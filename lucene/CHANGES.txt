@@ -126,6 +126,8 @@ Bug fixes
 
 Other
 
+* LUCENE-9391: Upgrade HPPC to 0.8.2. (Haoyu Zhai)
+
 * LUCENE-8768: Fix Javadocs build in Java 11. (Namgyu Kim)
 
 * LUCENE-9092: upgrade randomizedtesting to 2.7.5 (Dawid Weiss)
@@ -204,6 +206,10 @@ Improvements
 * LUCENE-9393: Make FunctionScoreQuery use ScoreMode.COMPLETE for creating the inner query weight when
   ScoreMode.TOP_DOCS is requested. (Tomás Fernández Löbbe)
 
+* LUCENE-9392: Make FacetsConfig.DELIM_CHAR publicly accessible (Ankur Goel))
+
+* LUCENE-9397: UniformSplit supports encodable fields metadata. (Bruno Roustant)
+
 Optimizations
 ---------------------
 
@@ -260,6 +266,11 @@ Bug Fixes
 * LUCENE-9362: Fix equality check in ExpressionValueSource#rewrite. This fixes rewriting of inner value sources.
   (Dmitry Emets)
 
+* LUCENE-9405: IndexWriter incorrectly calls closeMergeReaders twice when the merged segment is 100% deleted.
+  (Michael Froh, Simon Willnauer, Mike Mccandless, Mike Sokolov)
+
+* LUCENE-9400: Tessellator might build illegal polygons when several holes share the shame vertex. (Ignacio Vera)
+
 Other
 ---------------------
 
@@ -291,6 +302,8 @@ Other
 * LUCENE-9288: poll_mirrors.py release script can handle HTTPS mirrors. (Ignacio Vera)
 
 * LUCENE-9232: Fix or suppress 13 resource leak precommit warnings in lucene/replicator (Andras Salamon via Erick Erickson)
+
+* LUCENE-9398: Always keep BKD index off-heap. BKD reader does not implement Accountable any more. (Ignacio Vera)
 
 Build
 

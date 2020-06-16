@@ -96,6 +96,7 @@ public class TestZKPropertiesWriter extends AbstractDataImportHandlerTestCase {
   @SuppressForbidden(reason = "Needs currentTimeMillis to construct date stamps")
   @Test
   @SuppressWarnings({"unchecked"})
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12823")
   public void testZKPropertiesWriter() throws Exception {
     // test using ZooKeeper
     assertTrue("Not using ZooKeeper", h.getCoreContainer().isZooKeeperAware());

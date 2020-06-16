@@ -45,7 +45,7 @@ public interface SolrRequestHandler extends SolrInfoBean {
    * may be specified when declaring a request handler in
    * solrconfig.xml
    */
-  public void init(NamedList args);
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args);
 
 
   /**

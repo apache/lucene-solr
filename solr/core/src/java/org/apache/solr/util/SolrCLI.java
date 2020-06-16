@@ -1082,7 +1082,6 @@ public class SolrCLI implements CLIO {
       Map<String, Object> results = new LinkedHashMap<>();
       if (withClusterState) {
         Map<String, Object> map = new LinkedHashMap<>();
-        map.put("znodeVersion", clusterState.getZNodeVersion());
         map.put("liveNodes", new TreeSet<>(clusterState.getLiveNodes()));
         map.put("collections", clusterState.getCollectionsMap());
         results.put("CLUSTERSTATE", map);

@@ -99,7 +99,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
 
   public TextLogitStream(String zkHost,
                      String collectionName,
-                     Map params,
+                     @SuppressWarnings({"rawtypes"})Map params,
                      String name,
                      String field,
                      TupleStream termsStream,
@@ -283,9 +283,10 @@ public class TextLogitStream extends TupleStream implements Expressible {
     return expression;
   }
 
+  @SuppressWarnings({"unchecked"})
   private void init(String collectionName,
                     String zkHost,
-                    Map params,
+                    @SuppressWarnings({"rawtypes"})Map params,
                     String name,
                     String feature,
                     TupleStream termsStream,
@@ -332,7 +333,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l =  new ArrayList();
+    List<TupleStream> l =  new ArrayList<>();
     l.add(termsStream);
     return l;
   }
@@ -371,7 +372,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
 
   private List<Future<Tuple>> callShards(List<String> baseUrls) throws IOException {
 
-    List<Future<Tuple>> futures = new ArrayList();
+    List<Future<Tuple>> futures = new ArrayList<>();
     for (String baseUrl : baseUrls) {
       LogitCall lc = new LogitCall(baseUrl,
           this.params,
@@ -423,7 +424,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
     if (this.terms == null) {
       termsStream.open();
       this.terms = new ArrayList<>();
-      this.idfs = new ArrayList();
+      this.idfs = new ArrayList<>();
 
       while (true) {
         Tuple termTuple = termsStream.read();
@@ -438,6 +439,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   public Tuple read() throws IOException {
     try {
 
@@ -453,7 +455,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
           }
         }
 
-        List<List<Double>> allWeights = new ArrayList();
+        List<List<Double>> allWeights = new ArrayList<>();
         this.evaluation = new ClassificationEvaluation();
 
         this.error = 0;
@@ -463,11 +465,13 @@ public class TextLogitStream extends TupleStream implements Expressible {
           List<Double> shardWeights = (List<Double>) tuple.get("weights");
           allWeights.add(shardWeights);
           this.error += tuple.getDouble("error");
+          @SuppressWarnings({"rawtypes"})
           Map shardEvaluation = (Map) tuple.get("evaluation");
           this.evaluation.addEvaluation(shardEvaluation);
         }
 
         this.weights = averageWeights(allWeights);
+        @SuppressWarnings({"rawtypes"})
         Map map = new HashMap();
         map.put(ID, name+"_"+iteration);
         map.put("name_s", name);
@@ -514,7 +518,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
       working[i] = working[i] / allWeights.size();
     }
 
-    List<Double> ave = new ArrayList();
+    List<Double> ave = new ArrayList<>();
     for(double d : working) {
       ave.add(d);
     }
@@ -522,7 +526,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
     return ave;
   }
 
-  static String toString(List items) {
+  static String toString(@SuppressWarnings({"rawtypes"})List items) {
     StringBuilder buf = new StringBuilder();
     for(Object item : items) {
       if(buf.length() > 0) {
@@ -640,10 +644,13 @@ public class TextLogitStream extends TupleStream implements Expressible {
 
       QueryRequest  request= new QueryRequest(params, SolrRequest.METHOD.POST);
       QueryResponse response = request.process(solrClient);
+      @SuppressWarnings({"rawtypes"})
       NamedList res = response.getResponse();
 
+      @SuppressWarnings({"rawtypes"})
       NamedList logit = (NamedList)res.get("logit");
 
+      @SuppressWarnings({"unchecked"})
       List<Double> shardWeights = (List<Double>)logit.get("weights");
       double shardError = (double)logit.get("error");
 

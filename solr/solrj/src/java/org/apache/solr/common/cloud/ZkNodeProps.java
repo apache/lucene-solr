@@ -31,6 +31,7 @@ import static org.apache.solr.common.util.Utils.toJSONString;
 /**
  * ZkNodeProps contains generic immutable properties.
  */
+@SuppressWarnings({"overrides"})
 public class ZkNodeProps implements JSONWriter.Writable {
 
   protected final Map<String,Object> propMap;
@@ -91,6 +92,7 @@ public class ZkNodeProps implements JSONWriter.Writable {
   /**
    * Create Replica from json string that is typically stored in zookeeper.
    */
+  @SuppressWarnings({"unchecked"})
   public static ZkNodeProps load(byte[] bytes) {
     Map<String, Object> props = null;
     if (bytes[0] == 2) {
@@ -169,4 +171,8 @@ public class ZkNodeProps implements JSONWriter.Writable {
   public boolean equals(Object that) {
     return that instanceof ZkNodeProps && ((ZkNodeProps)that).propMap.equals(this.propMap);
   }
+//  @Override
+//  public int hashCode() {
+//    throw new UnsupportedOperationException("TODO unimplemented ZkNodeProps.hashCode");
+//  }
 }

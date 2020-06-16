@@ -206,7 +206,7 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
   }
   
   public List<TupleStream> children() {
-    List l = new ArrayList();
+    List<TupleStream> l = new ArrayList<>();
     l.add(tupleStream);
     return l;
   }

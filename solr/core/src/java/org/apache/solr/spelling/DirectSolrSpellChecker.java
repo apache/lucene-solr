@@ -96,7 +96,8 @@ public class DirectSolrSpellChecker extends SolrSpellChecker {
   private DirectSpellChecker checker = new DirectSpellChecker();
   
   @Override
-  public String init(NamedList config, SolrCore core) {
+  @SuppressWarnings({"unchecked"})
+  public String init(@SuppressWarnings({"rawtypes"})NamedList config, SolrCore core) {
 
     SolrParams params = config.toSolrParams();
 

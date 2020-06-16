@@ -145,6 +145,7 @@ public class SpellCheckResponse {
     private List<String> alternatives = new ArrayList<>();
     private List<Integer> alternativeFrequencies;
 
+    @SuppressWarnings({"rawtypes"})
     public Suggestion(String token, NamedList<Object> suggestion) {
       this.token = token;
       for (int i = 0; i < suggestion.size(); i++) {
