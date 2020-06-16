@@ -132,6 +132,8 @@ Bug Fixes
 * LUCENE-9405: IndexWriter incorrectly calls closeMergeReaders twice when the merged segment is 100% deleted.
   (Michael Froh, Simon Willnauer, Mike Mccandless, Mike Sokolov)
 
+* LUCENE-9400: Tessellator might build illegal polygons when several holes share the shame vertex. (Ignacio Vera)
+
 Other
 ---------------------
 
