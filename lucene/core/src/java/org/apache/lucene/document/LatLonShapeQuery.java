@@ -33,7 +33,7 @@ import org.apache.lucene.util.NumericUtils;
  * <p>The field must be indexed using {@link LatLonShape#createIndexableFields} added per document.
  *
  **/
-final class LatLonShapeQuery extends ShapeQuery {
+public final class LatLonShapeQuery extends ShapeQuery {
   final private LatLonGeometry[] geometries;
   final private Component2D component2D;
 

@@ -38,6 +38,18 @@ import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.DocIdSetBuilder;
 
+/**
+ * This query class scores documents based on their distance to {@code origin}:
+ * {@code score = weight * pivotDistance / (pivotDistance + distance)}.
+ *
+ * ie.: score is in the {@code [0, weight]} range, is equal to {@code weight} when
+ * the document's value is equal to {@code origin} and is equal to
+ * {@code weight/2}  when the document's value is distant of
+ * {@code pivotDistance} from {@code origin}.
+ *
+ * In case of multi-valued fields, only the closest point to {@code origin}
+ * will be considered.
+ */
 final class LongDistanceFeatureQuery extends Query {
 
   private final String field;

@@ -51,13 +51,13 @@ import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
 /**
  * Distance query for {@link LatLonPoint}.
  */
-final class LatLonPointDistanceQuery extends Query {
+public final class LatLonPointDistanceQuery extends Query {
   final String field;
   final double latitude;
   final double longitude;
   final double radiusMeters;
 
-  public LatLonPointDistanceQuery(String field, double latitude, double longitude, double radiusMeters) {
+  LatLonPointDistanceQuery(String field, double latitude, double longitude, double radiusMeters) {
     if (field == null) {
       throw new IllegalArgumentException("field must not be null");
     }
@@ -326,18 +326,38 @@ final class LatLonPointDistanceQuery extends Query {
     };
   }
 
+  /**
+   * Returns the field name for the query.
+   *
+   * @return the field name for the query
+   */
   public String getField() {
     return field;
   }
 
+  /**
+   * Returns the latitude at the center: must be within standard +/-90 coordinate bounds.
+   *
+   * @return latitude at the center
+   */
   public double getLatitude() {
     return latitude;
   }
 
+  /**
+   * Returns the longitude at the center: must be within standard +/-180 coordinate bounds.
+   *
+   * @return longitude at the center
+   */
   public double getLongitude() {
     return longitude;
   }
 
+  /**
+   * Returns the maximum distance from the center in meters.
+   *
+   * @return the maximum distance from the center in meters.
+   */
   public double getRadiusMeters() {
     return radiusMeters;
   }

@@ -34,7 +34,7 @@ import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
 
 /** Distance query for {@link LatLonDocValuesField}. */
-final class LatLonDocValuesDistanceQuery extends Query {
+public final class LatLonDocValuesDistanceQuery extends Query {
 
   private final String field;
   private final double latitude, longitude;

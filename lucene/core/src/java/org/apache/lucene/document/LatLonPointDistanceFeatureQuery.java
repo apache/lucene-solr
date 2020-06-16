@@ -43,8 +43,21 @@ import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.SloppyMath;
 
-
-final class LatLonPointDistanceFeatureQuery extends Query {
+/**
+ * This class models a query that scores
+ * documents based on their haversine distance in meters to {@code (originLat, originLon)}:
+ *
+ * {@code score = weight * pivotDistanceMeters / (pivotDistanceMeters + distance)}.
+ *
+ * ie. score is in the {@code [0, weight]} range, is equal to {@code weight} when
+ * the document's value is equal to {@code (originLat, originLon)} and is equal to
+ * {@code weight/2}  when the document's value is distant of
+ * {@code pivotDistanceMeters} from {@code (originLat, originLon)}.
+ *
+ * In case of multi-valued fields, only the closest point to {@code (originLat, originLon)}
+ * will be considered.
+ */
+public final class LatLonPointDistanceFeatureQuery extends Query {
 
   private final String field;
   private final double originLat;

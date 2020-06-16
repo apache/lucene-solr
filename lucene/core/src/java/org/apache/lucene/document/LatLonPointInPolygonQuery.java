@@ -53,7 +53,7 @@ import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
  *
  *  @lucene.experimental */
 
-final class LatLonPointInPolygonQuery extends Query {
+public final class LatLonPointInPolygonQuery extends Query {
   final String field;
   final Polygon[] polygons;
 
