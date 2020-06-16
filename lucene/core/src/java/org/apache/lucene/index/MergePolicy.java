@@ -24,10 +24,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BooleanSupplier;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -76,7 +81,7 @@ public abstract class MergePolicy {
    * @lucene.experimental */
   public static class OneMergeProgress {
     /** Reason for pausing the merge thread. */
-    public static enum PauseReason {
+    public enum PauseReason {
       /** Stopped (because of throughput rate set to 0, typically). */
       STOPPED,
       /** Temporarily paused because of exceeded throughput rate. */
@@ -196,6 +201,7 @@ public abstract class MergePolicy {
    *
    * @lucene.experimental */
   public static class OneMerge {
+    private final CompletableFuture<Boolean> completable = new CompletableFuture<>();
     SegmentCommitInfo info;         // used by IndexWriter
     boolean registerDone;           // used by IndexWriter
     long mergeGen;                  // used by IndexWriter
@@ -222,7 +228,7 @@ public abstract class MergePolicy {
     volatile long mergeStartNS = -1;
 
     /** Total number of documents in segments to be merged, not accounting for deletions. */
-    public final int totalMaxDoc;
+    final int totalMaxDoc;
     Throwable error;
 
     /** Sole constructor.
@@ -233,13 +239,8 @@ public abstract class MergePolicy {
         throw new RuntimeException("segments must include at least one segment");
       }
       // clone the list, as the in list may be based off original SegmentInfos and may be modified
-      this.segments = new ArrayList<>(segments);
-      int count = 0;
-      for(SegmentCommitInfo info : segments) {
-        count += info.info.maxDoc();
-      }
-      totalMaxDoc = count;
-
+      this.segments = List.copyOf(segments);
+      totalMaxDoc = segments.stream().mapToInt(i -> i.info.maxDoc()).sum();
       mergeProgress = new OneMergeProgress();
     }
 
@@ -251,8 +252,12 @@ public abstract class MergePolicy {
       mergeProgress.setMergeThread(Thread.currentThread());
     }
     
-    /** Called by {@link IndexWriter} after the merge is done and all readers have been closed. */
-    public void mergeFinished() throws IOException {
+    /** Called by {@link IndexWriter} after the merge is done and all readers have been closed.
+     * @param success true iff the merge finished successfully ie. was committed */
+    public void mergeFinished(boolean success) throws IOException {
+      if (completable.complete(success) == false) {
+        throw new IllegalStateException("merge has already finished");
+      }
     }
 
     /** Wrap the reader in order to add/remove information to the merged segment. */
@@ -362,6 +367,30 @@ public abstract class MergePolicy {
     public OneMergeProgress getMergeProgress() {
       return mergeProgress;
     }
+
+    /**
+     * Waits for this merge to be completed
+     * @return true if the merge finished within the specified timeout
+     */
+    boolean await(long timeout, TimeUnit timeUnit) {
+      try {
+        completable.get(timeout, timeUnit);
+        return true;
+      } catch (InterruptedException e) {
+        Thread.interrupted();
+        return false;
+      } catch (ExecutionException | TimeoutException e) {
+        return false;
+      }
+    }
+
+    boolean isDone() {
+      return completable.isDone();
+    }
+
+    boolean isCommitted() {
+      return completable.getNow(Boolean.FALSE);
+    }
   }
 
   /**
@@ -398,6 +427,23 @@ public abstract class MergePolicy {
         b.append("  ").append(1 + i).append(": ").append(merges.get(i).segString());
       }
       return b.toString();
+    }
+
+    /**
+     * Waits if necessary for at most the given time for all merges.
+     */
+    boolean await(long timeout, TimeUnit unit) {
+      try {
+        CompletableFuture<Void> future = CompletableFuture.allOf(merges.stream()
+            .map(m -> m.completable).collect(Collectors.toList()).toArray(new CompletableFuture<?>[0]));
+        future.get(timeout, unit);
+        return true;
+      } catch (InterruptedException e) {
+        Thread.interrupted();
+        return false;
+      } catch (ExecutionException | TimeoutException e) {
+        return false;
+      }
     }
   }
 
