@@ -239,10 +239,16 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
     CoreContainer cc = req.getCore().getCoreContainer();
     boolean isZkAware = cc.isZooKeeperAware();
     rb.isDistrib = req.getParams().getBool(DISTRIB, isZkAware);
+    // SOLR-13195: For back compatibility, allow distributed search only when the
+    // request has a shards parameter
+    final String shards = req.getParams().get(ShardParams.SHARDS);
+    if (rb.isDistrib && (shards == null) && !isZkAware) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "shards not defined but " +
+                              "required without SolrCloud");
+    }
     if (!rb.isDistrib) {
       // for back compat, a shards param with URLs like localhost:8983/solr will mean that this
       // search is distributed.
-      final String shards = req.getParams().get(ShardParams.SHARDS);
       rb.isDistrib = ((shards != null) && (shards.indexOf('/') > 0));
     }
     

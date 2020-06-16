@@ -30,12 +30,15 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -118,6 +121,27 @@ public class SearchHandlerTest extends SolrTestCaseJ4
     } catch (IOException e) {
       fail("Exception when closing SearchHandler");
     }
+  }
+  
+  @Test
+  public void testDistribWithoutZk() throws Exception{
+    SolrCore core = h.getCore();
+    List<String> names0 = new ArrayList<>();
+    names0.add( FacetComponent.COMPONENT_NAME );
+    NamedList<List<String>> args = new NamedList<>();
+    args.add( SearchHandler.INIT_COMPONENTS, names0 );
+    SearchHandler handler = new SearchHandler();
+    handler.init(args);
+    handler.inform(core);
+    
+    final ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add("distrib", "true");
+    SolrQueryRequest req = req(params);
+    SolrQueryResponse resp = new SolrQueryResponse();
+    
+    Exception e = expectThrows(SolrException.class, () -> handler.handleRequestBody(req, resp));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ((SolrException)e).code());
+    assertEquals("shards not defined but required without SolrCloud", e.getMessage());
   }
   
   @Test
