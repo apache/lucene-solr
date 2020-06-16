@@ -356,16 +356,10 @@ public class TestCodecUtil extends LuceneTestCase {
       exception = expectThrows(CorruptIndexException.class,
           () -> CodecUtil.retrieveChecksum(in, in.length() - 1));
       assertTrue(exception.getMessage().contains("too long"));
-      assertEquals(1, exception.getSuppressed().length);
-      assertTrue(exception.getSuppressed()[0] instanceof CorruptIndexException);
-      assertTrue(exception.getSuppressed()[0].getMessage().contains("codec footer mismatch"));
 
       exception = expectThrows(CorruptIndexException.class,
           () -> CodecUtil.retrieveChecksum(in, in.length() + 1));
       assertTrue(exception.getMessage().contains("truncated"));
-      assertEquals(1, exception.getSuppressed().length);
-      assertTrue(exception.getSuppressed()[0] instanceof CorruptIndexException);
-      assertTrue(exception.getSuppressed()[0].getMessage().contains("codec footer mismatch"));
     }
 
     dir.close();

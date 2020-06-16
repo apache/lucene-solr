@@ -500,27 +500,13 @@ public final class CodecUtil {
     if (expectedLength < footerLength()) {
       throw new IllegalArgumentException("expectedLength cannot be less than the footer length");
     }
-    IOException mainException = null;
     if (in.length() < expectedLength) {
-      mainException = new CorruptIndexException("truncated file: length=" + in.length() + " but expectedLength==" + expectedLength, in);
+      throw new CorruptIndexException("truncated file: length=" + in.length() + " but expectedLength==" + expectedLength, in);
     } else if (in.length() > expectedLength) {
-      mainException = new CorruptIndexException("file too long: length=" + in.length() + " but expectedLength==" + expectedLength, in);
+      throw new CorruptIndexException("file too long: length=" + in.length() + " but expectedLength==" + expectedLength, in);
     }
 
-    try {
-      return retrieveChecksum(in);
-    } catch (IOException e) {
-      if (mainException == null) {
-        mainException = e;
-      } else {
-        mainException.addSuppressed(e);
-      }
-    } finally {
-      if (mainException != null) {
-        throw mainException;
-      }
-    }
-    throw new Error("unreachable code");
+    return retrieveChecksum(in);
   }
 
   private static void validateFooter(IndexInput in) throws IOException {
