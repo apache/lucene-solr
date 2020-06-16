@@ -402,7 +402,7 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
     }
 
     @Override
-    public FunctionValues getValues(Map context, LeafReaderContext reader)
+    public FunctionValues getValues(@SuppressWarnings({"rawtypes"})Map context, LeafReaderContext reader)
         throws IOException {
       final FunctionValues amounts = source.getValues(context, reader);
       // the target digits & currency of our source, 
@@ -514,7 +514,8 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
     public Currency getTargetCurrency() { return targetCurrency; }
 
     @Override
-    public FunctionValues getValues(Map context, LeafReaderContext reader) throws IOException {
+    @SuppressWarnings({"unchecked"})
+    public FunctionValues getValues(@SuppressWarnings({"rawtypes"})Map context, LeafReaderContext reader) throws IOException {
       final FunctionValues amounts = amountValues.getValues(context, reader);
       final FunctionValues currencies = currencyValues.getValues(context, reader);
 

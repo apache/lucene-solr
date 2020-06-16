@@ -83,7 +83,7 @@ public class FieldNameMutatingUpdateProcessorFactory  extends UpdateRequestProce
   }
 
   @Override
-  public void init(NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     sourcePattern = (String) args.get("pattern");
     replacement = (String) args.get("replacement");
     if(sourcePattern ==null || replacement == null) {

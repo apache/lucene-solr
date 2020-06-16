@@ -40,8 +40,9 @@ public class ScalarAddEvaluator extends RecursiveObjectEvaluator implements TwoV
 
     double d = ((Number)value1).doubleValue();
     if(value2 instanceof List){
+      @SuppressWarnings({"unchecked"})
       List<Number> nums = (List<Number>)value2;
-      List<Number> out = new ArrayList();
+      List<Number> out = new ArrayList<>();
       for(Number num : nums) {
         out.add(operate(num.doubleValue(), d));
       }

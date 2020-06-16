@@ -1042,13 +1042,10 @@ IF "%SCRIPT_CMD%"=="stop" (
                 del "%SOLR_TIP%"\bin\solr-!SOME_SOLR_PORT!.port
                 timeout /T 5
                 REM Kill it if it is still running after the graceful shutdown
-                For /f "tokens=2,5" %%M in ('netstat -nao ^| find "TCP " ^| find ":0 " ^| find ":!SOME_SOLR_PORT! "') do (
-                  IF "%%N"=="%%k" (
-                    IF "%%M"=="%SOLR_JETTY_HOST%:!SOME_SOLR_PORT!" (
-                      @echo Forcefully killing process %%N
-                      taskkill /f /PID %%N
-                    )
-                  )
+                IF EXIST "%JAVA_HOME%\bin\jstack.exe" (
+                  qprocess "%%k" >nul 2>nul && "%JAVA_HOME%\bin\jstack.exe" %%k && taskkill /f /PID %%k
+                ) else (
+                  qprocess "%%k" >nul 2>nul && taskkill /f /PID %%k
                 )
               )
             )
@@ -1072,13 +1069,10 @@ IF "%SCRIPT_CMD%"=="stop" (
           del "%SOLR_TIP%"\bin\solr-%SOLR_PORT%.port
           timeout /T 5
           REM Kill it if it is still running after the graceful shutdown
-          For /f "tokens=2,5" %%j in ('netstat -nao ^| find "TCP " ^| find ":0 " ^| find ":%SOLR_PORT% "') do (
-            IF "%%N"=="%%k" (
-              IF "%%j"=="%SOLR_JETTY_HOST%:%SOLR_PORT%" (
-                @echo Forcefully killing process %%N
-                taskkill /f /PID %%N
-              )
-            )
+          IF EXIST "%JAVA_HOME%\bin\jstack.exe" (
+            qprocess "%%N" >nul 2>nul && "%JAVA_HOME%\bin\jstack.exe" %%N && taskkill /f /PID %%N
+          ) else (
+            qprocess "%%N" >nul 2>nul && taskkill /f /PID %%N
           )
         )
       )
@@ -1218,7 +1212,8 @@ IF "%GC_TUNE%"=="" (
     -XX:+ParallelRefProcEnabled ^
     -XX:MaxGCPauseMillis=250 ^
     -XX:+UseLargePages ^
-    -XX:+AlwaysPreTouch
+    -XX:+AlwaysPreTouch ^
+    -XX:+ExplicitGCInvokesConcurrent
 )
 
 if !JAVA_MAJOR_VERSION! GEQ 9  (

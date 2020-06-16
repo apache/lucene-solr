@@ -22,7 +22,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import org.apache.solr.common.util.Utils;
-
+@SuppressWarnings({"overrides"})
 public class Replica extends ZkNodeProps {
   
   /**
@@ -153,7 +153,10 @@ public class Replica extends ZkNodeProps {
 
     return name.equals(replica.name);
   }
-
+//  @Override
+//  public int hashCode() {
+//    throw new UnsupportedOperationException("TODO unimplemented Replica.hashCode()");
+//  }
   /** Also known as coreNodeName. */
   public String getName() {
     return name;

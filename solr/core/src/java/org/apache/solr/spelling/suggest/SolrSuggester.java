@@ -99,6 +99,7 @@ public class SolrSuggester implements Accountable {
    * Uses the <code>config</code> and the <code>core</code> to initialize the underlying 
    * Lucene suggester
    * */
+  @SuppressWarnings({"unchecked"})
   public String init(NamedList<?> config, SolrCore core) {
     log.info("init: {}", config);
     

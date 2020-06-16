@@ -147,6 +147,7 @@ public class MetricSuppliers {
   private static final double DEFAULT_ALPHA = 0.015;
   private static final long DEFAULT_WINDOW = 300;
 
+  @SuppressWarnings({"unchecked"})
   private static final Reservoir getReservoir(SolrResourceLoader loader, PluginInfo info) {
     if (info == null) {
       return new ExponentiallyDecayingReservoir();
@@ -276,6 +277,7 @@ public class MetricSuppliers {
    * @param info plugin configuration, or null for default
    * @return configured supplier instance, or default instance if configuration was invalid
    */
+  @SuppressWarnings({"unchecked"})
   public static MetricRegistry.MetricSupplier<Counter> counterSupplier(SolrResourceLoader loader, PluginInfo info) {
     if (info == null || info.className == null || info.className.trim().isEmpty()) {
       return new DefaultCounterSupplier();
@@ -302,6 +304,7 @@ public class MetricSuppliers {
    * @param info plugin configuration, or null for default
    * @return configured supplier instance, or default instance if configuration was invalid
    */
+  @SuppressWarnings({"unchecked"})
   public static MetricRegistry.MetricSupplier<Meter> meterSupplier(SolrResourceLoader loader, PluginInfo info) {
     MetricRegistry.MetricSupplier<Meter> supplier;
     if (info == null || info.className == null || info.className.isEmpty()) {
@@ -328,6 +331,7 @@ public class MetricSuppliers {
    * @param info plugin configuration, or null for default
    * @return configured supplier instance, or default instance if configuration was invalid
    */
+  @SuppressWarnings({"unchecked"})
   public static MetricRegistry.MetricSupplier<Timer> timerSupplier(SolrResourceLoader loader, PluginInfo info) {
     MetricRegistry.MetricSupplier<Timer> supplier;
     if (info == null || info.className == null || info.className.isEmpty()) {
@@ -353,6 +357,7 @@ public class MetricSuppliers {
    * @param info plugin configuration, or null for default
    * @return configured supplier instance, or default instance if configuration was invalid
    */
+  @SuppressWarnings({"unchecked"})
   public static MetricRegistry.MetricSupplier<Histogram> histogramSupplier(SolrResourceLoader loader, PluginInfo info) {
     MetricRegistry.MetricSupplier<Histogram> supplier;
     if (info == null || info.className == null || info.className.isEmpty()) {

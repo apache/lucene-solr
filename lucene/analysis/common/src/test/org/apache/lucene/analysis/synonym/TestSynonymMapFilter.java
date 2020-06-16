@@ -39,6 +39,7 @@ import org.apache.lucene.analysis.tokenattributes.*;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.TestUtil;
 
+@Deprecated
 public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
 
   private SynonymMap.Builder b;

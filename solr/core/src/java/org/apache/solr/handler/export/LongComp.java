@@ -19,27 +19,28 @@ package org.apache.solr.handler.export;
 
 interface LongComp {
   int compare(long a, long b);
+
   long resetValue();
-}
 
-class LongAsc implements LongComp {
+  static class LongAsc implements LongComp {
 
-  public long resetValue() {
-    return Long.MAX_VALUE;
+    public long resetValue() {
+      return Long.MAX_VALUE;
+    }
+
+    public int compare(long a, long b) {
+      return Long.compare(b, a);
+    }
   }
 
-  public int compare(long a, long b) {
-    return Long.compare(b, a);
-  }
-}
+  static class LongDesc implements LongComp {
 
-class LongDesc implements LongComp {
+    public long resetValue() {
+      return Long.MIN_VALUE;
+    }
 
-  public long resetValue() {
-    return Long.MIN_VALUE;
-  }
-
-  public int compare(long a, long b) {
-    return Long.compare(a, b);
+    public int compare(long a, long b) {
+      return Long.compare(a, b);
+    }
   }
 }

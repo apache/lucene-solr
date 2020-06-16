@@ -74,7 +74,7 @@ final class VersionFieldReader extends Terms implements Accountable {
       final IndexInput clone = indexIn.clone();
       //System.out.println("start=" + indexStartFP + " field=" + fieldInfo.name);
       clone.seek(indexStartFP);
-      index = new FST<>(clone, VersionBlockTreeTermsWriter.FST_OUTPUTS);
+      index = new FST<>(clone, clone, VersionBlockTreeTermsWriter.FST_OUTPUTS);
         
       /*
         if (false) {

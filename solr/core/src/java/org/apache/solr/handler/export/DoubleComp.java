@@ -17,28 +17,29 @@
 
 package org.apache.solr.handler.export;
 
-interface FloatComp {
-  int compare(float a, float b);
-  float resetValue();
+interface DoubleComp {
+  int compare(double a, double b);
+
+  double resetValue();
+
+
+  static class DoubleAsc implements DoubleComp {
+    public double resetValue() {
+      return Double.MAX_VALUE;
+    }
+
+    public int compare(double a, double b) {
+      return Double.compare(b, a);
+    }
+  }
+
+  static class DoubleDesc implements DoubleComp {
+    public double resetValue() {
+      return -Double.MAX_VALUE;
+    }
+
+    public int compare(double a, double b) {
+      return Double.compare(a, b);
+    }
+  }
 }
-
-class FloatAsc implements FloatComp {
-  public float resetValue() {
-    return Float.MAX_VALUE;
-  }
-
-  public int compare(float a, float b) {
-    return Float.compare(b, a);
-  }
-}
-
-class FloatDesc implements FloatComp {
-  public float resetValue() {
-    return -Float.MAX_VALUE;
-  }
-
-  public int compare(float a, float b) {
-    return Float.compare(a, b);
-  }
-}
-

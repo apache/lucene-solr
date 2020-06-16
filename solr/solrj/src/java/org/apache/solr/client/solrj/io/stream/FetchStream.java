@@ -199,11 +199,12 @@ public class FetchStream extends TupleStream implements Expressible {
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l =  new ArrayList();
+    List<TupleStream> l =  new ArrayList<>();
     l.add(stream);
     return l;
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void open() throws IOException {
     tuples = new ArrayList().iterator();
     stream.open();

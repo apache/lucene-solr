@@ -173,7 +173,7 @@ public class RandomSortField extends FieldType {
     }
 
     @Override
-    public FunctionValues getValues(Map context, final LeafReaderContext readerContext) throws IOException {
+    public FunctionValues getValues(@SuppressWarnings({"rawtypes"})Map context, final LeafReaderContext readerContext) throws IOException {
       return new IntDocValues(this) {
           private final int seed = getSeed(field, readerContext);
           @Override

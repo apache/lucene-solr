@@ -493,6 +493,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     TupleStream stream;
     List<Tuple> tuples;
     Tuple t0, t1, t2;
+    @SuppressWarnings({"rawtypes"})
     List<Map> maps0, maps1, maps2;
     StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
@@ -1564,14 +1565,17 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       assert (tuples.size() == 3);
 
       Tuple t0 = tuples.get(0);
+      @SuppressWarnings({"rawtypes"})
       List<Map> maps0 = t0.getMaps("group");
       assertMaps(maps0, 0, 1, 2, 9);
 
       Tuple t1 = tuples.get(1);
+      @SuppressWarnings({"rawtypes"})
       List<Map> maps1 = t1.getMaps("group");
       assertMaps(maps1, 3, 5, 7, 8);
 
       Tuple t2 = tuples.get(2);
+      @SuppressWarnings({"rawtypes"})
       List<Map> maps2 = t2.getMaps("group");
       assertMaps(maps2, 4, 6);
 
@@ -2296,7 +2300,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       tuples = getTuples(stream);
       
       assertEquals(1, tuples.size());
-      assertFalse(tuples.get(0).fields.containsKey("extra_s"));
+      assertFalse(tuples.get(0).getFields().containsKey("extra_s"));
     
     } finally {
       solrClientCache.close();
@@ -3798,6 +3802,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
     Tuple tuple1 = tuples.get(0);
+    @SuppressWarnings({"unchecked", "rawtypes"})
     List<Map> results = (List<Map>)tuple1.get("results");
     assertTrue(results.size() == 2);
     assertTrue(results.get(0).get("id").equals("hello1"));
@@ -4467,7 +4472,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   protected boolean assertFields(List<Tuple> tuples, String ... fields) throws Exception{
     for(Tuple tuple : tuples){
       for(String field : fields){
-        if(!tuple.fields.containsKey(field)){
+        if(!tuple.getFields().containsKey(field)){
           throw new Exception(String.format(Locale.ROOT, "Expected field '%s' not found", field));
         }
       }
@@ -4477,7 +4482,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   protected boolean assertNotFields(List<Tuple> tuples, String ... fields) throws Exception{
     for(Tuple tuple : tuples){
       for(String field : fields){
-        if(tuple.fields.containsKey(field)){
+        if(tuple.getFields().containsKey(field)){
           throw new Exception(String.format(Locale.ROOT, "Unexpected field '%s' found", field));
         }
       }
@@ -4520,13 +4525,14 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     return true;
   }
   
-  protected boolean assertMaps(List<Map> maps, int... ids) throws Exception {
+  protected boolean assertMaps(@SuppressWarnings({"rawtypes"})List<Map> maps, int... ids) throws Exception {
     if(maps.size() != ids.length) {
       throw new Exception("Expected id count != actual map count:"+ids.length+":"+maps.size());
     }
 
     int i=0;
     for(int val : ids) {
+      @SuppressWarnings({"rawtypes"})
       Map t = maps.get(i);
       String tip = (String)t.get("id");
       if(!tip.equals(Integer.toString(val))) {
@@ -4537,7 +4543,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     return true;
   }
 
-  private boolean assertList(List list, Object... vals) throws Exception {
+  private boolean assertList(@SuppressWarnings({"rawtypes"})List list, Object... vals) throws Exception {
 
     if(list.size() != vals.length) {
       throw new Exception("Lists are not the same size:"+list.size() +" : "+vals.length);

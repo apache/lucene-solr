@@ -296,11 +296,11 @@ public class FSTTester<T> {
     if (random.nextBoolean() && fst != null) {
       IOContext context = LuceneTestCase.newIOContext(random);
       IndexOutput out = dir.createOutput("fst.bin", context);
-      fst.save(out);
+      fst.save(out, out);
       out.close();
       IndexInput in = dir.openInput("fst.bin", context);
       try {
-        fst = new FST<T>(in, outputs);
+        fst = new FST<T>(in, in, outputs);
       } finally {
         in.close();
         dir.deleteFile("fst.bin");
@@ -340,6 +340,7 @@ public class FSTTester<T> {
   }
 
   // FST is complete
+  @SuppressWarnings("deprecation")
   private void verifyUnPruned(int inputMode, FST<T> fst) throws IOException {
 
     final FST<Long> fstLong;

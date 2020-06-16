@@ -67,6 +67,7 @@ public class LatLonVectorsEvaluator extends RecursiveObjectEvaluator implements 
       if(!(objects[0] instanceof List)) {
         throw new IOException("The latlonVectors function expects a list of Tuples as a parameter.");
       } else {
+        @SuppressWarnings({"rawtypes"})
         List list = (List)objects[0];
         if(list.size() > 0) {
           Object o = list.get(0);
@@ -78,14 +79,15 @@ public class LatLonVectorsEvaluator extends RecursiveObjectEvaluator implements 
         }
       }
 
+      @SuppressWarnings({"unchecked"})
       List<Tuple> tuples = (List<Tuple>) objects[0];
 
       double[][] locationVectors = new double[tuples.size()][2];
-      List<String> features = new ArrayList();
+      List<String> features = new ArrayList<>();
       features.add("lat");
       features.add("lon");
 
-      List<String> rowLabels = new ArrayList();
+      List<String> rowLabels = new ArrayList<>();
 
       for(int i=0; i< tuples.size(); i++) {
         Tuple tuple = tuples.get(i);

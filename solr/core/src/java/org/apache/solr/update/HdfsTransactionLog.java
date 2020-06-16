@@ -164,6 +164,7 @@ public class HdfsTransactionLog extends TransactionLog {
     return true;
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private void readHeader(FastInputStream fis) throws IOException {
     // read existing header
     boolean closeFis = false;
@@ -488,6 +489,7 @@ public class HdfsTransactionLog extends TransactionLog {
 
         long lastVersion = Long.MIN_VALUE;
         while ( (o = super.next()) != null) {
+          @SuppressWarnings({"rawtypes"})
           List entry = (List) o;
           long version = (Long) entry.get(UpdateLog.VERSION_IDX);
           version = Math.abs(version);

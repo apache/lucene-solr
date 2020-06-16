@@ -18,6 +18,7 @@
 package org.apache.lucene.queries.function;
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.NumericDocValuesField;
@@ -37,8 +38,10 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -242,6 +245,35 @@ public class TestFunctionScoreQuery extends FunctionTestSetup {
     QueryUtils.checkEqual(q5, q6);
 
 
+  }
+
+  public void testScoreMode() throws Exception {
+    // Value Source doesn't need scores
+    assertInnerScoreMode(ScoreMode.COMPLETE_NO_SCORES, ScoreMode.COMPLETE, DoubleValuesSource.fromDoubleField("foo"));
+    assertInnerScoreMode(ScoreMode.COMPLETE_NO_SCORES, ScoreMode.COMPLETE_NO_SCORES, DoubleValuesSource.fromDoubleField("foo"));
+    assertInnerScoreMode(ScoreMode.COMPLETE_NO_SCORES, ScoreMode.TOP_SCORES, DoubleValuesSource.fromDoubleField("foo"));
+    
+    // Value Source needs scores
+    assertInnerScoreMode(ScoreMode.COMPLETE, ScoreMode.COMPLETE, DoubleValuesSource.SCORES);
+    assertInnerScoreMode(ScoreMode.COMPLETE_NO_SCORES, ScoreMode.COMPLETE_NO_SCORES, DoubleValuesSource.SCORES);
+    assertInnerScoreMode(ScoreMode.COMPLETE, ScoreMode.TOP_SCORES, DoubleValuesSource.SCORES);
+    
+  }
+  
+  private void assertInnerScoreMode(ScoreMode expectedScoreMode, ScoreMode inputScoreMode, DoubleValuesSource valueSource) throws IOException {
+    final AtomicReference<ScoreMode> scoreModeInWeight = new AtomicReference<ScoreMode>();
+    Query innerQ = new TermQuery(new Term(TEXT_FIELD, "a")) {
+      
+      @Override
+      public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+        scoreModeInWeight.set(scoreMode);
+        return super.createWeight(searcher, scoreMode, boost);
+      }
+    };
+    
+    FunctionScoreQuery fq = new FunctionScoreQuery(innerQ, valueSource);
+    fq.createWeight(searcher, inputScoreMode, 1f);
+    assertEquals(expectedScoreMode, scoreModeInWeight.get());
   }
 
 }

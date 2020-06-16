@@ -31,13 +31,16 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.AD
 
 class AddReplicaSuggester extends Suggester {
 
+  @SuppressWarnings({"rawtypes"})
   SolrRequest init() {
     SolrRequest operation = tryEachNode(true);
     if (operation == null) operation = tryEachNode(false);
     return operation;
   }
 
+  @SuppressWarnings({"rawtypes"})
   SolrRequest tryEachNode(boolean strict) {
+    @SuppressWarnings({"unchecked"})
     Set<Pair<String, String>> shards = (Set<Pair<String, String>>) hints.getOrDefault(Hint.COLL_SHARD, Collections.emptySet());
     if (shards.isEmpty()) {
       throw new RuntimeException("add-replica requires 'collection' and 'shard'");

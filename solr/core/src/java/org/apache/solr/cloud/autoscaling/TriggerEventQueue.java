@@ -72,6 +72,7 @@ public class TriggerEventQueue {
           continue;
         }
         try {
+          @SuppressWarnings({"unchecked"})
           Map<String, Object> map = (Map<String, Object>) Utils.fromJSON(data);
           return fromMap(map);
         } catch (Exception e) {
@@ -98,6 +99,7 @@ public class TriggerEventQueue {
           continue;
         }
         try {
+          @SuppressWarnings({"unchecked"})
           Map<String, Object> map = (Map<String, Object>) Utils.fromJSON(data);
           return fromMap(map);
         } catch (Exception e) {

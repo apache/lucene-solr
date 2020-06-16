@@ -376,7 +376,12 @@ final public class Tessellator {
     Node next = polygon;
     do {
       if (isVertexEquals(next, vertex)) {
-        return next;
+        // make sure we are not crossing the polygon. This might happen when several holes share the same polygon vertex.
+        boolean crosses = GeoUtils.lineCrossesLine(next.previous.getX(), next.previous.getY(), vertex.next.getX(), vertex.next.getY(),
+                                                   next.next.getX(), next.next.getY(), vertex.previous.getX(), vertex.previous.getY());
+        if (crosses == false) {
+          return next;
+        }
       }
       next = next.next;
     } while(next != polygon);

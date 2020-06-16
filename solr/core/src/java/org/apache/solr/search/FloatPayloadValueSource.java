@@ -53,10 +53,12 @@ public class FloatPayloadValueSource extends ValueSource {
   }
 
   @Override
-  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(@SuppressWarnings({"rawtypes"})Map context
+          , LeafReaderContext readerContext) throws IOException {
 
     final Terms terms = readerContext.reader().terms(indexedField);
 
+    @SuppressWarnings({"unchecked"})
     FunctionValues defaultValues = defaultValueSource.getValues(context, readerContext);
 
     // copied the bulk of this from TFValueSource - TODO: this is a very repeated pattern - base-class this advance logic stuff?

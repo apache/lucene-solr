@@ -105,7 +105,17 @@ _(raw; not yet edited)_
 
 * SOLR-11775: Return long value for facet count in Json Facet module irrespective of number of shards (hossman, Munendra S N)
 
+* SOLR-12823: Remove /clusterstate.json support, i.e. support for collections created with stateFormat=1 as well as support
+  for Collection API MIGRATESTATEFORMAT action. Also removes support for cluster property `legacyCloud` (as if always false now).
+
 === Upgrade Prerequisites in Solr 9
+
+* Upgrade all collections in stateFormat=1 to stateFormat=2 *before* upgrading to Solr 9, as Solr 9 does not support the
+older format and no longer supports migrating collections from the older format to the current format (previously known
+as stateFormat=2).
+Upgrade is to be done using Collection API MIGRATESTATEFORMAT action using a previous version of Solr.
+See for example https://lucene.apache.org/solr/guide/8_5/cluster-node-management.html#migratestateforma[Solr 8.5 Ref Guide].
+// Can't link directly to .adoc file, need to link to 8.something ref guide as MIGRATESTATEFORMAT no longer exists in 9.0.
 
 === Rolling Upgrades with Solr 9
 

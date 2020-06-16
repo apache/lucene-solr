@@ -52,7 +52,6 @@ public final class FieldReader extends Terms implements Accountable {
   final long sumTotalTermFreq;
   final long sumDocFreq;
   final int docCount;
-  final long indexStartFP;
   final long rootBlockFP;
   final BytesRef rootCode;
   final BytesRef minTerm;
@@ -63,7 +62,7 @@ public final class FieldReader extends Terms implements Accountable {
   //private boolean DEBUG;
 
   FieldReader(BlockTreeTermsReader parent, FieldInfo fieldInfo, long numTerms, BytesRef rootCode, long sumTotalTermFreq, long sumDocFreq, int docCount,
-              long indexStartFP, IndexInput indexIn, BytesRef minTerm, BytesRef maxTerm) throws IOException {
+              long indexStartFP, IndexInput metaIn, IndexInput indexIn, BytesRef minTerm, BytesRef maxTerm) throws IOException {
     assert numTerms > 0;
     this.fieldInfo = fieldInfo;
     //DEBUG = BlockTreeTermsReader.DEBUG && fieldInfo.name.equals("id");
@@ -72,7 +71,6 @@ public final class FieldReader extends Terms implements Accountable {
     this.sumTotalTermFreq = sumTotalTermFreq;
     this.sumDocFreq = sumDocFreq;
     this.docCount = docCount;
-    this.indexStartFP = indexStartFP;
     this.rootCode = rootCode;
     this.minTerm = minTerm;
     this.maxTerm = maxTerm;
@@ -81,22 +79,22 @@ public final class FieldReader extends Terms implements Accountable {
     // }
     rootBlockFP = (new ByteArrayDataInput(rootCode.bytes, rootCode.offset, rootCode.length)).readVLong() >>> BlockTreeTermsReader.OUTPUT_FLAGS_NUM_BITS;
     // Initialize FST always off-heap.
-    if (indexIn != null) {
-      final IndexInput clone = indexIn.clone();
-      clone.seek(indexStartFP);
-      index = new FST<>(clone, ByteSequenceOutputs.getSingleton(), new OffHeapFSTStore());
-      /*
-        if (false) {
-        final String dotFileName = segment + "_" + fieldInfo.name + ".dot";
-        Writer w = new OutputStreamWriter(new FileOutputStream(dotFileName));
-        Util.toDot(index, w, false, false);
-        System.out.println("FST INDEX: SAVED to " + dotFileName);
-        w.close();
-        }
-      */
+    final IndexInput clone = indexIn.clone();
+    clone.seek(indexStartFP);
+    if (metaIn == indexIn) { // Only true before Lucene 8.6
+      index = new FST<>(clone, clone, ByteSequenceOutputs.getSingleton(), new OffHeapFSTStore());
     } else {
-      index = null;
+      index = new FST<>(metaIn, clone, ByteSequenceOutputs.getSingleton(), new OffHeapFSTStore());
     }
+    /*
+      if (false) {
+      final String dotFileName = segment + "_" + fieldInfo.name + ".dot";
+      Writer w = new OutputStreamWriter(new FileOutputStream(dotFileName));
+      Util.toDot(index, w, false, false);
+      System.out.println("FST INDEX: SAVED to " + dotFileName);
+      w.close();
+      }
+     */
   }
 
   @Override
