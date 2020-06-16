@@ -211,7 +211,6 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
 
   //private final static boolean SAVE_DOT_FILES = false;
 
-  private final SegmentWriteState state;
   private final IndexOutput metaOut;
   private final IndexOutput termsOut;
   private final IndexOutput indexOut;
@@ -237,7 +236,6 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
     validateSettings(minItemsInBlock,
                      maxItemsInBlock);
 
-    this.state = state;
     this.minItemsInBlock = minItemsInBlock;
     this.maxItemsInBlock = maxItemsInBlock;
 
