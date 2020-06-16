@@ -143,6 +143,10 @@ Improvements
 * SOLR-14442: bin/solr and bin\solr.cmd invoke jstack <SOLR_PID> before forceful termination, if jstack is available.
   Also, bin\solr.cmd executes forceful termination even port is unbinded  already (Christine Poerschke via Mikhail Khludnev).
 
+* SOLR-14384: SolrRequestInfo now stacks internally when a new request is set/clear'ed.
+  Also fixes SolrIndexSearcher.warm which should have re-instated previous SRI.
+  (Nazerke Seidan, David Smiley)
+
 Optimizations
 ---------------------
 * SOLR-8306: Do not collect expand documents when expand.rows=0 (Marshall Sanders, Amelia Henderson)
