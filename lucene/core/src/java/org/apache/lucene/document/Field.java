@@ -40,6 +40,7 @@ import org.apache.lucene.util.BytesRef;
  *    <li>{@link LongPoint}: {@code long} indexed for exact/range queries.
  *    <li>{@link FloatPoint}: {@code float} indexed for exact/range queries.
  *    <li>{@link DoublePoint}: {@code double} indexed for exact/range queries.
+ *    <li>{@link VectorField}: {@code float[]} indexed for vector search queries
  *    <li>{@link SortedDocValuesField}: {@code byte[]} indexed column-wise for sorting/faceting
  *    <li>{@link SortedSetDocValuesField}: {@code SortedSet<byte[]>} indexed column-wise for sorting/faceting
  *    <li>{@link NumericDocValuesField}: {@code long} indexed column-wise for sorting/faceting

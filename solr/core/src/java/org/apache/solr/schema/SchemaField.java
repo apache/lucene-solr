@@ -443,6 +443,11 @@ public final class SchemaField extends FieldProperties implements IndexableField
   }
 
   @Override
+  public int vectorDimension() {
+    return 0;
+  }
+
+  @Override
   public int pointNumBytes() {
     return 0;
   }

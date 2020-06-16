@@ -114,6 +114,8 @@ public interface IndexableFieldType {
    */
   public int pointNumBytes();
 
+  public int vectorDimension();
+
   /**
    * Attributes for the field type.
    *

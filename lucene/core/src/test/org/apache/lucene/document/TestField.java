@@ -34,6 +34,26 @@ import org.apache.lucene.util.LuceneTestCase;
 
 // sanity check some basics of fields
 public class TestField extends LuceneTestCase {
+
+  public void testVectorField() throws Exception {
+    float[] vector = new float[]{1.2f, 0.9f};
+    Field field = new VectorField("vector_field", vector);
+
+    trySetByteValue(field);
+    trySetBytesValue(field);
+    field.setBytesValue(VectorField.encode(vector));
+    trySetDoubleValue(field);
+    trySetIntValue(field);
+    trySetFloatValue(field);
+    trySetLongValue(field);
+    trySetReaderValue(field);
+    trySetShortValue(field);
+    trySetStringValue(field);
+    trySetTokenStreamValue(field);
+
+    assertEquals(VectorField.encode(vector), field.binaryValue());
+    assertEquals("VectorField <vector_field:6.0>", field.toString());
+  }
   
   public void testDoublePoint() throws Exception {
     Field field = new DoublePoint("foo", 5d);
