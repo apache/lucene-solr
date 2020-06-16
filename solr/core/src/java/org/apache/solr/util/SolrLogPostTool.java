@@ -186,20 +186,25 @@ public class SolrLogPostTool {
         }
 
         if (line != null) {
+          SolrInputDocument lineDoc = new SolrInputDocument();
+          lineDoc.setField("date_dt", parseDate(line));
+          lineDoc.setField("line_t", line);
+          lineDoc.setField("type_s", "other"); // Overridden by known types below
+
           if (line.contains("Registered new searcher")) {
-            return parseNewSearch(line);
+            parseNewSearch(lineDoc, line);
           } else if (line.contains("path=/update")) {
-            return parseUpdate(line);
+            parseUpdate(lineDoc, line);
           } else if (line.contains(" ERROR ")) {
             this.cause = null;
-            return parseError(line, readTrace());
+            parseError(lineDoc, line, readTrace());
           } else if (line.contains("start commit")) {
-            return parseCommit(line);
+            parseCommit(lineDoc, line);
           } else if(line.contains("QTime=")) {
-            return parseQueryRecord(line);
-          } else {
-            continue;
+            parseQueryRecord(lineDoc, line);
           }
+
+          return lineDoc;
         } else {
           return null;
         }
@@ -252,94 +257,75 @@ public class SolrLogPostTool {
       doc.setField(fieldName, fieldValue);
     }
 
-    private SolrInputDocument parseError(String line, String trace) throws IOException {
-      SolrInputDocument doc = new SolrInputDocument();
-      doc.setField("date_dt", parseDate(line));
-      doc.setField("type_s", "error");
-      doc.setField("line_t", line);
+    private void parseError(SolrInputDocument lineRecord, String line, String trace) throws IOException {
+      lineRecord.setField("type_s", "error");
 
       //Don't include traces that have only the %html header.
       if(trace != null && trace.length() > 6) {
-        doc.setField("stack_t", trace);
+        lineRecord.setField("stack_t", trace);
       }
 
       if(this.cause != null) {
-        doc.setField("root_cause_t", cause.replace("Caused by:", "").trim());
+        lineRecord.setField("root_cause_t", cause.replace("Caused by:", "").trim());
       }
 
-      doc.setField("collection_s", parseCollection(line));
-      doc.setField("core_s", parseCore(line));
-      doc.setField("shard_s", parseShard(line));
-      doc.setField("replica_s", parseReplica(line));
-
-      return doc;
+      lineRecord.setField("collection_s", parseCollection(line));
+      lineRecord.setField("core_s", parseCore(line));
+      lineRecord.setField("shard_s", parseShard(line));
+      lineRecord.setField("replica_s", parseReplica(line));
     }
 
-    private SolrInputDocument parseCommit(String line) throws IOException {
-      SolrInputDocument doc = new SolrInputDocument();
-      doc.setField("date_dt", parseDate(line));
-      doc.setField("type_s", "commit");
-      doc.setField("line_t", line);
-      doc.setField("soft_commit_s", Boolean.toString(line.contains("softCommit=true")));
+    private void parseCommit(SolrInputDocument lineRecord, String line) throws IOException {
+      lineRecord.setField("type_s", "commit");
+      lineRecord.setField("soft_commit_s", Boolean.toString(line.contains("softCommit=true")));
 
-      doc.setField("open_searcher_s", Boolean.toString(line.contains("openSearcher=true")));
+      lineRecord.setField("open_searcher_s", Boolean.toString(line.contains("openSearcher=true")));
 
-      doc.setField("collection_s", parseCollection(line));
-      doc.setField("core_s", parseCore(line));
-      doc.setField("shard_s", parseShard(line));
-      doc.setField("replica_s", parseReplica(line));
-
-      return doc;
+      lineRecord.setField("collection_s", parseCollection(line));
+      lineRecord.setField("core_s", parseCore(line));
+      lineRecord.setField("shard_s", parseShard(line));
+      lineRecord.setField("replica_s", parseReplica(line));
     }
 
-    private SolrInputDocument parseQueryRecord(String line) throws IOException {
 
-      SolrInputDocument doc = new SolrInputDocument();
-      doc.setField("date_dt", parseDate(line));
-      doc.setField("qtime_i", parseQTime(line));
-      doc.setField("status_s", parseStatus(line));
+    private void parseQueryRecord(SolrInputDocument lineRecord, String line) throws IOException {
+      lineRecord.setField("date_dt", parseDate(line));
+      lineRecord.setField("qtime_i", parseQTime(line));
+      lineRecord.setField("status_s", parseStatus(line));
 
       String path = parsePath(line);
-      doc.setField("path_s", path);
+      lineRecord.setField("path_s", path);
 
       if(line.contains("hits=")) {
-        doc.setField("hits_l", parseHits(line));
+        lineRecord.setField("hits_l", parseHits(line));
       }
 
       String params = parseParams(line);
-      doc.setField("params_t", params);
-      addParams(doc, params);
+      lineRecord.setField("params_t", params);
+      addParams(lineRecord, params);
 
-      doc.setField("collection_s", parseCollection(line));
-      doc.setField("core_s", parseCore(line));
-      doc.setField("node_s", parseNode(line));
-      doc.setField("shard_s", parseShard(line));
-      doc.setField("replica_s", parseReplica(line));
+      lineRecord.setField("collection_s", parseCollection(line));
+      lineRecord.setField("core_s", parseCore(line));
+      lineRecord.setField("node_s", parseNode(line));
+      lineRecord.setField("shard_s", parseShard(line));
+      lineRecord.setField("replica_s", parseReplica(line));
 
 
       if(path != null && path.contains("/admin")) {
-        doc.setField("type_s", "admin");
+        lineRecord.setField("type_s", "admin");
       } else if(path != null && params.contains("/replication")) {
-        doc.setField("type_s", "replication");
+        lineRecord.setField("type_s", "replication");
       } else if (path != null && path.contains("/get")) {
-        doc.setField("type_s", "get");
+        lineRecord.setField("type_s", "get");
       } else {
-        doc.setField("type_s", "query");
+        lineRecord.setField("type_s", "query");
       }
-
-      return doc;
     }
 
 
-    private SolrInputDocument parseNewSearch(String line) {
-
-      SolrInputDocument doc = new SolrInputDocument();
-      doc.setField("date_dt", parseDate(line));
-      doc.setField("core_s", parseNewSearcherCore(line));
-      doc.setField("type_s", "newSearcher");
-      doc.setField("line_t", line);
-
-      return doc;
+    private void parseNewSearch(SolrInputDocument lineRecord, String line) {
+      lineRecord.setField("core_s", parseNewSearcherCore(line));
+      lineRecord.setField("type_s", "newSearcher");
     }
 
     private String parseCollection(String line) {
@@ -352,25 +338,19 @@ public class SolrLogPostTool {
       }
     }
 
-    private SolrInputDocument parseUpdate(String line) {
-      SolrInputDocument doc = new SolrInputDocument();
-      doc.setField("date_dt", parseDate(line));
-
+    private void parseUpdate(SolrInputDocument lineRecord, String line) {
       if(line.contains("deleteByQuery=")) {
-        doc.setField("type_s", "deleteByQuery");
+        lineRecord.setField("type_s", "deleteByQuery");
       } else if(line.contains("delete=")) {
-        doc.setField("type_s", "delete");
+        lineRecord.setField("type_s", "delete");
       } else {
-        doc.setField("type_s", "update");
+        lineRecord.setField("type_s", "update");
       }
 
-      doc.setField("collection_s", parseCollection(line));
-      doc.setField("core_s", parseCore(line));
-      doc.setField("shard_s", parseShard(line));
-      doc.setField("replica_s", parseReplica(line));
-      doc.setField("line_t", line);
-
-      return doc;
+      lineRecord.setField("collection_s", parseCollection(line));
+      lineRecord.setField("core_s", parseCore(line));
+      lineRecord.setField("shard_s", parseShard(line));
+      lineRecord.setField("replica_s", parseReplica(line));
     }
 
     private String parseNewSearcherCore(String line) {

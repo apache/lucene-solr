@@ -18,6 +18,7 @@ package org.apache.solr.util;
 
 import java.io.BufferedReader;
 import java.io.StringReader;
+import java.util.Collection;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -284,6 +285,21 @@ public class SolrLogPostToolTest extends SolrTestCaseJ4 {
     assertEquals(date.getValue(), "2019-12-16T19:00:23.931");
     assertEquals(type.getValue(), "newSearcher");
     assertEquals(core.getValue(), "production_cv_month_201912_shard35_replica_n1");
+  }
+
+  // Ensure SolrLogPostTool parses _all_ log lines into searchable records
+  @Test
+  public void testOtherRecord() throws Exception {
+    final String record = "2020-06-11 11:59:08.386 INFO  (main) [   ] o.a.s.c.c.ZkStateReader Updated live nodes from ZooKeeper... (0) -> (2)";
+    final List<SolrInputDocument> docs = readDocs(record);
+    assertEquals(docs.size(), 1);
+
+    SolrInputDocument doc = docs.get(0);
+    final Collection<String> fields = doc.getFieldNames();
+    assertEquals(3, fields.size());
+    assertEquals("2020-06-11T11:59:08.386", doc.getField("date_dt").getValue());
+    assertEquals("other", doc.getField("type_s").getValue());
+    assertEquals(record, doc.getField("line_t").getValue());
   }
 
   private List<SolrInputDocument> readDocs(String records) throws Exception {
