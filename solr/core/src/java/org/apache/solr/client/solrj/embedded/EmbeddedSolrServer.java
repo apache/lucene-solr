@@ -271,8 +271,10 @@ public class EmbeddedSolrServer extends SolrClient {
     } catch (Exception ex) {
       throw new SolrServerException(ex);
     } finally {
-      if (req != null) req.close();
-      SolrRequestInfo.clearRequestInfo();
+      if (req != null) {
+        req.close();
+        SolrRequestInfo.clearRequestInfo();
+      }
     }
   }
 

@@ -2157,7 +2157,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       };
 
       final SolrQueryResponse rsp = new SolrQueryResponse();
-      SolrRequestInfo.clearRequestInfo();
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
       try {
         cacheList[i].warm(this, old.cacheList[i]);
