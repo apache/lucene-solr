@@ -212,6 +212,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
   //private final static boolean SAVE_DOT_FILES = false;
 
   private final SegmentWriteState state;
+  private final IndexOutput metaOut;
   private final IndexOutput termsOut;
   private final IndexOutput indexOut;
   final int maxDoc;
@@ -247,7 +248,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
     final String termsName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, BlockTreeTermsReader.TERMS_EXTENSION);
     termsOut = state.directory.createOutput(termsName, state.context);
     boolean success = false;
-    IndexOutput indexOut = null;
+    IndexOutput metaOut = null, indexOut = null;
     try {
       CodecUtil.writeIndexHeader(termsOut, BlockTreeTermsReader.TERMS_CODEC_NAME, BlockTreeTermsReader.VERSION_CURRENT,
                                  state.segmentInfo.getId(), state.segmentSuffix);
@@ -258,13 +259,19 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
                                  state.segmentInfo.getId(), state.segmentSuffix);
       //segment = state.segmentInfo.name;
 
-      postingsWriter.init(termsOut, state);                          // have consumer write its format/header
-      
+      final String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, BlockTreeTermsReader.TERMS_META_EXTENSION);
+      metaOut = state.directory.createOutput(metaName, state.context);
+      CodecUtil.writeIndexHeader(metaOut, BlockTreeTermsReader.TERMS_META_CODEC_NAME, BlockTreeTermsReader.VERSION_CURRENT,
+          state.segmentInfo.getId(), state.segmentSuffix);
+
+      postingsWriter.init(metaOut, state);                          // have consumer write its format/header
+
+      this.metaOut = metaOut;
       this.indexOut = indexOut;
       success = true;
     } finally {
       if (!success) {
-        IOUtils.closeWhileHandlingException(termsOut, indexOut);
+        IOUtils.closeWhileHandlingException(metaOut, termsOut, indexOut);
       }
     }
   }
@@ -1028,25 +1035,23 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
     }
     closed = true;
 
-    final String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, BlockTreeTermsReader.TERMS_META_EXTENSION);
     boolean success = false;
-    try (IndexOutput metaOut = state.directory.createOutput(metaName, state.context)) {
-      CodecUtil.writeIndexHeader(metaOut, BlockTreeTermsReader.TERMS_META_CODEC_NAME, BlockTreeTermsReader.VERSION_CURRENT,
-          state.segmentInfo.getId(), state.segmentSuffix);
-
+    try {
       metaOut.writeVInt(fields.size());
       for (ByteBuffersDataOutput fieldMeta : fields) {
         fieldMeta.copyTo(metaOut);
       }
-      CodecUtil.writeFooter(termsOut);
       CodecUtil.writeFooter(indexOut);
+      metaOut.writeLong(indexOut.getFilePointer());
+      CodecUtil.writeFooter(termsOut);
+      metaOut.writeLong(termsOut.getFilePointer());
       CodecUtil.writeFooter(metaOut);
       success = true;
     } finally {
       if (success) {
-        IOUtils.close(termsOut, indexOut, postingsWriter);
+        IOUtils.close(metaOut, termsOut, indexOut, postingsWriter);
       } else {
-        IOUtils.closeWhileHandlingException(termsOut, indexOut, postingsWriter);
+        IOUtils.closeWhileHandlingException(metaOut, termsOut, indexOut, postingsWriter);
       }
     }
   }
