@@ -302,7 +302,7 @@ public class AtomicUpdateDocumentMerger {
   /**
    *
    * @param completeHierarchy SolrInputDocument that represents the nested document hierarchy from its root
-   * @param fieldPath the path to fetch, seperated by a '/' e.g. /children/grandChildren
+   * @param fieldPath the path to fetch, separated by a '/' e.g. /children/grandChildren
    * @return the SolrInputField of fieldPath
    */
   public static SolrInputField getFieldFromHierarchy(SolrInputDocument completeHierarchy, String fieldPath) {
@@ -355,7 +355,7 @@ public class AtomicUpdateDocumentMerger {
     // This can happen, despite requesting for these fields in the call to RTGC.getInputDocument, if the document was
     // fetched from the tlog and had all these fields (possibly because it was a full document ADD operation).
     if (updatedFields != null) {
-      Collection<String> names = new HashSet<String>(oldDocument.getFieldNames());
+      Collection<String> names = new HashSet<>(oldDocument.getFieldNames());
       for (String fieldName: names) {
         if (fieldName.equals(CommonParams.VERSION_FIELD)==false && fieldName.equals(ID)==false && updatedFields.contains(fieldName)==false) {
           oldDocument.remove(fieldName);
@@ -450,33 +450,33 @@ public class AtomicUpdateDocumentMerger {
     final String name = sif.getName();
     SolrInputField existingField = toDoc.get(name);
 
+    // throws exception if field doesn't exist
     SchemaField sf = schema.getField(name);
 
-    if (sf != null) {
-      Collection<Object> original = existingField != null ?
-          existingField.getValues() :
-          new ArrayList<>();
+    Collection<Object> original = existingField != null ?
+        existingField.getValues() :
+        new ArrayList<>();
 
-      int initialSize = original.size();
-      if (fieldVal instanceof Collection) {
-        for (Object object : (Collection) fieldVal) {
-          if (!original.contains(object)) {
-            original.add(object);
-          }
-        }
-      } else {
-        Object object = sf.getType().toNativeType(fieldVal);
-        if (!original.contains(object)) {
-          original.add(object);
+    int initialSize = original.size();
+    if (fieldVal instanceof Collection) {
+      for (Object object : (Collection) fieldVal) {
+        Object obj = sf.getType().toNativeType(object);
+        if (!original.contains(obj)) {
+          original.add(obj);
         }
       }
+    } else {
+      Object object = sf.getType().toNativeType(fieldVal);
+      if (!original.contains(object)) {
+        original.add(object);
+      }
+    }
 
-      if (original.size() > initialSize) { // update only if more are added
-        if (original.size() == 1) { // if single value, pass the value instead of List
-          doAdd(toDoc, sif, original.toArray()[0]);
-        } else {
-          toDoc.setField(name, original);
-        }
+    if (original.size() > initialSize) { // update only if more are added
+      if (original.size() == 1) { // if single value, pass the value instead of List
+        doAdd(toDoc, sif, original.toArray()[0]);
+      } else {
+        toDoc.setField(name, original);
       }
     }
   }

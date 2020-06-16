@@ -68,6 +68,7 @@ public abstract class WrapperMergePolicyFactory extends MergePolicyFactory {
   }
 
   /** Returns an instance of the wrapped {@link MergePolicy} after it has been configured with all set parameters. */
+  @SuppressWarnings({"rawtypes"})
   protected final MergePolicy getWrappedMergePolicy() {
     if (wrappedMergePolicyArgs == null) {
       return getDefaultWrappedMergePolicy();

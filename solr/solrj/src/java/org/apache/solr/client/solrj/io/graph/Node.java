@@ -30,7 +30,7 @@ public class Node {
   public Node(String id, boolean track) {
     this.id=id;
     if(track) {
-      ancestors = new HashSet();
+      ancestors = new HashSet<>();
     }
   }
 
@@ -62,7 +62,7 @@ public class Node {
     List<String> cols = traversal.getCollections();
 
     if(ancestors != null) {
-      List<String> l = new ArrayList();
+      List<String> l = new ArrayList<>();
       for(String ancestor : ancestors) {
         String[] ancestorParts = ancestor.split("\\^");
 

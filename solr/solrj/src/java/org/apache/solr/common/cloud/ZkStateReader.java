@@ -476,27 +476,32 @@ public class ZkStateReader implements SolrCloseable {
 
     log.debug("Updating cluster state from ZooKeeper... ");
 
-    // on reconnect of SolrZkClient force refresh and re-add watches.
-    loadClusterProperties();
-    refreshLiveNodes(new LiveNodeWatcher());
-    refreshCollections();
-    refreshCollectionList(new CollectionsChildWatcher());
-    refreshAliases(aliasesManager);
+    try {
+      // on reconnect of SolrZkClient force refresh and re-add watches.
+      loadClusterProperties();
+      refreshLiveNodes(new LiveNodeWatcher());
+      refreshCollections();
+      refreshCollectionList(new CollectionsChildWatcher());
+      refreshAliases(aliasesManager);
 
-    if (securityNodeListener != null) {
-      addSecurityNodeWatcher(pair -> {
-        ConfigData cd = new ConfigData();
-        cd.data = pair.first() == null || pair.first().length == 0 ? EMPTY_MAP : Utils.getDeepCopy((Map) fromJSON(pair.first()), 4, false);
-        cd.version = pair.second() == null ? -1 : pair.second().getVersion();
-        securityData = cd;
-        securityNodeListener.run();
+      if (securityNodeListener != null) {
+        addSecurityNodeWatcher(pair -> {
+          ConfigData cd = new ConfigData();
+          cd.data = pair.first() == null || pair.first().length == 0 ? EMPTY_MAP : Utils.getDeepCopy((Map) fromJSON(pair.first()), 4, false);
+          cd.version = pair.second() == null ? -1 : pair.second().getVersion();
+          securityData = cd;
+          securityNodeListener.run();
+        });
+        securityData = getSecurityProps(true);
+      }
+
+      collectionPropsObservers.forEach((k, v) -> {
+        collectionPropsWatchers.computeIfAbsent(k, PropsWatcher::new).refreshAndWatch(true);
       });
-      securityData = getSecurityProps(true);
+    } catch (KeeperException.NoNodeException nne) {
+      throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
+          "Cannot connect to cluster at " + zkClient.getZkServerAddress() + ": cluster not found/not ready");
     }
-
-    collectionPropsObservers.forEach((k, v) -> {
-      collectionPropsWatchers.computeIfAbsent(k, PropsWatcher::new).refreshAndWatch(true);
-    });
   }
 
   private void addSecurityNodeWatcher(final Callable<Pair<byte[], Stat>> callback)

@@ -421,6 +421,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     } catch (KeeperException.NoNodeException e) {
       return null;
     }
+    @SuppressWarnings({"rawtypes"})
     Map m = (Map) Utils.fromJSON(data);
     return  (String) m.get(ID);
   }

@@ -295,7 +295,7 @@ public class TestSearchAfter extends LuceneTestCase {
       assertEquals(sd1.score, sd2.score, 0f);
       if (sd1 instanceof FieldDoc) {
         assertTrue(sd2 instanceof FieldDoc);
-        assertEquals(((FieldDoc) sd1).fields, ((FieldDoc) sd2).fields);
+        assertArrayEquals(((FieldDoc) sd1).fields, ((FieldDoc) sd2).fields);
       }
     }
   }

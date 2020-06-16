@@ -42,7 +42,7 @@ public class DefFunction extends MultiFunction {
 
 
   @Override
-  public FunctionValues getValues(Map fcontext, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> fcontext, LeafReaderContext readerContext) throws IOException {
 
 
     return new Values(valsArr(sources, fcontext, readerContext)) {

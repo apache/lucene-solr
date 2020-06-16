@@ -234,11 +234,13 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     }
 
     public Builder withDefaultClusterProperty(String key, String value) {
+      @SuppressWarnings({"unchecked"})
       HashMap<String, Object> defaults = (HashMap<String, Object>) this.clusterProperties.get(CollectionAdminParams.DEFAULTS);
       if (defaults == null) {
         defaults = new HashMap<>();
         this.clusterProperties.put(CollectionAdminParams.DEFAULTS, defaults);
       }
+      @SuppressWarnings({"unchecked"})
       HashMap<String, Object> cluster = (HashMap<String, Object>) defaults.get(CollectionAdminParams.CLUSTER);
       if (cluster == null) {
         cluster = new HashMap<>();
@@ -447,6 +449,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     }
   }
 
+  @SuppressWarnings({"rawtypes"})
   protected NamedList waitForResponse(Predicate<NamedList> predicate, SolrRequest request, int intervalInMillis, int numRetries, String messageOnFail) {
     log.info("waitForResponse: {}", request);
     int i = 0;

@@ -28,12 +28,11 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
-
-import junit.framework.Assert;
 
 public class TestMultiTermConstantScore extends BaseTestRangeFilter {
 

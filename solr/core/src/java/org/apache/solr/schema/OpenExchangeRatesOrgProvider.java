@@ -88,8 +88,8 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
 
     reloadIfExpired();
 
-    Double source = (Double) rates.getRates().get(sourceCurrencyCode);
-    Double target = (Double) rates.getRates().get(targetCurrencyCode);
+    Double source = rates.getRates().get(sourceCurrencyCode);
+    Double target = rates.getRates().get(targetCurrencyCode);
 
     if (source == null || target == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
