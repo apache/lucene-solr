@@ -29,7 +29,7 @@ public interface FilteringLeafFieldComparator extends LeafFieldComparator {
    * @return an iterator over competitive docs that are stronger than already collected docs
    * or {@code null} if such an iterator is not available for the current segment.
    */
-  DocIdSetIterator competitiveIterator();
+  DocIdSetIterator competitiveIterator() throws IOException;
 
   /**
    * Informs this leaf comparator that it is allowed to start updating its competitive iterator.

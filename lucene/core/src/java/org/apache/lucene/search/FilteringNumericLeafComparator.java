@@ -34,7 +34,7 @@ import java.util.Arrays;
 abstract class FilteringNumericLeafComparator implements FilteringLeafFieldComparator {
   protected final LeafFieldComparator in;
   protected final boolean reverse;
-  protected final boolean singleSort;
+  protected final boolean singleSort; //if sort is based on a single sort field as opposed to multiple sort fields
   private final boolean hasTopValue;
   private final PointValues pointValues;
   private final int bytesCount;
@@ -192,18 +192,14 @@ abstract class FilteringNumericLeafComparator implements FilteringLeafFieldCompa
 
       @Override
       public PointValues.Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-        boolean maxValueOutsideQuery = false;
-        boolean minValueOutsideQuery = false;
         if (maxValueAsBytes != null) {
           int cmp = Arrays.compareUnsigned(minPackedValue, 0, bytesCount, maxValueAsBytes, 0, bytesCount);
-          maxValueOutsideQuery = cmp > 0 || (singleSort && cmp == 0);
+          if (cmp > 0 || (singleSort && cmp == 0)) return PointValues.Relation.CELL_OUTSIDE_QUERY;
         }
         if (minValueAsBytes != null) {
           int cmp =  Arrays.compareUnsigned(maxPackedValue, 0, bytesCount, minValueAsBytes, 0, bytesCount);
-          minValueOutsideQuery = cmp < 0 || (singleSort && cmp == 0);
+          if (cmp < 0 || (singleSort && cmp == 0)) return PointValues.Relation.CELL_OUTSIDE_QUERY;
         }
-        if (maxValueOutsideQuery || minValueOutsideQuery) return PointValues.Relation.CELL_OUTSIDE_QUERY;
-
         if ((maxValueAsBytes != null && Arrays.compareUnsigned(maxPackedValue, 0, bytesCount, maxValueAsBytes, 0, bytesCount) > 0) ||
             (minValueAsBytes != null && Arrays.compareUnsigned(minPackedValue, 0, bytesCount, minValueAsBytes, 0, bytesCount) < 0)) {
           return PointValues.Relation.CELL_CROSSES_QUERY;

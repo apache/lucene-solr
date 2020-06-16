@@ -101,7 +101,7 @@ public interface LeafCollector {
    *
    * The default is to return {@code null} which is interpreted as the collector provide any competitive iterator.
    */
-  default DocIdSetIterator competitiveIterator() {
+  default DocIdSetIterator competitiveIterator() throws IOException {
     return null;
   }
 

@@ -45,8 +45,7 @@ class FilteringNumericComparator<T extends Number> extends FilteringFieldCompara
       return new FilteringNumericLeafComparator.FilteringFloatLeafComparator((FieldComparator.FloatComparator) inLeafComparator, context,
           ((FloatComparator) inLeafComparator).field, reverse, singleSort, hasTopValue);
     } else {
-      assert false: "Unexpected class for [FieldComparator]!";
-      return null;
+      throw new IllegalStateException("Unexpected numeric class of ["+ comparatorClass + "] for [FieldComparator]!");
     }
   }
 

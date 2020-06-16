@@ -159,7 +159,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     }
 
     @Override
-    public DocIdSetIterator competitiveIterator() {
+    public DocIdSetIterator competitiveIterator() throws IOException {
       if (filteringLeafComparator == null) {
         return null;
       } else {
