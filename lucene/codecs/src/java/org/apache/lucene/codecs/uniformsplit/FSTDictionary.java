@@ -71,10 +71,10 @@ public class FSTDictionary implements IndexDictionary {
   @Override
   public void write(DataOutput output, BlockEncoder blockEncoder) throws IOException {
     if (blockEncoder == null) {
-      fst.save(output);
+      fst.save(output, output);
     } else {
       ByteBuffersDataOutput bytesDataOutput = ByteBuffersDataOutput.newResettableInstance();
-      fst.save(bytesDataOutput);
+      fst.save(bytesDataOutput, bytesDataOutput);
       BlockEncoder.WritableBytes encodedBytes = blockEncoder.encode(bytesDataOutput.toDataInput(), bytesDataOutput.size());
       output.writeVLong(encodedBytes.size());
       encodedBytes.writeTo(output);
@@ -98,8 +98,8 @@ public class FSTDictionary implements IndexDictionary {
       isFSTOnHeap = true;
     }
     PositiveIntOutputs fstOutputs = PositiveIntOutputs.getSingleton();
-    FST<Long> fst = isFSTOnHeap ? new FST<>(fstDataInput, fstOutputs)
-        : new FST<>(fstDataInput, fstOutputs, new OffHeapFSTStore());
+    FST<Long> fst = isFSTOnHeap ? new FST<>(fstDataInput, fstDataInput, fstOutputs)
+        : new FST<>(fstDataInput, fstDataInput, fstOutputs, new OffHeapFSTStore());
     return new FSTDictionary(fst);
   }
 
