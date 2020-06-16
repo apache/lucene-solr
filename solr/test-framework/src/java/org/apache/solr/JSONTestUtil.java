@@ -105,6 +105,7 @@ public class JSONTestUtil {
 
     @Override
     public void addKeyVal(Object map, Object key, Object val) throws IOException {
+      @SuppressWarnings({"unchecked"})
       Object prev = ((Map<Object, Object>) map).put(key, val);
       if (prev != null) {
         throw new RuntimeException("REPEATED JSON OBJECT KEY: key=" + key + " prevValue=" + prev + " thisValue" + val);
@@ -259,7 +260,9 @@ class CollectionTester {
   }
 
   boolean matchList() {
+    @SuppressWarnings({"rawtypes"})
     List expectedList = (List)expected;
+    @SuppressWarnings({"rawtypes"})
     List v = asList();
     if (v == null) return false;
     int a = 0;
@@ -290,6 +293,7 @@ class CollectionTester {
 
   private static Set<String> reserved = new HashSet<>(Arrays.asList("_SKIP_","_MATCH_","_ORDERED_","_UNORDERED_"));
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   boolean matchMap() {
     Map<String,Object> expectedMap = (Map<String,Object>)expected;
     Map<String,Object> v = asMap();
@@ -397,6 +401,7 @@ class CollectionTester {
     return seek(pathList);
   }
 
+  @SuppressWarnings({"rawtypes"})
   List asList() {
     // TODO: handle native arrays
     if (val instanceof List) {
@@ -406,6 +411,7 @@ class CollectionTester {
     return null;
   }
   
+  @SuppressWarnings({"unchecked"})
   Map<String,Object> asMap() {
     // TODO: handle NamedList
     if (val instanceof Map) {
@@ -420,6 +426,7 @@ class CollectionTester {
     String seg = seekPath.get(0);
 
     if (seg.charAt(0)=='[') {
+      @SuppressWarnings({"rawtypes"})
       List listVal = asList();
       if (listVal==null) return false;
 

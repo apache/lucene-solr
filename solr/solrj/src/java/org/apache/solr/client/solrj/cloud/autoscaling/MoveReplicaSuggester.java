@@ -34,12 +34,14 @@ public class MoveReplicaSuggester extends Suggester {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
+  @SuppressWarnings({"rawtypes"})
   SolrRequest init() {
     SolrRequest operation = tryEachNode(true);
     if (operation == null) operation = tryEachNode(false);
     return operation;
   }
 
+  @SuppressWarnings({"rawtypes"})
   SolrRequest tryEachNode(boolean strict) {
     //iterate through elements and identify the least loaded
     List<Violation> leastSeriousViolation = null;

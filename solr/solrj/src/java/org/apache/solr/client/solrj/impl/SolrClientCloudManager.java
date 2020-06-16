@@ -124,7 +124,7 @@ public class SolrClientCloudManager implements SolrCloudManager {
   }
 
   @Override
-  public SolrResponse request(SolrRequest req) throws IOException {
+  public SolrResponse request(@SuppressWarnings({"rawtypes"})SolrRequest req) throws IOException {
     try {
       return req.process(solrClient);
     } catch (SolrServerException e) {

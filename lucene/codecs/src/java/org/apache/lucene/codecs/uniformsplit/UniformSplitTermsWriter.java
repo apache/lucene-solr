@@ -249,9 +249,24 @@ public class UniformSplitTermsWriter extends FieldsConsumer {
   protected void writeFieldsMetadata(int fieldsNumber, ByteBuffersDataOutput fieldsOutput) throws IOException {
     long fieldsStartPosition = blockOutput.getFilePointer();
     blockOutput.writeVInt(fieldsNumber);
-    fieldsOutput.copyTo(blockOutput);
+    if (blockEncoder == null) {
+      writeUnencodedFieldsMetadata(fieldsOutput);
+    } else {
+      writeEncodedFieldsMetadata(fieldsOutput);
+    }
+    // Must be a fixed length. Read by UniformSplitTermsReader when seeking fields metadata.
     blockOutput.writeLong(fieldsStartPosition);
     CodecUtil.writeFooter(blockOutput);
+  }
+
+  protected void writeUnencodedFieldsMetadata(ByteBuffersDataOutput fieldsOutput) throws IOException {
+    fieldsOutput.copyTo(blockOutput);
+  }
+
+  protected void writeEncodedFieldsMetadata(ByteBuffersDataOutput fieldsOutput) throws IOException {
+    BlockEncoder.WritableBytes encodedBytes = blockEncoder.encode(fieldsOutput.toDataInput(), fieldsOutput.size());
+    blockOutput.writeVLong(encodedBytes.size());
+    encodedBytes.writeTo(blockOutput);
   }
 
   /**

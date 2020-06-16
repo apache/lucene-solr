@@ -208,6 +208,7 @@ public class VersionInfo {
    * Returns the latest version from the index, searched by the given id (bytes) as seen from the realtime searcher.
    * Returns null if no document can be found in the index for the given id.
    */
+  @SuppressWarnings({"unchecked"})
   public Long getVersionFromIndex(BytesRef idBytes) {
     // TODO: we could cache much of this and invalidate during a commit.
     // TODO: most DocValues classes are threadsafe - expose which.
@@ -238,6 +239,7 @@ public class VersionInfo {
   /**
    * Returns the highest version from the index, or 0L if no versions can be found in the index.
    */
+  @SuppressWarnings({"unchecked"})
   public Long getMaxVersionFromIndex(IndexSearcher searcher) throws IOException {
 
     final String versionFieldName = versionField.getName();

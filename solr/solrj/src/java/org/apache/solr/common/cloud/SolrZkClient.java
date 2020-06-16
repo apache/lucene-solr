@@ -608,12 +608,7 @@ public class SolrZkClient implements Closeable {
     string.append(dent).append(path).append(" (").append(children.size()).append(")").append(NEWL);
     if (data != null) {
       String dataString = new String(data, StandardCharsets.UTF_8);
-      if ((!path.endsWith(".txt") && !path.endsWith(".xml")) || path.endsWith(ZkStateReader.CLUSTER_STATE)) {
-        if (path.endsWith(".xml")) {
-          // this is the cluster state in xml format - lets pretty print
-          dataString = prettyPrint(dataString);
-        }
-
+      if (!path.endsWith(".txt") && !path.endsWith(".xml")) {
         string.append(dent).append("DATA:\n").append(dent).append("    ").append(dataString.replaceAll("\n", "\n" + dent + "    ")).append(NEWL);
       } else {
         string.append(dent).append("DATA: ...supressed...").append(NEWL);

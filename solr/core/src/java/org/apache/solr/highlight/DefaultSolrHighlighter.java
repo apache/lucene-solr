@@ -459,6 +459,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     IndexReader reader = new TermVectorReusingLeafReader(req.getSearcher().getSlowAtomicReader()); // SOLR-5855
 
     // Highlight each document
+    @SuppressWarnings({"rawtypes"})
     NamedList fragments = new SimpleOrderedMap();
     DocIterator iterator = docs.iterator();
     for (int i = 0; i < docs.size(); i++) {

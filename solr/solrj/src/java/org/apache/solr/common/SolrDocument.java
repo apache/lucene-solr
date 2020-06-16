@@ -99,8 +99,8 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument> impleme
    * set multiple fields with the included contents.  This will replace any existing 
    * field with the given name
    */
-  @SuppressWarnings("unchecked")
-  public void setField(String name, Object value) 
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  public void setField(String name, Object value)
   {
     if( value instanceof Object[] ) {
       value = new ArrayList(Arrays.asList( (Object[])value ));
@@ -186,6 +186,7 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument> impleme
   public Object getFirstValue(String name) {
     Object v = _fields.get( name );
     if (v == null || !(v instanceof Collection)) return v;
+    @SuppressWarnings({"rawtypes"})
     Collection c = (Collection)v;
     if (c.size() > 0 ) {
       return c.iterator().next();

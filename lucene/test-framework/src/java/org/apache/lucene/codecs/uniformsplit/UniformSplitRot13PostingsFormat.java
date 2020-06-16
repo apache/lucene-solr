@@ -28,6 +28,7 @@ import org.apache.lucene.codecs.lucene84.Lucene84PostingsReader;
 import org.apache.lucene.codecs.lucene84.Lucene84PostingsWriter;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
@@ -40,6 +41,7 @@ public class UniformSplitRot13PostingsFormat extends PostingsFormat {
   public static volatile boolean encoderCalled;
   public static volatile boolean decoderCalled;
   public static volatile boolean blocksEncoded;
+  public static volatile boolean fieldsMetadataEncoded;
   public static volatile boolean dictionaryEncoded;
   protected final boolean dictionaryOnHeap;
 
@@ -56,6 +58,7 @@ public class UniformSplitRot13PostingsFormat extends PostingsFormat {
     encoderCalled = false;
     decoderCalled = false;
     blocksEncoded = false;
+    fieldsMetadataEncoded = false;
     dictionaryEncoded = false;
   }
 
@@ -86,12 +89,24 @@ public class UniformSplitRot13PostingsFormat extends PostingsFormat {
         super.writeDictionary(dictionaryBuilder);
         recordDictionaryEncodingCall();
       }
+      @Override
+      protected void writeEncodedFieldsMetadata(ByteBuffersDataOutput fieldsOutput) throws IOException {
+        super.writeEncodedFieldsMetadata(fieldsOutput);
+        recordFieldsMetadataEncodingCall();
+      }
     };
   }
 
   protected void recordBlockEncodingCall() {
     if (encoderCalled) {
       blocksEncoded = true;
+      encoderCalled = false;
+    }
+  }
+
+  protected void recordFieldsMetadataEncodingCall() {
+    if (encoderCalled) {
+      fieldsMetadataEncoded = true;
       encoderCalled = false;
     }
   }

@@ -328,8 +328,6 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
       when(zkStateReaderMock.getBaseUrlForNodeName(address)).thenAnswer(invocation -> address.replaceAll("_", "/"));
     }
 
-    when(zkStateReaderMock.getClusterProperty("legacyCloud", "false")).thenReturn("false");
-
     when(solrZkClientMock.getZkClientTimeout()).thenReturn(30000);
     
     when(clusterStateMock.hasCollection(anyString())).thenAnswer(invocation -> {

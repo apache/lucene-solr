@@ -168,6 +168,7 @@ public class DaemonStream extends TupleStream implements Expressible {
     init(tupleStream, id, runInterval, queueSize, false);
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void init(TupleStream tupleStream, String id, long runInterval, int queueSize, boolean terminate) {
     this.tupleStream = tupleStream;
     this.id = id;
@@ -245,7 +246,7 @@ public class DaemonStream extends TupleStream implements Expressible {
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> children = new ArrayList();
+    List<TupleStream> children = new ArrayList<>();
     children.add(tupleStream);
     return children;
   }

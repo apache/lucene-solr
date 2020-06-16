@@ -89,7 +89,7 @@ public class PackageStoreAPI {
    */
   public ArrayList<String> shuffledNodes() {
     Set<String> liveNodes = coreContainer.getZkController().getZkStateReader().getClusterState().getLiveNodes();
-    ArrayList<String> l = new ArrayList(liveNodes);
+    ArrayList<String> l = new ArrayList<>(liveNodes);
     l.remove(coreContainer.getZkController().getNodeName());
     Collections.shuffle(l, BlobRepository.RANDOM);
     return l;
@@ -279,6 +279,7 @@ public class PackageStoreAPI {
           int idx = path.lastIndexOf('/');
           String fileName = path.substring(idx + 1);
           String parentPath = path.substring(0, path.lastIndexOf('/'));
+          @SuppressWarnings({"rawtypes"})
           List l = packageStore.list(parentPath, s -> s.equals(fileName));
           rsp.add("files", Collections.singletonMap(path, l.isEmpty() ? null : l.get(0)));
           return;
@@ -312,7 +313,8 @@ public class PackageStoreAPI {
     List<String> signatures;
     Map<String, Object> otherAttribs;
 
-    public MetaData(Map m) {
+    @SuppressWarnings({"unchecked"})
+    public MetaData(@SuppressWarnings({"rawtypes"})Map m) {
       m = Utils.getDeepCopy(m, 3);
       this.sha512 = (String) m.remove(SHA512);
       this.signatures = (List<String>) m.remove("sig");
