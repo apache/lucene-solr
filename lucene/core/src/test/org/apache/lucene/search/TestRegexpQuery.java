@@ -50,7 +50,7 @@ public class TestRegexpQuery extends LuceneTestCase {
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
     Document doc = new Document();
-    doc.add(newTextField(FN, "the quick brown fox jumps over the lazy ??? dog 493432 49344 [foo] 12.3", Field.Store.NO));
+    doc.add(newTextField(FN, "the quick brown fox jumps over the lazy ??? dog 493432 49344 [foo] 12.3 \\", Field.Store.NO));
     writer.addDocument(doc);
     reader = writer.getReader();
     writer.close();
@@ -113,7 +113,16 @@ public class TestRegexpQuery extends LuceneTestCase {
     assertEquals(1, regexQueryNrHits("\\S*ck")); //matches quick
     assertEquals(1, regexQueryNrHits("[\\d\\.]{3,10}")); // matches 12.3
     assertEquals(1, regexQueryNrHits("\\d{1,3}(\\.(\\d{1,2}))+")); // matches 12.3
-    
+
+    assertEquals(1, regexQueryNrHits("\\\\"));
+    assertEquals(1, regexQueryNrHits("\\\\.*"));
+
+    IllegalArgumentException expected = expectThrows(
+        IllegalArgumentException.class, () -> {
+          regexQueryNrHits("\\p");
+        }
+    );
+    assertTrue(expected.getMessage().contains("invalid character class"));         
   }  
   
   public void testRegexComplement() throws IOException {

@@ -37,6 +37,7 @@ public class GetRadiusEvaluator extends RecursiveObjectEvaluator implements OneV
     if(!(value instanceof EnclosingBall)){
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for value, expecting an EnclosingBall",toExpression(constructingFactory), value.getClass().getSimpleName()));
     } else {
+      @SuppressWarnings({"rawtypes"})
       EnclosingBall enclosingBall = (EnclosingBall)value;
       return enclosingBall.getRadius();
     }

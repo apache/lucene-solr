@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.PrintStream;
 import java.util.Arrays;
-import java.util.EnumSet;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -32,9 +31,9 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.PrintStreamInfoStream;
+import org.apache.lucene.util.SetOnce;
 import org.apache.lucene.util.SetOnce.AlreadySetException;
 import org.apache.lucene.util.Version;
-import org.apache.lucene.util.SetOnce;
 
 /**
  * Holds all the configuration that is used to create an {@link IndexWriter}.
@@ -460,21 +459,13 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
     return this;
   }
 
-  /** We only allow sorting on these types */
-  private static final EnumSet<SortField.Type> ALLOWED_INDEX_SORT_TYPES = EnumSet.of(SortField.Type.STRING,
-                                                                                     SortField.Type.LONG,
-                                                                                     SortField.Type.INT,
-                                                                                     SortField.Type.DOUBLE,
-                                                                                     SortField.Type.FLOAT);
-
   /**
    * Set the {@link Sort} order to use for all (flushed and merged) segments.
    */
   public IndexWriterConfig setIndexSort(Sort sort) {
-    for(SortField sortField : sort.getSort()) {
-      final SortField.Type sortType = Sorter.getSortFieldType(sortField);
-      if (ALLOWED_INDEX_SORT_TYPES.contains(sortType) == false) {
-        throw new IllegalArgumentException("invalid SortField type: must be one of " + ALLOWED_INDEX_SORT_TYPES + " but got: " + sortField);
+    for (SortField sortField : sort.getSort()) {
+      if (sortField.getIndexSorter() == null) {
+        throw new IllegalArgumentException("Cannot sort index with sort field " + sortField);
       }
     }
     this.indexSort = sort;

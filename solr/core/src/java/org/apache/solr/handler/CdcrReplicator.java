@@ -150,6 +150,7 @@ public class CdcrReplicator implements Runnable {
    *  or received via solr client
    */
   private boolean isTargetCluster(Object o) {
+    @SuppressWarnings({"rawtypes"})
     List entry = (List) o;
     int operationAndFlags = (Integer) entry.get(0);
     int oper = operationAndFlags & UpdateLog.OPERATION_MASK;
@@ -171,6 +172,7 @@ public class CdcrReplicator implements Runnable {
   }
 
   private boolean isDelete(Object o) {
+    @SuppressWarnings({"rawtypes"})
     List entry = (List) o;
     int operationAndFlags = (Integer) entry.get(0);
     int oper = operationAndFlags & UpdateLog.OPERATION_MASK;
@@ -195,6 +197,7 @@ public class CdcrReplicator implements Runnable {
   private UpdateRequest processUpdate(Object o, UpdateRequest req) {
 
     // should currently be a List<Oper,Ver,Doc/Id>
+    @SuppressWarnings({"rawtypes"})
     List entry = (List) o;
 
     int operationAndFlags = (Integer) entry.get(0);

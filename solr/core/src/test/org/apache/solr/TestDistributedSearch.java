@@ -211,7 +211,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     query("q","*:*", "sort","n_tl1 desc");
     
     handle.put("maxScore", SKIPVAL);
-    testMinExactHits();
+    testMinExactCount();
     
     query("q","{!func}"+i1);// does not expect maxScore. So if it comes ,ignore it. JavaBinCodec.writeSolrDocumentList()
     //is agnostic of request params.
@@ -1090,13 +1090,13 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
           "stats.facet", fieldName);
   }
 
-  private void testMinExactHits() throws Exception {
-    assertIsExactHitCount("q","{!cache=false}dog OR men OR cow OR country OR dumpty", CommonParams.MIN_EXACT_HITS, "200", CommonParams.ROWS, "2", CommonParams.SORT, "score desc, id asc");
-    assertIsExactHitCount("q","{!cache=false}dog OR men OR cow OR country OR dumpty", CommonParams.MIN_EXACT_HITS, "-1", CommonParams.ROWS, "2", CommonParams.SORT, "score desc, id asc");
-    assertIsExactHitCount("q","{!cache=false}dog OR men OR cow OR country OR dumpty", CommonParams.MIN_EXACT_HITS, "1", CommonParams.ROWS, "200", CommonParams.SORT, "score desc, id asc");
-    assertIsExactHitCount("q","{!cache=false}dog OR men OR cow OR country OR dumpty", "facet", "true", "facet.field", s1, CommonParams.MIN_EXACT_HITS,"1", CommonParams.ROWS, "200", CommonParams.SORT, "score desc, id asc");
-    assertIsExactHitCount("q","{!cache=false}id:1", CommonParams.MIN_EXACT_HITS,"1", CommonParams.ROWS, "1");
-    assertApproximatedHitCount("q","{!cache=false}dog OR men OR cow OR country OR dumpty", CommonParams.MIN_EXACT_HITS,"2", CommonParams.ROWS, "2", CommonParams.SORT, "score desc, id asc");
+  private void testMinExactCount() throws Exception {
+    assertIsExactHitCount("q","{!cache=false}dog OR men OR cow OR country OR dumpty", CommonParams.MIN_EXACT_COUNT, "200", CommonParams.ROWS, "2", CommonParams.SORT, "score desc, id asc");
+    assertIsExactHitCount("q","{!cache=false}dog OR men OR cow OR country OR dumpty", CommonParams.MIN_EXACT_COUNT, "-1", CommonParams.ROWS, "2", CommonParams.SORT, "score desc, id asc");
+    assertIsExactHitCount("q","{!cache=false}dog OR men OR cow OR country OR dumpty", CommonParams.MIN_EXACT_COUNT, "1", CommonParams.ROWS, "200", CommonParams.SORT, "score desc, id asc");
+    assertIsExactHitCount("q","{!cache=false}dog OR men OR cow OR country OR dumpty", "facet", "true", "facet.field", s1, CommonParams.MIN_EXACT_COUNT,"1", CommonParams.ROWS, "200", CommonParams.SORT, "score desc, id asc");
+    assertIsExactHitCount("q","{!cache=false}id:1", CommonParams.MIN_EXACT_COUNT,"1", CommonParams.ROWS, "1");
+    assertApproximatedHitCount("q","{!cache=false}dog OR men OR cow OR country OR dumpty", CommonParams.MIN_EXACT_COUNT,"2", CommonParams.ROWS, "2", CommonParams.SORT, "score desc, id asc");
   }
   
   private void assertIsExactHitCount(Object... requestParams) throws Exception {

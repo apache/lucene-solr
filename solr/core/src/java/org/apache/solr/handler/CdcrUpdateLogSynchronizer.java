@@ -139,11 +139,13 @@ class CdcrUpdateLogSynchronizer implements CdcrStateManager.CdcrStateObserver {
         ModifiableSolrParams params = new ModifiableSolrParams();
         params.set(CommonParams.ACTION, CdcrParams.CdcrAction.LASTPROCESSEDVERSION.toString());
 
+        @SuppressWarnings({"rawtypes"})
         SolrRequest request = new QueryRequest(params);
         request.setPath(path);
 
         long lastVersion;
         try {
+          @SuppressWarnings({"rawtypes"})
           NamedList response = server.request(request);
           lastVersion = (Long) response.get(CdcrParams.LAST_PROCESSED_VERSION);
           if (log.isDebugEnabled()) {

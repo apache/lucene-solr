@@ -253,6 +253,7 @@ public class MailEntityProcessor extends EntityProcessorBase {
     }
   }
   
+  @SuppressWarnings({"unchecked"})
   public void addPartToDocument(Part part, Map<String,Object> row, boolean outerMost) throws Exception {
     if (part instanceof Message) {
       addEnvelopeToDocument(part, row);

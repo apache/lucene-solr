@@ -341,7 +341,7 @@ include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-ipod-query-bool-f
 
 == Additional Queries
 
-Multiple additional queries might be specified under `queries` key with all syntax alternatives described above. Every entry might have multiple values in array. Notice that old-style referencing `"{!v=$query_name}"` picks only the first element in array ignoring everything beyond, e.g., if one changes the reference below from `"{!v=$electronic}"` to `"{!v=$manufacturers}"` it's equivalent to querying for `manu:apple`, ignoring the later query. These queries don't impact query result until explicit referencing.
+Multiple additional queries might be specified under `queries` key with all syntax alternatives described above. Every entry might have multiple values in array. To reference these queries one can use `{"param":"query_name"}`, as well as old-style referencing `"{!v=$query_name}"`. Beware of arity for these references. Depending on the context, a reference might be resolved into the first element in array ignoring the later elements, e.g., if one changes the reference below from `{"param":"electronic"}` to `{"param":"manufacturers"}` it's equivalent to querying for `manu:apple`, ignoring the later query. These queries don't impact query result until explicit referencing.
 
 [source,bash]
 ----
@@ -354,7 +354,7 @@ curl -X POST http://localhost:8983/solr/techproducts/query -d '
            {"field": {"f":"manu", "query":"belkin"}}
         ]
     },
-    "query":"{!v=$electronic}"
+    "query":{"param":"electronic"}
 }'
 ----
 

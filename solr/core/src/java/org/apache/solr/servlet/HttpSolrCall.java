@@ -476,6 +476,7 @@ public class HttpSolrCall {
     int statusCode = authResponse.statusCode;
     
     if (statusCode == AuthorizationResponse.PROMPT.statusCode) {
+      @SuppressWarnings({"unchecked"})
       Map<String, String> headers = (Map) getReq().getAttribute(AuthenticationPlugin.class.getName());
       if (headers != null) {
         for (Map.Entry<String, String> e : headers.entrySet()) response.setHeader(e.getKey(), e.getValue());
@@ -782,6 +783,7 @@ public class HttpSolrCall {
     } finally {
       try {
         if (exp != null) {
+          @SuppressWarnings({"rawtypes"})
           SimpleOrderedMap info = new SimpleOrderedMap();
           int code = ResponseUtils.getErrorInfo(ex, info, log);
           sendError(code, info.toString());
@@ -892,6 +894,7 @@ public class HttpSolrCall {
       if (null != ct) response.setContentType(ct);
 
       if (solrRsp.getException() != null) {
+        @SuppressWarnings({"rawtypes"})
         NamedList info = new SimpleOrderedMap();
         int code = ResponseUtils.getErrorInfo(solrRsp.getException(), info, log);
         solrRsp.add("error", info);
@@ -1195,6 +1198,7 @@ public class HttpSolrCall {
   static final String CONTENT_LENGTH_HEADER = "Content-Length";
   List<CommandOperation> parsedCommands;
 
+  @SuppressWarnings({"unchecked"})
   public List<CommandOperation> getCommands(boolean validateInput) {
     if (parsedCommands == null) {
       Iterable<ContentStream> contentStreams = solrReq.getContentStreams();
@@ -1209,6 +1213,7 @@ public class HttpSolrCall {
     return null;
   }
 
+  @SuppressWarnings({"unchecked"})
   protected Map<String, JsonSchemaValidator> getValidators(){
     return Collections.EMPTY_MAP;
   }

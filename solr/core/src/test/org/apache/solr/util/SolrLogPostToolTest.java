@@ -75,6 +75,24 @@ public class SolrLogPostToolTest extends SolrTestCaseJ4 {
     assertEquals("REFINE_FACETS", purposes[1].toString());
   }
 
+  // Requests which have multiple copies of the same param should be parsed so that the first param value only is
+  // indexed, since the log schema expects many of these to be single-valued fields and will throw errors if multiple
+  // values are received.
+  @Test
+  public void testRecordsFirstInstanceOfSingleValuedParams() throws Exception {
+    final String record = "2019-12-09 15:05:01.931 INFO  (qtp2103763750-21) [c:logs4 s:shard1 r:core_node2 x:logs4_shard1_replica_n1] o.a.s.c.S.Request [logs4_shard1_replica_n1]  webapp=/solr path=/select params={q=*:*&q=inStock:true&_=1575835181759&shards.purpose=36&isShard=true&wt=javabin&wt=xml&distrib=false} hits=234868 status=0 QTime=8\n";
+
+    List<SolrInputDocument> docs = readDocs(record);
+    assertEquals(docs.size(), 1);
+    SolrInputDocument doc = docs.get(0);
+
+    assertEquals(doc.getFieldValues("q_s").size(), 1);
+    assertEquals(doc.getFieldValue("q_s"), "*:*");
+
+    assertEquals(doc.getFieldValues("wt_s").size(), 1);
+    assertEquals(doc.getFieldValue("wt_s"), "javabin");
+  }
+
   @Test
   public void testRTGRecord() throws Exception {
     final String record = "2020-03-19 20:00:30.845 INFO  (qtp1635378213-20354) [c:logs4 s:shard8 r:core_node63 x:logs4_shard8_replica_n60] o.a.s.c.S.Request [logs4_shard8_replica_n60]  webapp=/solr path=/get params={qt=/get&_stateVer_=logs4:104&ids=id1&ids=id2&ids=id3&wt=javabin&version=2} status=0 QTime=61";

@@ -130,7 +130,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
   private CdcrBufferManager bufferManager;
 
   @Override
-  public void init(NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     super.init(args);
 
     if (args != null) {
@@ -154,6 +154,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
 
       // Configuration of the Replicas
       replicasConfiguration = new HashMap<>();
+      @SuppressWarnings({"rawtypes"})
       List replicas = args.getAll(CdcrParams.REPLICA_PARAM);
       for (Object replica : replicas) {
         if (replica != null && replica instanceof NamedList) {
@@ -375,6 +376,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
     rsp.add(CdcrParams.CdcrAction.STATUS.toLower(), this.getStatus());
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private NamedList getStatus() {
     NamedList status = new NamedList();
     status.add(CdcrParams.ProcessState.getParam(), processStateManager.getState().toLower());
@@ -547,6 +549,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
     rsp.add(CdcrParams.LAST_PROCESSED_VERSION, lastProcessedVersion);
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private void handleQueuesAction(SolrQueryRequest req, SolrQueryResponse rsp) {
     NamedList hosts = new NamedList();
 
@@ -579,6 +582,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
         updateLogSynchronizer.isStarted() ? CdcrParams.ProcessState.STARTED.toLower() : CdcrParams.ProcessState.STOPPED.toLower());
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private void handleOpsAction(SolrQueryRequest req, SolrQueryResponse rsp) {
     NamedList hosts = new NamedList();
 
@@ -597,6 +601,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
     rsp.add(CdcrParams.OPERATIONS_PER_SECOND, hosts);
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private void handleErrorsAction(SolrQueryRequest req, SolrQueryResponse rsp) {
     NamedList hosts = new NamedList();
 
@@ -860,9 +865,11 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
         ModifiableSolrParams params = new ModifiableSolrParams();
         params.set(CommonParams.ACTION, CdcrParams.CdcrAction.SHARDCHECKPOINT.toString());
 
+        @SuppressWarnings({"rawtypes"})
         SolrRequest request = new QueryRequest(params);
         request.setPath(cdcrPath);
 
+        @SuppressWarnings({"rawtypes"})
         NamedList response = server.request(request);
         return (Long) response.get(CdcrParams.CHECKPOINT);
       }

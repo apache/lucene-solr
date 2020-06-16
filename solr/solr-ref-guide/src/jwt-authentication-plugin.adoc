@@ -102,7 +102,7 @@ The next example shows configuring using https://openid.net/specs/openid-connect
     "class": "solr.JWTAuthPlugin",
     "wellKnownUrl": "https://idp.example.com/.well-known/openid-configuration",
     "clientId": "xyz",
-    "redirectUri": "https://my.solr.server:8983/solr/"
+    "redirectUris": "https://my.solr.server:8983/solr/"
   }
 }
 ----

@@ -34,5 +34,5 @@ public class CommonParamsTest extends SolrTestCase
 
   public void testPreferLocalShards() { assertEquals("preferLocalShards", CommonParams.PREFER_LOCAL_SHARDS); }
   
-  public void testMinExactHits() { assertEquals("minExactHits", CommonParams.MIN_EXACT_HITS); }
+  public void testMinExactCount() { assertEquals("minExactCount", CommonParams.MIN_EXACT_COUNT); }
 }

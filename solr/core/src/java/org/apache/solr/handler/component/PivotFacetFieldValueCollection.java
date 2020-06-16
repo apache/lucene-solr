@@ -342,6 +342,7 @@ public class PivotFacetFieldValueCollection implements Iterable<PivotFacetValue>
    * A helper method for use in <code>Comparator</code> classes where object properties 
    * are <code>Comparable</code> but may be null.
    */
+  @SuppressWarnings({"unchecked"})
   static int compareWithNullLast(final Comparable o1, final Comparable o2) {
     if (null == o1) {
       if (null == o2) {

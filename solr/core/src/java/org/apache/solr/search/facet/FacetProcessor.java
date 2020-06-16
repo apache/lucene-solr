@@ -47,21 +47,21 @@ import org.apache.solr.search.facet.SlotAcc.SlotContext;
 /** Base abstraction for a class that computes facets. This is fairly internal to the module. */
 public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
   SimpleOrderedMap<Object> response;
-  FacetRequest.FacetContext fcontext;
+  FacetContext fcontext;
   FacetRequestT freq;
 
   DocSet filter;  // additional filters specified by "filter"  // TODO: do these need to be on the context to support recomputing during multi-select?
   LinkedHashMap<String,SlotAcc> accMap;
   SlotAcc[] accs;
-  CountSlotAcc countAcc;
+  SlotAcc.CountSlotAcc countAcc;
 
-  FacetProcessor(FacetRequest.FacetContext fcontext, FacetRequestT freq) {
+  FacetProcessor(FacetContext fcontext, FacetRequestT freq) {
     this.fcontext = fcontext;
     this.freq = freq;
     fcontext.processor = this;
   }
 
-  public Object getResponse() {
+  public org.apache.solr.common.MapWriter getResponse() {
     return response;
   }
 
@@ -74,7 +74,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
     this.filter = fcontext.searcher.getDocSet(evalJSONFilterQueryStruct(fcontext, freq.domain.filters));
   }
   
-  private static List<Query> evalJSONFilterQueryStruct(FacetRequest.FacetContext fcontext, List<Object> filters) throws IOException {
+  private static List<Query> evalJSONFilterQueryStruct(FacetContext fcontext, List<Object> filters) throws IOException {
     List<Query> qlist = new ArrayList<>(filters.size());
     // TODO: prevent parsing filters each time!
     for (Object rawFilter : filters) {
@@ -82,6 +82,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
         qlist.add(parserFilter((String) rawFilter, fcontext.req));
       } else if (rawFilter instanceof Map) {
 
+        @SuppressWarnings({"unchecked"})
         Map<String,Object> m = (Map<String, Object>) rawFilter;
         String type;
         Object args;
@@ -181,6 +182,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
       return;
     }
 
+    @SuppressWarnings({"rawtypes"})
     Map tagMap = (Map) fcontext.req.getContext().get("tags");
     if (tagMap == null) {
       // no filters were tagged
@@ -226,7 +228,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
 
     // now walk back up the context tree
     // TODO: we lose parent exclusions...
-    for (FacetRequest.FacetContext curr = fcontext; curr != null; curr = curr.parent) {
+    for (FacetContext curr = fcontext; curr != null; curr = curr.parent) {
       if (curr.filter != null) {
         qlist.add( curr.filter );
       }
@@ -307,7 +309,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
 
     // allow a custom count acc to be used
     if (countAcc == null) {
-      countAcc = new CountSlotArrAcc(fcontext, slotCount);
+      countAcc = new SlotAcc.CountSlotArrAcc(fcontext, slotCount);
       countAcc.key = "count";
     }
 
@@ -438,6 +440,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   void processSubs(SimpleOrderedMap<Object> response, Query filter, DocSet domain, boolean skip, Map<String,Object> facetInfo) throws IOException {
 
     boolean emptyDomain = domain == null || domain.size() == 0;
@@ -462,9 +465,9 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
       if (skip && facetInfoSub == null) continue;
 
       // make a new context for each sub-facet since they can change the domain
-      FacetRequest.FacetContext subContext = fcontext.sub(filter, domain);
+      FacetContext subContext = fcontext.sub(filter, domain);
       subContext.facetInfo = facetInfoSub;
-      if (!skip) subContext.flags &= ~FacetRequest.FacetContext.SKIP_FACET;  // turn off the skip flag if we're not skipping this bucket
+      if (!skip) subContext.flags &= ~FacetContext.SKIP_FACET;  // turn off the skip flag if we're not skipping this bucket
 
       if (fcontext.getDebugInfo() != null) {   // if fcontext.debugInfo != null, it means rb.debug() == true
         FacetDebugInfo fdebug = new FacetDebugInfo();

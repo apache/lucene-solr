@@ -19,11 +19,11 @@ package org.apache.solr.security;
 
 import java.lang.invoke.MethodHandles;
 
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.SolrCloudAuthTestCase;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -45,13 +45,13 @@ public class BasicAuthOnSingleNodeTest extends SolrCloudAuthTestCase {
         .setBasicAuthCredentials("solr", "solr")
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION, 4, 4);
+  }
 
-    JettySolrRunner jetty = cluster.getJettySolrRunner(0);
-    jetty.stop();
-    cluster.waitForJettyToStop(jetty);
-    jetty.start();
-    cluster.waitForAllNodes(30);
-    cluster.waitForActiveCollection(COLLECTION, 4, 4);
+  @Override
+  @After
+  public void tearDown() throws Exception {
+    cluster.shutdown();
+    super.tearDown();
   }
 
   @Test
@@ -64,6 +64,36 @@ public class BasicAuthOnSingleNodeTest extends SolrCloudAuthTestCase {
       for (int i = 0; i < 30; i++) {
         assertNotNull(new QueryRequest(params("q", "*:*"))
                       .setBasicAuthCredentials("solr", "solr").process(client, COLLECTION));
+      }
+    }
+  }
+
+  @Test
+  public void testDeleteSecurityJsonZnode() throws Exception {
+    try (Http2SolrClient client = new Http2SolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
+        .build()){
+      try {
+        new QueryRequest(params("q", "*:*")).process(client, COLLECTION);
+        fail("Should throw exception due to authentication needed");
+      } catch (Exception e) { /* Ignore */ }
+
+      // Deleting security.json will disable security - before SOLR-9679 it would instead cause an exception
+      cluster.getZkClient().delete("/security.json", -1, false);
+
+      int count = 0;
+      boolean done = false;
+      // Assert that security is turned off. This is async, so we retry up to 5s before failing the test
+      while (!done) {
+        try {
+          Thread.sleep(500);
+          count += 1;
+          new QueryRequest(params("q", "*:*")).process(client, COLLECTION);
+          done = true;
+        } catch (Exception e) {
+          if (count >= 10) {
+            fail("Failed 10 times to query without credentials after removing security.json");
+          }
+        }
       }
     }
   }

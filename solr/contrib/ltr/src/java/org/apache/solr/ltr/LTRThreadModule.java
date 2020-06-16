@@ -59,9 +59,10 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
  */
 final public class LTRThreadModule extends CloseHook implements NamedListInitializedPlugin  {
 
-  public static LTRThreadModule getInstance(NamedList args) {
+  public static LTRThreadModule getInstance(@SuppressWarnings({"rawtypes"})NamedList args) {
 
     final LTRThreadModule threadManager;
+    @SuppressWarnings({"rawtypes"})
     final NamedList threadManagerArgs = extractThreadModuleParams(args);
     // if and only if there are thread module args then we want a thread module!
     if (threadManagerArgs.size() > 0) {
@@ -77,6 +78,7 @@ final public class LTRThreadModule extends CloseHook implements NamedListInitial
 
   private static String CONFIG_PREFIX = "threadModule.";
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private static NamedList extractThreadModuleParams(NamedList args) {
 
     // gather the thread module args from amongst the general args
@@ -118,7 +120,8 @@ final public class LTRThreadModule extends CloseHook implements NamedListInitial
   }
 
   @Override
-  public void init(NamedList args) {
+  @SuppressWarnings({"unchecked"})
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     if (args != null) {
       SolrPluginUtils.invokeSetters(this, args);
     }

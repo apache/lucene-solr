@@ -112,6 +112,7 @@ public class SubQueryAugmenterFactory extends TransformerFactory{
   @SuppressWarnings("unchecked")
   private void checkThereIsNoDupe(String field, Map<Object,Object> context) {
     // find a map
+    @SuppressWarnings({"rawtypes"})
     final Map conflictMap;
     final String conflictMapKey = getClass().getSimpleName();
     if (context.containsKey(conflictMapKey)) {
@@ -215,8 +216,8 @@ class SubQueryAugmenter extends DocTransformer {
       
       if (vals != null) {
         StringBuilder rez = new StringBuilder();
-        for (Iterator iterator = vals.iterator(); iterator.hasNext();) {
-          Object object = (Object) iterator.next();
+        for (@SuppressWarnings({"rawtypes"})Iterator iterator = vals.iterator(); iterator.hasNext();) {
+          Object object = iterator.next();
           rez.append(convertFieldValue(object));
           if (iterator.hasNext()) {
             rez.append(separator);
@@ -325,7 +326,6 @@ class SubQueryAugmenter extends DocTransformer {
         new DocRowParams(doc, prefix, separator), baseSubParams);
     try {
       QueryResponse rsp = server.query(coreName, docWithDeprefixed);
-
       final SolrDocumentList docList = rsp.getResults();
       doc.setField(getName(), new Result(docList));
     } catch (Exception e) {
@@ -333,6 +333,6 @@ class SubQueryAugmenter extends DocTransformer {
       throw new SolrException(ErrorCode.BAD_REQUEST, "while invoking " +
           name + ":[subquery"+ (coreName!=null ? "fromIndex="+coreName : "") +"] on doc=" +
             docString.substring(0, Math.min(100, docString.length())), e.getCause());
-    } finally {}
+    }
   }
 }

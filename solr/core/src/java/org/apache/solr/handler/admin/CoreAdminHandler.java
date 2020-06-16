@@ -114,7 +114,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
 
 
   @Override
-  final public void init(NamedList args) {
+  final public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
             "CoreAdminHandler should not be configured in solrconf.xml\n" +
                     "it is a special Handler configured directly by the RequestDispatcher");

@@ -103,11 +103,6 @@ public class ShardSplitTest extends BasicDistributedZkTest {
 
     waitForThingsToLevelOut(15, TimeUnit.SECONDS);
 
-    if (usually()) {
-      log.info("Using legacyCloud=false for cluster");
-      CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, "false")
-          .process(cloudClient);
-    }
     incompleteOrOverlappingCustomRangeTest();
     splitByUniqueKeyTest();
     splitByRouteFieldTest();
@@ -416,10 +411,6 @@ public class ShardSplitTest extends BasicDistributedZkTest {
   public void testSplitWithChaosMonkey() throws Exception {
     waitForThingsToLevelOut(15, TimeUnit.SECONDS);
 
-    log.info("Using legacyCloud=false for cluster");
-    CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, "false")
-        .process(cloudClient);
-
     List<StoppableIndexingThread> indexers = new ArrayList<>();
     try {
       for (int i = 0; i < 1; i++) {
@@ -644,12 +635,6 @@ public class ShardSplitTest extends BasicDistributedZkTest {
 
   private void doSplitShardWithRule(SolrIndexSplitter.SplitMethod splitMethod) throws Exception {
     waitForThingsToLevelOut(15, TimeUnit.SECONDS);
-
-    if (usually()) {
-      log.info("Using legacyCloud=false for cluster");
-      CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, "false")
-          .process(cloudClient);
-    }
 
     log.info("Starting testSplitShardWithRule");
     String collectionName = "shardSplitWithRule_" + splitMethod.toLower();

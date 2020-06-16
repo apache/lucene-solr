@@ -28,6 +28,7 @@ import org.apache.solr.common.util.StrUtils;
 class StandaloneReplicaSource implements ReplicaSource {
   private List<String>[] replicas;
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public StandaloneReplicaSource(Builder builder) {
     List<String> list = StrUtils.splitSmart(builder.shardsParam, ",", true);
     replicas = new List[list.size()];

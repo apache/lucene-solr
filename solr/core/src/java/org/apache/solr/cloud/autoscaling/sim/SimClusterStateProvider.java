@@ -48,7 +48,9 @@ import java.util.stream.Collectors;
 import com.google.common.util.concurrent.AtomicDouble;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
+import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
@@ -98,6 +100,7 @@ import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.update.SolrIndexSplitter;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -119,8 +122,8 @@ import static org.apache.solr.common.params.CommonParams.NAME;
  *     <li>using autoscaling policy for replica placements</li>
  *     <li>maintaining and up-to-date list of /live_nodes and nodeAdded / nodeLost markers</li>
  *     <li>running a simulated leader election on collection changes (with throttling), when needed</li>
- *     <li>maintaining an up-to-date /clusterstate.json (single file format), which also tracks replica states,
- *     leader election changes, replica property changes, etc. Note: this file is only written,
+ *     <li>maintaining an up-to-date /state.json per-collection files, which also track replica states,
+ *     leader election changes, replica property changes, etc. Note: these files are only written,
  *     but never read by the framework!</li>
  *     <li>maintaining an up-to-date /clusterprops.json. Note: this file is only written, but never read by the
  *     framework!</li>
@@ -153,12 +156,132 @@ public class SimClusterStateProvider implements ClusterStateProvider {
   private final Map<String, Map<String, Long>> opDelays = new ConcurrentHashMap<>();
 
 
-  private volatile int clusterStateVersion = 0;
   private volatile String overseerLeader = null;
 
   private volatile Map<String, Object> lastSavedProperties = null;
 
-  private final AtomicReference<Map<String, DocCollection>> collectionsStatesRef = new AtomicReference<>();
+  private class CachedCollectionRef {
+    private final String name;
+    private int zkVersion;
+    private DocCollection coll;
+    ReentrantLock lock = new ReentrantLock();
+
+    CachedCollectionRef(String name, int zkVersion) {
+      this.name = name;
+      this.zkVersion = zkVersion;
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public DocCollection getColl() throws InterruptedException, IOException {
+      DocCollection dc = coll;
+      if (dc != null) {
+        return dc;
+      }
+      lock.lock();
+      try {
+        if (coll != null) {
+          return coll;
+        } else {
+          Map<String, Map<String, Map<String, Replica>>> collMap = new HashMap<>();
+          nodeReplicaMap.forEach((n, replicas) -> {
+            synchronized (replicas) {
+              replicas.forEach(ri -> {
+                if (!ri.getCollection().equals(name)) {
+                  return;
+                }
+                Map<String, Object> props;
+                synchronized (ri) {
+                  props = new HashMap<>(ri.getVariables());
+                }
+                props.put(ZkStateReader.NODE_NAME_PROP, n);
+                props.put(ZkStateReader.CORE_NAME_PROP, ri.getCore());
+                props.put(ZkStateReader.REPLICA_TYPE, ri.getType().toString());
+                props.put(ZkStateReader.STATE_PROP, ri.getState().toString());
+                Replica r = new Replica(ri.getName(), props, ri.getCollection(), ri.getShard());
+                collMap.computeIfAbsent(ri.getCollection(), c -> new HashMap<>())
+                    .computeIfAbsent(ri.getShard(), s -> new HashMap<>())
+                    .put(ri.getName(), r);
+              });
+            }
+          });
+
+          // add empty slices
+          sliceProperties.forEach((c, perSliceProps) -> {
+            if (!c.equals(name)) {
+              return;
+            }
+            perSliceProps.forEach((slice, props) -> {
+              collMap.computeIfAbsent(c, co -> new ConcurrentHashMap<>()).computeIfAbsent(slice, s -> new ConcurrentHashMap<>());
+            });
+          });
+          // add empty collections
+          collProperties.keySet().forEach(c -> {
+            if (!c.equals(name)) {
+              return;
+            }
+            collMap.computeIfAbsent(c, co -> new ConcurrentHashMap<>());
+          });
+
+          Map<String, Map<String, Replica>> shards = collMap.get(name);
+          Map<String, Slice> slices = new HashMap<>();
+          shards.forEach((s, replicas) -> {
+            Map<String, Object> sliceProps = sliceProperties.computeIfAbsent(name, c -> new ConcurrentHashMap<>()).computeIfAbsent(s, sl -> new ConcurrentHashMap<>());
+            Slice slice = new Slice(s, replicas, sliceProps, name);
+            slices.put(s, slice);
+          });
+          Map<String, Object> collProps = collProperties.computeIfAbsent(name, c -> new ConcurrentHashMap<>());
+          Map<String, Object> routerProp = (Map<String, Object>) collProps.getOrDefault(DocCollection.DOC_ROUTER, Collections.singletonMap("name", DocRouter.DEFAULT_NAME));
+          DocRouter router = DocRouter.getDocRouter((String)routerProp.getOrDefault("name", DocRouter.DEFAULT_NAME));
+          String path = ZkStateReader.getCollectionPath(name);
+          coll = new DocCollection(name, slices, collProps, router, zkVersion + 1);
+          try {
+            SimDistribStateManager stateManager = cloudManager.getSimDistribStateManager();
+            byte[] data = Utils.toJSON(Collections.singletonMap(name, coll));
+            if (!stateManager.hasData(path)) {
+              try {
+                stateManager.makePath(path, data, CreateMode.PERSISTENT, true);
+              } catch (AlreadyExistsException e) {
+                // try updating
+                stateManager.setData(path, data, zkVersion);
+              }
+            } else {
+              stateManager.setData(path, data, zkVersion);
+            }
+            // verify version
+            VersionedData vd = stateManager.getData(path);
+            assert vd.getVersion() == zkVersion + 1;
+            zkVersion++;
+          } catch (KeeperException | BadVersionException e) {
+            // should never happen?
+            throw new RuntimeException("error saving " + coll, e);
+          }
+        }
+      } finally {
+        lock.unlock();
+      }
+      return coll;
+    }
+
+    public int getZkVersion() {
+      lock.lock();
+      try {
+        return zkVersion;
+      } finally {
+        lock.unlock();
+      }
+    }
+
+    public void invalidate() {
+      lock.lock();
+      try {
+        coll = null;
+      } finally {
+        lock.unlock();
+      }
+    }
+  }
+
+  private final Map<String, CachedCollectionRef> collectionsStatesRef = new ConcurrentHashMap<>();
 
   private final Random bulkUpdateRandom = new Random(0);
 
@@ -199,6 +322,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * Initialize from an existing cluster state
    * @param initialState initial cluster state
    */
+  @SuppressWarnings({"unchecked"})
   public void simSetClusterState(ClusterState initialState) throws Exception {
     lock.lockInterruptibly();
     try {
@@ -207,6 +331,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       sliceProperties.clear();
       nodeReplicaMap.clear();
       liveNodes.clear();
+      collectionsStatesRef.clear();
       for (String nodeId : stateManager.listData(ZkStateReader.LIVE_NODES_ZKNODE)) {
         if (stateManager.hasData(ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeId)) {
           stateManager.removeData(ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeId, -1);
@@ -223,6 +348,8 @@ public class SimClusterStateProvider implements ClusterStateProvider {
         createEphemeralLiveNode(nodeId);
       }
       initialState.forEachCollection(dc -> {
+        // DocCollection will be created later
+        collectionsStatesRef.put(dc.getName(), new CachedCollectionRef(dc.getName(), dc.getZNodeVersion()));
         collProperties.computeIfAbsent(dc.getName(), name -> new ConcurrentHashMap<>()).putAll(dc.getProperties());
         opDelays.computeIfAbsent(dc.getName(), Utils.NEW_HASHMAP_FUN).putAll(defaultOpDelays);
         dc.getSlices().forEach(s -> {
@@ -248,7 +375,6 @@ public class SimClusterStateProvider implements ClusterStateProvider {
           });
         });
       });
-      collectionsStatesRef.set(null);
     } finally {
       lock.unlock();
     }
@@ -287,9 +413,8 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     return nodes.get(random.nextInt(nodes.size()));
   }
 
-  // todo: maybe hook up DistribStateManager /clusterstate.json watchers?
-
   private ReplicaInfo getReplicaInfo(Replica r) {
+    @SuppressWarnings({"unchecked"})
     final List<ReplicaInfo> list = nodeReplicaMap.computeIfAbsent
       (r.getNodeName(), Utils.NEW_SYNCHRONIZED_ARRAYLIST_FUN);
     synchronized (list) {
@@ -306,6 +431,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * Add a new node to the cluster.
    * @param nodeId unique node id
    */
+  @SuppressWarnings({"unchecked"})
   public void simAddNode(String nodeId) throws Exception {
     ensureNotClosed();
     if (liveNodes.contains(nodeId)) {
@@ -331,8 +457,8 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       // mark every replica on that node as down
       boolean res = liveNodes.remove(nodeId);
       setReplicaStates(nodeId, Replica.State.DOWN, collections);
-      if (!collections.isEmpty()) {
-        collectionsStatesRef.set(null);
+      for (String collection : collections) {
+        collectionsStatesRef.get(collection).invalidate();;
       }
       // remove ephemeral nodes
       stateManager.getRoot().removeEphemeralChildren(nodeId);
@@ -363,7 +489,6 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     try {
       Set<String> myNodes = new HashSet<>(nodeReplicaMap.keySet());
       myNodes.removeAll(liveNodes.get());
-      collectionsStatesRef.set(null);
     } finally {
       lock.unlock();
     }
@@ -404,6 +529,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
 
   // this method needs to be called under a lock
   private void setReplicaStates(String nodeId, Replica.State state, Set<String> changedCollections) {
+    @SuppressWarnings({"unchecked"})
     List<ReplicaInfo> replicas = nodeReplicaMap.computeIfAbsent(nodeId, Utils.NEW_SYNCHRONIZED_ARRAYLIST_FUN);
     synchronized (replicas) {
       replicas.forEach(r -> {
@@ -452,7 +578,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     try {
       setReplicaStates(nodeId, Replica.State.ACTIVE, collections);
       if (!collections.isEmpty()) {
-        collectionsStatesRef.set(null);
+        collections.forEach(c -> collectionsStatesRef.get(c).invalidate());
         simRunLeaderElection(collections, true);
         return true;
       } else {
@@ -469,6 +595,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @param message replica details
    * @param results result of the operation
    */
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void simAddReplica(ZkNodeProps message, NamedList results) throws Exception {
     if (message.getStr(CommonAdminParams.ASYNC) != null) {
       results.add(CoreAdminParams.REQUESTID, message.getStr(CommonAdminParams.ASYNC));
@@ -526,6 +653,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @param replicaInfo replica info
    * @param runLeaderElection if true then run a leader election after adding the replica.
    */
+  @SuppressWarnings({"unchecked"})
   public void simAddReplica(String nodeId, ReplicaInfo replicaInfo, boolean runLeaderElection) throws Exception {
     ensureNotClosed();
     lock.lockInterruptibly();
@@ -604,7 +732,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       cloudManager.getMetricManager().registerGauge(null, registry,
           () -> replicaSize, "", true, Type.CORE_IDX.metricsAttribute);
       // at this point nuke our cached DocCollection state
-      collectionsStatesRef.set(null);
+      collectionsStatesRef.get(replicaInfo.getCollection()).invalidate();
       log.trace("-- simAddReplica {}", replicaInfo);
       if (runLeaderElection) {
         simRunLeaderElection(replicaInfo.getCollection(), replicaInfo.getShard(), true);
@@ -624,6 +752,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     
     lock.lockInterruptibly();
     try {
+      @SuppressWarnings({"unchecked"})
       final List<ReplicaInfo> replicas = nodeReplicaMap.computeIfAbsent
         (nodeId, Utils.NEW_SYNCHRONIZED_ARRAYLIST_FUN);
       synchronized (replicas) {
@@ -633,7 +762,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
             colShardReplicaMap.computeIfAbsent(ri.getCollection(), c -> new ConcurrentHashMap<>())
               .computeIfAbsent(ri.getShard(), s -> new ArrayList<>())
               .remove(ri);
-            collectionsStatesRef.set(null);
+            collectionsStatesRef.get(ri.getCollection()).invalidate();
 
             opDelay(ri.getCollection(), CollectionParams.CollectionAction.DELETEREPLICA.name());
 
@@ -666,26 +795,6 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     } finally {
       lock.unlock();
     }
-  }
-
-  /**
-   * Save clusterstate.json to {@link DistribStateManager}.
-   * @return saved state
-   */
-  private ClusterState saveClusterState(ClusterState state) throws IOException {
-    ensureNotClosed();
-    byte[] data = Utils.toJSON(state);
-    try {
-      VersionedData oldData = stateManager.getData(ZkStateReader.CLUSTER_STATE);
-      int version = oldData != null ? oldData.getVersion() : 0;
-      assert clusterStateVersion == version : "local clusterStateVersion out of sync";
-      stateManager.setData(ZkStateReader.CLUSTER_STATE, data, version);
-      log.debug("** saved cluster state version {}", version);
-      clusterStateVersion++;
-    } catch (Exception e) {
-      throw new IOException(e);
-    }
-    return state;
   }
 
   /**
@@ -725,7 +834,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     if (saveClusterState) {
       lock.lockInterruptibly();
       try {
-        collectionsStatesRef.set(null);
+        collections.forEach(c -> collectionsStatesRef.get(c).invalidate());
       } finally {
         lock.unlock();
       }
@@ -865,13 +974,13 @@ public class SimClusterStateProvider implements ClusterStateProvider {
         }
         if (log.isDebugEnabled()) {
           log.debug("-- elected new leader for {} / {} (currentVersion={}): {}", collection,
-              s.getName(), clusterStateVersion, ri);
+              s.getName(), col.getZNodeVersion(), ri);
         }
         stateChanged.set(true);
       }
     } finally {
       if (stateChanged.get() || saveState) {
-        collectionsStatesRef.set(null);
+        collectionsStatesRef.get(collection).invalidate();
       }
       lock.unlock();
     }
@@ -882,6 +991,8 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @param props collection details
    * @param results results of the operation.
    */
+
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void simCreateCollection(ZkNodeProps props, NamedList results) throws Exception {
     ensureNotClosed();
     if (props.getStr(CommonAdminParams.ASYNC) != null) {
@@ -889,7 +1000,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     }
     boolean waitForFinalState = props.getBool(CommonAdminParams.WAIT_FOR_FINAL_STATE, false);
     final String collectionName = props.getStr(NAME);
-    log.debug("-- simCreateCollection {}, currentVersion={}", collectionName, clusterStateVersion);
+    log.debug("-- simCreateCollection {}", collectionName);
 
     String router = props.getStr("router.name", DocRouter.DEFAULT_NAME);
     String policy = props.getStr(Policy.POLICY);
@@ -903,12 +1014,6 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     CreateCollectionCmd.checkReplicaTypes(props);
 
     // always force getting fresh state
-    lock.lockInterruptibly();
-    try {
-      collectionsStatesRef.set(null);
-    } finally {
-      lock.unlock();
-    }
     final ClusterState clusterState = getClusterState();
 
     String withCollection = props.getStr(CollectionAdminParams.WITH_COLLECTION);
@@ -962,8 +1067,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
             CollectionAdminParams.COLOCATED_WITH, collectionName);
         cmd = new CollectionMutator(cloudManager).modifyCollection(clusterState,message);
       }
-      // force recreation of collection states
-      collectionsStatesRef.set(null);
+      collectionsStatesRef.put(collectionName, new CachedCollectionRef(collectionName, 0));
 
     } finally {
       lock.unlock();
@@ -1043,7 +1147,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     // force recreation of collection states
     lock.lockInterruptibly();
     try {
-      collectionsStatesRef.set(null);
+      collectionsStatesRef.get(collectionName).invalidate();
     } finally {
       lock.unlock();
     }
@@ -1057,7 +1161,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       }
     }
     results.add("success", "");
-    log.debug("-- finished createCollection {}, currentVersion={}", collectionName, clusterStateVersion);
+    log.debug("-- finished createCollection {}", collectionName);
   }
 
   /**
@@ -1066,6 +1170,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @param async async id
    * @param results results of the operation
    */
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void simDeleteCollection(String collection, String async, NamedList results) throws Exception {
     ensureNotClosed();
     if (async != null) {
@@ -1106,7 +1211,8 @@ public class SimClusterStateProvider implements ClusterStateProvider {
             }
           }
         });
-      collectionsStatesRef.set(null);
+      cloudManager.getDistribStateManager().removeRecursively(ZkStateReader.getCollectionPath(collection), true, true);
+      collectionsStatesRef.remove(collection);
       results.add("success", "");
     } catch (Exception e) {
       log.warn("Exception", e);
@@ -1121,7 +1227,13 @@ public class SimClusterStateProvider implements ClusterStateProvider {
   public void simDeleteAllCollections() throws Exception {
     lock.lockInterruptibly();
     try {
-      collectionsStatesRef.set(null);
+      collectionsStatesRef.keySet().forEach(name -> {
+        try {
+          cloudManager.getDistribStateManager().removeRecursively(ZkStateReader.getCollectionPath(name), true, true);
+        } catch (Exception e) {
+          log.error("Unable to delete collection state.json");
+        }
+      });
       
       collProperties.clear();
       sliceProperties.clear();
@@ -1153,6 +1265,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @param message operation details
    * @param results operation results.
    */
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void simMoveReplica(ZkNodeProps message, NamedList results) throws Exception {
     ensureNotClosed();
     if (message.getStr(CommonAdminParams.ASYNC) != null) {
@@ -1219,6 +1332,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @param message operation details
    * @param results operation results
    */
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void simCreateShard(ZkNodeProps message, NamedList results) throws Exception {
     ensureNotClosed();
     if (message.getStr(CommonAdminParams.ASYNC) != null) {
@@ -1285,6 +1399,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @param message operation details
    * @param results operation results.
    */
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void simSplitShard(ZkNodeProps message, NamedList results) throws Exception {
     ensureNotClosed();
     if (message.getStr(CommonAdminParams.ASYNC) != null) {
@@ -1468,7 +1583,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       }
 
       // invalidate cached state
-      collectionsStatesRef.set(null);
+      collectionsStatesRef.get(collectionName).invalidate();
     } finally {
       SplitShardCmd.unlockForSplit(cloudManager, collectionName, sliceName.get());
       lock.unlock();
@@ -1482,6 +1597,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @param message operation details
    * @param results operation results
    */
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void simDeleteShard(ZkNodeProps message, NamedList results) throws Exception {
     ensureNotClosed();
     if (message.getStr(CommonAdminParams.ASYNC) != null) {
@@ -1516,7 +1632,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
             }
           }
         });
-      collectionsStatesRef.set(null);
+      collectionsStatesRef.get(collectionName).invalidate();
       results.add("success", "");
     } catch (Exception e) {
       results.add("failure", e.toString());
@@ -1525,6 +1641,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     }
   }
 
+  @SuppressWarnings({"rawtypes"})
   public void createSystemCollection() throws IOException {
     try {
 
@@ -1939,6 +2056,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * Saves cluster properties to clusterprops.json.
    * @return current properties
    */
+  @SuppressWarnings({"unchecked"})
   private synchronized Map<String, Object> saveClusterProperties() throws Exception {
     if (lastSavedProperties != null && lastSavedProperties.equals(clusterProperties)) {
       return lastSavedProperties;
@@ -2004,7 +2122,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
         props.clear();
         props.putAll(properties);
       }
-      collectionsStatesRef.set(null);
+      collectionsStatesRef.get(coll).invalidate();
     } finally {
       lock.unlock();
     }
@@ -2025,7 +2143,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       } else {
         props.put(key, value);
       }
-      collectionsStatesRef.set(null);
+      collectionsStatesRef.get(coll).invalidate();
     } finally {
       lock.unlock();
     }
@@ -2046,7 +2164,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       if (properties != null) {
         sliceProps.putAll(properties);
       }
-      collectionsStatesRef.set(null);
+      collectionsStatesRef.get(coll).invalidate();
     } finally {
       lock.unlock();
     }
@@ -2175,6 +2293,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   public void simSetReplicaValues(String node, Map<String, Map<String, List<ReplicaInfo>>> source, boolean overwrite) {
     List<ReplicaInfo> infos = nodeReplicaMap.get(node);
     if (infos == null) {
@@ -2206,6 +2325,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @return copy of the list of replicas on that node, or empty list if none
    */
   public List<ReplicaInfo> simGetReplicaInfos(String node) {
+    @SuppressWarnings({"unchecked"})
     final List<ReplicaInfo> replicas = nodeReplicaMap.computeIfAbsent
       (node, Utils.NEW_SYNCHRONIZED_ARRAYLIST_FUN);
     // make a defensive copy to avoid ConcurrentModificationException
@@ -2247,7 +2367,6 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     lock.lockInterruptibly();
     try {
       final Map<String, Map<String, Object>> stats = new TreeMap<>();
-      collectionsStatesRef.set(null);
       ClusterState state = getClusterState();
       state.forEachCollection(coll -> {
         Map<String, Object> perColl = new LinkedHashMap<>();
@@ -2286,7 +2405,9 @@ public class SimClusterStateProvider implements ClusterStateProvider {
             }
             continue;
           }
-          AtomicLong buffered = (AtomicLong)sliceProperties.get(coll.getName()).get(s.getName()).get(BUFFERED_UPDATES);
+          AtomicLong buffered = (AtomicLong)sliceProperties
+              .getOrDefault(coll.getName(), Collections.emptyMap())
+              .getOrDefault(s.getName(), Collections.emptyMap()).get(BUFFERED_UPDATES);
           if (buffered != null) {
             bufferedDocs += buffered.get();
           }
@@ -2389,7 +2510,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       lock.lockInterruptibly();
       try {
         Map<String, DocCollection> states = getCollectionStates();
-        ClusterState state = new ClusterState(clusterStateVersion, liveNodes.get(), states);
+        ClusterState state = new ClusterState(liveNodes.get(), states);
         return state;
       } finally {
         lock.unlock();
@@ -2399,65 +2520,18 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     }
   }
 
-  // this method uses a simple cache in collectionsStatesRef. Operations that modify
-  // cluster state should always reset this cache so that the changes become visible
   private Map<String, DocCollection> getCollectionStates() throws IOException, InterruptedException {
     lock.lockInterruptibly();
     try {
-      Map<String, DocCollection> collectionStates = collectionsStatesRef.get();
-      if (collectionStates != null) {
-        return collectionStates;
-      }
-      collectionsStatesRef.set(null);
-      log.debug("** creating new collection states, currentVersion={}", clusterStateVersion);
-      Map<String, Map<String, Map<String, Replica>>> collMap = new HashMap<>();
-      nodeReplicaMap.forEach((n, replicas) -> {
-          synchronized (replicas) {
-            replicas.forEach(ri -> {
-                Map<String, Object> props;
-                synchronized (ri) {
-                  props = new HashMap<>(ri.getVariables());
-                }
-                props.put(ZkStateReader.NODE_NAME_PROP, n);
-                props.put(ZkStateReader.CORE_NAME_PROP, ri.getCore());
-                props.put(ZkStateReader.REPLICA_TYPE, ri.getType().toString());
-                props.put(ZkStateReader.STATE_PROP, ri.getState().toString());
-                Replica r = new Replica(ri.getName(), props, ri.getCollection(), ri.getShard());
-                collMap.computeIfAbsent(ri.getCollection(), c -> new HashMap<>())
-                  .computeIfAbsent(ri.getShard(), s -> new HashMap<>())
-                  .put(ri.getName(), r);
-              });
-          }
-        });
-
-      // add empty slices
-      sliceProperties.forEach((c, perSliceProps) -> {
-        perSliceProps.forEach((slice, props) -> {
-          collMap.computeIfAbsent(c, co -> new ConcurrentHashMap<>()).computeIfAbsent(slice, s -> new ConcurrentHashMap<>());
-        });
+      Map<String, DocCollection> collectionStates = new HashMap<>();
+      collectionsStatesRef.forEach((name, cached) -> {
+        try {
+          collectionStates.put(name, cached.getColl());
+        } catch (Exception e) {
+          throw new RuntimeException("error building collection " + name + " state", e);
+        }
       });
-      // add empty collections
-      collProperties.keySet().forEach(c -> {
-        collMap.computeIfAbsent(c, co -> new ConcurrentHashMap<>());
-      });
-
-      Map<String, DocCollection> res = new HashMap<>();
-      collMap.forEach((coll, shards) -> {
-        Map<String, Slice> slices = new HashMap<>();
-        shards.forEach((s, replicas) -> {
-          Map<String, Object> sliceProps = sliceProperties.computeIfAbsent(coll, c -> new ConcurrentHashMap<>()).computeIfAbsent(s, sl -> new ConcurrentHashMap<>());
-          Slice slice = new Slice(s, replicas, sliceProps, coll);
-          slices.put(s, slice);
-        });
-        Map<String, Object> collProps = collProperties.computeIfAbsent(coll, c -> new ConcurrentHashMap<>());
-        Map<String, Object> routerProp = (Map<String, Object>) collProps.getOrDefault(DocCollection.DOC_ROUTER, Collections.singletonMap("name", DocRouter.DEFAULT_NAME));
-        DocRouter router = DocRouter.getDocRouter((String)routerProp.getOrDefault("name", DocRouter.DEFAULT_NAME));
-        DocCollection dc = new DocCollection(coll, slices, collProps, router, clusterStateVersion, ZkStateReader.CLUSTER_STATE);
-        res.put(coll, dc);
-      });
-      saveClusterState(new ClusterState(clusterStateVersion, liveNodes.get(), res));
-      collectionsStatesRef.set(res);
-      return res;
+      return collectionStates;
     } finally {
       lock.unlock();
     }

@@ -202,13 +202,15 @@ public class SolrRequestInfo {
   public static ExecutorUtil.InheritableThreadLocalProvider getInheritableThreadLocalProvider() {
     return new ExecutorUtil.InheritableThreadLocalProvider() {
       @Override
-      public void store(AtomicReference ctx) {
+      @SuppressWarnings({"unchecked"})
+      public void store(@SuppressWarnings({"rawtypes"})AtomicReference ctx) {
         SolrRequestInfo me = SolrRequestInfo.getRequestInfo();
         if (me != null) ctx.set(me);
       }
 
       @Override
-      public void set(AtomicReference ctx) {
+      @SuppressWarnings({"unchecked"})
+      public void set(@SuppressWarnings({"rawtypes"})AtomicReference ctx) {
         SolrRequestInfo me = (SolrRequestInfo) ctx.get();
         if (me != null) {
           SolrRequestInfo.setRequestInfo(me);
@@ -216,7 +218,7 @@ public class SolrRequestInfo {
       }
 
       @Override
-      public void clean(AtomicReference ctx) {
+      public void clean(@SuppressWarnings({"rawtypes"})AtomicReference ctx) {
         if (ctx.get() != null) {
           SolrRequestInfo.clearRequestInfo();
         }

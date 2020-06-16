@@ -76,6 +76,7 @@ public class ExecutePlanAction extends TriggerActionBase {
   }
 
   @Override
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void process(TriggerEvent event, ActionContext context) throws Exception {
     if (log.isDebugEnabled()) {
       log.debug("-- processing event: {} with context properties: {}", event, context.getProperties());
@@ -163,6 +164,7 @@ public class ExecutePlanAction extends TriggerActionBase {
           }
           NamedList<Object> result = response.getResponse();
           context.getProperties().compute("responses", (s, o) -> {
+            @SuppressWarnings({"unchecked"})
             List<NamedList<Object>> responses = (List<NamedList<Object>>) o;
             if (responses == null)  responses = new ArrayList<>(operations.size());
             responses.add(result);

@@ -39,7 +39,8 @@ public class HeatmapFacetMap extends JsonFacetMap<HeatmapFacetMap> {
   public HeatmapFacetMap getThis() { return this; }
 
   @Override
-  public HeatmapFacetMap withSubFacet(String facetName, JsonFacetMap map) {
+  public HeatmapFacetMap withSubFacet(String facetName,
+                                      @SuppressWarnings({"rawtypes"})JsonFacetMap map) {
     throw new UnsupportedOperationException(getClass().getName() + " doesn't currently support subfacets");
   }
 

@@ -17,6 +17,8 @@
 
 apply plugin: 'java-library'
 
+description = 'Analytics Package'
+
 dependencies {
   implementation project(':solr:core')
   testImplementation project(':solr:test-framework')
