@@ -280,7 +280,7 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
     public void finish(long termsFilePointer) throws IOException {
       fst = fstBuilder.finish();
       if (fst != null) {
-        fst.save(out);
+        fst.save(out, out);
       }
     }
   }

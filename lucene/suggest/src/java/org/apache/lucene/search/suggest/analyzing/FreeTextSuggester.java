@@ -360,7 +360,7 @@ public class FreeTextSuggester extends Lookup implements Accountable {
     output.writeByte(separator);
     output.writeVInt(grams);
     output.writeVLong(totTokens);
-    fst.save(output);
+    fst.save(output, output);
     return true;
   }
 
@@ -378,7 +378,7 @@ public class FreeTextSuggester extends Lookup implements Accountable {
     }
     totTokens = input.readVLong();
 
-    fst = new FST<>(input, PositiveIntOutputs.getSingleton());
+    fst = new FST<>(input, input, PositiveIntOutputs.getSingleton());
 
     return true;
   }

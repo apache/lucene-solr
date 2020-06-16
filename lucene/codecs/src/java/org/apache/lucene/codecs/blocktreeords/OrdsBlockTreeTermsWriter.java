@@ -836,7 +836,7 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
 
         // Write FST to index
         indexStartFP = indexOut.getFilePointer();
-        root.index.save(indexOut);
+        root.index.save(indexOut, indexOut);
         //System.out.println("  write FST " + indexStartFP + " field=" + fieldInfo.name);
 
         // if (SAVE_DOT_FILES || DEBUG) {
