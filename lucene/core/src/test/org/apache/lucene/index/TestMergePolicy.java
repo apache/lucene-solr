@@ -38,7 +38,7 @@ public class TestMergePolicy extends LuceneTestCase {
     try (Directory dir = newDirectory()) {
       MergePolicy.MergeSpecification ms = createRandomMergeSpecification(dir, 1 + random().nextInt(10));
       for (MergePolicy.OneMerge m : ms.merges) {
-        assertFalse(m.isCommitted());
+        assertFalse(m.hasCompletedSuccessfully().isPresent());
       }
       Thread t = new Thread(() -> {
         try {
@@ -52,7 +52,7 @@ public class TestMergePolicy extends LuceneTestCase {
       t.start();
       assertTrue(ms.await(100, TimeUnit.HOURS));
       for (MergePolicy.OneMerge m : ms.merges) {
-        assertTrue(m.isCommitted());
+        assertTrue(m.hasCompletedSuccessfully().get());
       }
       t.join();
     }
@@ -62,7 +62,7 @@ public class TestMergePolicy extends LuceneTestCase {
     try (Directory dir = newDirectory()) {
       MergePolicy.MergeSpecification ms = createRandomMergeSpecification(dir, 3);
       for (MergePolicy.OneMerge m : ms.merges) {
-        assertFalse(m.isCommitted());
+        assertFalse(m.hasCompletedSuccessfully().isPresent());
       }
       Thread t = new Thread(() -> {
         try {
@@ -73,7 +73,7 @@ public class TestMergePolicy extends LuceneTestCase {
       });
       t.start();
       assertFalse(ms.await(10, TimeUnit.MILLISECONDS));
-      assertFalse(ms.merges.get(1).isCommitted());
+      assertFalse(ms.merges.get(1).hasCompletedSuccessfully().isPresent());
       t.join();
     }
   }
@@ -82,7 +82,7 @@ public class TestMergePolicy extends LuceneTestCase {
     try (Directory dir = newDirectory()) {
       MergePolicy.MergeSpecification ms = createRandomMergeSpecification(dir, 10000);
       for (MergePolicy.OneMerge m : ms.merges) {
-        assertFalse(m.isCommitted());
+        assertFalse(m.hasCompletedSuccessfully().isPresent());
       }
       AtomicInteger i = new AtomicInteger(0);
       AtomicBoolean stop = new AtomicBoolean(false);
@@ -102,9 +102,9 @@ public class TestMergePolicy extends LuceneTestCase {
       t.join();
       for (int j = 0; j < ms.merges.size(); j++) {
         if (j < i.get()) {
-          assertTrue(ms.merges.get(j).isCommitted());
+          assertTrue(ms.merges.get(j).hasCompletedSuccessfully().get());
         } else {
-          assertFalse(ms.merges.get(j).isCommitted());
+          assertFalse(ms.merges.get(j).hasCompletedSuccessfully().isPresent());
         }
       }
     }

@@ -23,6 +23,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -41,6 +42,7 @@ import org.apache.lucene.store.MergeInfo;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOSupplier;
 import org.apache.lucene.util.InfoStream;
+import org.apache.lucene.util.ThreadInterruptedException;
 
 /**
  * <p>Expert: a MergePolicy determines the sequence of
@@ -200,7 +202,7 @@ public abstract class MergePolicy {
    *
    * @lucene.experimental */
   public static class OneMerge {
-    private final CompletableFuture<Boolean> completable = new CompletableFuture<>();
+    private final CompletableFuture<Boolean> mergeCompleted = new CompletableFuture<>();
     SegmentCommitInfo info;         // used by IndexWriter
     boolean registerDone;           // used by IndexWriter
     long mergeGen;                  // used by IndexWriter
@@ -254,7 +256,7 @@ public abstract class MergePolicy {
     /** Called by {@link IndexWriter} after the merge is done and all readers have been closed.
      * @param success true iff the merge finished successfully ie. was committed */
     public void mergeFinished(boolean success) throws IOException {
-      if (completable.complete(success) == false) {
+      if (mergeCompleted.complete(success) == false) {
         throw new IllegalStateException("merge has already finished");
       }
     }
@@ -373,22 +375,29 @@ public abstract class MergePolicy {
      */
     boolean await(long timeout, TimeUnit timeUnit) {
       try {
-        completable.get(timeout, timeUnit);
+        mergeCompleted.get(timeout, timeUnit);
         return true;
       } catch (InterruptedException e) {
-        Thread.interrupted();
-        return false;
+        throw new ThreadInterruptedException(e);
       } catch (ExecutionException | TimeoutException e) {
         return false;
       }
     }
 
+    /**
+     * Returns true if the merge has finished or false if it's still running or
+     * has not been started. This method will not block.
+     */
     boolean isDone() {
-      return completable.isDone();
+      return mergeCompleted.isDone();
     }
 
-    boolean isCommitted() {
-      return completable.getNow(Boolean.FALSE);
+    /**
+     * Returns true iff the merge completed successfully or false if the merge succeeded with a failure.
+     * This method will not block and return an empty Optional if the merge has not finished yet
+     */
+    Optional<Boolean> hasCompletedSuccessfully() {
+      return Optional.ofNullable(mergeCompleted.getNow(null));
     }
   }
 
@@ -434,12 +443,11 @@ public abstract class MergePolicy {
     boolean await(long timeout, TimeUnit unit) {
       try {
         CompletableFuture<Void> future = CompletableFuture.allOf(merges.stream()
-            .map(m -> m.completable).collect(Collectors.toList()).toArray(new CompletableFuture<?>[0]));
+            .map(m -> m.mergeCompleted).collect(Collectors.toList()).toArray(CompletableFuture<?>[]::new));
         future.get(timeout, unit);
         return true;
       } catch (InterruptedException e) {
-        Thread.interrupted();
-        return false;
+        throw new ThreadInterruptedException(e);
       } catch (ExecutionException | TimeoutException e) {
         return false;
       }

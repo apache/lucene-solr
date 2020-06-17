@@ -4287,7 +4287,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   @SuppressWarnings("try")
   private synchronized void closeMergeReaders(MergePolicy.OneMerge merge, boolean suppressExceptions) throws IOException {
     final boolean drop = suppressExceptions == false;
-    try (Closeable finalizer = () -> merge.mergeFinished(suppressExceptions==false)) {
+    try (Closeable finalizer = () -> merge.mergeFinished(suppressExceptions == false)) {
       IOUtils.applyToAll(merge.readers, sr -> {
         final ReadersAndUpdates rld = getPooledInstance(sr.getOriginalSegmentInfo(), false);
         // We still hold a ref so it should not have been removed:
