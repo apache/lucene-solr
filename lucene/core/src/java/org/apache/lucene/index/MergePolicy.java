@@ -252,13 +252,16 @@ public abstract class MergePolicy {
     public void mergeInit() throws IOException {
       mergeProgress.setMergeThread(Thread.currentThread());
     }
-    
+
+    private Exception originalClosed;
     /** Called by {@link IndexWriter} after the merge is done and all readers have been closed.
      * @param success true iff the merge finished successfully ie. was committed */
     public void mergeFinished(boolean success) throws IOException {
-      if (mergeCompleted.complete(success) == false) {
-        throw new IllegalStateException("merge has already finished");
-      }
+      mergeCompleted.complete(success);
+      // https://issues.apache.org/jira/browse/LUCENE-9408
+      // if (mergeCompleted.complete(success) == false) {
+      //   throw new IllegalStateException("merge has already finished", originalClosed);
+      // }
     }
 
     /** Wrap the reader in order to add/remove information to the merged segment. */
