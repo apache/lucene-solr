@@ -140,7 +140,7 @@ public class CrossCollectionJoinQueryTest extends SolrCloudTestCase {
       // now we need to re-upload our config , now that we know a valid solr url for the cluster.
       CloudSolrClient client = cluster.getSolrClient();
       ((ZkClientClusterStateProvider) client.getClusterStateProvider()).uploadConfig(configset("ccjoin"), "ccjoin");
-      // reload the cores with the updated whitelisted solr url config.
+      // reload the cores with the updated allowSolrUrls config.
       CollectionAdminRequest.Reload.reloadCollection("products").process(client);
       CollectionAdminRequest.Reload.reloadCollection("parts").process(client);
       Thread.sleep(10000);
@@ -207,10 +207,10 @@ public class CrossCollectionJoinQueryTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testSolrUrlWhitelist() throws Exception {
+  public void testAllowSolrUrlsList() throws Exception {
     setupIndexes(false);
 
-    // programmatically add the current jetty solr url to the solrUrl whitelist property in the solrconfig.xml
+    // programmatically add the current jetty solr url to the allowSolrUrls property in the solrconfig.xml
     int i = 0;
     for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
       i++;
@@ -220,7 +220,7 @@ public class CrossCollectionJoinQueryTest extends SolrCloudTestCase {
       // now we need to re-upload our config , now that we know a valid solr url for the cluster.
       CloudSolrClient client = cluster.getSolrClient();
       ((ZkClientClusterStateProvider) client.getClusterStateProvider()).uploadConfig(configset("ccjoin"), "ccjoin");
-      // reload the cores with the updated whitelisted solr url config.
+      // reload the cores with the updated allowSolrUrls config.
       CollectionAdminRequest.Reload.reloadCollection("products").process(client);
       CollectionAdminRequest.Reload.reloadCollection("parts").process(client);
 
@@ -241,7 +241,7 @@ public class CrossCollectionJoinQueryTest extends SolrCloudTestCase {
       } catch (Exception e) {
         // should get here.
         String message = e.getMessage();
-        assertTrue("message was " + message, message.contains("SyntaxError: Solr Url was not in the whitelist"));
+        assertTrue("message was " + message, message.contains("SyntaxError: Solr URL was not in allowSolrUrls list"));
       }
 
       // verify the join plugin definition has the current valid urls and works.

@@ -50,7 +50,7 @@
 
   <queryParser name="join" class="org.apache.solr.search.JoinQParserPlugin">
     <str name="routerField">product_id_s</str>
-    <arr name="solrUrlWhitelist">
+    <arr name="allowSolrUrls">
       <str>${test.ccjoin.solr.url.1:}</str>
       <str>${test.ccjoin.solr.url.2:}</str>
       <str>${test.ccjoin.solr.url.3:}</str>

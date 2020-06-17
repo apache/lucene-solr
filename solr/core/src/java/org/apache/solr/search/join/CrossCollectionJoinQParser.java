@@ -47,14 +47,14 @@ public class CrossCollectionJoinQParser extends QParser {
           QueryParsing.TYPE, QueryParsing.V, ZK_HOST, SOLR_URL, FROM_INDEX, FROM, TO, ROUTED_BY_JOIN_KEY, TTL));
 
   private final String routerField;
-  private final Set<String> solrUrlWhitelist;
+  private final Set<String> allowSolrUrls;
 
   public CrossCollectionJoinQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req,
-                                    String routerField, Set<String> solrUrlWhiteList) {
+                                    String routerField, Set<String> allowSolrUrls) {
     super(qstr, localParams, params, req);
     this.routerField = routerField;
     // If specified in the config, this will limit which solr url's the parser can connect to.
-    this.solrUrlWhitelist = solrUrlWhiteList;
+    this.allowSolrUrls = allowSolrUrls;
   }
 
   @Override
@@ -64,11 +64,11 @@ public class CrossCollectionJoinQParser extends QParser {
     String solrUrl = localParams.get(SOLR_URL);
     // Test if this is a valid solr url.
     if (solrUrl != null) {
-      if (solrUrlWhitelist == null) {
-        throw new SyntaxError("White list must be configured to use solrUrl parameter.");
+      if (allowSolrUrls == null) {
+        throw new SyntaxError("allowSolrUrls list must be configured to use solrUrl parameter.");
       }
-      if (!solrUrlWhitelist.contains(solrUrl)) {
-        throw new SyntaxError("Solr Url was not in the whitelist.  Please check your configuration.");
+      if (!allowSolrUrls.contains(solrUrl)) {
+        throw new SyntaxError("Solr URL was not in allowSolrUrls list.  Please check your configuration.");
       }
     }
 

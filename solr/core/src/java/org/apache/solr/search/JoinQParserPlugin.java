@@ -77,7 +77,7 @@ public class JoinQParserPlugin extends QParserPlugin {
 
   private String routerField;
 
-  private Set<String> solrUrlWhitelist;
+  private Set<String> allowSolrUrls;
 
   private static class JoinParams {
     final String fromField;
@@ -124,7 +124,7 @@ public class JoinQParserPlugin extends QParserPlugin {
       @Override
       Query makeFilter(QParser qparser, JoinQParserPlugin plugin) throws SyntaxError {
         return new CrossCollectionJoinQParser(qparser.qstr, qparser.localParams, qparser.params, qparser.req,
-                plugin.routerField, plugin.solrUrlWhitelist).parse();
+                plugin.routerField, plugin.allowSolrUrls).parse();
       }
     };
 
@@ -180,14 +180,12 @@ public class JoinQParserPlugin extends QParserPlugin {
   @SuppressWarnings({"unchecked"})
   public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     routerField = (String) args.get("routerField");
-    solrUrlWhitelist = new HashSet<>();
-    if (args.get("solrUrlWhitelist") != null) {
-      for (String s : (List<String>) args.get("solrUrlWhitelist")) {
-        if (!StringUtils.isEmpty(s))
-          solrUrlWhitelist.add(s);
-      }
+
+    if (args.get("allowSolrUrls") != null) {
+      allowSolrUrls = new HashSet<>();
+      allowSolrUrls.addAll((List<String>) args.get("allowSolrUrls"));
     } else {
-      solrUrlWhitelist = null;
+      allowSolrUrls = null;
     }
   }
 
