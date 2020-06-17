@@ -145,7 +145,7 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
         filterChain.doFilter(request, response);
         return true;
       }
-      HttpServletRequest httpRequest = (HttpServletRequest)request;
+      HttpServletRequest httpRequest = request;
       String username = httpRequest.getHeader("username");
       String password = httpRequest.getHeader("password");
       
@@ -154,7 +154,7 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
         filterChain.doFilter(request, response);
         return true;
       } else {
-        ((HttpServletResponse)response).sendError(401, "Unauthorized request");
+        response.sendError(401, "Unauthorized request");
         return false;
       }
     }

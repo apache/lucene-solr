@@ -84,6 +84,7 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
         Arrays.asList("overlay", "requestHandler", "/test1", "class"),
         "org.apache.solr.core.BlobStoreTestRequestHandler",10);
 
+    @SuppressWarnings({"rawtypes"})
     Map map = TestSolrConfigHandler.getRespMap("/test1", client);
 
     assertNotNull(map.toString(), map = (Map) map.get("error"));
@@ -142,6 +143,7 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
     client = randomRestTestHarness();
     TestSolrConfigHandler.runConfigCommand(client, "/config", payload);
 
+    @SuppressWarnings({"rawtypes"})
     Map result = TestSolrConfigHandler.testForResponseElement(client,
         null,
         "/config/overlay",
@@ -258,7 +260,8 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
     return jar;
   }
 
-  public static  ByteBuffer persistZip(String loc, Class... classes) throws IOException {
+  public static  ByteBuffer persistZip(String loc,
+                                       @SuppressWarnings({"rawtypes"})Class... classes) throws IOException {
     ByteBuffer jar = generateZip(classes);
     try (FileOutputStream fos =  new FileOutputStream(loc)){
       fos.write(jar.array(), 0, jar.limit());
@@ -268,11 +271,11 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
   }
 
 
-  public static ByteBuffer generateZip(Class... classes) throws IOException {
+  public static ByteBuffer generateZip(@SuppressWarnings({"rawtypes"})Class... classes) throws IOException {
     SimplePostTool.BAOS bos = new SimplePostTool.BAOS();
     try (ZipOutputStream zipOut = new ZipOutputStream(bos)) {
       zipOut.setLevel(ZipOutputStream.DEFLATED);
-      for (Class c : classes) {
+      for (@SuppressWarnings({"rawtypes"})Class c : classes) {
         String path = c.getName().replace('.', '/').concat(".class");
         ZipEntry entry = new ZipEntry(path);
         ByteBuffer b = SimplePostTool.inputStreamToByteArray(c.getClassLoader().getResourceAsStream(path));

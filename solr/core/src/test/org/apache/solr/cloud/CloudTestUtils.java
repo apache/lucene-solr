@@ -64,6 +64,7 @@ public class CloudTestUtils {
     TimeOut timeout = new TimeOut(DEFAULT_TIMEOUT, TimeUnit.SECONDS, cloudManager.getTimeSource());
     while (!timeout.hasTimedOut()) {
       final SolrResponse response = cloudManager.request(AutoScalingRequest.create(SolrRequest.METHOD.GET, null));
+      @SuppressWarnings({"unchecked"})
       final Map<String,?> triggers = (Map<String,?>) response.getResponse().get("triggers");
       Assert.assertNotNull("null triggers in response from autoscaling request", triggers);
       
@@ -106,6 +107,7 @@ public class CloudTestUtils {
                                               final String json) throws IOException {
     // TODO: a lot of code that directly uses AutoScalingRequest.create should use this method
     
+    @SuppressWarnings({"rawtypes"})
     final SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, json);
     final SolrResponse rsp = cloudManager.request(req);
     final String result = rsp.getResponse().get("result").toString();
@@ -117,6 +119,7 @@ public class CloudTestUtils {
   /**
    * Helper class for sending (JSON) autoscaling requests that can randomize between V1 and V2 requests
    */
+  @SuppressWarnings({"rawtypes"})
   public static class AutoScalingRequest extends SolrRequest {
     private SolrParams params = null;
     /**
@@ -125,6 +128,7 @@ public class CloudTestUtils {
      * @param m HTTP Method to use
      * @aram message JSON payload, may be null
      */
+    @SuppressWarnings({"rawtypes"})
     public static SolrRequest create(SolrRequest.METHOD m, String message) {
       return create(m, null, message);
     }
@@ -136,10 +140,12 @@ public class CloudTestUtils {
      *        otherwise must start with "/"
      * @param message JSON payload, may be null
      */
+    @SuppressWarnings({"rawtypes"})
     public static SolrRequest create(SolrRequest.METHOD m, String subPath, String message) {
       return create(m,subPath,message,null);
 
     }
+    @SuppressWarnings({"rawtypes"})
     public static SolrRequest create(SolrRequest.METHOD m, String subPath, String message, SolrParams params) {
       final boolean useV1 = LuceneTestCase.random().nextBoolean();
       String path = useV1 ? "/admin/autoscaling" : "/cluster/autoscaling";

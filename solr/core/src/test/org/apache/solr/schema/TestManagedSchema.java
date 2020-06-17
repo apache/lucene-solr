@@ -145,8 +145,11 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     SolrQueryResponse response = new SolrQueryResponse();
     admin.handleRequestBody(request, response);
     assertNull("Exception on create", response.getException());
+    @SuppressWarnings({"rawtypes"})
     NamedList responseValues = response.getValues();
+    @SuppressWarnings({"rawtypes"})
     NamedList status = (NamedList)responseValues.get("status");
+    @SuppressWarnings({"rawtypes"})
     NamedList collectionStatus = (NamedList)status.get(collection);
     String collectionSchema = (String)collectionStatus.get(CoreAdminParams.SCHEMA);
     assertEquals("Schema resource name differs from expected name", expectedSchemaResource, collectionSchema);
