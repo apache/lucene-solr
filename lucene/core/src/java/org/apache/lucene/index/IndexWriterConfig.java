@@ -473,14 +473,6 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
     return this;
   }
 
-  /**
-   * Set the callback that gets invoked when IndexWriter performs various actions.
-   */
-  public IndexWriterConfig setIndexWriterEvents(IndexWriterEvents indexWriterEvents) {
-    this.indexWriterEvents = indexWriterEvents;
-    return this;
-  }
-
   /** We only allow sorting on these types */
   private static final EnumSet<SortField.Type> ALLOWED_INDEX_SORT_TYPES = EnumSet.of(SortField.Type.STRING,
                                                                                      SortField.Type.LONG,

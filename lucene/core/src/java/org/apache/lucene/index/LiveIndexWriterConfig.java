@@ -112,10 +112,6 @@ public class LiveIndexWriterConfig {
   /** Amount of time to wait for merges returned by MergePolicy.findFullFlushMerges(...) */
   protected volatile long maxCommitMergeWaitSeconds;
 
-  /** Callback interface called on index writer actions. */
-  protected IndexWriterEvents indexWriterEvents;
-
-
   // used by IndexWriterConfig
   LiveIndexWriterConfig(Analyzer analyzer) {
     this.analyzer = analyzer;
@@ -139,7 +135,6 @@ public class LiveIndexWriterConfig {
     readerPooling = IndexWriterConfig.DEFAULT_READER_POOLING;
     perThreadHardLimitMB = IndexWriterConfig.DEFAULT_RAM_PER_THREAD_HARD_LIMIT_MB;
     maxCommitMergeWaitSeconds = IndexWriterConfig.DEFAULT_MAX_COMMIT_MERGE_WAIT_SECONDS;
-    indexWriterEvents = IndexWriterEvents.NULL_EVENTS;
   }
   
   /** Returns the default analyzer to use for indexing documents. */
@@ -478,13 +473,6 @@ public class LiveIndexWriterConfig {
     return maxCommitMergeWaitSeconds;
   }
 
-  /**
-   * Returns a callback used to signal actions taken by the {@link IndexWriter}.
-   */
-  public IndexWriterEvents getIndexWriterEvents() {
-    return indexWriterEvents;
-  }
-
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
@@ -509,7 +497,6 @@ public class LiveIndexWriterConfig {
     sb.append("checkPendingFlushOnUpdate=").append(isCheckPendingFlushOnUpdate()).append("\n");
     sb.append("softDeletesField=").append(getSoftDeletesField()).append("\n");
     sb.append("maxCommitMergeWaitSeconds=").append(getMaxCommitMergeWaitSeconds()).append("\n");
-    sb.append("indexWriterEvents=").append(getIndexWriterEvents().getClass().getName()).append("\n");
     return sb.toString();
   }
 }
