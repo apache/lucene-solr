@@ -200,6 +200,10 @@ Improvements
 * LUCENE-9342: TotalHits' relation will be EQUAL_TO when the number of hits is lower than TopDocsColector's numHits
   (Tomás Fernández Löbbe)
 
+* LUCENE-9353: Metadata of the terms dictionary moved to its own file, with the
+  `.tmd` extension. This allows checksums of metadata to be verified when
+  opening indices and helps save seeks when opening an index. (Adrien Grand)
+
 * LUCENE-9359: SegmentInfos#readCommit now always returns a
   CorruptIndexException if the content of the file is invalid. (Adrien Grand)
   
@@ -209,6 +213,8 @@ Improvements
 * LUCENE-9392: Make FacetsConfig.DELIM_CHAR publicly accessible (Ankur Goel))
 
 * LUCENE-9397: UniformSplit supports encodable fields metadata. (Bruno Roustant)
+
+* LUCENE-9396: Improved truncation detection for points. (Adrien Grand, Robert Muir)
 
 Optimizations
 ---------------------
@@ -265,6 +271,11 @@ Bug Fixes
 
 * LUCENE-9362: Fix equality check in ExpressionValueSource#rewrite. This fixes rewriting of inner value sources.
   (Dmitry Emets)
+
+* LUCENE-9405: IndexWriter incorrectly calls closeMergeReaders twice when the merged segment is 100% deleted.
+  (Michael Froh, Simon Willnauer, Mike Mccandless, Mike Sokolov)
+
+* LUCENE-9400: Tessellator might build illegal polygons when several holes share the shame vertex. (Ignacio Vera)
 
 Other
 ---------------------

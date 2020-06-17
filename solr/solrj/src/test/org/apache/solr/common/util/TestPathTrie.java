@@ -30,6 +30,7 @@ import static org.apache.solr.api.ApiBag.HANDLER_NAME;
 
 public class TestPathTrie extends SolrTestCaseJ4 {
 
+  @SuppressWarnings({"unchecked"})
   public void testPathTrie() {
     PathTrie<String> pathTrie = new PathTrie<>(ImmutableSet.of("_introspect"));
     pathTrie.insert("/", emptyMap(), "R");
@@ -39,6 +40,7 @@ public class TestPathTrie extends SolrTestCaseJ4 {
     pathTrie.insert("/aa/bb/{cc}/{xx}", emptyMap(), "b");
     pathTrie.insert("/aa/bb", emptyMap(), "c");
 
+    @SuppressWarnings({"rawtypes"})
     HashMap templateValues = new HashMap<>();
     assertEquals("R", pathTrie.lookup("/", templateValues, null));
     assertEquals("d", pathTrie.lookup("/aa", templateValues, null));

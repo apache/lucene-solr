@@ -195,7 +195,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
       List<String> shardUrls = TupleStream.getShards(cluster.getZkServer().getZkAddress(), COLLECTIONORALIAS, streamContext);
 
-      Map<String, List<String>> shardsMap = new HashMap();
+      Map<String, List<String>> shardsMap = new HashMap<>();
       shardsMap.put("myCollection", shardUrls);
       StreamContext context = new StreamContext();
       context.put("shards", shardsMap);
@@ -674,6 +674,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
       tuples4 = getTuples(solrStream);
       assert(tuples4.size() == 500);
+      @SuppressWarnings({"rawtypes"})
       Map fields = tuples4.get(0).getFields();
       assert(fields.containsKey("id"));
       assert(fields.containsKey("a_f"));
@@ -863,7 +864,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       //Test with shards parameter
       List<String> shardUrls = TupleStream.getShards(cluster.getZkServer().getZkAddress(), COLLECTIONORALIAS, streamContext);
       expr = "stats(myCollection, q=*:*, sum(a_i), sum(a_f), min(a_i), min(a_f), max(a_i), max(a_f), avg(a_i), avg(a_f), std(a_i), std(a_f), per(a_i, 50), per(a_f, 50), count(*))";
-      Map<String, List<String>> shardsMap = new HashMap();
+      Map<String, List<String>> shardsMap = new HashMap<>();
       shardsMap.put("myCollection", shardUrls);
       StreamContext context = new StreamContext();
       context.put("shards", shardsMap);
@@ -2897,6 +2898,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked", "rawtypes"})
     List<Map> results  = (List<Map>)tuples.get(0).get("results");
     assertTrue(results.get(0).get("id").equals("hello1"));
     assertTrue(results.get(0).get("test_t").equals("l b c d c"));
@@ -3275,7 +3277,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       //Test with shards parameter
       List<String> shardUrls = TupleStream.getShards(cluster.getZkServer().getZkAddress(), COLLECTIONORALIAS, streamContext);
 
-      Map<String, List<String>> shardsMap = new HashMap();
+      Map<String, List<String>> shardsMap = new HashMap<>();
       shardsMap.put("myCollection", shardUrls);
       StreamContext context = new StreamContext();
       context.put("shards", shardsMap);
@@ -3663,13 +3665,14 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     return true;
   }
 
-  protected boolean assertMaps(List<Map> maps, int... ids) throws Exception {
+  protected boolean assertMaps(@SuppressWarnings({"rawtypes"})List<Map> maps, int... ids) throws Exception {
     if(maps.size() != ids.length) {
       throw new Exception("Expected id count != actual map count:"+ids.length+":"+maps.size());
     }
 
     int i=0;
     for(int val : ids) {
+      @SuppressWarnings({"rawtypes"})
       Map t = maps.get(i);
       String tip = (String)t.get("id");
       if(!tip.equals(Integer.toString(val))) {
@@ -3683,7 +3686,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   private void assertTopicRun(TupleStream stream, String... idArray) throws Exception {
     long version = -1;
     int count = 0;
-    List<String> ids = new ArrayList();
+    List<String> ids = new ArrayList<>();
     for(String id : idArray) {
       ids.add(id);
     }
@@ -3719,7 +3722,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   private void assertTopicSubject(TupleStream stream, String... textArray) throws Exception {
     long version = -1;
     int count = 0;
-    List<String> texts = new ArrayList();
+    List<String> texts = new ArrayList<>();
     for(String text : textArray) {
       texts.add(text);
     }

@@ -63,7 +63,6 @@ public class Lucene86PointsReader extends PointsReader implements Closeable {
           Lucene86PointsFormat.VERSION_CURRENT,
           readState.segmentInfo.getId(),
           readState.segmentSuffix);
-      CodecUtil.retrieveChecksum(indexIn);
 
       dataIn = readState.directory.openInput(dataFileName, readState.context);
       CodecUtil.checkIndexHeader(dataIn,
@@ -72,8 +71,8 @@ public class Lucene86PointsReader extends PointsReader implements Closeable {
           Lucene86PointsFormat.VERSION_CURRENT,
           readState.segmentInfo.getId(),
           readState.segmentSuffix);
-      CodecUtil.retrieveChecksum(dataIn);
 
+      long indexLength = -1, dataLength = -1;
       try (ChecksumIndexInput metaIn = readState.directory.openChecksumInput(metaFileName, readState.context)) {
         Throwable priorE = null;
         try {
@@ -94,12 +93,18 @@ public class Lucene86PointsReader extends PointsReader implements Closeable {
             BKDReader reader = new BKDReader(metaIn, indexIn, dataIn);
             readers.put(fieldNumber, reader);
           }
+          indexLength = metaIn.readLong();
+          dataLength = metaIn.readLong();
         } catch (Throwable t) {
           priorE = t;
         } finally {
           CodecUtil.checkFooter(metaIn, priorE);
         }
       }
+      // At this point, checksums of the meta file have been validated so we
+      // know that indexLength and dataLength are very likely correct.
+      CodecUtil.retrieveChecksum(indexIn, indexLength);
+      CodecUtil.retrieveChecksum(dataIn, dataLength);
       success = true;
     } finally {
       if (success == false) {

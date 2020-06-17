@@ -598,7 +598,7 @@ public class AnalyzingSuggester extends Lookup implements Accountable {
       return false;
     }
 
-    fst.save(output);
+    fst.save(output, output);
     output.writeVInt(maxAnalyzedPathsForOneInput);
     output.writeByte((byte) (hasPayloads ? 1 : 0));
     return true;
@@ -607,7 +607,7 @@ public class AnalyzingSuggester extends Lookup implements Accountable {
   @Override
   public boolean load(DataInput input) throws IOException {
     count = input.readVLong();
-    this.fst = new FST<>(input, new PairOutputs<>(PositiveIntOutputs.getSingleton(), ByteSequenceOutputs.getSingleton()));
+    this.fst = new FST<>(input, input, new PairOutputs<>(PositiveIntOutputs.getSingleton(), ByteSequenceOutputs.getSingleton()));
     maxAnalyzedPathsForOneInput = input.readVInt();
     hasPayloads = input.readByte() == 1;
     return true;

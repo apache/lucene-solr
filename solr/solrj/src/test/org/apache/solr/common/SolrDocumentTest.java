@@ -29,7 +29,8 @@ import org.apache.solr.SolrTestCase;
  */
 public class SolrDocumentTest extends SolrTestCase
 {
-  public void testSimple() 
+  @SuppressWarnings({"unchecked"})
+  public void testSimple()
   {
     Float fval = 10.01f;
     Boolean bval = Boolean.TRUE;
@@ -127,8 +128,10 @@ public class SolrDocumentTest extends SolrTestCase
     doc.clear();
     assertEquals( 0, doc.getFieldNames().size() );
     
+    @SuppressWarnings({"rawtypes"})
     Iterable iter = new Iterable() {
       @Override
+      @SuppressWarnings({"rawtypes"})
       public Iterator iterator() {
         return c0.iterator();
       }
