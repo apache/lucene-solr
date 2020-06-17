@@ -1421,7 +1421,7 @@ public final class JapaneseTokenizer extends Tokenizer {
     int left = lattice.nodeLeft[node];
     int right = lattice.nodeRight[node];
     Type type = lattice.nodeDicType[node];
-    if (!discardPunctuation || !isPunctuation(fragment[left])) {
+    if (!discardPunctuation || !isAllCharPunctuation(fragment, left, right - left)) {
       if (type == Type.USER) {
         // The code below are based on backtrace().
         //
