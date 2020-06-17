@@ -138,7 +138,8 @@ public class TestNamedUpdateProcessors extends AbstractFullDistribZkTestBase {
     return jar;
   }
 
-  public static ByteBuffer persistZip(String loc, Class... classes) throws IOException {
+  public static ByteBuffer persistZip(String loc,
+                                      @SuppressWarnings({"rawtypes"})Class... classes) throws IOException {
     ByteBuffer jar = generateZip(classes);
     try (FileOutputStream fos = new FileOutputStream(loc)) {
       fos.write(jar.array(), 0, jar.limit());
@@ -148,11 +149,11 @@ public class TestNamedUpdateProcessors extends AbstractFullDistribZkTestBase {
   }
 
 
-  public static ByteBuffer generateZip(Class... classes) throws IOException {
+  public static ByteBuffer generateZip(@SuppressWarnings({"rawtypes"})Class... classes) throws IOException {
     SimplePostTool.BAOS bos = new SimplePostTool.BAOS();
     try (ZipOutputStream zipOut = new ZipOutputStream(bos)) {
       zipOut.setLevel(ZipOutputStream.DEFLATED);
-      for (Class c : classes) {
+      for (@SuppressWarnings({"rawtypes"})Class c : classes) {
         String path = c.getName().replace('.', '/').concat(".class");
         ZipEntry entry = new ZipEntry(path);
         ByteBuffer b = SimplePostTool.inputStreamToByteArray(c.getClassLoader().getResourceAsStream(path));

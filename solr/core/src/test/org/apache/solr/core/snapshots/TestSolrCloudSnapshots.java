@@ -290,11 +290,13 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
 
   }
 
+  @SuppressWarnings({"unchecked"})
   private Collection<CollectionSnapshotMetaData> listCollectionSnapshots(SolrClient adminClient, String collectionName) throws Exception {
     CollectionAdminRequest.ListSnapshots listSnapshots = new CollectionAdminRequest.ListSnapshots(collectionName);
     CollectionAdminResponse resp = listSnapshots.process(adminClient);
 
     assertTrue( resp.getResponse().get(SolrSnapshotManager.SNAPSHOTS_INFO) instanceof NamedList );
+    @SuppressWarnings({"rawtypes"})
     NamedList apiResult = (NamedList) resp.getResponse().get(SolrSnapshotManager.SNAPSHOTS_INFO);
 
     Collection<CollectionSnapshotMetaData> result = new ArrayList<>();
@@ -308,8 +310,10 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
   private Collection<SnapshotMetaData> listCoreSnapshots(SolrClient adminClient, String coreName) throws Exception {
     ListSnapshots req = new ListSnapshots();
     req.setCoreName(coreName);
+    @SuppressWarnings({"rawtypes"})
     NamedList resp = adminClient.request(req);
     assertTrue( resp.get(SolrSnapshotManager.SNAPSHOTS_INFO) instanceof NamedList );
+    @SuppressWarnings({"rawtypes"})
     NamedList apiResult = (NamedList) resp.get(SolrSnapshotManager.SNAPSHOTS_INFO);
 
     List<SnapshotMetaData> result = new ArrayList<>(apiResult.size());

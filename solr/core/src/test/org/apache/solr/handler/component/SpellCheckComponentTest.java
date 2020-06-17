@@ -245,6 +245,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testReloadOnStart() throws Exception {
     assertU(adoc("id", "0", "lowerfilt", "This is a title"));
     assertU(commit());
@@ -253,7 +254,9 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
         "default", "spellcheck.build", "true");
     assertQ(request, "//arr[@name='suggestion'][.='title']");
 
+    @SuppressWarnings({"rawtypes"})
     NamedList args = new NamedList();
+    @SuppressWarnings({"rawtypes"})
     NamedList spellchecker = new NamedList();
     spellchecker.add(SolrSpellChecker.DICTIONARY_NAME, "default");
     spellchecker.add(AbstractLuceneSpellChecker.FIELD, "lowerfilt");
@@ -298,6 +301,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
   }
     
     @Test
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public void testThresholdTokenFrequency() throws Exception {
 
         //"document" is in 2 documents but "another" is only in 1.
@@ -345,7 +349,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
         req.close();
         values = rsp.getValues();
         spellCheck = (NamedList) values.get("spellcheck");
-        suggestions = (NamedList) spellCheck.get("suggestions");
+                suggestions = (NamedList) spellCheck.get("suggestions");
         assertTrue(suggestions.get("suggestion")==null);
         assertTrue((Boolean) spellCheck.get("correctlySpelled")==false);
     }

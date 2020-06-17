@@ -69,6 +69,7 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
 
   }
 
+  @SuppressWarnings({"unchecked"})
   public void testAwareCompatibility() throws Exception {
     
     final Class<?> clazz1 = ResourceLoaderAware.class;
@@ -199,7 +200,7 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
     
   }
 
-  @SuppressWarnings("deprecation")
+  @SuppressWarnings({"rawtypes", "deprecation"})
   public void testLoadDeprecatedFactory() throws Exception {
     SolrResourceLoader loader = new SolrResourceLoader(Paths.get("solr/collection1"));
     // ensure we get our exception

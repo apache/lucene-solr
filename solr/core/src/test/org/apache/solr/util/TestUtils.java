@@ -197,12 +197,13 @@ public class TestUtils extends SolrTestCaseJ4 {
     }
 
     ContentStream stream = new ContentStreamBase.ByteArrayStream(baos.toByteArray(),null, "application/javabin");
+    @SuppressWarnings({"rawtypes"})
     List<CommandOperation> commands = CommandOperation.readCommands(Collections.singletonList(stream), new NamedList(), Collections.singleton("single"));
 
     assertEquals(5, commands.size());
   }
 
-  private void assertNoggitJsonValues(Map m) {
+  private void assertNoggitJsonValues(@SuppressWarnings({"rawtypes"})Map m) {
     assertEquals( "c" ,Utils.getObjectByPath(m, true, "/a/b"));
     assertEquals( "v1" ,Utils.getObjectByPath(m, true, "/a/d[0]/k1"));
     assertEquals( "v2" ,Utils.getObjectByPath(m, true, "/a/d[1]/k2"));
@@ -223,6 +224,7 @@ public class TestUtils extends SolrTestCaseJ4 {
         "        'path':'/update/*',\n" +
         "        'role':'dev'}],\n" +
         "    '':{'v':4}}}";
+    @SuppressWarnings({"rawtypes"})
     Map m = (Map) fromJSONString(json);
     Utils.setObjectByPath(m,"authorization/permissions[1]/role","guest");
     Utils.setObjectByPath(m,"authorization/permissions[0]/role[-1]","dev");
@@ -248,11 +250,13 @@ public class TestUtils extends SolrTestCaseJ4 {
         "        'path':'/update/*',\n" +
         "        'role':'dev'}],\n" +
         "    '':{'v':4}}}";
+    @SuppressWarnings({"rawtypes"})
     Map m = (Map) fromJSONString(json);
     assertEquals("x-update", Utils.getObjectByPath(m,false, "authorization/permissions[1]/name"));
 
   }
   
+  @SuppressWarnings({"unchecked"})
   public void testMapWriterIdx(){
     String json = "{" +
         "  'responseHeader':{" +
@@ -279,6 +283,7 @@ public class TestUtils extends SolrTestCaseJ4 {
         "        'status':0," +
         "        'QTime':5033}," +
         "      'core':'corestatus_test_shard2_replica_n3'}}}";
+    @SuppressWarnings({"rawtypes"})
     Map m = (Map) fromJSONString(json);
 
     assertEquals("127.0.0.1:56443_solr", Utils.getObjectByPath(m,false, "success[0]/key"));
@@ -289,6 +294,7 @@ public class TestUtils extends SolrTestCaseJ4 {
     assertEquals("corestatus_test_shard2_replica_n3", Utils.getObjectByPath(m, false,asList("success[3]", "value", "core") ));
     assertEquals(5033L, Utils.getObjectByPath(m, false,asList("success[3]", "value", "responseHeader", "QTime") ));
 
+    @SuppressWarnings({"rawtypes"})
     Map nodes = (Map) m.get("success");
     m.put("success", (MapWriter) ew -> nodes.forEach((o, o2) -> ew.putNoEx((String) o,o2)));
     assertEquals("127.0.0.1:56443_solr", Utils.getObjectByPath(m,false, "success[0]/key"));
@@ -299,11 +305,13 @@ public class TestUtils extends SolrTestCaseJ4 {
     assertEquals("corestatus_test_shard2_replica_n3", Utils.getObjectByPath(m, false,asList("success[3]", "value", "core") ));
     assertEquals(5033L, Utils.getObjectByPath(m, false,asList("success[3]", "value", "responseHeader", "QTime") ));
     final int[] count = {0};
+    @SuppressWarnings({"unchecked", "rawtypes"})
     NamedList nl = new NamedList(m);
     nl._forEachEntry("success", (o, o2) -> count[0]++);
     assertEquals(count[0], 4);
   }
 
+  @SuppressWarnings({"unchecked"})
   public void testMergeJson() {
     Map<String, Object> sink = (Map<String, Object>) Utils.fromJSONString("{k2:v2, k1: {a:b, p:r, k21:{xx:yy}}}");
     assertTrue(Utils.mergeJson(sink, (Map<String, Object>) Utils.fromJSONString("k1:{a:c, e:f, p :null, k11:{a1:b1}, k21:{pp : qq}}")));

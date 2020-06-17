@@ -1253,13 +1253,15 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
             );
   }
   
-  private Doc createDocValuesDocument(List<FldType> types, String fieldName,  String id, Comparable... values) throws Exception {
+  private Doc createDocValuesDocument(List<FldType> types, String fieldName,  String id,
+                                      @SuppressWarnings({"rawtypes"})Comparable... values) throws Exception {
     Doc doc = createDoc(types);
     doc.getValues("id").set(0, id);
     initMultyValued(doc.getValues(fieldName), values);
     return doc;
   }
 
+  @SuppressWarnings({"rawtypes"})
   private List<Comparable> initMultyValued(List<Comparable> cat_docValues, Comparable... comparables) {
     Collections.addAll(cat_docValues, comparables);
     return cat_docValues;
@@ -1923,6 +1925,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     
   }
 
+  @SuppressWarnings({"unchecked"})
   private NamedList<Double> extractPercentils(SolrQueryResponse rsp, String key) {
     return ((NamedList<NamedList<NamedList<NamedList<Double>>>> )
             rsp.getValues().get("stats")).get("stats_fields").get(key).get("percentiles");

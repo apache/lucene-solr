@@ -36,6 +36,7 @@ public class RequestHandlersTest extends SolrTestCaseJ4 {
   public void testInitCount() {
     String registry = h.getCore().getCoreMetricManager().getRegistryName();
     SolrMetricManager manager = h.getCoreContainer().getMetricManager();
+    @SuppressWarnings({"unchecked"})
     Gauge<Number> g = (Gauge<Number>)manager.registry(registry).getMetrics().get("QUERY./mock.initCount");
     assertEquals("Incorrect init count",
                  1, g.getValue().intValue());

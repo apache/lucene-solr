@@ -77,6 +77,7 @@ public class HdfsDirectoryFactoryTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings({"try"})
   public void testInitArgsOrSysPropConfig() throws Exception {
     try(HdfsDirectoryFactory hdfsFactory = new HdfsDirectoryFactory()) {
       // test sys prop config

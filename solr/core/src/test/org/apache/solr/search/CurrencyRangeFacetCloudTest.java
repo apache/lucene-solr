@@ -94,6 +94,7 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
     assertEquals(0, cluster.getSolrClient().commit().getStatus());
   }
 
+  @SuppressWarnings({"rawtypes"})
   public void testSimpleRangeFacetsOfSymetricRates() throws Exception {
     for (boolean use_mincount : Arrays.asList(true, false)) {
     
@@ -146,6 +147,7 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
           assertEquals(3, result.getAfter());
           assertEquals(9, result.getBetween());
           
+          @SuppressWarnings({"unchecked"})
           List<RangeFacet.Count> counts = result.getCounts();
           if (use_mincount) {
             assertEquals(3, counts.size());
@@ -174,12 +176,14 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
         try {
           assertEquals(NUM_DOCS, rsp.getResults().getNumFound());
           
+          @SuppressWarnings({"unchecked"})
           final NamedList<Object> foo = ((NamedList<NamedList<Object>>)rsp.getResponse().get("facets")).get("foo");
           
           assertEqualsHACK("before", 3L, ((NamedList)foo.get("before")).get("count"));
           assertEqualsHACK("after", 3L, ((NamedList)foo.get("after")).get("count"));
           assertEqualsHACK("between", 9L, ((NamedList)foo.get("between")).get("count"));
           
+          @SuppressWarnings({"unchecked"})
           final List<NamedList> buckets = (List<NamedList>) foo.get("buckets");
           
           if (use_mincount) {
@@ -219,8 +223,10 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
       final QueryResponse rsp = cluster.getSolrClient().query(solrQuery);
       try {
         assertEquals(NUM_DOCS, rsp.getResults().getNumFound());
+        @SuppressWarnings({"rawtypes"})
         final List<RangeFacet> range_facets = rsp.getFacetRanges();
         assertEquals(1, range_facets.size());
+        @SuppressWarnings({"rawtypes"})
         final RangeFacet result = range_facets.get(0);
         assertEquals(FIELD, result.getName());
         assertEquals("8.00,EUR", result.getStart());
@@ -230,6 +236,7 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
         assertEquals(3, result.getAfter());
         assertEquals(6, result.getBetween());
         
+        @SuppressWarnings({"unchecked"})
         List<RangeFacet.Count> counts = result.getCounts();
         if (use_mincount) {
           assertEquals(2, counts.size());
@@ -266,17 +273,20 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
       try {
         assertEquals(NUM_DOCS, rsp.getResults().getNumFound());
         
+        @SuppressWarnings({"unchecked"})
         final NamedList<Object> foo = ((NamedList<NamedList<Object>>)rsp.getResponse().get("facets")).get("foo");
         
         assertEqualsHACK("before", 6L, ((NamedList)foo.get("before")).get("count"));
         assertEqualsHACK("after", 3L, ((NamedList)foo.get("after")).get("count"));
         assertEqualsHACK("between", 6L, ((NamedList)foo.get("between")).get("count"));
         
+        @SuppressWarnings({"unchecked", "rawtypes"})
         final List<NamedList> buckets = (List<NamedList>) foo.get("buckets");
         
         if (use_mincount) {
           assertEquals(2, buckets.size());
           for (int i = 0; i < 2; i++) {
+            @SuppressWarnings({"rawtypes"})
             NamedList bucket = buckets.get(i);
             assertEquals((12 + (i * 2)) + ".00,EUR", bucket.get("val"));
             assertEqualsHACK("bucket #" + i, 3L, bucket.get("count"));
@@ -284,6 +294,7 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
         } else {
           assertEquals(7, buckets.size());
           for (int i = 0; i < 7; i++) {
+            @SuppressWarnings({"rawtypes"})
             NamedList bucket = buckets.get(i);
             assertEquals((8 + (i * 2)) + ".00,EUR", bucket.get("val"));
             assertEqualsHACK("bucket #" + i, (i == 2 || i == 3) ? 3L : 0L, bucket.get("count"));
@@ -357,10 +368,15 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
         // this top level result count sanity check that should vary based on how we are filtering our facets...
         assertEquals(use_domain ? 15 : 10, rsp.getResults().getNumFound());
 
+        @SuppressWarnings({"unchecked"})
         final NamedList<Object> bar = ((NamedList<NamedList<Object>>)rsp.getResponse().get("facets")).get("bar");
+        @SuppressWarnings({"unchecked"})
         final List<NamedList<Object>> bar_buckets = (List<NamedList<Object>>) bar.get("buckets");
+        @SuppressWarnings({"unchecked"})
         final NamedList<Object> before = (NamedList<Object>) bar.get("before");
+        @SuppressWarnings({"unchecked"})
         final NamedList<Object> between = (NamedList<Object>) bar.get("between");
+        @SuppressWarnings({"unchecked"})
         final NamedList<Object> after = (NamedList<Object>) bar.get("after");
         
         // sanity check our high level expectations...
@@ -378,7 +394,8 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
         for (int i = 0; i < 2; i++) {
           final NamedList<Object> bucket = bar_buckets.get(i);
           assertEquals((i * 10) + ".00,EUR", bucket.get("val"));
-          assertEqualsHACK("bucket #" + i, 4L, bucket.get("count"));
+          assertEquals("bucket #" + i, 4L, bucket.get("count"));
+          @SuppressWarnings({"unchecked"})
           final List<NamedList<Object>> foo_buckets = ((NamedList<List<NamedList<Object>>>)bucket.get("foo")).get("buckets");
           assertEquals("bucket #" + i + " foo num buckets", 2, foo_buckets.size());
           assertEquals("bucket #" + i + " foo top term", (0==i ? "x2" : "x0"), foo_buckets.get(0).get("val"));
@@ -390,6 +407,7 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
         }
         
         { // between...
+          @SuppressWarnings({"unchecked"})
           final List<NamedList<Object>> buckets = ((NamedList<List<NamedList<Object>>>)between.get("foo")).get("buckets");
           assertEquals("between num buckets", 2, buckets.size());
           // the counts should both be 3, and the term order should break the tie...
@@ -400,6 +418,7 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
         }
         
         { // after...
+          @SuppressWarnings({"unchecked"})
           final List<NamedList<Object>> buckets = ((NamedList<List<NamedList<Object>>>)after.get("foo")).get("buckets");
           assertEquals("after num buckets", 2, buckets.size());
           // the counts should both be 1, and the term order should break the tie...
@@ -441,16 +460,19 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
         // this top level result count sanity check that should vary based on how we are filtering our facets...
         assertEquals(use_domain ? 15 : 11, rsp.getResults().getNumFound());
         
+        @SuppressWarnings({"unchecked"})
         final NamedList<Object> foo = ((NamedList<NamedList<Object>>)rsp.getResponse().get("facets")).get("foo");
         
         // sanity check...
         // because of the facet limit, foo should only have 1 bucket
         // because of the fq, the val should be "x2" and the count=5
+        @SuppressWarnings({"unchecked"})
         final List<NamedList<Object>> foo_buckets = (List<NamedList<Object>>) foo.get("buckets");
         assertEquals(1, foo_buckets.size());
         assertEquals("x2", foo_buckets.get(0).get("val"));
         assertEqualsHACK("foo bucket count", 5L, foo_buckets.get(0).get("count"));
         
+        @SuppressWarnings({"unchecked"})
         final NamedList<Object> bar = (NamedList<Object>)foo_buckets.get(0).get("bar");
         
         // these are the 'x2' specific counts, based on our fq...
@@ -459,9 +481,11 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
         assertEqualsHACK("after", 1L, ((NamedList)bar.get("after")).get("count"));
         assertEqualsHACK("between", 2L, ((NamedList)bar.get("between")).get("count"));
         
+        @SuppressWarnings({"unchecked", "rawtypes"})
         final List<NamedList> buckets = (List<NamedList>) bar.get("buckets");
         assertEquals(7, buckets.size());
         for (int i = 0; i < 7; i++) {
+          @SuppressWarnings({"rawtypes"})
           NamedList bucket = buckets.get(i);
           assertEquals((8 + (i * 2)) + ".00,EUR", bucket.get("val"));
           // 12,EUR & 15,EUR are the 2 values that align with x2 docs
@@ -482,5 +506,5 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
     assertTrue(msg + " ... NOT A NUMBER: " + actual.getClass(), Number.class.isInstance(actual));
     assertEquals(msg, expected, ((Number)actual).longValue());
   }
-  
+
 }

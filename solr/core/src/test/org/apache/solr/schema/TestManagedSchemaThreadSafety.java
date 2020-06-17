@@ -171,6 +171,7 @@ public class TestManagedSchemaThreadSafety extends SolrTestCaseJ4 {
     return zkController;
   }
 
+  @SuppressWarnings({"rawtypes"})
   private Runnable indexSchemaLoader(String configsetName, final ZkController zkController) {
     return () -> {
       try {

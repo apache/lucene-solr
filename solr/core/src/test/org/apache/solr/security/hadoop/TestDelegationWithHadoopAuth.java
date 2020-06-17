@@ -150,6 +150,7 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
     assertEquals("Did not receieve excepted status code", expectedStatusCode, lastStatusCode);
   }
 
+  @SuppressWarnings({"rawtypes"})
   private SolrRequest getAdminRequest(final SolrParams params) {
     return new CollectionAdminRequest.List() {
       @Override
@@ -161,6 +162,7 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
     };
   }
 
+  @SuppressWarnings({"unchecked"})
   private int getStatusCode(String token, final String user, final String op, HttpSolrClient client)
   throws Exception {
     SolrClient delegationTokenClient;
@@ -181,6 +183,7 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
       ModifiableSolrParams p = new ModifiableSolrParams();
       if (user != null) p.set(PseudoAuthenticator.USER_NAME, user);
       if (op != null) p.set("op", op);
+      @SuppressWarnings({"rawtypes"})
       SolrRequest req = getAdminRequest(p);
       if (user != null || op != null) {
         Set<String> queryParams = new HashSet<>();
@@ -199,7 +202,8 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
     }
   }
 
-  private void doSolrRequest(SolrClient client, SolrRequest request,
+  private void doSolrRequest(SolrClient client,
+                             @SuppressWarnings({"rawtypes"})SolrRequest request,
       int expectedStatusCode) throws Exception {
     try {
       client.request(request);
@@ -367,6 +371,7 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
     String token = getDelegationToken(null, USER_1, primarySolrClient);
     assertNotNull(token);
 
+    @SuppressWarnings({"rawtypes"})
     SolrRequest request = getAdminRequest(new ModifiableSolrParams());
 
     // test without token

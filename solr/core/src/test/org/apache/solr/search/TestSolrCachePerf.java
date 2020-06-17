@@ -37,6 +37,7 @@ import org.junit.Test;
 @LuceneTestCase.Slow
 public class TestSolrCachePerf extends SolrTestCaseJ4 {
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private static final Class<? extends SolrCache>[] IMPLS = new Class[] {
       CaffeineCache.class,
       LRUCache.class,
@@ -89,9 +90,11 @@ public class TestSolrCachePerf extends SolrTestCaseJ4 {
 
   static final String VALUE = "foo";
 
+  @SuppressWarnings({"rawtypes"})
   private void doTestGetPutCompute(Map<String, SummaryStatistics> ratioStats, Map<String, SummaryStatistics> timeStats, int numThreads, boolean useCompute) throws Exception {
     for (Class<? extends SolrCache> clazz : IMPLS) {
       SolrMetricManager metricManager = new SolrMetricManager();
+      @SuppressWarnings({"unchecked"})
       SolrCache<String, String> cache = clazz.getDeclaredConstructor().newInstance();
       Map<String, String> params = new HashMap<>();
       params.put("size", "" + NUM_KEYS);

@@ -58,6 +58,7 @@ public class TestDirectoryFactory extends SolrTestCaseJ4 {
     }
   }
 
+  @SuppressWarnings({"rawtypes"})
   private void testExistsBehavior(Class<? extends DirectoryFactory> clazz) throws Exception {
     final String path = createTempDir().toString() + "/" + clazz + "_somedir";
     DirectoryFactory dirFac = null;

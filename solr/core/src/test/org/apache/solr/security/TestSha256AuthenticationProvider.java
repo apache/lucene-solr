@@ -33,8 +33,10 @@ public class TestSha256AuthenticationProvider extends SolrTestCaseJ4 {
 
     String pwd = "My#$Password";
     String user = "noble";
+    @SuppressWarnings({"rawtypes"})
     Map latestConf = new LinkedHashMap<>();
     Map<String, Object> params = singletonMap(user, pwd);
+    @SuppressWarnings({"unchecked"})
     Map<String, Object> result = zkAuthenticationProvider.edit(latestConf,
         Collections.singletonList(new CommandOperation("set-user",params )));
     zkAuthenticationProvider = new Sha256AuthenticationProvider();
@@ -46,10 +48,12 @@ public class TestSha256AuthenticationProvider extends SolrTestCaseJ4 {
 
   }
 
+  @SuppressWarnings({"unchecked"})
   public void testBasicAuthCommands() throws IOException {
     try (BasicAuthPlugin basicAuthPlugin = new BasicAuthPlugin()) {
       basicAuthPlugin.init(Collections.emptyMap());
 
+      @SuppressWarnings({"rawtypes"})
       Map latestConf = new LinkedHashMap<>();
 
       CommandOperation blockUnknown = new CommandOperation("set-property", singletonMap("blockUnknown", true));

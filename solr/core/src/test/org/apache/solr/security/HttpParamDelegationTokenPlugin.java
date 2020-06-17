@@ -191,7 +191,7 @@ public class HttpParamDelegationTokenPlugin extends KerberosPlugin {
     @Override
     public void init(Properties config) throws ServletException {
       Properties conf = new Properties();
-      for (Map.Entry entry : config.entrySet()) {
+      for (@SuppressWarnings({"rawtypes"})Map.Entry entry : config.entrySet()) {
         conf.setProperty((String) entry.getKey(), (String) entry.getValue());
       }
       conf.setProperty(TOKEN_KIND, KerberosPlugin.DELEGATION_TOKEN_TYPE_DEFAULT);

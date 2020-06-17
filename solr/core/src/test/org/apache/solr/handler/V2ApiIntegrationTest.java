@@ -105,6 +105,7 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("command","XXXX");
     params.set("method", "POST");
+    @SuppressWarnings({"rawtypes"})
     Map result = resAsMap(cluster.getSolrClient(),
         new V2Request.Builder("/c/"+COLL_NAME+"/_introspect")
             .withParams(params).build());
@@ -141,14 +142,17 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
 
   @Test
   public void testSingleWarning() throws Exception {
+    @SuppressWarnings({"rawtypes"})
     NamedList resp = cluster.getSolrClient().request(
         new V2Request.Builder("/c/"+COLL_NAME+"/_introspect").build());
+    @SuppressWarnings({"rawtypes"})
     List warnings = resp.getAll("WARNING");
     assertEquals(1, warnings.size());
   }
 
   @Test
   public void testSetPropertyValidationOfCluster() throws IOException, SolrServerException {
+    @SuppressWarnings({"rawtypes"})
     NamedList resp = cluster.getSolrClient().request(
       new V2Request.Builder("/cluster").withMethod(SolrRequest.METHOD.POST).withPayload("{set-property: {name: autoAddReplicas, val:false}}").build());
     assertTrue(resp.toString().contains("status=0"));
@@ -160,6 +164,7 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
   @Test
   public void testCollectionsApi() throws Exception {
     CloudSolrClient client = cluster.getSolrClient();
+    @SuppressWarnings({"rawtypes"})
     Map result = resAsMap(client, new V2Request.Builder("/c/"+COLL_NAME+"/get/_introspect").build());
     assertEquals("/c/collection1/get", Utils.getObjectByPath(result, true, "/spec[0]/url/paths[0]"));
     result = resAsMap(client, new V2Request.Builder("/collections/"+COLL_NAME+"/get/_introspect").build());
@@ -177,6 +182,7 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
         .build());
   }
 
+  @SuppressWarnings({"rawtypes"})
   private Map resAsMap(CloudSolrClient client, V2Request request) throws SolrServerException, IOException {
     NamedList<Object> rsp = client.request(request);
     return rsp.asMap(100);
