@@ -538,7 +538,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
         }
 
         @Override
-        public void mergeFinished() throws IOException {
+        public void mergeFinished(boolean success) throws IOException {
           Throwable th = null;
           for (ParallelLeafReader r : parallelReaders) {
             try {

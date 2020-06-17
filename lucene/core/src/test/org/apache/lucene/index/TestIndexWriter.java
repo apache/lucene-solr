@@ -4182,7 +4182,7 @@ public class TestIndexWriter extends LuceneTestCase {
             SetOnce<Boolean> onlyFinishOnce = new SetOnce<>();
             return new MergePolicy.OneMerge(merge.segments) {
               @Override
-              public void mergeFinished() {
+              public void mergeFinished(boolean success) {
                 onlyFinishOnce.set(true);
               }
             };
