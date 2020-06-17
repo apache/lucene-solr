@@ -168,6 +168,9 @@ Bug Fixes
 
 * SOLR-14345: Return proper error message when non-BinaryResponseParser is used in solrJ (Munendra S N)
 
+* SOLR-14577: Return 400 BAD REQUEST when field is missing on a Terms query parser request
+  (Tomás Fernández Löbbe)
+
 Other Changes
 ---------------------
 * SOLR-14197: SolrResourceLoader: marked many methods as deprecated, and in some cases rerouted exiting logic to avoid
