@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.mockfile.ExtrasFS;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
@@ -236,7 +237,7 @@ public class TestSegmentInfos extends LuceneTestCase {
           // ok
         }
         corrupt = true;
-      } else if (slowFileExists(corruptDir, file) == false) { // extraFS
+      } else if (ExtrasFS.isExtra(file) == false) {
         corruptDir.copyFrom(dir, file, file, IOContext.DEFAULT);
       }
     }
