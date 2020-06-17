@@ -3181,6 +3181,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       boolean anyChanges = false;
       long seqNo;
       MergePolicy.MergeSpecification onCommitMerges = null;
+      AtomicBoolean includeInCommit = new AtomicBoolean(true);
       // This is copied from doFlush, except it's modified to
       // clone & incRef the flushed SegmentInfos inside the
       // sync block:
@@ -3241,7 +3242,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
                       @Override
                       public void mergeFinished(boolean committed) throws IOException {
                         assert Thread.holdsLock(IndexWriter.this);
-                        if (committed) {
+                        if (committed && includeInCommit.get()) {
                           deleter.incRef(info.files());
                           Set<String> mergedSegmentNames = new HashSet<>();
                           for (SegmentCommitInfo sci : segments) {
@@ -3303,7 +3304,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       }
 
       if (onCommitMerges != null) {
-        onCommitMerges.await(config.getMaxCommitMergeWaitSeconds(), TimeUnit.SECONDS); // pass some config value here
+        mergeScheduler.merge(mergeSource, MergeTrigger.COMMIT);
+        onCommitMerges.await((long)config.getMaxCommitMergeWaitSeconds(), TimeUnit.SECONDS);
+        synchronized (this) {
+          // we need to call this under lock since mergeFinished above is also called under the IW lock
+          includeInCommit.set(false);
+        }
       }
       filesToCommit = toCommit.files(false);
       try {
