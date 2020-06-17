@@ -110,7 +110,7 @@ public class LiveIndexWriterConfig {
   protected String softDeletesField = null;
 
   /** Amount of time to wait for merges returned by MergePolicy.findFullFlushMerges(...) */
-  protected volatile double maxCommitMergeWaitSeconds;
+  protected volatile long maxCommitMergeWaitSeconds;
 
   /** Callback interface called on index writer actions. */
   protected IndexWriterEvents indexWriterEvents;
@@ -474,7 +474,7 @@ public class LiveIndexWriterConfig {
    * If this time is reached, we proceed with the commit based on segments merged up to that point.
    * The merges are not cancelled, and may still run to completion independent of the commit.
    */
-  public double getMaxCommitMergeWaitSeconds() {
+  public long getMaxCommitMergeWaitSeconds() {
     return maxCommitMergeWaitSeconds;
   }
 

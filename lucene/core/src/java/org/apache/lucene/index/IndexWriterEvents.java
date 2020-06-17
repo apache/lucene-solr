@@ -45,13 +45,13 @@ public interface IndexWriterEvents {
 
   /**
    * Signals the end of waiting for merges on commit. This may be either because the merges completed, or because we timed out according
-   * to the limit set in {@link IndexWriterConfig#setMaxCommitMergeWaitSeconds(double)}.
+   * to the limit set in {@link IndexWriterConfig#setMaxCommitMergeWaitSeconds(long)}.
    */
   void finishMergeOnCommit();
 
   /**
    * Called to signal that we abandoned some merges on commit upon reaching the timeout specified in
-   * {@link IndexWriterConfig#setMaxCommitMergeWaitSeconds(double)}.
+   * {@link IndexWriterConfig#setMaxCommitMergeWaitSeconds(long)}.
    */
   void abandonedMergesOnCommit(int abandonedCount);
 }

@@ -3182,6 +3182,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       long seqNo;
       MergePolicy.MergeSpecification onCommitMerges = null;
       AtomicBoolean includeInCommit = new AtomicBoolean(true);
+      final long maxCommitMergeWaitSeconds = config.getMaxCommitMergeWaitSeconds();
       // This is copied from doFlush, except it's modified to
       // clone & incRef the flushed SegmentInfos inside the
       // sync block:
@@ -3235,7 +3236,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
               // sneak into the commit point:
               toCommit = segmentInfos.clone();
 
-              if (anyChanges) {
+              if (anyChanges && maxCommitMergeWaitSeconds > 0) {
                 SegmentInfos committingSegmentInfos = toCommit;
                 onCommitMerges = updatePendingMerges(new OneMergeWrappingMergePolicy(config.getMergePolicy(), toWrap ->
                     new MergePolicy.OneMerge(toWrap.segments) {
@@ -3305,7 +3306,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
       if (onCommitMerges != null) {
         mergeScheduler.merge(mergeSource, MergeTrigger.COMMIT);
-        onCommitMerges.await((long)config.getMaxCommitMergeWaitSeconds(), TimeUnit.SECONDS);
+        onCommitMerges.await(maxCommitMergeWaitSeconds, TimeUnit.SECONDS);
         synchronized (this) {
           // we need to call this under lock since mergeFinished above is also called under the IW lock
           includeInCommit.set(false);

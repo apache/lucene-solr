@@ -319,7 +319,8 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     firstWriter.close(); // When this writer closes, it does not merge on commit.
 
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()))
-        .setMergePolicy(MERGE_ON_COMMIT_POLICY);
+        .setMergePolicy(MERGE_ON_COMMIT_POLICY).setMaxCommitMergeWaitSeconds(30);
+
 
     IndexWriter writerWithMergePolicy = new IndexWriter(dir, iwc);
     writerWithMergePolicy.commit(); // No changes. Commit doesn't trigger a merge.
