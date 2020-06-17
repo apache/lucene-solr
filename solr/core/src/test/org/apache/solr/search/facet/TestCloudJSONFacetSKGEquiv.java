@@ -373,11 +373,6 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
     }
   }
   
-  /** 
-   * If/when we can re-enable this test, make sure to update {@link TermFacet#buildRandom} 
-   * and {@link #testBespokeStructures} to start doing randomized testing of <code>allBuckets</code>
-   */
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-14467")
   public void testBespokeAllBuckets() throws Exception {
     { // single level facet w/sorting on skg and allBuckets
       Map<String,TermFacet> facets = new LinkedHashMap<>();
@@ -722,7 +717,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
                                "perSeg", randomPerSegParam(random()),
                                "sort", sort,
                                "prelim_sort", randomPrelimSortParam(random(), sort),
-                               // SOLR-14467 // "allBuckets", randomAllBucketsParam(random()),
+                               "allBuckets", randomAllBucketsParam(random(), sort),
                                "refine", randomRefineParam(random())));
     }
     
@@ -759,12 +754,23 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
   
     /**
      * picks a random value for the "allBuckets" param, biased in favor of interesting test cases
+     * This bucket should be ignored by relatedness, but inclusion should not cause any problems 
+     * (or change the results)
+     *
+     * <p>
+     * <b>NOTE:</b> allBuckets is meaningless in conjunction with the <code>STREAM</code> processor, so
+     * this method always returns null if sort is <code>index asc</code>.
+     * </p>
      *
      * @return a Boolean, may be null
-     * @see #testBespokeAllBuckets
+     * @see <a href="https://issues.apache.org/jira/browse/SOLR-14514">SOLR-14514: allBuckets ignored by method:stream</a>
      */
-    public static Boolean randomAllBucketsParam(final Random r) {
+    public static Boolean randomAllBucketsParam(final Random r, final String sort) {
 
+      if ("index asc".equals(sort)) {
+        return null;
+      }
+      
       switch(r.nextInt(4)) {
         case 0: return true;
         case 1: return false;
@@ -834,6 +840,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
      * Assumes every TermFacet will have at least one "skg" stat
      *
      * @return a sort string (w/direction), or null to specify nothing (trigger default behavior)
+     * @see #randomAllBucketsParam
      * @see #randomPrelimSortParam
      */
     public static String randomSortParam(final Random r) {

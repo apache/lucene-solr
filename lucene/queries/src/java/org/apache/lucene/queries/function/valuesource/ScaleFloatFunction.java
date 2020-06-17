@@ -59,7 +59,7 @@ public class ScaleFloatFunction extends ValueSource {
     float maxVal;
   }
 
-  private ScaleInfo createScaleInfo(Map context, LeafReaderContext readerContext) throws IOException {
+  private ScaleInfo createScaleInfo(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
     final List<LeafReaderContext> leaves = ReaderUtil.getTopLevelContext(readerContext).leaves();
 
     float minVal = Float.POSITIVE_INFINITY;
@@ -100,7 +100,7 @@ public class ScaleFloatFunction extends ValueSource {
   }
 
   @Override
-  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
 
     ScaleInfo scaleInfo = (ScaleInfo)context.get(ScaleFloatFunction.this);
     if (scaleInfo == null) {
@@ -133,7 +133,7 @@ public class ScaleFloatFunction extends ValueSource {
   }
 
   @Override
-  public void createWeight(Map context, IndexSearcher searcher) throws IOException {
+  public void createWeight(Map<Object, Object> context, IndexSearcher searcher) throws IOException {
     source.createWeight(context, searcher);
   }
 

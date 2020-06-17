@@ -99,7 +99,7 @@ public class MaintainRoutedAliasCmd extends AliasCmd {
   }
 
   @Override
-  public void call(ClusterState clusterState, ZkNodeProps message, NamedList results) throws Exception {
+  public void call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     //---- PARSE PRIMARY MESSAGE PARAMS
     // important that we use NAME for the alias as that is what the Overseer will get a lock on before calling us
     final String aliasName = message.getStr(NAME);
@@ -162,7 +162,9 @@ public class MaintainRoutedAliasCmd extends AliasCmd {
     }
   }
 
-  public void addTargetCollection(ClusterState clusterState, NamedList results, String aliasName, ZkStateReader.AliasesManager aliasesManager, Map<String, String> aliasMetadata, RoutedAlias.Action action) throws Exception {
+  @SuppressWarnings({"unchecked"})
+  public void addTargetCollection(ClusterState clusterState, @SuppressWarnings({"rawtypes"})NamedList results, String aliasName, ZkStateReader.AliasesManager aliasesManager, Map<String, String> aliasMetadata, RoutedAlias.Action action) throws Exception {
+    @SuppressWarnings({"rawtypes"})
     NamedList createResults = createCollectionAndWait(clusterState, aliasName, aliasMetadata,
         action.targetCollection, ocmh);
     if (createResults != null) {
@@ -171,7 +173,7 @@ public class MaintainRoutedAliasCmd extends AliasCmd {
     addCollectionToAlias(aliasName, aliasesManager, action.targetCollection);
   }
 
-  public void deleteTargetCollection(ClusterState clusterState, NamedList results, String aliasName, ZkStateReader.AliasesManager aliasesManager, RoutedAlias.Action action) throws Exception {
+  public void deleteTargetCollection(ClusterState clusterState, @SuppressWarnings({"rawtypes"})NamedList results, String aliasName, ZkStateReader.AliasesManager aliasesManager, RoutedAlias.Action action) throws Exception {
     Map<String, Object> delProps = new HashMap<>();
     delProps.put(INVOKED_BY_ROUTED_ALIAS,
         (Runnable) () -> removeCollectionFromAlias(aliasName, aliasesManager, action.targetCollection));

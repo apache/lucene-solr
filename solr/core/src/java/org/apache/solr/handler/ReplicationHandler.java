@@ -969,6 +969,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       Properties props = loadReplicationProperties();
       if (showSlaveDetails) {
         try {
+          @SuppressWarnings({"rawtypes"})
           NamedList nl = fetcher.getDetails();
           slave.add("masterDetails", nl.get(CMD_DETAILS));
         } catch (Exception e) {
@@ -1091,6 +1092,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     if (slave.size() > 0)
       details.add("slave", slave);
 
+    @SuppressWarnings({"rawtypes"})
     NamedList snapshotStats = snapShootDetails;
     if (snapshotStats != null)
       details.add(CMD_BACKUP, snapshotStats);
@@ -1102,21 +1104,21 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     return details;
   }
 
-  private void addVal(NamedList<Object> nl, String key, Properties props, Class clzz) {
+  private void addVal(NamedList<Object> nl, String key, Properties props, @SuppressWarnings({"rawtypes"})Class clzz) {
     Object val = formatVal(key, props, clzz);
     if (val != null) {
       nl.add(key, val);
     }
   }
 
-  private void addVal(Map<String, Object> map, String key, Properties props, Class clzz) {
+  private void addVal(Map<String, Object> map, String key, Properties props, @SuppressWarnings({"rawtypes"})Class clzz) {
     Object val = formatVal(key, props, clzz);
     if (val != null) {
       map.put(key, val);
     }
   }
 
-  private Object formatVal(String key, Properties props, Class clzz) {
+  private Object formatVal(String key, Properties props, @SuppressWarnings({"rawtypes"})Class clzz) {
     String s = props.getProperty(key);
     if (s == null || s.trim().length() == 0) return null;
     if (clzz == Date.class) {
@@ -1233,6 +1235,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     } else {
       numberBackupsToKeep = 0;
     }
+    @SuppressWarnings({"rawtypes"})
     NamedList slave = (NamedList) initArgs.get("slave");
     boolean enableSlave = isEnabled( slave );
     if (enableSlave) {
@@ -1240,6 +1243,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       setupPolling((String) slave.get(POLL_INTERVAL));
       isSlave = true;
     }
+    @SuppressWarnings({"rawtypes"})
     NamedList master = (NamedList) initArgs.get("master");
     boolean enableMaster = isEnabled( master );
 
@@ -1269,9 +1273,11 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         }
         log.info("Replication enabled for following config files: {}", includeConfFiles);
       }
+      @SuppressWarnings({"rawtypes"})
       List backup = master.getAll("backupAfter");
       boolean backupOnCommit = backup.contains("commit");
       boolean backupOnOptimize = !backupOnCommit && backup.contains("optimize");
+      @SuppressWarnings({"rawtypes"})
       List replicateAfter = master.getAll(REPLICATE_AFTER);
       replicateOnCommit = replicateAfter.contains("commit");
       replicateOnOptimize = !replicateOnCommit && replicateAfter.contains("optimize");
@@ -1361,7 +1367,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
   // check master or slave is enabled
-  private boolean isEnabled( NamedList params ){
+  private boolean isEnabled( @SuppressWarnings({"rawtypes"})NamedList params ){
     if( params == null ) return false;
     Object enable = params.get( "enable" );
     if( enable == null ) return true;
@@ -1432,7 +1438,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   private SolrEventListener getEventListener(final boolean snapshoot, final boolean getCommit) {
     return new SolrEventListener() {
       @Override
-      public void init(NamedList args) {/*no op*/ }
+      public void init(@SuppressWarnings({"rawtypes"})NamedList args) {/*no op*/ }
 
       /**
        * This refreshes the latest replicateable index commit and optionally can create Snapshots as well

@@ -210,7 +210,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   // keep track of deletes only... this is not updated on an add
   protected LinkedHashMap<BytesRef, LogPtr> oldDeletes = new LinkedHashMap<BytesRef, LogPtr>(numDeletesToKeep) {
     @Override
-    protected boolean removeEldestEntry(Map.Entry eldest) {
+    protected boolean removeEldestEntry(@SuppressWarnings({"rawtypes"})Map.Entry eldest) {
       return size() > numDeletesToKeep;
     }
   };
@@ -420,6 +420,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       // populate recent deleteByQuery commands
       for (int i = startingUpdates.deleteByQueryList.size() - 1; i >= 0; i--) {
         Update update = startingUpdates.deleteByQueryList.get(i);
+        @SuppressWarnings({"unchecked"})
         List<Object> dbq = (List<Object>) update.log.lookup(update.pointer);
         long version = (Long) dbq.get(1);
         String q = (String) dbq.get(2);
@@ -894,14 +895,16 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
    * @return Returns 0 if a full document was found in the log, -1 if no full document was found. If full document was supposed
    * to be found in the tlogs, but couldn't be found (because the logs were rotated) then the prevPointer is returned.
    */
+  @SuppressWarnings({"unchecked"})
   synchronized public long applyPartialUpdates(BytesRef id, long prevPointer, long prevVersion,
-      Set<String> onlyTheseFields, SolrDocumentBase latestPartialDoc) {
+      Set<String> onlyTheseFields, @SuppressWarnings({"rawtypes"})SolrDocumentBase latestPartialDoc) {
     
     SolrInputDocument partialUpdateDoc = null;
 
     List<TransactionLog> lookupLogs = Arrays.asList(tlog, prevMapLog, prevMapLog2);
     while (prevPointer >= 0) {
       //go through each partial update and apply it on the incoming doc one after another
+      @SuppressWarnings({"rawtypes"})
       List entry;
       entry = getEntryFromTLog(prevPointer, prevVersion, lookupLogs);
       if (entry == null) {
@@ -942,7 +945,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   /**
    * Add all fields from olderDoc into newerDoc if not already present in newerDoc
    */
-  private void applyOlderUpdates(SolrDocumentBase newerDoc, SolrInputDocument olderDoc, Set<String> mergeFields) {
+  private void applyOlderUpdates(@SuppressWarnings({"rawtypes"})SolrDocumentBase newerDoc, SolrInputDocument olderDoc, Set<String> mergeFields) {
     for (String fieldName : olderDoc.getFieldNames()) {
       // if the newerDoc has this field, then this field from olderDoc can be ignored
       if (!newerDoc.containsKey(fieldName) && (mergeFields == null || mergeFields.contains(fieldName))) {
@@ -959,6 +962,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
    *
    * @return The entry if found, otherwise null
    */
+  @SuppressWarnings({"rawtypes"})
   private synchronized List getEntryFromTLog(long lookupPointer, long lookupVersion, List<TransactionLog> lookupLogs) {
     for (TransactionLog lookupLog : lookupLogs) {
       if (lookupLog != null && lookupLog.getLogSize() > lookupPointer) {
@@ -1255,6 +1259,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     try {
       while ( (o = logReader.next()) != null ) {
         try {
+          @SuppressWarnings({"rawtypes"})
           List entry = (List)o;
           int operationAndFlags = (Integer) entry.get(0);
           int oper = operationAndFlags & OPERATION_MASK;
@@ -1491,6 +1496,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
               if (o==null) break;
 
               // should currently be a List<Oper,Ver,Doc/Id>
+              @SuppressWarnings({"rawtypes"})
               List entry = (List)o;
 
               // TODO: refactor this out so we get common error handling
@@ -1875,6 +1881,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
           try {
 
             // should currently be a List<Oper,Ver,Doc/Id>
+            @SuppressWarnings({"rawtypes"})
             List entry = (List) o;
             operationAndFlags = (Integer) entry.get(UpdateLog.FLAGS_IDX);
             int oper = operationAndFlags & OPERATION_MASK;
@@ -2082,7 +2089,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
    *        if it is UPDATE_INPLACE then the previous version will also be read from the entry
    * @param version Version already obtained from the entry.
    */
-  public static AddUpdateCommand convertTlogEntryToAddUpdateCommand(SolrQueryRequest req, List entry,
+  public static AddUpdateCommand convertTlogEntryToAddUpdateCommand(SolrQueryRequest req,
+                                                                    @SuppressWarnings({"rawtypes"})List entry,
                                                                     int operation, long version) {
     assert operation == UpdateLog.ADD || operation == UpdateLog.UPDATE_INPLACE;
     SolrInputDocument sdoc = (SolrInputDocument) entry.get(entry.size()-1);

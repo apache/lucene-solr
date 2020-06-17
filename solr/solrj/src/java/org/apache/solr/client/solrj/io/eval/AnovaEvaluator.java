@@ -18,16 +18,15 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.apache.commons.math3.stat.inference.OneWayAnova;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.common.params.StreamParams;
 
 public class AnovaEvaluator extends RecursiveNumericListEvaluator implements ManyValueWorker {
   protected static final long serialVersionUID = 1L;
@@ -45,6 +44,7 @@ public class AnovaEvaluator extends RecursiveNumericListEvaluator implements Man
     
     // at this point we know every incoming value is an array of BigDecimals
     
+    @SuppressWarnings({"unchecked"})
     List<double[]> anovaInput = Arrays.stream(values)
         // for each List, convert to double[]
         .map(value -> ((List<Number>)value).stream().mapToDouble(Number::doubleValue).toArray())
@@ -54,10 +54,10 @@ public class AnovaEvaluator extends RecursiveNumericListEvaluator implements Man
     OneWayAnova anova = new OneWayAnova();
     double p = anova.anovaPValue(anovaInput);
     double f = anova.anovaFValue(anovaInput);
-    Map<String,Number> m = new HashMap<>();
-    m.put("p-value", p);
-    m.put("f-ratio", f);
-    return new Tuple(m);
+    Tuple tuple = new Tuple();
+    tuple.put(StreamParams.P_VALUE, p);
+    tuple.put("f-ratio", f);
+    return tuple;
   }
   
 

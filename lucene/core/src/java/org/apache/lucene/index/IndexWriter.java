@@ -2131,12 +2131,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
   private final void maybeMerge(MergePolicy mergePolicy, MergeTrigger trigger, int maxNumSegments) throws IOException {
     ensureOpen(false);
-    if (updatePendingMerges(mergePolicy, trigger, maxNumSegments)) {
+    if (updatePendingMerges(mergePolicy, trigger, maxNumSegments) != null) {
       mergeScheduler.merge(mergeSource, trigger);
     }
   }
 
-  private synchronized boolean updatePendingMerges(MergePolicy mergePolicy, MergeTrigger trigger, int maxNumSegments)
+  private synchronized MergePolicy.MergeSpecification updatePendingMerges(MergePolicy mergePolicy, MergeTrigger trigger, int maxNumSegments)
     throws IOException {
 
     // In case infoStream was disabled on init, but then enabled at some
@@ -2146,22 +2146,21 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     assert maxNumSegments == UNBOUNDED_MAX_MERGE_SEGMENTS || maxNumSegments > 0;
     assert trigger != null;
     if (stopMerges) {
-      return false;
+      return null;
     }
 
     // Do not start new merges if disaster struck
     if (tragedy.get() != null) {
-      return false;
+      return null;
     }
-    boolean newMergesFound = false;
+
     final MergePolicy.MergeSpecification spec;
     if (maxNumSegments != UNBOUNDED_MAX_MERGE_SEGMENTS) {
       assert trigger == MergeTrigger.EXPLICIT || trigger == MergeTrigger.MERGE_FINISHED :
       "Expected EXPLICT or MERGE_FINISHED as trigger even with maxNumSegments set but was: " + trigger.name();
 
       spec = mergePolicy.findForcedMerges(segmentInfos, maxNumSegments, Collections.unmodifiableMap(segmentsToMerge), this);
-      newMergesFound = spec != null;
-      if (newMergesFound) {
+      if (spec != null) {
         final int numMerges = spec.merges.size();
         for(int i=0;i<numMerges;i++) {
           final MergePolicy.OneMerge merge = spec.merges.get(i);
@@ -2171,14 +2170,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     } else {
       spec = mergePolicy.findMerges(trigger, segmentInfos, this);
     }
-    newMergesFound = spec != null;
-    if (newMergesFound) {
+    if (spec != null) {
       final int numMerges = spec.merges.size();
       for(int i=0;i<numMerges;i++) {
         registerMerge(spec.merges.get(i));
       }
     }
-    return newMergesFound;
+    return spec;
   }
 
   /** Expert: to be used by a {@link MergePolicy} to avoid
@@ -4401,7 +4399,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   @SuppressWarnings("try")
   private synchronized void closeMergeReaders(MergePolicy.OneMerge merge, boolean suppressExceptions) throws IOException {
     final boolean drop = suppressExceptions == false;
-    try (Closeable finalizer = merge::mergeFinished) {
+    try (Closeable finalizer = () -> merge.mergeFinished(suppressExceptions == false)) {
       IOUtils.applyToAll(merge.readers, sr -> {
         final ReadersAndUpdates rld = getPooledInstance(sr.getOriginalSegmentInfo(), false);
         // We still hold a ref so it should not have been removed:

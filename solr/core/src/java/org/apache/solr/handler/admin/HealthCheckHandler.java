@@ -78,7 +78,7 @@ public class HealthCheckHandler extends RequestHandlerBase {
   }
 
   @Override
-  final public void init(NamedList args) {
+  final public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
   }
 
   public CoreContainer getCoreContainer() {

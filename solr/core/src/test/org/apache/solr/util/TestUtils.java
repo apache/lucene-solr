@@ -316,7 +316,7 @@ public class TestUtils extends SolrTestCaseJ4 {
     assertEquals("b1", Utils.getObjectByPath(sink, true, "k1/k11/a1"));
 
     sink = new HashMap<>();
-    sink.put("legacyCloud", "false");
+    sink.put("autoAddReplicas", "false");
     assertTrue(Utils.mergeJson(sink, (Map<String, Object>) Utils.fromJSONString("collectionDefaults:{numShards:3 , nrtReplicas:2}")));
     assertEquals(3L, Utils.getObjectByPath(sink, true, ImmutableList.of(COLLECTION_DEF, NUM_SHARDS_PROP)));
     assertEquals(2L, Utils.getObjectByPath(sink, true, ImmutableList.of(COLLECTION_DEF, NRT_REPLICAS)));

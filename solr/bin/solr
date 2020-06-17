@@ -103,10 +103,17 @@ fi
 
 if [ -n "$SOLR_JAVA_HOME" ]; then
   JAVA="$SOLR_JAVA_HOME/bin/java"
+  JSTACK="$SOLR_JAVA_HOME/bin/jstack"
 elif [ -n "$JAVA_HOME" ]; then
-  for java in "$JAVA_HOME"/bin/amd64/java "$JAVA_HOME"/bin/java; do
-    if [ -x "$java" ]; then
-      JAVA="$java"
+  for java in "$JAVA_HOME"/bin/amd64 "$JAVA_HOME"/bin; do
+    if [ -x "$java/java" ]; then
+      JAVA="$java/java"
+      if [ -x "$java/jstack" ]; then
+        JSTACK="$java/jstack"
+      else
+        echo >&2 "The currently defined JAVA_HOME ($JAVA_HOME) refers to a location"
+        echo >&2 "where java was found but jstack was not found. Continuing."
+      fi
       break
     fi
   done
@@ -119,6 +126,7 @@ elif [ -n "$JAVA_HOME" ]; then
   fi
 else
   JAVA=java
+  JSTACK=jstack
 fi
 
 if [ -z "$SOLR_STOP_WAIT" ]; then
@@ -821,6 +829,7 @@ function run_package() {
 
 # tries to gracefully stop Solr using the Jetty
 # stop command and if that fails, then uses kill -9
+# (will attempt to jstack before killing)
 function stop_solr() {
 
   DIR="$1"
@@ -857,6 +866,10 @@ function stop_solr() {
 
   CHECK_PID=`ps auxww | awk '{print $2}' | grep -w $SOLR_PID | sort -r | tr -d ' '`
   if [ "$CHECK_PID" != "" ]; then
+    if [ "$JSTACK" != "" ]; then
+      echo -e "Solr process $SOLR_PID is still running; jstacking it now."
+      $JSTACK $SOLR_PID
+    fi
     echo -e "Solr process $SOLR_PID is still running; forcefully killing it now."
     kill -9 $SOLR_PID
     echo "Killed process $SOLR_PID"
@@ -2139,7 +2152,8 @@ function start_solr() {
         '-XX:+ParallelRefProcEnabled' \
         '-XX:MaxGCPauseMillis=250' \
         '-XX:+UseLargePages' \
-        '-XX:+AlwaysPreTouch')
+        '-XX:+AlwaysPreTouch' \
+        '-XX:+ExplicitGCInvokesConcurrent')
   else
     GC_TUNE=($GC_TUNE)
   fi

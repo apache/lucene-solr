@@ -37,6 +37,7 @@ import java.nio.ByteBuffer;
  */
 public class DocumentObjectBinder {
 
+  @SuppressWarnings({"rawtypes"})
   private final Map<Class, List<DocField>> infocache = new ConcurrentHashMap<>();
 
   public DocumentObjectBinder() {
@@ -83,6 +84,7 @@ public class DocumentObjectBinder {
       if (field.dynamicFieldNamePatternMatcher != null &&
           field.get(obj) != null &&
           field.isContainedInMap) {
+        @SuppressWarnings({"unchecked"})
         Map<String, Object> mapValue = (Map<String, Object>) field.get(obj);
 
         for (Map.Entry<String, Object> e : mapValue.entrySet()) {
@@ -103,6 +105,7 @@ public class DocumentObjectBinder {
     Object val = field.get(obj);
     if (val == null) return;
     if (val instanceof Collection) {
+      @SuppressWarnings({"rawtypes"})
       Collection collection = (Collection) val;
       for (Object o : collection) {
         SolrInputDocument child = toSolrInputDocument(o);
@@ -116,7 +119,7 @@ public class DocumentObjectBinder {
     }
   }
 
-  private List<DocField> getDocFields(Class clazz) {
+  private List<DocField> getDocFields(@SuppressWarnings({"rawtypes"})Class clazz) {
     List<DocField> fields = infocache.get(clazz);
     if (fields == null) {
       synchronized(infocache) {
@@ -127,8 +130,9 @@ public class DocumentObjectBinder {
   }
 
   @SuppressForbidden(reason = "Needs access to possibly private @Field annotated fields/methods")
-  private List<DocField> collectInfo(Class clazz) {
+  private List<DocField> collectInfo(@SuppressWarnings({"rawtypes"})Class clazz) {
     List<DocField> fields = new ArrayList<>();
+    @SuppressWarnings({"rawtypes"})
     Class superClazz = clazz;
     List<AccessibleObject> members = new ArrayList<>();
 
@@ -159,6 +163,7 @@ public class DocumentObjectBinder {
     private java.lang.reflect.Field field;
     private Method setter;
     private Method getter;
+    @SuppressWarnings({"rawtypes"})
     private Class type;
     private boolean isArray;
     private boolean isList;
@@ -230,6 +235,7 @@ public class DocumentObjectBinder {
       if (field != null) {
         type = field.getType();
       } else {
+        @SuppressWarnings({"rawtypes"})
         Class[] params = setter.getParameterTypes();
         if (params.length != 1) {
           throw new BindingException("Invalid setter method (" + setter +
@@ -325,7 +331,7 @@ public class DocumentObjectBinder {
      * Returns <code>SolrDocument.getFieldValue</code> for regular fields,
      * and <code>Map<String, List<Object>></code> for a dynamic field. The key is all matching fieldName's.
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private Object getFieldValue(SolrDocument solrDocument) {
       if (child != null) {
         List<SolrDocument> children = solrDocument.getChildDocuments();
@@ -406,6 +412,7 @@ public class DocumentObjectBinder {
       }
     }
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     <T> void inject(T obj, SolrDocument sdoc) {
       Object val = getFieldValue(sdoc);
       if(val == null) {

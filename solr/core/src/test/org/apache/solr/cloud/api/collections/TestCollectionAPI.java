@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.collect.Lists;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
@@ -34,7 +33,6 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
-import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -94,7 +92,6 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     clusterStatusBadCollectionTest();
     replicaPropTest();
     clusterStatusZNodeVersion();
-    testClusterStateMigration();
     testCollectionCreationCollectionNameValidation();
     testCollectionCreationTooManyShards();
     testReplicationFactorValidaton();
@@ -895,34 +892,6 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     }
   }
 
-  private void testClusterStateMigration() throws Exception {
-    try (CloudSolrClient client = createCloudClient(null)) {
-      client.connect();
-
-      CollectionAdminRequest.createCollection("testClusterStateMigration","conf1",1,1).setStateFormat(1).process(client);
-
-      waitForRecoveriesToFinish("testClusterStateMigration", true);
-
-      assertEquals(1, client.getZkStateReader().getClusterState().getCollection("testClusterStateMigration").getStateFormat());
-
-      for (int i = 0; i < 10; i++) {
-        SolrInputDocument doc = new SolrInputDocument();
-        doc.addField("id", "id_" + i);
-        client.add("testClusterStateMigration", doc);
-      }
-      client.commit("testClusterStateMigration");
-
-      CollectionAdminRequest.migrateCollectionFormat("testClusterStateMigration").process(client);
-
-      client.getZkStateReader().forceUpdateCollection("testClusterStateMigration");
-
-      assertEquals(2, client.getZkStateReader().getClusterState().getCollection("testClusterStateMigration").getStateFormat());
-
-      QueryResponse response = client.query("testClusterStateMigration", new SolrQuery("*:*"));
-      assertEquals(10, response.getResults().getNumFound());
-    }
-  }
-  
   private void testCollectionCreationCollectionNameValidation() throws Exception {
     try (CloudSolrClient client = createCloudClient(null)) {
       ModifiableSolrParams params = new ModifiableSolrParams();

@@ -929,7 +929,7 @@ final class DefaultIndexingChain extends DocConsumer {
           // corrupt and should not be flushed to a
           // new segment:
           try {
-            termsHashPerField.add();
+            termsHashPerField.add(invertState.termAttribute.getBytesRef(), docState.docID);
           } catch (MaxBytesLengthExceededException e) {
             byte[] prefix = new byte[30];
             BytesRef bigTerm = invertState.termAttribute.getBytesRef();

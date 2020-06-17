@@ -63,13 +63,13 @@ public class DeleteReplicaCmd implements Cmd {
   @Override
   @SuppressWarnings("unchecked")
 
-  public void call(ClusterState clusterState, ZkNodeProps message, NamedList results) throws Exception {
+  public void call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     deleteReplica(clusterState, message, results,null);
   }
 
 
   @SuppressWarnings("unchecked")
-  void deleteReplica(ClusterState clusterState, ZkNodeProps message, NamedList results, Runnable onComplete)
+  void deleteReplica(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results, Runnable onComplete)
           throws KeeperException, InterruptedException {
     if (log.isDebugEnabled()) {
       log.debug("deleteReplica() : {}", Utils.toJSONString(message));
@@ -112,9 +112,10 @@ public class DeleteReplicaCmd implements Cmd {
    * Delete replicas based on count for a given collection. If a shard is passed, uses that
    * else deletes given num replicas across all shards for the given collection.
    */
+  @SuppressWarnings({"unchecked"})
   void deleteReplicaBasedOnCount(ClusterState clusterState,
                                  ZkNodeProps message,
-                                 NamedList results,
+                                 @SuppressWarnings({"rawtypes"})NamedList results,
                                  Runnable onComplete,
                                  boolean parallel)
           throws KeeperException, InterruptedException {
@@ -211,7 +212,8 @@ public class DeleteReplicaCmd implements Cmd {
     }
   }
 
-  void deleteCore(Slice slice, String collectionName, String replicaName,ZkNodeProps message, String shard, NamedList results, Runnable onComplete, boolean parallel) throws KeeperException, InterruptedException {
+  @SuppressWarnings({"unchecked"})
+  void deleteCore(Slice slice, String collectionName, String replicaName,ZkNodeProps message, String shard, @SuppressWarnings({"rawtypes"})NamedList results, Runnable onComplete, boolean parallel) throws KeeperException, InterruptedException {
 
     Replica replica = slice.getReplica(replicaName);
     if (replica == null) {

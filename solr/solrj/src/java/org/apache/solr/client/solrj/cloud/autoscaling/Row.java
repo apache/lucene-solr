@@ -27,12 +27,15 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.apache.solr.client.solrj.cloud.NodeStateProvider;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -57,18 +60,34 @@ public class Row implements MapWriter {
   boolean anyValueMissing = false;
   boolean isLive = true;
   Policy.Session session;
+  @SuppressWarnings({"rawtypes"})
   Map globalCache;
+  @SuppressWarnings({"rawtypes"})
   Map perCollCache;
 
   public Row(String node, List<Pair<String, Variable.Type>> params, List<String> perReplicaAttributes, Policy.Session session) {
+    this(node, params, perReplicaAttributes, session, session.nodeStateProvider, session.cloudManager);
+  }
+
+  /**
+   * Constructor that allows explicitly passing a {@link NodeStateProvider} and a {@link SolrCloudManager} in order not to
+   * use those obtained through the passed <code>session</code>.
+   * <p>Note the resulting row has a {@link Policy.Session} that may not be consistent with the rest of the Row's state. When rows are copied
+   * as part of a {@link Policy.Session} copy, the copied rows' sessions are eventually updated in
+   * {@link org.apache.solr.client.solrj.cloud.autoscaling.Policy.Session#Session(List, SolrCloudManager, List, Set, List, NodeStateProvider, Policy, Policy.Transaction)}
+   * once the new {@link Policy.Session} instance is available.</p>
+   */
+  @SuppressWarnings({"rawtypes"})
+  Row(String node, List<Pair<String, Variable.Type>> params, List<String> perReplicaAttributes, Policy.Session session,
+      NodeStateProvider nsp, SolrCloudManager cloudManager) {
     this.session = session;
-    collectionVsShardVsReplicas = session.nodeStateProvider.getReplicaInfo(node, perReplicaAttributes);
+    collectionVsShardVsReplicas = nsp.getReplicaInfo(node, perReplicaAttributes);
     if (collectionVsShardVsReplicas == null) collectionVsShardVsReplicas = new HashMap<>();
     this.node = node;
     cells = new Cell[params.size()];
-    isLive = session.cloudManager.getClusterStateProvider().getLiveNodes().contains(node);
+    isLive = cloudManager.getClusterStateProvider().getLiveNodes().contains(node);
     List<String> paramNames = params.stream().map(Pair::first).collect(Collectors.toList());
-    Map<String, Object> vals = isLive ? session.nodeStateProvider.getNodeValues(node, paramNames) : Collections.emptyMap();
+    Map<String, Object> vals = isLive ? nsp.getNodeValues(node, paramNames) : Collections.emptyMap();
     for (int i = 0; i < params.size(); i++) {
       Pair<String, Variable.Type> pair = params.get(i);
       cells[i] = new Cell(i, pair.first(), Clause.validate(pair.first(), vals.get(pair.first()), false), null, pair.second(), this);
@@ -79,7 +98,6 @@ public class Row implements MapWriter {
     this.perCollCache = new HashMap();
     isAlreadyCopied = true;
   }
-
 
   public static final Map<String, CacheEntry> cacheStats = new HashMap<>();
 
@@ -119,6 +137,7 @@ public class Row implements MapWriter {
   }
 
 
+  @SuppressWarnings({"unchecked"})
   public <R> R computeCacheIfAbsent(String cacheName, Function<Object, R> supplier) {
     R result = (R) globalCache.get(cacheName);
     if (result != null) {
@@ -131,6 +150,7 @@ public class Row implements MapWriter {
     }
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public <R> R computeCacheIfAbsent(String coll, String shard, String cacheName, Object key, Function<Object, R> supplier) {
     Map collMap = (Map) this.perCollCache.get(coll);
     if (collMap == null) this.perCollCache.put(coll, collMap = new HashMap());
@@ -150,9 +170,11 @@ public class Row implements MapWriter {
   }
 
 
-
-  public Row(String node, Cell[] cells, boolean anyValueMissing, Map<String,
-      Map<String, List<ReplicaInfo>>> collectionVsShardVsReplicas, boolean isLive, Policy.Session session, Map perRowCache, Map globalCache) {
+  public Row(String node, Cell[] cells, boolean anyValueMissing,
+             @SuppressWarnings({"rawtypes"}) Map<String,
+                     Map<String, List<ReplicaInfo>>> collectionVsShardVsReplicas, boolean isLive, Policy.Session session,
+             @SuppressWarnings({"rawtypes"}) Map perRowCache,
+             @SuppressWarnings({"rawtypes"})Map globalCache) {
     this.session = session;
     this.node = node;
     this.isLive = isLive;
@@ -175,7 +197,7 @@ public class Row implements MapWriter {
     ew.put("attributes", Arrays.asList(cells));
   }
 
-  Row copy(Policy.Session session) {
+  Row copy() {
     return new Row(node, cells, anyValueMissing, collectionVsShardVsReplicas, isLive, session, this.globalCache, this.perCollCache);
   }
 
@@ -251,6 +273,7 @@ public class Row implements MapWriter {
 
   boolean isAlreadyCopied = false;
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private void lazyCopyReplicas(String coll, String shard) {
     globalCache = new HashMap();
     Map cacheCopy = new HashMap<>(perCollCache);
@@ -271,6 +294,7 @@ public class Row implements MapWriter {
     return collectionVsShardVsReplicas.containsKey(coll);
   }
 
+  @SuppressWarnings({"unchecked"})
   public void createCollShard(Pair<String, String> collShard) {
     Map<String, List<ReplicaInfo>> shardInfo = collectionVsShardVsReplicas.computeIfAbsent(collShard.first(), Utils.NEW_HASHMAP_FUN);
     if (collShard.second() != null) shardInfo.computeIfAbsent(collShard.second(), Utils.NEW_ARRAYLIST_FUN);

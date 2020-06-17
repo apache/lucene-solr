@@ -175,7 +175,7 @@ public final class IntBlockPool {
     return upto;
   }
   
-  private static final boolean assertSliceBuffer(int[] buffer) {
+  private static boolean assertSliceBuffer(int[] buffer) {
     int count = 0;
     for (int i = 0; i < buffer.length; i++) {
       count += buffer[i]; // for slices the buffer must only have 0 values

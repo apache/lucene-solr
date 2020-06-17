@@ -62,7 +62,7 @@ import com.codahale.metrics.MetricFilter;
 public class SolrShardReporter extends SolrCoreReporter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static final List<String> DEFAULT_FILTERS = new ArrayList(){{
+  public static final List<String> DEFAULT_FILTERS = new ArrayList<>(){{
     add("TLOG.*");
     add("CORE\\.fs.*");
     add("REPLICATION.*");

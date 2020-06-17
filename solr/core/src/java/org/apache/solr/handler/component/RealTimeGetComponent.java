@@ -246,6 +246,7 @@ public class RealTimeGetComponent extends SearchComponent
          Object o = ulog.lookup(idBytes.get());
          if (o != null) {
            // should currently be a List<Oper,Ver,Doc/Id>
+           @SuppressWarnings({"rawtypes"})
            List entry = (List)o;
            assert entry.size() >= 3;
            int oper = (Integer)entry.get(UpdateLog.FLAGS_IDX) & UpdateLog.OPERATION_MASK;
@@ -409,7 +410,9 @@ public class RealTimeGetComponent extends SearchComponent
    *          after the resolving began)
    */
   private static SolrDocument resolveFullDocument(SolrCore core, BytesRef idBytes,
-                                           ReturnFields returnFields, SolrInputDocument partialDoc, List logEntry, Set<String> onlyTheseFields) throws IOException {
+                                                  ReturnFields returnFields, SolrInputDocument partialDoc,
+                                                  @SuppressWarnings({"rawtypes"}) List logEntry,
+                                                  Set<String> onlyTheseFields) throws IOException {
     if (idBytes == null || (logEntry.size() != 5 && logEntry.size() != 6)) {
       throw new SolrException(ErrorCode.INVALID_STATE, "Either Id field not present in partial document or log entry doesn't have previous version.");
     }
@@ -547,6 +550,7 @@ public class RealTimeGetComponent extends SearchComponent
    *                  was an in-place update. In that case, should this partial document be resolved to a full document (by following
    *                  back prevPointer/prevVersion)?
    */
+  @SuppressWarnings({"fallthrough"})
   public static SolrInputDocument getInputDocumentFromTlog(SolrCore core, BytesRef idBytes, AtomicLong versionReturned,
       Set<String> onlyTheseNonStoredDVs, boolean resolveFullDocument) {
 
@@ -556,6 +560,7 @@ public class RealTimeGetComponent extends SearchComponent
       Object o = ulog.lookup(idBytes);
       if (o != null) {
         // should currently be a List<Oper,Ver,Doc/Id>
+        @SuppressWarnings({"rawtypes"})
         List entry = (List)o;
         assert entry.size() >= 3;
         int oper = (Integer)entry.get(0) & UpdateLog.OPERATION_MASK;
@@ -693,7 +698,8 @@ public class RealTimeGetComponent extends SearchComponent
     return sid;
   }
 
-  private static void decorateDocValueFields(SolrDocumentFetcher docFetcher, SolrDocumentBase doc, int docid, Set<String> onlyTheseNonStoredDVs, boolean resolveNestedFields) throws IOException {
+  private static void decorateDocValueFields(SolrDocumentFetcher docFetcher,
+                                             @SuppressWarnings({"rawtypes"})SolrDocumentBase doc, int docid, Set<String> onlyTheseNonStoredDVs, boolean resolveNestedFields) throws IOException {
     if (onlyTheseNonStoredDVs != null) {
       docFetcher.decorateDocValueFields(doc, docid, onlyTheseNonStoredDVs);
     } else {
@@ -1004,6 +1010,7 @@ public class RealTimeGetComponent extends SearchComponent
       // can get more than one response
       for (ShardResponse srsp : sreq.responses) {
         SolrResponse sr = srsp.getSolrResponse();
+        @SuppressWarnings({"rawtypes"})
         NamedList nl = sr.getResponse();
         SolrDocumentList subList = (SolrDocumentList)nl.get("response");
         docList.addAll(subList);
@@ -1116,9 +1123,12 @@ public class RealTimeGetComponent extends SearchComponent
   }
 
   public void processSyncWithLeader(ResponseBuilder rb, int nVersions, String syncWithLeader, List<Long> versions) {
-    PeerSyncWithLeader peerSync = new PeerSyncWithLeader(rb.req.getCore(), syncWithLeader, nVersions);
-    boolean success = peerSync.sync(versions).isSuccess();
-    rb.rsp.add("syncWithLeader", success);
+    try (PeerSyncWithLeader peerSync = new PeerSyncWithLeader(rb.req.getCore(), syncWithLeader, nVersions)) {
+      boolean success = peerSync.sync(versions).isSuccess();
+      rb.rsp.add("syncWithLeader", success);
+    } catch (IOException e) {
+      log.error("Error while closing", e);
+    }
   }
 
   
@@ -1137,12 +1147,13 @@ public class RealTimeGetComponent extends SearchComponent
     List<String> replicas = StrUtils.splitSmart(sync, ",", true);
     
     boolean cantReachIsSuccess = rb.req.getParams().getBool("cantReachIsSuccess", false);
-    
-    PeerSync peerSync = new PeerSync(rb.req.getCore(), replicas, nVersions, cantReachIsSuccess);
-    boolean success = peerSync.sync().isSuccess();
-    
-    // TODO: more complex response?
-    rb.rsp.add("sync", success);
+    try (PeerSync peerSync = new PeerSync(rb.req.getCore(), replicas, nVersions, cantReachIsSuccess)) {
+      boolean success = peerSync.sync().isSuccess();
+      // TODO: more complex response?
+      rb.rsp.add("sync", success);
+    } catch (IOException e) {
+      log.error("Error while closing", e);
+    }
   }
   
 

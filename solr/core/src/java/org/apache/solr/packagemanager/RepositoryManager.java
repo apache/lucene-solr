@@ -122,6 +122,7 @@ public class RepositoryManager {
     String existingRepositoriesJson = getRepositoriesJson(packageManager.zkClient);
     log.info(existingRepositoriesJson);
 
+    @SuppressWarnings({"unchecked"})
     List<PackageRepository> repos = getMapper().readValue(existingRepositoriesJson, List.class);
     repos.add(new DefaultPackageRepository(repoName, uri));
     if (packageManager.zkClient.exists(PackageUtils.REPOSITORIES_ZK_PATH, true) == false) {

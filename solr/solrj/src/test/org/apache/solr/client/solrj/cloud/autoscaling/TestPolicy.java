@@ -82,7 +82,6 @@ import static org.apache.solr.client.solrj.cloud.autoscaling.TestPolicy2.loadFro
 import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.CORES;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.FREEDISK;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.REPLICA;
-import static org.apache.solr.common.cloud.ZkStateReader.CLUSTER_STATE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOVEREPLICA;
 
@@ -93,13 +92,16 @@ public class TestPolicy extends SolrTestCaseJ4 {
   public TestPolicy(){
     useNodeset = true;
   }
-  static Suggester createSuggester(SolrCloudManager cloudManager, Map jsonObj, Suggester seed) throws IOException, InterruptedException {
+  @SuppressWarnings({"unchecked"})
+  static Suggester createSuggester(SolrCloudManager cloudManager,
+                                   @SuppressWarnings({"rawtypes"})Map jsonObj, Suggester seed) throws IOException, InterruptedException {
     Policy.Session session = null;
     if (seed != null) session = seed.session;
     else {
       session = cloudManager.getDistribStateManager().getAutoScalingConfig().getPolicy().createSession(cloudManager);
     }
 
+    @SuppressWarnings({"rawtypes"})
     Map m = (Map) jsonObj.get("suggester");
     Suggester result = session.getSuggester(CollectionParams.CollectionAction.get((String) m.get("action")));
     m = (Map) m.get("hints");
@@ -110,13 +112,14 @@ public class TestPolicy extends SolrTestCaseJ4 {
     return result;
   }
 
-  static SolrCloudManager createCloudManager(Map jsonObj) {
+  static SolrCloudManager createCloudManager(@SuppressWarnings({"rawtypes"})Map jsonObj) {
     return cloudManagerWithData(jsonObj);
   }
 
   public static String clusterState = Utils.toJSONString(loadFromResource("testPolicy.json"));
 
-  public static Map<String, Map<String, List<ReplicaInfo>>> getReplicaDetails(String node, Map clusterState) {
+  public static Map<String, Map<String, List<ReplicaInfo>>> getReplicaDetails(String node,
+                                                                              @SuppressWarnings({"rawtypes"})Map clusterState) {
     ValidatingJsonMap m = ValidatingJsonMap
         .getDeepCopy(clusterState, 6, true);
     Map<String, Map<String, List<ReplicaInfo>>> result = new LinkedHashMap<>();
@@ -141,9 +144,10 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
 
   public void testWithCollection() {
-    ClusterState clusterState = ClusterState.load(1,
+    @SuppressWarnings({"unchecked"})
+    ClusterState clusterState = ClusterState.createFromCollectionMap(1,
         (Map) loadFromResource("testWithCollection.json"),
-        ImmutableSet.of("node1", "node2", "node3", "node4", "node5"), CLUSTER_STATE);
+        ImmutableSet.of("node1", "node2", "node3", "node4", "node5"));
     DelegatingClusterStateProvider clusterStateProvider = new DelegatingClusterStateProvider(null) {
       @Override
       public ClusterState getClusterState() throws IOException {
@@ -182,9 +186,11 @@ public class TestPolicy extends SolrTestCaseJ4 {
         return clusterStateProvider;
       }
     };
+    @SuppressWarnings({"rawtypes"})
     Map m = solrClientNodeStateProvider.getNodeValues("node1", ImmutableSet.of("cores", "withCollection"));
     assertNotNull(m.get("withCollection"));
 
+    @SuppressWarnings({"rawtypes"})
     Map policies = (Map) Utils.fromJSONString("{" +
         "  'cluster-preferences': [" +
         "    { 'minimize': 'cores'}," +
@@ -195,6 +201,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "    { 'replica': '<2', 'shard': '#EACH', 'node': '#ANY'}," +
         "  ]" +
         "}");
+    @SuppressWarnings({"unchecked"})
     AutoScalingConfig config = new AutoScalingConfig(policies);
     Policy policy = config.getPolicy();
     Policy.Session session = policy.createSession(new DelegatingCloudManager(null) {
@@ -210,6 +217,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     });
     Suggester suggester = session.getSuggester(CollectionAction.ADDREPLICA);
     suggester.hint(Hint.COLL_SHARD, new Pair<>("comments_coll", "shard1"));
+    @SuppressWarnings({"rawtypes"})
     SolrRequest op = suggester.getSuggestion();
     assertNotNull(op);
     Set<String> nodes = new HashSet<>(2);
@@ -232,10 +240,11 @@ public class TestPolicy extends SolrTestCaseJ4 {
   }
 
   public void testWithCollectionSuggestions() {
+    @SuppressWarnings({"unchecked"})
     ClusterState clusterState =
-        ClusterState.load(1,
+        ClusterState.createFromCollectionMap(1,
             (Map) loadFromResource("testWithCollectionSuggestions.json"),
-            ImmutableSet.of("node1", "node2", "node3", "node4", "node5"), CLUSTER_STATE);
+            ImmutableSet.of("node1", "node2", "node3", "node4", "node5"));
     DelegatingClusterStateProvider clusterStateProvider = new DelegatingClusterStateProvider(null) {
       @Override
       public ClusterState getClusterState() throws IOException {
@@ -274,9 +283,11 @@ public class TestPolicy extends SolrTestCaseJ4 {
         return clusterStateProvider;
       }
     };
+    @SuppressWarnings({"rawtypes"})
     Map m = solrClientNodeStateProvider.getNodeValues("node1", ImmutableSet.of("cores", "withCollection"));
     assertNotNull(m.get("withCollection"));
 
+    @SuppressWarnings({"rawtypes"})
     Map policies = (Map) Utils.fromJSONString("{" +
         "  'cluster-preferences': [" +
         "    { 'maximize': 'freedisk', 'precision': 50}," +
@@ -288,6 +299,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "  ]" +
         "}");
 
+    @SuppressWarnings({"unchecked"})
     List<Suggester.SuggestionInfo> l = PolicyHelper.getSuggestions(new AutoScalingConfig(policies),
         new DelegatingCloudManager(null) {
           @Override
@@ -324,11 +336,10 @@ public class TestPolicy extends SolrTestCaseJ4 {
   }
 
   public void testWithCollectionMoveVsAddSuggestions() throws IOException {
-    ClusterState clusterState = ClusterState.load(1,
+    @SuppressWarnings({"unchecked"})
+    ClusterState clusterState = ClusterState.createFromCollectionMap(1,
         (Map) loadFromResource("testWithCollectionMoveVsAddSuggestions.json"),
-        ImmutableSet.of("node1", "node2", "node3", "node4", "node5", "node6"),
-        CLUSTER_STATE
-    );
+        ImmutableSet.of("node1", "node2", "node3", "node4", "node5", "node6"));
     DelegatingClusterStateProvider clusterStateProvider = new DelegatingClusterStateProvider(null) {
       @Override
       public ClusterState getClusterState() {
@@ -367,9 +378,11 @@ public class TestPolicy extends SolrTestCaseJ4 {
         return clusterStateProvider;
       }
     };
+    @SuppressWarnings({"rawtypes"})
     Map m = solrClientNodeStateProvider.getNodeValues("node1", ImmutableSet.of("cores", "withCollection"));
     assertNotNull(m.get("withCollection"));
 
+    @SuppressWarnings({"rawtypes"})
     Map policies = (Map) Utils.fromJSONString("{" +
         "  'cluster-preferences': [" +
         "    { 'maximize': 'freedisk', 'precision': 50}," +
@@ -381,6 +394,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "  ]" +
         "}");
 
+    @SuppressWarnings({"unchecked"})
     List<Suggester.SuggestionInfo> l = PolicyHelper.getSuggestions(new AutoScalingConfig(policies),
         new DelegatingCloudManager(null) {
           @Override
@@ -432,9 +446,10 @@ public class TestPolicy extends SolrTestCaseJ4 {
   }
 
   public void testWithCollectionMoveReplica() {
-    ClusterState clusterState = ClusterState.load(1,
+    @SuppressWarnings({"unchecked"})
+    ClusterState clusterState = ClusterState.createFromCollectionMap(1,
         (Map) loadFromResource("testWithCollectionMoveReplica.json"),
-        ImmutableSet.of("node2", "node3", "node4", "node5"), CLUSTER_STATE);
+        ImmutableSet.of("node2", "node3", "node4", "node5"));
     DelegatingClusterStateProvider clusterStateProvider = new DelegatingClusterStateProvider(null) {
       @Override
       public ClusterState getClusterState() throws IOException {
@@ -473,9 +488,11 @@ public class TestPolicy extends SolrTestCaseJ4 {
         return clusterStateProvider;
       }
     };
+    @SuppressWarnings({"rawtypes"})
     Map m = solrClientNodeStateProvider.getNodeValues("node1", ImmutableSet.of("cores", "withCollection"));
     assertNotNull(m.get("withCollection"));
 
+    @SuppressWarnings({"rawtypes"})
     Map policies = (Map) Utils.fromJSONString("{" +
         "  'cluster-preferences': [" +
         "    { 'minimize': 'cores'}," +
@@ -486,6 +503,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "    { 'replica': '<2', 'shard': '#EACH', 'node': '#ANY'}," +
         "  ]" +
         "}");
+    @SuppressWarnings({"unchecked"})
     AutoScalingConfig config = new AutoScalingConfig(policies);
     Policy policy = config.getPolicy();
     Policy.Session session = policy.createSession(new DelegatingCloudManager(null) {
@@ -502,6 +520,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     Suggester suggester = session.getSuggester(CollectionAction.MOVEREPLICA);
     suggester.hint(Hint.COLL_SHARD, new Pair<>("comments_coll", "shard1"));
     suggester.hint(Hint.SRC_NODE, "node1");
+    @SuppressWarnings({"rawtypes"})
     SolrRequest op = suggester.getSuggestion();
     assertNotNull(op);
     assertEquals("node2 should have been selected by move replica", "node2",
@@ -808,7 +827,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "}";
 
 
-    ClusterState clusterState = ClusterState.load(1, clusterStateStr.getBytes(UTF_8),
+    ClusterState clusterState = ClusterState.createFromJson(1, clusterStateStr.getBytes(UTF_8),
         ImmutableSet.of("node1", "node2", "node3", "node4", "node5"));
     DelegatingClusterStateProvider clusterStateProvider = new DelegatingClusterStateProvider(null) {
       @Override
@@ -850,6 +869,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
       }
     };
 
+    @SuppressWarnings({"rawtypes"})
     Map policies = (Map) Utils.fromJSONString("{" +
         "  'cluster-preferences': [" +
         "    { 'minimize': 'cores', 'precision': 50}" +
@@ -858,6 +878,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "    { 'replica': '#EQUAL', 'node': '#ANY'}," +
         "  ]" +
         "}");
+    @SuppressWarnings({"unchecked"})
     AutoScalingConfig config = new AutoScalingConfig(policies);
     Policy policy = config.getPolicy();
     Policy.Session session = policy.createSession(new DelegatingCloudManager(null) {
@@ -984,13 +1005,16 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "           'maximize':'freedisk'," +
         "           'precision':100}]}";
 
+    @SuppressWarnings({"unchecked"})
     Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
     Policy.Session session = policy.createSession(cloudManagerWithData(dataproviderdata));
+    @SuppressWarnings({"rawtypes"})
     SolrRequest op = session.getSuggester(MOVEREPLICA).hint(Hint.SRC_NODE, "127.0.0.1:65427_solr").getSuggestion();
     assertNotNull(op);
     assertEquals("127.0.0.1:65434_solr", op.getParams().get("targetNode"));
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void testNodeLostMultipleReplica() {
     String nodeValues = " {" +
         "    'node4':{" +
@@ -1151,6 +1175,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     return cloudManagerWithData((Map) Utils.fromJSONString(data));
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   static SolrCloudManager cloudManagerWithData(Map m) {
     Map replicaInfo = (Map) m.get("replicaInfo");
     replicaInfo.forEach((node, val) -> {
@@ -1172,6 +1197,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
       });
     });
+    @SuppressWarnings({"unchecked"})
     AutoScalingConfig asc = m.containsKey("autoscalingJson") ? new AutoScalingConfig((Map<String, Object>) m.get("autoscalingJson")) : null;
     return new DelegatingCloudManager(null) {
 
@@ -1190,10 +1216,11 @@ public class TestPolicy extends SolrTestCaseJ4 {
         return new DelegatingClusterStateProvider(null) {
           @Override
           public ClusterState getClusterState() throws IOException {
-            return ClusterState.load(0, new HashMap<>(), getLiveNodes(), CLUSTER_STATE);
+            return ClusterState.createFromCollectionMap(0, new HashMap<>(), getLiveNodes());
           }
 
           @Override
+          @SuppressWarnings({"unchecked"})
           public Set<String> getLiveNodes() {
             return new HashSet<>((Collection<String>) m.get("liveNodes"));
           }
@@ -1205,12 +1232,14 @@ public class TestPolicy extends SolrTestCaseJ4 {
         return new DelegatingNodeStateProvider(null) {
           @Override
           public Map<String, Object> getNodeValues(String node, Collection<String> tags) {
+            @SuppressWarnings({"unchecked"})
             Map<String, Object> result = (Map<String, Object>) Utils.getObjectByPath(m, false, Arrays.asList("nodeValues", node));
             return result == null ? new HashMap<>() : result;
           }
 
           @Override
           public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
+            @SuppressWarnings({"unchecked"})
             Map<String, Map<String, List<ReplicaInfo>>> result = (Map<String, Map<String, List<ReplicaInfo>>>) Utils.getObjectByPath(m, false, Arrays.asList("replicaInfo", node));
             return result == null ? new HashMap<>() : result;
           }
@@ -1219,6 +1248,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     };
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void testPolicyWithReplicaType() {
     Map policies = (Map) Utils.fromJSONString("{" +
         "  'cluster-preferences': [" +
@@ -1301,12 +1331,14 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
 
   public void testMoveReplicasInMultipleCollections() throws IOException {
+    @SuppressWarnings({"unchecked", "rawtypes"})
     Map<String, Map> nodeValues = (Map<String, Map>) Utils.fromJSONString("{" +
         "node1:{cores:2}," +
         "node3:{cores:4}" +
         "node2:{cores:2}" +
         "}");
     Policy policy = new Policy(new HashMap<>());
+    @SuppressWarnings({"unchecked"})
     Suggester suggester = policy.createSession(getSolrCloudManager(nodeValues,
         (Map<String, Object>) loadFromResource("testMoveReplicasInMultipleCollections.json")))
         .getSuggester(MOVEREPLICA)
@@ -1314,6 +1346,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         .hint(Hint.COLL, "collection2")
         .hint(Suggester.Hint.SRC_NODE, "node2")
         .forceOperation(true);
+    @SuppressWarnings({"rawtypes"})
     SolrRequest op = suggester.getSuggestion();
     assertNotNull(op);
     assertEquals("collection2", op.getParams().get("collection"));
@@ -1345,6 +1378,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
 
   public void testMultipleCollections() {
+    @SuppressWarnings({"rawtypes"})
     Map policies = (Map) Utils.fromJSONString("{" +
         "  'cluster-preferences': [" +
         "    { 'maximize': 'freedisk', 'precision': 50}," +
@@ -1376,18 +1410,21 @@ public class TestPolicy extends SolrTestCaseJ4 {
           "}");
 
     }
+    @SuppressWarnings({"unchecked", "rawtypes"})
     Map<String, Map> nodeValues = (Map<String, Map>) Utils.fromJSONString("{" +
         "node1:{cores:12, freedisk: 334, heapUsage:10480, rack: rack4, sysprop.fs: slowdisk}," +
         "node2:{cores:4, freedisk: 749, heapUsage:6873, rack: rack3, sysprop.fs: unknown}," +
         "node3:{cores:7, freedisk: 262, heapUsage:7834, rack: rack2, sysprop.fs : ssd}," +
         "node4:{cores:8, freedisk: 375, heapUsage:16900, nodeRole:overseer, rack: rack1, sysprop.fs: unknown}" +
         "}");
+    @SuppressWarnings({"unchecked"})
     Policy policy = new Policy(policies);
     Suggester suggester = policy.createSession(getSolrCloudManager(nodeValues, clusterState))
         .getSuggester(ADDREPLICA)
         .hint(Hint.REPLICATYPE, Replica.Type.PULL)
         .hint(Hint.COLL_SHARD, new Pair<>("newColl", "shard1"))
         .hint(Hint.COLL_SHARD, new Pair<>("newColl2", "shard1"));
+    @SuppressWarnings({"rawtypes"})
     SolrRequest op;
     int countOp = 0;
     int countNewCollOp = 0;
@@ -1444,6 +1481,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         return new DelegatingNodeStateProvider(null) {
           @Override
           public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
+            @SuppressWarnings({"unchecked"})
             Map<String, Map<String, List<ReplicaInfo>>> o = (Map<String, Map<String, List<ReplicaInfo>>>) Utils.fromJSONString("{c1: {s0:[{}]}}");
             Utils.setObjectByPath(o, "c1/s0[0]", new ReplicaInfo("r0", "c1.s0", "c1", "s0", Replica.Type.NRT, "nodex", new HashMap<>()));
             return o;
@@ -1483,6 +1521,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
   public void testMerge() {
 
+    @SuppressWarnings({"rawtypes"})
     Map map = (Map) Utils.fromJSONString("{" +
         "  'cluster-preferences': [" +
         "    { 'maximize': 'freedisk', 'precision': 50}," +
@@ -1520,6 +1559,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
           "}");
 
     }
+    @SuppressWarnings({"unchecked"})
     Policy policy = new Policy(map);
     List<Clause> clauses = Policy.mergePolicies("mycoll", policy.getPolicies().get("policy1"), policy.getClusterPolicy());
     Collections.sort(clauses);
@@ -1549,6 +1589,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
           "  }";
 
     }
+    @SuppressWarnings({"unchecked"})
     Policy p = new Policy((Map<String, Object>) Utils.fromJSONString(rules));
     List<Clause> clauses = new ArrayList<>(p.getClusterPolicy());
     Collections.sort(clauses);
@@ -1556,6 +1597,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     assertEquals("sysprop.rack", clauses.get(0).tag.getName());
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void testRules() {
     String rules = "{" +
         "cluster-policy:[" +
@@ -1630,6 +1672,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "    {      'replica':'<2',      'shard':'#EACH',      'node':'#ANY'}," +
         "    {      'nodeRole':'overseer','replica':0}]," +
         "  'cluster-preferences':[{'minimize':'cores'}]}";
+    @SuppressWarnings({"unchecked"})
     Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
 //    PolicyHelper.SESSION_REF.set(ref1);
     String nodeValues = " {" +
@@ -1648,6 +1691,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "}";
 
 
+    @SuppressWarnings({"rawtypes"})
     Map policies = (Map) Utils.fromJSONString("{" +
         "  'cluster-preferences': [" +
         "    { 'maximize': 'freedisk', 'precision': 50}," +
@@ -1658,7 +1702,9 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "    { 'replica': '<2', 'shard': '#EACH', 'node': '#ANY'}," +
         "  ]" +
         "}");
+    @SuppressWarnings({"unchecked"})
     AutoScalingConfig config = new AutoScalingConfig(policies);
+    @SuppressWarnings({"unchecked", "rawtypes"})
     final SolrCloudManager solrCloudManager = new DelegatingCloudManager(getSolrCloudManager((Map<String, Map>) Utils.fromJSONString(nodeValues),
         clusterState)) {
       @Override
@@ -1734,17 +1780,20 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "      'cluster-preferences':[" +
         "      {'minimize':'cores', 'precision':3}," +
         "      {'maximize':'freedisk','precision':100}]}";
+    @SuppressWarnings({"unchecked", "rawtypes"})
     Map<String, Map> nodeValues = (Map<String, Map>) Utils.fromJSONString("{" +
         "node1:{cores:12, freedisk: 334, heapUsage:10480, rack: rack4, sysprop.fs: slowdisk}," +
         "node2:{cores:4, freedisk: 749, heapUsage:6873, rack: rack3, sysprop.fs: slowdisk}," +
         "node3:{cores:7, freedisk: 262, heapUsage:7834, rack: rack2, sysprop.fs : ssd}," +
         "node4:{cores:8, freedisk: 375, heapUsage:16900, nodeRole:overseer, rack: rack1, sysprop.fs: slowdisk}" +
         "}");
+    @SuppressWarnings({"unchecked"})
     Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(autoscaleJson));
     SolrCloudManager cloudManager = getSolrCloudManager(nodeValues, clusterState);
     Policy.Session session = policy.createSession(cloudManager);
     for (int i = 0; i < 3; i++) {
       Suggester suggester = session.getSuggester(ADDREPLICA);
+      @SuppressWarnings({"rawtypes"})
       SolrRequest op = suggester
           .hint(Hint.COLL_SHARD, new Pair<>("newColl", "shard1"))
           .getSuggestion();
@@ -1777,6 +1826,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
           "      {'maximize':'freedisk','precision':100}]}";
 
     }
+    @SuppressWarnings({"unchecked", "rawtypes"})
     Map<String, Map> nodeValues = (Map<String, Map>) Utils.fromJSONString("{" +
         "node1:{cores:12, freedisk: 334, heapUsage:10480, rack: rack4}," +
         "node2:{cores:4, freedisk: 749, heapUsage:6873, rack: rack3}," +
@@ -1784,10 +1834,12 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "node4:{cores:8, freedisk: 375, heapUsage:16900, nodeRole:overseer, rack: rack1}" +
         "}");
 
+    @SuppressWarnings({"unchecked"})
     Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(autoscaleJson));
     SolrCloudManager cloudManager = getSolrCloudManager(nodeValues, clusterState);
     Policy.Session session = policy.createSession(cloudManager);
     Suggester suggester = session.getSuggester(ADDREPLICA);
+    @SuppressWarnings({"rawtypes"})
     SolrRequest op = suggester
         .hint(Hint.COLL_SHARD, new Pair<>("newColl", "shard1"))
         .getSuggestion();
@@ -1810,6 +1862,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     assertEquals("node2", op.getParams().get("node"));
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void testMoveReplica() {
     String autoscaleJson = "{" +
         "      'cluster-policy':[" +
@@ -1841,6 +1894,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         new ReplicaInfo("core_node1", "core_node1", "compute_plan_action_test", "shard1", Replica.Type.NRT, "127.0.0.1:60089_solr", Collections.emptyMap()),
         new ReplicaInfo("core_node2", "core_node2", "compute_plan_action_test", "shard1", Replica.Type.NRT, "127.0.0.1:60089_solr", Collections.emptyMap())));
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     Map<String, Map<String, Object>> tagsMap = (Map) Utils.fromJSONString("{" +
         "      '127.0.0.1:60099_solr':{" +
         "        'cores':0," +
@@ -1849,9 +1903,11 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "        'cores':2," +
         "            'freedisk':918005641216}}");
 
+    @SuppressWarnings({"unchecked"})
     Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(autoscaleJson));
     Policy.Session session = policy.createSession(new DelegatingCloudManager(null) {
       @Override
+      @SuppressWarnings({"unchecked"})
       public ClusterStateProvider getClusterStateProvider() {
         return new DelegatingClusterStateProvider(null) {
           @Override
@@ -1871,6 +1927,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
           }
 
           @Override
+          @SuppressWarnings({"unchecked"})
           public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
             return (Map<String, Map<String, List<ReplicaInfo>>>) replicaInfoMap.get(node);
           }
@@ -1879,6 +1936,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     });
     Suggester suggester = session.getSuggester(MOVEREPLICA)
         .hint(Hint.TARGET_NODE, "127.0.0.1:60099_solr");
+    @SuppressWarnings({"rawtypes"})
     SolrRequest op = suggester.getSuggestion();
     assertNotNull("expect a non null operation", op);
   }
@@ -1930,12 +1988,14 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
     }
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     Map<String, Map> nodeValues = (Map<String, Map>) Utils.fromJSONString("{" +
         "node1:{cores:12, freedisk: 334, heapUsage:10480, rack: rack4}," +
         "node2:{cores:4, freedisk: 749, heapUsage:6873, rack: rack3}," +
         "node3:{cores:7, freedisk: 262, heapUsage:7834, rack: rack2}," +
         "node4:{cores:8, freedisk: 375, heapUsage:16900, nodeRole:overseer, sysprop.rack: rack1}" +
         "}");
+    @SuppressWarnings({"unchecked"})
     Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(rules));
     SolrCloudManager cloudManager = getSolrCloudManager(nodeValues, clusterState);
     SolrCloudManager cdp = new DelegatingCloudManager(null) {
@@ -1979,11 +2039,13 @@ public class TestPolicy extends SolrTestCaseJ4 {
     assertNotNull(op);
     assertEquals("node2", op.getNode());
   }
+  @SuppressWarnings({"rawtypes"})
   static SolrCloudManager getSolrCloudManager(final Map<String, Map> nodeValues, String clusterS) {
     return getSolrCloudManager(nodeValues,(Map) Utils.fromJSONString(clusterS));
 
   }
-  private static SolrCloudManager getSolrCloudManager(final Map<String, Map> nodeValues, Map clusterS) {
+  private static SolrCloudManager getSolrCloudManager(@SuppressWarnings({"rawtypes"})final Map<String, Map> nodeValues,
+                                                      @SuppressWarnings({"rawtypes"})Map clusterS) {
     return new SolrCloudManager() {
       ObjectCache objectCache = new ObjectCache();
 
@@ -2041,7 +2103,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
       }
 
       @Override
-      public SolrResponse request(SolrRequest req) {
+      public SolrResponse request(@SuppressWarnings({"rawtypes"})SolrRequest req) {
         return null;
       }
 
@@ -2057,6 +2119,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "        'replica':1," +
         "        'shard':'#EACH'," +
         "        'port':'50096'}]}}";
+    @SuppressWarnings({"unchecked", "rawtypes"})
     Map<String, Map> nodeValues = (Map<String, Map>) Utils.fromJSONString("{" +
         "    '127.0.0.1:50097_solr':{" +
         "      'cores':0," +
@@ -2092,6 +2155,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         };
       }
     };
+    @SuppressWarnings({"unchecked"})
     List<ReplicaPosition> locations = PolicyHelper.getReplicaLocations(
         "newColl", new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScaleJson)),
         dataProvider, Collections.singletonMap("newColl", "c1"), Arrays.asList("shard1", "shard2"), 1, 0, 0, null);
@@ -2139,6 +2203,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     }
 
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     Map<String, Map> nodeValues = (Map<String, Map>) Utils.fromJSONString("{" +
         "node1:{cores:12, freedisk: 334, heap:10480, sysprop.rack:rack3}," +
         "node2:{cores:4, freedisk: 749, heap:6873, sysprop.fs : ssd, sysprop.rack:rack1}," +
@@ -2174,6 +2239,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         };
       }
     };
+    @SuppressWarnings({"unchecked"})
     List<ReplicaPosition> locations = PolicyHelper.getReplicaLocations(
         "newColl", new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScaleJson)),
         cloudManager, Collections.singletonMap("newColl", "policy1"), Arrays.asList("shard1", "shard2"), 3, 0, 0, null);
@@ -2185,10 +2251,12 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "{'cores':'<10', 'node':'#ANY'}," +
         "{'replica':'<2', 'shard':'#EACH','node':'#ANY'}]," +
         "'cluster-preferences':[{'minimize':'cores'}]}";
+    @SuppressWarnings({"unchecked"})
     Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
     Policy.Session session = policy.createSession(cloudManagerWithData((Map) loadFromResource("testMoveReplicaSuggester.json")));
     Suggester suggester = session.getSuggester(MOVEREPLICA)
         .hint(Hint.TARGET_NODE, "10.0.0.6:7574_solr");
+    @SuppressWarnings({"rawtypes"})
     SolrRequest op = suggester.getSuggestion();
     assertNotNull(op);
     suggester = suggester.getSession()
@@ -2221,10 +2289,12 @@ public class TestPolicy extends SolrTestCaseJ4 {
           "       {nodeset:{ nodeRole:overseer},replica:0}]}";
 
     }
+    @SuppressWarnings({"unchecked"})
     Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
     Policy.Session session = policy.createSession(cloudManagerWithData((Map) loadFromResource("testComputePlanAfterNodeAdded.json")));
     Suggester suggester = session.getSuggester(CollectionParams.CollectionAction.MOVEREPLICA)
         .hint(Hint.TARGET_NODE, "127.0.0.1:51147_solr");
+    @SuppressWarnings({"rawtypes"})
     SolrRequest op = suggester.getSuggestion();
     log.info("{}", op);
     assertNotNull("operation expected ", op);
@@ -2244,6 +2314,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
           "  cluster-preferences :[{ minimize : cores }]}";
 
     }
+    @SuppressWarnings({"unchecked"})
     List<Suggester.SuggestionInfo> l = PolicyHelper.getSuggestions(new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScalingjson)),
         cloudManagerWithData((Map) loadFromResource("testReplicaCountSuggestions.json")));
     assertFalse(l.isEmpty());
@@ -2261,6 +2332,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
   }
 
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void testReplicaPercentage() {
     List<Map> l = (List<Map>) loadFromResource("testReplicaPercentage.json");
     String autoScalingjson = "  { cluster-policy:[" +
@@ -2303,6 +2375,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
   }
 
+  @SuppressWarnings({"unchecked"})
   public void testReplicaZonesPercentage() {
     String autoScalingjson = "  { cluster-policy:[" +
         "    { replica :'33%', shard: '#EACH', sysprop.az : east}," +
@@ -2320,6 +2393,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
     int westCount = 0, eastCount = 0;
     for (int i = 0; i < 12; i++) {
+      @SuppressWarnings({"rawtypes"})
       SolrRequest suggestion = txn.getCurrentSession()
           .getSuggester(ADDREPLICA)
           .hint(Hint.COLL_SHARD, new Pair<>(COLL_NAME, "shard1"))
@@ -2350,7 +2424,9 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
   }
 
+  @SuppressWarnings({"unchecked"})
   public void testFreeDiskDeviation() {
+    @SuppressWarnings({"rawtypes"})
     Map map = (Map) loadFromResource("testFreeDiskDeviation.json");
     AutoScalingConfig cfg = new AutoScalingConfig((Map<String, Object>) map.get("config"));
     if(useNodeset){
@@ -2390,6 +2466,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
   }
 
 
+  @SuppressWarnings({"unchecked"})
   public void testFreeDiskSuggestions() {
     String autoScalingjson = "  { cluster-policy:[" +
         "    { replica :'0', freedisk:'<1000'}," +
@@ -2459,6 +2536,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     String autoScalingjson = "  { cluster-policy:[" +
         "    { cores :'<3', node :'#ANY'}]," +
         "  cluster-preferences :[{ minimize : cores }]}";
+    @SuppressWarnings({"unchecked"})
     AutoScalingConfig cfg = new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
     List<Violation> violations = cfg.getPolicy().createSession(cloudManagerWithData((Map) loadFromResource("testCoresSuggestions.json"))).getViolations();
     assertFalse(violations.isEmpty());
@@ -2498,6 +2576,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     }
 
 
+    @SuppressWarnings({"unchecked"})
     AutoScalingConfig cfg = new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
     List<Violation> violations = cfg.getPolicy().createSession(cloudManagerWithData((Map) loadFromResource("testSyspropSuggestions1.json"))).getViolations();
     assertEquals("expected 2 violations", 2, violations.size());
@@ -2531,6 +2610,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
           "}";
 
     }
+    @SuppressWarnings({"unchecked"})
     AutoScalingConfig cfg = new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
     List<Violation> violations = cfg.getPolicy().createSession(cloudManagerWithData((Map) loadFromResource("testPortSuggestions.json"))).getViolations();
     assertEquals(2, violations.size());
@@ -2547,6 +2627,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         " cluster-policy:[{cores:'<10',node:'#ANY'}," +
         "       {replica:'<2', shard:'#EACH',node:'#ANY'}," +
         "       { nodeRole:overseer,replica:0}]}";
+    @SuppressWarnings({"unchecked"})
     Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
     Policy.Session session = policy.createSession(cloudManagerWithData((Map) loadFromResource("testDiskSpaceHint.json")));
     Suggester suggester = session.getSuggester(CollectionAction.ADDREPLICA)
@@ -2575,6 +2656,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "}";
 
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     Map<String, Map> nodeValues = (Map<String, Map>) Utils.fromJSONString("{" +
         "node1:{cores:12, freedisk: 334, heap:10480, sysprop.rack:rack3}," +
         "node2:{cores:4, freedisk: 262, heap:6873, sysprop.fs : ssd, sysprop.rack:rack1}," +
@@ -2594,6 +2676,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
           }
 
           @Override
+          @SuppressWarnings({"unchecked", "rawtypes"})
           public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
             if (node.equals("node1")) {
               Map m = Utils.makeMap("newColl",
@@ -2637,6 +2720,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         };
       }
     };
+    @SuppressWarnings({"unchecked"})
     List<ReplicaPosition> locations = PolicyHelper.getReplicaLocations(
         "newColl", new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScaleJson)),
         cloudManager, null, Arrays.asList("shard1", "shard2"), 1, 0, 0, null);
@@ -2678,6 +2762,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
   }
 
   public void testScheduledTriggerFailure() throws Exception {
+    @SuppressWarnings({"rawtypes"})
     Map jsonObj = (Map) loadFromResource("testScheduledTriggerFailure.json");
     SolrCloudManager cloudManager = createCloudManager(jsonObj);
     Suggester suggester = createSuggester(cloudManager, jsonObj, null);
@@ -2696,6 +2781,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
   }
 
   public void testUtilizeNodeFailure() throws Exception {
+    @SuppressWarnings({"rawtypes"})
     Map jsonObj = (Map) loadFromResource("testUtilizeNodeFailure.json"); //(Map) Utils.fromJSONString(state);
     SolrCloudManager cloudManager = createCloudManager(jsonObj);
     Suggester suggester = createSuggester(cloudManager, jsonObj, null);
@@ -2714,6 +2800,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
   }
 
   public void testUtilizeNodeFailure2() throws Exception {
+    @SuppressWarnings({"rawtypes"})
     Map jsonObj = (Map) loadFromResource("testUtilizeNodeFailure2.json");
     SolrCloudManager cloudManager = createCloudManager(jsonObj);
     Suggester suggester = createSuggester(cloudManager, jsonObj, null);
@@ -2732,6 +2819,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
   }
 
   //SOLR-12358
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void testSortError() {
     Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString("{cluster-preferences: [{minimize : cores, precision:1}, " +
         "{maximize : freedisk, precision: 50}, " +
@@ -2791,6 +2879,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "  ]" +
         "}";
 
+    @SuppressWarnings({"unchecked"})
     AutoScalingConfig cfg = new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
     List<Violation> violations = cfg.getPolicy().createSession(cloudManagerWithData((Map) loadFromResource("testViolationOutput.json"))).getViolations();
     StringWriter writer = new StringWriter();
@@ -2811,6 +2900,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
   }
 
 
+  @SuppressWarnings({"unchecked"})
   public void testFreediskPercentage() {
 
     String autoScalingjson = "{" +
@@ -2848,6 +2938,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public static void fixRequiredProps(Map<String, Object> testData) {
     Map<String, Object> clusterState = (Map<String, Object>) testData.get("clusterstate");
     clusterState.forEach((collection, val) -> {
@@ -2890,6 +2981,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     });
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void testAutoscalingPreferencesUsedWithNoPolicy() throws IOException, InterruptedException {
     Map<String, Object> m = (Map<String, Object>) loadFromResource("testAutoscalingPreferencesUsedWithNoPolicy.json");
     fixRequiredProps(m);
@@ -2915,6 +3007,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
       });
     });
+    @SuppressWarnings({"unchecked"})
     AutoScalingConfig asc = m.containsKey("autoscalingJson") ? new AutoScalingConfig((Map<String, Object>) m.get("autoscalingJson")) : new AutoScalingConfig(Collections.emptyMap());
     DelegatingCloudManager cloudManager = new DelegatingCloudManager(null) {
 
@@ -2932,13 +3025,14 @@ public class TestPolicy extends SolrTestCaseJ4 {
       public ClusterStateProvider getClusterStateProvider() {
         return new DelegatingClusterStateProvider(null) {
           @Override
+          @SuppressWarnings({"unchecked"})
           public Set<String> getLiveNodes() {
             return new HashSet<>((Collection<String>) m.get("liveNodes"));
           }
 
           @Override
-          public ClusterState getClusterState() throws IOException {
-            return ClusterState.load(0, clusterState, getLiveNodes(), ZkStateReader.getCollectionPath("c1"));
+          public ClusterState getClusterState() {
+            return ClusterState.createFromCollectionMap(0, clusterState, getLiveNodes());
           }
 
           @Override
@@ -2953,12 +3047,14 @@ public class TestPolicy extends SolrTestCaseJ4 {
         return new DelegatingNodeStateProvider(null) {
           @Override
           public Map<String, Object> getNodeValues(String node, Collection<String> tags) {
+            @SuppressWarnings({"unchecked"})
             Map<String, Object> result = (Map<String, Object>) Utils.getObjectByPath(m, false, Arrays.asList("nodeValues", node));
             return result == null ? new HashMap<>() : result;
           }
 
           @Override
           public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
+            @SuppressWarnings({"unchecked"})
             Map<String, Map<String, List<ReplicaInfo>>> result = (Map<String, Map<String, List<ReplicaInfo>>>) Utils.getObjectByPath(m, false, Arrays.asList("replicaInfo", node));
             return result == null ? new HashMap<>() : result;
           }
@@ -2984,11 +3080,15 @@ public class TestPolicy extends SolrTestCaseJ4 {
   }
 
   public void testPolicyForEmptyCollection() throws IOException, InterruptedException {
+    @SuppressWarnings({"rawtypes"})
     Map m = (Map) loadFromResource("testEmptyCollection.json");
+    @SuppressWarnings({"unchecked", "rawtypes"})
     Map clusterStateMap = (Map) m.remove("clusterstate");
+    @SuppressWarnings({"unchecked", "rawtypes"})
     Map replicaInfoMap = (Map) m.remove("replicaInfo");
 
-    ClusterState clusterState = ClusterState.load(1, clusterStateMap, ImmutableSet.of("node1", "node2"), CLUSTER_STATE);
+    @SuppressWarnings({"unchecked"})
+    ClusterState clusterState = ClusterState.createFromCollectionMap(1, clusterStateMap, ImmutableSet.of("node1", "node2"));
 
     List<String> shards = Arrays.asList("shard1", "shard2", "shard3");
 
@@ -3027,11 +3127,13 @@ public class TestPolicy extends SolrTestCaseJ4 {
       public NodeStateProvider getNodeStateProvider() {
         return new DelegatingNodeStateProvider(null) {
           @Override
+          @SuppressWarnings({"unchecked"})
           public Map<String, Object> getNodeValues(String node, Collection<String> keys) {
             return Collections.EMPTY_MAP;
           }
 
           @Override
+          @SuppressWarnings({"unchecked"})
           public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
             //return Collections.EMPTY_MAP;
             return replicaInfoMap;
@@ -3060,6 +3162,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
    * @see Assign#usePolicyFramework(DocCollection, SolrCloudManager)
    */
   public void testPolicyMapWriterWithEmptyPreferences() throws IOException {
+    @SuppressWarnings({"rawtypes"})
     List<Map> defaultPreferences = Policy.DEFAULT_PREFERENCES
         .stream().map(preference -> preference.getOriginal()).collect(Collectors.toList());
 

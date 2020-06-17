@@ -4168,6 +4168,40 @@ public class TestIndexWriter extends LuceneTestCase {
     }
   }
 
+  public void testMergeZeroDocsMergeIsClosedOnce() throws IOException {
+    LogDocMergePolicy keepAllSegments = new LogDocMergePolicy() {
+      @Override
+      public boolean keepFullyDeletedSegment(IOSupplier<CodecReader> readerIOSupplier) {
+        return true;
+      }
+    };
+    try (Directory dir = newDirectory()) {
+      try (IndexWriter writer = new IndexWriter(dir,
+          new IndexWriterConfig().setMergePolicy(new OneMergeWrappingMergePolicy(keepAllSegments, merge -> {
+            SetOnce<Boolean> onlyFinishOnce = new SetOnce<>();
+            return new MergePolicy.OneMerge(merge.segments) {
+              @Override
+              public void mergeFinished(boolean success) {
+                onlyFinishOnce.set(true);
+              }
+            };
+          })))) {
+        Document doc = new Document();
+        doc.add(new StringField("id", "1", Field.Store.NO));
+        writer.addDocument(doc);
+        writer.flush();
+        writer.addDocument(doc);
+        writer.flush();
+        writer.deleteDocuments(new Term("id", "1"));
+        writer.flush();
+        assertEquals(2, writer.getSegmentCount());
+        assertEquals(0, writer.getDocStats().numDocs);
+        assertEquals(2, writer.getDocStats().maxDoc);
+        writer.forceMerge(1);
+      }
+    }
+  }
+
   public void testMergeOnCommitKeepFullyDeletedSegments() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig();
@@ -4182,8 +4216,8 @@ public class TestIndexWriter extends LuceneTestCase {
                                                     SegmentInfos segmentInfos,
                                                     MergeContext mergeContext) {
         List<SegmentCommitInfo> fullyDeletedSegments = segmentInfos.asList().stream()
-                .filter(s -> s.info.maxDoc() - s.getDelCount() == 0)
-                .collect(Collectors.toList());
+            .filter(s -> s.info.maxDoc() - s.getDelCount() == 0)
+            .collect(Collectors.toList());
         if (fullyDeletedSegments.isEmpty()) {
           return null;
         }

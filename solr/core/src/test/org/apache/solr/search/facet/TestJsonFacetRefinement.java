@@ -1212,10 +1212,13 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
                                     "{ type:func, func:'relatedness($fore,$back)', min_popularity:0.2 }")) {
         client.testJQ(params(p, "rows", "0", "q", "*:*", "fore", "${xy_s}:X", "back", "${num_d}:[0 TO 100]",
                              "json.facet", "{"
-                             + "   cat0:{ ${terms} type:terms, field: ${cat_s}, "
+                             + "   cat0:{ ${terms} type:terms, field: ${cat_s}, allBuckets:true, "
                              + "          sort:'count desc', limit:1, overrequest:0, refine:true, "
                              + "          facet:{ s:"+s+"} } }")
-                      , "facets=={ count:8, cat0:{ buckets:[ "
+                      , "facets=={ count:8, cat0:{ "
+                      // 's' key must not exist in the allBuckets bucket
+                      + "   allBuckets: { count:8 }"
+                      + "   buckets:[ "
                       + "   { val:A, count:4, "
                       + "     s : { relatedness: 0.00496, "
                       //+ "           foreground_count: 3, "
@@ -1231,11 +1234,14 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
       // same query with a high min_pop should result in a -Infinity relatedness score
       client.testJQ(params(p, "rows", "0", "q", "*:*", "fore", "${xy_s}:X", "back", "${num_d}:[0 TO 100]",
                            "json.facet", "{"
-                           + "   cat0:{ ${terms} type:terms, field: ${cat_s}, "
+                           + "   cat0:{ ${terms} type:terms, field: ${cat_s},  allBuckets:true,"
                            + "          sort:'count desc', limit:1, overrequest:0, refine:true, "
                            + "          facet:{ s:{ type:func, func:'relatedness($fore,$back)', "
                            + "                      min_popularity:0.6 } } } }")
-                    , "facets=={ count:8, cat0:{ buckets:[ "
+                    , "facets=={ count:8, cat0:{ "
+                    // 's' key must not exist in the allBuckets bucket
+                    + "   allBuckets: { count:8 }"
+                    + "   buckets:[ "
                     + "   { val:A, count:4, "
                     + "     s : { relatedness: '-Infinity', "
                     //+ "           foreground_count: 3, "
@@ -1247,6 +1253,22 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
                     + "         } } ] }" +
                     "}"
                     );
+
+      // really special case: allBuckets when there are no regular buckets...
+      for (String refine : Arrays.asList("", "refine: true,", "refine:false,")) {
+        client.testJQ(params(p, "rows", "0", "q", "*:*", "fore", "${xy_s}:X", "back", "${num_d}:[0 TO 100]",
+                             "json.facet", "{"
+                             + "   cat0:{ ${terms} type:terms, field: bogus_field_s, allBuckets:true, "
+                             + refine
+                             + "          facet:{ s:{ type:func, func:'relatedness($fore,$back)' } } } }")
+                      , "facets=={ count:8, cat0:{ "
+                      // 's' key must not exist in the allBuckets bucket
+                      + "    allBuckets: { count:0 }"
+                      + "    buckets:[ ]"
+                      + "} }"
+                      );
+      }
+
 
       // SKG under nested facet where some terms only exist on one shard
       { 

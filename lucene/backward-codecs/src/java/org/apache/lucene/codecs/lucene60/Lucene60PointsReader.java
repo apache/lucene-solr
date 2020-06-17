@@ -19,11 +19,7 @@ package org.apache.lucene.codecs.lucene60;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.codecs.CodecUtil;
@@ -34,12 +30,10 @@ import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.util.Accountable;
-import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.bkd.BKDReader;
 
-/** Reads point values previously written with {@link Lucene60PointsWriter} */
+/** Reads point values previously written with Lucene60PointsWriter */
 public class Lucene60PointsReader extends PointsReader implements Closeable {
   final IndexInput dataIn;
   final SegmentReadState readState;
@@ -63,7 +57,7 @@ public class Lucene60PointsReader extends PointsReader implements Closeable {
         CodecUtil.checkIndexHeader(indexIn,
                                    Lucene60PointsFormat.META_CODEC_NAME,
                                    Lucene60PointsFormat.INDEX_VERSION_START,
-                                   Lucene60PointsFormat.INDEX_VERSION_START,
+                                   Lucene60PointsFormat.INDEX_VERSION_CURRENT,
                                    readState.segmentInfo.getId(),
                                    readState.segmentSuffix);
         int count = indexIn.readVInt();
@@ -103,7 +97,7 @@ public class Lucene60PointsReader extends PointsReader implements Closeable {
         int fieldNumber = ent.getKey();
         long fp = ent.getValue();
         dataIn.seek(fp);
-        BKDReader reader = new BKDReader(dataIn);
+        BKDReader reader = new BKDReader(dataIn, dataIn, dataIn);
         readers.put(fieldNumber, reader);
       }
 
@@ -133,21 +127,7 @@ public class Lucene60PointsReader extends PointsReader implements Closeable {
 
   @Override
   public long ramBytesUsed() {
-    long sizeInBytes = 0;
-    for(BKDReader reader : readers.values()) {
-      sizeInBytes += reader.ramBytesUsed();
-    }
-    return sizeInBytes;
-  }
-
-  @Override
-  public Collection<Accountable> getChildResources() {
-    List<Accountable> resources = new ArrayList<>();
-    for(Map.Entry<Integer,BKDReader> ent : readers.entrySet()) {
-      resources.add(Accountables.namedAccountable(readState.fieldInfos.fieldInfo(ent.getKey()).name,
-                                                  ent.getValue()));
-    }
-    return Collections.unmodifiableList(resources);
+    return 0L;
   }
 
   @Override

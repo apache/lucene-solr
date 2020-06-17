@@ -33,8 +33,6 @@ import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.search.PhraseQuery;
 
-import static org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter.*;
-
 /**
  * Factory for {@link WordDelimiterFilter}.
  * <pre class="prettyprint">
@@ -58,6 +56,23 @@ import static org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter.*;
  */
 @Deprecated
 public class WordDelimiterFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
+
+  private static final int CATENATE_ALL = WordDelimiterFilter.CATENATE_ALL;
+  private static final int CATENATE_NUMBERS = WordDelimiterFilter.CATENATE_NUMBERS;
+  private static final int CATENATE_WORDS = WordDelimiterFilter.CATENATE_WORDS;
+  private static final int GENERATE_NUMBER_PARTS = WordDelimiterFilter.GENERATE_NUMBER_PARTS;
+  private static final int GENERATE_WORD_PARTS = WordDelimiterFilter.GENERATE_WORD_PARTS;
+  private static final int PRESERVE_ORIGINAL = WordDelimiterFilter.PRESERVE_ORIGINAL;
+  private static final int SPLIT_ON_CASE_CHANGE = WordDelimiterFilter.SPLIT_ON_CASE_CHANGE;
+  private static final int SPLIT_ON_NUMERICS = WordDelimiterFilter.SPLIT_ON_NUMERICS;
+  private static final int STEM_ENGLISH_POSSESSIVE = WordDelimiterFilter.STEM_ENGLISH_POSSESSIVE;
+  private static final int ALPHA = WordDelimiterFilter.ALPHA;
+  private static final int ALPHANUM = WordDelimiterFilter.ALPHANUM;
+  private static final int DIGIT = WordDelimiterFilter.DIGIT;
+  private static final int LOWER = WordDelimiterFilter.LOWER;
+  private static final int SUBWORD_DELIM = WordDelimiterFilter.SUBWORD_DELIM;
+  private static final int UPPER = WordDelimiterFilter.UPPER;
+
 
   /** SPI name */
   public static final String NAME = "wordDelimiter";

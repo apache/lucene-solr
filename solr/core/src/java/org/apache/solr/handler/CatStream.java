@@ -24,7 +24,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
@@ -126,14 +125,14 @@ public class CatStream extends TupleStream implements Expressible {
   public Tuple read() throws IOException {
     if (maxLines >= 0 && linesReturned >= maxLines) {
       closeCurrentFileIfSet();
-      return createEofTuple();
+      return Tuple.EOF();
     } else if (currentFileHasMoreLinesToRead()) {
       return fetchNextLineFromCurrentFile();
     } else if (advanceToNextFileWithData()) {
       return fetchNextLineFromCurrentFile();
     } else { // No more data
       closeCurrentFileIfSet();
-      return createEofTuple();
+      return Tuple.EOF();
     }
   }
 
@@ -197,19 +196,14 @@ public class CatStream extends TupleStream implements Expressible {
     return false;
   }
 
+  @SuppressWarnings({"unchecked"})
   private Tuple fetchNextLineFromCurrentFile() {
     linesReturned++;
 
-    HashMap m = new HashMap();
-    m.put("file", currentFilePath.displayPath);
-    m.put("line", currentFileLines.next());
-    return new Tuple(m);
-  }
-
-  private Tuple createEofTuple() {
-    HashMap m = new HashMap();
-    m.put("EOF", true);
-    return new Tuple(m);
+    return new Tuple(
+        "file", currentFilePath.displayPath,
+        "line", currentFileLines.next()
+    );
   }
 
   private boolean currentFileHasMoreLinesToRead() {

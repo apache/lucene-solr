@@ -26,9 +26,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 class LimitStream extends TupleStream {
 
@@ -79,9 +77,7 @@ class LimitStream extends TupleStream {
   public Tuple read() throws IOException {
     ++count;
     if(count > limit) {
-      Map<String, String> fields = new HashMap<>();
-      fields.put("EOF", "true");
-      return new Tuple(fields);
+      return Tuple.EOF();
     }
 
     return stream.read();

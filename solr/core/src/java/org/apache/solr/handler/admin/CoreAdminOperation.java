@@ -245,6 +245,7 @@ enum CoreAdminOperation implements CoreAdminOp {
   RESTORECORE_OP(RESTORECORE, new RestoreCoreOp()),
   CREATESNAPSHOT_OP(CREATESNAPSHOT, new CreateSnapshotOp()),
   DELETESNAPSHOT_OP(DELETESNAPSHOT, new DeleteSnapshotOp()),
+  @SuppressWarnings({"unchecked"})
   LISTSNAPSHOTS_OP(LISTSNAPSHOTS, it -> {
     final SolrParams params = it.req.getParams();
     String cname = params.required().get(CoreAdminParams.CORE);
@@ -257,6 +258,7 @@ enum CoreAdminOperation implements CoreAdminOp {
       }
 
       SolrSnapshotMetaDataManager mgr = core.getSnapshotMetaDataManager();
+      @SuppressWarnings({"rawtypes"})
       NamedList result = new NamedList();
       for (String name : mgr.listSnapshots()) {
         Optional<SnapshotMetaData> metadata = mgr.getSnapshotMetaData(name);
@@ -296,6 +298,7 @@ enum CoreAdminOperation implements CoreAdminOp {
    * @return - a named list of key/value pairs from the core.
    * @throws IOException - LukeRequestHandler can throw an I/O exception
    */
+  @SuppressWarnings({"unchecked", "rawtypes"})
   static NamedList<Object> getCoreStatus(CoreContainer cores, String cname, boolean isIndexInfoNeeded) throws IOException {
     NamedList<Object> info = new SimpleOrderedMap<>();
 

@@ -73,7 +73,7 @@ import org.apache.lucene.index.SegmentWriteState;
  * @lucene.experimental
  */
 
-public final class Lucene60PointsFormat extends PointsFormat {
+public class Lucene60PointsFormat extends PointsFormat {
 
   static final String DATA_CODEC_NAME = "Lucene60PointsFormatData";
   static final String META_CODEC_NAME = "Lucene60PointsFormatMeta";
@@ -100,7 +100,7 @@ public final class Lucene60PointsFormat extends PointsFormat {
 
   @Override
   public PointsWriter fieldsWriter(SegmentWriteState state) throws IOException {
-    return new Lucene60PointsWriter(state);
+    throw new UnsupportedOperationException("Old codecs may only be used for reading");
   }
 
   @Override

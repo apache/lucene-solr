@@ -82,7 +82,7 @@ abstract class TermsHash {
     if (nextTermsHash != null) {
       Map<String,TermsHashPerField> nextChildFields = new HashMap<>();
       for (final Map.Entry<String,TermsHashPerField> entry : fieldsToFlush.entrySet()) {
-        nextChildFields.put(entry.getKey(), entry.getValue().nextPerField);
+        nextChildFields.put(entry.getKey(), entry.getValue().getNextPerField());
       }
       nextTermsHash.flush(nextChildFields, state, sortMap, norms);
     }

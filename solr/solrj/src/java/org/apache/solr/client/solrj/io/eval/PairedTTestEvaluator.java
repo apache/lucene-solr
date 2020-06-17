@@ -17,15 +17,14 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 import org.apache.commons.math3.stat.inference.TTest;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.common.params.StreamParams;
 
 public class PairedTTestEvaluator extends RecursiveNumericListEvaluator implements TwoValueWorker {
   protected static final long serialVersionUID = 1L;
@@ -42,9 +41,9 @@ public class PairedTTestEvaluator extends RecursiveNumericListEvaluator implemen
   public Object doWork(Object value1, Object value2) throws IOException {
 
     TTest tTest = new TTest();
-    Map map = new HashMap();
-    Tuple tuple = new Tuple(map);
+    Tuple tuple = new Tuple();
     if(value1 instanceof List) {
+      @SuppressWarnings({"unchecked"})
       List<Number> values1 = (List<Number>)value1;
       double[] samples1 = new double[values1.size()];
 
@@ -53,6 +52,7 @@ public class PairedTTestEvaluator extends RecursiveNumericListEvaluator implemen
       }
 
       if(value2 instanceof List) {
+        @SuppressWarnings({"unchecked"})
         List<Number> values2 = (List<Number>) value2;
         double[] samples2 = new double[values2.size()];
 
@@ -63,7 +63,7 @@ public class PairedTTestEvaluator extends RecursiveNumericListEvaluator implemen
         double tstat = tTest.pairedT(samples1, samples2);
         double pval = tTest.pairedTTest(samples1, samples2);
         tuple.put("t-statistic", tstat);
-        tuple.put("p-value", pval);
+        tuple.put(StreamParams.P_VALUE, pval);
         return tuple;
       } else {
         throw new IOException("Second parameter for pairedTtest must be a double array");

@@ -119,10 +119,10 @@ public class Test2BFST extends LuceneTestCase {
           if (verify == 0) {
             System.out.println("\nTEST: save/load FST and re-verify");
             IndexOutput out = dir.createOutput("fst", IOContext.DEFAULT);
-            fst.save(out);
+            fst.save(out, out);
             out.close();
             IndexInput in = dir.openInput("fst", IOContext.DEFAULT);
-            fst = new FST<>(in, outputs);
+            fst = new FST<>(in, in, outputs);
             in.close();
           } else {
             dir.deleteFile("fst");
@@ -198,10 +198,10 @@ public class Test2BFST extends LuceneTestCase {
           if (verify == 0) {
             System.out.println("\nTEST: save/load FST and re-verify");
             IndexOutput out = dir.createOutput("fst", IOContext.DEFAULT);
-            fst.save(out);
+            fst.save(out, out);
             out.close();
             IndexInput in = dir.openInput("fst", IOContext.DEFAULT);
-            fst = new FST<>(in, outputs);
+            fst = new FST<>(in, in, outputs);
             in.close();
           } else {
             dir.deleteFile("fst");
@@ -256,7 +256,9 @@ public class Test2BFST extends LuceneTestCase {
             // forward lookup:
             assertEquals(output, Util.get(fst, input).longValue());
             // reverse lookup:
-            assertEquals(input, Util.getByOutput(fst, output));
+            @SuppressWarnings("deprecation")
+            IntsRef inputResult = Util.getByOutput(fst, output);
+            assertEquals(input, inputResult);
             output += 1 + r.nextInt(10);
             nextInput(r, ints);
           }
@@ -284,10 +286,10 @@ public class Test2BFST extends LuceneTestCase {
           if (verify == 0) {
             System.out.println("\nTEST: save/load FST and re-verify");
             IndexOutput out = dir.createOutput("fst", IOContext.DEFAULT);
-            fst.save(out);
+            fst.save(out, out);
             out.close();
             IndexInput in = dir.openInput("fst", IOContext.DEFAULT);
-            fst = new FST<>(in, outputs);
+            fst = new FST<>(in, in, outputs);
             in.close();
           } else {
             dir.deleteFile("fst");

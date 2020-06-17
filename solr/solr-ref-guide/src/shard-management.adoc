@@ -272,7 +272,7 @@ http://localhost:8983/solr/admin/collections?action=CREATESHARD&collection=anImp
 [[deleteshard]]
 == DELETESHARD: Delete a Shard
 
-Deleting a shard will unload all replicas of the shard, remove them from `clusterstate.json`, and (by default) delete the instanceDir and dataDir for each replica. It will only remove shards that are inactive, or which have no range given for custom sharding.
+Deleting a shard will unload all replicas of the shard, remove them from the collection's `state.json`, and (by default) delete the instanceDir and dataDir for each replica. It will only remove shards that are inactive, or which have no range given for custom sharding.
 
 `/admin/collections?action=DELETESHARD&shard=_shardID_&collection=_name_`
 
