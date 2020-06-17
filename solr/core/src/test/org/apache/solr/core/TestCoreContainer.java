@@ -19,6 +19,7 @@ package org.apache.solr.core;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -353,26 +354,34 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   @Test
   public void assertAllowPathFromSolrXml() throws Exception {
     Assume.assumeFalse(OS.isFamilyWindows());
+    System.setProperty("solr.allowPaths", "/var/solr");
     CoreContainer cc = init(ALLOW_PATHS_SOLR_XML);
-    cc.getAllowPaths().add(Path.of("/var/solr"));
+    cc.assertPathAllowed(Paths.get("/var/solr/foo"));
     try {
-      assertPathAllowed("/var/solr/foo");
-      assertPathBlocked("/tmp");
+      cc.assertPathAllowed(Paths.get("/tmp"));
+      fail("Path /tmp should not be allowed");
+    } catch(SolrException e) {
+      /* Ignore */
     } finally {
       cc.shutdown();
+      System.clearProperty("solr.allowPaths");
     }
   }
 
   @Test
   public void assertAllowPathFromSolrXmlWin() throws Exception {
     Assume.assumeTrue(OS.isFamilyWindows());
+    System.setProperty("solr.allowPaths", "C:\\solr");
     CoreContainer cc = init(ALLOW_PATHS_SOLR_XML);
-    cc.getAllowPaths().add(Path.of("C:\\solr"));
+    cc.assertPathAllowed(Paths.get("C:\\solr\\foo"));
     try {
-      assertPathAllowed("C:\\solr\\data");
-      assertPathBlocked("C:\\tmp");
+      cc.assertPathAllowed(Paths.get("C:\\tmp"));
+      fail("Path C:\\tmp should not be allowed");
+    } catch(SolrException e) {
+      /* Ignore */
     } finally {
       cc.shutdown();
+      System.clearProperty("solr.allowPaths");
     }
   }
 
@@ -408,6 +417,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
   private void assertPathBlocked(String path) {
     try {
+
       SolrPaths.assertPathAllowed(Path.of(path), OS.isFamilyWindows() ? ALLOWED_PATHS_WIN : ALLOWED_PATHS);
       fail("Path " + path + " sould have been blocked.");
     } catch (SolrException e) { /* Expected */ }
