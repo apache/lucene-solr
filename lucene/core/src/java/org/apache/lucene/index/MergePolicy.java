@@ -232,8 +232,6 @@ public abstract class MergePolicy {
     final int totalMaxDoc;
     Throwable error;
 
-    boolean committed; // Set by IndexWriter once the merge has been committed to disk
-
     /** Sole constructor.
      * @param segments List of {@link SegmentCommitInfo}s
      *        to be merged. */

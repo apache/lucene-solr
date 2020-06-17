@@ -4017,7 +4017,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     }
 
     try (Closeable finalizer = this::checkpoint) {
-      merge.committed = true;
       // Must close before checkpoint, otherwise IFD won't be
       // able to delete the held-open files from the merge
       // readers:
