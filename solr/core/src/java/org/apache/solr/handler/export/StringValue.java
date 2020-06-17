@@ -31,13 +31,13 @@ class StringValue implements SortValue {
 
   protected SortedDocValues globalDocValues;
 
-  protected OrdinalMap ordinalMap;
+  final protected OrdinalMap ordinalMap;
   protected LongValues toGlobal = LongValues.IDENTITY; // this segment to global ordinal. NN;
   protected SortedDocValues docValues;
 
-  protected String field;
+  final protected String field;
   protected int currentOrd;
-  protected IntComp comp;
+  final protected IntComp comp;
   protected int lastDocID;
   private boolean present;
 
@@ -50,6 +50,8 @@ class StringValue implements SortValue {
     this.docValues = globalDocValues;
     if (globalDocValues instanceof MultiDocValues.MultiSortedDocValues) {
       this.ordinalMap = ((MultiDocValues.MultiSortedDocValues) globalDocValues).mapping;
+    } else {
+      this.ordinalMap = null;
     }
     this.field = field;
     this.comp = comp;
@@ -66,7 +68,8 @@ class StringValue implements SortValue {
   }
 
   public StringValue copy() {
-    return new StringValue(globalDocValues, field, comp);
+    StringValue copy = new StringValue(globalDocValues, field, comp);
+    return copy;
   }
 
   public void setCurrentValue(int docId) throws IOException {

@@ -18,7 +18,10 @@ package org.apache.solr.handler.export;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.TimeoutException;
 
@@ -36,6 +39,8 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.common.IteratorWriter;
+import org.apache.solr.common.MapWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,12 +52,32 @@ import org.slf4j.LoggerFactory;
  */
 public class ExportWriterStream extends TupleStream implements Expressible {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  final TupleEntryWriter tupleEntryWriter = new TupleEntryWriter();
   StreamContext context;
   StreamComparator streamComparator;
   int pos = -1;
   ExportBuffers exportBuffers;
   ExportBuffers.Buffer buffer;
   Timer.Context writeOutputTimerContext;
+
+  private static final class TupleEntryWriter implements EntryWriter {
+    Tuple tuple;
+
+    @Override
+    public EntryWriter put(CharSequence k, Object v) throws IOException {
+      if (v instanceof IteratorWriter) {
+        List lst = new ArrayList();
+        ((IteratorWriter)v).toList(lst);
+        v = lst;
+      } else if (v instanceof MapWriter) {
+        Map<String, Object> map = new HashMap<>();
+        ((MapWriter)v).toMap(map);
+        v = map;
+      }
+      tuple.put(k.toString(), v);
+      return this;
+    }
+  }
 
   public ExportWriterStream(StreamExpression expression, StreamFactory factory) throws IOException {
     streamComparator = parseComp(factory.getDefaultSort());
@@ -188,9 +213,11 @@ public class ExportWriterStream extends TupleStream implements Expressible {
     if (writeOutputTimerContext == null) {
       writeOutputTimerContext = exportBuffers.getWriteOutputBufferTimer().time();
     }
-    res = new Tuple(buffer.outDocs[pos]);
+    SortDoc sortDoc = buffer.outDocs[pos];
+    tupleEntryWriter.tuple = new Tuple();
+    exportBuffers.exportWriter.writeDoc(sortDoc, exportBuffers.leaves, tupleEntryWriter, exportBuffers.exportWriter.fieldWriters);
     pos--;
-    return res;
+    return tupleEntryWriter.tuple;
   }
 
   @Override

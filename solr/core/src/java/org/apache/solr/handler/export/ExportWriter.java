@@ -321,21 +321,25 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     }
   }
 
-  protected void transferBatchToBufferForOutput(SortQueue queue, SortDoc[] outDocs,
-                                                List<LeafReaderContext> leaves, ExportBuffers.Buffer destination) throws IOException {
+  protected void transferBatchToBufferForOutput(SortQueue queue,
+                                                List<LeafReaderContext> leaves,
+                                                ExportBuffers.Buffer destination) throws IOException {
     Timer.Context timerContext = transferBatchToBufferTimer.time();
     try {
       int outDocsIndex = -1;
       for (int i = 0; i < queue.maxSize; i++) {
         SortDoc s = queue.pop();
         if (s.docId > -1) {
-          outDocs[++outDocsIndex] = s;
+          destination.outDocs[++outDocsIndex].setValues(s);
           // remove this doc id from the matching bitset, it's been exported
           sets[s.ord].clear(s.docId);
+          s.reset(); // reuse
         }
       }
       destination.outDocsIndex = outDocsIndex;
-      materializeDocs(leaves, outDocs, destination);
+    } catch (Throwable t) {
+      log.error("transfer", t);
+      throw t;
     } finally {
       timerContext.stop();
     }
@@ -398,7 +402,8 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
               // we're using the raw writer here because there's no potential
               // reduction in the number of output items, unlike when using
               // streaming expressions
-              buffer.writeItem(i, writer);
+              final SortDoc currentDoc = buffer.outDocs[i];
+              writer.add((MapWriter) ew -> writeDoc(currentDoc, leaves, ew, fieldWriters));
             }
           } finally {
             timerContext.stop();
@@ -419,38 +424,25 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   }
 
   void fillOutDocs(List<LeafReaderContext> leaves, SortDoc sortDoc,
-                          SortQueue sortQueue, SortDoc[] outDocs, ExportBuffers.Buffer buffer) throws IOException {
+                          SortQueue sortQueue, ExportBuffers.Buffer buffer) throws IOException {
     identifyLowestSortingUnexportedDocs(leaves, sortDoc, sortQueue);
-    transferBatchToBufferForOutput(sortQueue, outDocs, leaves, buffer);
-  }
-
-  private void materializeDocs(List<LeafReaderContext> leaves, SortDoc[] outDocs, ExportBuffers.Buffer buffer) throws IOException {
-    log.info("--- materialize docs in " + buffer);
-    if (buffer.outDocsIndex < 0) {
-      return;
-    }
-    for (int i = buffer.outDocsIndex; i >= 0; i--) {
-      SortDoc sortDoc = outDocs[i];
-      EntryWriter ew = buffer.getEntryWriter(i, fieldWriters.length);
-      writeDoc(sortDoc, leaves, ew);
-      sortDoc.reset();
-    }
+    transferBatchToBufferForOutput(sortQueue, leaves, buffer);
   }
 
   void writeDoc(SortDoc sortDoc,
                           List<LeafReaderContext> leaves,
-                          EntryWriter ew) throws IOException {
+                          EntryWriter ew, FieldWriter[] writers) throws IOException {
     int ord = sortDoc.ord;
     LeafReaderContext context = leaves.get(ord);
     int fieldIndex = 0;
-    for (FieldWriter fieldWriter : fieldWriters) {
+    for (FieldWriter fieldWriter : writers) {
       if (fieldWriter.write(sortDoc, context.reader(), ew, fieldIndex)) {
         ++fieldIndex;
       }
     }
   }
 
-  protected FieldWriter[] getFieldWriters(String[] fields, SolrIndexSearcher searcher) throws IOException {
+  public FieldWriter[] getFieldWriters(String[] fields, SolrIndexSearcher searcher) throws IOException {
     IndexSchema schema = searcher.getSchema();
     FieldWriter[] writers = new FieldWriter[fields.length];
     for (int i = 0; i < fields.length; i++) {

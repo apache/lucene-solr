@@ -35,7 +35,6 @@ import com.codahale.metrics.Timer;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Sort;
 import org.apache.solr.common.IteratorWriter;
-import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -53,7 +52,6 @@ class ExportBuffers {
 
   final Buffer bufferOne;
   final Buffer bufferTwo;
-  final SortDoc[] outDocs;
   final List<LeafReaderContext> leaves;
   final ExportWriter exportWriter;
   final OutputStream os;
@@ -74,7 +72,7 @@ class ExportBuffers {
 
   ExportBuffers(ExportWriter exportWriter, List<LeafReaderContext> leaves, SolrIndexSearcher searcher,
                 OutputStream os, IteratorWriter.ItemWriter rawWriter, Sort sort, int queueSize, int totalHits,
-                Timer writeOutputBufferTimer, Timer fillerWaitTimer, Timer writerWaitTimer) {
+                Timer writeOutputBufferTimer, Timer fillerWaitTimer, Timer writerWaitTimer) throws IOException {
     this.exportWriter = exportWriter;
     this.leaves = leaves;
     this.os = os;
@@ -90,23 +88,25 @@ class ExportBuffers {
     this.writeOutputBufferTimer = writeOutputBufferTimer;
     this.fillerWaitTimer = fillerWaitTimer;
     this.writerWaitTimer = writerWaitTimer;
-    this.outDocs = new SortDoc[queueSize];
-    this.bufferOne = new Buffer();
-    this.bufferTwo = new Buffer();
+    this.bufferOne = new Buffer(queueSize);
+    this.bufferTwo = new Buffer(queueSize);
     this.totalHits = totalHits;
     fillBuffer = bufferOne;
     outputBuffer = bufferTwo;
+    SortDoc writerSortDoc = exportWriter.getSortDoc(searcher, sort.getSort());
+    bufferOne.initialize(writerSortDoc);
+    bufferTwo.initialize(writerSortDoc);
     barrier = new CyclicBarrier(2, () -> swapBuffers());
     filler = () -> {
       try {
         log.info("--- filler start " + Thread.currentThread());
-        Buffer buffer = getFillBuffer();
         SortDoc sortDoc = exportWriter.getSortDoc(searcher, sort.getSort());
+        Buffer buffer = getFillBuffer();
         SortQueue queue = new SortQueue(queueSize, sortDoc);
         long lastOutputCounter = 0;
         for (int count = 0; count < totalHits; ) {
           log.info("--- filler fillOutDocs in " + fillBuffer);
-          exportWriter.fillOutDocs(leaves, sortDoc, queue, outDocs, buffer);
+          exportWriter.fillOutDocs(leaves, sortDoc, queue, buffer);
           count += (buffer.outDocsIndex + 1);
           log.info("--- filler count=" + count + ", exchange buffer from " + buffer);
           Timer.Context timerContext = getFillerWaitTimer().time();
@@ -241,78 +241,22 @@ class ExportBuffers {
     }
   }
 
-  public static final class Buffer implements MapWriter.EntryWriter {
+  public static final class Buffer {
     static final int EMPTY = -1;
     static final int NO_MORE_DOCS = -2;
 
     int outDocsIndex = EMPTY;
-    // use array-of-arrays instead of Map to conserve space
-    Object[][] outDocs;
-    int pos = EMPTY;
+    SortDoc[] outDocs;
 
-    MapWriter.EntryWriter getEntryWriter(int pos, int numFields) {
-      if (outDocs == null) {
-        outDocs = new Object[outDocsIndex + 1][];
-      }
-      this.pos = pos;
-      Object[] fields = new Object[numFields << 1];
-      outDocs[pos] = fields;
-      return this;
+    public Buffer(int size) {
+      outDocs = new SortDoc[size];
     }
 
-    @Override
-    public MapWriter.EntryWriter put(CharSequence k, Object v) throws IOException {
-      if (pos < 0) {
-        throw new IOException("Invalid entry position");
-      }
-      Object[] fields = outDocs[pos];
-      boolean putOk = false;
-      for (int i = 0; i < fields.length; i += 2) {
-        if (fields[i] == null || fields[i].equals(k)) {
-          fields[i] = k;
-          // convert everything complex into POJOs at this point
-          // to avoid accessing docValues or termEnums from other threads
-          if (v instanceof IteratorWriter) {
-            List lst = new ArrayList();
-            ((IteratorWriter)v).toList(lst);
-            v = lst;
-          } else if (v instanceof MapWriter) {
-            Map<String, Object> map = new HashMap<>();
-            ((MapWriter)v).toMap(map);
-            v = map;
-          }
-          fields[i + 1] = v;
-          putOk = true;
-          break;
-        }
-      }
-      if (!putOk) {
-        throw new IOException("should not happen! pos=" + pos + " ran out of space for field " + k + "=" + v
-            +  " - already full: " + Arrays.toString(fields));
-      }
-      return this;
-    }
-
-    // helper method to make it easier to write our internal key-value array as if it were a map
-    public void writeItem(int pos, IteratorWriter.ItemWriter itemWriter) throws IOException {
-      final Object[] fields = outDocs[pos];
-      if (fields == null) {
-        return;
-      }
-      itemWriter.add((MapWriter) ew -> {
-        for (int i = 0; i < fields.length; i += 2) {
-          if (fields[i] == null) {
-            continue;
-          }
-          ew.put((CharSequence)fields[i], fields[i + 1]);
-        }
-      });
-    }
-
-    public void reset() {
+    public void initialize(SortDoc proto) {
       outDocsIndex = EMPTY;
-      pos = EMPTY;
-      outDocs = null;
+      for (int i = 0; i < outDocs.length; i++) {
+        outDocs[i] = proto.copy();
+      }
     }
 
     @Override

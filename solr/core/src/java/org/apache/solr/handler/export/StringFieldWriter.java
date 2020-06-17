@@ -73,9 +73,9 @@ class StringFieldWriter extends FieldWriter {
       ew.put(this.field, utf8.reset(ref.bytes, ref.offset, ref.length, null));
     } else {
       String v = null;
-      if(sortValue != null) {
+      if (sortValue != null) {
         v = ((StringValue) sortValue).getLastString();
-        if(v == null) {
+        if (v == null) {
           fieldType.indexedToReadable(ref, cref);
           v = cref.toString();
           ((StringValue) sortValue).setLastString(v);
