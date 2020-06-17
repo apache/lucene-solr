@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.TimeoutException;
 
+import com.codahale.metrics.Timer;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
@@ -51,6 +52,7 @@ public class ExportWriterStream extends TupleStream implements Expressible {
   int pos = -1;
   ExportBuffers exportBuffers;
   ExportBuffers.Buffer buffer;
+  Timer.Context writeOutputTimerContext;
 
   public ExportWriterStream(StreamExpression expression, StreamFactory factory) throws IOException {
     streamComparator = parseComp(factory.getDefaultSort());
@@ -104,17 +106,26 @@ public class ExportWriterStream extends TupleStream implements Expressible {
 
   @Override
   public void close() throws IOException {
+    if (writeOutputTimerContext != null) {
+      writeOutputTimerContext.stop();
+    }
     exportBuffers = null;
   }
 
   @Override
   public Tuple read() throws IOException {
+    Tuple res = null;
     if (pos < 0) {
+      if (writeOutputTimerContext != null) {
+        writeOutputTimerContext.stop();
+        writeOutputTimerContext = null;
+      }
       try {
         buffer.outDocsIndex = ExportBuffers.Buffer.EMPTY;
         log.info("--- ews exchange empty buffer " + buffer);
         boolean exchanged = false;
         while (!exchanged) {
+          Timer.Context timerContext = exportBuffers.getWriterWaitTimer().time();
           try {
             exportBuffers.exchangeBuffers();
             exchanged = true;
@@ -122,37 +133,42 @@ public class ExportWriterStream extends TupleStream implements Expressible {
             log.info("--- ews timeout loop");
             if (exportBuffers.isShutDown()) {
               log.info("--- ews - the other end is shutdown, returning EOF");
-              return Tuple.EOF();
+              res = Tuple.EOF();
+              break;
             }
             continue;
           } catch (InterruptedException e) {
             log.info("--- ews interrupted");
             exportBuffers.error(e);
-            return Tuple.EXCEPTION(e, true);
+            res = Tuple.EXCEPTION(e, true);
+            break;
           } catch (BrokenBarrierException e) {
             if (exportBuffers.getError() != null) {
-              return Tuple.EXCEPTION(exportBuffers.getError(), true);
+              res = Tuple.EXCEPTION(exportBuffers.getError(), true);
             } else {
-              return Tuple.EXCEPTION(e, true);
+              res = Tuple.EXCEPTION(e, true);
             }
+            break;
+          } finally {
+            timerContext.stop();
           }
         }
       } catch (InterruptedException e) {
         log.info("--- ews interrupt");
         exportBuffers.error(e);
-        return Tuple.EXCEPTION(e, true);
+        res = Tuple.EXCEPTION(e, true);
       } catch (Exception e) {
         log.info("--- ews exception", e);
         exportBuffers.error(e);
-        return Tuple.EXCEPTION(e, true);
+        res = Tuple.EXCEPTION(e, true);
       }
       buffer = exportBuffers.getOutputBuffer();
       if (buffer == null) {
-        return Tuple.EOF();
+        res = Tuple.EOF();
       }
       if (buffer.outDocsIndex == ExportBuffers.Buffer.NO_MORE_DOCS) {
         log.info("--- ews EOF");
-        return Tuple.EOF();
+        res = Tuple.EOF();
       } else {
         pos = buffer.outDocsIndex;
         log.info("--- ews new pos=" + pos);
@@ -160,11 +176,21 @@ public class ExportWriterStream extends TupleStream implements Expressible {
     }
     if (pos < 0) {
       log.info("--- ews EOF?");
-      return Tuple.EOF();
+      res = Tuple.EOF();
     }
-    Tuple tuple = new Tuple(buffer.outDocs[pos]);
+    if (res != null) {
+      // only errors or EOF assigned result so far
+      if (writeOutputTimerContext != null) {
+        writeOutputTimerContext.stop();
+      }
+      return res;
+    }
+    if (writeOutputTimerContext == null) {
+      writeOutputTimerContext = exportBuffers.getWriteOutputBufferTimer().time();
+    }
+    res = new Tuple(buffer.outDocs[pos]);
     pos--;
-    return tuple;
+    return res;
   }
 
   @Override
