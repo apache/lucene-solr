@@ -42,6 +42,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import org.apache.commons.lang3.StringUtils;
@@ -1293,8 +1294,9 @@ public class CoreContainer {
    * <code>allowPaths</code> configuration of solr.xml.
    * These paths are used by the {@link #assertPathAllowed(Path)} method call.</p>
    * <p><b>NOTE:</b></p> This method is currently only in use in tests in order to
-   * modify the mutable Set directly. It shuold probably not be used elsewhere.
+   * modify the mutable Set directly. Please treat this as a private method.
    */
+  @VisibleForTesting
   public Set<Path> getAllowPaths() {
     return allowPaths;
   }
