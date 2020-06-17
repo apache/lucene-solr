@@ -1288,7 +1288,12 @@ public class CoreContainer {
   }
 
   /**
-   * Get the list of file system paths allowed for cores. These are the paths used by {@link #assertPathAllowed(Path)}.
+   * <p>Return the file system paths that should be allowed for various API requests.
+   * This list is compiled at startup from SOLR_HOME, SOLR_DATA_HOME and the
+   * <code>allowPaths</code> configuration of solr.xml.
+   * These paths are used by the {@link #assertPathAllowed(Path)} method call.</p>
+   * <p><b>NOTE:</b></p> This method is currently only in use in tests in order to
+   * modify the mutable Set directly. It shuold probably not be used elsewhere.
    */
   public Set<Path> getAllowPaths() {
     return allowPaths;
