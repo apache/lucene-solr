@@ -230,27 +230,8 @@ public class MultiCollectorTest extends LuceneTestCase {
     DirectoryReader reader = iw.getReader();
     iw.close();
     final LeafReaderContext ctx = reader.leaves().get(0);
-    DummyCollector c1 = new DummyCollector() {
-      @Override
-      public void collect(int doc) throws IOException {
-        if (doc == 1) {
-          throw new CollectionTerminatedException();
-        }
-        super.collect(doc);
-      }
-      
-    };
-    
-    DummyCollector c2 = new DummyCollector() {
-      @Override
-      public void collect(int doc) throws IOException {
-        if (doc == 2) {
-          throw new CollectionTerminatedException();
-        }
-        super.collect(doc);
-      }
-      
-    };
+    DummyCollector c1 = new TerminatingDummyCollector(1, ScoreMode.COMPLETE);
+    DummyCollector c2 = new TerminatingDummyCollector(2, ScoreMode.COMPLETE);
 
     Collector mc = MultiCollector.wrap(c1, c2);
     LeafCollector lc = mc.getLeafCollector(ctx);
@@ -274,4 +255,84 @@ public class MultiCollectorTest extends LuceneTestCase {
     reader.close();
     dir.close();
   }
+  
+  public void testSetScorerOnCollectionTerminationSkipNonCompetitive() throws IOException {
+    doTestSetScorerOnCollectionTermination(true);
+  }
+  
+  public void testSetScorerOnCollectionTerminationSkipNoSkips() throws IOException {
+    doTestSetScorerOnCollectionTermination(false);
+  }
+  
+  private void doTestSetScorerOnCollectionTermination(boolean allowSkipNonCompetitive) throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    iw.addDocument(new Document());
+    DirectoryReader reader = iw.getReader();
+    iw.close();
+    final LeafReaderContext ctx = reader.leaves().get(0);
+    
+    DummyCollector c1 = new TerminatingDummyCollector(1, allowSkipNonCompetitive? ScoreMode.TOP_SCORES : ScoreMode.COMPLETE);
+    DummyCollector c2 = new TerminatingDummyCollector(2, allowSkipNonCompetitive? ScoreMode.TOP_SCORES : ScoreMode.COMPLETE);
+    
+    Collector mc = MultiCollector.wrap(c1, c2);
+    LeafCollector lc = mc.getLeafCollector(ctx);
+    assertFalse(c1.setScorerCalled);
+    assertFalse(c2.setScorerCalled);
+    lc.setScorer(new ScoreAndDoc());
+    assertTrue(c1.setScorerCalled);
+    assertTrue(c2.setScorerCalled);
+    c1.setScorerCalled = false;
+    c2.setScorerCalled = false;
+    lc.collect(0); // OK
+    
+    lc.setScorer(new ScoreAndDoc());
+    assertTrue(c1.setScorerCalled);
+    assertTrue(c2.setScorerCalled);
+    c1.setScorerCalled = false;
+    c2.setScorerCalled = false;
+    
+    lc.collect(1); // OK, but c1 should terminate
+    lc.setScorer(new ScoreAndDoc());
+    assertFalse(c1.setScorerCalled);
+    assertTrue(c2.setScorerCalled);
+    c2.setScorerCalled = false;
+    
+    expectThrows(CollectionTerminatedException.class, () -> {
+      lc.collect(2);
+    });
+    lc.setScorer(new ScoreAndDoc());
+    assertFalse(c1.setScorerCalled);
+    assertFalse(c2.setScorerCalled);
+    
+    reader.close();
+    dir.close();
+  }
+  
+  private static class TerminatingDummyCollector extends DummyCollector {
+    
+    private final int terminateOnDoc;
+    private final ScoreMode scoreMode;
+    
+    public TerminatingDummyCollector(int terminateOnDoc, ScoreMode scoreMode) {
+      super();
+      this.terminateOnDoc = terminateOnDoc;
+      this.scoreMode = scoreMode;
+    }
+    
+    @Override
+    public void collect(int doc) throws IOException {
+      if (doc == terminateOnDoc) {
+        throw new CollectionTerminatedException();
+      }
+      super.collect(doc);
+    }
+    
+    @Override
+    public ScoreMode scoreMode() {
+      return scoreMode;
+    }
+    
+  }
+
 }
