@@ -126,6 +126,7 @@ public class TestCryptoKeys extends AbstractFullDistribZkTestBase {
         Arrays.asList("overlay", "runtimeLib", blobName, "version"),
         1l, 10);
 
+    @SuppressWarnings({"rawtypes"})
     LinkedHashMapWriter map = TestSolrConfigHandler.getRespMap("/runtime", client);
     String s = map._getStr( "error/msg",null);
     assertNotNull(map.toString(), s);

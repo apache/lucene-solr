@@ -285,8 +285,10 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
   private Collection<SnapshotMetaData> listSnapshots(SolrClient adminClient, String coreName) throws Exception {
     ListSnapshots req = new ListSnapshots();
     req.setCoreName(coreName);
+    @SuppressWarnings({"rawtypes"})
     NamedList resp = adminClient.request(req);
     assertTrue( resp.get("snapshots") instanceof NamedList );
+    @SuppressWarnings({"rawtypes"})
     NamedList apiResult = (NamedList) resp.get("snapshots");
 
     List<SnapshotMetaData> result = new ArrayList<>(apiResult.size());

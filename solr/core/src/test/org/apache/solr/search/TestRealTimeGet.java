@@ -715,7 +715,9 @@ public class TestRealTimeGet extends TestRTGBase {
               }
 
               String response = h.query(sreq);
+              @SuppressWarnings({"rawtypes"})
               Map rsp = (Map) Utils.fromJSONString(response);
+              @SuppressWarnings({"rawtypes"})
               List doclist = (List)(((Map)rsp.get("response")).get("docs"));
               if (doclist.size() == 0) {
                 // there's no info we can get back with a delete, so not much we can check without further synchronization

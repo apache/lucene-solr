@@ -59,6 +59,7 @@ public class TestSolrQueryResponse extends SolrTestCase {
     assertEquals("values new value", newValue, response.getValues());
     response.add("key2", "value2");
     {
+      @SuppressWarnings({"unchecked"})
       final Iterator<Map.Entry<String,Object>> it = response.getValues().iterator();
       assertTrue(it.hasNext());
       final Map.Entry<String,Object> entry1 = it.next();

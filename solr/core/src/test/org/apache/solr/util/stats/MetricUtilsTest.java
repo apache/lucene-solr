@@ -38,6 +38,7 @@ import org.junit.Test;
 public class MetricUtilsTest extends SolrTestCaseJ4 {
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testSolrTimerGetSnapshot() {
     // create a timer with up to 100 data points
     final Timer timer = new Timer();
@@ -50,6 +51,7 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
     MetricUtils.convertTimer("", timer, MetricUtils.PropertyFilter.ALL, false, false, ".", (k, v) -> {
       map.putAll((Map<String,Object>)v);
     });
+    @SuppressWarnings({"rawtypes"})
     NamedList lst = new NamedList(map);
     // check that expected metrics were obtained
     assertEquals(14, lst.size());
@@ -67,6 +69,7 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testMetrics() throws Exception {
     MetricRegistry registry = new MetricRegistry();
     Counter counter = registry.counter("counter");
@@ -102,6 +105,7 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
     registry.register("memory.expected.error", error);
     MetricUtils.toMaps(registry, Collections.singletonList(MetricFilter.ALL), MetricFilter.ALL,
         MetricUtils.PropertyFilter.ALL, false, false, false, false, (k, o) -> {
+      @SuppressWarnings({"rawtypes"})
       Map v = (Map)o;
       if (k.startsWith("counter")) {
         assertEquals(1L, v.get("count"));
@@ -149,19 +153,23 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
             assertEquals("foobar", o);
           } else if (k.startsWith("timer")) {
             assertTrue(o instanceof Map);
+            @SuppressWarnings({"rawtypes"})
             Map v = (Map)o;
             assertEquals(1L, v.get("count"));
             assertTrue(((Number)v.get("min_ms")).intValue() > 100);
           } else if (k.startsWith("meter")) {
             assertTrue(o instanceof Map);
+            @SuppressWarnings({"rawtypes"})
             Map v = (Map)o;
             assertEquals(1L, v.get("count"));
           } else if (k.startsWith("histogram")) {
             assertTrue(o instanceof Map);
+            @SuppressWarnings({"rawtypes"})
             Map v = (Map)o;
             assertEquals(1L, v.get("count"));
           } else if (k.startsWith("aggregate1")) {
             assertTrue(o instanceof Map);
+            @SuppressWarnings({"rawtypes"})
             Map v = (Map)o;
             assertEquals(4, v.get("count"));
             Map<String, Object> values = (Map<String, Object>)v.get("values");
@@ -175,6 +183,7 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
             assertEquals(2, update.get("updateCount"));
           } else if (k.startsWith("aggregate2")) {
             assertTrue(o instanceof Map);
+            @SuppressWarnings({"rawtypes"})
             Map v = (Map)o;
             assertEquals(2, v.get("count"));
             Map<String, Object> values = (Map<String, Object>)v.get("values");
@@ -189,6 +198,7 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
           } else if (k.startsWith("memory.expected.error")) {
             assertNull(o);
           } else {
+            @SuppressWarnings({"rawtypes"})
             Map v = (Map)o;
             assertEquals(1L, v.get("count"));
           }

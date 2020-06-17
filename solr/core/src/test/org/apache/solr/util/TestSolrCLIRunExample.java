@@ -583,6 +583,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
           "      {'nodeRole':'overseer', 'replica':0}" +
           "    ]" +
           "}";
+      @SuppressWarnings({"rawtypes"})
       SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
       NamedList<Object> response = cloudClient.request(req);
       assertEquals(response.get("result").toString(), "success");
