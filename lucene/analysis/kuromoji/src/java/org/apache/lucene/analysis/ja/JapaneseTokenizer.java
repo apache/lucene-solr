@@ -1919,13 +1919,11 @@ public final class JapaneseTokenizer extends Tokenizer {
   }
 
   private static boolean isAllCharPunctuation(char[] ch, int offset, int length) {
-    boolean flag = true;
     for (int i = offset; i < offset + length; i++) {
       if (!isPunctuation(ch[i])) {
-        flag = false;
-        break;
+        return false;
       }
     }
-    return flag;
+    return true;
   }
 }

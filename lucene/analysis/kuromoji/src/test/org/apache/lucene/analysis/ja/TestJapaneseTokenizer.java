@@ -931,7 +931,8 @@ public class
     assertAnalyzesTo(extendedModeAnalyzerNoPunct, "（株）巴商会",
         new String[] { "（株）", "巴商会" },
         new int[] { 0, 3 },
-        new int[] { 3, 6 }
+        new int[] { 3, 6 },
+        new int[] { 1, 1 }
     );
   }
 
@@ -942,11 +943,28 @@ public class
         new int[] { 5 }
     );
   }
+
   public void testDiscardPunctuationStartingPunctuationToken4() throws Exception {
-    assertAnalyzesTo(analyzerNoPunct, "−−巴商会",
-        new String[] { "巴商会" },
-        new int[] { 2 },
-        new int[] { 5 }
+    JapaneseTokenizer t = makeTokenizer(true, Mode.NORMAL);
+    Analyzer a = makeAnalyzer(t);
+    t.setNBestCost(0);
+    assertAnalyzesTo(a, "（株）巴商会",
+        new String[] { "（株）", "巴商会" }
+    );
+  }
+
+  public void testDiscardPunctuationStartingPunctuationToken5() throws Exception {
+    JapaneseTokenizer t = makeTokenizer(true, Mode.NORMAL);
+    Analyzer a = makeAnalyzer(t);
+    t.setNBestCost(1000);
+    assertAnalyzesTo(a, "（株）巴商会",
+        new String[] { "（株）","株", "巴商会" },
+        new int[] { 0, 1, 3 },
+        new int[] { 3, 2, 6 },
+        null,
+        new int[] { 1, 1, 1 },
+        new int[] { 3, 1, 1 },
+        false
     );
   }
 }
