@@ -32,12 +32,13 @@ class StringValue implements SortValue {
   protected SortedDocValues globalDocValues;
 
   final protected OrdinalMap ordinalMap;
+  final protected String field;
+  final protected IntComp comp;
+
   protected LongValues toGlobal = LongValues.IDENTITY; // this segment to global ordinal. NN;
   protected SortedDocValues docValues;
 
-  final protected String field;
   protected int currentOrd;
-  final protected IntComp comp;
   protected int lastDocID;
   private boolean present;
 

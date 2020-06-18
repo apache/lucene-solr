@@ -41,6 +41,7 @@ class SingleValueSortDoc extends SortDoc {
   public void reset() {
     this.docId = -1;
     this.docBase = -1;
+    this.ord = -1;
     this.value1.reset();
   }
 
@@ -83,7 +84,7 @@ class SingleValueSortDoc extends SortDoc {
   }
 
   public String toString() {
-    return docId+":"+value1.toString();
+    return ord + ":" + docBase + ":" + docId + ":val=" + value1.toString();
   }
 
 }
