@@ -147,6 +147,10 @@ Improvements
   Also fixes SolrIndexSearcher.warm which should have re-instated previous SRI.
   (Nazerke Seidan, David Smiley)
 
+* SOLR-14561: CoreAdminAPI's parameters instanceDir and dataDir are now validated, and must be relative to either
+  SOLR_HOME, SOLR_DATA_HOME or coreRootDir. Added new solr.xml config 'allowPaths', controlled by system property
+  'solr.allowPaths' that allows you to add other allowed paths when needed.
+
 Optimizations
 ---------------------
 * SOLR-8306: Do not collect expand documents when expand.rows=0 (Marshall Sanders, Amelia Henderson)
