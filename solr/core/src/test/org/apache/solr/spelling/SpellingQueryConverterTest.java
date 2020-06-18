@@ -35,6 +35,7 @@ import org.junit.Test;
 public class SpellingQueryConverterTest extends SolrTestCase {
 
   @Test
+  @SuppressWarnings({"rawtypes"})
   public void test() throws Exception {
     SpellingQueryConverter converter = new SpellingQueryConverter();
     converter.init(new NamedList());
@@ -45,6 +46,7 @@ public class SpellingQueryConverterTest extends SolrTestCase {
   }
   
   @Test
+  @SuppressWarnings({"rawtypes"})
   public void testNumeric() throws Exception {
     SpellingQueryConverter converter = new SpellingQueryConverter();
     converter.init(new NamedList());
@@ -59,6 +61,7 @@ public class SpellingQueryConverterTest extends SolrTestCase {
   }
   
   @Test
+  @SuppressWarnings({"rawtypes"})
   public void testSpecialChars()  {
     SpellingQueryConverter converter = new SpellingQueryConverter();
     converter.init(new NamedList());
@@ -115,6 +118,7 @@ public class SpellingQueryConverterTest extends SolrTestCase {
   }
 
   @Test
+  @SuppressWarnings({"rawtypes"})
   public void testUnicode() {
     SpellingQueryConverter converter = new SpellingQueryConverter();
     converter.init(new NamedList());
@@ -135,6 +139,7 @@ public class SpellingQueryConverterTest extends SolrTestCase {
   }
 
   @Test
+  @SuppressWarnings({"rawtypes"})
   public void testMultipleClauses() {
     SpellingQueryConverter converter = new SpellingQueryConverter();
     converter.init(new NamedList());
@@ -152,6 +157,7 @@ public class SpellingQueryConverterTest extends SolrTestCase {
   }
   
   @Test
+  @SuppressWarnings({"rawtypes"})
   public void testRequiredOrProhibitedFlags() {
     SpellingQueryConverter converter = new SpellingQueryConverter();
     converter.init(new NamedList());

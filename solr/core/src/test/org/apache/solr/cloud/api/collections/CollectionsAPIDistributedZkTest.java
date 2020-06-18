@@ -215,6 +215,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     params.set("action", CollectionAction.CREATE.toString());
     params.set("numShards", 2);
     // missing required collection parameter
+    @SuppressWarnings({"rawtypes"})
     final SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
@@ -225,6 +226,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
 
   @Test
   public void testTooManyReplicas() {
+    @SuppressWarnings({"rawtypes"})
     CollectionAdminRequest req = CollectionAdminRequest.createCollection("collection", "conf", 2, 10);
 
     expectThrows(Exception.class, () -> {
@@ -241,6 +243,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     params.set(REPLICATION_FACTOR, 10);
     params.set("collection.configName", "conf");
 
+    @SuppressWarnings({"rawtypes"})
     final SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
@@ -258,6 +261,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     params.set("numShards", 0);
     params.set("collection.configName", "conf");
 
+    @SuppressWarnings({"rawtypes"})
     final SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
     expectThrows(Exception.class, () -> {

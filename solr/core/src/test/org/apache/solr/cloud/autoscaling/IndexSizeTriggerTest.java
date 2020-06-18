@@ -197,6 +197,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
       trigger.run();
       ev = eventRef.get();
       assertNotNull("should have fired an event", ev);
+      @SuppressWarnings({"unchecked"})
       List<TriggerEvent.Op> ops = (List<TriggerEvent.Op>) ev.getProperty(TriggerEvent.REQUESTED_OPS);
       assertNotNull("should contain requestedOps", ops);
       assertEquals("number of ops: " + ops, 2, ops.size());
@@ -204,6 +205,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
       boolean shard2 = false;
       for (TriggerEvent.Op op : ops) {
         assertEquals(CollectionParams.CollectionAction.SPLITSHARD, op.getAction());
+        @SuppressWarnings({"unchecked"})
         Set<Pair<String, String>> hints = (Set<Pair<String, String>>)op.getHints().get(Suggester.Hint.COLL_SHARD);
         assertNotNull("hints", hints);
         assertEquals("hints", 1, hints.size());
@@ -216,6 +218,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
         } else {
           fail("unexpected shard name " + p.second());
         }
+        @SuppressWarnings({"unchecked"})
         Map<String, Object> params = (Map<String, Object>)op.getHints().get(Suggester.Hint.PARAMS);
         assertNotNull("params are null: " + op, params);
         
@@ -281,6 +284,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
         "'actions' : [{'name' : 'compute_plan', 'class' : 'solr.ComputePlanAction'}," +
         "{'name' : 'execute_plan', 'class' : '" + ExecutePlanAction.class.getName() + "'}]" +
         "}}";
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
@@ -346,6 +350,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     assertEquals(TriggerEventProcessorStage.AFTER_ACTION, events.get(4).stage);
     assertEquals(TriggerEventProcessorStage.SUCCEEDED, events.get(5).stage);
     // check ops
+    @SuppressWarnings({"unchecked"})
     List<TriggerEvent.Op> ops = (List<TriggerEvent.Op>) events.get(4).event.getProperty(TriggerEvent.REQUESTED_OPS);
     assertNotNull("should contain requestedOps", ops);
     assertEquals("number of ops", 2, ops.size());
@@ -353,6 +358,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     boolean shard2 = false;
     for (TriggerEvent.Op op : ops) {
       assertEquals(CollectionParams.CollectionAction.SPLITSHARD, op.getAction());
+      @SuppressWarnings({"unchecked"})
       Set<Pair<String, String>> hints = (Set<Pair<String, String>>)op.getHints().get(Suggester.Hint.COLL_SHARD);
       assertNotNull("hints", hints);
       assertEquals("hints", 1, hints.size());
@@ -409,6 +415,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
         "'actions' : [{'name' : 'compute_plan', 'class' : 'solr.ComputePlanAction'}," +
         "{'name' : 'execute_plan', 'class' : '" + ExecutePlanAction.class.getName() + "'}]" +
         "}}";
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
@@ -472,11 +479,13 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     assertEquals(TriggerEventProcessorStage.AFTER_ACTION, events.get(4).stage);
     assertEquals(TriggerEventProcessorStage.SUCCEEDED, events.get(5).stage);
     // check ops
+    @SuppressWarnings({"unchecked"})
     List<TriggerEvent.Op> ops = (List<TriggerEvent.Op>) events.get(4).event.getProperty(TriggerEvent.REQUESTED_OPS);
     assertNotNull("should contain requestedOps", ops);
     assertTrue("number of ops: " + ops, ops.size() > 0);
     for (TriggerEvent.Op op : ops) {
       assertEquals(CollectionParams.CollectionAction.MERGESHARDS, op.getAction());
+      @SuppressWarnings({"unchecked"})
       Set<Pair<String, String>> hints = (Set<Pair<String, String>>)op.getHints().get(Suggester.Hint.COLL_SHARD);
       assertNotNull("hints", hints);
       assertEquals("hints", 2, hints.size());
@@ -485,6 +494,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     }
 
     // TODO: fix this once MERGESHARDS is supported
+    @SuppressWarnings({"unchecked"})
     List<TriggerEvent.Op> unsupportedOps = (List<TriggerEvent.Op>)events.get(2).context.get("properties.unsupportedOps");
     assertNotNull("should have unsupportedOps", unsupportedOps);
     assertEquals(unsupportedOps.toString() + "\n" + ops, ops.size(), unsupportedOps.size());
@@ -492,6 +502,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testMaxOps() throws Exception {
     String collectionName = "testMaxOps_collection";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
@@ -512,6 +523,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
         "'enabled' : false," +
         "'actions' : [{'name' : 'compute_plan', 'class' : 'solr.ComputePlanAction'}]" +
         "}}";
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
@@ -684,6 +696,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
       trigger.run();
       ev = eventRef.get();
       assertNotNull("should have fired an event", ev);
+      @SuppressWarnings({"unchecked"})
       List<TriggerEvent.Op> ops = (List<TriggerEvent.Op>) ev.getProperty(TriggerEvent.REQUESTED_OPS);
       assertNotNull("should contain requestedOps", ops);
       assertEquals("number of ops: " + ops, 2, ops.size());
@@ -691,6 +704,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
       boolean shard2 = false;
       for (TriggerEvent.Op op : ops) {
         assertEquals(CollectionParams.CollectionAction.SPLITSHARD, op.getAction());
+        @SuppressWarnings({"unchecked"})
         Set<Pair<String, String>> hints = (Set<Pair<String, String>>)op.getHints().get(Suggester.Hint.COLL_SHARD);
         assertNotNull("hints", hints);
         assertEquals("hints", 1, hints.size());
@@ -703,6 +717,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
         } else {
           fail("unexpected shard name " + p.second());
         }
+        @SuppressWarnings({"unchecked"})
         Map<String, Object> params = (Map<String, Object>)op.getHints().get(Suggester.Hint.PARAMS);
         assertNotNull("params are null: " + op, params);
         
