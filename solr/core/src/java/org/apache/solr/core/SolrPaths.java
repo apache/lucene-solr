@@ -132,15 +132,17 @@ public final class SolrPaths {
   }
 
   /**
-   * Checks that the given path is relative to SOLR_HOME, SOLR_DATA_HOME, coreRootDirectory or one of the paths
-   * specified in solr.xml's allowPaths element. The following paths will fail validation
+   * Checks that the given path is relative to one of the allowPaths supplied. Typically this will be
+   * called from {@link CoreContainer#assertPathAllowed(Path)} and allowPaths pre-filled with the node's
+   * SOLR_HOME, SOLR_DATA_HOME and coreRootDirectory folders, as well as any paths specified in
+   * solr.xml's allowPaths element. The following paths will always fail validation:
    * <ul>
    *   <li>Relative paths starting with <code>..</code></li>
-   *   <li>Windows UNC paths (<code>\\host\share\path</code>)</li>
-   *   <li>Absolute paths which are not below the list of allowed paths</li>
+   *   <li>Windows UNC paths (such as <code>\\host\share\path</code>)</li>
+   *   <li>Paths which are not relative to any of allowPaths</li>
    * </ul>
    * @param pathToAssert path to check
-   * @param allowPaths list of paths that should be allowed prefixes
+   * @param allowPaths list of paths that should be allowed prefixes for pathToAssert
    * @throws SolrException if path is outside allowed paths
    */
   public static void assertPathAllowed(Path pathToAssert, Set<Path> allowPaths) throws SolrException {
