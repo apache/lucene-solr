@@ -25,7 +25,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.search.TotalHits;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -371,12 +370,6 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
       rb.finished = new ArrayList<>();
 
       int nextStage = 0;
-
-      final String nowTimestamp = (rb.requestInfo != null) ? Long.toString(rb.requestInfo.getNOW().getTime()) : null;
-      if (StringUtils.isNotEmpty(nowTimestamp)) {
-        rsp.addToLog("NOW", nowTimestamp);
-      }
-
       do {
         rb.stage = nextStage;
         nextStage = ResponseBuilder.STAGE_DONE;
@@ -411,9 +404,9 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
               params.set(ShardParams.SHARDS_PURPOSE, sreq.purpose);
               params.set(ShardParams.SHARD_URL, shard); // so the shard knows what was asked
               params.set(CommonParams.OMIT_HEADER, false);
-              if (nowTimestamp != null) {
+              if (rb.requestInfo != null) {
                 // we could try and detect when this is needed, but it could be tricky
-                params.set("NOW", nowTimestamp);
+                params.set("NOW", Long.toString(rb.requestInfo.getNOW().getTime()));
               }
               String shardQt = params.get(ShardParams.SHARDS_QT);
               if (shardQt != null) {
