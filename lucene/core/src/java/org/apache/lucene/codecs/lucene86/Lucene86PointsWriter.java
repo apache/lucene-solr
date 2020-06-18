@@ -43,8 +43,9 @@ import org.apache.lucene.util.bkd.BKDWriter;
 /** Writes dimensional values */
 public class Lucene86PointsWriter extends PointsWriter implements Closeable {
 
-  /** Outputs used to write the BKD tree data files. */
+  /** Output to the metadata. */
   protected IndexOutput tempMetaOut;
+  /** Outputs used to write the BKD tree data files. */
   protected final IndexOutput indexOut, dataOut;
 
   final SegmentWriteState writeState;
