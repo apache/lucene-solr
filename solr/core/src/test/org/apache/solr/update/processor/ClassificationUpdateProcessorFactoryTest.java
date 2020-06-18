@@ -32,9 +32,11 @@ import static org.mockito.Mockito.mock;
  */
 public class ClassificationUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
   private ClassificationUpdateProcessorFactory cFactoryToTest = new ClassificationUpdateProcessorFactory();
+  @SuppressWarnings({"rawtypes"})
   private NamedList args = new NamedList<String>();
 
   @Before
+  @SuppressWarnings({"unchecked"})
   public void initArgs() {
     args.add("inputFields", "inputField1,inputField2");
     args.add("classField", "classField1");
@@ -92,6 +94,7 @@ public class ClassificationUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void init_unsupportedAlgorithm_shouldThrowExceptionWithDetailedMessage() {
     args.removeAll("algorithm");
     args.add("algorithm", "unsupported");
@@ -103,6 +106,7 @@ public class ClassificationUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void init_unsupportedFilterQuery_shouldThrowExceptionWithDetailedMessage() {
     assumeWorkingMockito();
     

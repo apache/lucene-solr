@@ -249,6 +249,9 @@ Bug Fixes
 
 * SOLR-14516: NPE in JsonTextWriter (noble)
 
+* SOLR-14577: Return 400 BAD REQUEST when field is missing on a Terms query parser request
+  (Tomás Fernández Löbbe)
+
 Other Changes
 ---------------------
 * SOLR-14197: SolrResourceLoader: marked many methods as deprecated, and in some cases rerouted exiting logic to avoid
@@ -355,6 +358,8 @@ Other Changes
 * SOLR-14556: Fix or suppress warnings in solrj/cloud/autoscaling (Erick Erickson)
 
 * SOLR-14573: Fix or suppress warnings in solrj/src/test (Erick Erickson)
+
+* SOLR-14574: Fix or suppress warnings in solr/core/src/test (Erick Erickson)
 
 ==================  8.5.2 ==================
 

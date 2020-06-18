@@ -1046,6 +1046,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     if (splitKey != null) {
       params.set("split.key", splitKey);
     }
+    @SuppressWarnings({"rawtypes"})
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 

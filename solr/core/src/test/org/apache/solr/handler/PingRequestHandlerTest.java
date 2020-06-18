@@ -50,6 +50,7 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
   }
 
   @Before
+  @SuppressWarnings({"unchecked"})
   public void before() throws IOException {
     // by default, use relative file in dataDir
     healthcheckFile = new File(initAndGetDataDir(), fileName);
@@ -63,6 +64,7 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
     if (healthcheckFile.exists()) FileUtils.forceDelete(healthcheckFile);
 
     handler = new PingRequestHandler();
+    @SuppressWarnings({"rawtypes"})
     NamedList initParams = new NamedList();
     initParams.add(PingRequestHandler.HEALTHCHECK_FILE_PARAM,
                    fileNameParam);
@@ -70,6 +72,7 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
     handler.inform(h.getCore());
   }
   
+  @SuppressWarnings({"rawtypes"})
   public void testPingWithNoHealthCheck() throws Exception {
     
     // for this test, we don't want any healthcheck file configured at all

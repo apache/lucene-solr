@@ -42,6 +42,7 @@ public class BinaryUpdateRequestHandlerTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings({"rawtypes"})
   public void testRequestParams() throws Exception {
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", "1");
