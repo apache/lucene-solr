@@ -230,11 +230,7 @@ final class DocumentsWriterPerThread {
           // it's very hard to fix (we can't easily distinguish aborting
           // vs non-aborting exceptions):
           reserveOneDoc();
-          try {
-            consumer.processDocument(numDocsInRAM, doc);
-          } finally {
-            numDocsInRAM++; // we count the doc anyway even in the case of an exception
-          }
+          consumer.processDocument(numDocsInRAM++, doc);
         }
         allDocsIndexed = true;
         return finishDocuments(deleteNode, docsInRamBefore);
