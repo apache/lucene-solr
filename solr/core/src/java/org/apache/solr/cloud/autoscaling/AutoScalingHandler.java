@@ -539,11 +539,12 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
                                              AutoScalingConfig currentConfig) throws KeeperException, InterruptedException {
     // we're going to modify the op - use a copy
     String triggerName = op.getStr(NAME);
+    String eventTypeStr = op.getStr(EVENT);
 
     if (op.hasError()) return currentConfig;
-    String waitForStr = op.getStr(WAIT_FOR, null);
-    String eventTypeStr = op.getStr(EVENT);
     TriggerEventType.valueOf(eventTypeStr.trim().toUpperCase(Locale.ROOT));
+
+    String waitForStr = op.getStr(WAIT_FOR, null);
 
     CommandOperation opCopy = new CommandOperation(op.name, Utils.getDeepCopy((Map) op.getCommandData(), 10));
 
