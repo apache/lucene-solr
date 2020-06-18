@@ -494,6 +494,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings({"try"})
   public void testDownNodeFailover() throws Exception {
     MockZKController mockController = null;
     SolrZkClient overseerClient = null;

@@ -194,6 +194,7 @@ public class AssignTest extends SolrTestCaseJ4 {
     // lets provide a custom preference and assert that autoscaling is used even if useLegacyReplicaAssignment=false
     // our custom preferences are exactly the same as the default ones
     // but because we are providing them explicitly, they must cause autoscaling to turn on
+    @SuppressWarnings({"rawtypes"})
     List<Map> customPreferences = Policy.DEFAULT_PREFERENCES
         .stream().map(preference -> preference.getOriginal()).collect(Collectors.toList());
 

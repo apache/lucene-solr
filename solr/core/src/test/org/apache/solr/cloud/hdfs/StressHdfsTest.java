@@ -193,7 +193,9 @@ public class StressHdfsTest extends BasicDistributedZkTest {
         
         NamedList<Object> response = c.query(
             new SolrQuery().setRequestHandler("/admin/system")).getResponse();
+        @SuppressWarnings({"unchecked"})
         NamedList<Object> coreInfo = (NamedList<Object>) response.get("core");
+        @SuppressWarnings({"unchecked"})
         String dataDir = (String) ((NamedList<Object>) coreInfo.get("directory")).get("data");
         dataDirs.add(dataDir);
       }

@@ -59,6 +59,7 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
     if (request.get("success") != null) {
       assertTrue(cloudClient.getZkStateReader().getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName, false));
 
+      @SuppressWarnings({"rawtypes"})
       CollectionAdminRequest delete = CollectionAdminRequest.deleteCollection(collectionName);
       cloudClient.request(delete);
 

@@ -151,6 +151,7 @@ public class TestPolicyCloud extends SolrCloudTestCase {
         "    ]" +
         "  }" +
         "}";
+    @SuppressWarnings({"unchecked"})
     AutoScalingConfig config = new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScaleJson));
     AtomicInteger count = new AtomicInteger(0);
     try (SolrCloudManager cloudManager = new SolrClientCloudManager(new ZkDistributedQueueFactory(cluster.getZkClient()), cluster.getSolrClient())) {
@@ -351,6 +352,7 @@ public class TestPolicyCloud extends SolrCloudTestCase {
         "      {'metrics:abc':'overseer', 'replica':0}" +
         "    ]" +
         "}";
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     try {
       solrClient.request(req);

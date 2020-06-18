@@ -278,7 +278,7 @@ Other Changes
 
 * SOLR-14573: Fix or suppress warnings in solrj/src/test (Erick Erickson)
 
-* SOLR-14574: Fix or suppress warnings in solr/core/src/test (Erick Erickson)
+* SOLR-14574: Fix or suppress warnings in solr/core/src/test (parts 1 and 2) (Erick Erickson)
 
 ==================  8.5.2 ==================
 

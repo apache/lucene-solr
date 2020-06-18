@@ -288,6 +288,7 @@ public class CollectionPropsTest extends SolrCloudTestCase {
     }
     
     @Override
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public boolean onStateChanged(Map<String, String> collectionProperties) {
       log.info("{}: state changed...", name);
       if (forceReadPropsFromZk) {

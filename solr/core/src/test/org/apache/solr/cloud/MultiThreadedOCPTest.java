@@ -265,6 +265,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
       params.set("collection", "collection1");
+      @SuppressWarnings({"rawtypes"})
       SolrRequest request = new QueryRequest(params);
       request.setPath("/admin/collections");
 

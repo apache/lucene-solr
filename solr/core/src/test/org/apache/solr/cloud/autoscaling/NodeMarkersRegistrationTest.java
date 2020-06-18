@@ -179,6 +179,7 @@ public class NodeMarkersRegistrationTest extends SolrCloudTestCase {
         "'enabled' : true," +
         "'actions' : [{'name':'test','class':'" + TestEventMarkerAction.class.getName() + "'}]" +
         "}}";
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
@@ -274,6 +275,7 @@ public class NodeMarkersRegistrationTest extends SolrCloudTestCase {
     }
     assertEquals(1, events.size());
     TriggerEvent ev = events.iterator().next();
+    @SuppressWarnings({"unchecked"})
     List<String> nodeNames = (List<String>) ev.getProperty(TriggerEvent.NODE_NAMES);
     assertTrue(nodeNames.contains(overseerLeader));
     assertEquals(TriggerEventType.NODELOST, ev.getEventType());

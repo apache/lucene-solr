@@ -91,6 +91,7 @@ public class TestPackages extends SolrCloudTestCase {
     public String klass;
   }
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testPluginLoading() throws Exception {
     MiniSolrCloudCluster cluster =
         configureCluster(4)
@@ -437,6 +438,7 @@ public class TestPackages extends SolrCloudTestCase {
     }
 
   }
+  @SuppressWarnings({"unchecked"})
   private void executeReq(String uri, JettySolrRunner jetty, Utils.InputStreamConsumer parser, Map expected) throws Exception {
     try(HttpSolrClient client = (HttpSolrClient) jetty.newClient()){
       TestDistribPackageStore.assertResponseValues(10,
@@ -453,6 +455,7 @@ public class TestPackages extends SolrCloudTestCase {
 
   private void verifyCmponent(SolrClient client, String COLLECTION_NAME,
   String componentType, String componentName, String pkg, String version) throws Exception {
+    @SuppressWarnings({"unchecked"})
     SolrParams params = new MapSolrParams((Map) Utils.makeMap("collection", COLLECTION_NAME,
         WT, JAVABIN,
         "componentName", componentName,

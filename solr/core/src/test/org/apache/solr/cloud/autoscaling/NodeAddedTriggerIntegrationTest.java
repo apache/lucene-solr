@@ -126,6 +126,7 @@ public class NodeAddedTriggerIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testNodeAddedTriggerRestoreState() throws Exception {
     
     final String triggerName = "node_added_restore_trigger";
@@ -241,6 +242,7 @@ public class NodeAddedTriggerIntegrationTest extends SolrCloudTestCase {
     assertTrue(triggerFired.get());
     NodeAddedTrigger.NodeAddedEvent nodeAddedEvent = (NodeAddedTrigger.NodeAddedEvent) events.iterator().next();
     assertNotNull(nodeAddedEvent);
+    @SuppressWarnings({"unchecked"})
     List<String> nodeNames = (List<String>) nodeAddedEvent.getProperty(TriggerEvent.NODE_NAMES);
     assertTrue(nodeNames.contains(newNode.getNodeName()));
 

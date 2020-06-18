@@ -67,6 +67,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
   private static final AtomicBoolean fired = new AtomicBoolean(false);
   private static final int NODE_COUNT = 1;
   private static CountDownLatch triggerFiredLatch = new CountDownLatch(1);
+  @SuppressWarnings({"rawtypes"})
   private static final AtomicReference<Map> actionContextPropsRef = new AtomicReference<>();
   private static final AtomicReference<TriggerEvent> eventRef = new AtomicReference<>();
   private static SolrCloudManager cloudManager;
@@ -113,6 +114,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
         "      {'nodeRole':'overseer', 'replica':0}" +
         "    ]" +
         "}";
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
@@ -189,6 +191,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
         "'actions' : [{'name':'compute_plan', 'class' : 'solr.ComputePlanAction'}," +
         "{'name':'test','class':'" + ComputePlanActionTest.AssertingTriggerAction.class.getName() + "'}]" +
         "}}";
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
@@ -225,11 +228,14 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
 
     assertTrue("Trigger was not fired even after 10 seconds", triggerFiredLatch.await(10, TimeUnit.SECONDS));
     assertTrue(fired.get());
+    @SuppressWarnings({"rawtypes"})
     Map context = actionContextPropsRef.get();
     assertNotNull(context);
+    @SuppressWarnings({"unchecked", "rawtypes"})
     List<SolrRequest> operations = (List<SolrRequest>) context.get("operations");
     assertNotNull("The operations computed by ComputePlanAction should not be null , "+ getNodeStateProviderState() + eventRef.get(), operations);
     assertEquals("ComputePlanAction should have computed exactly 1 operation", 1, operations.size());
+    @SuppressWarnings({"rawtypes"})
     SolrRequest solrRequest = operations.get(0);
     SolrParams params = solrRequest.getParams();
     assertEquals("Expected MOVEREPLICA action after adding node", MOVEREPLICA, CollectionParams.CollectionAction.get(params.get("action")));
@@ -274,6 +280,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
         "'actions' : [{'name':'compute_plan', 'class' : 'solr.ComputePlanAction'}," +
         "{'name':'test','class':'" + ComputePlanActionTest.AssertingTriggerAction.class.getName() + "'}]" +
         "}}";
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
@@ -315,8 +322,10 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     assertEquals(TriggerEventType.NODELOST, triggerEvent.getEventType());
     // TODO assertEquals(stoppedNodeName, triggerEvent.getProperty(TriggerEvent.NODE_NAME));
 
+    @SuppressWarnings({"rawtypes"})
     Map context = actionContextPropsRef.get();
     assertNotNull(context);
+    @SuppressWarnings({"unchecked", "rawtypes"})
     List<SolrRequest> operations = (List<SolrRequest>) context.get("operations");
     assertNotNull("The operations computed by ComputePlanAction should not be null "+ getNodeStateProviderState() + actionContextPropsRef.get(), operations);
     if (log.isInfoEnabled()) {
@@ -324,7 +333,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     }
     assertEquals("ComputePlanAction should have computed exactly 2 operation", 2, operations.size());
 
-    for (SolrRequest solrRequest : operations) {
+    for (@SuppressWarnings({"rawtypes"})SolrRequest solrRequest : operations) {
       SolrParams params = solrRequest.getParams();
       assertEquals("Expected MOVEREPLICA action after adding node", MOVEREPLICA, CollectionParams.CollectionAction.get(params.get("action")));
       String moved = params.get("replica");
@@ -345,6 +354,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
         "'actions' : [{'name':'compute_plan', 'class' : 'solr.ComputePlanAction'}," +
         "{'name':'test','class':'" + ComputePlanActionTest.AssertingTriggerAction.class.getName() + "'}]" +
         "}}";
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
@@ -384,11 +394,14 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     JettySolrRunner runner = cluster.startJettySolrRunner();
     assertTrue("Trigger was not fired even after 5 seconds", triggerFiredLatch.await(5, TimeUnit.SECONDS));
     assertTrue(fired.get());
+    @SuppressWarnings({"rawtypes"})
     Map context = actionContextPropsRef.get();
     assertNotNull(context);
+    @SuppressWarnings({"unchecked", "rawtypes"})
     List<SolrRequest> operations = (List<SolrRequest>) context.get("operations");
     assertNotNull("The operations computed by ComputePlanAction should not be null" + getNodeStateProviderState() + context, operations);
     assertEquals("ComputePlanAction should have computed exactly 1 operation", 1, operations.size());
+    @SuppressWarnings({"rawtypes"})
     SolrRequest request = operations.get(0);
     SolrParams params = request.getParams();
     assertEquals("Expected MOVEREPLICA action after adding node", MOVEREPLICA, CollectionParams.CollectionAction.get(params.get("action")));
@@ -417,6 +430,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     @Override
     public void process(TriggerEvent event, ActionContext context) {
       if (expectedNode != null) {
+        @SuppressWarnings({"rawtypes"})
         Collection nodes = (Collection) event.getProperty(TriggerEvent.NODE_NAMES);
         if (nodes == null || !nodes.contains(expectedNode)) return;//this is not the event we are looking for
       }
@@ -450,6 +464,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
             "      {'replica':'<5', 'shard': '#EACH', 'node': '#ANY'}," +
             "    ]" +
             "}}";
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setSearchPolicyCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
@@ -482,6 +497,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
             "'actions' : [{'name':'compute_plan', 'class' : 'solr.ComputePlanAction', 'collections' : " + collectionsFilter + "}," +
             "{'name':'test','class':'" + ComputePlanActionTest.AssertingTriggerAction.class.getName() + "'}]" +
             "}}";
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
@@ -542,11 +558,14 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     }
     assertTrue("Trigger was not fired even after 5 seconds", triggerFiredLatch.await(5, TimeUnit.SECONDS));
     assertTrue(fired.get());
+    @SuppressWarnings({"rawtypes"})
     Map context = actionContextPropsRef.get();
     assertNotNull(context);
+    @SuppressWarnings({"unchecked", "rawtypes"})
     List<SolrRequest> operations = (List<SolrRequest>) context.get("operations");
     assertNotNull("The operations computed by ComputePlanAction should not be null. " + getNodeStateProviderState() + context, operations);
     assertEquals("ComputePlanAction should have computed exactly 2 operations", 2, operations.size());
+    @SuppressWarnings({"rawtypes"})
     SolrRequest request = operations.get(0);
     SolrParams params = request.getParams();
     assertEquals("Expected MOVEREPLICA action after adding node", MOVEREPLICA, CollectionParams.CollectionAction.get(params.get("action")));
@@ -636,6 +655,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
   }
   private void nodeAddedTriggerWithAddReplicaPreferredOp(String collectionNamePrefix, int numShards, int numCollections, String setTriggerCommand, String setClusterPolicyCommand, Integer nNrtReplicas, Integer nTlogReplicas, Integer nPullReplicas) throws Exception {
     CloudSolrClient solrClient = cluster.getSolrClient();
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
@@ -657,7 +677,9 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     cluster.waitForAllNodes(30);
     assertTrue(triggerFiredLatch.await(30, TimeUnit.SECONDS));
     assertTrue(fired.get());
+    @SuppressWarnings({"rawtypes"})
     Map actionContext = actionContextPropsRef.get();
+    @SuppressWarnings({"rawtypes"})
     List operations = (List) actionContext.get("operations");
     assertNotNull(operations);
     assertEquals(numShards, operations.size());
@@ -724,6 +746,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
         "{'name':'execute_plan','class':'solr.ExecutePlanAction'}" +
         "{'name':'test','class':'" + AssertingTriggerAction.class.getName() + "'}]" +
         "}}";
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
@@ -754,7 +777,9 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     cluster.stopJettySolrRunner(newNode);
     assertTrue(triggerFiredLatch.await(30, TimeUnit.SECONDS));
     assertTrue(fired.get());
+    @SuppressWarnings({"rawtypes"})
     Map actionContext = actionContextPropsRef.get();
+    @SuppressWarnings({"rawtypes"})
     List operations = (List) actionContext.get("operations");
     assertNotNull(operations);
     assertEquals(1, operations.size());

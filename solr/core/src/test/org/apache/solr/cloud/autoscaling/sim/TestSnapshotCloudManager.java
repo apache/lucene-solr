@@ -186,6 +186,7 @@ public class TestSnapshotCloudManager extends SolrCloudTestCase {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   private static void assertNodeStateProvider(SolrCloudManager oneMgr, SolrCloudManager twoMgr, String... ignorableNodeValues) throws Exception {
     NodeStateProvider one = oneMgr.getNodeStateProvider();
     NodeStateProvider two = twoMgr.getNodeStateProvider();

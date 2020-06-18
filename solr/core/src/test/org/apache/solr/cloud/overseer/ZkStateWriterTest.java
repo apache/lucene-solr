@@ -150,6 +150,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
     }
   }
 
+  @SuppressWarnings({"rawtypes"})
   public void testSingleExternalCollection() throws Exception {
     Path zkDir = createTempDir("testSingleExternalCollection");
 
