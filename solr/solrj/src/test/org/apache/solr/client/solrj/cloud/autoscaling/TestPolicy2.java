@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.cloud.autoscaling;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -44,8 +43,6 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.util.Utils;
 import org.junit.Ignore;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.EMPTY_MAP;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.CORES;
@@ -57,8 +54,6 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
   public TestPolicy2(){
     useNodeset = true;
   }
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @SuppressWarnings({"unchecked", "rawtypes"})
   public void testEqualOnNonNode() {
@@ -230,8 +225,8 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
 
           @Override
           public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
-            @SuppressWarnings({"unchecked"})
-            Map<String, Map<String, List<ReplicaInfo>>> result = nodeVsCollectionVsShardVsReplicaInfo.computeIfAbsent(node, Utils.NEW_HASHMAP_FUN);
+            Map<String, Map<String, List<ReplicaInfo>>> result = 
+                nodeVsCollectionVsShardVsReplicaInfo.computeIfAbsent(node, o -> new HashMap<String, Map<String, List<ReplicaInfo>>>());
             if (!keys.isEmpty()) {
               Row.forEachReplica(result, replicaInfo -> {
                 for (String key : keys) {
@@ -257,7 +252,7 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
 
     Policy policy = new Policy((Map<String, Object>) getObjectByPath(m, false, "diagnostics/config"));
     SolrCloudManager cloudManagerFromDiagnostics = createCloudManagerFromDiagnostics(m);
-    Policy.Session session = policy.createSession(cloudManagerFromDiagnostics);
+    policy.createSession(cloudManagerFromDiagnostics);
     List<Suggester.SuggestionInfo> suggestions = PolicyHelper.getSuggestions(new AutoScalingConfig((Map<String, Object>) getObjectByPath(m, false, "diagnostics/config")), cloudManagerFromDiagnostics);
 //    System.out.println(Utils.writeJson(suggestions, new StringWriter(),true).toString());
     assertEquals(4, suggestions.size());
@@ -295,7 +290,6 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
       }
 
       @Override
-      @SuppressWarnings({"unchecked", "rawtypes"})
       public Map<String, Object> getNodeValues(String node, Collection<String> tags) {
         for (Map n : sortedNodes) if (n.get("node").equals(node)) return n;
         return Collections.emptyMap();
@@ -311,7 +305,6 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
       @Override
       public ClusterStateProvider getClusterStateProvider() {
         if (clusterState == null) {
-          @SuppressWarnings({"rawtypes"})
           Map map = (Map) getObjectByPath(m, false, "cluster/collections");
           if (map == null) map = new HashMap<>();
           clusterState = ClusterState.createFromCollectionMap(0, map, liveNodes);

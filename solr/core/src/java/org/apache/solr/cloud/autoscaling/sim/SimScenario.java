@@ -600,8 +600,8 @@ public class SimScenario implements AutoCloseable {
         req.setContentWriter(new RequestWriter.StringPayloadContentWriter(streamBody, "application/json"));
       }
       SolrResponse rsp = scenario.cluster.request(req);
-      @SuppressWarnings({"unchecked"})
-      List<SolrResponse> responses = (List<SolrResponse>) scenario.context.computeIfAbsent(RESPONSES_CTX_PROP, Utils.NEW_ARRAYLIST_FUN);
+      @SuppressWarnings("unchecked")
+      List<SolrResponse> responses = (List<SolrResponse>) scenario.context.computeIfAbsent(RESPONSES_CTX_PROP, o -> new ArrayList<SolrResponse>());
       responses.add(rsp);
     }
   }
@@ -724,12 +724,12 @@ public class SimScenario implements AutoCloseable {
       String[] afterActions = params.getParams(AutoScalingParams.AFTER_ACTION);
       if (beforeActions != null) {
         for (String beforeAction : beforeActions) {
-          ((List<String>)cfgMap.computeIfAbsent(AutoScalingParams.BEFORE_ACTION, Utils.NEW_ARRAYLIST_FUN)).add(beforeAction);
+          ((List<String>)cfgMap.computeIfAbsent(AutoScalingParams.BEFORE_ACTION, o -> new ArrayList<String>())).add(beforeAction);
         }
       }
       if (afterActions != null) {
         for (String afterAction : afterActions) {
-          ((List<String>)cfgMap.computeIfAbsent(AutoScalingParams.AFTER_ACTION, Utils.NEW_ARRAYLIST_FUN)).add(afterAction);
+          ((List<String>)cfgMap.computeIfAbsent(AutoScalingParams.AFTER_ACTION, o -> new ArrayList<String>())).add(afterAction);
         }
       }
       String[] stages = params.required().getParams(AutoScalingParams.STAGE);
@@ -738,7 +738,7 @@ public class SimScenario implements AutoCloseable {
         for (String val : lst) {
           try {
             TriggerEventProcessorStage.valueOf(val);
-            ((List<String>)cfgMap.computeIfAbsent(AutoScalingParams.STAGE, Utils.NEW_ARRAYLIST_FUN)).add(val);
+            ((List<String>)cfgMap.computeIfAbsent(AutoScalingParams.STAGE, o -> new ArrayList<String>())).add(val);
           } catch (IllegalArgumentException e) {
             throw new IOException("Invalid stage name '" + val + "'");
           }

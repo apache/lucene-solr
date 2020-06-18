@@ -70,7 +70,6 @@ import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.WITH_
  * Create a fresh new session for each use
  *
  */
-@SuppressWarnings({"overrides"})
 public class Policy implements MapWriter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

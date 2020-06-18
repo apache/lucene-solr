@@ -35,7 +35,6 @@ import static org.apache.solr.common.ConditionalMapWriter.NON_NULL_VAL;
 import static org.apache.solr.common.ConditionalMapWriter.dedupeKeyPredicate;
 import static org.apache.solr.common.cloud.ZkStateReader.LEADER_PROP;
 
-@SuppressWarnings({"overrides"})
 public class ReplicaInfo implements MapWriter {
   private final String name;
   private final String core, collection, shard;

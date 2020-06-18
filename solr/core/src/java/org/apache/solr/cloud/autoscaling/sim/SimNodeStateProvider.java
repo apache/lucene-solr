@@ -18,6 +18,7 @@ package org.apache.solr.cloud.autoscaling.sim;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -152,7 +153,7 @@ public class SimNodeStateProvider implements NodeStateProvider {
    * @param key property name
    * @param value property value.
    */
-  @SuppressWarnings({"unchecked"})
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void simAddNodeValue(String node, String key, Object value) throws InterruptedException {
     lock.lockInterruptibly();
     try {
@@ -339,13 +340,11 @@ public class SimNodeStateProvider implements NodeStateProvider {
     if (replicas == null || replicas.isEmpty()) {
       return new HashMap<>();
     }
-    Map<String, Map<String, List<ReplicaInfo>>> res = new HashMap<>();
+    Map<String, Map<String, List<ReplicaInfo>>> res = new HashMap<String, Map<String, List<ReplicaInfo>>>();
     // TODO: probably needs special treatment for "metrics:solr.core..." tags
     for (ReplicaInfo r : replicas) {
-      @SuppressWarnings({"unchecked"})
-      Map<String, List<ReplicaInfo>> perCollection = res.computeIfAbsent(r.getCollection(), Utils.NEW_HASHMAP_FUN);
-      @SuppressWarnings({"unchecked"})
-      List<ReplicaInfo> perShard = perCollection.computeIfAbsent(r.getShard(), Utils.NEW_ARRAYLIST_FUN);
+      Map<String, List<ReplicaInfo>> perCollection = res.computeIfAbsent(r.getCollection(), o -> new HashMap<String, List<ReplicaInfo>>());
+      List<ReplicaInfo> perShard = perCollection.computeIfAbsent(r.getShard(), o -> new ArrayList<ReplicaInfo>());
       // XXX filter out some properties?
       perShard.add(r);
     }

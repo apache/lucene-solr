@@ -51,7 +51,6 @@ import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
-import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
@@ -171,7 +170,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       this.zkVersion = zkVersion;
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    @SuppressWarnings({"unchecked"})
     public DocCollection getColl() throws InterruptedException, IOException {
       DocCollection dc = coll;
       if (dc != null) {
@@ -191,7 +190,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
                 }
                 Map<String, Object> props;
                 synchronized (ri) {
-                  props = new HashMap<>(ri.getVariables());
+                  props = new HashMap<String,Object>(ri.getVariables());
                 }
                 props.put(ZkStateReader.NODE_NAME_PROP, n);
                 props.put(ZkStateReader.CORE_NAME_PROP, ri.getCore());
@@ -262,15 +261,6 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       return coll;
     }
 
-    public int getZkVersion() {
-      lock.lock();
-      try {
-        return zkVersion;
-      } finally {
-        lock.unlock();
-      }
-    }
-
     public void invalidate() {
       lock.lock();
       try {
@@ -322,7 +312,6 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * Initialize from an existing cluster state
    * @param initialState initial cluster state
    */
-  @SuppressWarnings({"unchecked"})
   public void simSetClusterState(ClusterState initialState) throws Exception {
     lock.lockInterruptibly();
     try {
@@ -351,10 +340,10 @@ public class SimClusterStateProvider implements ClusterStateProvider {
         // DocCollection will be created later
         collectionsStatesRef.put(dc.getName(), new CachedCollectionRef(dc.getName(), dc.getZNodeVersion()));
         collProperties.computeIfAbsent(dc.getName(), name -> new ConcurrentHashMap<>()).putAll(dc.getProperties());
-        opDelays.computeIfAbsent(dc.getName(), Utils.NEW_HASHMAP_FUN).putAll(defaultOpDelays);
+        opDelays.computeIfAbsent(dc.getName(), o -> new HashMap<String,Long>()).putAll(defaultOpDelays);
         dc.getSlices().forEach(s -> {
           sliceProperties.computeIfAbsent(dc.getName(), name -> new ConcurrentHashMap<>())
-              .computeIfAbsent(s.getName(), Utils.NEW_HASHMAP_FUN).putAll(s.getProperties());
+              .computeIfAbsent(s.getName(), o -> new HashMap<String,Object>()).putAll(s.getProperties());
           Replica leader = s.getLeader();
           s.getReplicas().forEach(r -> {
             Map<String, Object> props = new HashMap<>(r.getProperties());
@@ -366,7 +355,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
               ri.getVariables().put("leader", "true");
             }
             if (liveNodes.get().contains(r.getNodeName())) {
-              nodeReplicaMap.computeIfAbsent(r.getNodeName(), Utils.NEW_SYNCHRONIZED_ARRAYLIST_FUN).add(ri);
+              nodeReplicaMap.computeIfAbsent(r.getNodeName(), o -> Collections.synchronizedList(new ArrayList<ReplicaInfo>())).add(ri);
               colShardReplicaMap.computeIfAbsent(ri.getCollection(), name -> new ConcurrentHashMap<>())
                   .computeIfAbsent(ri.getShard(), shard -> new ArrayList<>()).add(ri);
             } else {
@@ -414,9 +403,8 @@ public class SimClusterStateProvider implements ClusterStateProvider {
   }
 
   private ReplicaInfo getReplicaInfo(Replica r) {
-    @SuppressWarnings({"unchecked"})
     final List<ReplicaInfo> list = nodeReplicaMap.computeIfAbsent
-      (r.getNodeName(), Utils.NEW_SYNCHRONIZED_ARRAYLIST_FUN);
+      (r.getNodeName(), o -> Collections.synchronizedList(new ArrayList<ReplicaInfo>()));
     synchronized (list) {
       for (ReplicaInfo ri : list) {
         if (r.getCoreName().equals(ri.getCore()) && r.getName().equals(ri.getName())) {
@@ -431,14 +419,13 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * Add a new node to the cluster.
    * @param nodeId unique node id
    */
-  @SuppressWarnings({"unchecked"})
   public void simAddNode(String nodeId) throws Exception {
     ensureNotClosed();
     if (liveNodes.contains(nodeId)) {
       throw new Exception("Node " + nodeId + " already exists");
     }
     createEphemeralLiveNode(nodeId);
-    nodeReplicaMap.computeIfAbsent(nodeId, Utils.NEW_SYNCHRONIZED_ARRAYLIST_FUN);
+    nodeReplicaMap.computeIfAbsent(nodeId, o -> Collections.synchronizedList(new ArrayList<ReplicaInfo>()));
     liveNodes.add(nodeId);
     updateOverseerLeader();
   }
@@ -529,8 +516,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
 
   // this method needs to be called under a lock
   private void setReplicaStates(String nodeId, Replica.State state, Set<String> changedCollections) {
-    @SuppressWarnings({"unchecked"})
-    List<ReplicaInfo> replicas = nodeReplicaMap.computeIfAbsent(nodeId, Utils.NEW_SYNCHRONIZED_ARRAYLIST_FUN);
+    List<ReplicaInfo> replicas = nodeReplicaMap.computeIfAbsent(nodeId, o -> Collections.synchronizedList(new ArrayList<ReplicaInfo>()));
     synchronized (replicas) {
       replicas.forEach(r -> {
         r.getVariables().put(ZkStateReader.STATE_PROP, state.toString());
@@ -653,7 +639,6 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @param replicaInfo replica info
    * @param runLeaderElection if true then run a leader election after adding the replica.
    */
-  @SuppressWarnings({"unchecked"})
   public void simAddReplica(String nodeId, ReplicaInfo replicaInfo, boolean runLeaderElection) throws Exception {
     ensureNotClosed();
     lock.lockInterruptibly();
@@ -702,7 +687,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
         replicaInfo.getVariables().put(Variable.coreidxsize,
             new AtomicDouble((Double)Type.CORE_IDX.convertVal(SimCloudManager.DEFAULT_IDX_SIZE_BYTES)));
       }
-      nodeReplicaMap.computeIfAbsent(nodeId, Utils.NEW_SYNCHRONIZED_ARRAYLIST_FUN).add(replicaInfo);
+      nodeReplicaMap.computeIfAbsent(nodeId, o -> Collections.synchronizedList(new ArrayList<ReplicaInfo>())).add(replicaInfo);
       colShardReplicaMap.computeIfAbsent(replicaInfo.getCollection(), c -> new ConcurrentHashMap<>())
           .computeIfAbsent(replicaInfo.getShard(), s -> new ArrayList<>())
           .add(replicaInfo);
@@ -752,9 +737,8 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     
     lock.lockInterruptibly();
     try {
-      @SuppressWarnings({"unchecked"})
       final List<ReplicaInfo> replicas = nodeReplicaMap.computeIfAbsent
-        (nodeId, Utils.NEW_SYNCHRONIZED_ARRAYLIST_FUN);
+        (nodeId, o -> Collections.synchronizedList(new ArrayList<ReplicaInfo>()));
       synchronized (replicas) {
         for (int i = 0; i < replicas.size(); i++) {
           if (collection.equals(replicas.get(i).getCollection()) && coreNodeName.equals(replicas.get(i).getName())) {
@@ -1003,9 +987,6 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     log.debug("-- simCreateCollection {}", collectionName);
 
     String router = props.getStr("router.name", DocRouter.DEFAULT_NAME);
-    String policy = props.getStr(Policy.POLICY);
-    AutoScalingConfig autoScalingConfig = cloudManager.getDistribStateManager().getAutoScalingConfig();
-    boolean usePolicyFramework = !autoScalingConfig.getPolicy().getClusterPolicy().isEmpty() || policy != null;
 
     // fail fast if parameters are wrong or incomplete
     List<String> shardNames = CreateCollectionCmd.populateShardNames(props, router);
@@ -2293,15 +2274,14 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     }
   }
 
-  @SuppressWarnings({"unchecked"})
   public void simSetReplicaValues(String node, Map<String, Map<String, List<ReplicaInfo>>> source, boolean overwrite) {
     List<ReplicaInfo> infos = nodeReplicaMap.get(node);
     if (infos == null) {
       throw new RuntimeException("Node not present: " + node);
     }
     // core_node_name is not unique across collections
-    Map<String, Map<String, ReplicaInfo>> infoMap = new HashMap<>();
-    infos.forEach(ri -> infoMap.computeIfAbsent(ri.getCollection(), Utils.NEW_HASHMAP_FUN).put(ri.getName(), ri));
+    Map<String, Map<String, ReplicaInfo>> infoMap = new HashMap<String, Map<String, ReplicaInfo>>();
+    infos.forEach(ri -> infoMap.computeIfAbsent(ri.getCollection(), o -> new HashMap<String, ReplicaInfo>()).put(ri.getName(), ri));
     source.forEach((coll, shards) -> shards.forEach((shard, replicas) -> replicas.forEach(r -> {
       ReplicaInfo target = infoMap.getOrDefault(coll, Collections.emptyMap()).get(r.getName());
       if (target == null) {
@@ -2325,9 +2305,8 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @return copy of the list of replicas on that node, or empty list if none
    */
   public List<ReplicaInfo> simGetReplicaInfos(String node) {
-    @SuppressWarnings({"unchecked"})
     final List<ReplicaInfo> replicas = nodeReplicaMap.computeIfAbsent
-      (node, Utils.NEW_SYNCHRONIZED_ARRAYLIST_FUN);
+      (node, o -> Collections.synchronizedList(new ArrayList<ReplicaInfo>()));
     // make a defensive copy to avoid ConcurrentModificationException
     return Arrays.asList(replicas.toArray(new ReplicaInfo[replicas.size()]));
   }

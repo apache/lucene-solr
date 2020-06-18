@@ -323,6 +323,8 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     String policyName = (String) op.getVal("");
 
     if (op.hasError()) return currentConfig;
+    String eventTypeStr = op.getStr(EVENT);
+    TriggerEventType.valueOf(eventTypeStr.trim().toUpperCase(Locale.ROOT));
 
     Map<String, List<Clause>> policies = currentConfig.getPolicy().getPolicies();
     if (policies == null || !policies.containsKey(policyName)) {
@@ -539,11 +541,8 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
                                              AutoScalingConfig currentConfig) throws KeeperException, InterruptedException {
     // we're going to modify the op - use a copy
     String triggerName = op.getStr(NAME);
-    String eventTypeStr = op.getStr(EVENT);
 
     if (op.hasError()) return currentConfig;
-    TriggerEventType eventType = TriggerEventType.valueOf(eventTypeStr.trim().toUpperCase(Locale.ROOT));
-
     String waitForStr = op.getStr(WAIT_FOR, null);
 
     CommandOperation opCopy = new CommandOperation(op.name, Utils.getDeepCopy((Map) op.getCommandData(), 10));
@@ -558,9 +557,6 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
       }
       opCopy.getDataMap().put(WAIT_FOR, seconds);
     }
-
-    Integer lowerBound = op.getInt(LOWER_BOUND, null);
-    Integer upperBound = op.getInt(UPPER_BOUND, null);
 
     List<Map<String, String>> actions = (List<Map<String, String>>) op.getVal(ACTIONS);
     if (actions == null) {
@@ -601,9 +597,6 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     // check that there's a default SystemLogListener, unless user specified another one
     return withSystemLogListener(currentConfig, triggerName);
   }
-
-  private static String fullName = SystemLogListener.class.getName();
-  private static String solrName = "solr." + SystemLogListener.class.getSimpleName();
 
   public static AutoScalingConfig withSystemLogListener(AutoScalingConfig autoScalingConfig, String triggerName) {
     Map<String, AutoScalingConfig.TriggerListenerConfig> configs = autoScalingConfig.getTriggerListenerConfigs();
@@ -699,8 +692,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
   }
 
   private void verifyAutoScalingConf(AutoScalingConfig autoScalingConf) throws IOException {
-    Policy.Session session = autoScalingConf.getPolicy()
-        .createSession(cloudManager);
+    autoScalingConf.getPolicy().createSession(cloudManager);
     log.debug("Verified autoscaling configuration");
   }
 
