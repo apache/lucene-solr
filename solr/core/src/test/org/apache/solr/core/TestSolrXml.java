@@ -20,10 +20,14 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Locale;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+import com.google.common.collect.Sets;
+import org.apache.commons.exec.OS;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
@@ -56,6 +60,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     Path testSrcRoot = TEST_PATH();
     Files.copy(testSrcRoot.resolve("solr-50-all.xml"), solrHome.resolve("solr.xml"));
 
+    System.setProperty("solr.allowPaths", OS.isFamilyWindows() ? "C:\\tmp,C:\\home\\john" : "/tmp,/home/john");
     NodeConfig cfg = SolrXmlConfig.fromSolrHome(solrHome, new Properties());
     CloudConfig ccfg = cfg.getCloudConfig();
     UpdateShardHandlerConfig ucfg = cfg.getUpdateShardHandlerConfig();
@@ -98,6 +103,12 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     assertEquals("a.b.C", backupRepoConfigs[0].className);
     assertEquals("true", backupRepoConfigs[0].attributes.get("default"));
     assertEquals(0, backupRepoConfigs[0].initArgs.size());
+    assertTrue("allowPaths", cfg.getAllowPaths().containsAll(OS.isFamilyWindows() ?
+            Sets.newHashSet("C:\\tmp", "C:\\home\\john").stream().map(s -> Paths.get(s)).collect(Collectors.toSet()) :
+            Sets.newHashSet("/tmp", "/home/john").stream().map(s -> Paths.get(s)).collect(Collectors.toSet())
+        )
+    );
+    System.clearProperty("solr.allowPaths");
   }
 
   // Test  a few property substitutions that happen to be in solr-50-all.xml.

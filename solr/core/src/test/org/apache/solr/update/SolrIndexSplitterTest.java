@@ -24,6 +24,7 @@ import java.util.List;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
@@ -67,6 +68,7 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
     indexDir1 = createTempDir("_testSplit1").toFile();
     indexDir2 = createTempDir("_testSplit2").toFile();
     indexDir3 = createTempDir("_testSplit3").toFile();
+    h.getCoreContainer().getAllowPaths().addAll(Sets.newHashSet(indexDir1.toPath(), indexDir2.toPath(), indexDir3.toPath()));
   }
 
   @Test

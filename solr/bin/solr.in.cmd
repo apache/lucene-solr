@@ -199,3 +199,8 @@ REM Runtime properties are passed to the security policy file (server\etc\securi
 REM You can also tweak via standard JDK files such as ~\.java.policy, see https://s.apache.org/java8policy
 REM This is experimental! It may not work at all with Hadoop/HDFS features.
 REM set SOLR_SECURITY_MANAGER_ENABLED=false
+
+REM Solr is by default allowed to read and write data from/to SOLR_HOME and a few other well defined locations
+REM Sometimes it may be necessary to place a core or a backup on a different location or a different disk
+REM This parameter lets you specify file system path(s) to explicitly allow. The special value of '*' will allow any path
+REM SOLR_OPTS="%SOLR_OPTS% -Dsolr.allowPaths=D:\,E:\other\path"

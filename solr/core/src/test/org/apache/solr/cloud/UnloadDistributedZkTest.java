@@ -16,6 +16,15 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Random;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -32,20 +41,12 @@ import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.junit.Test;
-
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Random;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 /**
  * This test simply does a bunch of basic things in solrcloud mode and asserts things
@@ -64,6 +65,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
 
   @Test
   public void test() throws Exception {
+    jettys.forEach(j -> j.getCoreContainer().getAllowPaths().add(Paths.get("_ALL_"))); // Allow non-standard core instance path
     testCoreUnloadAndLeaders(); // long
     testUnloadLotsOfCores(); // long
 

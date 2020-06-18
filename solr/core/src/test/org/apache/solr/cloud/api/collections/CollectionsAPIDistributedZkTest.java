@@ -99,6 +99,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     System.setProperty("createCollectionWaitTimeTillActive", "5");
     TestInjection.randomDelayInCoreCreation = "true:5";
     System.setProperty("validateAfterInactivity", "200");
+    System.setProperty("solr.allowPaths", "*");
 
     configureCluster(4)
         .addConfig("conf", configset(getConfigSet()))
@@ -113,6 +114,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
       shutdownCluster();
     } finally {
       System.clearProperty("createCollectionWaitTimeTillActive");
+      System.clearProperty("solr.allowPaths");
       super.tearDown();
     }
   }

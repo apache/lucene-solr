@@ -18,6 +18,7 @@ package org.apache.solr.core;
 
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
@@ -39,6 +40,8 @@ public class NodeConfig {
   private final Integer booleanQueryMaxClauseCount;
   
   private final Path configSetBaseDirectory;
+
+  private final Set<Path> allowPaths;
 
   private final String sharedLibDirectory;
 
@@ -89,7 +92,8 @@ public class NodeConfig {
                      int transientCacheSize, boolean useSchemaCache, String managementPath,
                      Path solrHome, SolrResourceLoader loader,
                      Properties solrProperties, PluginInfo[] backupRepositoryPlugins,
-                     MetricsConfig metricsConfig, PluginInfo transientCacheConfig, PluginInfo tracerConfig) {
+                     MetricsConfig metricsConfig, PluginInfo transientCacheConfig, PluginInfo tracerConfig,
+                     Set<Path> allowPaths) {
     // all Path params here are absolute and normalized.
     this.nodeName = nodeName;
     this.coreRootDirectory = coreRootDirectory;
@@ -118,6 +122,7 @@ public class NodeConfig {
     this.metricsConfig = metricsConfig;
     this.transientCacheConfig = transientCacheConfig;
     this.tracerConfig = tracerConfig;
+    this.allowPaths = allowPaths;
 
     if (this.cloudConfig != null && this.getCoreLoadThreadCount(false) < 2) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -252,6 +257,12 @@ public class NodeConfig {
     return tracerConfig;
   }
 
+  /**
+   * Extra file paths that will be allowed for core creation, in addition to
+   * SOLR_HOME, SOLR_DATA_HOME and coreRootDir
+   */
+  public Set<Path> getAllowPaths() { return allowPaths; }
+
   public static class NodeConfigBuilder {
     // all Path fields here are absolute and normalized.
     private SolrResourceLoader loader;
@@ -281,6 +292,7 @@ public class NodeConfig {
     private MetricsConfig metricsConfig;
     private PluginInfo transientCacheConfig;
     private PluginInfo tracerConfig;
+    private Set<Path> allowPaths = Collections.emptySet();
 
     private final Path solrHome;
     private final String nodeName;
@@ -440,6 +452,11 @@ public class NodeConfig {
       return this;
     }
 
+   public NodeConfigBuilder setAllowPaths(Set<Path> paths) {
+      this.allowPaths = paths;
+      return this;
+    }
+
     public NodeConfig build() {
       // if some things weren't set then set them now.  Simple primitives are set on the field declaration
       if (loader == null) {
@@ -450,7 +467,7 @@ public class NodeConfig {
                             updateShardHandlerConfig, coreAdminHandlerClass, collectionsAdminHandlerClass, healthCheckHandlerClass, infoHandlerClass, configSetsHandlerClass,
                             logWatcherConfig, cloudConfig, coreLoadThreads, replayUpdatesThreads, transientCacheSize, useSchemaCache, managementPath,
                             solrHome, loader, solrProperties,
-                            backupRepositoryPlugins, metricsConfig, transientCacheConfig, tracerConfig);
+                            backupRepositoryPlugins, metricsConfig, transientCacheConfig, tracerConfig, allowPaths);
     }
 
     public NodeConfigBuilder setSolrResourceLoader(SolrResourceLoader resourceLoader) {
