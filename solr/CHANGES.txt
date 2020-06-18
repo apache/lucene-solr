@@ -141,6 +141,9 @@ Improvements
 * SOLR-14442: bin/solr and bin\solr.cmd invoke jstack <SOLR_PID> before forceful termination, if jstack is available.
   Also, bin\solr.cmd executes forceful termination even port is unbinded  already (Christine Poerschke via Mikhail Khludnev).
 
+* SOLR-14566: Request ID's ('rid') are now added by default to distributed search requests, and can be used to correlate logs
+  from the receiving coordinator node with those from downstream shard requests. (Jason Gerlowski)
+
 Optimizations
 ---------------------
 * SOLR-8306: Do not collect expand documents when expand.rows=0 (Marshall Sanders, Amelia Henderson)

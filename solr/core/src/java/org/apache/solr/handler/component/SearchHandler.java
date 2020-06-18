@@ -24,7 +24,9 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.search.TotalHits;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -36,6 +38,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
@@ -69,6 +72,11 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
   static final String INIT_LAST_COMPONENTS = "last-components";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  /**
+   * A counter to ensure that no RID is equal, even if they fall in the same millisecond
+   */
+  private static final AtomicLong ridCounter = new AtomicLong();
 
   protected volatile List<SearchComponent> components;
   private ShardHandlerFactory shardHandlerFactory;
@@ -298,7 +306,8 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
     final RTimerTree timer = rb.isDebug() ? req.getRequestTimer() : null;
 
     final ShardHandler shardHandler1 = getAndPrepShardHandler(req, rb); // creates a ShardHandler object only if it's needed
-    
+
+    tagRequestWithRequestId(rb);
     if (timer == null) {
       // non-debugging prepare phase
       for( SearchComponent c : components ) {
@@ -498,6 +507,29 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
       shardInfo.add(shardInfoName, nl);   
       rsp.getValues().add(ShardParams.SHARDS_INFO,shardInfo);            
     }
+  }
+
+  private void tagRequestWithRequestId(ResponseBuilder rb) {
+    String rid = getRequestId(rb.req);
+    if (StringUtils.isBlank(rb.req.getParams().get(CommonParams.REQUEST_ID))) {
+      ModifiableSolrParams params = new ModifiableSolrParams(rb.req.getParams());
+      params.add(CommonParams.REQUEST_ID, rid);//add rid to the request so that shards see it
+      rb.req.setParams(params);
+    }
+    if (rb.isDistrib) {
+      rb.rsp.addToLog(CommonParams.REQUEST_ID, rid); //to see it in the logs of the landing core
+    }
+  }
+
+  public static String getRequestId(SolrQueryRequest req) {
+    String rid = req.getParams().get(CommonParams.REQUEST_ID);
+    return StringUtils.isNotBlank(rid) ? rid : generateRid(req);
+  }
+
+  @SuppressForbidden(reason = "Need currentTimeMillis, only used for naming")
+  private static String generateRid(SolrQueryRequest req) {
+    String hostName = req.getCore().getCoreContainer().getHostName();
+    return hostName + "-" + req.getCore().getName() + "-" + System.currentTimeMillis() + "-" + ridCounter.getAndIncrement();
   }
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
