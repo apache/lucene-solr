@@ -466,7 +466,10 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
   /**
    * Expert: sets the amount of time to wait for merges returned by MergePolicy.findFullFlushMerges(...).
    * If this time is reached, we proceed with the commit based on segments merged up to that point.
-   * The merges are not cancelled, and may still run to completion independent of the commit.
+   * The merges are not cancelled, and will still run to completion independent of the commit
+   * like normal segment merges. The default is <tt>0</tt> ie. no waiting time.
+   * Note: This settings has no effect unless {@link MergePolicy#findFullFlushMerges(MergeTrigger, SegmentInfos, MergePolicy.MergeContext)}
+   * has an implementation that actually returns merges which by default doesn't return any merges.
    */
   public IndexWriterConfig setMaxCommitMergeWaitSeconds(long maxCommitMergeWaitSeconds) {
     this.maxCommitMergeWaitSeconds = maxCommitMergeWaitSeconds;
