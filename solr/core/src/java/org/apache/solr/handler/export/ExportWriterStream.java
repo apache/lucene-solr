@@ -147,7 +147,7 @@ public class ExportWriterStream extends TupleStream implements Expressible {
       }
       try {
         buffer.outDocsIndex = ExportBuffers.Buffer.EMPTY;
-        log.info("--- ews exchange empty buffer " + buffer);
+        log.debug("--- ews exchange empty buffer {}", buffer);
         boolean exchanged = false;
         while (!exchanged) {
           Timer.Context timerContext = exportBuffers.getWriterWaitTimer().time();
@@ -155,15 +155,15 @@ public class ExportWriterStream extends TupleStream implements Expressible {
             exportBuffers.exchangeBuffers();
             exchanged = true;
           } catch (TimeoutException e) {
-            log.info("--- ews timeout loop");
+            log.debug("--- ews timeout loop");
             if (exportBuffers.isShutDown()) {
-              log.info("--- ews - the other end is shutdown, returning EOF");
+              log.debug("--- ews - the other end is shutdown, returning EOF");
               res = Tuple.EOF();
               break;
             }
             continue;
           } catch (InterruptedException e) {
-            log.info("--- ews interrupted");
+            log.debug("--- ews interrupted");
             exportBuffers.error(e);
             res = Tuple.EXCEPTION(e, true);
             break;
@@ -179,11 +179,11 @@ public class ExportWriterStream extends TupleStream implements Expressible {
           }
         }
       } catch (InterruptedException e) {
-        log.info("--- ews interrupt");
+        log.debug("--- ews interrupt");
         exportBuffers.error(e);
         res = Tuple.EXCEPTION(e, true);
       } catch (Exception e) {
-        log.info("--- ews exception", e);
+        log.debug("--- ews exception", e);
         exportBuffers.error(e);
         res = Tuple.EXCEPTION(e, true);
       }
@@ -192,15 +192,15 @@ public class ExportWriterStream extends TupleStream implements Expressible {
         res = Tuple.EOF();
       }
       if (buffer.outDocsIndex == ExportBuffers.Buffer.NO_MORE_DOCS) {
-        log.info("--- ews EOF");
+        log.debug("--- ews EOF");
         res = Tuple.EOF();
       } else {
         pos = buffer.outDocsIndex;
-        log.info("--- ews new pos=" + pos);
+        log.debug("--- ews new pos=" + pos);
       }
     }
     if (pos < 0) {
-      log.info("--- ews EOF?");
+      log.debug("--- ews EOF?");
       res = Tuple.EOF();
     }
     if (res != null) {

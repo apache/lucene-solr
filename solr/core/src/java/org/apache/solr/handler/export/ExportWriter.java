@@ -339,6 +339,9 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       destination.outDocsIndex = outDocsIndex;
     } catch (Throwable t) {
       log.error("transfer", t);
+      if (t instanceof InterruptedException) {
+        Thread.currentThread().interrupt();
+      }
       throw t;
     } finally {
       timerContext.stop();
@@ -387,13 +390,13 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     } else {
       buffers.run(() -> {
         // get the initial buffer
-        log.info("--- writer init exchanging from empty");
+        log.debug("--- writer init exchanging from empty");
         buffers.exchangeBuffers();
         ExportBuffers.Buffer buffer = buffers.getOutputBuffer();
-        log.info("--- writer init got " + buffer);
+        log.debug("--- writer init got {}", buffer);
         while (buffer.outDocsIndex != ExportBuffers.Buffer.NO_MORE_DOCS) {
           if (Thread.currentThread().isInterrupted()) {
-            log.info("--- writer interrupted");
+            log.debug("--- writer interrupted");
             break;
           }
           Timer.Context timerContext = writeOutputBufferTimer.time();
@@ -408,7 +411,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
           } finally {
             timerContext.stop();
           }
-          log.info("--- writer exchanging from " + buffer);
+          log.debug("--- writer exchanging from {}", buffer);
           timerContext = writerWaitTimer.time();
           try {
             buffers.exchangeBuffers();
@@ -416,7 +419,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
             timerContext.stop();
           }
           buffer = buffers.getOutputBuffer();
-          log.info("--- writer got " + buffer);
+          log.debug("--- writer got {}", buffer);
         }
         return true;
       });

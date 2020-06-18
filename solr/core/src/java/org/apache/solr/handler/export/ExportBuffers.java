@@ -99,16 +99,16 @@ class ExportBuffers {
     barrier = new CyclicBarrier(2, () -> swapBuffers());
     filler = () -> {
       try {
-        log.info("--- filler start " + Thread.currentThread());
+        log.debug("--- filler start {}", Thread.currentThread());
         SortDoc sortDoc = exportWriter.getSortDoc(searcher, sort.getSort());
         Buffer buffer = getFillBuffer();
         SortQueue queue = new SortQueue(queueSize, sortDoc);
         long lastOutputCounter = 0;
         for (int count = 0; count < totalHits; ) {
-          log.info("--- filler fillOutDocs in " + fillBuffer);
+          log.debug("--- filler fillOutDocs in {}", fillBuffer);
           exportWriter.fillOutDocs(leaves, sortDoc, queue, buffer);
           count += (buffer.outDocsIndex + 1);
-          log.info("--- filler count=" + count + ", exchange buffer from " + buffer);
+          log.debug("--- filler count={}, exchange buffer from {}", count, buffer);
           Timer.Context timerContext = getFillerWaitTimer().time();
           try {
             exchangeBuffers();
@@ -120,10 +120,10 @@ class ExportBuffers {
             lastOutputCounter = outputCounter.longValue();
             flushOutput();
           }
-          log.info("--- filler got empty buffer " + buffer);
+          log.debug("--- filler got empty buffer {}", buffer);
         }
         buffer.outDocsIndex = Buffer.NO_MORE_DOCS;
-        log.info("--- filler final exchange buffer from " + buffer);
+        log.debug("--- filler final exchange buffer from {}", buffer);
         Timer.Context timerContext = getFillerWaitTimer().time();
         try {
           exchangeBuffers();
@@ -131,7 +131,7 @@ class ExportBuffers {
           timerContext.stop();
         }
         buffer = getFillBuffer();
-        log.info("--- filler final got buffer " + buffer);
+        log.debug("--- filler final got buffer {}", buffer);
       } catch (Exception e) {
         log.error("filler", e);
         error(e);
@@ -141,7 +141,7 @@ class ExportBuffers {
   }
 
   public void exchangeBuffers() throws Exception {
-    log.info("---- wait from " + Thread.currentThread());
+    log.debug("---- wait exchangeBuffers from {}", Thread.currentThread());
     barrier.await(EXCHANGE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
   }
 
@@ -156,7 +156,7 @@ class ExportBuffers {
   }
 
   private void swapBuffers() {
-    log.info("--- swap buffers");
+    log.debug("--- swap buffers");
     Buffer one = fillBuffer;
     fillBuffer = outputBuffer;
     outputBuffer = one;
@@ -194,7 +194,7 @@ class ExportBuffers {
 
   public void shutdownNow() {
     if (service != null) {
-      log.info("--- shutting down buffers");
+      log.debug("--- shutting down buffers");
       service.shutdownNow();
       service = null;
     }
@@ -230,13 +230,13 @@ class ExportBuffers {
 //            }, service)
 //        );
 //        allDone.join();
-      log.info("-- finished.");
+      log.debug("-- finished.");
     } catch (Exception e) {
       log.error("Exception running filler / writer", e);
       error(e);
       //
     } finally {
-      log.info("--- all done, shutting down buffers");
+      log.debug("--- all done, shutting down buffers");
       shutdownNow();
     }
   }
