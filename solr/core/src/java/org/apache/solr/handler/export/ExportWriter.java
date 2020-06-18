@@ -87,17 +87,18 @@ import static org.apache.solr.common.util.Utils.makeMap;
  * {@link ExportWriter} gathers and sorts the documents for a core using "stream sorting".
  * <p>
  * Stream sorting works by repeatedly processing and modifying a bitmap of matching documents.  Each pass over the
- * bitmap identifies the smallest {@link #DOCUMENT_BATCH_SIZE} docs that haven't been sent yet and stores them in a
+ * bitmap identifies the smallest docs (default is {@link #DEFAULT_BATCH_SIZE}) that haven't been sent yet and stores them in a
  * Priority Queue.  They are then exported (written across the wire) and marked as sent (unset in the bitmap).
  * This process repeats until all matching documents have been sent.
  * <p>
- * This streaming approach is light on memory (only up to 2x {@link #DOCUMENT_BATCH_SIZE} documents are ever stored in memory at
+ * This streaming approach is light on memory (only up to 2x batch size documents are ever stored in memory at
  * once), and it allows {@link ExportWriter} to scale well with regard to numDocs.
  */
 public class ExportWriter implements SolrCore.RawWriter, Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final int DOCUMENT_BATCH_SIZE = 30000;
+  public static final String BATCH_SIZE_PARAM = "batchSize";
+  public static final int DEFAULT_BATCH_SIZE = 30000;
 
   private OutputStreamWriter respWriter;
   final SolrQueryRequest req;
@@ -105,6 +106,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   final StreamContext initialStreamContext;
   final SolrMetricsContext solrMetricsContext;
   final String metricsPath;
+  final int batchSize;
   StreamExpression streamExpression;
   StreamContext streamContext;
   FieldWriter[] fieldWriters;
@@ -128,6 +130,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     this.initialStreamContext = initialStreamContext;
     this.solrMetricsContext = solrMetricsContext;
     this.metricsPath = metricsPath;
+    this.batchSize = req.getParams().getInt(BATCH_SIZE_PARAM, DEFAULT_BATCH_SIZE);
     identifyLowestSortingDocTimer = solrMetricsContext.timer("identifyLowestSortingDoc", metricsPath);
     transferBatchToBufferTimer = solrMetricsContext.timer("transferBatchToBuffer", metricsPath);
     writeOutputBufferTimer = solrMetricsContext.timer("writeOutputBuffer", metricsPath);
@@ -350,7 +353,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
 
   protected void writeDocs(SolrQueryRequest req, OutputStream os, IteratorWriter.ItemWriter writer, Sort sort) throws IOException {
     List<LeafReaderContext> leaves = req.getSearcher().getTopReaderContext().leaves();
-    final int queueSize = Math.min(DOCUMENT_BATCH_SIZE, totalHits);
+    final int queueSize = Math.min(batchSize, totalHits);
 
     ExportBuffers buffers = new ExportBuffers(this, leaves, req.getSearcher(), os, writer, sort, queueSize, totalHits,
         writeOutputBufferTimer, fillerWaitTimer, writerWaitTimer);
