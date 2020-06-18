@@ -71,6 +71,11 @@ public class Lucene86PointsWriter extends PointsWriter implements Closeable {
                                  writeState.segmentInfo.getId(),
                                  writeState.segmentSuffix);
 
+      // We have a chicken/egg problem with the meta file since we need to write the lengths of the index/data files
+      // before any offsets into these files in order to detect truncation properly. But the lengths of these files
+      // are not known until we finish building KD trees for all fields, so we write into a temp file first, and only
+      // create the final metadata file in finish() by writing the lengths of the index/data files first, and then
+      // copying the content of this temporary meta file.
       tempMetaOut = writeState.directory.createTempOutput(
           writeState.segmentInfo.name, Lucene86PointsFormat.META_CODEC_NAME, writeState.context);
       CodecUtil.writeIndexHeader(tempMetaOut,
