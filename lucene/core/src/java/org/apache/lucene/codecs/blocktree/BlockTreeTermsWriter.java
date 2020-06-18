@@ -1035,14 +1035,14 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
 
     boolean success = false;
     try {
-      metaOut.writeVInt(fields.size());
-      for (ByteBuffersDataOutput fieldMeta : fields) {
-        fieldMeta.copyTo(metaOut);
-      }
       CodecUtil.writeFooter(indexOut);
       metaOut.writeLong(indexOut.getFilePointer());
       CodecUtil.writeFooter(termsOut);
       metaOut.writeLong(termsOut.getFilePointer());
+      metaOut.writeVInt(fields.size());
+      for (ByteBuffersDataOutput fieldMeta : fields) {
+        fieldMeta.copyTo(metaOut);
+      }
       CodecUtil.writeFooter(metaOut);
       success = true;
     } finally {

@@ -160,14 +160,20 @@ public final class BlockTreeTermsReader extends FieldsProducer {
       String metaName = IndexFileNames.segmentFileName(segment, state.segmentSuffix, TERMS_META_EXTENSION);
       Map<String, FieldReader> fieldMap = null;
       Throwable priorE = null;
-      long indexLength = -1, termsLength = -1;
       try (ChecksumIndexInput metaIn = version >= VERSION_META_FILE ? state.directory.openChecksumInput(metaName, state.context) : null) {
         try {
           final IndexInput indexMetaIn, termsMetaIn;
           if (version >= VERSION_META_FILE) {
             CodecUtil.checkIndexHeader(metaIn, TERMS_META_CODEC_NAME, version, version, state.segmentInfo.getId(), state.segmentSuffix);
             indexMetaIn = termsMetaIn = metaIn;
+
             postingsReader.init(metaIn, state);
+
+            final long indexLength = metaIn.readLong();
+            CodecUtil.retrieveChecksum(indexIn, indexLength);
+
+            final long termsLength = metaIn.readLong();
+            CodecUtil.retrieveChecksum(termsIn, termsLength);
           } else {
             seekDir(termsIn);
             seekDir(indexIn);
@@ -220,10 +226,6 @@ public final class BlockTreeTermsReader extends FieldsProducer {
               throw new CorruptIndexException("duplicate field: " + fieldInfo.name, termsMetaIn);
             }
           }
-          if (version >= VERSION_META_FILE) {
-            indexLength = metaIn.readLong();
-            termsLength = metaIn.readLong();
-          }
         } catch (Throwable exception) {
           priorE = exception;
         } finally {
@@ -233,14 +235,6 @@ public final class BlockTreeTermsReader extends FieldsProducer {
             IOUtils.rethrowAlways(priorE);
           }
         }
-      }
-      if (version >= VERSION_META_FILE) {
-        // At this point the checksum of the meta file has been verified so the lengths are likely correct
-        CodecUtil.retrieveChecksum(indexIn, indexLength);
-        CodecUtil.retrieveChecksum(termsIn, termsLength);
-      } else {
-        assert indexLength == -1 : indexLength;
-        assert termsLength == -1 : termsLength;
       }
       List<String> fieldList = new ArrayList<>(fieldMap.keySet());
       fieldList.sort(null);
