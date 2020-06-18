@@ -79,6 +79,8 @@ Improvements
 
 * LUCENE-9396: Improved truncation detection for points. (Adrien Grand, Robert Muir)
 
+* LUCENE-9402: Let MultiCollector handle minCompetitiveScore (Tomás Fernández Löbbe, Adrien Grand)
+
 Optimizations
 ---------------------
 
