@@ -292,7 +292,6 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
                 leafContexts));
       }
       doc.addField(name, featureVector);
-      doc.addField("interleavingPick",rerankingQuery.getScoringModel().getName());
     }
 
   }

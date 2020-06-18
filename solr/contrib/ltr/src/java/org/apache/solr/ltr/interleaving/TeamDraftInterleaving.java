@@ -26,7 +26,18 @@ import java.util.Set;
 import org.apache.lucene.search.ScoreDoc;
 
 public class TeamDraftInterleaving implements Interleaving{
-  private Random generator = new Random();
+  public static Random RANDOM;
+
+  static {
+    // We try to make things reproducible in the context of our tests by initializing the random instance
+    // based on the current seed
+    String seed = System.getProperty("tests.seed");
+    if (seed == null) {
+      RANDOM = new Random();
+    } else {
+      RANDOM = new Random(seed.hashCode());
+    }
+  }  
   
   public InterleavingResult interleave(ScoreDoc[] rerankedA, ScoreDoc[] rerankedB){
     LinkedHashSet<ScoreDoc> interleavedResults = new LinkedHashSet<>();
@@ -38,7 +49,7 @@ public class TeamDraftInterleaving implements Interleaving{
     int indexA = 0, indexB = 0;
     
     while(interleavedResults.size()<topN && (indexA<rerankedA.length) && (indexB<rerankedB.length)){
-      if(teamA.size()<teamB.size() || (teamA.size()==teamB.size() && generator.nextBoolean())){
+      if(teamA.size()<teamB.size() || (teamA.size()==teamB.size() && !RANDOM.nextBoolean())){
         indexA = updateIndex(interleavedResults,indexA,rerankedA);
         interleavedResults.add(rerankedA[indexA]);
         teamA.add(rerankedA[indexA].doc);
@@ -70,7 +81,7 @@ public class TeamDraftInterleaving implements Interleaving{
     return index;
   }
 
-  public void setGenerator(Random generator) {
-    this.generator = generator;
+  public static void setRANDOM(Random RANDOM) {
+    TeamDraftInterleaving.RANDOM = RANDOM;
   }
 }
