@@ -357,8 +357,14 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
 
     if (streamExpression != null) {
       streamContext.put(ExportBuffers.EXPORT_BUFFERS_KEY, buffers);
-      final TupleStream tupleStream = createTupleStream();
-      tupleStream.open();
+      final TupleStream tupleStream;
+      try {
+        tupleStream = createTupleStream();
+        tupleStream.open();
+      } catch (Exception e) {
+        buffers.getWriter().add((MapWriter) ew -> Tuple.EXCEPTION(e, true).writeMap(ew));
+        return;
+      }
       buffers.run(() -> {
         for (;;) {
           if (Thread.currentThread().isInterrupted()) {
