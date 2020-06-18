@@ -197,6 +197,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
       (Map<String,Exception>) resp.getValues().get("initFailures");
     assertNotNull("core failures is null", failures);
 
+    @SuppressWarnings({"rawtypes"})
     NamedList status = (NamedList)resp.getValues().get("status");
     assertNotNull("core status is null", status);
 

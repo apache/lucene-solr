@@ -290,10 +290,12 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
     try {
       final QueryResponse rsp = (new QueryRequest(params)).process(getRandClient(random()));
       assertNotNull(params + " is null rsp?", rsp);
+      @SuppressWarnings({"rawtypes"})
       final NamedList topNamedList = rsp.getResponse();
       assertNotNull(params + " is null topNamedList?", topNamedList);
       
       // skip past the (implicit) top Facet query to get it's "sub-facets" (the real facets)...
+      @SuppressWarnings({"unchecked"})
       final List<NamedList<Object>> facetDebug =
         (List<NamedList<Object>>) topNamedList.findRecursive("debug", "facet-trace", "sub-facet");
       assertNotNull(topNamedList + " ... null facet debug?", facetDebug);
@@ -515,12 +517,14 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
     try {
 
       // start by recording the results of the purely "default" behavior...
+      @SuppressWarnings({"rawtypes"})
       final NamedList expected = getFacetResponse(basicParams);
 
       // now loop over all processors and compare them to the "default"...
       for (FacetMethod method : EnumSet.allOf(FacetMethod.class)) {
         ModifiableSolrParams options = params("method_val", method.toString().toLowerCase(Locale.ROOT));
           
+        @SuppressWarnings({"rawtypes"})
         final NamedList actual = getFacetResponse(SolrParams.wrapAppended(options, basicParams));
 
         // we can't rely on a trivial assertEquals() comparison...
@@ -550,6 +554,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
    * We ignore {@link QueryResponse#getJsonFacetingResponse()} because it isn't as useful for
    * doing a "deep equals" comparison across requests
    */
+  @SuppressWarnings({"rawtypes"})
   private NamedList getFacetResponse(final SolrParams params) {
     try {
       final QueryResponse rsp = (new QueryRequest(params)).process(getRandClient(random()));

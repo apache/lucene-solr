@@ -62,6 +62,7 @@ import static org.apache.solr.common.util.Utils.makeMap;
  */
 @SuppressWarnings("unchecked")
 public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
+  @SuppressWarnings({"rawtypes"})
   protected Map rules;
 
   final int STATUS_OK = 200;
@@ -464,6 +465,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
     assertEquals("admin", perms.getVal("permissions[0]/role"));
     perms.runCmd("{set-permission : {name: config-edit, role: [admin, dev], index:2 } }", false);
     perms.runCmd("{set-permission : {name: config-edit, role: [admin, dev], index:1}}", true);
+    @SuppressWarnings({"rawtypes"})
     Collection roles = (Collection) perms.getVal("permissions[0]/role");
     assertEquals(2, roles.size());
     assertTrue(roles.contains("admin"));
@@ -484,15 +486,18 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
   }
 
   static class  Perms {
+    @SuppressWarnings({"rawtypes"})
     Map conf =  new HashMap<>();
     ConfigEditablePlugin plugin = new RuleBasedAuthorizationPlugin();
     List<CommandOperation> parsedCommands;
 
     public void runCmd(String cmds, boolean failOnError) throws IOException {
       parsedCommands = CommandOperation.parse(new StringReader(cmds));
+      @SuppressWarnings({"rawtypes"})
       LinkedList ll = new LinkedList();
       Map<String, Object> edited = plugin.edit(conf, parsedCommands);
       if(edited!= null) conf = edited;
+      @SuppressWarnings({"rawtypes"})
       List<Map> maps = captureErrors(parsedCommands);
       if(failOnError){
         assertTrue("unexpected error ,"+maps , maps.isEmpty());
@@ -553,6 +558,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
     }
 
     @Override
+    @SuppressWarnings({"rawtypes"})
     public Enumeration getHeaderNames() {
       return null;
     }

@@ -44,11 +44,11 @@ class TermVectorsConsumer extends TermsHash {
   final ByteSliceReader vectorSliceReaderOff = new ByteSliceReader();
 
   boolean hasVectors;
-  int numVectorFields;
+  private int numVectorFields;
   int lastDocID;
   private TermVectorsConsumerPerField[] perFields = new TermVectorsConsumerPerField[1];
 
-  public TermVectorsConsumer(DocumentsWriterPerThread docWriter) {
+  TermVectorsConsumer(DocumentsWriterPerThread docWriter) {
     super(docWriter, false, null);
     this.docWriter = docWriter;
   }

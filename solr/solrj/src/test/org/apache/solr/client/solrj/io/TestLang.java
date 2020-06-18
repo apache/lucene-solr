@@ -89,7 +89,7 @@ public class TestLang extends SolrTestCase {
 
   @Test
   public void testLang() {
-    List<String> functions = new ArrayList();
+    List<String> functions = new ArrayList<>();
     for(String f : allFunctions) {
       functions.add(f);
     }

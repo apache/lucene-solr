@@ -53,6 +53,7 @@ public class TestPushWriter extends SolrTestCaseJ4 {
     if (log.isInfoEnabled()) {
       log.info("{}", new String(baos.toByteArray(), StandardCharsets.UTF_8));
     }
+    @SuppressWarnings({"rawtypes"})
     Map m = (Map) Utils.fromJSON(baos.toByteArray());
     checkValues(m);
     try (JavaBinCodec jbc = new JavaBinCodec(baos= new ByteArrayOutputStream(), null)) {
@@ -64,7 +65,7 @@ public class TestPushWriter extends SolrTestCaseJ4 {
     checkValues(m);
   }
 
-  protected void checkValues(Map m) {
+  protected void checkValues(@SuppressWarnings({"rawtypes"})Map m) {
     assertEquals(0, ((Number)Utils.getObjectByPath(m, true, "responseHeader/status")).intValue());
     assertEquals(10, ((Number)Utils.getObjectByPath(m, true, "response/numFound")).intValue());
     assertEquals(1, ((Number)Utils.getObjectByPath(m, true, "response/docs[0]/id")).intValue());

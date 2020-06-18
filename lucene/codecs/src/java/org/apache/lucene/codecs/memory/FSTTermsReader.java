@@ -176,7 +176,7 @@ public class FSTTermsReader extends FieldsProducer {
       this.sumTotalTermFreq = sumTotalTermFreq;
       this.sumDocFreq = sumDocFreq;
       this.docCount = docCount;
-      this.dict = new FST<>(in, new FSTTermOutputs(fieldInfo));
+      this.dict = new FST<>(in, in, new FSTTermOutputs(fieldInfo));
     }
 
     @Override

@@ -37,6 +37,7 @@ import org.locationtech.spatial4j.shape.Circle;
 import org.locationtech.spatial4j.shape.Point;
 import org.locationtech.spatial4j.shape.Rectangle;
 import org.locationtech.spatial4j.shape.Shape;
+import org.locationtech.spatial4j.shape.ShapeFactory;
 import org.locationtech.spatial4j.shape.SpatialRelation;
 import org.locationtech.spatial4j.shape.impl.RectangleImpl;
 
@@ -46,6 +47,7 @@ import static com.carrotsearch.randomizedtesting.RandomizedTest.randomIntBetween
 public class HeatmapFacetCounterTest extends StrategyTestCase {
 
   SpatialPrefixTree grid;
+  ShapeFactory shapeFactory;
 
   int cellsValidated;
   int cellValidatedNonZero;
@@ -55,6 +57,7 @@ public class HeatmapFacetCounterTest extends StrategyTestCase {
     super.setUp();
     cellsValidated = cellValidatedNonZero = 0;
     ctx = SpatialContext.GEO;
+    shapeFactory = ctx.getShapeFactory();
     grid = new QuadPrefixTree(ctx, randomIntBetween(1, 8));
     strategy = new RecursivePrefixTreeStrategy(grid, getTestClass().getSimpleName());
     if (rarely()) {
@@ -70,14 +73,14 @@ public class HeatmapFacetCounterTest extends StrategyTestCase {
   @Test
   public void testStatic() throws IOException {
     //Some specific tests (static, not random).
-    adoc("0", ctx.makeRectangle(179.8, -170, -90, -80));//barely crosses equator
-    adoc("1", ctx.makePoint(-180, -85));//a pt within the above rect
-    adoc("2", ctx.makePoint(172, -85));//a pt to left of rect
+    adoc("0", shapeFactory.rect(179.8, -170, -90, -80));//barely crosses equator
+    adoc("1", shapeFactory.pointXY(-180, -85));//a pt within the above rect
+    adoc("2", shapeFactory.pointXY(172, -85));//a pt to left of rect
     commit();
 
-    validateHeatmapResultLoop(ctx.makeRectangle(+170, +180, -90, -85), 1, 100);
-    validateHeatmapResultLoop(ctx.makeRectangle(-180, -160, -89, -50), 1, 100);
-    validateHeatmapResultLoop(ctx.makeRectangle(179, 179, -89, -50), 1, 100);//line
+    validateHeatmapResultLoop(shapeFactory.rect(+170, +180, -90, -85), 1, 100);
+    validateHeatmapResultLoop(shapeFactory.rect(-180, -160, -89, -50), 1, 100);
+    validateHeatmapResultLoop(shapeFactory.rect(179, 179, -89, -50), 1, 100);//line
     // We could test anything and everything at this point... I prefer we leave that to random testing and then
     // add specific tests if we find a bug.
   }
@@ -86,9 +89,9 @@ public class HeatmapFacetCounterTest extends StrategyTestCase {
   public void testLucene7291Dateline() throws IOException {
     grid = new QuadPrefixTree(ctx, 2); // only 2, and we wind up with some big leaf cells
     strategy = new RecursivePrefixTreeStrategy(grid, getTestClass().getSimpleName());
-    adoc("0", ctx.makeRectangle(-102, -83, 43, 52));
+    adoc("0", shapeFactory.rect(-102, -83, 43, 52));
     commit();
-    validateHeatmapResultLoop(ctx.makeRectangle(179, -179, 62, 63), 2, 100);// HM crosses dateline
+    validateHeatmapResultLoop(shapeFactory.rect(179, -179, 62, 63), 2, 100);// HM crosses dateline
   }
 
   @Test
@@ -98,12 +101,13 @@ public class HeatmapFacetCounterTest extends StrategyTestCase {
     spatialContextFactory.geo = false;
     spatialContextFactory.worldBounds = new RectangleImpl(-90, 90, -90, 90, null);
     ctx = spatialContextFactory.newSpatialContext();
+    shapeFactory = ctx.getShapeFactory();
     final int LEVEL = 4;
     grid = new QuadPrefixTree(ctx, LEVEL);
     strategy = new RecursivePrefixTreeStrategy(grid, getTestClass().getSimpleName());
-    Circle circle = ctx.makeCircle(0, 0, 89);
-    adoc("0", ctx.makePoint(88, 88));//top-right, inside bbox of circle but not the circle
-    adoc("1", ctx.makePoint(0, 0));//clearly inside; dead center in fact
+    Circle circle = shapeFactory.circle(0, 0, 89);
+    adoc("0", shapeFactory.pointXY(88, 88));//top-right, inside bbox of circle but not the circle
+    adoc("1", shapeFactory.pointXY(0, 0));//clearly inside; dead center in fact
     commit();
     final HeatmapFacetCounter.Heatmap heatmap = HeatmapFacetCounter.calcFacets(
         (PrefixTreeStrategy) strategy, indexSearcher.getTopReaderContext(), null,
@@ -178,7 +182,7 @@ public class HeatmapFacetCounterTest extends StrategyTestCase {
     // and once with dateline wrap
     if (rect.getWidth() > 0) {
       double shift = random().nextDouble() % rect.getWidth();
-      queryHeatmapRecursive(ctx.makeRectangle(
+      queryHeatmapRecursive(shapeFactory.rect(
               DistanceUtils.normLonDEG(rect.getMinX() - shift),
               DistanceUtils.normLonDEG(rect.getMaxX() - shift),
               rect.getMinY(), rect.getMaxY()),
@@ -231,7 +235,7 @@ public class HeatmapFacetCounterTest extends StrategyTestCase {
         final int facetCount = heatmap.getCount(c, r);
         double x = DistanceUtils.normLonDEG(heatRect.getMinX() + c * cellWidth + cellWidth / 2);
         double y = DistanceUtils.normLatDEG(heatRect.getMinY() + r * cellHeight + cellHeight / 2);
-        Point pt =  ctx.makePoint(x, y);
+        Point pt =  shapeFactory.pointXY(x, y);
         assertEquals(countMatchingDocsAtLevel(pt, facetLevel), facetCount);
       }
     }

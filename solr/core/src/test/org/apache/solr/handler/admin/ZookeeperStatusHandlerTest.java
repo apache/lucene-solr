@@ -83,12 +83,15 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
     NamedList<Object> nl = solr.httpUriRequest(mntrReq).future.get(10000, TimeUnit.MILLISECONDS);
 
     assertEquals("zkStatus", nl.getName(1));
+    @SuppressWarnings({"unchecked"})
     Map<String,Object> zkStatus = (Map<String,Object>) nl.get("zkStatus");
     assertEquals("green", zkStatus.get("status"));
     assertEquals("standalone", zkStatus.get("mode"));
     assertEquals(1L, zkStatus.get("ensembleSize"));
+    @SuppressWarnings({"unchecked"})
     List<Object> detailsList = (List<Object>)zkStatus.get("details");
     assertEquals(1, detailsList.size());
+    @SuppressWarnings({"unchecked"})
     Map<String,Object> details = (Map<String,Object>) detailsList.get(0);
     assertEquals(true, details.get("ok"));
     assertTrue(Integer.parseInt((String) details.get("zk_znode_count")) > 50);

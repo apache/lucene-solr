@@ -80,6 +80,7 @@ public enum Operand {
   IN("", 0) {
     @Override
     public TestStatus match(Object ruleVal, Object testVal) {
+      @SuppressWarnings({"rawtypes"})
       List l = (List) ruleVal;
       return (l.contains(testVal)) ?  PASS: FAIL;
     }

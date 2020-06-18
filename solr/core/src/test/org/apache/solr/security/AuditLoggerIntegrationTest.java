@@ -162,7 +162,7 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
     gate.release(preShutdownEventsAllowed);
     runThreeTestAdminCommands();
 
-    final List<AuditEvent> events = new ArrayList
+    final List<AuditEvent> events = new ArrayList<>
       (harness.receiver.waitForAuditEvents(preShutdownEventsAllowed));
     assertEquals(preShutdownEventsAllowed, events.size());
 

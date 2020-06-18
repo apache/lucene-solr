@@ -141,14 +141,14 @@ public class WFSTCompletionLookup extends Lookup implements Accountable {
     if (fst == null) {
       return false;
     }
-    fst.save(output);
+    fst.save(output, output);
     return true;
   }
 
   @Override
   public boolean load(DataInput input) throws IOException {
     count = input.readVLong();
-    this.fst = new FST<>(input, PositiveIntOutputs.getSingleton());
+    this.fst = new FST<>(input, input, PositiveIntOutputs.getSingleton());
     return true;
   }
 

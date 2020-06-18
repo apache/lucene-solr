@@ -178,6 +178,7 @@ public class DistribPackageStore implements PackageStore {
       String baseUrl = url.replace("/solr", "/api");
 
       ByteBuffer metadata = null;
+      @SuppressWarnings({"rawtypes"})
       Map m = null;
       try {
         metadata = Utils.executeGET(coreContainer.getUpdateShardHandler().getDefaultHttpClient(),
@@ -448,7 +449,7 @@ public class DistribPackageStore implements PackageStore {
   }
 
   @Override
-  public List list(String path, Predicate<String> predicate) {
+  public List<FileDetails> list(String path, Predicate<String> predicate) {
     File file = getRealpath(path).toFile();
     List<FileDetails> fileDetails = new ArrayList<>();
     FileType type = getType(path, false);
@@ -472,6 +473,7 @@ public class DistribPackageStore implements PackageStore {
   @Override
   public void refresh(String path) {
     try {
+      @SuppressWarnings({"rawtypes"})
       List l = null;
       try {
         l = coreContainer.getZkController().getZkClient().getChildren(ZK_PACKAGESTORE+ path, null, true);
@@ -479,6 +481,7 @@ public class DistribPackageStore implements PackageStore {
         // does not matter
       }
       if (l != null && !l.isEmpty()) {
+        @SuppressWarnings({"rawtypes"})
         List myFiles = list(path, s -> true);
         for (Object f : l) {
           if (!myFiles.contains(f)) {
@@ -546,6 +549,7 @@ public class DistribPackageStore implements PackageStore {
     if (!parent.exists()) {
       parent.mkdirs();
     }
+    @SuppressWarnings({"rawtypes"})
     Map m = (Map) Utils.fromJSON(meta.array(), meta.arrayOffset(), meta.limit());
     if (m == null || m.isEmpty()) {
       throw new SolrException(SERVER_ERROR, "invalid metadata , discarding : " + path);

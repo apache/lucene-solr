@@ -299,7 +299,7 @@ public class DrillSideways {
     if (executor != null) {  // We have an executor, let use the multi-threaded version
 
       final CollectorManager<TopScoreDocCollector, TopDocs> collectorManager =
-              new CollectorManager<TopScoreDocCollector, TopDocs>() {
+              new CollectorManager<>() {
 
                 @Override
                 public TopScoreDocCollector newCollector() throws IOException {
@@ -404,6 +404,7 @@ public class DrillSideways {
   }
 
   /** Runs a search, using a {@link CollectorManager} to gather and merge search results */
+  @SuppressWarnings("unchecked")
   public <R> ConcurrentDrillSidewaysResult<R> search(final DrillDownQuery query,
           final CollectorManager<?, R> hitCollectorManager) throws IOException {
 

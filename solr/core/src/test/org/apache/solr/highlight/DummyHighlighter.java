@@ -27,6 +27,7 @@ import java.io.IOException;
 public class DummyHighlighter extends SolrHighlighter {
 
   @Override
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public NamedList<Object> doHighlighting(DocList docs, Query query,
       SolrQueryRequest req, String[] defaultFields) throws IOException {
     NamedList fragments = new SimpleOrderedMap();

@@ -41,6 +41,7 @@ public class ServerSnitchContext extends SnitchContext {
   }
 
 
+  @SuppressWarnings({"rawtypes"})
   public Map getZkJson(String path) throws KeeperException, InterruptedException {
     try {
       return Utils.getJson(cloudManager.getDistribStateManager(), path) ;

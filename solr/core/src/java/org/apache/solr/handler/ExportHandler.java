@@ -48,6 +48,7 @@ public class ExportHandler extends SearchHandler {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private ModelCache modelCache = null;
+  @SuppressWarnings({"rawtypes"})
   private ConcurrentMap objectCache = new ConcurrentHashMap();
   private SolrDefaultStreamFactory streamFactory = new ExportHandlerStreamFactory();
   private String coreName;

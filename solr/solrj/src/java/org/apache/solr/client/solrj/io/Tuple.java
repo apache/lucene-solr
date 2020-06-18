@@ -54,16 +54,19 @@ public class Tuple implements Cloneable, MapWriter {
    * Tuple fields.
    * @deprecated use {@link #getFields()} instead of this public field.
    */
+  @Deprecated
   public Map<Object, Object> fields = new HashMap<>(2);
   /**
    * External serializable field names.
    * @deprecated use {@link #getFieldNames()} instead of this public field.
    */
+  @Deprecated
   public List<String> fieldNames;
   /**
    * Mapping of external field names to internal tuple field names.
    * @deprecated use {@link #getFieldLabels()} instead of this public field.
    */
+  @Deprecated
   public Map<String, String> fieldLabels;
 
   public Tuple() {
@@ -157,6 +160,7 @@ public class Tuple implements Cloneable, MapWriter {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   public List<Boolean> getBools(Object key) {
     return (List<Boolean>) this.fields.get(key);
   }
@@ -177,6 +181,7 @@ public class Tuple implements Cloneable, MapWriter {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   public List<Date> getDates(Object key) {
     List<String> vals = (List<String>) this.fields.get(key);
     if (vals == null) return null;
@@ -203,14 +208,17 @@ public class Tuple implements Cloneable, MapWriter {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   public List<String> getStrings(Object key) {
     return (List<String>)this.fields.get(key);
   }
 
+  @SuppressWarnings({"unchecked"})
   public List<Long> getLongs(Object key) {
     return (List<Long>)this.fields.get(key);
   }
 
+  @SuppressWarnings({"unchecked"})
   public List<Double> getDoubles(Object key) {
     return (List<Double>)this.fields.get(key);
   }
@@ -227,6 +235,7 @@ public class Tuple implements Cloneable, MapWriter {
    * @deprecated use {@link #getFields()} instead.
    */
   @Deprecated(since = "8.6.0")
+  @SuppressWarnings({"rawtypes"})
   public Map getMap() {
     return this.fields;
   }
@@ -258,18 +267,21 @@ public class Tuple implements Cloneable, MapWriter {
     this.fieldNames = fieldNames;
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public List<Map> getMaps(Object key) {
     return (List<Map>) this.fields.get(key);
   }
 
-  public void setMaps(Object key, List<Map> maps) {
+  public void setMaps(Object key, @SuppressWarnings({"rawtypes"})List<Map> maps) {
     this.fields.put(key, maps);
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public Map<String, Map> getMetrics() {
     return (Map<String, Map>) this.fields.get(StreamParams.METRICS);
   }
 
+  @SuppressWarnings({"rawtypes"})
   public void setMetrics(Map<String, Map> metrics) {
     this.fields.put(StreamParams.METRICS, metrics);
   }
