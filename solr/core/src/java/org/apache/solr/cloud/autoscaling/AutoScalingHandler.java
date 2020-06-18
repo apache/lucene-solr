@@ -323,8 +323,6 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     String policyName = (String) op.getVal("");
 
     if (op.hasError()) return currentConfig;
-    String eventTypeStr = op.getStr(EVENT);
-    TriggerEventType.valueOf(eventTypeStr.trim().toUpperCase(Locale.ROOT));
 
     Map<String, List<Clause>> policies = currentConfig.getPolicy().getPolicies();
     if (policies == null || !policies.containsKey(policyName)) {
@@ -544,6 +542,8 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
 
     if (op.hasError()) return currentConfig;
     String waitForStr = op.getStr(WAIT_FOR, null);
+    String eventTypeStr = op.getStr(EVENT);
+    TriggerEventType.valueOf(eventTypeStr.trim().toUpperCase(Locale.ROOT));
 
     CommandOperation opCopy = new CommandOperation(op.name, Utils.getDeepCopy((Map) op.getCommandData(), 10));
 
