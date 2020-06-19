@@ -193,7 +193,12 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
     Timer.Context timer = requestTimes.time();
     try {
       if(pluginInfo != null && pluginInfo.attributes.containsKey(USEPARAM)) req.getContext().put(USEPARAM,pluginInfo.attributes.get(USEPARAM));
-      SolrPluginUtils.setDefaults(this, req, defaults, appends, invariants);
+      if (req.getParams().getBool(ShardParams.IS_SHARD, false)
+        && req.getParams().getBool(ShardParams.SHARDS + ".handler.skipAppend", false)) {
+        SolrPluginUtils.setDefaults(this, req, defaults, null, invariants);
+      } else {
+        SolrPluginUtils.setDefaults(this, req, defaults, appends, invariants);
+      }
       req.getContext().remove(USEPARAM);
       rsp.setHttpCaching(httpCaching);
       handleRequestBody( req, rsp );
