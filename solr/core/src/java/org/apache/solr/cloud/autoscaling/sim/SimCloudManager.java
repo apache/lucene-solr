@@ -181,7 +181,6 @@ public class SimCloudManager implements SolrCloudManager {
     if (distribStateManager == null) {
       this.stateManager =  new SimDistribStateManager(SimDistribStateManager.createNewRootNode());
       // init common paths
-      stateManager.makePath(ZkStateReader.CLUSTER_STATE);
       stateManager.makePath(ZkStateReader.CLUSTER_PROPS);
       stateManager.makePath(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH);
       stateManager.makePath(ZkStateReader.LIVE_NODES_ZKNODE);
@@ -217,6 +216,7 @@ public class SimCloudManager implements SolrCloudManager {
 
     solrClient = new MockSearchableSolrClient() {
       @Override
+      @SuppressWarnings({"rawtypes"})
       public NamedList<Object> request(SolrRequest request, String collection) throws SolrServerException, IOException {
         if (collection != null) {
           if (request instanceof AbstractUpdateRequest) {
@@ -626,6 +626,7 @@ public class SimCloudManager implements SolrCloudManager {
    * @return future to obtain results
    * @see #getBackgroundTaskFailureCount
    */
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public <T> Future<T> submit(Callable<T> callable) {
     return simCloudManagerPool.submit(new LoggingCallable(backgroundTaskFailureCounter, callable));
   }
@@ -715,6 +716,7 @@ public class SimCloudManager implements SolrCloudManager {
   }
 
   @Override
+  @SuppressWarnings({"rawtypes"})
   public SolrResponse request(SolrRequest req) throws IOException {
     try {
       // NOTE: we're doing 2 odd things here:
@@ -743,6 +745,8 @@ public class SimCloudManager implements SolrCloudManager {
    * @param req autoscaling request
    * @return results
    */
+
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public SolrResponse simHandleSolrRequest(SolrRequest req) throws IOException, InterruptedException {
     // pay the penalty for remote request, at least 5 ms
     timeSource.sleep(5);
@@ -790,12 +794,14 @@ public class SimCloudManager implements SolrCloudManager {
             if (metricsHistoryHandler != null) {
               metricsHistoryHandler.handleRequest(queryRequest, queryResponse);
             } else {
+              queryRequest.close();
               throw new UnsupportedOperationException("must add at least 1 node first");
             }
           } else {
             if (metricsHandler != null) {
               metricsHandler.handleRequest(queryRequest, queryResponse);
             } else {
+              queryRequest.close();
               throw new UnsupportedOperationException("must add at least 1 node first");
             }
           }
@@ -866,6 +872,7 @@ public class SimCloudManager implements SolrCloudManager {
       if (log.isTraceEnabled()) {
         log.trace("Invoking Collection Action :{} with params {}", action.toLower(), params.toQueryString());
       }
+      @SuppressWarnings({"rawtypes"})
       NamedList results = new NamedList();
       rsp.setResponse(results);
       incrementCount(action.name());

@@ -136,7 +136,7 @@ public abstract class SpatialStrategy {
   public final DoubleValuesSource makeRecipDistanceValueSource(Shape queryShape) {
     Rectangle bbox = queryShape.getBoundingBox();
     double diagonalDist = ctx.getDistCalc().distance(
-        ctx.makePoint(bbox.getMinX(), bbox.getMinY()), bbox.getMaxX(), bbox.getMaxY());
+        ctx.getShapeFactory().pointXY(bbox.getMinX(), bbox.getMinY()), bbox.getMaxX(), bbox.getMaxY());
     double distToEdge = diagonalDist * 0.5;
     float c = (float)distToEdge * 0.1f;//one tenth
     DoubleValuesSource distance = makeDistanceValueSource(queryShape.getCenter(), 1.0);

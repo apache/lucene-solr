@@ -89,8 +89,10 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     configureCluster(4).configure();
     solrClient = getCloudSolrClient(cluster);
     //log this to help debug potential causes of problems
-    log.info("SolrClient: {}", solrClient);
-    log.info("ClusterStateProvider {}",solrClient.getClusterStateProvider());
+    if (log.isInfoEnabled()) {
+      log.info("SolrClient: {}", solrClient);
+      log.info("ClusterStateProvider {}", solrClient.getClusterStateProvider()); // logOk
+    }
   }
 
   @After
@@ -916,6 +918,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
 
   // here we do things not to be emulated elsewhere to create a legacy condition and ensure that we can
   // work with both old and new formats.
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private void manuallyConstructLegacyTRA() throws Exception {
     // first create a "modern" alias
     String configName = getSaferTestName();
@@ -973,7 +976,6 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     if (data == null || data.length == 0) {
       aliasMap = Collections.emptyMap();
     } else {
-      //noinspection unchecked
       aliasMap = (Map<String, Map>) Utils.fromJSON(data);
     }
     assertNotEquals(0, aliasMap.size());

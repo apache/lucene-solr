@@ -156,6 +156,7 @@ class ReplicaVariable extends VariableBase {
     }
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private int getNumBuckets(Policy.Session session, Clause clause) {
     if (clause.getTag().getOperand() == Operand.IN) {
       return ((Collection) clause.getTag().val).size();

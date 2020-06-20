@@ -26,13 +26,17 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.google.common.base.Strings;
 import org.apache.commons.io.IOUtils;
@@ -277,6 +281,9 @@ public class SolrXmlConfig {
         case "sharedLib":
           builder.setSharedLibDirectory(value);
           break;
+        case "allowPaths":
+          builder.setAllowPaths(stringToPaths(value));
+          break;
         case "configSetBaseDir":
           builder.setConfigSetBaseDirectory(value);
           break;
@@ -298,6 +305,15 @@ public class SolrXmlConfig {
     }
 
     return builder.build();
+  }
+
+  private static Set<Path> stringToPaths(String commaSeparatedString) {
+    if (Strings.isNullOrEmpty(commaSeparatedString)) {
+      return Collections.emptySet();
+    }
+    // Parse list of paths. The special value '*' is mapped to _ALL_ to mean all paths
+    return Arrays.stream(commaSeparatedString.split(",\\s?"))
+        .map(p -> Paths.get("*".equals(p) ? "_ALL_" : p)).collect(Collectors.toSet());
   }
 
   private static UpdateShardHandlerConfig loadUpdateConfig(NamedList<Object> nl, boolean alwaysDefine) {

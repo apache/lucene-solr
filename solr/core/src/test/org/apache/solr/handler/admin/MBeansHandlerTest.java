@@ -63,6 +63,7 @@ public class MBeansHandlerTest extends SolrTestCaseJ4 {
     NamedList<NamedList<NamedList<Object>>> diff = SolrInfoMBeanHandler.fromXML(xml);
 
     // The stats bean for SolrInfoMBeanHandler
+    @SuppressWarnings({"rawtypes"})
     NamedList stats = (NamedList)diff.get("ADMIN").get("/admin/mbeans").get("stats");
 
     //System.out.println("stats:"+stats);
@@ -193,5 +194,6 @@ public class MBeansHandlerTest extends SolrTestCaseJ4 {
     reader.start();
     counter.await(30, TimeUnit.SECONDS);
     runSnapshots = false;
+    bean.close();
   }
 }

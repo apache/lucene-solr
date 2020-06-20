@@ -33,6 +33,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -2129,12 +2130,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
   private final void maybeMerge(MergePolicy mergePolicy, MergeTrigger trigger, int maxNumSegments) throws IOException {
     ensureOpen(false);
-    if (updatePendingMerges(mergePolicy, trigger, maxNumSegments)) {
+    if (updatePendingMerges(mergePolicy, trigger, maxNumSegments) != null) {
       mergeScheduler.merge(mergeSource, trigger);
     }
   }
 
-  private synchronized boolean updatePendingMerges(MergePolicy mergePolicy, MergeTrigger trigger, int maxNumSegments)
+  private synchronized MergePolicy.MergeSpecification updatePendingMerges(MergePolicy mergePolicy, MergeTrigger trigger, int maxNumSegments)
     throws IOException {
 
     // In case infoStream was disabled on init, but then enabled at some
@@ -2144,22 +2145,21 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     assert maxNumSegments == UNBOUNDED_MAX_MERGE_SEGMENTS || maxNumSegments > 0;
     assert trigger != null;
     if (stopMerges) {
-      return false;
+      return null;
     }
 
     // Do not start new merges if disaster struck
     if (tragedy.get() != null) {
-      return false;
+      return null;
     }
-    boolean newMergesFound = false;
+
     final MergePolicy.MergeSpecification spec;
     if (maxNumSegments != UNBOUNDED_MAX_MERGE_SEGMENTS) {
       assert trigger == MergeTrigger.EXPLICIT || trigger == MergeTrigger.MERGE_FINISHED :
       "Expected EXPLICT or MERGE_FINISHED as trigger even with maxNumSegments set but was: " + trigger.name();
 
       spec = mergePolicy.findForcedMerges(segmentInfos, maxNumSegments, Collections.unmodifiableMap(segmentsToMerge), this);
-      newMergesFound = spec != null;
-      if (newMergesFound) {
+      if (spec != null) {
         final int numMerges = spec.merges.size();
         for(int i=0;i<numMerges;i++) {
           final MergePolicy.OneMerge merge = spec.merges.get(i);
@@ -2167,16 +2167,21 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
         }
       }
     } else {
-      spec = mergePolicy.findMerges(trigger, segmentInfos, this);
+      switch (trigger) {
+        case COMMIT:
+          spec = mergePolicy.findFullFlushMerges(trigger, segmentInfos, this);
+          break;
+        default:
+          spec = mergePolicy.findMerges(trigger, segmentInfos, this);
+      }
     }
-    newMergesFound = spec != null;
-    if (newMergesFound) {
+    if (spec != null) {
       final int numMerges = spec.merges.size();
       for(int i=0;i<numMerges;i++) {
         registerMerge(spec.merges.get(i));
       }
     }
-    return newMergesFound;
+    return spec;
   }
 
   /** Expert: to be used by a {@link MergePolicy} to avoid
@@ -2260,6 +2265,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
         // changes concurrently, abortMerges is synced as well
         stopMerges = true; // this disables merges forever
         abortMerges();
+        assert mergingSegments.isEmpty() : "we aborted all merges but still have merging segments: " + mergingSegments;
       }
       if (infoStream.isEnabled("IW")) {
         infoStream.message("IW", "rollback: done finish merges");
@@ -2494,8 +2500,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     }
 
     notifyAll();
-    assert 0 == mergingSegments.size();
-
     if (infoStream.isEnabled("IW")) {
       infoStream.message("IW", "all running merges have aborted");
     }
@@ -3175,7 +3179,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       SegmentInfos toCommit = null;
       boolean anyChanges = false;
       long seqNo;
-
+      MergePolicy.MergeSpecification onCommitMerges = null;
+      AtomicBoolean includeInCommit = new AtomicBoolean(true);
+      final long maxCommitMergeWaitSeconds = config.getMaxCommitMergeWaitSeconds();
       // This is copied from doFlush, except it's modified to
       // clone & incRef the flushed SegmentInfos inside the
       // sync block:
@@ -3229,6 +3235,45 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
               // sneak into the commit point:
               toCommit = segmentInfos.clone();
 
+              if (anyChanges && maxCommitMergeWaitSeconds > 0) {
+                SegmentInfos committingSegmentInfos = toCommit;
+                onCommitMerges = updatePendingMerges(new OneMergeWrappingMergePolicy(config.getMergePolicy(), toWrap ->
+                    new MergePolicy.OneMerge(toWrap.segments) {
+                      @Override
+                      public void mergeFinished(boolean committed) throws IOException {
+                        assert Thread.holdsLock(IndexWriter.this);
+                        if (committed && includeInCommit.get()) {
+                          deleter.incRef(info.files());
+                          Set<String> mergedSegmentNames = new HashSet<>();
+                          for (SegmentCommitInfo sci : segments) {
+                            mergedSegmentNames.add(sci.info.name);
+                          }
+                          List<SegmentCommitInfo> toCommitMergedAwaySegments = new ArrayList<>();
+                          for (SegmentCommitInfo sci : committingSegmentInfos) {
+                            if (mergedSegmentNames.contains(sci.info.name)) {
+                              toCommitMergedAwaySegments.add(sci);
+                              deleter.decRef(sci.files());
+                            }
+                          }
+                          // Construct a OneMerge that applies to toCommit
+                          MergePolicy.OneMerge applicableMerge = new MergePolicy.OneMerge(toCommitMergedAwaySegments);
+                          applicableMerge.info = info.clone();
+                          long segmentCounter = Long.parseLong(info.info.name.substring(1), Character.MAX_RADIX);
+                          committingSegmentInfos.counter = Math.max(committingSegmentInfos.counter, segmentCounter + 1);
+                          committingSegmentInfos.applyMergeChanges(applicableMerge, false);
+                        }
+                        toWrap.mergeFinished(committed);
+                        super.mergeFinished(committed);
+                      }
+
+                      @Override
+                      public CodecReader wrapForMerge(CodecReader reader) throws IOException {
+                        return toWrap.wrapForMerge(reader);
+                      }
+                    }
+                ), MergeTrigger.COMMIT, UNBOUNDED_MAX_MERGE_SEGMENTS);
+              }
+
               pendingCommitChangeCount = changeCount.get();
 
               // This protects the segmentInfos we are now going
@@ -3236,8 +3281,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
               // we are trying to sync all referenced files, a
               // merge completes which would otherwise have
               // removed the files we are now syncing.    
-              filesToCommit = toCommit.files(false); 
-              deleter.incRef(filesToCommit);
+              deleter.incRef(toCommit.files(false));
             }
             success = true;
           } finally {
@@ -3258,7 +3302,16 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       } finally {
         maybeCloseOnTragicEvent();
       }
-     
+
+      if (onCommitMerges != null) {
+        mergeScheduler.merge(mergeSource, MergeTrigger.COMMIT);
+        onCommitMerges.await(maxCommitMergeWaitSeconds, TimeUnit.SECONDS);
+        synchronized (this) {
+          // we need to call this under lock since mergeFinished above is also called under the IW lock
+          includeInCommit.set(false);
+        }
+      }
+      filesToCommit = toCommit.files(false);
       try {
         if (anyChanges) {
           maybeMerge.set(true);
@@ -4290,7 +4343,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   @SuppressWarnings("try")
   private synchronized void closeMergeReaders(MergePolicy.OneMerge merge, boolean suppressExceptions) throws IOException {
     final boolean drop = suppressExceptions == false;
-    try (Closeable finalizer = merge::mergeFinished) {
+    try (Closeable finalizer = () -> merge.mergeFinished(suppressExceptions == false)) {
       IOUtils.applyToAll(merge.readers, sr -> {
         final ReadersAndUpdates rld = getPooledInstance(sr.getOriginalSegmentInfo(), false);
         // We still hold a ref so it should not have been removed:
@@ -4484,6 +4537,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
         // Merge would produce a 0-doc segment, so we do nothing except commit the merge to remove all the 0-doc segments that we "merged":
         assert merge.info.info.maxDoc() == 0;
         commitMerge(merge, mergeState);
+        success = true;
         return 0;
       }
 

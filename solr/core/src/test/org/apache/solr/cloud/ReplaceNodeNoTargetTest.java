@@ -60,7 +60,9 @@ public class ReplaceNodeNoTargetTest extends SolrCloudTestCase {
   @LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-11067")
   public void test() throws Exception {
     String coll = "replacenodetest_coll_notarget";
-    log.info("total_jettys: " + cluster.getJettySolrRunners().size());
+    if (log.isInfoEnabled()) {
+      log.info("total_jettys: {}", cluster.getJettySolrRunners().size());
+    }
 
     CloudSolrClient cloudClient = cluster.getSolrClient();
     Set<String> liveNodes = cloudClient.getZkStateReader().getClusterState().getLiveNodes();
@@ -71,6 +73,7 @@ public class ReplaceNodeNoTargetTest extends SolrCloudTestCase {
     String setClusterPolicyCommand = "{" +
         " 'set-cluster-policy': [" +
         "      {'replica':'<5', 'shard': '#EACH', 'node': '#ANY'}]}";
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     solrClient.request(req);
 
@@ -79,11 +82,13 @@ public class ReplaceNodeNoTargetTest extends SolrCloudTestCase {
     cloudClient.request(create);
     cluster.waitForActiveCollection(coll, 5, 10);
 
-    log.info("Current core status list for node we plan to decommision: {} => {}",
-             node2bdecommissioned,
-             getCoreStatusForNamedNode(cloudClient, node2bdecommissioned).getCoreStatus());
-    
-    log.info("Decommisioning node: " + node2bdecommissioned);
+    if (log.isInfoEnabled()) {
+      log.info("Current core status list for node we plan to decommision: {} => {}",
+          node2bdecommissioned,
+          getCoreStatusForNamedNode(cloudClient, node2bdecommissioned).getCoreStatus());
+      log.info("Decommisioning node: {}", node2bdecommissioned);
+    }
+
     createReplaceNodeRequest(node2bdecommissioned, null, null).processAsync("001", cloudClient);
     CollectionAdminRequest.RequestStatus requestStatus = CollectionAdminRequest.requestStatus("001");
     boolean success = false;

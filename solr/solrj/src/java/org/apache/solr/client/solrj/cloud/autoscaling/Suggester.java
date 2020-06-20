@@ -62,6 +62,7 @@ public abstract class Suggester implements MapWriter {
 
   protected final EnumMap<Hint, Object> hints = new EnumMap<>(Hint.class);
   Policy.Session session;
+  @SuppressWarnings({"rawtypes"})
   SolrRequest operation;
   boolean force;
   protected List<Violation> originalViolations = new ArrayList<>();
@@ -88,6 +89,7 @@ public abstract class Suggester implements MapWriter {
     }
     return false;
   }
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public Suggester hint(Hint hint, Object value) {
     hint.validator.accept(value);
     if (hint.multiValued) {
@@ -143,9 +145,10 @@ public abstract class Suggester implements MapWriter {
     return true;
   }
 
+  @SuppressWarnings({"rawtypes"})
   abstract SolrRequest init();
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public SolrRequest getSuggestion() {
     if (!isInitialized) {
       Set<String> collections = (Set<String>) hints.getOrDefault(Hint.COLL, Collections.emptySet());
@@ -226,14 +229,16 @@ public abstract class Suggester implements MapWriter {
   public static class SuggestionInfo implements MapWriter {
     Suggestion.Type type;
     Violation violation;
+    @SuppressWarnings({"rawtypes"})
     SolrRequest operation;
 
-    public SuggestionInfo(Violation violation, SolrRequest op, Suggestion.Type type) {
+    public SuggestionInfo(Violation violation, @SuppressWarnings({"rawtypes"})SolrRequest op, Suggestion.Type type) {
       this.violation = violation;
       this.operation = op;
       this.type = type;
     }
 
+    @SuppressWarnings({"rawtypes"})
     public SolrRequest getOperation() {
       return operation;
     }
@@ -344,6 +349,7 @@ public abstract class Suggester implements MapWriter {
     Object hintVal = hints.get(hint);
     if (hintVal == null) return true;
     if (hint.multiValued) {
+      @SuppressWarnings({"rawtypes"})
       Set set = (Set) hintVal;
       return set == null || set.contains(v);
     } else {
@@ -356,11 +362,13 @@ public abstract class Suggester implements MapWriter {
     // collection shard pair
     // this should be a Pair<String, String> , (collection,shard)
     COLL_SHARD(true, v -> {
+      @SuppressWarnings({"rawtypes"})
       Collection c = v instanceof Collection ? (Collection) v : Collections.singleton(v);
       for (Object o : c) {
         if (!(o instanceof Pair)) {
           throw new RuntimeException("COLL_SHARD hint must use a Pair");
         }
+        @SuppressWarnings({"rawtypes"})
         Pair p = (Pair) o;
         if (p.first() == null || p.second() == null) {
           throw new RuntimeException("Both collection and shard must not be null");
@@ -371,6 +379,7 @@ public abstract class Suggester implements MapWriter {
       @Override
       public Object parse(Object v) {
         if (v instanceof Map) {
+          @SuppressWarnings({"rawtypes"})
           Map map = (Map) v;
           return Pair.parse(map);
         }
@@ -409,6 +418,7 @@ public abstract class Suggester implements MapWriter {
 
     Hint(boolean multiValued) {
       this(multiValued, v -> {
+        @SuppressWarnings({"rawtypes"})
         Collection c = v instanceof Collection ? (Collection) v : Collections.singleton(v);
         for (Object o : c) {
           if (!(o instanceof String)) throw new RuntimeException("hint must be of type String");
@@ -453,6 +463,7 @@ public abstract class Suggester implements MapWriter {
     ew.put("hints", (MapWriter) ew1 -> hints.forEach((hint, o) -> ew1.putNoEx(hint.toString(), o)));
   }
 
+  @SuppressWarnings({"rawtypes"})
   protected Collection setupWithCollectionTargetNodes(Set<String> collections, Set<Pair<String, String>> s, String withCollection) {
     Collection originalTargetNodesCopy = null;
     if (withCollection != null) {
@@ -477,6 +488,7 @@ public abstract class Suggester implements MapWriter {
 
       if (originalTargetNodesCopy != null && !originalTargetNodesCopy.isEmpty()) {
         // find intersection of the set of target nodes with the set of 'withCollection' nodes
+        @SuppressWarnings({"unchecked"})
         Set<String> set = (Set<String>) hints.computeIfAbsent(Hint.TARGET_NODE, h -> new HashSet<>());
         set.retainAll(withCollectionNodes);
         if (set.isEmpty()) {

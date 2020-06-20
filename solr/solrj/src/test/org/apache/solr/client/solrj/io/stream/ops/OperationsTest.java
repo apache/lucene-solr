@@ -37,6 +37,7 @@ public class OperationsTest extends SolrTestCase {
   StreamFactory factory;
   Map<String, Object> values;
   
+  @SuppressWarnings({"unchecked"})
   public OperationsTest() {
     super();
     

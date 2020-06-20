@@ -41,7 +41,7 @@ public class GetBaryCenterEvaluator extends RecursiveObjectEvaluator implements 
     } else {
       ConvexHull2D convexHull2D = (ConvexHull2D)value;
       Vector2D vector2D = (Vector2D)convexHull2D.createRegion().getBarycenter();
-      List<Number> vec = new ArrayList();
+      List<Number> vec = new ArrayList<>();
       vec.add(vector2D.getX());
       vec.add(vector2D.getY());
       return vec;

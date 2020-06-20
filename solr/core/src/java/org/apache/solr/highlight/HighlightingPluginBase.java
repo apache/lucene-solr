@@ -36,7 +36,7 @@ public abstract class HighlightingPluginBase implements SolrInfoBean
   protected Set<String> metricNames = ConcurrentHashMap.newKeySet(1);
   protected SolrMetricsContext solrMetricsContext;
 
-  public void init(NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     if( args != null ) {
       Object o = args.get("defaults");
       if (o != null && o instanceof NamedList ) {

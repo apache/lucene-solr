@@ -132,6 +132,7 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
   /**
    * Wrapper for SolrParams that wraps V2 params and exposes them as V1 params.
    */
+  @SuppressWarnings({"unchecked"})
   private static void wrapParams(final SolrQueryRequest req, final CommandOperation co, final ApiCommand cmd, final boolean useRequestParams) {
     final Map<String, String> pathValues = req.getPathTemplateValues();
     final Map<String, Object> map = co == null || !(co.getCommandData() instanceof Map) ?
@@ -158,6 +159,7 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
             if (o == null) o = pathValues.get(param);
             if (o == null && useRequestParams) o = origParams.getParams(param);
             if (o instanceof List) {
+              @SuppressWarnings({"rawtypes"})
               List l = (List) o;
               return l.toArray(new String[l.size()]);
             }
@@ -179,7 +181,7 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
           }
 
           @Override
-          public Map toMap(Map<String, Object> suppliedMap) {
+          public Map<String, Object> toMap(Map<String, Object> suppliedMap) {
             for(Iterator<String> it=getParameterNamesIterator(); it.hasNext(); ) {
               final String param = it.next();
               String key = cmd.meta().getParamSubstitute(param);
@@ -197,6 +199,7 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
                   Boolean.class.isAssignableFrom(oClass)) {
                 suppliedMap.put(param,String.valueOf(o));
               } else if (List.class.isAssignableFrom(oClass) && ((List)o).get(0) instanceof String ) {
+                @SuppressWarnings({"unchecked"})
                 List<String> l = (List<String>) o;
                 suppliedMap.put( param, l.toArray(new String[0]));
               } else {

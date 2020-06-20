@@ -57,7 +57,7 @@ public class StddevAgg extends SimpleAggValueSource {
       }
       vs = sf.getType().getValueSource(sf, null);
     }
-    return new StddevSlotAcc(vs, fcontext, numSlots);
+    return new SlotAcc.StddevSlotAcc(vs, fcontext, numSlots);
   }
 
   @Override
@@ -65,7 +65,7 @@ public class StddevAgg extends SimpleAggValueSource {
     return new Merger();
   }
 
-  private static class Merger extends FacetDoubleMerger {
+  private static class Merger extends FacetModule.FacetDoubleMerger {
     long count;
     double sumSq;
     double sum;
@@ -90,7 +90,7 @@ public class StddevAgg extends SimpleAggValueSource {
     }    
   }
 
-  class StddevSortedNumericAcc extends SDVSortedNumericAcc {
+  class StddevSortedNumericAcc extends DocValuesAcc.SDVSortedNumericAcc {
 
     public StddevSortedNumericAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots);
@@ -102,7 +102,7 @@ public class StddevAgg extends SimpleAggValueSource {
     }
   }
 
-  class StddevSortedSetAcc extends SDVSortedSetAcc {
+  class StddevSortedSetAcc extends DocValuesAcc.SDVSortedSetAcc {
 
     public StddevSortedSetAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots);
@@ -114,7 +114,7 @@ public class StddevAgg extends SimpleAggValueSource {
     }
   }
 
-  class StddevUnInvertedFieldAcc extends SDVUnInvertedFieldAcc {
+  class StddevUnInvertedFieldAcc extends UnInvertedFieldAcc.SDVUnInvertedFieldAcc {
 
     public StddevUnInvertedFieldAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots);

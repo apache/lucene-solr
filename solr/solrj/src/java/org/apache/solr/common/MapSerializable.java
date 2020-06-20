@@ -26,5 +26,6 @@ public interface MapSerializable {
    * Do not keep a reference to the passed map and reuse it.
    * it may be reused by the framework
    */
+  @SuppressWarnings({"rawtypes"})
   Map toMap(Map<String, Object> map);
 }

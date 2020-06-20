@@ -82,6 +82,7 @@ public class SchemaManager {
    * as possible instead of failing at the first error it encounters
    * @return List of errors. If the List is empty then the operation was successful.
    */
+  @SuppressWarnings({"rawtypes"})
   public List performOperations() throws Exception {
     List<CommandOperation> ops = req.getCommands(false);
     List errs = CommandOperation.captureErrors(ops);
@@ -95,6 +96,7 @@ public class SchemaManager {
     }
   }
 
+  @SuppressWarnings({"rawtypes"})
   private List doOperations(List<CommandOperation> operations) throws InterruptedException, IOException, KeeperException {
     TimeOut timeOut = new TimeOut(timeout, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     SolrCore core = req.getCore();

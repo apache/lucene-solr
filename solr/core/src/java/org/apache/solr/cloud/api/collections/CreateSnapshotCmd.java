@@ -65,7 +65,8 @@ public class CreateSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
+  @SuppressWarnings({"unchecked"})
+  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     String extCollectionName =  message.getStr(COLLECTION_PROP);
     boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
 
@@ -92,6 +93,7 @@ public class CreateSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
     SolrSnapshotManager.createCollectionLevelSnapshot(zkClient, collectionName, new CollectionSnapshotMetaData(commitName));
     log.info("Created a ZK path to store snapshot information for collection={} with commitName={}", collectionName, commitName);
 
+    @SuppressWarnings({"rawtypes"})
     NamedList shardRequestResults = new NamedList();
     Map<String, Slice> shardByCoreName = new HashMap<>();
     ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseer.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient());
@@ -127,10 +129,12 @@ public class CreateSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
     Set<String> failedShards = new HashSet<>();
 
     shardRequestTracker.processResponses(shardRequestResults, shardHandler, false, null);
+    @SuppressWarnings({"rawtypes"})
     NamedList success = (NamedList) shardRequestResults.get("success");
     List<CoreSnapshotMetaData> replicas = new ArrayList<>();
     if (success != null) {
       for ( int i = 0 ; i < success.size() ; i++) {
+        @SuppressWarnings({"rawtypes"})
         NamedList resp = (NamedList)success.getVal(i);
 
         // Check if this core is the leader for the shard. The idea here is that during the backup

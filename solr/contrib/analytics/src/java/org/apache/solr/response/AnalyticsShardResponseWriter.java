@@ -55,7 +55,7 @@ public class AnalyticsShardResponseWriter implements BinaryQueryResponseWriter {
   }
 
   @Override
-  public void init(NamedList args) {}
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {}
 
   /**
    * Manages the streaming of analytics reduction data if no exception occurred.

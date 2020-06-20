@@ -79,14 +79,16 @@ import org.slf4j.LoggerFactory;
 public class RecoveryStrategy implements Runnable, Closeable {
 
   public static class Builder implements NamedListInitializedPlugin {
+    @SuppressWarnings({"rawtypes"})
     private NamedList args;
 
     @Override
-    public void init(NamedList args) {
+    public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
       this.args = args;
     }
 
     // this should only be used from SolrCoreState
+    @SuppressWarnings({"unchecked"})
     public RecoveryStrategy create(CoreContainer cc, CoreDescriptor cd,
         RecoveryStrategy.RecoveryListener recoveryListener) {
       final RecoveryStrategy recoveryStrategy = newRecoveryStrategy(cc, cd, recoveryListener);
@@ -641,9 +643,11 @@ public class RecoveryStrategy implements Runnable, Closeable {
           }
           // System.out.println("Attempting to PeerSync from " + leaderUrl
           // + " i am:" + zkController.getNodeName());
-          PeerSyncWithLeader peerSyncWithLeader = new PeerSyncWithLeader(core,
-              leader.getCoreUrl(), ulog.getNumRecordsToKeep());
-          boolean syncSuccess = peerSyncWithLeader.sync(recentVersions).isSuccess();
+          boolean syncSuccess;
+          try (PeerSyncWithLeader peerSyncWithLeader = new PeerSyncWithLeader(core,
+              leader.getCoreUrl(), ulog.getNumRecordsToKeep())) {
+            syncSuccess = peerSyncWithLeader.sync(recentVersions).isSuccess();
+          }
           if (syncSuccess) {
             SolrQueryRequest req = new LocalSolrQueryRequest(core,
                 new ModifiableSolrParams());

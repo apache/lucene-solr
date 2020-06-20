@@ -109,6 +109,7 @@ public class TestDynamicLoadingUrl extends AbstractFullDistribZkTestBase {
           Arrays.asList("overlay", "requestHandler", "/runtime", "class"),
           "org.apache.solr.core.RuntimeLibReqHandler", 120);
 
+      @SuppressWarnings({"rawtypes"})
       Map result = TestSolrConfigHandler.testForResponseElement(client,
           null,
           "/runtime",

@@ -267,11 +267,7 @@ pre > code
     font-weight: 400;
     font-family: 'Inconsolata', monospace;
     line-height: 1.45;
-   white-space: pre-wrap;
-}
-
-table code {
-  background-color: transparent;
+    white-space: pre-wrap;
 }
 
 a code {

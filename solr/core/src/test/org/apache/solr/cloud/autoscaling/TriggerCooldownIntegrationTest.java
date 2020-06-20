@@ -88,6 +88,7 @@ public class TriggerCooldownIntegrationTest extends SolrCloudTestCase {
         "{'name':'test','class':'" + TestTriggerAction.class.getName() + "'}" +
         "]" +
         "}}";
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");

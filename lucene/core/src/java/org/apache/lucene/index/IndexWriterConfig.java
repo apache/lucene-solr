@@ -32,9 +32,9 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.PrintStreamInfoStream;
+import org.apache.lucene.util.SetOnce;
 import org.apache.lucene.util.SetOnce.AlreadySetException;
 import org.apache.lucene.util.Version;
-import org.apache.lucene.util.SetOnce;
 
 /**
  * Holds all the configuration that is used to create an {@link IndexWriter}.
@@ -110,6 +110,9 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
   
   /** Default value for whether calls to {@link IndexWriter#close()} include a commit. */
   public final static boolean DEFAULT_COMMIT_ON_CLOSE = true;
+
+  /** Default value for time to wait for merges on commit (when using a {@link MergePolicy} that implements findFullFlushMerges). */
+  public static final long DEFAULT_MAX_COMMIT_MERGE_WAIT_SECONDS = 0;
   
   // indicates whether this config instance is already attached to a writer.
   // not final so that it can be cloned properly.
@@ -460,6 +463,20 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
     return this;
   }
 
+  /**
+   * Expert: sets the amount of time to wait for merges returned by MergePolicy.findFullFlushMerges(...).
+   * If this time is reached, we proceed with the commit based on segments merged up to that point.
+   * The merges are not cancelled, and will still run to completion independent of the commit
+   * like normal segment merges. The default is <code>{@value IndexWriterConfig#DEFAULT_MAX_COMMIT_MERGE_WAIT_SECONDS}</code>.
+   *
+   * Note: This settings has no effect unless {@link MergePolicy#findFullFlushMerges(MergeTrigger, SegmentInfos, MergePolicy.MergeContext)}
+   * has an implementation that actually returns merges which by default doesn't return any merges.
+   */
+  public IndexWriterConfig setMaxCommitMergeWaitSeconds(long maxCommitMergeWaitSeconds) {
+    this.maxCommitMergeWaitSeconds = maxCommitMergeWaitSeconds;
+    return this;
+  }
+
   /** We only allow sorting on these types */
   private static final EnumSet<SortField.Type> ALLOWED_INDEX_SORT_TYPES = EnumSet.of(SortField.Type.STRING,
                                                                                      SortField.Type.LONG,
@@ -471,10 +488,9 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
    * Set the {@link Sort} order to use for all (flushed and merged) segments.
    */
   public IndexWriterConfig setIndexSort(Sort sort) {
-    for(SortField sortField : sort.getSort()) {
-      final SortField.Type sortType = Sorter.getSortFieldType(sortField);
-      if (ALLOWED_INDEX_SORT_TYPES.contains(sortType) == false) {
-        throw new IllegalArgumentException("invalid SortField type: must be one of " + ALLOWED_INDEX_SORT_TYPES + " but got: " + sortField);
+    for (SortField sortField : sort.getSort()) {
+      if (sortField.getIndexSorter() == null) {
+        throw new IllegalArgumentException("Cannot sort index with sort field " + sortField);
       }
     }
     this.indexSort = sort;

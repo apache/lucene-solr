@@ -55,7 +55,7 @@ public class QueryValueSource extends ValueSource {
   }
 
   @Override
-  public FunctionValues getValues(Map fcontext, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> fcontext, LeafReaderContext readerContext) throws IOException {
     return new QueryDocValues(this, readerContext, fcontext);
   }
 
@@ -72,7 +72,7 @@ public class QueryValueSource extends ValueSource {
   }
 
   @Override
-  public void createWeight(Map context, IndexSearcher searcher) throws IOException {
+  public void createWeight(Map<Object, Object> context, IndexSearcher searcher) throws IOException {
     Query rewritten = searcher.rewrite(q);
     Weight w = searcher.createWeight(rewritten, ScoreMode.COMPLETE, 1);
     context.put(this, w);
@@ -84,7 +84,7 @@ class QueryDocValues extends FloatDocValues {
   final LeafReaderContext readerContext;
   final Weight weight;
   final float defVal;
-  final Map fcontext;
+  final Map<Object, Object> fcontext;
   final Query q;
 
   Scorer scorer;
@@ -96,7 +96,7 @@ class QueryDocValues extends FloatDocValues {
   int lastDocRequested=-1;
 
 
-  public QueryDocValues(QueryValueSource vs, LeafReaderContext readerContext, Map fcontext) throws IOException {
+  public QueryDocValues(QueryValueSource vs, LeafReaderContext readerContext, Map<Object, Object> fcontext) throws IOException {
     super(vs);
 
     this.readerContext = readerContext;

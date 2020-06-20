@@ -83,12 +83,15 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
     NamedList<Object> nl = solr.httpUriRequest(mntrReq).future.get(10000, TimeUnit.MILLISECONDS);
 
     assertEquals("zkStatus", nl.getName(1));
+    @SuppressWarnings({"unchecked"})
     Map<String,Object> zkStatus = (Map<String,Object>) nl.get("zkStatus");
     assertEquals("green", zkStatus.get("status"));
     assertEquals("standalone", zkStatus.get("mode"));
     assertEquals(1L, zkStatus.get("ensembleSize"));
+    @SuppressWarnings({"unchecked"})
     List<Object> detailsList = (List<Object>)zkStatus.get("details");
     assertEquals(1, detailsList.size());
+    @SuppressWarnings({"unchecked"})
     Map<String,Object> details = (Map<String,Object>) detailsList.get(0);
     assertEquals(true, details.get("ok"));
     assertTrue(Integer.parseInt((String) details.get("zk_znode_count")) > 50);
@@ -157,12 +160,55 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
 
   @Test(expected = SolrException.class)
   public void validateNotWhitelisted() {
-    new ZookeeperStatusHandler(null).validateZkRawResponse(Collections.singletonList("mntr is not executed because it is not in the whitelist."),
-        "zoo1:2181", "mntr");
+    try (ZookeeperStatusHandler zsh = new ZookeeperStatusHandler(null)) {
+     zsh.validateZkRawResponse(Collections.singletonList("mntr is not executed because it is not in the whitelist."),
+          "zoo1:2181", "mntr");
+    }  catch (IOException e) {
+      fail("Error closing ZookeeperStatusHandler");
+    }
   }
 
   @Test(expected = SolrException.class)
   public void validateEmptyResponse() {
-    new ZookeeperStatusHandler(null).validateZkRawResponse(Collections.emptyList(), "zoo1:2181", "mntr");
+    try (ZookeeperStatusHandler zsh = new ZookeeperStatusHandler(null)) {
+      zsh.validateZkRawResponse(Collections.emptyList(), "zoo1:2181", "mntr");
+    } catch (IOException e) {
+      fail("Error closing ZookeeperStatusHandler");
+    }
+  }
+
+  @Test
+  public void testMntrBugZk36Solr14463() {
+    assumeWorkingMockito();
+    ZookeeperStatusHandler zkStatusHandler = mock(ZookeeperStatusHandler.class);
+    when(zkStatusHandler.getZkRawResponse("zoo1:2181", "ruok")).thenReturn(Arrays.asList("imok"));
+    when(zkStatusHandler.getZkRawResponse("zoo1:2181", "mntr")).thenReturn(
+        Arrays.asList("zk_version\t3.5.5-390fe37ea45dee01bf87dc1c042b5e3dcce88653, built on 05/03/2019 12:07 GMT",
+            "zk_avg_latency\t1",
+            "zk_server_state\tleader",
+            "zk_synced_followers\t2"));
+    when(zkStatusHandler.getZkRawResponse("zoo1:2181", "conf")).thenReturn(
+        Arrays.asList("clientPort=2181"));
+    when(zkStatusHandler.getZkStatus(anyString(), any())).thenCallRealMethod();
+    when(zkStatusHandler.monitorZookeeper(anyString())).thenCallRealMethod();
+    when(zkStatusHandler.validateZkRawResponse(ArgumentMatchers.any(), any(), any())).thenAnswer(Answers.CALLS_REAL_METHODS);
+
+    Map<String, Object> mockStatus = zkStatusHandler.getZkStatus("zoo1:2181", ZkDynamicConfig.fromZkConnectString("zoo1:2181"));
+    String expected = "{\n" +
+        "  \"mode\":\"ensemble\",\n" +
+        "  \"dynamicReconfig\":true,\n" +
+        "  \"ensembleSize\":1,\n" +
+        "  \"details\":[{\n" +
+        "      \"zk_synced_followers\":\"2\",\n" +
+        "      \"zk_version\":\"3.5.5-390fe37ea45dee01bf87dc1c042b5e3dcce88653, built on 05/03/2019 12:07 GMT\",\n" +
+        "      \"zk_avg_latency\":\"1\",\n" +
+        "      \"host\":\"zoo1:2181\",\n" +
+        "      \"clientPort\":\"2181\",\n" +
+        "      \"ok\":true,\n" +
+        "      \"zk_server_state\":\"leader\"}],\n" +
+        "  \"zkHost\":\"zoo1:2181\",\n" +
+        "  \"errors\":[\"Leader reports 2 followers, but we only found 0. Please check zkHost configuration\"],\n" +
+        "  \"status\":\"red\"}";
+    assertEquals(expected, JSONUtil.toJSON(mockStatus));
   }
 }

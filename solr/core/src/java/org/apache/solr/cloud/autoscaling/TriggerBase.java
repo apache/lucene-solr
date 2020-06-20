@@ -109,6 +109,7 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
     }
     this.enabled = Boolean.parseBoolean(String.valueOf(this.properties.getOrDefault("enabled", "true")));
     this.waitForSecond = ((Number) this.properties.getOrDefault("waitFor", -1L)).intValue();
+    @SuppressWarnings({"unchecked"})
     List<Map<String, Object>> o = (List<Map<String, Object>>) properties.get("actions");
     if (o != null && !o.isEmpty()) {
       actions = new ArrayList<>(3);
@@ -243,6 +244,7 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
    * @see #getState
    * @lucene.internal
    */
+  @SuppressWarnings({"unchecked"})
   public Map<String,Object> deepCopyState() {
     return Utils.getDeepCopy(getState(), 10, false, true);
   }
@@ -273,6 +275,7 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
   }
 
   @Override
+  @SuppressWarnings({"unchecked"})
   public void restoreState() {
     byte[] data = null;
     String path = ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH + "/" + getName();
