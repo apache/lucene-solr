@@ -30,6 +30,7 @@ import org.junit.Test;
 public class TestEmbeddedSolrServerConstructors extends SolrTestCaseJ4 {
 
   @Test
+  @SuppressWarnings({"try"})
   public void testPathConstructor() throws IOException {
     Path path = Paths.get(TEST_HOME());
     try (EmbeddedSolrServer server = new EmbeddedSolrServer(path, "collection1")) {

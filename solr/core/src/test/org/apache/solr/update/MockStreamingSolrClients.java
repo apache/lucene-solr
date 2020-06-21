@@ -69,7 +69,7 @@ public class MockStreamingSolrClients extends StreamingSolrClients {
     }
     
     @Override
-    public NamedList<Object> request(SolrRequest request, String collection)
+    public NamedList<Object> request(@SuppressWarnings({"rawtypes"})SolrRequest request, String collection)
         throws SolrServerException, IOException {
       if (exp != null) {
         Exception e = exception();

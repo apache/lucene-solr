@@ -64,6 +64,7 @@ public class PackageLoader implements Closeable {
     return packageClassLoaders.get(key);
   }
 
+  @SuppressWarnings({"unchecked"})
   public Map<String, Package> getPackages() {
     return Collections.EMPTY_MAP;
   }
@@ -221,7 +222,7 @@ public class PackageLoader implements Closeable {
       if (lessThan == null) {
         return getLatest();
       }
-      String latest = findBiggest(lessThan, new ArrayList(sortedVersions));
+      String latest = findBiggest(lessThan, new ArrayList<>(sortedVersions));
       return latest == null ? null : myVersions.get(latest);
     }
 
@@ -279,6 +280,7 @@ public class PackageLoader implements Closeable {
         return version.version;
       }
 
+      @SuppressWarnings({"rawtypes"})
       public Collection getFiles() {
         return Collections.unmodifiableList(version.files);
       }

@@ -209,3 +209,7 @@ REM change the value to true. The option is configured as a system property as d
 REM scripts.
 REM set SOLR_ADMIN_UI_DISABLED=false
 
+REM Solr is by default allowed to read and write data from/to SOLR_HOME and a few other well defined locations
+REM Sometimes it may be necessary to place a core or a backup on a different location or a different disk
+REM This parameter lets you specify file system path(s) to explicitly allow. The special value of '*' will allow any path
+REM SOLR_OPTS="%SOLR_OPTS% -Dsolr.allowPaths=D:\,E:\other\path"

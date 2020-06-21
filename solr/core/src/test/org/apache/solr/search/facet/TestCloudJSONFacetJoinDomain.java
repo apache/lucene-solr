@@ -208,6 +208,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
       SolrException e = expectThrows(SolrException.class, () -> {
           final SolrParams req = params("q", "*:*", "json.facet",
                                         "{ x : { type:terms, field:x_s, domain: { join:"+join+" } } }");
+          @SuppressWarnings({"rawtypes"})
           final NamedList trash = getRandClient(random()).request(new QueryRequest(req));
         });
       assertEquals(join + " -> " + e, SolrException.ErrorCode.BAD_REQUEST.code, e.code());
@@ -440,6 +441,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
 
     QueryResponse rsp = null;
     // JSON Facets not (currently) available from QueryResponse...
+    @SuppressWarnings({"rawtypes"})
     NamedList topNamedList = null;
     try {
       rsp = (new QueryRequest(initParams)).process(getRandClient(random()));
@@ -451,6 +453,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
                                  e.getMessage(), e);
     }
     try {
+      @SuppressWarnings({"rawtypes"})
       final NamedList facetResponse = (NamedList) topNamedList.get("facets");
       assertNotNull("null facet results?", facetResponse);
       assertEquals("numFound mismatch with top count?",
@@ -474,13 +477,15 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
   private void assertFacetCountsAreCorrect(final AtomicInteger maxBucketsToCheck,
                                            final Map<String,TermFacet> expected,
                                            final SolrParams baseParams,
-                                           final NamedList actualFacetResponse) throws SolrServerException, IOException {
+                                           @SuppressWarnings({"rawtypes"})final NamedList actualFacetResponse) throws SolrServerException, IOException {
 
     for (Map.Entry<String,TermFacet> entry : expected.entrySet()) {
       final String facetKey = entry.getKey();
       final TermFacet facet = entry.getValue();
+      @SuppressWarnings({"rawtypes"})
       final NamedList results = (NamedList) actualFacetResponse.get(facetKey);
       assertNotNull(facetKey + " key missing from: " + actualFacetResponse, results);
+      @SuppressWarnings({"unchecked", "rawtypes"})
       final List<NamedList> buckets = (List<NamedList>) results.get("buckets");
       assertNotNull(facetKey + " has null buckets: " + actualFacetResponse, buckets);
 
@@ -492,7 +497,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
                      0, docsWithField);
       }
       
-      for (NamedList bucket : buckets) {
+      for (@SuppressWarnings({"rawtypes"})NamedList bucket : buckets) {
         final long count = ((Number) bucket.get("count")).longValue();
         final String fieldVal = bucket.get("val").toString(); // int or stringified int
 

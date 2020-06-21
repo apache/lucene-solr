@@ -159,6 +159,7 @@ public class ConcurrentCreateCollectionTest extends SolrCloudTestCase {
           "    ]" +
           "}";
 
+      @SuppressWarnings({"rawtypes"})
       SolrRequest req = CloudTestUtils.AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
       client.request(req);
     }

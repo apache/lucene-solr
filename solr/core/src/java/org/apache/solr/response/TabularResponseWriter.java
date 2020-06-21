@@ -118,7 +118,7 @@ public abstract class TabularResponseWriter extends TextResponseWriter {
   }
 
   @Override
-  public void writeNamedList(String name, NamedList val) throws IOException {
+  public void writeNamedList(String name, @SuppressWarnings({"rawtypes"})NamedList val) throws IOException {
   }
 
   @Override
@@ -142,11 +142,11 @@ public abstract class TabularResponseWriter extends TextResponseWriter {
   }
 
   @Override
-  public void writeMap(String name, Map val, boolean excludeOuter, boolean isFirstVal) throws IOException {
+  public void writeMap(String name, @SuppressWarnings({"rawtypes"})Map val, boolean excludeOuter, boolean isFirstVal) throws IOException {
   }
 
   @Override
-  public void writeArray(String name, Iterator val) throws IOException {
+  public void writeArray(String name, @SuppressWarnings({"rawtypes"})Iterator val) throws IOException {
   }
 
   @Override

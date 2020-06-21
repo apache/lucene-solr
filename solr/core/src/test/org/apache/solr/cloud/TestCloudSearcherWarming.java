@@ -311,7 +311,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
 
   public static class SleepingSolrEventListener implements SolrEventListener {
     @Override
-    public void init(NamedList args) {
+    public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
       // No-Op
     }
 

@@ -70,6 +70,7 @@ public class ApiBag {
   /**Register a POJO annotated with {@link EndPoint}
    * @param o the instance to be used for invocations
    */
+  @SuppressWarnings({"unchecked"})
   public synchronized List<Api> registerObject(Object o) {
     List<Api> l = AnnotatedApi.getApis(o);
     for (Api api : l) {
@@ -77,6 +78,7 @@ public class ApiBag {
     }
     return l;
   }
+  @SuppressWarnings({"unchecked"})
   public synchronized void register(Api api) {
     register(api, Collections.EMPTY_MAP);
   }
@@ -94,6 +96,7 @@ public class ApiBag {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   private void validateAndRegister(Api api, Map<String, String> nameSubstitutes) {
     ValidatingJsonMap spec = api.getSpec();
     Api introspect = new IntrospectApi(api, isCoreSpecific);
@@ -166,6 +169,7 @@ public class ApiBag {
       this.isCoreSpecific = isCoreSpecific;
     }
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public void call(SolrQueryRequest req, SolrQueryResponse rsp) {
 
       String cmd = req.getParams().get("command");
@@ -206,6 +210,7 @@ public class ApiBag {
   public static Map<String, JsonSchemaValidator> getParsedSchema(ValidatingJsonMap commands) {
     Map<String, JsonSchemaValidator> validators = new HashMap<>();
     for (Object o : commands.entrySet()) {
+      @SuppressWarnings({"rawtypes"})
       Map.Entry cmd = (Map.Entry) o;
       try {
         validators.put((String) cmd.getKey(), new JsonSchemaValidator((Map) cmd.getValue()));
@@ -298,6 +303,7 @@ public class ApiBag {
     Object specObj = info == null ? null : info.attributes.get("spec");
     if (specObj == null) specObj = "emptySpec";
     if (specObj instanceof Map) {
+      @SuppressWarnings({"rawtypes"})
       Map map = (Map) specObj;
       return () -> ValidatingJsonMap.getDeepCopy(map, 4, false);
     } else {
@@ -305,6 +311,7 @@ public class ApiBag {
     }
   }
 
+  @SuppressWarnings({"rawtypes"})
   public static List<CommandOperation> getCommandOperations(ContentStream stream, Map<String, JsonSchemaValidator> validators, boolean validate) {
     List<CommandOperation> parsedCommands = null;
     try {
@@ -336,6 +343,7 @@ public class ApiBag {
       }
 
     }
+    @SuppressWarnings({"rawtypes"})
     List<Map> errs = CommandOperation.captureErrors(commandsCopy);
     if (!errs.isEmpty()) {
       throw new ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST, "Error in command payload", errs);
@@ -344,13 +352,15 @@ public class ApiBag {
   }
 
   public static class ExceptionWithErrObject extends SolrException {
+    @SuppressWarnings({"rawtypes"})
     private List<Map> errs;
 
-    public ExceptionWithErrObject(ErrorCode code, String msg, List<Map> errs) {
+    public ExceptionWithErrObject(ErrorCode code, String msg, @SuppressWarnings({"rawtypes"})List<Map> errs) {
       super(code, msg);
       this.errs = errs;
     }
 
+    @SuppressWarnings({"rawtypes"})
     public List<Map> getErrs() {
       return errs;
     }

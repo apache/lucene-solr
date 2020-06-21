@@ -102,6 +102,7 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     params.set("action", CollectionAction.SYNCSHARD.toString());
     params.set("collection", "collection1");
     params.set("shard", "shard1");
+    @SuppressWarnings({"rawtypes"})
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
     

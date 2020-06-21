@@ -231,8 +231,10 @@ class XLSXWriter extends TabularResponseWriter {
   }
 
   //NOTE: a document cannot currently contain another document
+  @SuppressWarnings({"rawtypes"})
   List tmpList;
   @Override
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void writeSolrDocument(String name, SolrDocument doc, ReturnFields returnFields, int idx ) throws IOException {
     if (tmpList == null) {
       tmpList = new ArrayList(1);
@@ -277,7 +279,7 @@ class XLSXWriter extends TabularResponseWriter {
   }
 
   @Override
-  public void writeArray(String name, Iterator val) throws IOException {
+  public void writeArray(String name, @SuppressWarnings({"rawtypes"})Iterator val) throws IOException {
     StringBuffer output = new StringBuffer();
     while (val.hasNext()) {
       Object v = val.next();

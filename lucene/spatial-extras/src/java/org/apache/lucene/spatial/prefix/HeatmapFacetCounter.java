@@ -100,7 +100,7 @@ public class HeatmapFacetCounter {
     //First get the rect of the cell at the bottom-left at depth facetLevel
     final SpatialPrefixTree grid = strategy.getGrid();
     final SpatialContext ctx = grid.getSpatialContext();
-    final Point cornerPt = ctx.makePoint(inputRect.getMinX(), inputRect.getMinY());
+    final Point cornerPt = ctx.getShapeFactory().pointXY(inputRect.getMinX(), inputRect.getMinY());
     final CellIterator cellIterator = grid.getTreeCellIterator(cornerPt, facetLevel);
     Cell cornerCell = null;
     while (cellIterator.hasNext()) {
@@ -141,7 +141,7 @@ public class HeatmapFacetCounter {
       heatMaxY = worldRect.getMaxY();
     }
 
-    final Heatmap heatmap = new Heatmap(columns, rows, ctx.makeRectangle(heatMinX, heatMaxX, heatMinY, heatMaxY));
+    final Heatmap heatmap = new Heatmap(columns, rows, ctx.getShapeFactory().rect(heatMinX, heatMaxX, heatMinY, heatMaxY));
     if (topAcceptDocs instanceof Bits.MatchNoBits) {
       return heatmap; // short-circuit
     }

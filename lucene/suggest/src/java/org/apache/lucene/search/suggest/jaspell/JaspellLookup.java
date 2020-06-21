@@ -73,7 +73,7 @@ public class JaspellLookup extends Lookup implements Accountable {
         continue;
       }
       charsSpare.copyUTF8Bytes(spare);
-      trie.put(charsSpare.toString(), Long.valueOf(weight));
+      trie.put(charsSpare.toString(), weight);
       count++;
     }
   }
@@ -144,7 +144,7 @@ public class JaspellLookup extends Lookup implements Accountable {
     node.splitchar = in.readString().charAt(0);
     byte mask = in.readByte();
     if ((mask & HAS_VALUE) != 0) {
-      node.data = Long.valueOf(in.readLong());
+      node.data = in.readLong();
     }
     if ((mask & LO_KID) != 0) {
       TSTNode kid = new TSTNode('\0', node);

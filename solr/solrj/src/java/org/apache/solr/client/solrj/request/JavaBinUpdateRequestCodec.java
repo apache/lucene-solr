@@ -71,8 +71,11 @@ public class JavaBinUpdateRequestCodec {
    *
    * @throws IOException in case of an exception during marshalling or writing to the stream
    */
+  @SuppressWarnings({"unchecked"})
   public void marshal(UpdateRequest updateRequest, OutputStream os) throws IOException {
+    @SuppressWarnings({"rawtypes"})
     NamedList nl = new NamedList();
+    @SuppressWarnings({"rawtypes"})
     NamedList params = solrParamsToNamedList(updateRequest.getParams());
     if (updateRequest.getCommitWithin() != -1) {
       params.add("commitWithin", updateRequest.getCommitWithin());
@@ -115,6 +118,7 @@ public class JavaBinUpdateRequestCodec {
    *
    * @throws IOException in case of an exception while reading from the input stream or unmarshalling
    */
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public UpdateRequest unmarshal(InputStream is, final StreamingUpdateHandler handler) throws IOException {
     final UpdateRequest updateRequest = new UpdateRequest();
     List<List<NamedList>> doclist;
@@ -181,6 +185,7 @@ public class JavaBinUpdateRequestCodec {
   }
 
 
+  @SuppressWarnings({"rawtypes"})
   private NamedList solrParamsToNamedList(SolrParams params) {
     if (params == null) return new NamedList();
     return params.toNamedList();
@@ -204,6 +209,7 @@ public class JavaBinUpdateRequestCodec {
 
   class StreamingCodec extends JavaBinCodec {
 
+    @SuppressWarnings({"rawtypes"})
     private final NamedList[] namedList;
     private final UpdateRequest updateRequest;
     private final StreamingUpdateHandler handler;
@@ -212,7 +218,7 @@ public class JavaBinUpdateRequestCodec {
     // is ever refactored, this will not work.
     private boolean seenOuterMostDocIterator;
 
-    public StreamingCodec(NamedList[] namedList, UpdateRequest updateRequest, StreamingUpdateHandler handler) {
+    public StreamingCodec(@SuppressWarnings({"rawtypes"})NamedList[] namedList, UpdateRequest updateRequest, StreamingUpdateHandler handler) {
       this.namedList = namedList;
       this.updateRequest = updateRequest;
       this.handler = handler;
@@ -220,11 +226,13 @@ public class JavaBinUpdateRequestCodec {
     }
 
     @Override
+    @SuppressWarnings({"unchecked", "rawtypes"})
     protected SolrInputDocument createSolrInputDocument(int sz) {
       return new MaskCharSequenceSolrInputDoc(new LinkedHashMap(sz));
     }
 
     @Override
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public NamedList readNamedList(DataInputInputStream dis) throws IOException {
       int sz = readSize(dis);
       NamedList nl = new NamedList();
@@ -239,6 +247,7 @@ public class JavaBinUpdateRequestCodec {
       return nl;
     }
 
+    @SuppressWarnings({"rawtypes"})
     private SolrInputDocument listToSolrInputDocument(List<NamedList> namedList) {
       SolrInputDocument doc = new SolrInputDocument();
       for (int i = 0; i < namedList.size(); i++) {
@@ -271,6 +280,7 @@ public class JavaBinUpdateRequestCodec {
     }
 
     @Override
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public List readIterator(DataInputInputStream fis) throws IOException {
       // default behavior for reading any regular Iterator in the stream
       if (seenOuterMostDocIterator) return super.readIterator(fis);
@@ -282,6 +292,7 @@ public class JavaBinUpdateRequestCodec {
     }
 
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private List readOuterMostDocIterator(DataInputInputStream fis) throws IOException {
       if(namedList[0] == null) namedList[0] = new NamedList();
       NamedList params = (NamedList) namedList[0].get("params");
@@ -338,11 +349,13 @@ public class JavaBinUpdateRequestCodec {
       }
     }
 
-    private SolrInputDocument convertMapToSolrInputDoc(Map m) {
+    @SuppressWarnings({"unchecked"})
+    private SolrInputDocument convertMapToSolrInputDoc(@SuppressWarnings({"rawtypes"})Map m) {
       SolrInputDocument result = createSolrInputDocument(m.size());
       m.forEach((k, v) -> {
         if (CHILDDOC.equals(k.toString())) {
           if (v instanceof List) {
+            @SuppressWarnings({"rawtypes"})
             List list = (List) v;
             for (Object o : list) {
               if (o instanceof Map) {

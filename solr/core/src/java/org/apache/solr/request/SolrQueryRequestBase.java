@@ -211,6 +211,7 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
     return null;
   }
 
+  @SuppressWarnings({"unchecked"})
   protected Map<String, JsonSchemaValidator> getValidators(){
     return Collections.EMPTY_MAP;
   }

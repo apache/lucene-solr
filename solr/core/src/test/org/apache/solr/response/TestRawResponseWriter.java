@@ -189,8 +189,10 @@ public class TestRawResponseWriter extends SolrTestCaseJ4 {
    *
    * @param baseWriter null or the name of a valid base writer
    */
+  @SuppressWarnings({"unchecked"})
   private static RawResponseWriter newRawResponseWriter(String baseWriter) {
     RawResponseWriter writer = new RawResponseWriter();
+    @SuppressWarnings({"rawtypes"})
     NamedList initArgs = new NamedList<Object>();
     if (null != baseWriter) {
       initArgs.add("base", baseWriter);
