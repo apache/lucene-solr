@@ -78,6 +78,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
   /**
    * Modifies the request to inlcude authentication params if needed, returns the request 
    */
+  @SuppressWarnings({"rawtypes"})
   private <T extends SolrRequest> T setAuthIfNeeded(T req) {
     if (null != USER) {
       assert null != PASS;

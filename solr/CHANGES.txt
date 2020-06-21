@@ -147,6 +147,10 @@ Improvements
   Also fixes SolrIndexSearcher.warm which should have re-instated previous SRI.
   (Nazerke Seidan, David Smiley)
 
+* SOLR-14561: CoreAdminAPI's parameters instanceDir and dataDir are now validated, and must be relative to either
+  SOLR_HOME, SOLR_DATA_HOME or coreRootDir. Added new solr.xml config 'allowPaths', controlled by system property
+  'solr.allowPaths' that allows you to add other allowed paths when needed.
+
 Optimizations
 ---------------------
 * SOLR-8306: Do not collect expand documents when expand.rows=0 (Marshall Sanders, Amelia Henderson)
@@ -244,6 +248,9 @@ Bug Fixes
 * SOLR-14345: Return proper error message when non-BinaryResponseParser is used in solrJ (Munendra S N)
 
 * SOLR-14516: NPE in JsonTextWriter (noble)
+
+* SOLR-14577: Return 400 BAD REQUEST when field is missing on a Terms query parser request
+  (Tomás Fernández Löbbe)
 
 Other Changes
 ---------------------
@@ -351,6 +358,8 @@ Other Changes
 * SOLR-14556: Fix or suppress warnings in solrj/cloud/autoscaling (Erick Erickson)
 
 * SOLR-14573: Fix or suppress warnings in solrj/src/test (Erick Erickson)
+
+* SOLR-14574: Fix or suppress warnings in solr/core/src/test (parts 1 and 2) (Erick Erickson)
 
 ==================  8.5.2 ==================
 

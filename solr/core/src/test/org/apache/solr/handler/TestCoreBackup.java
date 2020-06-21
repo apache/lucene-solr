@@ -319,7 +319,7 @@ public class TestCoreBackup extends SolrTestCaseJ4 {
         
         // sanity check this is the initial commit..
         final IndexCommit commit = s.getIndexReader().getIndexCommit();
-        assertEquals(EXPECTED_GEN_OF_EMPTY_INDEX, (long) commit.getGeneration());
+        assertEquals(EXPECTED_GEN_OF_EMPTY_INDEX, commit.getGeneration());
         return commit;
       });
 
@@ -338,7 +338,7 @@ public class TestCoreBackup extends SolrTestCaseJ4 {
         final IndexCommit commit = s.getIndexReader().getIndexCommit();
         // WTF: how/why does this reader still have the same commit generation as before ? ? ? ? ?
         assertEquals("WTF: This Reader (claims) the same generation as our previous pre-softCommif (empty) reader",
-                     EXPECTED_GEN_OF_EMPTY_INDEX, (long) commit.getGeneration());
+                     EXPECTED_GEN_OF_EMPTY_INDEX, commit.getGeneration());
         return commit;
       });
 

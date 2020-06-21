@@ -67,6 +67,7 @@ public class DistributedFacetPivotLongTailTest extends BaseDistributedSearchTest
     doTestDeepPivotStats();
   }
   
+  @SuppressWarnings({"rawtypes"})
   private void sanityCheckIndividualShards() throws Exception {
     assertEquals("This test assumes exactly 3 shards/clients", 3, clients.size());
     
@@ -81,6 +82,7 @@ public class DistributedFacetPivotLongTailTest extends BaseDistributedSearchTest
     PivotField pivot = null;
     List<PivotField> pivots = null;
     
+    @SuppressWarnings({"unchecked", "rawtypes"})
     List<PivotField>[] shardPivots = new List[clients.size()];
     for (int i = 0; i < clients.size(); i++) {
       shardPivots[i] = clients.get(i).query( req ).getFacetPivot().get("foo_s,bar_s");

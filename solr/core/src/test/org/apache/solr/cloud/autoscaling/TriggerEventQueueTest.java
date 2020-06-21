@@ -57,6 +57,7 @@ public class TriggerEventQueueTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testSerialization() throws Exception {
     TriggerEventQueue queue = new TriggerEventQueue(cloudManager, "test", null);
     Map<String, Number> hotHosts = new HashMap<>();

@@ -94,17 +94,22 @@ public class CdcrUpdateLogTest extends SolrTestCaseJ4 {
   }
 
   private static Long getVer(SolrQueryRequest req) throws Exception {
+    @SuppressWarnings({"rawtypes"})
     Map rsp = (Map) fromJSONString(JQ(req));
+    @SuppressWarnings({"rawtypes"})
     Map doc = null;
     if (rsp.containsKey("doc")) {
       doc = (Map) rsp.get("doc");
     } else if (rsp.containsKey("docs")) {
+      @SuppressWarnings({"rawtypes"})
       List lst = (List) rsp.get("docs");
       if (lst.size() > 0) {
         doc = (Map) lst.get(0);
       }
     } else if (rsp.containsKey("response")) {
+      @SuppressWarnings({"rawtypes"})
       Map responseMap = (Map) rsp.get("response");
+      @SuppressWarnings({"rawtypes"})
       List lst = (List) responseMap.get("docs");
       if (lst.size() > 0) {
         doc = (Map) lst.get(0);
@@ -140,6 +145,7 @@ public class CdcrUpdateLogTest extends SolrTestCaseJ4 {
     Object o = reader.next();
     assertNotNull(o);
 
+    @SuppressWarnings({"rawtypes"})
     List entry = (List) o;
     int opAndFlags = (Integer) entry.get(0);
     assertEquals(UpdateLog.COMMIT, opAndFlags & UpdateLog.OPERATION_MASK);
@@ -203,6 +209,7 @@ public class CdcrUpdateLogTest extends SolrTestCaseJ4 {
     assertTrue(reader1.seek(targetVersion));
     Object o = reader1.next();
     assertNotNull(o);
+    @SuppressWarnings({"rawtypes"})
     List entry = (List) o;
     long version = (Long) entry.get(1);
 
@@ -579,6 +586,7 @@ public class CdcrUpdateLogTest extends SolrTestCaseJ4 {
     subReader.close();
 
     // After fast forward, the parent reader should be position on the doc15
+    @SuppressWarnings({"rawtypes"})
     List o = (List) reader.next();
     assertNotNull(o);
     assertTrue("Expected SolrInputDocument but got" + o.toString() ,o.get(3) instanceof SolrInputDocument);

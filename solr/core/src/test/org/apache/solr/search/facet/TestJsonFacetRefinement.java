@@ -118,11 +118,13 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     JSONParser parser = new JSONParser(json);
     ObjectBuilder ob = new ObjectBuilder(parser) {
       @Override
+      @SuppressWarnings({"rawtypes"})
       public Object newObject() throws IOException {
         return new SimpleOrderedMap();
       }
 
       @Override
+      @SuppressWarnings({"unchecked", "rawtypes"})
       public void addKeyVal(Object map, Object key, Object val) throws IOException {
         ((SimpleOrderedMap) map).add(key.toString(), val);
       }
@@ -136,6 +138,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     try {
       int nShards = responsesAndTests.length / 2;
       Object jsonFacet = Utils.fromJSONString(facet);
+      @SuppressWarnings({"rawtypes"})
       FacetParser parser = new FacetParser.FacetTopParser(req);
       FacetRequest facetRequest = parser.parse(jsonFacet);
 

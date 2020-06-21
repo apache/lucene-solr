@@ -100,6 +100,7 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
 
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testBasics() throws Exception {
 
     // get initial metrics
@@ -466,7 +467,7 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     }
 
     @Override
-    public void init(NamedList args) {
+    public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
 
     }
   }

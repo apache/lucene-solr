@@ -70,7 +70,7 @@ public class NvlValueSourceParser extends ValueSourceParser {
     }
 
   @Override
-  public void init(NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     /* initialize the value to consider as null */
     Float nvlFloatValueArg = (Float) args.get("nvlFloatValue");
     if (nvlFloatValueArg != null) {

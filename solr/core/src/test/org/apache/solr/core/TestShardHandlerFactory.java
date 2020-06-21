@@ -33,6 +33,7 @@ public class TestShardHandlerFactory extends SolrTestCaseJ4 {
     CoreContainer cc = CoreContainer.createAndLoad(home, home.resolve("solr-shardhandler.xml"));
     ShardHandlerFactory factory = cc.getShardHandlerFactory();
     assertTrue(factory instanceof MockShardHandlerFactory);
+    @SuppressWarnings({"rawtypes"})
     NamedList args = ((MockShardHandlerFactory)factory).args;
     assertEquals("myMagicRequiredValue", args.get("myMagicRequiredParameter"));
     factory.close();

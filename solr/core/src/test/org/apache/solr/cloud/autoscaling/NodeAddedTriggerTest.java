@@ -118,6 +118,7 @@ public class NodeAddedTriggerTest extends SolrCloudTestCase {
 
       TriggerEvent nodeAddedEvent = eventRef.get();
       assertNotNull(nodeAddedEvent);
+      @SuppressWarnings({"unchecked"})
       List<String> nodeNames = (List<String>)nodeAddedEvent.getProperty(TriggerEvent.NODE_NAMES);
       assertTrue(nodeNames.contains(newNode1.getNodeName()));
       assertTrue(nodeNames.contains(newNode2.getNodeName()));
@@ -172,6 +173,7 @@ public class NodeAddedTriggerTest extends SolrCloudTestCase {
   public void testActionLifecycle() throws Exception {
     CoreContainer container = cluster.getJettySolrRunners().get(0).getCoreContainer();
     Map<String, Object> props = createTriggerProps(0);
+    @SuppressWarnings({"unchecked"})
     List<Map<String, String>> actions = (List<Map<String, String>>) props.get("actions");
     Map<String, String> action = new HashMap<>(2);
     action.put("name", "testActionInit");
@@ -298,6 +300,7 @@ public class NodeAddedTriggerTest extends SolrCloudTestCase {
         if (currentTimeNanos - eventTimeNanos <= waitForNanos) {
           fail("NodeAddedListener was fired before the configured waitFor period: currentTimeNanos=" + currentTimeNanos + ", eventTimeNanos=" +  eventTimeNanos + ",waitForNanos=" + waitForNanos);
         }
+        @SuppressWarnings({"unchecked"})
         List<String> nodeNames = (List<String>) event.getProperty(NodeAddedTrigger.NodeAddedEvent.NODE_NAMES);
         if (nodeNames.contains(newNode.getNodeName())) {
           stop.set(true);
