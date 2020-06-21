@@ -77,19 +77,23 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
   // in this way, we prevent a Base ConfigSet from being deleted while it is being copied
   // but don't prevent different ConfigSets from being created with the same Base ConfigSet
   // at the same time.
+  @SuppressWarnings({"rawtypes"})
   final private Set configSetWriteWip;
+  @SuppressWarnings({"rawtypes"})
   final private Set configSetReadWip;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public OverseerConfigSetMessageHandler(ZkStateReader zkStateReader) {
     this.zkStateReader = zkStateReader;
-    this.configSetWriteWip = new HashSet();
-    this.configSetReadWip = new HashSet();
+    this.configSetWriteWip = new HashSet<>();
+    this.configSetReadWip = new HashSet<>();
   }
 
   @Override
+  @SuppressWarnings({"unchecked"})
   public OverseerSolrResponse processMessage(ZkNodeProps message, String operation) {
+    @SuppressWarnings({"rawtypes"})
     NamedList results = new NamedList();
     try {
       if (!operation.startsWith(CONFIGSETS_ACTION_PREFIX)) {
@@ -98,7 +102,7 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
                 + " expected: " + CONFIGSETS_ACTION_PREFIX);
       }
       operation = operation.substring(CONFIGSETS_ACTION_PREFIX.length());
-      log.info("OverseerConfigSetMessageHandler.processMessage : " + operation + " , " + message.toString());
+      log.info("OverseerConfigSetMessageHandler.processMessage : {}, {}", operation, message);
 
       ConfigSetParams.ConfigSetAction action = ConfigSetParams.ConfigSetAction.get(operation);
       if (action == null) {
@@ -126,6 +130,7 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
       }
 
       results.add("Operation " + operation + " caused exception:", e);
+      @SuppressWarnings({"rawtypes"})
       SimpleOrderedMap nl = new SimpleOrderedMap();
       nl.add("msg", e.getMessage());
       nl.add("rspCode", e instanceof SolrException ? ((SolrException) e).code() : -1);
@@ -165,6 +170,7 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
     markExclusive(configSetName, baseConfigSet);
   }
 
+  @SuppressWarnings({"unchecked"})
   private void markExclusive(String configSetName, String baseConfigSetName) {
     synchronized (configSetWriteWip) {
       configSetWriteWip.add(configSetName);
@@ -220,6 +226,7 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
     return null;
   }
 
+  @SuppressWarnings({"rawtypes"})
   private NamedList getConfigSetProperties(String path) throws IOException {
     byte[] oldPropsData = null;
     try {
@@ -256,7 +263,8 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
     return properties;
   }
 
-  private void mergeOldProperties(Map<String, Object> newProps, NamedList oldProps) {
+  private void mergeOldProperties(Map<String, Object> newProps, @SuppressWarnings({"rawtypes"})NamedList oldProps) {
+    @SuppressWarnings({"unchecked"})
     Iterator<Map.Entry<String, Object>> it = oldProps.iterator();
     while (it.hasNext()) {
       Map.Entry<String, Object> oldEntry = it.next();
@@ -304,6 +312,7 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
     Map<String, Object> props = getNewProperties(message);
     if (props != null) {
       // read the old config properties and do a merge, if necessary
+      @SuppressWarnings({"rawtypes"})
       NamedList oldProps = getConfigSetProperties(getPropertyPath(baseConfigSetName, propertyPath));
       if (oldProps != null) {
         mergeOldProperties(props, oldProps);
@@ -370,6 +379,7 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
     }
 
     String propertyPath = ConfigSetProperties.DEFAULT_FILENAME;
+    @SuppressWarnings({"rawtypes"})
     NamedList properties = getConfigSetProperties(getPropertyPath(configSetName, propertyPath));
     if (properties != null) {
       Object immutable = properties.get(ConfigSetProperties.IMMUTABLE_CONFIGSET_ARG);

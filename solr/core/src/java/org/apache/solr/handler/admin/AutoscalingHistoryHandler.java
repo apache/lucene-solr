@@ -100,6 +100,7 @@ public class AutoscalingHistoryHandler extends RequestHandlerBase implements Per
   }
 
   @Override
+  @SuppressWarnings({"unchecked"})
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
     String collection = params.get(SYSTEM_COLLECTION_PARAM, CollectionAdminParams.SYSTEM_COLL);

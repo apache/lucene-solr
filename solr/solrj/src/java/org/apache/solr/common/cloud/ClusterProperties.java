@@ -108,6 +108,7 @@ public class ClusterProperties {
   public void setClusterProperties(Map<String, Object> properties) throws IOException, KeeperException, InterruptedException {
     client.atomicUpdate(ZkStateReader.CLUSTER_PROPS, zkData -> {
       if (zkData == null) return Utils.toJSON(convertCollectionDefaultsToNestedFormat(properties));
+      @SuppressWarnings({"unchecked"})
       Map<String, Object> zkJson = (Map<String, Object>) Utils.fromJSON(zkData);
       zkJson = convertCollectionDefaultsToNestedFormat(zkJson);
       boolean modified = Utils.mergeJson(zkJson, convertCollectionDefaultsToNestedFormat(properties));
@@ -122,6 +123,7 @@ public class ClusterProperties {
    * @param properties the properties to be converted
    * @return the converted map
    */
+  @SuppressWarnings({"unchecked"})
   static Map<String, Object> convertCollectionDefaultsToNestedFormat(Map<String, Object> properties) {
     if (properties.containsKey(COLLECTION_DEF)) {
       Map<String, Object> values = (Map<String, Object>) properties.remove(COLLECTION_DEF);
@@ -161,6 +163,7 @@ public class ClusterProperties {
       Stat s = new Stat();
       try {
         if (client.exists(ZkStateReader.CLUSTER_PROPS, true)) {
+          @SuppressWarnings({"rawtypes"})
           Map properties = (Map) Utils.fromJSON(client.getData(ZkStateReader.CLUSTER_PROPS, null, s, true));
           if (propertyValue == null) {
             //Don't update ZK unless absolutely necessary.
@@ -176,6 +179,7 @@ public class ClusterProperties {
             }
           }
         } else {
+          @SuppressWarnings({"rawtypes"})
           Map properties = new LinkedHashMap();
           properties.put(propertyName, propertyValue);
           client.create(ZkStateReader.CLUSTER_PROPS, Utils.toJSON(properties), CreateMode.PERSISTENT, true);

@@ -88,8 +88,8 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
 
     reloadIfExpired();
 
-    Double source = (Double) rates.getRates().get(sourceCurrencyCode);
-    Double target = (Double) rates.getRates().get(targetCurrencyCode);
+    Double source = rates.getRates().get(sourceCurrencyCode);
+    Double target = rates.getRates().get(targetCurrencyCode);
 
     if (source == null || target == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
@@ -140,7 +140,7 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
   public boolean reload() throws SolrException {
     InputStream ratesJsonStream = null;
     try {
-      log.debug("Reloading exchange rates from "+ratesFileLocation);
+      log.debug("Reloading exchange rates from {}", ratesFileLocation);
       try {
         ratesJsonStream = (new URL(ratesFileLocation)).openStream();
       } catch (Exception e) {
@@ -175,7 +175,7 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
         refreshInterval = 60;
         log.warn("Specified refreshInterval was too small. Setting to 60 minutes which is the update rate of openexchangerates.org");
       }
-      log.debug("Initialized with rates="+ratesFileLocation+", refreshInterval="+refreshInterval+".");
+      log.debug("Initialized with rates={}, refreshInterval={}.", ratesFileLocation, refreshInterval);
       refreshIntervalSeconds = refreshInterval * 60;
     } catch (SolrException e1) {
       throw e1;
@@ -245,11 +245,11 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
                   ev = parser.nextEvent();                  
                 }
               } else {
-                log.warn("Unknown key "+key);
+                log.warn("Unknown key {}", key);
               }
               break;
             } else {
-              log.warn("Expected key, got "+JSONParser.getEventString(ev));
+              log.warn("Expected key, got {}", JSONParser.getEventString(ev));
               break;
             }
              
@@ -259,7 +259,9 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
             break;
 
           default:
-            log.info("Noggit UNKNOWN_EVENT_ID:"+JSONParser.getEventString(ev));
+            if (log.isInfoEnabled()) {
+              log.info("Noggit UNKNOWN_EVENT_ID: {}", JSONParser.getEventString(ev));
+            }
             break;
         }
       } while( ev != JSONParser.EOF);

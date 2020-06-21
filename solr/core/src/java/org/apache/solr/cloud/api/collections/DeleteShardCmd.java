@@ -62,7 +62,8 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   @Override
-  public void call(ClusterState clusterState, ZkNodeProps message, NamedList results) throws Exception {
+  @SuppressWarnings({"unchecked"})
+  public void call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     String extCollectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
     String sliceId = message.getStr(ZkStateReader.SHARD_ID_PROP);
 
@@ -106,7 +107,10 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
       CountDownLatch cleanupLatch = new CountDownLatch(replicas.size());
       for (ZkNodeProps r : replicas) {
         final ZkNodeProps replica = r.plus(message.getProperties()).plus("parallel", "true").plus(ASYNC, asyncId);
-        log.info("Deleting replica for collection={} shard={} on node={}", replica.getStr(COLLECTION_PROP), replica.getStr(SHARD_ID_PROP), replica.getStr(CoreAdminParams.NODE));
+        if (log.isInfoEnabled()) {
+          log.info("Deleting replica for collection={} shard={} on node={}", replica.getStr(COLLECTION_PROP), replica.getStr(SHARD_ID_PROP), replica.getStr(CoreAdminParams.NODE));
+        }
+        @SuppressWarnings({"rawtypes"})
         NamedList deleteResult = new NamedList();
         try {
           ((DeleteReplicaCmd)ocmh.commandMap.get(DELETEREPLICA)).deleteReplica(clusterState, replica, deleteResult, () -> {
@@ -117,6 +121,7 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
                     " on node=%s", replica.getStr(COLLECTION_PROP), replica.getStr(SHARD_ID_PROP), replica.getStr(NODE_NAME_PROP)));
               }
             }
+            @SuppressWarnings({"rawtypes"})
             SimpleOrderedMap success = (SimpleOrderedMap) deleteResult.get("success");
             if (success != null) {
               synchronized (results)  {
@@ -125,10 +130,10 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
             }
           });
         } catch (KeeperException e) {
-          log.warn("Error deleting replica: " + r, e);
+          log.warn("Error deleting replica: {}", r, e);
           cleanupLatch.countDown();
         } catch (Exception e) {
-          log.warn("Error deleting replica: " + r, e);
+          log.warn("Error deleting replica: {}", r, e);
           cleanupLatch.countDown();
           throw e;
         }
@@ -143,7 +148,7 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
       zkStateReader.waitForState(collectionName, 45, TimeUnit.SECONDS, (c) -> c.getSlice(sliceId) == null);
 
-      log.info("Successfully deleted collection: " + collectionName + ", shard: " + sliceId);
+      log.info("Successfully deleted collection: {} , shard: {}", collectionName, sliceId);
     } catch (SolrException e) {
       throw e;
     } catch (Exception e) {

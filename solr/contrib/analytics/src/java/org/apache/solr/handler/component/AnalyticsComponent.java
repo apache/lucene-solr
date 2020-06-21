@@ -36,7 +36,7 @@ public class AnalyticsComponent extends SearchComponent {
   public static final String COMPONENT_NAME = "analytics";
 
   @Override
-  public void init(NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     AnalyticsRequestParser.init();
   }
 

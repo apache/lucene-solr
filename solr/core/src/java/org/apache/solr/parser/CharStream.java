@@ -27,6 +27,22 @@ interface CharStream {
    */
   char readChar() throws java.io.IOException;
 
+  @Deprecated
+  /**
+   * Returns the column position of the character last read.
+   * @deprecated
+   * @see #getEndColumn
+   */
+  int getColumn();
+
+  @Deprecated
+  /**
+   * Returns the line number of the character last read.
+   * @deprecated
+   * @see #getEndLine
+   */
+  int getLine();
+
   /**
    * Returns the column number of the last character for current token (being
    * matched after the last call to BeginTOken).
@@ -55,7 +71,7 @@ interface CharStream {
    * Backs up the input stream by amount steps. Lexer calls this method if it
    * had already read some characters, but could not use them to match a
    * (longer) token. So, they will be used again as the prefix of the next
-   * token and it is the implemetation's responsibility to do this right.
+   * token and it is the implementation's responsibility to do this right.
    */
   void backup(int amount);
 

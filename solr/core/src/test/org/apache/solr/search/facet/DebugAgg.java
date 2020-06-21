@@ -50,7 +50,7 @@ class DebugAgg extends AggValueSource {
     }
 
     @Override
-    public void init(NamedList args) {
+    public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     }
   }
 
@@ -68,7 +68,7 @@ class DebugAgg extends AggValueSource {
   }
 
   @Override
-  public SlotAcc createSlotAcc(FacetContext fcontext, int numDocs, int numSlots) throws IOException {
+  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots) throws IOException {
     return new Acc(fcontext, numDocs, numSlots, inner.createSlotAcc(fcontext, numDocs, numSlots));
   }
 
@@ -91,12 +91,12 @@ class DebugAgg extends AggValueSource {
     public static Acc last;
 
     public SlotAcc sub;
-    public int numDocs;
+    public long numDocs;
     public int numSlots;
 
-    public Acc(FacetContext fcontext, int numDocs, int numSlots, SlotAcc sub) {
+    public Acc(FacetContext fcontext, long numDocs, int numSlots, SlotAcc sub) {
       super(fcontext);
-      this.last = this;
+      last = this;
       this.numDocs = numDocs;
       this.numSlots = numSlots;
       this.sub = sub;
@@ -173,7 +173,7 @@ class DebugAgg extends AggValueSource {
     }
     
     @Override
-    public SlotAcc createSlotAcc(FacetContext fcontext, int numDocs, int numSlots) {
+    public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots) {
       return new NumShardsAcc(fcontext, numDocs, numSlots);
     }
     
@@ -188,7 +188,7 @@ class DebugAgg extends AggValueSource {
     }
     
     public static class NumShardsAcc extends SlotAcc {
-      public NumShardsAcc(FacetContext fcontext, int numDocs, int numSlots) {
+      public NumShardsAcc(FacetContext fcontext, long numDocs, int numSlots) {
         super(fcontext);
       }
       
@@ -221,7 +221,7 @@ class DebugAgg extends AggValueSource {
     
     @Override
     public FacetMerger createFacetMerger(Object prototype) {
-      return new FacetLongMerger();
+      return new FacetModule.FacetLongMerger();
     }
     
   }

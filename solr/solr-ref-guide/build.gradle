@@ -52,6 +52,8 @@ plugins {
     id 'com.github.jruby-gradle.base' version '2.0.0-alpha.7'
 }
 
+description = 'Solr reference guide'
+
 // Use an internal proxy to ruby gems.
 repositories {
     ruby.gems()
@@ -96,6 +98,9 @@ dependencies {
 sourceSets {
     refGuide {
         java {
+            srcDirs = []
+        }
+        resources {
             srcDirs = ['src']
         }
     }
@@ -105,6 +110,12 @@ sourceSets {
             srcDirs = ['tools']
             exclude "**/CustomizedAsciidoctorAntTask.java"
             exclude "**/asciidoctor-antlib.xml"
+        }
+    }
+
+    test {
+        java {
+            srcDirs = []
         }
     }
 }
@@ -159,7 +170,6 @@ ext {
     asciiDocAttrs = [
             'common': [
                     'attribute-missing' : 'warn',
-                    'section-toc'       : '',
                     'icons'             : 'font',
                     'icon-set'          : 'fa',
                     'figure-caption!'   : '',

@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.lucene.util.LuceneTestCase.Slow;
@@ -138,11 +139,11 @@ public class RestartWhileUpdatingTest extends AbstractFullDistribZkTestBase {
     
     Thread.sleep(1000);
   
-    waitForThingsToLevelOut(320);
+    waitForThingsToLevelOut(320, TimeUnit.SECONDS);
     
     Thread.sleep(2000);
     
-    waitForThingsToLevelOut(30);
+    waitForThingsToLevelOut(30, TimeUnit.SECONDS);
     
     Thread.sleep(5000);
     

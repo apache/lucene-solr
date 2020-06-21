@@ -74,7 +74,7 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
 
 
   @Override
-  public void call(ClusterState clusterState, ZkNodeProps message, NamedList results) throws Exception {
+  public void call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     String extSourceCollectionName = message.getStr("collection");
     String splitKey = message.getStr("split.key");
     String extTargetCollectionName = message.getStr("target.collection");
@@ -129,21 +129,22 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
 
     for (Slice sourceSlice : sourceSlices) {
       for (Slice targetSlice : targetSlices) {
-        log.info("Migrating source shard: {} to target shard: {} for split.key = " + splitKey, sourceSlice, targetSlice);
+        log.info("Migrating source shard: {} to target shard: {} for split.key = {}", sourceSlice, targetSlice, splitKey);
         migrateKey(clusterState, sourceCollection, sourceSlice, targetCollection, targetSlice, splitKey,
             timeout, results, asyncId, message);
       }
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   private void migrateKey(ClusterState clusterState, DocCollection sourceCollection, Slice sourceSlice,
                           DocCollection targetCollection, Slice targetSlice,
                           String splitKey, int timeout,
-                          NamedList results, String asyncId, ZkNodeProps message) throws Exception {
+                          @SuppressWarnings({"rawtypes"})NamedList results, String asyncId, ZkNodeProps message) throws Exception {
     String tempSourceCollectionName = "split_" + sourceSlice.getName() + "_temp_" + targetSlice.getName();
     ZkStateReader zkStateReader = ocmh.zkStateReader;
     if (clusterState.hasCollection(tempSourceCollectionName)) {
-      log.info("Deleting temporary collection: " + tempSourceCollectionName);
+      log.info("Deleting temporary collection: {}", tempSourceCollectionName);
       Map<String, Object> props = makeMap(
           Overseer.QUEUE_OPERATION, DELETE.toLower(),
           NAME, tempSourceCollectionName);
@@ -152,7 +153,7 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
         ocmh.commandMap.get(DELETE).call(zkStateReader.getClusterState(), new ZkNodeProps(props), results);
         clusterState = zkStateReader.getClusterState();
       } catch (Exception e) {
-        log.warn("Unable to clean up existing temporary collection: " + tempSourceCollectionName, e);
+        log.warn("Unable to clean up existing temporary collection: {}", tempSourceCollectionName, e);
       }
     }
 
@@ -167,15 +168,21 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
     // this is the range that has to be split from source and transferred to target
     DocRouter.Range splitRange = ocmh.intersect(targetSlice.getRange(), ocmh.intersect(sourceSlice.getRange(), keyHashRange));
     if (splitRange == null) {
-      log.info("No common hashes between source shard: {} and target shard: {}", sourceSlice.getName(), targetSlice.getName());
+      if (log.isInfoEnabled()) {
+        log.info("No common hashes between source shard: {} and target shard: {}", sourceSlice.getName(), targetSlice.getName());
+      }
       return;
     }
-    log.info("Common hash range between source shard: {} and target shard: {} = " + splitRange, sourceSlice.getName(), targetSlice.getName());
+    if (log.isInfoEnabled()) {
+      log.info("Common hash range between source shard: {} and target shard: {} = {}", sourceSlice.getName(), targetSlice.getName(), splitRange);
+    }
 
     Replica targetLeader = zkStateReader.getLeaderRetry(targetCollection.getName(), targetSlice.getName(), 10000);
 
-    log.info("Asking target leader node: " + targetLeader.getNodeName() + " core: "
-        + targetLeader.getStr("core") + " to buffer updates");
+    if (log.isInfoEnabled()) {
+      log.info("Asking target leader node: {} core: {} to buffer updates"
+          , targetLeader.getNodeName(), targetLeader.getStr("core"));
+    }
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.REQUESTBUFFERUPDATES.toString());
     params.set(CoreAdminParams.NAME, targetLeader.getStr("core"));
@@ -194,7 +201,7 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
         "range", splitRange.toString(),
         "targetCollection", targetCollection.getName(),
         "expireAt", RoutingRule.makeExpiryAt(timeout));
-    log.info("Adding routing rule: " + m);
+    log.info("Adding routing rule: {}", m);
     ocmh.overseer.offerStateUpdate(Utils.toJSON(m));
 
     // wait for a while until we see the new rule
@@ -237,7 +244,7 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
       props.put(ASYNC, internalAsyncId);
     }
 
-    log.info("Creating temporary collection: " + props);
+    log.info("Creating temporary collection: {}", props);
     ocmh.commandMap.get(CREATE).call(clusterState, new ZkNodeProps(props), results);
     // refresh cluster state
     clusterState = zkStateReader.getClusterState();
@@ -248,7 +255,9 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
     String coreNodeName = ocmh.waitForCoreNodeName(tempSourceCollectionName,
         sourceLeader.getNodeName(), tempCollectionReplica1);
     // wait for the replicas to be seen as active on temp source leader
-    log.info("Asking source leader to wait for: " + tempCollectionReplica1 + " to be alive on: " + sourceLeader.getNodeName());
+    if (log.isInfoEnabled()) {
+      log.info("Asking source leader to wait for: {} to be alive on: {}", tempCollectionReplica1, sourceLeader.getNodeName());
+    }
     CoreAdminRequest.WaitForState cmd = new CoreAdminRequest.WaitForState();
     cmd.setCoreName(tempCollectionReplica1);
     cmd.setNodeName(sourceLeader.getNodeName());
@@ -282,8 +291,10 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
       shardRequestTracker.sendShardRequest(tempNodeName, params, shardHandler);
       shardRequestTracker.processResponses(results, shardHandler, true, "MIGRATE failed to invoke SPLIT core admin command");
     }
-    log.info("Creating a replica of temporary collection: {} on the target leader node: {}",
-        tempSourceCollectionName, targetLeader.getNodeName());
+    if (log.isInfoEnabled()) {
+      log.info("Creating a replica of temporary collection: {} on the target leader node: {}",
+          tempSourceCollectionName, targetLeader.getNodeName());
+    }
     String tempCollectionReplica2 = Assign.buildSolrCoreName(ocmh.overseer.getSolrCloudManager().getDistribStateManager(),
         zkStateReader.getClusterState().getCollection(tempSourceCollectionName), tempSourceSlice.getName(), Replica.Type.NRT);
     props = new HashMap<>();
@@ -312,7 +323,9 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
     coreNodeName = ocmh.waitForCoreNodeName(tempSourceCollectionName,
         targetLeader.getNodeName(), tempCollectionReplica2);
     // wait for the replicas to be seen as active on temp source leader
-    log.info("Asking temp source leader to wait for: " + tempCollectionReplica2 + " to be alive on: " + targetLeader.getNodeName());
+    if (log.isInfoEnabled()) {
+      log.info("Asking temp source leader to wait for: {} to be alive on: {}", tempCollectionReplica2, targetLeader.getNodeName());
+    }
     cmd = new CoreAdminRequest.WaitForState();
     cmd.setCoreName(tempSourceLeader.getStr("core"));
     cmd.setNodeName(targetLeader.getNodeName());
@@ -356,14 +369,13 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
       shardRequestTracker.processResponses(results, shardHandler, true, "MIGRATE failed to request node to apply buffered updates");
     }
     try {
-      log.info("Deleting temporary collection: " + tempSourceCollectionName);
+      log.info("Deleting temporary collection: {}", tempSourceCollectionName);
       props = makeMap(
           Overseer.QUEUE_OPERATION, DELETE.toLower(),
           NAME, tempSourceCollectionName);
       ocmh.commandMap.get(DELETE). call(zkStateReader.getClusterState(), new ZkNodeProps(props), results);
     } catch (Exception e) {
-      log.error("Unable to delete temporary collection: " + tempSourceCollectionName
-          + ". Please remove it manually", e);
+      log.error("Unable to delete temporary collection: {}. Please remove it manually", tempSourceCollectionName, e);
     }
   }
 }

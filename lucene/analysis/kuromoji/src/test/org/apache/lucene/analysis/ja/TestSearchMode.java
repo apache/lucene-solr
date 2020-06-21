@@ -23,6 +23,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -31,7 +33,7 @@ import org.apache.lucene.analysis.ja.JapaneseTokenizer.Mode;
 
 public class TestSearchMode extends BaseTokenStreamTestCase {
   private final static String SEGMENTATION_FILENAME = "search-segmentation-tests.txt";
-  private Analyzer analyzer;
+  private Analyzer analyzer, analyzerNoOriginal;
   
   @Override
   public void setUp() throws Exception {
@@ -39,7 +41,14 @@ public class TestSearchMode extends BaseTokenStreamTestCase {
     analyzer = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), null, true, Mode.SEARCH);
+        Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), null, true, false, Mode.SEARCH);
+        return new TokenStreamComponents(tokenizer, tokenizer);
+      }
+    };
+    analyzerNoOriginal = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), null, true, true, Mode.SEARCH);
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
@@ -48,6 +57,7 @@ public class TestSearchMode extends BaseTokenStreamTestCase {
   @Override
   public void tearDown() throws Exception {
     analyzer.close();
+    analyzerNoOriginal.close();
     super.tearDown();
   }
 
@@ -85,6 +95,53 @@ public class TestSearchMode extends BaseTokenStreamTestCase {
           }
         }
         assertAnalyzesTo(analyzer, sourceText, expectedTokens, expectedPosIncrs);
+      }
+    } finally {
+      is.close();
+    }
+  }
+
+  public void testSearchSegmentationNoOriginal() throws IOException {
+    InputStream is = TestSearchMode.class.getResourceAsStream(SEGMENTATION_FILENAME);
+    if (is == null) {
+      throw new FileNotFoundException("Cannot find " + SEGMENTATION_FILENAME + " in test classpath");
+    }
+    try {
+      LineNumberReader reader = new LineNumberReader(new InputStreamReader(is, StandardCharsets.UTF_8));
+      String line = null;
+      while ((line = reader.readLine()) != null) {
+        // Remove comments
+        line = line.replaceAll("#.*$", "");
+        // Skip empty lines or comment lines
+        if (line.trim().isEmpty()) {
+          continue;
+        }
+        if (VERBOSE) {
+          System.out.println("Line no. " + reader.getLineNumber() + ": " + line);
+        }
+        String[] fields = line.split("\t", 2);
+        String sourceText = fields[0];
+        String[] tmpExpectedTokens = fields[1].split("\\s+");
+        if (sourceText.equals("京都大学硬式野球部")) {
+          // This is the only case that tokenization result is different from discardCompoundToken=false
+          tmpExpectedTokens[0] = "京都";
+          tmpExpectedTokens[1] = "大学";
+        }
+
+        List<String> expectedTokenList = new ArrayList<>();
+        for(int tokIDX=0;tokIDX<tmpExpectedTokens.length;tokIDX++) {
+          if (!tmpExpectedTokens[tokIDX].endsWith("/0")) {
+            expectedTokenList.add(tmpExpectedTokens[tokIDX]);
+          }
+        }
+
+        int[] expectedPosIncrs = new int[expectedTokenList.size()];
+        int[] expectedPosLengths = new int[expectedTokenList.size()];
+        for(int tokIDX=0;tokIDX<expectedTokenList.size();tokIDX++) {
+          expectedPosIncrs[tokIDX] = 1;
+          expectedPosLengths[tokIDX] = 1;
+        }
+        assertAnalyzesTo(analyzerNoOriginal, sourceText, expectedTokenList.toArray(new String[expectedTokenList.size()]), expectedPosIncrs);
       }
     } finally {
       is.close();

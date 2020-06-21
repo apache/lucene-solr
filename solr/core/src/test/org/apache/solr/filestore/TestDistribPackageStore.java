@@ -17,9 +17,10 @@
 
 package org.apache.solr.filestore;
 
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -52,6 +53,7 @@ import org.junit.Before;
 
 import static org.apache.solr.common.util.Utils.JAVABINCONSUMER;
 import static org.apache.solr.core.TestDynamicLoading.getFileContent;
+import static org.hamcrest.CoreMatchers.containsString;
 
 @LogLevel("org.apache.solr.filestore.PackageStoreAPI=DEBUG;org.apache.solr.filestore.DistribPackageStore=DEBUG")
 public class TestDistribPackageStore extends SolrCloudTestCase {
@@ -66,6 +68,7 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
     System.clearProperty("enable.packages");
   }
   
+  @SuppressWarnings({"unchecked"})
   public void testPackageStoreManagement() throws Exception {
     MiniSolrCloudCluster cluster =
         configureCluster(4)
@@ -86,7 +89,7 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
         );
         fail("should have failed because of wrong signature ");
       } catch (RemoteExecutionException e) {
-        assertTrue(e.getMessage().contains("Signature does not match"));
+        assertThat(e.getMessage(), containsString("Signature does not match"));
       }
 
       postFile(cluster.getSolrClient(), getFileContent("runtimecode/runtimelibs.jar.bin"),
@@ -117,6 +120,7 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
           )
       );
 
+      @SuppressWarnings({"rawtypes"})
       Map expected = Utils.makeMap(
           ":files:/package/mypkg/v1.0/runtimelibs.jar:name", "runtimelibs.jar",
           ":files:/package/mypkg/v1.0[0]:sha512", "d01b51de67ae1680a84a813983b1de3b592fc32f1a22b662fc9057da5953abd1b72476388ba342cad21671cd0b805503c78ab9075ff2f3951fdf75fa16981420"
@@ -140,8 +144,10 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
 
       expected = Utils.makeMap(
           ":files:/package/mypkg/v1.0", (Predicate<Object>) o -> {
+            @SuppressWarnings({"rawtypes"})
             List l = (List) o;
             assertEquals(2, l.size());
+            @SuppressWarnings({"rawtypes"})
             Set expectedKeys = ImmutableSet.of("runtimelibs_v2.jar", "runtimelibs.jar");
             for (Object file : l) {
               if(! expectedKeys.contains(Utils.getObjectByPath(file, true, "name"))) return false;
@@ -165,6 +171,7 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
     }
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public static void waitForAllNodesHaveFile(MiniSolrCloudCluster cluster, String path, Map expected , boolean verifyContent) throws Exception {
     for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
       String baseUrl = jettySolrRunner.getBaseUrl().toString().replace("/solr", "/api");
@@ -186,6 +193,7 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
     }
   }
 
+  @SuppressWarnings({"rawtypes"})
   static class Fetcher implements Callable {
     String url;
     JettySolrRunner jetty;
@@ -207,13 +215,17 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
 
   }
 
-  public static NavigableObject assertResponseValues(int repeats, SolrClient client, SolrRequest req, Map vals) throws Exception {
+  public static NavigableObject assertResponseValues(int repeats, SolrClient client,
+                                                     @SuppressWarnings({"rawtypes"})SolrRequest req,
+                                                     @SuppressWarnings({"rawtypes"})Map vals) throws Exception {
     Callable<NavigableObject> callable = () -> req.process(client);
 
     return assertResponseValues(repeats, callable,vals);
   }
 
-  public static NavigableObject assertResponseValues(int repeats,  Callable<NavigableObject> callable,Map vals) throws Exception {
+  @SuppressWarnings({"unchecked"})
+  public static NavigableObject assertResponseValues(int repeats,  Callable<NavigableObject> callable,
+                                                     @SuppressWarnings({"rawtypes"})Map vals) throws Exception {
     NavigableObject rsp = null;
 
     for (int i = 0; i < repeats; i++) {
@@ -227,11 +239,13 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
         continue;
       }
       for (Object e : vals.entrySet()) {
+        @SuppressWarnings({"rawtypes"})
         Map.Entry entry = (Map.Entry) e;
         String k = (String) entry.getKey();
         List<String> key = StrUtils.split(k, '/');
 
         Object val = entry.getValue();
+        @SuppressWarnings({"rawtypes"})
         Predicate p = val instanceof Predicate ? (Predicate) val : o -> {
           String v = o == null ? null : String.valueOf(o);
           return Objects.equals(val, o);
@@ -251,7 +265,7 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
   public static void uploadKey(byte[] bytes, String path, MiniSolrCloudCluster cluster) throws Exception {
     JettySolrRunner jetty = cluster.getRandomJetty(random());
     try(HttpSolrClient client = (HttpSolrClient) jetty.newClient()) {
-      PackageUtils.uploadKey(bytes, path, jetty.getCoreContainer().getResourceLoader().getInstancePath(), client);
+      PackageUtils.uploadKey(bytes, path, Paths.get(jetty.getCoreContainer().getSolrHome()), client);
       Object resp = Utils.executeGET(client.getHttpClient(), jetty.getBaseURLV2().toString() + "/node/files" + path + "?sync=true", null);
       System.out.println("sync resp: "+jetty.getBaseURLV2().toString() + "/node/files" + path + "?sync=true"+" ,is: "+resp);
     }
@@ -275,12 +289,15 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
     assertEquals(name, rsp.getResponse().get(CommonParams.FILE));
   }
 
+  /**
+   * Read and return the contents of the file-like resource
+   * @param fname the name of the resource to read
+   * @return the bytes of the resource
+   * @throws IOException if there is an I/O error reading the contents
+   */
   public static byte[] readFile(String fname) throws IOException {
-    byte[] buf = null;
-    try (FileInputStream fis = new FileInputStream(getFile(fname))) {
-      buf = new byte[fis.available()];
-      fis.read(buf);
+    try (InputStream is = TestDistribPackageStore.class.getClassLoader().getResourceAsStream(fname)) {
+      return is.readAllBytes();
     }
-    return buf;
   }
 }

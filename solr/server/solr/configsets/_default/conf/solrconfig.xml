@@ -100,8 +100,8 @@
        wraps solr.StandardDirectoryFactory and caches small files in memory
        for better NRT performance.
 
-       One can force a particular implementation via solr.MMapDirectoryFactory,
-       solr.NIOFSDirectoryFactory, or solr.SimpleFSDirectoryFactory.
+       One can force a particular implementation via solr.MMapDirectoryFactory
+       or solr.NIOFSDirectoryFactory.
 
        solr.RAMDirectoryFactory is memory based and not persistent.
     -->

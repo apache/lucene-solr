@@ -49,9 +49,12 @@ public class CustomHighlightComponentTest extends SolrCloudTestCase {
     }
 
     @Override
-    protected Object convertHighlights(NamedList hl) {
+    @SuppressWarnings({"unchecked"})
+    protected Object convertHighlights(@SuppressWarnings({"rawtypes"})NamedList hl) {
+      @SuppressWarnings({"rawtypes"})
       final ArrayList<SimpleOrderedMap> hlMaps = new ArrayList<>();
       for (int i=0; i<hl.size(); ++i) {
+          @SuppressWarnings({"rawtypes"})
           SimpleOrderedMap hlMap = new SimpleOrderedMap<Object>();
           hlMap.add(id_key, hl.getName(i));
           hlMap.add(snippets_key, hl.getVal(i));
@@ -61,15 +64,18 @@ public class CustomHighlightComponentTest extends SolrCloudTestCase {
     }
 
     @Override
+    @SuppressWarnings({"rawtypes"})
     protected Object[] newHighlightsArray(int size) {
       return new SimpleOrderedMap[size];
     }
 
     @Override
     protected void addHighlights(Object[] objArr, Object obj, Map<Object, ShardDoc> resultIds) {
+      @SuppressWarnings({"rawtypes"})
       SimpleOrderedMap[] mapArr = (SimpleOrderedMap[])objArr;
+      @SuppressWarnings({"unchecked", "rawtypes"})
       final ArrayList<SimpleOrderedMap> hlMaps = (ArrayList<SimpleOrderedMap>)obj;
-      for (SimpleOrderedMap hlMap : hlMaps) {
+      for (@SuppressWarnings({"rawtypes"})SimpleOrderedMap hlMap : hlMaps) {
         String id = (String)hlMap.get(id_key);
         ShardDoc sdoc = resultIds.get(id);
         int idx = sdoc.positionInResponse;
@@ -79,12 +85,14 @@ public class CustomHighlightComponentTest extends SolrCloudTestCase {
 
     @Override
     protected Object getAllHighlights(Object[] objArr) {
+      @SuppressWarnings({"rawtypes"})
       final SimpleOrderedMap[] mapArr = (SimpleOrderedMap[])objArr;
       // remove nulls in case not all docs were able to be retrieved
+      @SuppressWarnings({"rawtypes"})
       ArrayList<SimpleOrderedMap> mapList = new ArrayList<>();
-      for (SimpleOrderedMap map : mapArr) {
+      for (@SuppressWarnings({"rawtypes"})SimpleOrderedMap map : mapArr) {
         if (map != null) {
-          mapList.add((SimpleOrderedMap)map);
+          mapList.add(map);
         }
       }
       return mapList;
@@ -199,6 +207,7 @@ public class CustomHighlightComponentTest extends SolrCloudTestCase {
 
       // analyse the response
       final Map<String, Map<String, List<String>>> highlighting = queryResponse.getHighlighting();
+      @SuppressWarnings({"unchecked"})
       final ArrayList<SimpleOrderedMap<Object>> custom_highlighting =
           (ArrayList<SimpleOrderedMap<Object>>)queryResponse.getResponse().get("custom_highlighting");
 
@@ -289,13 +298,15 @@ public class CustomHighlightComponentTest extends SolrCloudTestCase {
       }
       // snippets element
       {
+        @SuppressWarnings({"unchecked"})
         SimpleOrderedMap<Object> snippets = (SimpleOrderedMap<Object>)highlightingListElementMap.get(snippets_key);
         if (highlightedField == null) {
           assertEquals(0, snippets.size());
         } else {
+          @SuppressWarnings({"unchecked"})
           ArrayList<String> docHighlights = (ArrayList<String>)(snippets).get(highlightedField);
           assertEquals(1, docHighlights.size());
-          actualHighlightText = (String)docHighlights.get(0);
+          actualHighlightText = docHighlights.get(0);
           assertEquals(expectedHighlightText, actualHighlightText);
         }
       }

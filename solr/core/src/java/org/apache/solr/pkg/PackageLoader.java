@@ -20,20 +20,11 @@ package org.apache.solr.pkg;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.net.MalformedURLException;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.nio.file.Paths;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
@@ -73,6 +64,7 @@ public class PackageLoader implements Closeable {
     return packageClassLoaders.get(key);
   }
 
+  @SuppressWarnings({"unchecked"})
   public Map<String, Package> getPackages() {
     return Collections.EMPTY_MAP;
   }
@@ -113,11 +105,15 @@ public class PackageLoader implements Closeable {
       List<PackageAPI.PkgVersion> versions = old.packages.get(e.getKey());
       if (versions != null) {
         if (!Objects.equals(e.getValue(), versions)) {
-          log.info("Package {} is modified ", e.getKey());
+          if (log.isInfoEnabled()) {
+            log.info("Package {} is modified ", e.getKey());
+          }
           changed.put(e.getKey(), e.getValue());
         }
       } else {
-        log.info("A new package: {} introduced", e.getKey());
+        if (log.isInfoEnabled()) {
+          log.info("A new package: {} introduced", e.getKey());
+        }
         changed.put(e.getKey(), e.getValue());
       }
     }
@@ -172,7 +168,7 @@ public class PackageLoader implements Closeable {
           try {
             ver = new Version(this, v);
           } catch (Exception e) {
-            log.error("package could not be loaded "+ ver.toString(), e);
+            log.error("package could not be loaded {}", ver, e);
             continue;
           }
           myVersions.put(v.version, ver);
@@ -218,7 +214,7 @@ public class PackageLoader implements Closeable {
       if (lessThan == null) {
         return getLatest();
       }
-      String latest = findBiggest(lessThan, new ArrayList(sortedVersions));
+      String latest = findBiggest(lessThan, new ArrayList<>(sortedVersions));
       return latest == null ? null : myVersions.get(latest);
     }
 
@@ -265,21 +261,18 @@ public class PackageLoader implements Closeable {
           paths.add(coreContainer.getPackageStoreAPI().getPackageStore().getRealpath(file));
         }
 
-        try {
-          loader = new SolrResourceLoader(
-              "PACKAGE_LOADER: " + parent.name() + ":" + version,
-              paths,
-              coreContainer.getResourceLoader().getInstancePath(),
-              coreContainer.getResourceLoader().getClassLoader());
-        } catch (MalformedURLException e) {
-          log.error("Could not load classloader ", e);
-        }
+        loader = new PackageResourceLoader(
+            "PACKAGE_LOADER: " + parent.name() + ":" + version,
+            paths,
+            Paths.get(coreContainer.getSolrHome()),
+            coreContainer.getResourceLoader().getClassLoader());
       }
 
       public String getVersion() {
         return version.version;
       }
 
+      @SuppressWarnings({"rawtypes"})
       public Collection getFiles() {
         return Collections.unmodifiableList(version.files);
       }
@@ -299,6 +292,34 @@ public class PackageLoader implements Closeable {
       public String toString() {
         return jsonStr();
       }
+    }
+  }
+  static class PackageResourceLoader extends SolrResourceLoader {
+
+    PackageResourceLoader(String name, List<Path> classpath, Path instanceDir, ClassLoader parent) {
+      super(name, classpath, instanceDir, parent);
+    }
+
+    @Override
+    public <T> boolean addToCoreAware(T obj) {
+      //do not do anything
+      //this class is not aware of a SolrCore and it is totally not tied to
+      // the lifecycle of SolrCore. So, this returns 'false' & it should be
+      // taken care of by the caller
+      return false;
+    }
+
+    @Override
+    public <T> boolean addToResourceLoaderAware(T obj) {
+      // do not do anything
+      // this should be invoked only after the init() is invoked.
+      // The caller should take care of that
+      return false;
+    }
+
+    @Override
+    public  <T> void addToInfoBeans(T obj) {
+      //do not do anything. It should be handled externally
     }
   }
 

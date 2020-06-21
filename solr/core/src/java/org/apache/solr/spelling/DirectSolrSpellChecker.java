@@ -96,11 +96,12 @@ public class DirectSolrSpellChecker extends SolrSpellChecker {
   private DirectSpellChecker checker = new DirectSpellChecker();
   
   @Override
-  public String init(NamedList config, SolrCore core) {
+  @SuppressWarnings({"unchecked"})
+  public String init(@SuppressWarnings({"rawtypes"})NamedList config, SolrCore core) {
 
     SolrParams params = config.toSolrParams();
 
-    log.info("init: " + config);
+    log.info("init: {}", config);
     String name = super.init(config, core);
     
     Comparator<SuggestWord> comp = SuggestWordQueue.DEFAULT_COMPARATOR;
@@ -183,7 +184,7 @@ public class DirectSolrSpellChecker extends SolrSpellChecker {
   @Override
   public SpellingResult getSuggestions(SpellingOptions options)
       throws IOException {
-    log.debug("getSuggestions: " + options.tokens);
+    log.debug("getSuggestions: {}", options.tokens);
         
     SpellingResult result = new SpellingResult();
     float accuracy = (options.accuracy == Float.MIN_VALUE) ? checker.getAccuracy() : options.accuracy;

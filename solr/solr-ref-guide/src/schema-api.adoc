@@ -1,5 +1,4 @@
 = Schema API
-:page-tocclass: right
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -538,7 +537,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 
 [example.tab-pane#v2delete-copyfield]
 ====
-[tab-label]*V1 API*
+[tab-label]*V2 API*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{

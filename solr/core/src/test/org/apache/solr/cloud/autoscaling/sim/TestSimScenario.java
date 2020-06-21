@@ -64,6 +64,7 @@ public class TestSimScenario extends SimSolrCloudTestCase {
 
   String testSuggestionsScenario =
       "create_cluster numNodes=2\n" +
+      "load_autoscaling json={'cluster-policy':[]}\n" +
       "solr_request /admin/collections?action=CREATE&autoAddReplicas=true&name=testCollection&numShards=2&replicationFactor=2&maxShardsPerNode=2\n" +
       "wait_collection collection=testCollection&shards=2&replicas=2\n" +
       "ctx_set key=myNode&value=${_random_node_}\n" +
@@ -92,15 +93,19 @@ public class TestSimScenario extends SimSolrCloudTestCase {
       scenario.context.put("iterative", "0");
       scenario.context.put("justCalc", "1");
       scenario.run();
+      @SuppressWarnings({"unchecked"})
       List<Suggester.SuggestionInfo> suggestions = (List<Suggester.SuggestionInfo>)scenario.context.get(SimScenario.SUGGESTIONS_CTX_PROP);
       assertNotNull(suggestions);
       assertEquals(suggestions.toString(), 1, suggestions.size());
       // reconstruct the snapshot from the dump
+      @SuppressWarnings({"unchecked"})
       Map<String, Object> snapshot = (Map<String, Object>)Utils.fromJSON(baos.toByteArray());
+      @SuppressWarnings({"unchecked"})
       Map<String, Object> autoscalingState = (Map<String, Object>)snapshot.get(SnapshotCloudManager.AUTOSCALING_STATE_KEY);
       assertNotNull(autoscalingState);
       assertEquals(autoscalingState.toString(), 1, autoscalingState.size());
       assertTrue(autoscalingState.toString(), autoscalingState.containsKey("suggestions"));
+      @SuppressWarnings({"unchecked"})
       List<Map<String, Object>> snapSuggestions = (List<Map<String, Object>>)autoscalingState.get("suggestions");
       assertEquals(snapSuggestions.toString(), 1, snapSuggestions.size());
       // _loop_iter_ should be present and 0 (first iteration)
@@ -118,6 +123,7 @@ public class TestSimScenario extends SimSolrCloudTestCase {
 
   String indexingScenario =
       "create_cluster numNodes=100\n" +
+      "load_autoscaling json={'cluster-policy':[]}\n" +
       "solr_request /admin/collections?action=CREATE&autoAddReplicas=true&name=testCollection&numShards=2&replicationFactor=2&maxShardsPerNode=2\n" +
       "wait_collection collection=testCollection&shards=2&replicas=2\n" +
       "solr_request /admin/autoscaling?httpMethod=POST&stream.body=" +
@@ -141,6 +147,7 @@ public class TestSimScenario extends SimSolrCloudTestCase {
 
   String splitShardScenario =
       "create_cluster numNodes=2\n" +
+          "load_autoscaling json={'cluster-policy':[]}\n" +
           "solr_request /admin/collections?action=CREATE&name=testCollection&numShards=2&replicationFactor=2&maxShardsPerNode=5\n" +
           "wait_collection collection=testCollection&shards=2&replicas=2\n" +
           "set_shard_metrics collection=testCollection&shard=shard1&INDEX.sizeInBytes=1000000000\n" +

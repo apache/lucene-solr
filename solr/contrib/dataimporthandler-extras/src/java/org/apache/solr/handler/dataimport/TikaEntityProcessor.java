@@ -82,22 +82,26 @@ public class TikaEntityProcessor extends EntityProcessorBase {
   @Override
   protected void firstInit(Context context) {
     super.firstInit(context);
+    // See similar code in ExtractingRequestHandler.inform
     try {
-      String tikaConfigFile = context.getResolvedEntityAttribute("tikaConfig");
-      if (tikaConfigFile == null) {
+      String tikaConfigLoc = context.getResolvedEntityAttribute("tikaConfig");
+      if (tikaConfigLoc == null) {
         ClassLoader classLoader = context.getSolrCore().getResourceLoader().getClassLoader();
         try (InputStream is = classLoader.getResourceAsStream("solr-default-tika-config.xml")) {
           tikaConfig = new TikaConfig(is);
         }
       } else {
-        File configFile = new File(tikaConfigFile);
-        if (!configFile.isAbsolute()) {
-          configFile = new File(context.getSolrCore().getResourceLoader().getConfigDir(), tikaConfigFile);
+        File configFile = new File(tikaConfigLoc);
+        if (configFile.isAbsolute()) {
+          tikaConfig = new TikaConfig(configFile);
+        } else { // in conf/
+          try (InputStream is = context.getSolrCore().getResourceLoader().openResource(tikaConfigLoc)) {
+            tikaConfig = new TikaConfig(is);
+          }
         }
-        tikaConfig = new TikaConfig(configFile);
       }
     } catch (Exception e) {
-      wrapAndThrow (SEVERE, e,"Unable to load Tika Config");
+      wrapAndThrow(SEVERE, e,"Unable to load Tika Config");
     }
 
     String extractEmbeddedString = context.getResolvedEntityAttribute("extractEmbedded");
@@ -128,6 +132,7 @@ public class TikaEntityProcessor extends EntityProcessorBase {
   public Map<String, Object> nextRow() {
     if(done) return null;
     Map<String, Object> row = new HashMap<>();
+    @SuppressWarnings({"unchecked"})
     DataSource<InputStream> dataSource = context.getDataSource();
     InputStream is = dataSource.getData(context.getResolvedEntityAttribute(URL));
     ContentHandler contentHandler = null;

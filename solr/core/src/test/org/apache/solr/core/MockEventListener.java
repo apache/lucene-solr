@@ -34,7 +34,7 @@ public class MockEventListener implements SolrEventListener {
   }
 
   @Override
-  public void init(NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     /* NOOP */
   }
 

@@ -77,7 +77,7 @@ enum CoreAdminOperation implements CoreAdminOp {
     String coreName = params.required().get(CoreAdminParams.NAME);
     Map<String, String> coreParams = buildCoreParams(params);
     CoreContainer coreContainer = it.handler.coreContainer;
-    Path instancePath = coreContainer.getCoreRootDirectory().resolve(coreName);
+    Path instancePath;
 
     // TODO: Should we nuke setting odd instance paths?  They break core discovery, generally
     String instanceDir = it.req.getParams().get(CoreAdminParams.INSTANCE_DIR);
@@ -86,6 +86,8 @@ enum CoreAdminOperation implements CoreAdminOp {
     if (instanceDir != null) {
       instanceDir = PropertiesUtil.substituteProperty(instanceDir, coreContainer.getContainerProperties());
       instancePath = coreContainer.getCoreRootDirectory().resolve(instanceDir).normalize();
+    } else {
+      instancePath = coreContainer.getCoreRootDirectory().resolve(coreName);
     }
 
     boolean newCollection = params.getBool(CoreAdminParams.NEW_COLLECTION, false);
@@ -243,6 +245,7 @@ enum CoreAdminOperation implements CoreAdminOp {
   RESTORECORE_OP(RESTORECORE, new RestoreCoreOp()),
   CREATESNAPSHOT_OP(CREATESNAPSHOT, new CreateSnapshotOp()),
   DELETESNAPSHOT_OP(DELETESNAPSHOT, new DeleteSnapshotOp()),
+  @SuppressWarnings({"unchecked"})
   LISTSNAPSHOTS_OP(LISTSNAPSHOTS, it -> {
     final SolrParams params = it.req.getParams();
     String cname = params.required().get(CoreAdminParams.CORE);
@@ -255,6 +258,7 @@ enum CoreAdminOperation implements CoreAdminOp {
       }
 
       SolrSnapshotMetaDataManager mgr = core.getSnapshotMetaDataManager();
+      @SuppressWarnings({"rawtypes"})
       NamedList result = new NamedList();
       for (String name : mgr.listSnapshots()) {
         Optional<SnapshotMetaData> metadata = mgr.getSnapshotMetaData(name);
@@ -294,6 +298,7 @@ enum CoreAdminOperation implements CoreAdminOp {
    * @return - a named list of key/value pairs from the core.
    * @throws IOException - LukeRequestHandler can throw an I/O exception
    */
+  @SuppressWarnings({"unchecked", "rawtypes"})
   static NamedList<Object> getCoreStatus(CoreContainer cores, String cname, boolean isIndexInfoNeeded) throws IOException {
     NamedList<Object> info = new SimpleOrderedMap<>();
 
@@ -321,7 +326,7 @@ enum CoreAdminOperation implements CoreAdminOp {
         try (SolrCore core = cores.getCore(cname)) {
           if (core != null) {
             info.add(NAME, core.getName());
-            info.add("instanceDir", core.getResourceLoader().getInstancePath().toString());
+            info.add("instanceDir", core.getInstancePath().toString());
             info.add("dataDir", normalizePath(core.getDataDir()));
             info.add("config", core.getConfigResource());
             info.add("schema", core.getSchemaResource());

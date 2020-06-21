@@ -1,0 +1,16 @@
+o.df1.s.mean=mean(long.dotfield)
+o.df1.ff=long.dotfield
+o.df1.ff.long.dotfield.ss=mean
+o.df1.ff.long.dotfield.sd=asc
+
+o.df2.s.count=count(long.dotfield)
+o.df2.rf=long.dotfield
+o.df2.rf.long.dotfield.st=5
+o.df2.rf.long.dotfield.end=30
+o.df2.rf.long.dotfield.hardend=True
+o.df2.rf.long.dotfield.g=5
+o.df2.rf.long.dotfield.ib=lower
+o.df2.rf.long.dotfield.or=all
+
+
+

@@ -61,6 +61,7 @@ public class SystemLogListenerTest extends SolrCloudTestCase {
   private static final AtomicBoolean fired = new AtomicBoolean(false);
   private static final int NODE_COUNT = 3;
   private static CountDownLatch triggerFiredLatch = new CountDownLatch(1);
+  @SuppressWarnings({"rawtypes"})
   private static final AtomicReference<Map> actionContextPropsRef = new AtomicReference<>();
   private static final AtomicReference<TriggerEvent> eventRef = new AtomicReference<>();
 
@@ -111,6 +112,7 @@ public class SystemLogListenerTest extends SolrCloudTestCase {
         "{'name':'test','class':'" + AssertingTriggerAction.class.getName() + "'}," +
         "{'name':'error','class':'" + ErrorTriggerAction.class.getName() + "'}]" +
         "}}";
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
@@ -150,12 +152,15 @@ public class SystemLogListenerTest extends SolrCloudTestCase {
 
     // Stop a node (that's safe to stop for the purposes of this test)
     final JettySolrRunner stoppedJetty = pickNodeToStop();
-    log.info("Stopping node " + stoppedJetty.getNodeName());
+    if (log.isInfoEnabled()) {
+      log.info("Stopping node {}", stoppedJetty.getNodeName());
+    }
     cluster.stopJettySolrRunner(stoppedJetty);
     cluster.waitForJettyToStop(stoppedJetty);
     
     assertTrue("Trigger was not fired ", triggerFiredLatch.await(60, TimeUnit.SECONDS));
     assertTrue(fired.get());
+    @SuppressWarnings({"rawtypes"})
     Map context = actionContextPropsRef.get();
     assertNotNull(context);
     

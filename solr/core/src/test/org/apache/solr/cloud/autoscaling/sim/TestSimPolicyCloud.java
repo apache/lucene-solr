@@ -63,6 +63,9 @@ public class TestSimPolicyCloud extends SimSolrCloudTestCase {
   @Before
   public void setupCluster() throws Exception {
     configureCluster(5, TimeSource.get("simTime:50"));
+    // reset autoscaling policy to empty
+    String commands =  "{set-cluster-policy : []}";
+    cluster.simGetSolrClient().request(AutoScalingRequest.create(SolrRequest.METHOD.POST, commands));
   }
   
   @After
@@ -95,6 +98,7 @@ public class TestSimPolicyCloud extends SimSolrCloudTestCase {
         "    ]" +
         "  }" +
         "}";
+    @SuppressWarnings({"unchecked"})
     AutoScalingConfig config = new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScaleJson));
     Policy.Session session = config.getPolicy().createSession(cluster);
 
@@ -198,6 +202,7 @@ public class TestSimPolicyCloud extends SimSolrCloudTestCase {
         "      {'metrics:abc':'overseer', 'replica':0}" +
         "    ]" +
         "}";
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     try {
       solrClient.request(req);

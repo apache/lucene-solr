@@ -17,8 +17,6 @@
 package org.apache.solr.client.solrj.embedded;
 
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
@@ -29,18 +27,16 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.NodeConfig;
-import org.apache.solr.core.SolrResourceLoader;
 import org.junit.Test;
 
 public class TestEmbeddedSolrServerAdminHandler extends SolrTestCaseJ4 {
 
     @Test
+    @SuppressWarnings({"rawtypes"})
     public void testPathIsAddedToContext() throws IOException, SolrServerException {
-        final Path path = createTempDir();
 
-        final SolrResourceLoader loader = new SolrResourceLoader(path);
-        final NodeConfig config = new NodeConfig.NodeConfigBuilder("testnode", loader)
-                .setConfigSetBaseDirectory(Paths.get(TEST_HOME()).resolve("configsets").toString())
+        final NodeConfig config = new NodeConfig.NodeConfigBuilder("testnode", TEST_PATH())
+                .setConfigSetBaseDirectory(TEST_PATH().resolve("configsets").toString())
                 .build();
 
         try (final EmbeddedSolrServer server = new EmbeddedSolrServer(config, "collection1")) {

@@ -195,18 +195,19 @@ public class ChaosMonkeySafeLeaderWithPullReplicasTest extends AbstractFullDistr
 
     Thread.sleep(2000);
 
-    waitForThingsToLevelOut(180000);
+    waitForThingsToLevelOut(3, TimeUnit.MINUTES);
     
     // even if things were leveled out, a jetty may have just been stopped or something
     // we wait again and wait to level out again to make sure the system is not still in flux
     
     Thread.sleep(3000);
 
-    waitForThingsToLevelOut(180000);
-    
-    log.info("control docs:" + controlClient.query(new SolrQuery("*:*")).getResults().getNumFound() + "\n\n");
-    
-    log.info("collection state: " + printClusterStateInfo(DEFAULT_COLLECTION));
+    waitForThingsToLevelOut(3, TimeUnit.MINUTES);
+
+    if (log.isInfoEnabled()) {
+      log.info("control docs:{}\n\n", controlClient.query(new SolrQuery("*:*")).getResults().getNumFound());
+      log.info("collection state: {}", printClusterStateInfo(DEFAULT_COLLECTION)); // logOk
+    }
     
     waitForReplicationFromReplicas(DEFAULT_COLLECTION, cloudClient.getZkStateReader(), new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME));
 //    waitForAllWarmingSearchers();

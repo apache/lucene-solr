@@ -37,7 +37,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.update.CdcrUpdateLog;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,7 +88,7 @@ class CdcrUpdateLogSynchronizer implements CdcrStateManager.CdcrStateObserver {
   public void stateUpdate() {
     // If I am not the leader, I need to synchronise periodically my update log with my leader.
     if (!leaderStateManager.amILeader()) {
-      scheduler = Executors.newSingleThreadScheduledExecutor(new DefaultSolrThreadFactory("cdcr-update-log-synchronizer"));
+      scheduler = Executors.newSingleThreadScheduledExecutor(new SolrNamedThreadFactory("cdcr-update-log-synchronizer"));
       scheduler.scheduleWithFixedDelay(new UpdateLogSynchronisation(), 0, timeSchedule, TimeUnit.MILLISECONDS);
       return;
     }
@@ -139,15 +139,19 @@ class CdcrUpdateLogSynchronizer implements CdcrStateManager.CdcrStateObserver {
         ModifiableSolrParams params = new ModifiableSolrParams();
         params.set(CommonParams.ACTION, CdcrParams.CdcrAction.LASTPROCESSEDVERSION.toString());
 
+        @SuppressWarnings({"rawtypes"})
         SolrRequest request = new QueryRequest(params);
         request.setPath(path);
 
         long lastVersion;
         try {
+          @SuppressWarnings({"rawtypes"})
           NamedList response = server.request(request);
           lastVersion = (Long) response.get(CdcrParams.LAST_PROCESSED_VERSION);
-          log.debug("My leader {} says its last processed _version_ number is: {}. I am {}", leaderUrl, lastVersion,
-              core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName());
+          if (log.isDebugEnabled()) {
+            log.debug("My leader {} says its last processed _version_ number is: {}. I am {}", leaderUrl, lastVersion,
+                core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName());
+          }
         } catch (IOException | SolrServerException e) {
           log.warn("Couldn't get last processed version from leader {}: {}", leaderUrl, e.getMessage());
           return;

@@ -34,7 +34,7 @@ import org.apache.lucene.util.Bits;
  rely on a given document having the same number between sessions.
 
  <p>
- <a name="thread-safety"></a><p><b>NOTE</b>: {@link
+ <a id="thread-safety"></a><p><b>NOTE</b>: {@link
  IndexReader} instances are completely thread
  safe, meaning multiple threads can call any of its methods,
  concurrently.  If your application requires external

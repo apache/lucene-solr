@@ -31,9 +31,8 @@ import org.apache.lucene.search.IndexSearcher;
 /**
  * A {@link DoubleValuesSource} which evaluates a {@link Expression} given the context of an {@link Bindings}.
  */
-@SuppressWarnings({"rawtypes", "unchecked"})
 final class ExpressionValueSource extends DoubleValuesSource {
-  final DoubleValuesSource variables[];
+  final DoubleValuesSource[] variables;
   final Expression expression;
   final boolean needsScores;
 
@@ -175,7 +174,7 @@ final class ExpressionValueSource extends DoubleValuesSource {
     DoubleValuesSource[] rewritten = new DoubleValuesSource[variables.length];
     for (int i = 0; i < variables.length; i++) {
       rewritten[i] = variables[i].rewrite(searcher);
-      changed |= (rewritten[i] == variables[i]);
+      changed |= (rewritten[i] != variables[i]);
     }
     if (changed) {
       return new ExpressionValueSource(rewritten, expression, needsScores);

@@ -121,10 +121,11 @@ public class TestSnapshotCloudManager extends SolrCloudTestCase {
   public void testRedaction() throws Exception {
     Path tmpPath = createTempDir();
     File tmpDir = tmpPath.toFile();
-    SnapshotCloudManager snapshotCloudManager = new SnapshotCloudManager(realManager, null);
     Set<String> redacted = new HashSet<>(realManager.getClusterStateProvider().getLiveNodes());
-    redacted.addAll(realManager.getClusterStateProvider().getClusterState().getCollectionStates().keySet());
-    snapshotCloudManager.saveSnapshot(tmpDir, true, true);
+    try (SnapshotCloudManager snapshotCloudManager = new SnapshotCloudManager(realManager, null)) {
+      redacted.addAll(realManager.getClusterStateProvider().getClusterState().getCollectionStates().keySet());
+      snapshotCloudManager.saveSnapshot(tmpDir, true, true);
+    }
     for (String key : SnapshotCloudManager.REQUIRED_KEYS) {
       File src = new File(tmpDir, key + ".json");
       assertTrue(src.toString() + " doesn't exist", src.exists());
@@ -185,6 +186,7 @@ public class TestSnapshotCloudManager extends SolrCloudTestCase {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   private static void assertNodeStateProvider(SolrCloudManager oneMgr, SolrCloudManager twoMgr, String... ignorableNodeValues) throws Exception {
     NodeStateProvider one = oneMgr.getNodeStateProvider();
     NodeStateProvider two = twoMgr.getNodeStateProvider();
@@ -228,8 +230,8 @@ public class TestSnapshotCloudManager extends SolrCloudTestCase {
       Pattern.compile("/autoscaling/triggerState/.*"),
       // some triggers may have run after the snapshot was taken
       Pattern.compile("/autoscaling/events/.*"),
-      // we always use format 1 in SimClusterStateProvider
       Pattern.compile("/clusterstate\\.json"),
+      Pattern.compile("/collections/[^/]+?/state.json"),
       // depending on the startup sequence leaders may differ
       Pattern.compile("/collections/[^/]+?/leader_elect/.*"),
       Pattern.compile("/collections/[^/]+?/leaders/.*"),
@@ -254,6 +256,14 @@ public class TestSnapshotCloudManager extends SolrCloudTestCase {
         .filter(STATE_FILTER_FUN).collect(Collectors.toList()));
     Collections.sort(treeOne);
     Collections.sort(treeTwo);
+    if (!treeOne.equals(treeTwo)) {
+      List<String> t1 = new ArrayList<>(treeOne);
+      t1.removeAll(treeTwo);
+      log.warn("Only in tree one: {}", t1);
+      List<String> t2 = new ArrayList<>(treeTwo);
+      t2.removeAll(treeOne);
+      log.warn("Only in tree two: {}", t2);
+    }
     assertEquals(treeOne, treeTwo);
     for (String path : treeOne) {
       VersionedData vd1 = one.getData(path);

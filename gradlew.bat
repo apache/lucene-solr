@@ -77,12 +77,21 @@ if "x%~1" == "x" goto execute
 set CMD_LINE_ARGS=%*
 
 :execute
-@rem Setup the command line
 
-set CLASSPATH=%APP_HOME%\gradle\wrapper\gradle-wrapper.jar
+@rem LUCENE-9266: verify and download the gradle wrapper jar if we don't have one.
+set GRADLE_WRAPPER_JAR=%APP_HOME%\gradle\wrapper\gradle-wrapper.jar
+"%JAVA_EXE%" --source 11 "%APP_HOME%/buildSrc/src/main/java/org/apache/lucene/gradle/WrapperDownloader.java" "%GRADLE_WRAPPER_JAR%"
+IF %ERRORLEVEL% NEQ 0 goto fail
+
+@rem Setup the command line
+set CLASSPATH=%GRADLE_WRAPPER_JAR%
+
+@rem Don't fork a daemon mode on initial run that generates local defaults.
+SET GRADLE_DAEMON_CTRL=
+IF NOT EXIST %DIRNAME%\gradle.properties SET GRADLE_DAEMON_CTRL=--no-daemon
 
 @rem Execute Gradle
-"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %GRADLE_OPTS% "-Dorg.gradle.appname=%APP_BASE_NAME%" -classpath "%CLASSPATH%" org.gradle.wrapper.GradleWrapperMain %CMD_LINE_ARGS%
+"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %GRADLE_OPTS% "-Dorg.gradle.appname=%APP_BASE_NAME%" -classpath "%CLASSPATH%" org.gradle.wrapper.GradleWrapperMain %GRADLE_DAEMON_CTRL% %CMD_LINE_ARGS%
 
 :end
 @rem End local scope for the variables with windows NT shell

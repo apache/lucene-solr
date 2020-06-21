@@ -38,6 +38,7 @@ public class SSLCredentialProviderFactory {
   public static final String DEFAULT_PROVIDER_CHAIN = "env;sysprop";
   public static final String PROVIDER_CHAIN_KEY = "solr.ssl.credential.provider.chain";
 
+  @SuppressWarnings({"rawtypes"})
   private final static ImmutableMap<String, Class> defaultProviders = ImmutableMap.of(
       "env", EnvSSLCredentialProvider.class,
       "sysprop", SysPropSSLCredentialProvider.class,
@@ -56,7 +57,9 @@ public class SSLCredentialProviderFactory {
 
   public List<SSLCredentialProvider> getProviders() {
     ArrayList<SSLCredentialProvider> providers = new ArrayList<>();
-    log.debug(String.format(Locale.ROOT, "Processing SSL Credential Provider chain: %s", providerChain));
+    if (log.isDebugEnabled()) {
+      log.debug(String.format(Locale.ROOT, "Processing SSL Credential Provider chain: %s", providerChain));
+    }
     String classPrefix = "class://";
     for (String provider : providerChain.split(";")) {
       if (defaultProviders.containsKey(provider)) {
@@ -80,7 +83,8 @@ public class SSLCredentialProviderFactory {
     }
   }
 
-  private SSLCredentialProvider getDefaultProvider(Class aClass) {
+  @SuppressWarnings({"unchecked"})
+  private SSLCredentialProvider getDefaultProvider(@SuppressWarnings({"rawtypes"})Class aClass) {
     try {
       return (SSLCredentialProvider) aClass.getConstructor().newInstance();
     } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {

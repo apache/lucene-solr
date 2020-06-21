@@ -37,6 +37,7 @@ public class MockingHttp2SolrClient extends Http2SolrClient {
 
   private volatile Exp exp = null;
   private boolean oneExpPerReq;
+  @SuppressWarnings({"rawtypes"})
   private Set<SolrRequest> reqGotException;
 
   public MockingHttp2SolrClient(String baseSolrUrl, Builder builder) {
@@ -85,7 +86,8 @@ public class MockingHttp2SolrClient extends Http2SolrClient {
   }
 
   @Override
-  public NamedList<Object> request(SolrRequest request, String collection)
+  public NamedList<Object> request(@SuppressWarnings({"rawtypes"})SolrRequest request,
+                                   String collection)
       throws SolrServerException, IOException {
     if (request instanceof UpdateRequest) {
       UpdateRequest ur = (UpdateRequest) request;
@@ -118,7 +120,8 @@ public class MockingHttp2SolrClient extends Http2SolrClient {
     return super.request(request, collection);
   }
 
-  public NamedList<Object> request(SolrRequest request, String collection, OnComplete onComplete)
+  public NamedList<Object> request(@SuppressWarnings({"rawtypes"})SolrRequest request,
+                                   String collection, OnComplete onComplete)
       throws SolrServerException, IOException {
     if (request instanceof UpdateRequest) {
       UpdateRequest ur = (UpdateRequest) request;

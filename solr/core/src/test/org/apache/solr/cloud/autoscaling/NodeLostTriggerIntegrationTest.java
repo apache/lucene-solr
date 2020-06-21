@@ -93,7 +93,9 @@ public class NodeLostTriggerIntegrationTest extends SolrCloudTestCase {
 
     // clear any persisted auto scaling configuration
     Stat stat = zkClient().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(new ZkNodeProps()), true);
-    log.info(SOLR_AUTOSCALING_CONF_PATH + " reset, new znode version {}", stat.getVersion());
+    if (log.isInfoEnabled()) {
+      log.info("{} reset, new znode version {}", SOLR_AUTOSCALING_CONF_PATH, stat.getVersion());
+    }
 
     cluster.getSolrClient().setDefaultCollection(null);
 
@@ -127,6 +129,7 @@ public class NodeLostTriggerIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testNodeLostTriggerRestoreState() throws Exception {
 
     final String triggerName = "node_lost_restore_trigger";
@@ -274,6 +277,7 @@ public class NodeLostTriggerIntegrationTest extends SolrCloudTestCase {
     assertTrue(triggerFired.get());
     NodeLostTrigger.NodeLostEvent nodeLostEvent = (NodeLostTrigger.NodeLostEvent) events.iterator().next();
     assertNotNull(nodeLostEvent);
+    @SuppressWarnings({"unchecked"})
     List<String> nodeNames = (List<String>) nodeLostEvent.getProperty(TriggerEvent.NODE_NAMES);
     assertTrue(nodeNames.contains(lostNodeName));
 

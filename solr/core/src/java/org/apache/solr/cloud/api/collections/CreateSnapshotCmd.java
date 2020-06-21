@@ -65,7 +65,8 @@ public class CreateSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
+  @SuppressWarnings({"unchecked"})
+  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     String extCollectionName =  message.getStr(COLLECTION_PROP);
     boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
 
@@ -92,6 +93,7 @@ public class CreateSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
     SolrSnapshotManager.createCollectionLevelSnapshot(zkClient, collectionName, new CollectionSnapshotMetaData(commitName));
     log.info("Created a ZK path to store snapshot information for collection={} with commitName={}", collectionName, commitName);
 
+    @SuppressWarnings({"rawtypes"})
     NamedList shardRequestResults = new NamedList();
     Map<String, Slice> shardByCoreName = new HashMap<>();
     ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseer.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient());
@@ -100,7 +102,9 @@ public class CreateSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
     for (Slice slice : ocmh.zkStateReader.getClusterState().getCollection(collectionName).getSlices()) {
       for (Replica replica : slice.getReplicas()) {
         if (replica.getState() != State.ACTIVE) {
-          log.info("Replica {} is not active. Hence not sending the createsnapshot request", replica.getCoreName());
+          if (log.isInfoEnabled()) {
+            log.info("Replica {} is not active. Hence not sending the createsnapshot request", replica.getCoreName());
+          }
           continue; // Since replica is not active - no point sending a request.
         }
 
@@ -125,10 +129,12 @@ public class CreateSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
     Set<String> failedShards = new HashSet<>();
 
     shardRequestTracker.processResponses(shardRequestResults, shardHandler, false, null);
+    @SuppressWarnings({"rawtypes"})
     NamedList success = (NamedList) shardRequestResults.get("success");
     List<CoreSnapshotMetaData> replicas = new ArrayList<>();
     if (success != null) {
       for ( int i = 0 ; i < success.size() ; i++) {
+        @SuppressWarnings({"rawtypes"})
         NamedList resp = (NamedList)success.getVal(i);
 
         // Check if this core is the leader for the shard. The idea here is that during the backup
@@ -142,7 +148,9 @@ public class CreateSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
 
         CoreSnapshotMetaData c = new CoreSnapshotMetaData(resp);
         replicas.add(c);
-        log.info("Snapshot with commitName {} is created successfully for core {}", commitName, c.getCoreName());
+        if (log.isInfoEnabled()) {
+          log.info("Snapshot with commitName {} is created successfully for core {}", commitName, c.getCoreName());
+        }
       }
     }
 
@@ -173,8 +181,10 @@ public class CreateSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
     if (failedShards.isEmpty()) { // No failures.
       CollectionSnapshotMetaData meta = new CollectionSnapshotMetaData(commitName, SnapshotStatus.Successful, creationDate, replicas);
       SolrSnapshotManager.updateCollectionLevelSnapshot(zkClient, collectionName, meta);
-      log.info("Saved following snapshot information for collection={} with commitName={} in Zookeeper : {}", collectionName,
-          commitName, meta.toNamedList());
+      if (log.isInfoEnabled()) {
+        log.info("Saved following snapshot information for collection={} with commitName={} in Zookeeper : {}", collectionName,
+            commitName, meta.toNamedList());
+      }
     } else {
       log.warn("Failed to create a snapshot for collection {} with commitName = {}. Snapshot could not be captured for following shards {}",
           collectionName, commitName, failedShards);
@@ -182,8 +192,10 @@ public class CreateSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
       // which cores have the named snapshot.
       CollectionSnapshotMetaData meta = new CollectionSnapshotMetaData(commitName, SnapshotStatus.Failed, creationDate, replicas);
       SolrSnapshotManager.updateCollectionLevelSnapshot(zkClient, collectionName, meta);
-      log.info("Saved following snapshot information for collection={} with commitName={} in Zookeeper : {}", collectionName,
-          commitName, meta.toNamedList());
+      if (log.isInfoEnabled()) {
+        log.info("Saved following snapshot information for collection={} with commitName={} in Zookeeper : {}", collectionName,
+            commitName, meta.toNamedList());
+      }
       throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to create snapshot on shards " + failedShards);
     }
   }

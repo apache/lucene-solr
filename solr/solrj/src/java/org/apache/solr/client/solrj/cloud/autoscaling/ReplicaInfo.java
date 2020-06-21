@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.BiPredicate;
 
 import org.apache.solr.common.MapWriter;
@@ -34,12 +35,12 @@ import static org.apache.solr.common.ConditionalMapWriter.NON_NULL_VAL;
 import static org.apache.solr.common.ConditionalMapWriter.dedupeKeyPredicate;
 import static org.apache.solr.common.cloud.ZkStateReader.LEADER_PROP;
 
-
+@SuppressWarnings({"overrides"})
 public class ReplicaInfo implements MapWriter {
   private final String name;
-  private String core, collection, shard;
-  private Replica.Type type;
-  private String node;
+  private final String core, collection, shard;
+  private final Replica.Type type;
+  private final String node;
   public final boolean isLeader;
   private final Map<String, Object> variables = new HashMap<>();
 
@@ -49,13 +50,14 @@ public class ReplicaInfo implements MapWriter {
     this.collection = coll;
     this.shard = shard;
     this.type = r.getType();
+    this.node = r.getNodeName();
     boolean maybeLeader = r.getBool(LEADER_PROP, false);
     if (vals != null) {
       this.variables.putAll(vals);
       maybeLeader = "true".equals(String.valueOf(vals.getOrDefault(LEADER_PROP, maybeLeader)));
     }
     this.isLeader = maybeLeader;
-    this.node = r.getNodeName();
+    validate();
   }
 
   public ReplicaInfo(String name, String core, String coll, String shard, Replica.Type type, String node, Map<String, Object> vals) {
@@ -70,11 +72,13 @@ public class ReplicaInfo implements MapWriter {
     this.type = type;
     this.core = core;
     this.node = node;
+    validate();
   }
 
+  @SuppressWarnings({"unchecked"})
   public ReplicaInfo(Map<String, Object> map) {
     this.name = map.keySet().iterator().next();
-    Map details = (Map) map.get(name);
+    @SuppressWarnings({"rawtypes"})Map details = (Map) map.get(name);
     details = Utils.getDeepCopy(details, 4);
     this.collection = (String) details.remove("collection");
     this.shard = (String) details.remove("shard");
@@ -85,6 +89,16 @@ public class ReplicaInfo implements MapWriter {
     type = Replica.Type.valueOf((String) details.getOrDefault("type", "NRT"));
     details.remove("type");
     this.variables.putAll(details);
+    validate();
+  }
+
+  private final void validate() {
+    Objects.requireNonNull(this.name, "'name' must not be null");
+    Objects.requireNonNull(this.core, "'core' must not be null");
+    Objects.requireNonNull(this.collection, "'collection' must not be null");
+    Objects.requireNonNull(this.shard, "'shard' must not be null");
+    Objects.requireNonNull(this.type, "'type' must not be null");
+    Objects.requireNonNull(this.node, "'node' must not be null");
   }
 
   public Object clone() {
@@ -194,6 +208,11 @@ public class ReplicaInfo implements MapWriter {
       return false;
     }
   }
+
+//  @Override
+//  public int hashCode() {
+//    throw new UnsupportedOperationException("TODO unimplemented");
+//  }
 
   @Override
   public String toString() {

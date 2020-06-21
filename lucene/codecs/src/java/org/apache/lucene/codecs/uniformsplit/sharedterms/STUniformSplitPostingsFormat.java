@@ -54,20 +54,29 @@ public class STUniformSplitPostingsFormat extends UniformSplitPostingsFormat {
    */
   public static final String TERMS_BLOCKS_EXTENSION = "stustb";
 
-  public static final int VERSION_CURRENT = 0;
+  public static final int VERSION_CURRENT = UniformSplitPostingsFormat.VERSION_CURRENT;
 
   public static final String NAME = "SharedTermsUniformSplit";
 
+  /**
+   * Creates a {@link STUniformSplitPostingsFormat} with default settings.
+   */
   public STUniformSplitPostingsFormat() {
-    this(UniformSplitTermsWriter.DEFAULT_TARGET_NUM_BLOCK_LINES, UniformSplitTermsWriter.DEFAULT_DELTA_NUM_LINES, null, null);
+    this(UniformSplitTermsWriter.DEFAULT_TARGET_NUM_BLOCK_LINES, UniformSplitTermsWriter.DEFAULT_DELTA_NUM_LINES,
+        null, null, false);
   }
 
-  public STUniformSplitPostingsFormat(int targetNumBlockLines, int deltaNumLines, BlockEncoder blockEncoder, BlockDecoder blockDecoder) {
-    this(NAME, targetNumBlockLines, deltaNumLines, blockEncoder, blockDecoder);
+  /**
+   * @see UniformSplitPostingsFormat#UniformSplitPostingsFormat(int, int, BlockEncoder, BlockDecoder, boolean)
+   */
+  public STUniformSplitPostingsFormat(int targetNumBlockLines, int deltaNumLines, BlockEncoder blockEncoder, BlockDecoder blockDecoder,
+                                      boolean dictionaryOnHeap) {
+    this(NAME, targetNumBlockLines, deltaNumLines, blockEncoder, blockDecoder, dictionaryOnHeap);
   }
 
-  protected STUniformSplitPostingsFormat(String name, int targetNumBlockLines, int deltaNumLines, BlockEncoder blockEncoder, BlockDecoder blockDecoder) {
-    super(name, targetNumBlockLines, deltaNumLines, blockEncoder, blockDecoder);
+  protected STUniformSplitPostingsFormat(String name, int targetNumBlockLines, int deltaNumLines, BlockEncoder blockEncoder,
+                                         BlockDecoder blockDecoder, boolean dictionaryOnHeap) {
+    super(name, targetNumBlockLines, deltaNumLines, blockEncoder, blockDecoder, dictionaryOnHeap);
   }
 
   @Override
@@ -79,6 +88,6 @@ public class STUniformSplitPostingsFormat extends UniformSplitPostingsFormat {
   @Override
   protected FieldsProducer createUniformSplitTermsReader(PostingsReaderBase postingsReader, SegmentReadState state,
                                                BlockDecoder blockDecoder) throws IOException {
-    return new STUniformSplitTermsReader(postingsReader, state, blockDecoder);
+    return new STUniformSplitTermsReader(postingsReader, state, blockDecoder, dictionaryOnHeap);
   }
 }

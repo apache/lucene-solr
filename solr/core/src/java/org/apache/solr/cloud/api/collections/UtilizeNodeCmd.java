@@ -52,7 +52,7 @@ public class UtilizeNodeCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
+  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     ocmh.checkRequired(message, NODE);
     String nodeName = message.getStr(NODE);
     String async = message.getStr(ASYNC);
@@ -63,7 +63,9 @@ public class UtilizeNodeCmd implements OverseerCollectionMessageHandler.Cmd {
     //first look for suggestions if any
     List<Suggester.SuggestionInfo> suggestions = PolicyHelper.getSuggestions(autoScalingConfig, ocmh.overseer.getSolrCloudManager());
     for (Suggester.SuggestionInfo suggestionInfo : suggestions) {
-      log.info("op: " + suggestionInfo.getOperation());
+      if (log.isInfoEnabled()) {
+        log.info("op: {}", suggestionInfo.getOperation());
+      }
       String coll = null;
       List<String> pieces = StrUtils.splitSmart(suggestionInfo.getOperation().getPath(), '/');
       if (pieces.size() > 1) {
@@ -71,7 +73,7 @@ public class UtilizeNodeCmd implements OverseerCollectionMessageHandler.Cmd {
       } else {
         continue;
       }
-      log.info("coll: " + coll);
+      log.info("coll: {}", coll);
       if (suggestionInfo.getOperation() instanceof V2Request) {
         String targetNode = (String) Utils.getObjectByPath(suggestionInfo.getOperation(), true, "command/move-replica/targetNode");
         if (Objects.equals(targetNode, nodeName)) {
@@ -92,6 +94,7 @@ public class UtilizeNodeCmd implements OverseerCollectionMessageHandler.Cmd {
     for (; ; ) {
       suggester = session.getSuggester(MOVEREPLICA)
           .hint(Suggester.Hint.TARGET_NODE, nodeName);
+      @SuppressWarnings({"rawtypes"})
       SolrRequest request = suggester.getSuggestion();
       if (requests.size() > 10) {
         log.info("too_many_suggestions");
@@ -106,7 +109,9 @@ public class UtilizeNodeCmd implements OverseerCollectionMessageHandler.Cmd {
           REPLICA_PROP, request.getParams().get(REPLICA_PROP),
           ASYNC, request.getParams().get(ASYNC)));
     }
-    log.info("total_suggestions: {}", requests.size());
+    if (log.isInfoEnabled()) {
+      log.info("total_suggestions: {}", requests.size());
+    }
     if (requests.size() == 0) {
       PolicyHelper.logState(ocmh.overseer.getSolrCloudManager(), initialsuggester);
     }
@@ -121,6 +126,7 @@ public class UtilizeNodeCmd implements OverseerCollectionMessageHandler.Cmd {
   private void executeAll(List<ZkNodeProps> requests) throws Exception {
     if (requests.isEmpty()) return;
     for (ZkNodeProps props : requests) {
+      @SuppressWarnings({"rawtypes"})
       NamedList result = new NamedList();
       ocmh.commandMap.get(MOVEREPLICA)
           .call(ocmh.overseer.getSolrCloudManager().getClusterStateProvider().getClusterState(),

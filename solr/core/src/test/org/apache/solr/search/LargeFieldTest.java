@@ -36,6 +36,7 @@ public class LargeFieldTest extends SolrTestCaseJ4 {
   private static final String BIG_FIELD = "bigField";
 
   @BeforeClass
+  @SuppressWarnings({"unchecked"})
   public static void initManagedSchemaCore() throws Exception {
     // This testing approach means no schema file or per-test temp solr-home!
     System.setProperty("managed.schema.mutable", "true");

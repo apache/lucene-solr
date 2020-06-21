@@ -98,7 +98,9 @@ public class VariableBase implements Variable {
     return info;
   }
 
+  @SuppressWarnings({"unchecked"})
   static Variable loadImpl(Meta meta, Type t) {
+    @SuppressWarnings({"rawtypes"})
     Class implementation = meta.implementation();
     if (implementation == void.class) implementation = VariableBase.class;
     try {

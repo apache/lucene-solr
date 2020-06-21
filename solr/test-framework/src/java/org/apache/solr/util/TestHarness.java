@@ -24,7 +24,6 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.solr.SolrTestCaseJ4;
@@ -43,7 +42,7 @@ import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.core.SolrPaths;
 import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.metrics.reporters.SolrJmxReporter;
@@ -86,7 +85,7 @@ public class TestHarness extends BaseTestHarness {
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
     try {
-      return new SolrConfig(solrHome.resolve(coreName), confFile, null, true);
+      return new SolrConfig(solrHome.resolve(coreName), confFile);
     } catch (Exception xany) {
       throw new RuntimeException(xany);
     }
@@ -140,7 +139,7 @@ public class TestHarness extends BaseTestHarness {
    * @param indexSchema schema resource name
    */
   public TestHarness(String coreName, String dataDir, String solrConfig, String indexSchema) {
-    this(buildTestNodeConfig(new SolrResourceLoader(SolrResourceLoader.locateSolrHome())),
+    this(buildTestNodeConfig(SolrPaths.locateSolrHome()),
         new TestCoresLocator(coreName, dataDir, solrConfig, indexSchema));
     this.coreName = (coreName == null) ? SolrTestCaseJ4.DEFAULT_TEST_CORENAME : coreName;
   }
@@ -155,16 +154,7 @@ public class TestHarness extends BaseTestHarness {
    * @param solrXml the text of a solrxml
    */
   public TestHarness(Path solrHome, String solrXml) {
-    this(new SolrResourceLoader(solrHome), solrXml);
-  }
-
-  /**
-   * Create a TestHarness using a specific solr resource loader and solr xml
-   * @param loader the SolrResourceLoader to use
-   * @param solrXml the text of a solrxml
-   */
-  public TestHarness(SolrResourceLoader loader, String solrXml) {
-    this(SolrXmlConfig.fromString(loader, solrXml));
+    this(SolrXmlConfig.fromString(solrHome, solrXml));
   }
 
   public TestHarness(NodeConfig nodeConfig) {
@@ -176,13 +166,13 @@ public class TestHarness extends BaseTestHarness {
    * @param config the ConfigSolr to use
    */
   public TestHarness(NodeConfig config, CoresLocator coresLocator) {
-    container = new CoreContainer(config, new Properties(), coresLocator);
+    container = new CoreContainer(config, coresLocator);
     container.load();
     updater = new UpdateRequestHandler();
     updater.init(null);
   }
 
-  public static NodeConfig buildTestNodeConfig(SolrResourceLoader loader) {
+  public static NodeConfig buildTestNodeConfig(Path solrHome) {
     CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder(System.getProperty("host"),
                                                                  Integer.getInteger("hostPort", 8983),
                                                                  System.getProperty("hostContext", ""))
@@ -204,7 +194,7 @@ public class TestHarness extends BaseTestHarness {
         .setMetricReporterPlugins(new PluginInfo[] {defaultPlugin})
         .build();
 
-    return new NodeConfig.NodeConfigBuilder("testNode", loader)
+    return new NodeConfig.NodeConfigBuilder("testNode", solrHome)
         .setUseSchemaCache(Boolean.getBoolean("shareSchema"))
         .setCloudConfig(cloudConfig)
         .setUpdateShardHandlerConfig(updateShardHandlerConfig)
@@ -284,7 +274,7 @@ public class TestHarness extends BaseTestHarness {
       }
       return connection.request(handler, null, xml);
     } catch (SolrException e) {
-      throw (SolrException)e;
+      throw e;
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
@@ -446,6 +436,7 @@ public class TestHarness extends BaseTestHarness {
      * Perhaps the best we could do is increment the core reference count
      * and decrement it in the request close() method?
      */
+    @SuppressWarnings({"unchecked"})
     public LocalSolrQueryRequest makeRequest(String ... q) {
       if (q.length==1) {
         return new LocalSolrQueryRequest(TestHarness.this.getCore(),
@@ -454,10 +445,12 @@ public class TestHarness extends BaseTestHarness {
       if (q.length%2 != 0) { 
         throw new RuntimeException("The length of the string array (query arguments) needs to be even");
       }
+      @SuppressWarnings({"rawtypes"})
       Map.Entry<String, String> [] entries = new NamedListEntry[q.length / 2];
       for (int i = 0; i < q.length; i += 2) {
         entries[i/2] = new NamedListEntry<>(q[i], q[i+1]);
       }
+      @SuppressWarnings({"rawtypes"})
       NamedList nl = new NamedList(entries);
       if(nl.get("wt" ) == null) nl.add("wt","xml");
       return new LocalSolrQueryRequest(TestHarness.this.getCore(), nl);

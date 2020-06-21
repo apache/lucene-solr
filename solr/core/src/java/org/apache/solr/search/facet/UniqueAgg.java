@@ -26,24 +26,23 @@ import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
-import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.LongIterator;
 import org.apache.solr.util.LongSet;
 
 public class UniqueAgg extends StrAggValueSource {
-  public static String UNIQUE = "unique";
+  public static final String UNIQUE = "unique";
 
   // internal constants used for aggregating values from multiple shards
-  static String VALS = "vals";
+  static final String VALS = "vals";
 
   public UniqueAgg(String field) {
     super(UNIQUE, field);
   }
 
   @Override
-  public SlotAcc createSlotAcc(FacetContext fcontext, int numDocs, int numSlots) throws IOException {
+  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots) throws IOException {
     SchemaField sf = fcontext.qcontext.searcher().getSchema().getField(getArg());
     if (sf.multiValued() || sf.getType().multiValuedFieldCache()) {
       if (sf.getType().isPointField()) {
@@ -67,7 +66,7 @@ public class UniqueAgg extends StrAggValueSource {
     return new Merger();
   }
 
-  private static class Merger extends FacetSortableMerger {
+  private static class Merger extends FacetModule.FacetSortableMerger {
     long answer = -1;
     long sumUnique;
     Set<Object> values;
@@ -76,13 +75,14 @@ public class UniqueAgg extends StrAggValueSource {
     long shardsMissingMax;
 
     @Override
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public void merge(Object facetResult, Context mcontext) {
       SimpleOrderedMap map = (SimpleOrderedMap)facetResult;
-      long unique = ((Number)map.get("unique")).longValue();
+      long unique = ((Number)map.get(UNIQUE)).longValue();
       sumUnique += unique;
 
       int valsListed = 0;
-      List vals = (List) map.get("vals");
+      List vals = (List) map.get(VALS);
       if (vals != null) {
         if (values == null) {
           values = new HashSet<>(vals.size()*4);
@@ -118,7 +118,7 @@ public class UniqueAgg extends StrAggValueSource {
     }
 
     @Override
-    public int compareTo(FacetSortableMerger other, FacetRequest.SortDirection direction) {
+    public int compareTo(FacetModule.FacetSortableMerger other, FacetRequest.SortDirection direction) {
       return Long.compare( getLong(), ((Merger)other).getLong() );
     }
   }
@@ -158,20 +158,33 @@ public class UniqueAgg extends StrAggValueSource {
       if (fcontext.isShard()) {
         return getShardValue(slot);
       }
-      return getCardinality(slot);
+      return getNonShardValue(slot);
     }
 
+    /**
+     * Returns the current slot value as long
+     * This is used to get non-sharded value
+     */
+    private long getNonShardValue(int slot) {
+      return (long) getCardinality(slot);
+    }
+
+    /**
+     * Returns the size of the {@code LongSet} for given slot
+     * If value doesn't exist for slot then returns 0
+     */
     private int getCardinality(int slot) {
       LongSet set = sets[slot];
-      return set==null ? 0 : set.cardinality();
+      return set == null ? 0 : set.cardinality();
     }
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public Object getShardValue(int slot) throws IOException {
       LongSet set = sets[slot];
       int unique = getCardinality(slot);
 
       SimpleOrderedMap map = new SimpleOrderedMap();
-      map.add("unique", unique);
+      map.add(UNIQUE, unique);
 
       int maxExplicit=100;
       // TODO: make configurable
@@ -184,7 +197,7 @@ public class UniqueAgg extends StrAggValueSource {
             lst.add( iter.next() );
           }
         }
-        map.add("vals", lst);
+        map.add(VALS, lst);
       }
 
       return map;
@@ -203,10 +216,6 @@ public class UniqueAgg extends StrAggValueSource {
 
     public NumericAcc(FacetContext fcontext, String field, int numSlots) throws IOException {
       super(fcontext, field, numSlots);
-    }
-
-    protected DocIdSetIterator docIdSetIterator() {
-      return values;
     }
 
     @Override
@@ -230,10 +239,6 @@ public class UniqueAgg extends StrAggValueSource {
 
     public SortedNumericAcc(FacetContext fcontext, String field, int numSlots) throws IOException {
       super(fcontext, field, numSlots);
-    }
-
-    protected DocIdSetIterator docIdSetIterator() {
-      return values;
     }
 
     @Override

@@ -28,11 +28,6 @@ import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Deque;
@@ -44,6 +39,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+import javax.script.ScriptEngineManager;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.io.FileUtils;
@@ -59,9 +55,9 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Create;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Delete;
@@ -83,10 +79,12 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigSetProperties;
 import org.apache.solr.core.TestDynamicLoading;
 import org.apache.solr.security.BasicAuthIntegrationTest;
+import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -216,6 +214,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     solrClient.close();
   }
 
+  @SuppressWarnings({"rawtypes"})
   private NamedList getConfigSetPropertiesFromZk(
       SolrZkClient zkClient, String path) throws Exception {
     byte [] oldPropsData = null;
@@ -238,6 +237,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
 
   private void verifyProperties(String configSetName, Map<String, String> oldProps,
        Map<String, String> newProps, SolrZkClient zkClient) throws Exception {
+    @SuppressWarnings({"rawtypes"})
     NamedList properties = getConfigSetPropertiesFromZk(zkClient,
         ZkConfigManager.CONFIGS_ZKNODE + "/" + configSetName + "/" + DEFAULT_FILENAME);
     // let's check without merging the maps, since that's what the MessageHandler does
@@ -262,6 +262,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     }
 
     // check the value in properties are correct
+    @SuppressWarnings({"unchecked"})
     Iterator<Map.Entry<String, Object>> it = properties.iterator();
     while (it.hasNext()) {
       Map.Entry<String, Object> entry = it.next();
@@ -285,6 +286,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     ByteBuffer emptyData = ByteBuffer.allocate(0);
 
     // Checking error when no configuration name is specified in request
+    @SuppressWarnings({"rawtypes"})
     Map map = postDataAndGetResponse(solrCluster.getSolrClient(),
         solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString()
         + "/admin/configs?action=UPLOAD", emptyData, null, null);
@@ -348,12 +350,15 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
   
   @Test
   public void testUploadWithScriptUpdateProcessor() throws Exception {
+    Assume.assumeNotNull((new ScriptEngineManager()).getEngineByExtension("js"));
+    Assume.assumeNotNull((new ScriptEngineManager()).getEngineByName("JavaScript"));
+    
       // Authorization off
       // unprotectConfigsHandler(); // TODO Enable this back when testUploadWithLibDirective() is re-enabled
       final String untrustedSuffix = "-untrusted";
       uploadConfigSetWithAssertions("with-script-processor", untrustedSuffix, null, null);
       // try to create a collection with the uploaded configset
-      Throwable thrown = expectThrows(HttpSolrClient.RemoteSolrException.class, () -> {
+      Throwable thrown = expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> {
         createCollection("newcollection2", "with-script-processor" + untrustedSuffix,
       1, 1, solrCluster.getSolrClient());
       });
@@ -379,7 +384,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     final String untrustedSuffix = "-untrusted";
     uploadConfigSetWithAssertions("with-lib-directive", untrustedSuffix, null, null);
     // try to create a collection with the uploaded configset
-    Throwable thrown = expectThrows(HttpSolrClient.RemoteSolrException.class, () -> {
+    Throwable thrown = expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> {
       createCollection("newcollection3", "with-lib-directive" + untrustedSuffix,
           1, 1, solrCluster.getSolrClient());
     });
@@ -487,6 +492,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     ZkConfigManager configManager = new ZkConfigManager(zkClient);
     assertFalse(configManager.configExists(configSetName+suffix));
 
+    @SuppressWarnings({"rawtypes"})
     Map map = postDataAndGetResponse(solrCluster.getSolrClient(),
         solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/admin/configs?action=UPLOAD&name="+configSetName+suffix,
         sampleZippedConfig, username, password);
@@ -504,10 +510,14 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
         File.separator + TestUtil.randomSimpleString(random(), 6, 8) + ".zip");
 
     File directory = TestDynamicLoading.getFile(directoryPath);
-    log.info("Directory: "+directory.getAbsolutePath());
+    if (log.isInfoEnabled()) {
+      log.info("Directory: {}", directory.getAbsolutePath());
+    }
     try {
       zip (directory, zipFile);
-      log.info("Zipfile: "+zipFile.getAbsolutePath());
+      if (log.isInfoEnabled()) {
+        log.info("Zipfile: {}", zipFile.getAbsolutePath());
+      }
       return zipFile.getAbsolutePath();
     } catch (IOException e) {
       throw new RuntimeException(e);
@@ -572,6 +582,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     params.set("name", collectionName);
     params.set("numShards", numShards);
     params.set("replicationFactor", replicationFactor);
+    @SuppressWarnings({"rawtypes"})
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
@@ -580,6 +591,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     return res;
   }
   
+  @SuppressWarnings({"rawtypes"})
   public static Map postDataAndGetResponse(CloudSolrClient cloudClient,
       String uri, ByteBuffer bytarr, String username, String password) throws IOException {
     HttpPost httpPost = null;
@@ -615,7 +627,9 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     return m;
   }
 
-  private static Object getObjectByPath(Map root, boolean onlyPrimitive, java.util.List<String> hierarchy) {
+  private static Object getObjectByPath(@SuppressWarnings({"rawtypes"})Map root,
+                                        boolean onlyPrimitive, java.util.List<String> hierarchy) {
+    @SuppressWarnings({"rawtypes"})
     Map obj = root;
     for (int i = 0; i < hierarchy.size(); i++) {
       String s = hierarchy.get(i);
@@ -672,7 +686,8 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     solrClient.close();
   }
 
-  private void verifyException(SolrClient solrClient, ConfigSetAdminRequest request,
+  private void verifyException(SolrClient solrClient,
+                               @SuppressWarnings({"rawtypes"})ConfigSetAdminRequest request,
       String errorContains) throws Exception {
     Exception e = expectThrows(Exception.class, () -> solrClient.request(request));
     assertTrue("Expected exception message to contain: " + errorContains
@@ -735,55 +750,40 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
 
     solrClient.close();
   }
-  
+
+  /**
+   * A simple sanity check that the test-framework hueristic logic for setting 
+   * {@link ExternalPaths#DEFAULT_CONFIGSET} is working as it should 
+   * in the current test env, and finding the real directory which matches what {@link ZkController}
+   * finds and uses to bootstrap ZK in cloud based tests.
+   *
+   * <p>
+   * This assumes the {@link SolrDispatchFilter#SOLR_DEFAULT_CONFDIR_ATTRIBUTE} system property 
+   * has not been externally set in the environment where this test is being run -- which should 
+   * <b>never</b> be the case, since it would prevent the test-framework from using 
+   * {@link ExternalPaths#DEFAULT_CONFIGSET}
+   *
+   * @see SolrDispatchFilter#SOLR_DEFAULT_CONFDIR_ATTRIBUTE
+   * @see #setDefaultConfigDirSysPropIfNotSet
+   * @see ZkController#getDefaultConfigDirPath
+   */
   @Test
   public void testUserAndTestDefaultConfigsetsAreSame() throws IOException {
-    File testDefaultConf = configset("_default").toFile();
-    log.info("Test _default path: " + testDefaultConf);
+    final File extPath = new File(ExternalPaths.DEFAULT_CONFIGSET);
+    assertTrue("_default dir doesn't exist: " + ExternalPaths.DEFAULT_CONFIGSET, extPath.exists());
+    assertTrue("_default dir isn't a dir: " + ExternalPaths.DEFAULT_CONFIGSET, extPath.isDirectory());
     
-    File userDefaultConf = new File(ExternalPaths.DEFAULT_CONFIGSET);
-    log.info("User _default path: " + userDefaultConf);
-    
-    compareDirectories(userDefaultConf, testDefaultConf);
+    final String zkBootStrap = ZkController.getDefaultConfigDirPath();
+    assertEquals("extPath _default configset dir vs zk bootstrap path",
+                 ExternalPaths.DEFAULT_CONFIGSET, zkBootStrap);
   }
 
-  private static void compareDirectories(File userDefault, File testDefault) throws IOException {
-    assertTrue("Test _default doesn't exist: " + testDefault.getAbsolutePath(), testDefault.exists());
-    assertTrue("Test _default not a directory: " + testDefault.getAbsolutePath(),testDefault.isDirectory());
-    assertTrue("User _default doesn't exist: " + userDefault.getAbsolutePath(), userDefault.exists());
-    assertTrue("User _default not a directory: " + userDefault.getAbsolutePath(),userDefault.isDirectory());
-
-    Files.walkFileTree(userDefault.toPath(), new SimpleFileVisitor<Path>() {
-      @Override
-      public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-        FileVisitResult result = super.preVisitDirectory(dir, attrs);
-        Path relativePath = userDefault.toPath().relativize(dir);
-        File testDefaultFile = testDefault.toPath().resolve(relativePath).toFile();
-        String[] listOne = dir.toFile().list();
-        String[] listTwo = testDefaultFile.list();
-        Arrays.sort(listOne);
-        Arrays.sort(listTwo);
-        assertEquals("Mismatch in files", Arrays.toString(listOne), Arrays.toString(listTwo));
-        return result;
-      }
-      @Override
-      public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-        FileVisitResult result = super.visitFile(file, attrs);
-        Path relativePath = userDefault.toPath().relativize(file);
-        File testDefaultFile = testDefault.toPath().resolve(relativePath).toFile();
-        String userDefaultContents = FileUtils.readFileToString(file.toFile(), "UTF-8");
-        String testDefaultContents = FileUtils.readFileToString(testDefaultFile, "UTF-8");
-        assertEquals(testDefaultFile+" contents doesn't match expected ("+file+")", userDefaultContents, testDefaultContents);                    
-        return result;
-      }
-    });
-  }
-  
   private StringBuilder getConfigSetProps(Map<String, String> map) {
     return new StringBuilder(new String(Utils.toJSON(map), StandardCharsets.UTF_8));
   }
 
   public static class CreateNoErrorChecking extends ConfigSetAdminRequest.Create {
+    @SuppressWarnings({"rawtypes"})
     public ConfigSetAdminRequest setAction(ConfigSetAction action) {
        return super.setAction(action);
     }
@@ -799,6 +799,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
   }
 
   public static class DeleteNoErrorChecking extends ConfigSetAdminRequest.Delete {
+    @SuppressWarnings({"rawtypes"})
     public ConfigSetAdminRequest setAction(ConfigSetAction action) {
        return super.setAction(action);
     }

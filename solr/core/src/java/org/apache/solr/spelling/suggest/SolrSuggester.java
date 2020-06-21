@@ -99,8 +99,9 @@ public class SolrSuggester implements Accountable {
    * Uses the <code>config</code> and the <code>core</code> to initialize the underlying 
    * Lucene suggester
    * */
+  @SuppressWarnings({"unchecked"})
   public String init(NamedList<?> config, SolrCore core) {
-    log.info("init: " + config);
+    log.info("init: {}", config);
     
     // read the config
     name = config.get(NAME) != null ? (String) config.get(NAME)
@@ -112,7 +113,7 @@ public class SolrSuggester implements Accountable {
 
     if (lookupImpl == null) {
       lookupImpl = LookupFactory.DEFAULT_FILE_BASED_DICT;
-      log.info("No " + LOOKUP_IMPL + " parameter was provided falling back to " + lookupImpl);
+      log.info("No {} parameter was provided falling back to {}", LOOKUP_IMPL, lookupImpl);
     }
 
     contextFilterQueryAnalyzer = new TokenizerChain(new StandardTokenizerFactory(Collections.EMPTY_MAP), null);
@@ -148,7 +149,7 @@ public class SolrSuggester implements Accountable {
         storeDir.mkdirs();
       } else if (getStoreFile().exists()) {
         if (log.isDebugEnabled()) {
-          log.debug("attempt reload of the stored lookup from file " + getStoreFile());
+          log.debug("attempt reload of the stored lookup from file {}", getStoreFile());
         }
         try {
           lookup.load(new FileInputStream(getStoreFile()));
@@ -162,19 +163,19 @@ public class SolrSuggester implements Accountable {
     if (dictionaryImpl == null) {
       dictionaryImpl = (sourceLocation == null) ? DictionaryFactory.DEFAULT_INDEX_BASED_DICT : 
         DictionaryFactory.DEFAULT_FILE_BASED_DICT;
-      log.info("No " + DICTIONARY_IMPL + " parameter was provided falling back to " + dictionaryImpl);
+      log.info("No {} parameter was provided falling back to {}", DICTIONARY_IMPL, dictionaryImpl);
     }
 
     dictionaryFactory = core.getResourceLoader().newInstance(dictionaryImpl, DictionaryFactory.class);
     dictionaryFactory.setParams(config);
-    log.info("Dictionary loaded with params: " + config);
+    log.info("Dictionary loaded with params: {}", config);
 
     return name;
   }
 
   /** Build the underlying Lucene Suggester */
   public void build(SolrCore core, SolrIndexSearcher searcher) throws IOException {
-    log.info("SolrSuggester.build(" + name + ")");
+    log.info("SolrSuggester.build({})", name);
 
     dictionary = dictionaryFactory.create(core, searcher);
     try {
@@ -190,14 +191,16 @@ public class SolrSuggester implements Accountable {
       if(!lookup.store(new FileOutputStream(target))) {
         log.error("Store Lookup build failed");
       } else {
-        log.info("Stored suggest data to: " + target.getAbsolutePath());
+        if (log.isInfoEnabled()) {
+          log.info("Stored suggest data to: {}", target.getAbsolutePath());
+        }
       }
     }
   }
 
   /** Reloads the underlying Lucene Suggester */
   public void reload(SolrCore core, SolrIndexSearcher searcher) throws IOException {
-    log.info("SolrSuggester.reload(" + name + ")");
+    log.info("SolrSuggester.reload({})", name);
     if (dictionary == null && storeDir != null) {
       File lookupFile = getStoreFile();
       if (lookupFile.exists()) {
@@ -230,7 +233,9 @@ public class SolrSuggester implements Accountable {
 
   /** Returns suggestions based on the {@link SuggesterOptions} passed */
   public SuggesterResult getSuggestions(SuggesterOptions options) throws IOException {
-    log.debug("getSuggestions: " + options.token);
+    if (log.isDebugEnabled()) {
+      log.debug("getSuggestions: {}", options.token);
+    }
     if (lookup == null) {
       log.info("Lookup is null - invoke suggest.build first");
       return EMPTY_RESULT;
@@ -247,7 +252,9 @@ public class SolrSuggester implements Accountable {
       if(suggestions == null){
         // Context filtering not supported/configured by lookup
         // Silently ignore filtering and serve a result by querying without context filtering
-        log.debug("Context Filtering Query not supported by {}", lookup.getClass());
+        if (log.isDebugEnabled()) {
+          log.debug("Context Filtering Query not supported by {}", lookup.getClass());
+        }
         suggestions = lookup.lookup(options.token, false, options.count);
       }
     }

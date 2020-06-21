@@ -73,9 +73,8 @@ public class DistribPackageStore implements PackageStore {
 
   public DistribPackageStore(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
-    solrhome = this.coreContainer.getResourceLoader().getInstancePath();
-    ensurePackageStoreDir(coreContainer.getResourceLoader().getInstancePath());
-
+    this.solrhome = Paths.get(this.coreContainer.getSolrHome());
+    ensurePackageStoreDir(Paths.get(coreContainer.getSolrHome()));
   }
 
   @Override
@@ -126,7 +125,9 @@ public class DistribPackageStore implements PackageStore {
         this.metaData = meta;
         this.fileData = data;
         _persistToFile(solrhome, path, data, meta);
-        log.info("persisted a file {} and metadata. sizes {} {}", path, data.limit(), meta.limit());
+        if (log.isInfoEnabled()) {
+          log.info("persisted a file {} and metadata. sizes {} {}", path, data.limit(), meta.limit());
+        }
 
       }
     }
@@ -165,7 +166,7 @@ public class DistribPackageStore implements PackageStore {
       try {
         IOUtils.deleteFilesIfExist(getRealpath(path), getRealpath(getMetaPath()));
       } catch (IOException e) {
-        log.error("Unable to delete files: " + path);
+        log.error("Unable to delete files: {}", path);
       }
 
     }
@@ -177,6 +178,7 @@ public class DistribPackageStore implements PackageStore {
       String baseUrl = url.replace("/solr", "/api");
 
       ByteBuffer metadata = null;
+      @SuppressWarnings({"rawtypes"})
       Map m = null;
       try {
         metadata = Utils.executeGET(coreContainer.getUpdateShardHandler().getDefaultHttpClient(),
@@ -367,8 +369,7 @@ public class DistribPackageStore implements PackageStore {
           //fire and forget
           Utils.executeGET(coreContainer.getUpdateShardHandler().getDefaultHttpClient(), url, null);
         } catch (Exception e) {
-          log.info("Node: " + node +
-              " failed to respond for file fetch notification", e);
+          log.info("Node: {} failed to respond for file fetch notification",  node, e);
           //ignore the exception
           // some nodes may be down or not responding
         }
@@ -448,7 +449,7 @@ public class DistribPackageStore implements PackageStore {
   }
 
   @Override
-  public List list(String path, Predicate<String> predicate) {
+  public List<FileDetails> list(String path, Predicate<String> predicate) {
     File file = getRealpath(path).toFile();
     List<FileDetails> fileDetails = new ArrayList<>();
     FileType type = getType(path, false);
@@ -472,6 +473,7 @@ public class DistribPackageStore implements PackageStore {
   @Override
   public void refresh(String path) {
     try {
+      @SuppressWarnings({"rawtypes"})
       List l = null;
       try {
         l = coreContainer.getZkController().getZkClient().getChildren(ZK_PACKAGESTORE+ path, null, true);
@@ -479,6 +481,7 @@ public class DistribPackageStore implements PackageStore {
         // does not matter
       }
       if (l != null && !l.isEmpty()) {
+        @SuppressWarnings({"rawtypes"})
         List myFiles = list(path, s -> true);
         for (Object f : l) {
           if (!myFiles.contains(f)) {
@@ -488,7 +491,7 @@ public class DistribPackageStore implements PackageStore {
         }
       }
     } catch (Exception e) {
-      log.error("Could not refresh files in " +path, e);
+      log.error("Could not refresh files in {}", path, e);
     }
   }
 
@@ -522,13 +525,13 @@ public class DistribPackageStore implements PackageStore {
           log.warn("Unable to create [{}] directory in SOLR_HOME [{}].  Features requiring this directory may fail.", packageStoreDir, solrHome);
         }
       } catch (Exception e) {
-        log.warn("Unable to create [" + packageStoreDir + "] directory in SOLR_HOME [" + solrHome + "].  Features requiring this directory may fail.", e);
+        log.warn("Unable to create [{}] directory in SOLR_HOME [{}].  Features requiring this directory may fail.", packageStoreDir, solrHome, e);
       }
     }
   }
 
   public static Path getPackageStoreDirPath(Path solrHome) {
-    return Paths.get(solrHome.toAbsolutePath().toString(), PackageStoreAPI.PACKAGESTORE_DIRECTORY).toAbsolutePath();
+    return solrHome.resolve(PackageStoreAPI.PACKAGESTORE_DIRECTORY);
   }
 
   private static String _getMetapath(String path) {
@@ -546,6 +549,7 @@ public class DistribPackageStore implements PackageStore {
     if (!parent.exists()) {
       parent.mkdirs();
     }
+    @SuppressWarnings({"rawtypes"})
     Map m = (Map) Utils.fromJSON(meta.array(), meta.arrayOffset(), meta.limit());
     if (m == null || m.isEmpty()) {
       throw new SolrException(SERVER_ERROR, "invalid metadata , discarding : " + path);

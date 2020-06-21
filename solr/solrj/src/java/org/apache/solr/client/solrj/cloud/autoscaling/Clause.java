@@ -101,6 +101,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
     this.nodeSetPresent = nodeSetPresent;
   }
 
+  @SuppressWarnings({"unchecked"})
   private Clause(Map<String, Object> m) {
     derivedFrom = (Clause) m.remove(Clause.class.getName());
     this.original = Utils.getDeepCopy(m, 10);
@@ -117,7 +118,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
     Optional<String> globalTagName = m.keySet().stream().filter(Policy.GLOBAL_ONLY_TAGS::contains).findFirst();
     if (globalTagName.isPresent()) {
       globalTag = parse(globalTagName.get(), m);
-      if (m.size() > 2) {
+      if (m.size() > 3) {
         throw new RuntimeException("Only one extra tag supported for the tag " + globalTagName.get() + " in " + toJSONString(m));
       }
       tag = parse(m.keySet().stream()
@@ -154,6 +155,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
       String key = validateObjectInNodeset(m, (Map) o);
       parseCondition(key, o, m);
     } else if (o instanceof List) {
+      @SuppressWarnings({"rawtypes"})
       List l = (List) o;
       if(l.size()<2) throwExp(m, "nodeset [] must have atleast 2 items");
       if( checkMapArray(l, m)) return true;
@@ -168,7 +170,8 @@ public class Clause implements MapWriter, Comparable<Clause> {
     return true;
   }
 
-  private String validateObjectInNodeset(Map<String, Object> m, Map map) {
+  private String validateObjectInNodeset(@SuppressWarnings({"rawtypes"})Map<String, Object> m,
+                                         @SuppressWarnings({"rawtypes"})Map map) {
     if (map.size() != 1) {
       throwExp(m, "nodeset must only have one and only one key");
     }
@@ -180,7 +183,8 @@ public class Clause implements MapWriter, Comparable<Clause> {
     return key;
   }
 
-  private boolean checkMapArray(List l, Map<String, Object> m) {
+  private boolean checkMapArray(@SuppressWarnings({"rawtypes"})List l, Map<String, Object> m) {
+    @SuppressWarnings({"rawtypes"})
     List<Map> maps = null;
     for (Object o : l) {
       if (o instanceof Map) {
@@ -192,7 +196,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
     if (maps != null) {
       if (maps.size() != l.size()) throwExp(m, "all elements of nodeset must be Objects");
       List<Condition> tags = new ArrayList<>(maps.size());
-      for (Map map : maps) {
+      for (@SuppressWarnings({"rawtypes"})Map map : maps) {
         String s = validateObjectInNodeset(m, map);
         if(key == null) key = s;
         if(!Objects.equals(key, s)){
@@ -222,6 +226,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   public static Clause create(String json) {
     return create((Map<String, Object>) Utils.fromJSONString(json));
   }
@@ -276,7 +281,8 @@ public class Clause implements MapWriter, Comparable<Clause> {
     return globalTag == null;
   }
 
-  void parseCondition(String s, Object o, Map m) {
+  @SuppressWarnings({"unchecked"})
+  void parseCondition(String s, Object o, @SuppressWarnings({"rawtypes"})Map m) {
     if (IGNORE_TAGS.contains(s)) return;
     if (tag != null) {
       throwExp(m, "Only one tag other than collection, shard, replica is possible");
@@ -401,10 +407,11 @@ public class Clause implements MapWriter, Comparable<Clause> {
     }
   }
 
-  public static void throwExp(Map clause, String msg, Object... args) {
+  public static void throwExp(@SuppressWarnings({"rawtypes"})Map clause, String msg, Object... args) {
     throw new IllegalArgumentException("syntax error in clause :" + toJSONString(clause) + " , msg:  " + formatString(msg, args));
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private static List readListVal(Map m, List val, Type varType, String conditionName) {
     List list = val;
     list = (List) list.stream()
@@ -466,6 +473,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
     eval.collName = (String) collection.getValue();
     Violation.Ctx ctx = new Violation.Ctx(this, session.matrix, eval);
 
+    @SuppressWarnings({"rawtypes"})
     Set tags = getUniqueTags(session, eval);
     if (tags.isEmpty()) return Collections.emptyList();
 
@@ -505,6 +513,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
     return ctx.allViolations;
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private Set getUniqueTags(Policy.Session session, ComputedValueEvaluator eval) {
     Set tags =  new HashSet();
 
@@ -677,7 +686,8 @@ public class Clause implements MapWriter, Comparable<Clause> {
       for (Row r : session.matrix) {
         computedValueEvaluator.node = r.node;
         SealedClause sealedClause = getSealedClause(computedValueEvaluator);
-        if (!sealedClause.getGlobalTag().isPass(r)) {
+        // check only live nodes
+        if (r.isLive() && !sealedClause.getGlobalTag().isPass(r)) {
           ctx.resetAndAddViolation(r.node, null, new Violation(sealedClause, null, null, r.node, r.getVal(sealedClause.globalTag.name),
               sealedClause.globalTag.delta(r.getVal(globalTag.name)), r.node));
           addViolatingReplicasForGroup(sealedClause.globalTag, computedValueEvaluator, ctx, Type.CORES.tagName, r.node, ctx.currentViolation, session.matrix);

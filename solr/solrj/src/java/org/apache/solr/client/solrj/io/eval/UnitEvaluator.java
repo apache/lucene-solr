@@ -58,6 +58,7 @@ public class UnitEvaluator extends RecursiveObjectEvaluator implements OneValueW
       m.setColumnLabels(matrix.getColumnLabels());
       return m;
     } else if(value instanceof List) {
+      @SuppressWarnings({"unchecked"})
       List<Number> values = (List<Number>)value;
       double[] doubles = new double[values.size()];
       for(int i=0; i<doubles.length; i++) {
@@ -66,7 +67,7 @@ public class UnitEvaluator extends RecursiveObjectEvaluator implements OneValueW
 
       ArrayRealVector vector = new ArrayRealVector(doubles);
       RealVector unitVector = vector.unitVector();
-      List<Number> unitList = new ArrayList(doubles.length);
+      List<Number> unitList = new ArrayList<>(doubles.length);
       double[] unitArray = unitVector.toArray();
       for(double d : unitArray) {
         unitList.add(d);

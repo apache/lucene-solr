@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.codecs.blocktree;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -36,6 +34,7 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
@@ -76,39 +75,6 @@ import org.apache.lucene.util.fst.Outputs;
 
 public final class BlockTreeTermsReader extends FieldsProducer {
 
-  /**
-   * An enum that allows to control if term index FSTs are loaded into memory or read off-heap
-   */
-  public enum FSTLoadMode {
-    /**
-     * Always read FSTs from disk.
-     * NOTE: If this option is used the FST will be read off-heap even if buffered directory implementations
-     * are used.
-     */
-    OFF_HEAP,
-    /**
-     * Never read FSTs from disk ie. all fields FSTs are loaded into memory
-     */
-    ON_HEAP,
-    /**
-     * Always read FSTs from disk.
-     * An exception is made for ID fields in an IndexWriter context which are always loaded into memory.
-     * This is useful to guarantee best update performance even if a non MMapDirectory is used.
-     * NOTE: If this option is used the FST will be read off-heap even if buffered directory implementations
-     * are used.
-     * See {@link FSTLoadMode#AUTO}
-     */
-    OPTIMIZE_UPDATES_OFF_HEAP,
-    /**
-     * Automatically make the decision if FSTs are read from disk depending if the segment read from an MMAPDirectory
-     * An exception is made for ID fields in an IndexWriter context which are always loaded into memory.
-     */
-    AUTO
-  }
-
-  /** Attribute key for fst mode. */
-  public static final String FST_MODE_KEY = "blocktree.terms.fst";
-
   static final Outputs<BytesRef> FST_OUTPUTS = ByteSequenceOutputs.getSingleton();
   
   static final BytesRef NO_OUTPUT = FST_OUTPUTS.getNoOutput();
@@ -123,10 +89,7 @@ public final class BlockTreeTermsReader extends FieldsProducer {
   final static String TERMS_CODEC_NAME = "BlockTreeTermsDict";
 
   /** Initial terms format. */
-  public static final int VERSION_START = 2;
-
-  /** Auto-prefix terms have been superseded by points. */
-  public static final int VERSION_AUTO_PREFIX_TERMS_REMOVED = 3;
+  public static final int VERSION_START = 3;
 
   /** The long[] + byte[] metadata has been replaced with a single byte[]. */
   public static final int VERSION_META_LONGS_REMOVED = 4;
@@ -134,12 +97,19 @@ public final class BlockTreeTermsReader extends FieldsProducer {
   /** Suffixes are compressed to save space. */
   public static final int VERSION_COMPRESSED_SUFFIXES = 5;
 
+  /** Metadata is written to its own file. */
+  public static final int VERSION_META_FILE = 6;
+
   /** Current terms format. */
-  public static final int VERSION_CURRENT = VERSION_COMPRESSED_SUFFIXES;
+  public static final int VERSION_CURRENT = VERSION_META_FILE;
 
   /** Extension of terms index file */
   static final String TERMS_INDEX_EXTENSION = "tip";
   final static String TERMS_INDEX_CODEC_NAME = "BlockTreeTermsIndex";
+
+  /** Extension of terms meta file */
+  static final String TERMS_META_EXTENSION = "tmd";
+  final static String TERMS_META_CODEC_NAME = "BlockTreeTermsMeta";
 
   // Open input to the main terms dict file (_X.tib)
   final IndexInput termsIn;
@@ -160,92 +130,121 @@ public final class BlockTreeTermsReader extends FieldsProducer {
   final int version;
 
   /** Sole constructor. */
-  public BlockTreeTermsReader(PostingsReaderBase postingsReader, SegmentReadState state, FSTLoadMode defaultLoadMode) throws IOException {
+  public BlockTreeTermsReader(PostingsReaderBase postingsReader, SegmentReadState state) throws IOException {
     boolean success = false;
     
     this.postingsReader = postingsReader;
     this.segment = state.segmentInfo.name;
-    
-    String termsName = IndexFileNames.segmentFileName(segment, state.segmentSuffix, TERMS_EXTENSION);
+
     try {
+      String termsName = IndexFileNames.segmentFileName(segment, state.segmentSuffix, TERMS_EXTENSION);
       termsIn = state.directory.openInput(termsName, state.context);
       version = CodecUtil.checkIndexHeader(termsIn, TERMS_CODEC_NAME, VERSION_START, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
-
-      if (version < VERSION_AUTO_PREFIX_TERMS_REMOVED) {
-        // pre-6.2 index, records whether auto-prefix terms are enabled in the header
-        byte b = termsIn.readByte();
-        if (b != 0) {
-          throw new CorruptIndexException("Index header pretends the index has auto-prefix terms: " + b, termsIn);
-        }
-      }
 
       String indexName = IndexFileNames.segmentFileName(segment, state.segmentSuffix, TERMS_INDEX_EXTENSION);
       indexIn = state.directory.openInput(indexName, state.context);
       CodecUtil.checkIndexHeader(indexIn, TERMS_INDEX_CODEC_NAME, version, version, state.segmentInfo.getId(), state.segmentSuffix);
-      CodecUtil.checksumEntireFile(indexIn);
 
-      // Have PostingsReader init itself
-      postingsReader.init(termsIn, state);
-      
-      // NOTE: data file is too costly to verify checksum against all the bytes on open,
-      // but for now we at least verify proper structure of the checksum footer: which looks
-      // for FOOTER_MAGIC + algorithmID. This is cheap and can detect some forms of corruption
-      // such as file truncation.
-      CodecUtil.retrieveChecksum(termsIn);
+      if (version < VERSION_META_FILE) {
+        // Have PostingsReader init itself
+        postingsReader.init(termsIn, state);
+
+        // Verifying the checksum against all bytes would be too costly, but for now we at least
+        // verify proper structure of the checksum footer. This is cheap and can detect some forms
+        // of corruption such as file truncation.
+        CodecUtil.retrieveChecksum(indexIn);
+        CodecUtil.retrieveChecksum(termsIn);
+      }
 
       // Read per-field details
-      seekDir(termsIn);
-      seekDir(indexIn);
+      String metaName = IndexFileNames.segmentFileName(segment, state.segmentSuffix, TERMS_META_EXTENSION);
+      Map<String, FieldReader> fieldMap = null;
+      Throwable priorE = null;
+      long indexLength = -1, termsLength = -1;
+      try (ChecksumIndexInput metaIn = version >= VERSION_META_FILE ? state.directory.openChecksumInput(metaName, state.context) : null) {
+        try {
+          final IndexInput indexMetaIn, termsMetaIn;
+          if (version >= VERSION_META_FILE) {
+            CodecUtil.checkIndexHeader(metaIn, TERMS_META_CODEC_NAME, version, version, state.segmentInfo.getId(), state.segmentSuffix);
+            indexMetaIn = termsMetaIn = metaIn;
+            postingsReader.init(metaIn, state);
+          } else {
+            seekDir(termsIn);
+            seekDir(indexIn);
+            indexMetaIn = indexIn;
+            termsMetaIn = termsIn;
+          }
 
-      final FSTLoadMode fstLoadMode = getLoadMode(state.readerAttributes, FST_MODE_KEY, defaultLoadMode);
-      final int numFields = termsIn.readVInt();
-      if (numFields < 0) {
-        throw new CorruptIndexException("invalid numFields: " + numFields, termsIn);
-      }
-      fieldMap = new HashMap<>((int) (numFields / 0.75f) + 1);
-      for (int i = 0; i < numFields; ++i) {
-        final int field = termsIn.readVInt();
-        final long numTerms = termsIn.readVLong();
-        if (numTerms <= 0) {
-          throw new CorruptIndexException("Illegal numTerms for field number: " + field, termsIn);
-        }
-        final BytesRef rootCode = readBytesRef(termsIn);
-        final FieldInfo fieldInfo = state.fieldInfos.fieldInfo(field);
-        if (fieldInfo == null) {
-          throw new CorruptIndexException("invalid field number: " + field, termsIn);
-        }
-        final long sumTotalTermFreq = termsIn.readVLong();
-        // when frequencies are omitted, sumDocFreq=sumTotalTermFreq and only one value is written.
-        final long sumDocFreq = fieldInfo.getIndexOptions() == IndexOptions.DOCS ? sumTotalTermFreq : termsIn.readVLong();
-        final int docCount = termsIn.readVInt();
-        if (version < VERSION_META_LONGS_REMOVED) {
-          final int longsSize = termsIn.readVInt();
-          if (longsSize < 0) {
-            throw new CorruptIndexException("invalid longsSize for field: " + fieldInfo.name + ", longsSize=" + longsSize, termsIn);
+          final int numFields = termsMetaIn.readVInt();
+          if (numFields < 0) {
+            throw new CorruptIndexException("invalid numFields: " + numFields, termsMetaIn);
+          }
+          fieldMap = new HashMap<>((int) (numFields / 0.75f) + 1);
+          for (int i = 0; i < numFields; ++i) {
+            final int field = termsMetaIn.readVInt();
+            final long numTerms = termsMetaIn.readVLong();
+            if (numTerms <= 0) {
+              throw new CorruptIndexException("Illegal numTerms for field number: " + field, termsMetaIn);
+            }
+            final BytesRef rootCode = readBytesRef(termsMetaIn);
+            final FieldInfo fieldInfo = state.fieldInfos.fieldInfo(field);
+            if (fieldInfo == null) {
+              throw new CorruptIndexException("invalid field number: " + field, termsMetaIn);
+            }
+            final long sumTotalTermFreq = termsMetaIn.readVLong();
+            // when frequencies are omitted, sumDocFreq=sumTotalTermFreq and only one value is written.
+            final long sumDocFreq = fieldInfo.getIndexOptions() == IndexOptions.DOCS ? sumTotalTermFreq : termsMetaIn.readVLong();
+            final int docCount = termsMetaIn.readVInt();
+            if (version < VERSION_META_LONGS_REMOVED) {
+              final int longsSize = termsMetaIn.readVInt();
+              if (longsSize < 0) {
+                throw new CorruptIndexException("invalid longsSize for field: " + fieldInfo.name + ", longsSize=" + longsSize, termsMetaIn);
+              }
+            }
+            BytesRef minTerm = readBytesRef(termsMetaIn);
+            BytesRef maxTerm = readBytesRef(termsMetaIn);
+            if (docCount < 0 || docCount > state.segmentInfo.maxDoc()) { // #docs with field must be <= #docs
+              throw new CorruptIndexException("invalid docCount: " + docCount + " maxDoc: " + state.segmentInfo.maxDoc(), termsMetaIn);
+            }
+            if (sumDocFreq < docCount) {  // #postings must be >= #docs with field
+              throw new CorruptIndexException("invalid sumDocFreq: " + sumDocFreq + " docCount: " + docCount, termsMetaIn);
+            }
+            if (sumTotalTermFreq < sumDocFreq) { // #positions must be >= #postings
+              throw new CorruptIndexException("invalid sumTotalTermFreq: " + sumTotalTermFreq + " sumDocFreq: " + sumDocFreq, termsMetaIn);
+            }
+            final long indexStartFP = indexMetaIn.readVLong();
+            FieldReader previous = fieldMap.put(fieldInfo.name,
+                new FieldReader(this, fieldInfo, numTerms, rootCode, sumTotalTermFreq, sumDocFreq, docCount,
+                    indexStartFP, indexMetaIn, indexIn, minTerm, maxTerm));
+            if (previous != null) {
+              throw new CorruptIndexException("duplicate field: " + fieldInfo.name, termsMetaIn);
+            }
+          }
+          if (version >= VERSION_META_FILE) {
+            indexLength = metaIn.readLong();
+            termsLength = metaIn.readLong();
+          }
+        } catch (Throwable exception) {
+          priorE = exception;
+        } finally {
+          if (metaIn != null) {
+            CodecUtil.checkFooter(metaIn, priorE);
+          } else if (priorE != null) {
+            IOUtils.rethrowAlways(priorE);
           }
         }
-        BytesRef minTerm = readBytesRef(termsIn);
-        BytesRef maxTerm = readBytesRef(termsIn);
-        if (docCount < 0 || docCount > state.segmentInfo.maxDoc()) { // #docs with field must be <= #docs
-          throw new CorruptIndexException("invalid docCount: " + docCount + " maxDoc: " + state.segmentInfo.maxDoc(), termsIn);
-        }
-        if (sumDocFreq < docCount) {  // #postings must be >= #docs with field
-          throw new CorruptIndexException("invalid sumDocFreq: " + sumDocFreq + " docCount: " + docCount, termsIn);
-        }
-        if (sumTotalTermFreq < sumDocFreq) { // #positions must be >= #postings
-          throw new CorruptIndexException("invalid sumTotalTermFreq: " + sumTotalTermFreq + " sumDocFreq: " + sumDocFreq, termsIn);
-        }
-        final FSTLoadMode perFieldLoadMode = getLoadMode(state.readerAttributes, FST_MODE_KEY + "." + fieldInfo.name, fstLoadMode);
-        final long indexStartFP = indexIn.readVLong();
-        FieldReader previous = fieldMap.put(fieldInfo.name,
-                                          new FieldReader(this, fieldInfo, numTerms, rootCode, sumTotalTermFreq, sumDocFreq, docCount,
-                                                          indexStartFP, indexIn, minTerm, maxTerm, state.openedFromWriter, perFieldLoadMode));
-        if (previous != null) {
-          throw new CorruptIndexException("duplicate field: " + fieldInfo.name, termsIn);
-        }
+      }
+      if (version >= VERSION_META_FILE) {
+        // At this point the checksum of the meta file has been verified so the lengths are likely correct
+        CodecUtil.retrieveChecksum(indexIn, indexLength);
+        CodecUtil.retrieveChecksum(termsIn, termsLength);
+      } else {
+        assert indexLength == -1 : indexLength;
+        assert termsLength == -1 : termsLength;
       }
       List<String> fieldList = new ArrayList<>(fieldMap.keySet());
       fieldList.sort(null);
+      this.fieldMap = fieldMap;
       this.fieldList = Collections.unmodifiableList(fieldList);
       success = true;
     } finally {
@@ -253,19 +252,6 @@ public final class BlockTreeTermsReader extends FieldsProducer {
         // this.close() will close in:
         IOUtils.closeWhileHandlingException(this);
       }
-    }
-  }
-
-  private static FSTLoadMode getLoadMode(Map<String, String> attributes, String key, FSTLoadMode defaultValue) {
-    String value = attributes.get(key);
-    if (value == null) {
-      return defaultValue;
-    }
-    try {
-      return FSTLoadMode.valueOf(value);
-    } catch (IllegalArgumentException ex) {
-      throw new IllegalArgumentException("Invalid value for " + key + " expected one of: "
-          + Arrays.toString(FSTLoadMode.values()) + " but was: " + value, ex);
     }
   }
 
@@ -356,6 +342,9 @@ public final class BlockTreeTermsReader extends FieldsProducer {
 
   @Override
   public void checkIntegrity() throws IOException { 
+    // terms index
+    CodecUtil.checksumEntireFile(indexIn);
+
     // term dictionary
     CodecUtil.checksumEntireFile(termsIn);
       

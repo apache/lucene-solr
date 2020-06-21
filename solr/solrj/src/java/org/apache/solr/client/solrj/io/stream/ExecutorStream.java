@@ -37,7 +37,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParamete
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -132,13 +132,13 @@ public class ExecutorStream extends TupleStream implements Expressible {
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l =  new ArrayList();
+    List<TupleStream> l =  new ArrayList<>();
     l.add(stream);
     return l;
   }
 
   public void open() throws IOException {
-    executorService = ExecutorUtil.newMDCAwareFixedThreadPool(threads, new SolrjNamedThreadFactory("ExecutorStream"));
+    executorService = ExecutorUtil.newMDCAwareFixedThreadPool(threads, new SolrNamedThreadFactory("ExecutorStream"));
     stream.open();
   }
 
@@ -153,6 +153,7 @@ public class ExecutorStream extends TupleStream implements Expressible {
   }
 
   public Tuple read() throws IOException {
+    @SuppressWarnings({"unchecked", "rawtypes"})
     ArrayBlockingQueue<Tuple> queue = new ArrayBlockingQueue(10000);
     while(true) {
       Tuple tuple = stream.read();
@@ -183,10 +184,12 @@ public class ExecutorStream extends TupleStream implements Expressible {
     private StreamFactory streamFactory;
     private StreamContext streamContext;
 
-    public StreamTask(ArrayBlockingQueue queue, StreamFactory streamFactory, StreamContext streamContext) {
+    @SuppressWarnings({"unchecked"})
+    public StreamTask(@SuppressWarnings({"rawtypes"})ArrayBlockingQueue queue, StreamFactory streamFactory, StreamContext streamContext) {
       this.queue = queue;
       this.streamFactory = streamFactory;
       this.streamContext = new StreamContext();
+      this.streamContext.setObjectCache(streamContext.getObjectCache());
       this.streamContext.setSolrClientCache(streamContext.getSolrClientCache());
       this.streamContext.setModelCache(streamContext.getModelCache());
     }
@@ -214,7 +217,7 @@ public class ExecutorStream extends TupleStream implements Expressible {
           }
         }
       } catch (Exception e) {
-        log.error("Executor Error: id="+id+" expr_s="+expr, e);
+        log.error("Executor Error: id={} expr_s={}", id, expr, e);
       } finally {
         try {
           stream.close();

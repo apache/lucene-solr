@@ -22,10 +22,8 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
@@ -67,7 +65,7 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
   private DateTimeFormatter formatter;
 
   private Metric[] metrics;
-  private List<Tuple> tuples = new ArrayList();
+  private List<Tuple> tuples = new ArrayList<>();
   private int index;
   private String zkHost;
   private SolrParams params;
@@ -289,7 +287,7 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
   }
 
   public List<TupleStream> children() {
-    return new ArrayList();
+    return new ArrayList<>();
   }
 
   public void open() throws IOException {
@@ -309,6 +307,7 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
 
     QueryRequest request = new QueryRequest(paramsLoc, SolrRequest.METHOD.POST);
     try {
+      @SuppressWarnings({"rawtypes"})
       NamedList response = cloudSolrClient.request(request, collection);
       getTuples(response, field, metrics);
     } catch (Exception e) {
@@ -328,10 +327,7 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
       ++index;
       return tuple;
     } else {
-      Map fields = new HashMap();
-      fields.put("EOF", true);
-      Tuple tuple = new Tuple(fields);
-      return tuple;
+      return Tuple.EOF();
     }
   }
 
@@ -366,35 +362,45 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
         if(metricCount>0) {
           buf.append(",");
         }
-        buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier).append('"');
+        if(identifier.startsWith("per(")) {
+          buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier.replaceFirst("per", "percentile")).append('"');
+        } else if(identifier.startsWith("std(")) {
+          buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier.replaceFirst("std", "stddev")).append('"');
+        } else {
+          buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier).append('"');
+        }
         ++metricCount;
       }
     }
     buf.append("}}");
   }
 
-  private void getTuples(NamedList response,
+  private void getTuples(@SuppressWarnings({"rawtypes"})NamedList response,
                          String field,
                          Metric[] metrics) {
 
-    Tuple tuple = new Tuple(new HashMap());
+    Tuple tuple = new Tuple();
+    @SuppressWarnings({"rawtypes"})
     NamedList facets = (NamedList)response.get("facets");
     fillTuples(tuples, tuple, facets, field, metrics);
   }
 
   private void fillTuples(List<Tuple> tuples,
                           Tuple currentTuple,
-                          NamedList facets,
+                          @SuppressWarnings({"rawtypes"})NamedList facets,
                           String field,
                           Metric[] _metrics) {
 
+    @SuppressWarnings({"rawtypes"})
     NamedList nl = (NamedList)facets.get("timeseries");
     if(nl == null) {
       return;
     }
 
+    @SuppressWarnings({"rawtypes"})
     List allBuckets = (List)nl.get("buckets");
     for(int b=0; b<allBuckets.size(); b++) {
+      @SuppressWarnings({"rawtypes"})
       NamedList bucket = (NamedList)allBuckets.get(b);
       Object val = bucket.get("val");
 

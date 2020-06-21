@@ -87,7 +87,7 @@ public class TestSolrEntityProcessorUnit extends AbstractDataImportHandlerTestCa
       Map<String, Object> next = processor.nextRow();
       assertNotNull(next);
   
-      @SuppressWarnings("unchecked")
+      @SuppressWarnings({"unchecked", "rawtypes"})
       List<Comparable> multiField = (List<Comparable>) next.get("description");
       assertEquals(testDoc.getValues("description").size(), multiField.size());
       assertEquals(testDoc.getValues("description"), multiField);
@@ -161,6 +161,7 @@ public class TestSolrEntityProcessorUnit extends AbstractDataImportHandlerTestCa
     types.add(new FldType(ID, ONE_ONE, new SVal('A', 'Z', 4, 40)));
     types.add(new FldType("description", new IRange(1, 3), new SVal('a', 'c', 1, 1)));
 
+    @SuppressWarnings({"rawtypes"})
     Set<Comparable> previousIds = new HashSet<>();
     List<Doc> docs = new ArrayList<>(numDocs);
     for (int i = 0; i < numDocs; i++) {

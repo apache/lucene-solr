@@ -42,11 +42,14 @@ public class Suggestion {
     public Policy.Session session;
     public Violation violation;
     List<Suggester.SuggestionInfo> suggestions = new ArrayList<>();
+    @SuppressWarnings({"rawtypes"})
     SolrRequest addSuggestion(Suggester suggester) {
       return addSuggestion(suggester, Type.violation);
     }
 
+    @SuppressWarnings({"rawtypes"})
     SolrRequest addSuggestion(Suggester suggester, Type type) {
+      @SuppressWarnings({"rawtypes"})
       SolrRequest op = suggester.getSuggestion();
       if (op != null) {
         session = suggester.getSession();
@@ -68,7 +71,6 @@ public class Suggestion {
 
     public boolean hasTimedOut() {
       return session.cloudManager.getTimeSource().getTimeNs() >= endTime;
-
     }
 
     public boolean needMore() {
@@ -94,6 +96,7 @@ public class Suggestion {
         Suggester suggester = ctx.session.getSuggester(MOVEREPLICA)
             .hint(Suggester.Hint.COLL_SHARD, new Pair<>(ctx.violation.coll, shard))
             .forceOperation(true);
+        @SuppressWarnings({"rawtypes"})
         SolrRequest op = ctx.addSuggestion(suggester);
         if (op == null) continue;
         totalSuggestions++;

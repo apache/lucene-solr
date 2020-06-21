@@ -27,22 +27,20 @@ import org.apache.lucene.util.BytesRef;
  */
 public class UnionFieldMetadataBuilder {
 
+  private long dictionaryStartFP;
   private long minStartBlockFP;
   private long maxEndBlockFP;
   private BytesRef maxLastTerm;
 
   public UnionFieldMetadataBuilder() {
-    reset();
-  }
-
-  public UnionFieldMetadataBuilder reset() {
-    maxEndBlockFP = Long.MIN_VALUE;
+    dictionaryStartFP = -1;
     minStartBlockFP = Long.MAX_VALUE;
-    maxLastTerm = null;
-    return this;
+    maxEndBlockFP = Long.MIN_VALUE;
   }
 
   public UnionFieldMetadataBuilder addFieldMetadata(FieldMetadata fieldMetadata) {
+    assert dictionaryStartFP == -1 || dictionaryStartFP == fieldMetadata.getDictionaryStartFP();
+    dictionaryStartFP = fieldMetadata.getDictionaryStartFP();
     minStartBlockFP = Math.min(minStartBlockFP, fieldMetadata.getFirstBlockStartFP());
     maxEndBlockFP = Math.max(maxEndBlockFP, fieldMetadata.getLastBlockStartFP());
     if (maxLastTerm == null || maxLastTerm.compareTo(fieldMetadata.getLastTerm()) < 0) {
@@ -55,6 +53,6 @@ public class UnionFieldMetadataBuilder {
     if (maxLastTerm == null) {
       throw new IllegalStateException("no field metadata was provided");
     }
-    return new FieldMetadata(null, 0, false, minStartBlockFP, maxEndBlockFP, maxLastTerm);
+    return new FieldMetadata(dictionaryStartFP, minStartBlockFP, maxEndBlockFP, maxLastTerm);
   }
 }

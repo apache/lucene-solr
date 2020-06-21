@@ -256,19 +256,27 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
       }
       try {
         if (lastActionExecutedAt.get() != 0)  {
-          log.info("last action at " + lastActionExecutedAt.get() + " time = " + cluster.getTimeSource().getTimeNs());
+          if (log.isInfoEnabled()) {
+            log.info("last action at {} time = {}", lastActionExecutedAt.get(), cluster.getTimeSource().getTimeNs());
+          }
           if (TimeUnit.NANOSECONDS.toMillis(cluster.getTimeSource().getTimeNs() - lastActionExecutedAt.get()) <
               TimeUnit.SECONDS.toMillis(ScheduledTriggers.DEFAULT_ACTION_THROTTLE_PERIOD_SECONDS) - DELTA_MS) {
-            log.info("action executed again before minimum wait time from {}", event.getSource());
+            if (log.isInfoEnabled()) {
+              log.info("action executed again before minimum wait time from {}", event.getSource());
+            }
             fail("TriggerListener was fired before the throttling period");
           }
         }
         if (onlyOnce.compareAndSet(false, true)) {
-          log.info("action executed from {}", event.getSource());
+          if (log.isInfoEnabled()) {
+            log.info("action executed from {}", event.getSource());
+          }
           lastActionExecutedAt.set(cluster.getTimeSource().getTimeNs());
           getTriggerFiredLatch().countDown();
         } else  {
-          log.info("action executed more than once from {}", event.getSource());
+          if (log.isInfoEnabled()) {
+            log.info("action executed more than once from {}", event.getSource());
+          }
           fail("Trigger should not have fired more than once!");
         }
       } finally {
@@ -278,6 +286,7 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testNodeLostTriggerRestoreState() throws Exception {
     
     final String triggerName = "node_lost_restore_trigger";
@@ -388,6 +397,7 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testNodeAddedTriggerRestoreState() throws Exception {
     
     final String triggerName = "node_added_restore_trigger";
@@ -514,6 +524,7 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     assertTrue(triggerFired.get());
     TriggerEvent nodeAddedEvent = events.iterator().next();
     assertNotNull(nodeAddedEvent);
+    @SuppressWarnings({"unchecked"})
     List<String> nodeNames = (List<String>)nodeAddedEvent.getProperty(TriggerEvent.NODE_NAMES);
     assertTrue(nodeAddedEvent.toString(), nodeNames.contains(newNode));
 
@@ -567,6 +578,7 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     assertTrue(triggerFired.get());
     TriggerEvent nodeLostEvent = events.iterator().next();
     assertNotNull(nodeLostEvent);
+    @SuppressWarnings({"unchecked"})
     List<String> nodeNames = (List<String>)nodeLostEvent.getProperty(TriggerEvent.NODE_NAMES);
     assertTrue(nodeNames.contains(lostNodeName));
 
@@ -823,6 +835,7 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     triggerFiredLatch = new CountDownLatch(1);
     TriggerEvent nodeAddedEvent = events.iterator().next();
     assertNotNull(nodeAddedEvent);
+    @SuppressWarnings({"unchecked"})
     List<String> nodeNames = (List<String>)nodeAddedEvent.getProperty(TriggerEvent.NODE_NAMES);
     assertTrue(nodeNames.contains(newNode));
     // add a second node - state of the trigger will change but it won't fire for waitFor sec.
@@ -1058,6 +1071,7 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     }
     assertEquals(1, events.size());
     TriggerEvent ev = events.iterator().next();
+    @SuppressWarnings({"unchecked"})
     List<String> nodeNames = (List<String>) ev.getProperty(TriggerEvent.NODE_NAMES);
     assertTrue(nodeNames.contains(overseerLeader));
     assertEquals(TriggerEventType.NODELOST, ev.getEventType());
@@ -1377,6 +1391,7 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
 
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testSearchRate() throws Exception {
     SolrClient solrClient = cluster.simGetSolrClient();
     String COLL1 = "collection1";

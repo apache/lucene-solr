@@ -37,18 +37,21 @@ public class RetryUtil {
     boolean execute();
   }
   
-  public static void retryOnThrowable(Class clazz, long timeoutms, long intervalms, RetryCmd cmd) throws Throwable {
+  public static void retryOnThrowable(@SuppressWarnings({"rawtypes"})Class clazz, long timeoutms, long intervalms, RetryCmd cmd) throws Throwable {
     retryOnThrowable(Collections.singleton(clazz), timeoutms, intervalms, cmd);
   }
   
-  public static void retryOnThrowable(Set<Class> classes, long timeoutms, long intervalms, RetryCmd cmd) throws Throwable {
+  public static void retryOnThrowable(@SuppressWarnings({"rawtypes"})Set<Class> classes,
+                                      long timeoutms, long intervalms, RetryCmd cmd) throws Throwable {
     long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeoutms, TimeUnit.MILLISECONDS);
     while (true) {
       try {
         cmd.execute();
       } catch (Throwable t) {
         if (isInstanceOf(classes, t) && System.nanoTime() < timeout) {
-          log.info("Retry due to Throwable, " + t.getClass().getName() + " " + t.getMessage());
+          if (log.isInfoEnabled()) {
+            log.info("Retry due to Throwable, {} {}", t.getClass().getName(), t.getMessage());
+          }
           Thread.sleep(intervalms);
           continue;
         }
@@ -59,8 +62,8 @@ public class RetryUtil {
     }
   }
   
-  private static boolean isInstanceOf(Set<Class> classes, Throwable t) {
-    for (Class c : classes) {
+  private static boolean isInstanceOf(@SuppressWarnings({"rawtypes"})Set<Class> classes, Throwable t) {
+    for (@SuppressWarnings({"rawtypes"})Class c : classes) {
       if (c.isInstance(t)) {
         return true;
       }

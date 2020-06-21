@@ -80,7 +80,7 @@ public class LockStressTest {
 
     final LockFactory lockFactory = getNewLockFactory(lockFactoryClassName);
     // we test the lock factory directly, so we don't need it on the directory itsself (the directory is just for testing)
-    final FSDirectory lockDir = new SimpleFSDirectory(lockDirPath, NoLockFactory.INSTANCE);
+    final FSDirectory lockDir = new NIOFSDirectory(lockDirPath, NoLockFactory.INSTANCE);
     final InetSocketAddress addr = new InetSocketAddress(verifierHost, verifierPort);
     System.out.println("Connecting to server " + addr +
         " and registering as client " + myID + "...");

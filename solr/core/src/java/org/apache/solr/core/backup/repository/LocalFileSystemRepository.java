@@ -33,8 +33,8 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.store.NoLockFactory;
-import org.apache.lucene.store.SimpleFSDirectory;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.DirectoryFactory;
 
@@ -46,10 +46,11 @@ import com.google.common.base.Preconditions;
  * interface e.g. NFS).
  */
 public class LocalFileSystemRepository implements BackupRepository {
+  @SuppressWarnings("rawtypes")
   private NamedList config = null;
 
   @Override
-  public void init(NamedList args) {
+  public void init(@SuppressWarnings("rawtypes") NamedList args) {
     this.config = args;
   }
 
@@ -117,7 +118,7 @@ public class LocalFileSystemRepository implements BackupRepository {
 
   @Override
   public IndexInput openInput(URI dirPath, String fileName, IOContext ctx) throws IOException {
-    try (FSDirectory dir = new SimpleFSDirectory(Paths.get(dirPath), NoLockFactory.INSTANCE)) {
+    try (FSDirectory dir = new NIOFSDirectory(Paths.get(dirPath), NoLockFactory.INSTANCE)) {
       return dir.openInput(fileName, ctx);
     }
   }
@@ -129,7 +130,7 @@ public class LocalFileSystemRepository implements BackupRepository {
 
   @Override
   public String[] listAll(URI dirPath) throws IOException {
-    try (FSDirectory dir = new SimpleFSDirectory(Paths.get(dirPath), NoLockFactory.INSTANCE)) {
+    try (FSDirectory dir = new NIOFSDirectory(Paths.get(dirPath), NoLockFactory.INSTANCE)) {
       return dir.listAll();
     }
   }
@@ -141,14 +142,14 @@ public class LocalFileSystemRepository implements BackupRepository {
 
   @Override
   public void copyFileFrom(Directory sourceDir, String fileName, URI dest) throws IOException {
-    try (FSDirectory dir = new SimpleFSDirectory(Paths.get(dest), NoLockFactory.INSTANCE)) {
+    try (FSDirectory dir = new NIOFSDirectory(Paths.get(dest), NoLockFactory.INSTANCE)) {
       dir.copyFrom(sourceDir, fileName, fileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
     }
   }
 
   @Override
   public void copyFileTo(URI sourceDir, String fileName, Directory dest) throws IOException {
-    try (FSDirectory dir = new SimpleFSDirectory(Paths.get(sourceDir), NoLockFactory.INSTANCE)) {
+    try (FSDirectory dir = new NIOFSDirectory(Paths.get(sourceDir), NoLockFactory.INSTANCE)) {
       dest.copyFrom(dir, fileName, fileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
     }
   }

@@ -154,10 +154,10 @@ public class NodesSysPropsCacher implements SolrCloseable {
           Thread.sleep(backOffTime);
         } catch (InterruptedException e1) {
           Thread.currentThread().interrupt();
-          log.info("Exception on caching node:{} system.properties:{}, retry {}/{}", node, tags, i+1, NUM_RETRY, e);
+          log.info("Exception on caching node:{} system.properties:{}, retry {}/{}", node, tags, i+1, NUM_RETRY, e); // logOk
           break;
         }
-        log.info("Exception on caching node:{} system.properties:{}, retry {}/{}", node, tags, i+1, NUM_RETRY, e);
+        log.info("Exception on caching node:{} system.properties:{}, retry {}/{}", node, tags, i+1, NUM_RETRY, e); // logOk
       }
     }
   }

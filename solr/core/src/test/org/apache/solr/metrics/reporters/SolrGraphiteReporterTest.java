@@ -32,7 +32,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
-import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricReporter;
@@ -60,7 +59,7 @@ public class SolrGraphiteReporterTest extends SolrTestCaseJ4 {
       // define the port where MockGraphite is running
       System.setProperty("mock-graphite-port", String.valueOf(mock.port));
       String solrXml = FileUtils.readFileToString(Paths.get(home.toString(), "solr-graphitereporter.xml").toFile(), "UTF-8");
-      NodeConfig cfg = SolrXmlConfig.fromString(new SolrResourceLoader(home), solrXml);
+      NodeConfig cfg = SolrXmlConfig.fromString(home, solrXml);
       CoreContainer cc = createCoreContainer(cfg, new TestHarness.TestCoresLocator
                                              (DEFAULT_TEST_CORENAME, initAndGetDataDir().getAbsolutePath(),
                                               "solrconfig.xml", "schema.xml"));
@@ -74,7 +73,7 @@ public class SolrGraphiteReporterTest extends SolrTestCaseJ4 {
       assertTrue(reporter instanceof SolrGraphiteReporter);
       Thread.sleep(5000);
       assertTrue(mock.lines.size() >= 3);
-      String[] frozenLines = (String[])mock.lines.toArray(new String[mock.lines.size()]);
+      String[] frozenLines = mock.lines.toArray(new String[mock.lines.size()]);
       for (String line : frozenLines) {
         assertTrue(line, line.startsWith("test.solr.node.CONTAINER.cores."));
       }

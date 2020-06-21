@@ -63,7 +63,8 @@ public class DeleteSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
+  @SuppressWarnings({"unchecked"})
+  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     String extCollectionName =  message.getStr(COLLECTION_PROP);
     boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
     String collectionName;
@@ -74,6 +75,7 @@ public class DeleteSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
     }
     String commitName =  message.getStr(CoreAdminParams.COMMIT_NAME);
     String asyncId = message.getStr(ASYNC);
+    @SuppressWarnings({"rawtypes"})
     NamedList shardRequestResults = new NamedList();
     ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseer.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient());
     SolrZkClient zkClient = ocmh.zkStateReader.getZkClient();
@@ -126,10 +128,12 @@ public class DeleteSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
     }
 
     shardRequestTracker.processResponses(shardRequestResults, shardHandler, false, null);
+    @SuppressWarnings({"rawtypes"})
     NamedList success = (NamedList) shardRequestResults.get("success");
     List<CoreSnapshotMetaData> replicas = new ArrayList<>();
     if (success != null) {
       for ( int i = 0 ; i < success.size() ; i++) {
+        @SuppressWarnings({"rawtypes"})
         NamedList resp = (NamedList)success.getVal(i);
         // Unfortunately async processing logic doesn't provide the "core" name automatically.
         String coreName = (String)resp.get("core");
@@ -153,8 +157,10 @@ public class DeleteSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
       CollectionSnapshotMetaData newResult = new CollectionSnapshotMetaData(meta.get().getName(), SnapshotStatus.Failed,
           meta.get().getCreationDate(), replicasWithSnapshot);
       SolrSnapshotManager.updateCollectionLevelSnapshot(zkClient, collectionName, newResult);
-      log.info("Saved snapshot information for collection={} with commitName={} in Zookeeper as follows: {}", collectionName, commitName,
-          Utils.toJSON(newResult));
+      if (log.isInfoEnabled()) {
+        log.info("Saved snapshot information for collection={} with commitName={} in Zookeeper as follows: {}", collectionName, commitName,
+            Utils.toJSON(newResult));
+      }
       throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to delete snapshot on cores " + coresWithSnapshot);
 
     } else {

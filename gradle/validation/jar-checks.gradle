@@ -279,7 +279,7 @@ configure([project(":solr"), project(":lucene"),]) {
   // Update dependency checksums.
   task updateLicenses() {
     group = 'Dependency validation'
-    description = "Write or update checksums of dependencies"
+    description = "Write or update checksums of dependencies. May need to run gradlew --write-locks first if changing dependency versions"
     dependsOn jarInfoTasks
 
     doLast {

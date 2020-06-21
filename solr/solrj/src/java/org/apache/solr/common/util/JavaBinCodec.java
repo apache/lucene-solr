@@ -351,6 +351,7 @@ public class JavaBinCodec implements PushWriter {
     throw new RuntimeException("Unknown type " + tagByte);
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public boolean writeKnownType(Object val) throws IOException {
     if (writePrimitive(val)) return true;
     if (val instanceof NamedList) {
@@ -588,10 +589,14 @@ public class JavaBinCodec implements PushWriter {
 
   public SolrDocumentList readSolrDocumentList(DataInputInputStream dis) throws IOException {
     SolrDocumentList solrDocs = new SolrDocumentList();
-    List list = (List) readVal(dis);
+    @SuppressWarnings("unchecked")
+    List<Object> list = (List<Object>) readVal(dis);
     solrDocs.setNumFound((Long) list.get(0));
     solrDocs.setStart((Long) list.get(1));
     solrDocs.setMaxScore((Float) list.get(2));
+    if (list.size() > 3) { //needed for back compatibility
+      solrDocs.setNumFoundExact((Boolean)list.get(3));
+    }
 
     @SuppressWarnings("unchecked")
     List<SolrDocument> l = (List<SolrDocument>) readVal(dis);
@@ -602,10 +607,11 @@ public class JavaBinCodec implements PushWriter {
   public void writeSolrDocumentList(SolrDocumentList docs)
           throws IOException {
     writeTag(SOLRDOCLST);
-    List<Number> l = new ArrayList<>(3);
+    List<Object> l = new ArrayList<>(4);
     l.add(docs.getNumFound());
     l.add(docs.getStart());
     l.add(docs.getMaxScore());
+    l.add(docs.getNumFoundExact());
     writeArray(l);
     writeArray(docs);
   }
@@ -747,7 +753,7 @@ public class JavaBinCodec implements PushWriter {
     val.writeIter(itemWriter);
     writeTag(END);
   }
-  public void writeIterator(Iterator iter) throws IOException {
+  public void writeIterator(@SuppressWarnings({"rawtypes"})Iterator iter) throws IOException {
     writeTag(ITERATOR);
     while (iter.hasNext()) {
       writeVal(iter.next());
@@ -765,14 +771,14 @@ public class JavaBinCodec implements PushWriter {
     return l;
   }
 
-  public void writeArray(List l) throws IOException {
+  public void writeArray(@SuppressWarnings({"rawtypes"})List l) throws IOException {
     writeTag(ARR, l.size());
     for (int i = 0; i < l.size(); i++) {
       writeVal(l.get(i));
     }
   }
 
-  public void writeArray(Collection coll) throws IOException {
+  public void writeArray(@SuppressWarnings({"rawtypes"})Collection coll) throws IOException {
     writeTag(ARR, coll.size());
     for (Object o : coll) {
       writeVal(o);
@@ -788,11 +794,13 @@ public class JavaBinCodec implements PushWriter {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   public List<Object> readArray(DataInputInputStream dis) throws IOException {
     int sz = readSize(dis);
     return readArray(dis, sz);
   }
 
+  @SuppressWarnings({"rawtypes"})
   protected List readArray(DataInputInputStream dis, int sz) throws IOException {
     ArrayList<Object> l = new ArrayList<>(sz);
     for (int i = 0; i < sz; i++) {
@@ -811,7 +819,7 @@ public class JavaBinCodec implements PushWriter {
     writeStr(enumFieldValue.toString());
   }
 
-  public void writeMapEntry(Map.Entry val) throws IOException {
+  public void writeMapEntry(Map.Entry<?,?> val) throws IOException {
     writeTag(MAP_ENTRY);
     writeVal(val.getKey());
     writeVal(val.getValue());
@@ -867,11 +875,11 @@ public class JavaBinCodec implements PushWriter {
         if(this == obj) {
           return true;
         }
-        if(!(obj instanceof Entry)) {
-          return false;
+        if (obj instanceof Map.Entry<?, ?>) {
+          Entry<?, ?> entry = (Entry<?, ?>) obj;
+          return (this.getKey().equals(entry.getKey()) && this.getValue().equals(entry.getValue()));
         }
-        Map.Entry<Object, Object> entry = (Entry<Object, Object>) obj;
-        return (this.getKey().equals(entry.getKey()) && this.getValue().equals(entry.getValue()));
+        return false;
       }
     };
   }

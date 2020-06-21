@@ -59,7 +59,7 @@ public class HadoopSSLCredentialProvider extends AbstractSSLCredentialProvider {
       char[] password = hadoopConfigurationProvider.getPassword(keystoreKey);
       return password == null ? null : String.valueOf(password);
     } catch (IOException e) {
-      log.error("Could not read password from Hadoop Credential Store: " + keystoreKey, e);
+      log.error("Could not read password from Hadoop Credential Store: {}", keystoreKey, e);
       return null;
     }
   }

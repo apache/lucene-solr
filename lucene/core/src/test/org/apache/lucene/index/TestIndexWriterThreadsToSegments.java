@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
@@ -42,7 +41,7 @@ import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
 
-@LuceneTestCase.SuppressCodecs("SimpleText")
+@LuceneTestCase.SuppressCodecs({"SimpleText", "Direct"})
 public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
 
   // LUCENE-5644: for first segment, two threads each indexed one doc (likely concurrently), but for second segment, each thread indexed the
@@ -333,8 +332,8 @@ public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
               byte id[] = readSegmentInfoID(dir, fileName);
               SegmentInfo si = TestUtil.getDefaultCodec().segmentInfoFormat().read(dir, segName, id, IOContext.DEFAULT);
               si.setCodec(codec);
-              SegmentCommitInfo sci = new SegmentCommitInfo(si, 0, 0, -1, -1, -1);
-              SegmentReader sr = new SegmentReader(sci, Version.LATEST.major, false, IOContext.DEFAULT, Collections.emptyMap());
+              SegmentCommitInfo sci = new SegmentCommitInfo(si, 0, 0, -1, -1, -1, StringHelper.randomId());
+              SegmentReader sr = new SegmentReader(sci, Version.LATEST.major, IOContext.DEFAULT);
               try {
                 thread0Count += sr.docFreq(new Term("field", "threadID0"));
                 thread1Count += sr.docFreq(new Term("field", "threadID1"));

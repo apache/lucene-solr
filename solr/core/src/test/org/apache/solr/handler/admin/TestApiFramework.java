@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.Command;
@@ -173,10 +172,9 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     Utils.fromJSONString(json);
 
     ApiBag apiBag = new ApiBag(false);
-    AnnotatedApi api = new AnnotatedApi(new ApiTest());
-    apiBag.register(api, Collections.emptyMap());
+    List<Api> apis =  apiBag.registerObject(new ApiTest());
 
-    ValidatingJsonMap spec = api.getSpec();
+    ValidatingJsonMap spec = apis.get(0).getSpec();
 
     assertEquals("POST", spec._getStr("/methods[0]",null) );
     assertEquals("POST", spec._getStr("/methods[0]",null) );
@@ -226,10 +224,17 @@ public class TestApiFramework extends SolrTestCaseJ4 {
 
   public void testAnnotatedApi() {
     ApiBag apiBag = new ApiBag(false);
-    apiBag.register(new AnnotatedApi(new DummyTest()), Collections.emptyMap());
+    apiBag.registerObject(new DummyTest());
     SolrQueryResponse rsp = v2ApiInvoke(apiBag, "/node/filestore/package/mypkg/jar1.jar", "GET",
         new ModifiableSolrParams(), null);
     assertEquals("/package/mypkg/jar1.jar", rsp.getValues().get("path"));
+
+    apiBag = new ApiBag(false);
+    apiBag.registerObject(new DummyTest1());
+    rsp = v2ApiInvoke(apiBag, "/node/filestore/package/mypkg/jar1.jar", "GET",
+        new ModifiableSolrParams(), null);
+    assertEquals("/package/mypkg/jar1.jar", rsp.getValues().get("path"));
+
   }
 
   @EndPoint(
@@ -238,6 +243,18 @@ public class TestApiFramework extends SolrTestCaseJ4 {
       permission = PermissionNameProvider.Name.ALL)
   public class DummyTest {
     @Command
+    public void read(SolrQueryRequest req, SolrQueryResponse rsp) {
+      rsp.add("FSRead.called", "true");
+      rsp.add("path", req.getPathTemplateValues().get("*"));
+    }
+  }
+
+
+  public class DummyTest1 {
+    @EndPoint(
+        path = "/node/filestore/*",
+        method = SolrRequest.METHOD.GET,
+        permission = PermissionNameProvider.Name.ALL)
     public void read(SolrQueryRequest req, SolrQueryResponse rsp) {
       rsp.add("FSRead.called", "true");
       rsp.add("path", req.getPathTemplateValues().get("*"));
@@ -336,14 +353,18 @@ public class TestApiFramework extends SolrTestCaseJ4 {
   }
 
 
-  public static void assertConditions(Map root, Map conditions) {
+  public static void assertConditions(@SuppressWarnings({"rawtypes"})Map root,
+                                      @SuppressWarnings({"rawtypes"})Map conditions) {
     for (Object o : conditions.entrySet()) {
+      @SuppressWarnings({"rawtypes"})
       Map.Entry e = (Map.Entry) o;
       String path = (String) e.getKey();
       List<String> parts = StrUtils.splitSmart(path, path.charAt(0) == '/' ? '/' : ' ', true);
       Object val = Utils.getObjectByPath(root, false, parts);
       if (e.getValue() instanceof ValidatingJsonMap.PredicateWithErrMsg) {
+        @SuppressWarnings({"rawtypes"})
         ValidatingJsonMap.PredicateWithErrMsg value = (ValidatingJsonMap.PredicateWithErrMsg) e.getValue();
+        @SuppressWarnings({"unchecked"})
         String err = value.test(val);
         if (err != null) {
           assertEquals(err + " for " + e.getKey() + " in :" + Utils.toJSONString(root), e.getValue(), val);

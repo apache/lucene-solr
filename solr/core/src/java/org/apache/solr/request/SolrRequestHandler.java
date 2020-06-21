@@ -24,7 +24,7 @@ import org.apache.solr.response.SolrQueryResponse;
  * Implementations of <code>SolrRequestHandler</code> are called to handle query requests.
  *
  * Different <code>SolrRequestHandler</code>s are registered with the <code>SolrCore</code>.
- * One way to register a SolrRequestHandler with the core is thorugh the <code>solrconfig.xml</code> file.
+ * One way to register a SolrRequestHandler with the core is through the <code>solrconfig.xml</code> file.
  * <p>
  * Example <code>solrconfig.xml</code> entry to register a <code>SolrRequestHandler</code> implementation to
  * handle all queries with a Request Handler of "/test":
@@ -45,7 +45,7 @@ public interface SolrRequestHandler extends SolrInfoBean {
    * may be specified when declaring a request handler in
    * solrconfig.xml
    */
-  public void init(NamedList args);
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args);
 
 
   /**

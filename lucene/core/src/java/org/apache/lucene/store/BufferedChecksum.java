@@ -27,8 +27,8 @@ public class BufferedChecksum implements Checksum {
   private final Checksum in;
   private final byte buffer[];
   private int upto;
-  /** Default buffer size: 256 */
-  public static final int DEFAULT_BUFFERSIZE = 256;
+  /** Default buffer size: 1024 */
+  public static final int DEFAULT_BUFFERSIZE = 1024;
   
   /** Create a new BufferedChecksum with {@link #DEFAULT_BUFFERSIZE} */
   public BufferedChecksum(Checksum in) {

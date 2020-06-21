@@ -90,6 +90,7 @@ public class SnapshotCloudManager implements SolrCloudManager {
     SimUtils.checkConsistency(this, config);
   }
 
+  @SuppressWarnings({"unchecked"})
   public SnapshotCloudManager(Map<String, Object> snapshot) throws Exception {
     Objects.requireNonNull(snapshot);
     init(
@@ -120,6 +121,7 @@ public class SnapshotCloudManager implements SolrCloudManager {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   public static SnapshotCloudManager readSnapshot(File sourceDir) throws Exception {
     if (!sourceDir.exists()) {
       throw new Exception("Source path doesn't exist: " + sourceDir);
@@ -194,7 +196,7 @@ public class SnapshotCloudManager implements SolrCloudManager {
           ReplicaInfo info = nodeStateProvider.getReplicaInfo(
               params.get(CollectionAdminParams.COLLECTION), params.get("replica"));
           if (info == null) {
-            log.warn("Can't find ReplicaInfo for suggested operation: " + s);
+            log.warn("Can't find ReplicaInfo for suggested operation: {}", s);
           } else {
             map.put("replica", info);
           }
@@ -241,6 +243,7 @@ public class SnapshotCloudManager implements SolrCloudManager {
   }
 
   @Override
+  @SuppressWarnings({"rawtypes"})
   public SolrResponse request(SolrRequest req) throws IOException {
     throw new UnsupportedOperationException("request");
   }

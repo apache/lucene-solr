@@ -62,7 +62,7 @@ public final class DirectMonotonicWriter {
     this.data = dataOut;
     this.numValues = numValues;
     final int blockSize = 1 << blockShift;
-    this.buffer = new long[blockSize];
+    this.buffer = new long[(int) Math.min(numValues, blockSize)];
     this.bufferSize = 0;
     this.baseDataPointer = dataOut.getFilePointer();
   }

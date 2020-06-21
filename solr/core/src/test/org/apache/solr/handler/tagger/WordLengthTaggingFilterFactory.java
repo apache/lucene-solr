@@ -65,6 +65,11 @@ public class WordLengthTaggingFilterFactory extends TokenFilterFactory {
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public WordLengthTaggingFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public TokenStream create(TokenStream input) {
     return new WordLengthTaggingFilter(input, minLength);

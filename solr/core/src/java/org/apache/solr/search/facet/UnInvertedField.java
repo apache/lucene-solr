@@ -205,7 +205,7 @@ public class UnInvertedField extends DocTermOrds {
     if (tnums != null) {
       for(byte[] target : tnums) {
         if (target != null && target.length > (1<<24)*.9) {
-          log.warn("Approaching too many values for UnInvertedField faceting on field '"+field+"' : bucket size=" + target.length);
+          log.warn("Approaching too many values for UnInvertedField faceting on field '{}' : bucket size={}", field, target.length);
         }
       }
     }
@@ -217,7 +217,7 @@ public class UnInvertedField extends DocTermOrds {
       maxTermCounts = newMaxTermCounts;
     }
 
-    log.info("UnInverted multi-valued field " + toString());
+    log.info("UnInverted multi-valued field {}", this);
     //System.out.println("CREATED: " + toString() + " ti.index=" + ti.index);
   }
 
@@ -315,7 +315,7 @@ public class UnInvertedField extends DocTermOrds {
 
 
 
-  private void getCounts(FacetFieldProcessorByArrayUIF processor, CountSlotAcc counts) throws IOException {
+  private void getCounts(FacetFieldProcessorByArrayUIF processor, SlotAcc.CountSlotAcc counts) throws IOException {
     DocSet docs = processor.fcontext.base;
     int baseSize = docs.size();
     int maxDoc = searcher.maxDoc();
@@ -390,7 +390,7 @@ public class UnInvertedField extends DocTermOrds {
     if (doNegative) {
       for (int i=0; i<numTermsInField; i++) {
  //       counts[i] = maxTermCounts[i] - counts[i];
-        counts.incrementCount(i, maxTermCounts[i] - counts.getCount(i)*2);
+        counts.incrementCount(i, maxTermCounts[i] - (int) counts.getCount(i)*2);
       }
     }
 
@@ -427,7 +427,7 @@ public class UnInvertedField extends DocTermOrds {
     DocSet docs = processor.fcontext.base;
 
     int uniqueTerms = 0;
-    final CountSlotAcc countAcc = processor.countAcc;
+    final SlotAcc.CountSlotAcc countAcc = processor.countAcc;
 
     for (TopTerm tt : bigTerms.values()) {
       if (tt.termNum >= startTermIndex && tt.termNum < endTermIndex) {

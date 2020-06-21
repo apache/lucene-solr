@@ -74,13 +74,15 @@ public class TestSimExecutePlanAction extends SimSolrCloudTestCase {
       // test didn't init, nothing to do
       return;
     }
-                          
-    log.info("-------------_ FINAL STATE --------------");
-    log.info("* Node values: " + Utils.toJSONString(cluster.getSimNodeStateProvider().simGetAllNodeValues()));
-    log.info("* Live nodes: " + cluster.getClusterStateProvider().getLiveNodes());
-    ClusterState state = cluster.getClusterStateProvider().getClusterState();
-    for (String coll: cluster.getSimClusterStateProvider().simListCollections()) {
-      log.info("* Collection " + coll + " state: " + state.getCollection(coll));
+
+    if (log.isInfoEnabled()) {
+      log.info("-------------_ FINAL STATE --------------");
+      log.info("* Node values: {}", Utils.toJSONString(cluster.getSimNodeStateProvider().simGetAllNodeValues())); // logOk
+      log.info("* Live nodes: {}", cluster.getClusterStateProvider().getLiveNodes()); // logOk
+      ClusterState state = cluster.getClusterStateProvider().getClusterState();
+      for (String coll : cluster.getSimClusterStateProvider().simListCollections()) {
+        log.info("* Collection {} state: {}", coll, state.getCollection(coll)); // logOk
+      }
     }
     shutdownCluster();
   }
@@ -95,8 +97,10 @@ public class TestSimExecutePlanAction extends SimSolrCloudTestCase {
     create.setMaxShardsPerNode(1);
     create.process(solrClient);
 
-    log.info("Collection ready after " + CloudUtil.waitForState(cluster, collectionName, 120, TimeUnit.SECONDS,
-        CloudUtil.clusterShape(1, 2, false, true)) + "ms");
+    if (log.isInfoEnabled()) {
+      log.info("Collection ready after {} ms", CloudUtil.waitForState(cluster, collectionName, 120, TimeUnit.SECONDS,
+          CloudUtil.clusterShape(1, 2, false, true)));
+    }
 
     String sourceNodeName = cluster.getSimClusterStateProvider().simGetRandomNode();
     ClusterState clusterState = cluster.getClusterStateProvider().getClusterState();
@@ -128,6 +132,7 @@ public class TestSimExecutePlanAction extends SimSolrCloudTestCase {
               if (!children.isEmpty()) {
                 String child = children.get(0);
                 VersionedData data = cluster.getDistribStateManager().getData(parentPath + "/" + child);
+                @SuppressWarnings({"rawtypes"})
                 Map m = (Map) Utils.fromJSON(data.getData());
                 if (m.containsKey("requestid")) {
                   znodeCreated.set(m.get("requestid").equals(asyncId));
@@ -149,6 +154,7 @@ public class TestSimExecutePlanAction extends SimSolrCloudTestCase {
       action.process(nodeLostEvent, actionContext);
 
 //      assertTrue("ExecutePlanAction should have stored the requestid in ZK before executing the request", znodeCreated.get());
+      @SuppressWarnings({"unchecked"})
       List<NamedList<Object>> responses = (List<NamedList<Object>>) actionContext.getProperty("responses");
       assertNotNull(responses);
       assertEquals(2, responses.size());
@@ -157,8 +163,10 @@ public class TestSimExecutePlanAction extends SimSolrCloudTestCase {
       assertNotNull(response.get("success"));
     }
 
-    log.info("Collection ready after " + CloudUtil.waitForState(cluster, collectionName, 300, TimeUnit.SECONDS,
-        CloudUtil.clusterShape(1, 2, false, true)) + "ms");
+    if (log.isInfoEnabled()) {
+      log.info("Collection ready after {} ms", CloudUtil.waitForState(cluster, collectionName, 300, TimeUnit.SECONDS,
+          CloudUtil.clusterShape(1, 2, false, true)));
+    }
   }
 
   @Test
@@ -174,6 +182,7 @@ public class TestSimExecutePlanAction extends SimSolrCloudTestCase {
         "'actions' : [{'name':'compute_plan', 'class' : 'solr.ComputePlanAction'}," +
         "{'name':'execute_plan','class':'solr.ExecutePlanAction'}]" +
         "}}";
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");

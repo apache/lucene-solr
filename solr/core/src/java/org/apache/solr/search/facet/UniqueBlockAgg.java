@@ -21,14 +21,14 @@ import java.util.Arrays;
 
 import org.apache.solr.schema.SchemaField;
 
-public class UniqueBlockAgg extends UniqueAgg {
+public abstract class UniqueBlockAgg extends UniqueAgg {
 
-  private static final class UniqueBlockSlotAcc extends UniqueSinglevaluedSlotAcc {
-    
-    private int lastSeenValuesPerSlot[];
-    
-    private UniqueBlockSlotAcc(FacetContext fcontext, SchemaField field, int numSlots)
-        throws IOException { //  
+  protected static class UniqueBlockSlotAcc extends UniqueSinglevaluedSlotAcc {
+
+    protected int[] lastSeenValuesPerSlot;
+
+    protected UniqueBlockSlotAcc(FacetContext fcontext, SchemaField field, int numSlots)
+        throws IOException { //
       super(fcontext, field, /*numSlots suppressing inherited accumulator */0, null);
       counts = new int[numSlots];
       lastSeenValuesPerSlot = new int[numSlots];
@@ -62,7 +62,12 @@ public class UniqueBlockAgg extends UniqueAgg {
 
     @Override
     public Object getValue(int slot) throws IOException {
-      return counts[slot];
+      return getNonShardValue(slot);
+    }
+
+    @Override
+    public long getNonShardValue(int slot) {
+      return (long)counts[slot];
     }
   }
 
@@ -70,28 +75,14 @@ public class UniqueBlockAgg extends UniqueAgg {
 
   public UniqueBlockAgg(String field) {
     super(field);
-    name= uniqueBlock;
+    name = uniqueBlock;
   }
 
   @Override
-  public SlotAcc createSlotAcc(FacetContext fcontext, int numDocs, int numSlots) throws IOException {
-    final String fieldName = getArg();
-    SchemaField sf = fcontext.qcontext.searcher().getSchema().getField(fieldName);
-    if (sf.multiValued() || sf.getType().multiValuedFieldCache()) {
-      throw new IllegalArgumentException(uniqueBlock+"("+fieldName+
-          ") doesn't allow multivalue fields, got " + sf);
-    } else {
-      if (sf.getType().getNumberType() != null) {
-        throw new IllegalArgumentException(uniqueBlock+"("+fieldName+
-            ") not yet support numbers " + sf);
-      } else {
-        return new UniqueBlockSlotAcc(fcontext, sf, numSlots);
-      }
-    }
-  }
+  public abstract SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots) throws IOException ;
   
   @Override
   public FacetMerger createFacetMerger(Object prototype) {
-    return new FacetLongMerger() ;
+    return new FacetModule.FacetLongMerger() ;
   }
 }

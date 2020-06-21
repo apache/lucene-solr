@@ -159,8 +159,8 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
    * Remove a field from the document
    *
    * @param name The field name whose field is to be removed from the document
-   * @return the previous field with <tt>name</tt>, or
-   *         <tt>null</tt> if there was no field for <tt>key</tt>.
+   * @return the previous field with <code>name</code>, or
+   *         <code>null</code> if there was no field for <code>key</code>.
    */
   public SolrInputField removeField(String name) {
     return _fields.remove( name );

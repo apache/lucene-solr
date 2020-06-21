@@ -163,6 +163,7 @@ public class HttpSolrCall {
   protected final boolean retry;
   protected SolrCore core = null;
   protected SolrQueryRequest solrReq = null;
+  private boolean mustClearSolrRequestInfo = false;
   protected SolrRequestHandler handler = null;
   protected final SolrParams queryParams;
   protected String path;
@@ -307,7 +308,6 @@ public class HttpSolrCall {
 
     // With a valid core...
     if (core != null) {
-      MDCLoggingContext.setCore(core);
       config = core.getSolrConfig();
       // get or create/cache the parser for the core
       SolrRequestParsers parser = config.getRequestParsers();
@@ -332,7 +332,7 @@ public class HttpSolrCall {
         return; // we are done with a valid handler
       }
     }
-    log.debug("no handler or core retrieved for " + path + ", follow through...");
+    log.debug("no handler or core retrieved for {}, follow through...", path);
 
     action = PASSTHROUGH;
   }
@@ -342,7 +342,7 @@ public class HttpSolrCall {
         SYSTEM_COLL.equals(corename) &&
         "POST".equals(req.getMethod()) &&
         !cores.getZkController().getClusterState().hasCollection(SYSTEM_COLL)) {
-      log.info("Going to auto-create " + SYSTEM_COLL + " collection");
+      log.info("Going to auto-create {} collection", SYSTEM_COLL);
       SolrQueryResponse rsp = new SolrQueryResponse();
       String repFactor = String.valueOf(Math.min(3, cores.getZkController().getClusterState().getLiveNodes().size()));
       cores.getCollectionsHandler().handleRequestBody(new LocalSolrQueryRequest(null,
@@ -414,6 +414,7 @@ public class HttpSolrCall {
         if (path.equals("/schema") || path.startsWith("/schema/")) {
           solrReq = parser.parse(core, path, req);
           SolrRequestInfo.setRequestInfo(new SolrRequestInfo(solrReq, new SolrQueryResponse()));
+          mustClearSolrRequestInfo = true;
           if (path.equals(req.getServletPath())) {
             // avoid endless loop - pass through to Restlet via webapp
             action = PASSTHROUGH;
@@ -474,11 +475,14 @@ public class HttpSolrCall {
     int statusCode = authResponse.statusCode;
     
     if (statusCode == AuthorizationResponse.PROMPT.statusCode) {
+      @SuppressWarnings({"unchecked"})
       Map<String, String> headers = (Map) getReq().getAttribute(AuthenticationPlugin.class.getName());
       if (headers != null) {
         for (Map.Entry<String, String> e : headers.entrySet()) response.setHeader(e.getKey(), e.getValue());
       }
-      log.debug("USER_REQUIRED "+req.getHeader("Authorization")+" "+ req.getUserPrincipal());
+      if (log.isDebugEnabled()) {
+        log.debug("USER_REQUIRED {} {}", req.getHeader("Authorization"), req.getUserPrincipal());
+      }
       sendError(statusCode,
           "Authentication failed, Response code: " + statusCode);
       if (shouldAudit(EventType.REJECTED)) {
@@ -487,7 +491,9 @@ public class HttpSolrCall {
       return RETURN;
     }
     if (statusCode == AuthorizationResponse.FORBIDDEN.statusCode) {
-      log.debug("UNAUTHORIZED auth header {} context : {}, msg: {}", req.getHeader("Authorization"), context, authResponse.getMessage());
+      if (log.isDebugEnabled()) {
+        log.debug("UNAUTHORIZED auth header {} context : {}, msg: {}", req.getHeader("Authorization"), context, authResponse.getMessage());
+      }
       sendError(statusCode,
           "Unauthorized request, Response code: " + statusCode);
       if (shouldAudit(EventType.UNAUTHORIZED)) {
@@ -560,6 +566,7 @@ public class HttpSolrCall {
           return RETURN;
         case REMOTEQUERY:
           SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, new SolrQueryResponse(), action));
+          mustClearSolrRequestInfo = true;
           remoteQuery(coreUrl + path, resp);
           return RETURN;
         case PROCESS:
@@ -576,6 +583,7 @@ public class HttpSolrCall {
                * Content-Type)
                */
             SolrRequestInfo.setRequestInfo(new SolrRequestInfo(solrReq, solrRsp, action));
+            mustClearSolrRequestInfo = true;
             execute(solrRsp);
             if (shouldAudit()) {
               EventType eventType = solrRsp.getException() == null ? EventType.COMPLETED : EventType.ERROR;
@@ -614,8 +622,6 @@ public class HttpSolrCall {
         t = t.getCause();
       }
       return RETURN;
-    } finally {
-      MDCLoggingContext.clear();
     }
 
   }
@@ -650,7 +656,9 @@ public class HttpSolrCall {
       try {
         if (core != null) core.close();
       } finally {
-        SolrRequestInfo.clearRequestInfo();
+        if (mustClearSolrRequestInfo) {
+          SolrRequestInfo.clearRequestInfo();
+        }
       }
       AuthenticationPlugin authcPlugin = cores.getAuthenticationPlugin();
       if (authcPlugin != null) authcPlugin.closeRequest();
@@ -725,7 +733,7 @@ public class HttpSolrCall {
 
       if (httpEntity != null) {
         if (httpEntity.getContentEncoding() != null)
-          resp.setCharacterEncoding(httpEntity.getContentEncoding().getValue());
+          resp.setHeader(httpEntity.getContentEncoding().getName(), httpEntity.getContentEncoding().getValue());
         if (httpEntity.getContentType() != null) resp.setContentType(httpEntity.getContentType().getValue());
 
         InputStream is = httpEntity.getContent();
@@ -774,6 +782,7 @@ public class HttpSolrCall {
     } finally {
       try {
         if (exp != null) {
+          @SuppressWarnings({"rawtypes"})
           SimpleOrderedMap info = new SimpleOrderedMap();
           int code = ResponseUtils.getErrorInfo(ex, info, log);
           sendError(code, info.toString());
@@ -884,6 +893,7 @@ public class HttpSolrCall {
       if (null != ct) response.setContentType(ct);
 
       if (solrRsp.getException() != null) {
+        @SuppressWarnings({"rawtypes"})
         NamedList info = new SimpleOrderedMap();
         int code = ResponseUtils.getErrorInfo(solrRsp.getException(), info, log);
         solrRsp.add("error", info);
@@ -1187,6 +1197,7 @@ public class HttpSolrCall {
   static final String CONTENT_LENGTH_HEADER = "Content-Length";
   List<CommandOperation> parsedCommands;
 
+  @SuppressWarnings({"unchecked"})
   public List<CommandOperation> getCommands(boolean validateInput) {
     if (parsedCommands == null) {
       Iterable<ContentStream> contentStreams = solrReq.getContentStreams();
@@ -1201,6 +1212,7 @@ public class HttpSolrCall {
     return null;
   }
 
+  @SuppressWarnings({"unchecked"})
   protected Map<String, JsonSchemaValidator> getValidators(){
     return Collections.EMPTY_MAP;
   }

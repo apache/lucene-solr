@@ -28,6 +28,7 @@ import org.apache.lucene.codecs.uniformsplit.UniformSplitRot13PostingsFormat;
 import org.apache.lucene.codecs.uniformsplit.UniformSplitTermsWriter;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.store.ByteBuffersDataOutput;
 
 /**
  *  {@link STUniformSplitPostingsFormat} with block encoding using ROT13 cypher.
@@ -35,7 +36,7 @@ import org.apache.lucene.index.SegmentWriteState;
 public class STUniformSplitRot13PostingsFormat extends UniformSplitRot13PostingsFormat {
 
   public STUniformSplitRot13PostingsFormat() {
-    super("STUniformSplitRot13");
+    super("STUniformSplitRot13", false);
   }
 
   protected FieldsConsumer createFieldsConsumer(SegmentWriteState segmentWriteState, PostingsWriterBase postingsWriter) throws IOException {
@@ -50,10 +51,16 @@ public class STUniformSplitRot13PostingsFormat extends UniformSplitRot13Postings
         super.writeDictionary(dictionaryBuilder);
         recordDictionaryEncodingCall();
       }
+      @Override
+      protected void writeEncodedFieldsMetadata(ByteBuffersDataOutput fieldsOutput) throws IOException {
+        recordBlockEncodingCall();
+        super.writeEncodedFieldsMetadata(fieldsOutput);
+        recordFieldsMetadataEncodingCall();
+      }
     };
   }
 
   protected FieldsProducer createFieldsProducer(SegmentReadState segmentReadState, PostingsReaderBase postingsReader) throws IOException {
-    return new STUniformSplitTermsReader(postingsReader, segmentReadState, getBlockDecoder());
+    return new STUniformSplitTermsReader(postingsReader, segmentReadState, getBlockDecoder(), dictionaryOnHeap);
   }
 }

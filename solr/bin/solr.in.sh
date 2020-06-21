@@ -47,6 +47,7 @@
 
 # These GC settings have shown to work well for a number of common Solr workloads
 #GC_TUNE=" \
+#-XX:+ExplicitGCInvokesConcurrent \
 #-XX:SurvivorRatio=4 \
 #-XX:TargetSurvivorRatio=90 \
 #-XX:MaxTenuringThreshold=8 \
@@ -58,8 +59,7 @@
 #-XX:CMSInitiatingOccupancyFraction=50 \
 #-XX:CMSMaxAbortablePrecleanTime=6000 \
 #-XX:+CMSParallelRemarkEnabled \
-#-XX:+ParallelRefProcEnabled \
-#-XX:-OmitStackTraceInFastThrow  etc.
+#-XX:+ParallelRefProcEnabled        etc.
 
 # Set the ZooKeeper connection string if using an external ZooKeeper ensemble
 # e.g. host1:2181,host2:2181/chroot
@@ -225,8 +225,22 @@
 # label or color, e.g. -Dsolr.environment=test,label=Functional+test,color=brown
 #SOLR_OPTS="$SOLR_OPTS -Dsolr.environment=prod"
 
+# Specifies the path to a common library directory that will be shared across all cores.
+# Any JAR files in this directory will be added to the search path for Solr plugins.
+# If the specified path is not absolute, it will be relative to `$SOLR_HOME`.
+#SOLR_OPTS="$SOLR_OPTS -Dsolr.sharedLib=/path/to/lib"
+
 # Runs solr in java security manager sandbox. This can protect against some attacks.
 # Runtime properties are passed to the security policy file (server/etc/security.policy)
 # You can also tweak via standard JDK files such as ~/.java.policy, see https://s.apache.org/java8policy
 # This is experimental! It may not work at all with Hadoop/HDFS features.
-#SOLR_SECURITY_MANAGER_ENABLED=false
+#SOLR_SECURITY_MANAGER_ENABLED=true
+# This variable provides you with the option to disable the Admin UI. if you uncomment the variable below and
+# change the value to true. The option is configured as a system property as defined in SOLR_START_OPTS in the start
+# scripts.
+# SOLR_ADMIN_UI_DISABLED=false
+
+# Solr is by default allowed to read and write data from/to SOLR_HOME and a few other well defined locations
+# Sometimes it may be necessary to place a core or a backup on a different location or a different disk
+# This parameter lets you specify file system path(s) to explicitly allow. The special value of '*' will allow any path
+#SOLR_OPTS="$SOLR_OPTS -Dsolr.allowPaths=/mnt/bigdisk,/other/path"

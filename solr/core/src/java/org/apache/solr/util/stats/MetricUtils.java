@@ -174,6 +174,7 @@ public class MetricUtils {
       doc.addField(key, o);
       return;
     }
+    @SuppressWarnings({"unchecked"})
     Map<String, Object> map = (Map<String, Object>)o;
     for (Map.Entry<String, Object> entry : map.entrySet()) {
       if (entry.getValue() instanceof Map) { // flatten recursively
@@ -269,12 +270,13 @@ public class MetricUtils {
       Counter counter = (Counter) metric;
       convertCounter(n, counter, propertyFilter, compact, consumer);
     } else if (metric instanceof Gauge) {
+      @SuppressWarnings({"rawtypes"})
       Gauge gauge = (Gauge) metric;
       try {
         convertGauge(n, gauge, propertyFilter, simple, compact, separator, consumer);
       } catch (InternalError ie) {
         if (n.startsWith("memory.") && ie.getMessage().contains("Memory Pool not found")) {
-          log.warn("Error converting gauge '" + n + "', possible JDK bug: SOLR-10362", ie);
+          log.warn("Error converting gauge '{}', possible JDK bug: SOLR-10362", n, ie);
           consumer.accept(n, null);
         } else {
           throw ie;
@@ -482,8 +484,10 @@ public class MetricUtils {
    *                then return a map with a "value" field.
    * @param consumer consumer that accepts produced objects
    */
-  static void convertGauge(String name, Gauge gauge, PropertyFilter propertyFilter, boolean simple, boolean compact,
-                             String separator, BiConsumer<String, Object> consumer) {
+  static void convertGauge(String name,
+                           @SuppressWarnings({"rawtypes"})Gauge gauge,
+                           PropertyFilter propertyFilter, boolean simple, boolean compact,
+                           String separator, BiConsumer<String, Object> consumer) {
     if (compact || simple) {
       Object o = gauge.getValue();
       if (o instanceof Map) {
@@ -577,7 +581,7 @@ public class MetricUtils {
       try {
         beanInfo = Introspector.getBeanInfo(intf, intf.getSuperclass(), Introspector.IGNORE_ALL_BEANINFO);
       } catch (IntrospectionException e) {
-        log.warn("Unable to fetch properties of MXBean " + obj.getClass().getName());
+        log.warn("Unable to fetch properties of MXBean {}", obj.getClass().getName());
         return;
       }
       for (final PropertyDescriptor desc : beanInfo.getPropertyDescriptors()) {

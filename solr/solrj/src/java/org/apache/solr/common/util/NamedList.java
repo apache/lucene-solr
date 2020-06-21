@@ -27,6 +27,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
@@ -61,6 +62,7 @@ import org.apache.solr.common.params.SolrParams;
  * </p>
  *
  */
+@SuppressWarnings({"unchecked", "rawtypes"})
 public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry<String,T>> , MapWriter {
 
   private static final long serialVersionUID = 1957981902839867821L;
@@ -117,7 +119,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
     if (null == nameValueMap) {
       nvPairs = new ArrayList<>();
     } else {
-      nvPairs = new ArrayList<>(nameValueMap.size());
+      nvPairs = new ArrayList<>(nameValueMap.size() << 1);
       for (Map.Entry<String,? extends T> ent : nameValueMap.entrySet()) {
         nvPairs.add(ent.getKey());
         nvPairs.add(ent.getValue());
@@ -161,7 +163,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
    * @see <a href="https://issues.apache.org/jira/browse/SOLR-912">SOLR-912</a>
    */
   private List<Object> nameValueMapToList(Map.Entry<String, ? extends T>[] nameValuePairs) {
-    List<Object> result = new ArrayList<>();
+    List<Object> result = new ArrayList<>(nameValuePairs.length << 1);
     for (Map.Entry<String, ?> ent : nameValuePairs) {
       result.add(ent.getKey());
       result.add(ent.getValue());
@@ -307,7 +309,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
     int sz = size();
     for (int i = 0; i < sz; i++) {
       String n = getName(i);
-      if (name==n || (name!=null && name.equals(n))) {
+      if (Objects.equals(name, n)) {
         result.add(getVal(i));
       }
     }
@@ -324,7 +326,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
     // Go through the list backwards, removing matches as found.
     for (int i = sz - 1; i >= 0; i--) {
       String n = getName(i);
-      if (name==n || (name!=null && name.equals(n))) {
+      if (Objects.equals(name, n)) {
         remove(i);
       }
     }
@@ -466,9 +468,11 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
       }
 
       @Override
+      @SuppressWarnings({"unchecked"})
       public void putAll(Map m) {
         boolean isEmpty = isEmpty();
         for (Object o : m.entrySet()) {
+          @SuppressWarnings({"rawtypes"})
           Map.Entry e = (Entry) o;
           if (isEmpty) {// we know that there are no duplicates
             add((String) e.getKey(), (T) e.getValue());
@@ -484,12 +488,14 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
       }
 
       @Override
+      @SuppressWarnings({"unchecked"})
       public Set<String> keySet() {
         //TODO implement more efficiently
         return  NamedList.this.asMap(1).keySet();
       }
 
       @Override
+      @SuppressWarnings({"unchecked", "rawtypes"})
       public Collection values() {
         //TODO implement more efficiently
         return  NamedList.this.asMap(1).values();
@@ -702,8 +708,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
    * @return List of values
    */
   public List<T> removeAll(String name) {
-    List<T> result = new ArrayList<>();
-    result = getAll(name);
+    List<T> result = getAll(name);
     if (result.size() > 0 ) {
       killAll(name);
       return result;
@@ -795,7 +800,6 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
    *           If values are found for the input key that are not strings or
    *           arrays of strings.
    */
-  @SuppressWarnings("rawtypes")
   public Collection<String> removeConfigArgs(final String name)
       throws SolrException {
     List<T> objects = getAll(name);

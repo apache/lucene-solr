@@ -35,7 +35,7 @@ public abstract class IndexReaderFactory implements NamedListInitializedPlugin {
    *
    */
   @Override
-  public void init(NamedList args) {
+  public void init(@SuppressWarnings("rawtypes") NamedList args) {
    Object v = args.get("setTermIndexDivisor");
    if (v != null) {
      throw new IllegalArgumentException("Illegal parameter 'setTermIndexDivisor'");

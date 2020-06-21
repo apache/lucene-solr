@@ -114,7 +114,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
   }
 
   private CoreContainer init() throws Exception {
-    final CoreContainer container = new CoreContainer();
+    final CoreContainer container = new CoreContainer(SolrPaths.locateSolrHome(), new Properties());
     try {
       container.load();
     } catch (Exception e) {
@@ -141,6 +141,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
   // Test the basic setup, create some dirs with core.properties files in them, but solr.xml has discoverCores
   // set and insure that we find all the cores and can load them.
   @Test
+  @SuppressWarnings({"try"})
   public void testDiscovery() throws Exception {
     setMeUp();
 
@@ -298,7 +299,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     addCoreWithProps("coreT6", makeCoreProperties("coreT6", true, true, "dataDir=coreT6"));
 
     // Do this specially since we need to search.
-    final CoreContainer cc = new CoreContainer(solrHomeDirectory.toString());
+    final CoreContainer cc = new CoreContainer(solrHomeDirectory, new Properties());
     try {
       cc.load();
       // Just check that the proper number of cores are loaded since making the test depend on order would be fragile
@@ -397,7 +398,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       assertNull(cc.getCore("core0"));
 
       SolrCore core3 = cc.create("core3", ImmutableMap.of("configSet", "minimal"));
-      assertThat(core3.getCoreDescriptor().getInstanceDir().toAbsolutePath().toString(), containsString("relative"));
+      assertThat(core3.getCoreDescriptor().getInstanceDir().toString(), containsString("relative"));
 
     } finally {
       cc.shutdown();
@@ -547,13 +548,10 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
   @Test
   public void testRootDirectoryResolution() {
-
-    SolrResourceLoader loader = new SolrResourceLoader(solrHomeDirectory);
-
-    NodeConfig config = SolrXmlConfig.fromString(loader, "<solr><str name=\"coreRootDirectory\">relative</str></solr>");
+    NodeConfig config = SolrXmlConfig.fromString(solrHomeDirectory, "<solr><str name=\"coreRootDirectory\">relative</str></solr>");
     assertThat(config.getCoreRootDirectory().toString(), containsString(solrHomeDirectory.toAbsolutePath().toString()));
 
-    NodeConfig absConfig = SolrXmlConfig.fromString(loader, "<solr><str name=\"coreRootDirectory\">/absolute</str></solr>");
+    NodeConfig absConfig = SolrXmlConfig.fromString(solrHomeDirectory, "<solr><str name=\"coreRootDirectory\">/absolute</str></solr>");
     assertThat(absConfig.getCoreRootDirectory().toString(), not(containsString(solrHomeDirectory.toAbsolutePath().toString())));
   }
   

@@ -17,13 +17,12 @@
 
 package org.apache.solr.pkg;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-
-import org.apache.solr.core.PluginBag;
-import org.apache.solr.core.PluginInfo;
-import org.apache.solr.core.RequestParams;
-import org.apache.solr.core.SolrConfig;
-import org.apache.solr.core.SolrCore;
+import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.core.*;
+import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,29 +89,35 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
     if (lessThan != null) {
       PackageLoader.Package.Version pkgLatest = pkg.getLatest();
       if (pkgLatest != newest) {
-        log.info("Using version :{}. latest is {},  params.json has config {} : {}", newest.getVersion(), pkgLatest.getVersion(), pkg.name(), lessThan);
+        if (log.isInfoEnabled()) {
+          log.info("Using version :{}. latest is {},  params.json has config {} : {}", newest.getVersion(), pkgLatest.getVersion(), pkg.name(), lessThan);
+        }
       }
     }
 
     if (pkgVersion != null) {
       if (newest == pkgVersion) {
-        //I'm already using the latest classloder in the package. nothing to do
+        //I'm already using the latest classloader in the package. nothing to do
         return;
       }
     }
 
-    log.info("loading plugin: {} -> {} using  package {}:{}",
-        pluginInfo.type, pluginInfo.name, pkg.name(), newest.getVersion());
+    if (log.isInfoEnabled()) {
+      log.info("loading plugin: {} -> {} using  package {}:{}",
+          pluginInfo.type, pluginInfo.name, pkg.name(), newest.getVersion());
+    }
 
     initNewInstance(newest);
     pkgVersion = newest;
 
   }
 
+  @SuppressWarnings({"unchecked"})
   protected void initNewInstance(PackageLoader.Package.Version newest) {
     Object instance = SolrCore.createInstance(pluginInfo.className,
         pluginMeta.clazz, pluginMeta.getCleanTag(), core, newest.getLoader());
     PluginBag.initInstance(instance, pluginInfo);
+    handleAwareCallbacks(newest.getLoader(), instance);
     T old = inst;
     inst = (T) instance;
     if (old instanceof AutoCloseable) {
@@ -122,6 +127,26 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
       } catch (Exception e) {
         log.error("error closing plugin", e);
       }
+    }
+  }
+
+  private void handleAwareCallbacks(SolrResourceLoader loader, Object instance) {
+    if (instance instanceof SolrCoreAware) {
+      SolrCoreAware coreAware = (SolrCoreAware) instance;
+      if (!core.getResourceLoader().addToCoreAware(coreAware)) {
+        coreAware.inform(core);
+      }
+    }
+    if (instance instanceof ResourceLoaderAware) {
+      SolrResourceLoader.assertAwareCompatibility(ResourceLoaderAware.class, instance);
+      try {
+        ((ResourceLoaderAware) instance).inform(loader);
+      } catch (IOException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      }
+    }
+    if (instance instanceof SolrInfoBean) {
+      core.getResourceLoader().addToInfoBeans(instance);
     }
   }
 

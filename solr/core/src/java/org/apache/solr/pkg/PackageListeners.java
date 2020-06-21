@@ -23,7 +23,7 @@ import java.lang.ref.SoftReference;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-
+import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.logging.MDCLoggingContext;
@@ -42,7 +42,7 @@ public class PackageListeners {
 
   // this registry only keeps a weak reference because it does not want to
   // cause a memory leak if the listener forgets to unregister itself
-  private List<Reference<Listener>> listeners = new ArrayList<>();
+  private List<Reference<Listener>> listeners = new CopyOnWriteArrayList<>();
 
   public synchronized void addListener(Listener listener) {
     listeners.add(new SoftReference<>(listener));
@@ -63,14 +63,13 @@ public class PackageListeners {
   }
 
   synchronized void packagesUpdated(List<PackageLoader.Package> pkgs) {
-    if(core != null) MDCLoggingContext.setCore(core);
+    MDCLoggingContext.setCore(core);
     try {
       for (PackageLoader.Package pkgInfo : pkgs) {
         invokeListeners(pkgInfo);
       }
     } finally {
-      if(core != null) MDCLoggingContext.clear();
-
+      MDCLoggingContext.clear();
     }
   }
 

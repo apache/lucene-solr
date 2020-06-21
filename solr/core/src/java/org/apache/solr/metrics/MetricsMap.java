@@ -127,7 +127,7 @@ public class MetricsMap implements Gauge<Map<String,Object>>, DynamicMBean {
       try {
         list.add(new Attribute(attribute, getAttribute(attribute)));
       } catch (Exception e) {
-        log.warn("Could not get attribute " + attribute);
+        log.warn("Could not get attribute {}", attribute);
       }
     }
     return list;
@@ -159,7 +159,9 @@ public class MetricsMap implements Gauge<Map<String,Object>>, DynamicMBean {
         if (jmxAttributes.containsKey(k)) {
           return;
         }
+        @SuppressWarnings({"rawtypes"})
         Class type = v.getClass();
+        @SuppressWarnings({"rawtypes"})
         OpenType typeBox = determineType(type);
         if (type.equals(String.class) || typeBox == null) {
           attrInfoList.add(new MBeanAttributeInfo(k, String.class.getName(),
@@ -179,6 +181,7 @@ public class MetricsMap implements Gauge<Map<String,Object>>, DynamicMBean {
     return new MBeanInfo(getClass().getName(), "MetricsMap", attrInfoArr, null, null, null);
   }
 
+  @SuppressWarnings({"rawtypes"})
   private OpenType determineType(Class type) {
     try {
       for (Field field : SimpleType.class.getFields()) {

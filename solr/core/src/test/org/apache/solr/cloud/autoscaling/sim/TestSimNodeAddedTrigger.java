@@ -115,6 +115,7 @@ public class TestSimNodeAddedTrigger extends SimSolrCloudTestCase {
 
       TriggerEvent nodeAddedEvent = eventRef.get();
       assertNotNull(nodeAddedEvent);
+      @SuppressWarnings({"unchecked"})
       List<String> nodeNames = (List<String>)nodeAddedEvent.getProperty(TriggerEvent.NODE_NAMES);
       assertTrue(nodeNames.contains(newNode1));
       assertTrue(nodeNames.contains(newNode2));
@@ -163,6 +164,7 @@ public class TestSimNodeAddedTrigger extends SimSolrCloudTestCase {
 
   public void testActionLifecycle() throws Exception {
     Map<String, Object> props = createTriggerProps(0);
+    @SuppressWarnings({"unchecked"})
     List<Map<String, String>> actions = (List<Map<String, String>>) props.get("actions");
     Map<String, String> action = new HashMap<>(2);
     action.put("name", "testActionInit");

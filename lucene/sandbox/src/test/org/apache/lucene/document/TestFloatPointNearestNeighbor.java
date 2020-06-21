@@ -144,7 +144,7 @@ public class TestFloatPointNearestNeighbor extends LuceneTestCase {
     iwc.setMergeScheduler(new SerialMergeScheduler());
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
 
-    int dims = TestUtil.nextInt(random(), 1, PointValues.MAX_DIMENSIONS);
+    int dims = TestUtil.nextInt(random(), 1, PointValues.MAX_INDEX_DIMENSIONS);
     float[][] values = new float[numPoints][dims];
     for (int id = 0 ; id < numPoints ; ++id) {
       for (int dim = 0 ; dim < dims ; ++dim) {
@@ -243,7 +243,7 @@ public class TestFloatPointNearestNeighbor extends LuceneTestCase {
 
   private IndexWriterConfig getIndexWriterConfig() {
     IndexWriterConfig iwc = newIndexWriterConfig();
-    iwc.setCodec(Codec.forName("Lucene84"));
+    iwc.setCodec(Codec.forName("Lucene86"));
     return iwc;
   }
 }

@@ -25,6 +25,7 @@ import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.ParseException;
@@ -79,7 +80,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
@@ -133,20 +133,18 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
   private final SolrRequestParsers solrRequestParsers;
 
   /**
-   * Creates a configuration instance from an instance directory, configuration name and stream.
-   *
+   * TEST-ONLY: Creates a configuration instance from an instance directory and file name
    * @param instanceDir the directory used to create the resource loader
    * @param name        the configuration name used by the loader if the stream is null
-   * @param is          the configuration stream
    */
-  public SolrConfig(Path instanceDir, String name, InputSource is, boolean isConfigsetTrusted)
+  public SolrConfig(Path instanceDir, String name)
       throws ParserConfigurationException, IOException, SAXException {
-    this(new SolrResourceLoader(instanceDir), name, is, isConfigsetTrusted);
+    this(new SolrResourceLoader(instanceDir), name, true, null);
   }
 
-  public static SolrConfig readFromResourceLoader(SolrResourceLoader loader, String name, boolean isConfigsetTrusted) {
+  public static SolrConfig readFromResourceLoader(SolrResourceLoader loader, String name, boolean isConfigsetTrusted, Properties substitutableProperties) {
     try {
-      return new SolrConfig(loader, name, null, isConfigsetTrusted);
+      return new SolrConfig(loader, name, isConfigsetTrusted, substitutableProperties);
     } catch (Exception e) {
       String resource;
       if (loader instanceof ZkSolrResourceLoader) {
@@ -162,18 +160,18 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
    * Creates a configuration instance from a resource loader, a configuration name and a stream.
    * If the stream is null, the resource loader will open the configuration stream.
    * If the stream is not null, no attempt to load the resource will occur (the name is not used).
-   *
-   * @param                     loader the resource loader
+   * @param loader              the resource loader
    * @param name                the configuration name
-   * @param is                  the configuration stream
    * @param isConfigsetTrusted  false if configset was uploaded using unsecured configset upload API, true otherwise
+   * @param substitutableProperties optional properties to substitute into the XML
    */
-  private SolrConfig(SolrResourceLoader loader, String name, InputSource is, boolean isConfigsetTrusted)
+  private SolrConfig(SolrResourceLoader loader, String name, boolean isConfigsetTrusted, Properties substitutableProperties)
       throws ParserConfigurationException, IOException, SAXException {
-    super(loader, name, is, "/config/");
+    // insist we have non-null substituteProperties; it might get overlayed
+    super(loader, name, null, "/config/", substitutableProperties == null ? new Properties() : substitutableProperties);
     getOverlay();//just in case it is not initialized
     getRequestParams();
-    initLibs(isConfigsetTrusted);
+    initLibs(loader, isConfigsetTrusted);
     luceneMatchVersion = SolrConfig.parseLuceneVersionString(getVal(IndexSchema.LUCENE_MATCH_VERSION_PARAM, true));
     log.info("Using Lucene MatchVersion: {}", luceneMatchVersion);
 
@@ -205,9 +203,9 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
     booleanQueryMaxClauseCount = getInt("query/maxBooleanClauses", IndexSearcher.getMaxClauseCount());
     if (IndexSearcher.getMaxClauseCount() < booleanQueryMaxClauseCount) {
-      log.warn("solrconfig.xml: <maxBooleanClauses> of {} is greater than global limit of {} "+
-               "and will have no effect", booleanQueryMaxClauseCount, IndexSearcher.getMaxClauseCount());
-      log.warn("set 'maxBooleanClauses' in solr.xml to increase global limit");
+      log.warn("solrconfig.xml: <maxBooleanClauses> of {} is greater than global limit of {} {}"
+          , booleanQueryMaxClauseCount, IndexSearcher.getMaxClauseCount()
+          , "and will have no effect set 'maxBooleanClauses' in solr.xml to increase global limit");
     }
     
     // Warn about deprecated / discontinued parameters
@@ -215,7 +213,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     if (get("query/boolTofilterOptimizer", null) != null)
       log.warn("solrconfig.xml: <boolTofilterOptimizer> is currently not implemented and has no effect.");
     if (get("query/HashDocSet", null) != null)
-      log.warn("solrconfig.xml: <HashDocSet> is deprecated and no longer recommended used.");
+      log.warn("solrconfig.xml: <HashDocSet> is deprecated and no longer used.");
 
 // TODO: Old code - in case somebody wants to re-enable. Also see SolrIndexSearcher#search()
 //    filtOptEnabled = getBool("query/boolTofilterOptimizer/@enabled", false);
@@ -248,9 +246,6 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
 
     org.apache.solr.search.SolrIndexSearcher.initRegenerators(this);
-
-    hashSetInverseLoadFactor = 1.0f / getFloat("//HashDocSet/@loadFactor", 0.75f);
-    hashDocSetMaxSize = getInt("//HashDocSet/@maxSize", 3000);
 
     if (get("jmx", null) != null) {
       log.warn("solrconfig.xml: <jmx> is no longer supported, use solr.xml:/metrics/reporter section instead");
@@ -320,12 +315,10 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     }
 
     if (version == Version.LATEST && !versionWarningAlreadyLogged.getAndSet(true)) {
-      log.warn(
-          "You should not use LATEST as luceneMatchVersion property: "+
-              "if you use this setting, and then Solr upgrades to a newer release of Lucene, "+
-              "sizable changes may happen. If precise back compatibility is important "+
-              "then you should instead explicitly specify an actual Lucene version."
-      );
+      log.warn("You should not use LATEST as luceneMatchVersion property: "
+          + "if you use this setting, and then Solr upgrades to a newer release of Lucene, "
+          + "sizable changes may happen. If precise back compatibility is important "
+          + "then you should instead explicitly specify an actual Lucene version.");
     }
 
     return version;
@@ -375,11 +368,13 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
   public static class SolrPluginInfo {
 
+    @SuppressWarnings({"rawtypes"})
     public final Class clazz;
     public final String tag;
     public final Set<PluginOpts> options;
 
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private SolrPluginInfo(Class clz, String tag, PluginOpts... opts) {
       this.clazz = clz;
       this.tag = tag;
@@ -396,6 +391,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     }
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public static ConfigOverlay getConfigOverlay(SolrResourceLoader loader) {
     InputStream in = null;
     InputStreamReader isr = null;
@@ -529,9 +525,6 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
   
   public final boolean useRangeVersionsForPeerSync;
   
-  // DocSet
-  public final float hashSetInverseLoadFactor;
-  public final int hashDocSetMaxSize;
   // IndexConfig settings
   public final SolrIndexConfig indexConfig;
 
@@ -583,7 +576,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
         try {
           return valueOf(s.toUpperCase(Locale.ROOT));
         } catch (Exception e) {
-          log.warn("Unrecognized value for lastModFrom: " + s, e);
+          log.warn("Unrecognized value for lastModFrom: {}", s, e);
           return BOGUS;
         }
       }
@@ -616,9 +609,8 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
               ? Long.valueOf(ttlStr)
               : null;
         } catch (Exception e) {
-          log.warn("Ignoring exception while attempting to " +
-              "extract max-age from cacheControl config: " +
-              cacheControlHeader, e);
+          log.warn("Ignoring exception while attempting to extract max-age from cacheControl config: {}"
+              , cacheControlHeader, e);
         }
       }
       maxAge = tmp;
@@ -683,6 +675,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
 
     @Override
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public Map<String, Object> toMap(Map<String, Object> map) {
       LinkedHashMap result = new LinkedHashMap();
       result.put("indexWriter", makeMap("closeWaitsForMerges", indexWriterCloseWaitsForMerges));
@@ -717,6 +710,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
    *             SearchComponent, QueryConverter, SolrEventListener, DirectoryFactory,
    *             IndexDeletionPolicy, IndexReaderFactory, {@link TransformerFactory}
    */
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public List<PluginInfo> getPluginInfos(String type) {
     List<PluginInfo> result = pluginStore.get(type);
     SolrPluginInfo info = classVsSolrPluginInfo.get(type);
@@ -754,7 +748,22 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
         "Multiple plugins configured for type: " + type);
   }
 
-  private void initLibs(boolean isConfigsetTrusted) {
+  private void initLibs(SolrResourceLoader loader, boolean isConfigsetTrusted) {
+    // TODO Want to remove SolrResourceLoader.getInstancePath; it can be on a Standalone subclass.
+    //  For Zk subclass, it's needed for the time being as well.  We could remove that one if we remove two things
+    //  in SolrCloud: (1) instancePath/lib  and (2) solrconfig lib directives with relative paths.  Can wait till 9.0.
+    Path instancePath = loader.getInstancePath();
+    List<URL> urls = new ArrayList<>();
+
+    Path libPath = instancePath.resolve("lib");
+    if (Files.exists(libPath)) {
+      try {
+        urls.addAll(SolrResourceLoader.getURLs(libPath));
+      } catch (IOException e) {
+        log.warn("Couldn't add files from {} to classpath: {}", libPath, e);
+      }
+    }
+
     NodeList nodes = (NodeList) evaluate("lib", XPathConstants.NODESET);
     if (nodes == null || nodes.getLength() == 0) return;
     if (!isConfigsetTrusted) {
@@ -763,17 +772,13 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
           + " after enabling authentication and authorization.");
     }
 
-    log.debug("Adding specified lib dirs to ClassLoader");
-    SolrResourceLoader loader = getResourceLoader();
-    List<URL> urls = new ArrayList<>();
-
     for (int i = 0; i < nodes.getLength(); i++) {
       Node node = nodes.item(i);
       String baseDir = DOMUtil.getAttr(node, "dir");
       String path = DOMUtil.getAttr(node, PATH);
       if (null != baseDir) {
         // :TODO: add support for a simpler 'glob' mutually exclusive of regex
-        Path dir = loader.getInstancePath().resolve(baseDir);
+        Path dir = instancePath.resolve(baseDir);
         String regex = DOMUtil.getAttr(node, "regex");
         try {
           if (regex == null)
@@ -781,24 +786,22 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
           else
             urls.addAll(SolrResourceLoader.getFilteredURLs(dir, regex));
         } catch (IOException e) {
-          log.warn("Couldn't add files from {} filtered by {} to classpath: {}", dir, regex, e.getMessage());
+          log.warn("Couldn't add files from {} filtered by {} to classpath: {}", dir, regex, e);
         }
       } else if (null != path) {
-        final Path dir = loader.getInstancePath().resolve(path);
+        final Path dir = instancePath.resolve(path);
         try {
           urls.add(dir.toUri().toURL());
         } catch (MalformedURLException e) {
-          log.warn("Couldn't add file {} to classpath: {}", dir, e.getMessage());
+          log.warn("Couldn't add file {} to classpath: {}", dir, e);
         }
       } else {
         throw new RuntimeException("lib: missing mandatory attributes: 'dir' or 'path'");
       }
     }
 
-    if (urls.size() > 0) {
-      loader.addToClassLoader(urls);
-      loader.reloadLuceneSPI();
-    }
+    loader.addToClassLoader(urls);
+    loader.reloadLuceneSPI();
   }
 
   public int getMultipartUploadLimitKB() {
@@ -858,6 +861,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
   }
 
   @Override
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public Map<String, Object> toMap(Map<String, Object> result) {
     if (getZnodeVersion() > -1) result.put(ZNODEVER, getZnodeVersion());
     result.put(IndexSchema.LUCENE_MATCH_VERSION_PARAM, luceneMatchVersion);
@@ -916,6 +920,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     return result;
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private void addCacheConfig(Map queryMap, CacheConfig... cache) {
     if (cache == null) return;
     for (CacheConfig config : cache) if (config != null) queryMap.put(config.getNodeName(), config);
@@ -923,7 +928,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
   }
 
   @Override
-  protected Properties getSubstituteProperties() {
+  public Properties getSubstituteProperties() {
     Map<String, Object> p = getOverlay().getUserProps();
     if (p == null || p.isEmpty()) return super.getSubstituteProperties();
     Properties result = new Properties(super.getSubstituteProperties());
@@ -950,7 +955,9 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
   public RequestParams refreshRequestParams() {
     requestParams = RequestParams.getFreshRequestParams(getResourceLoader(), requestParams);
-    log.debug("current version of requestparams : {}", requestParams.getZnodeVersion());
+    if (log.isDebugEnabled()) {
+      log.debug("current version of requestparams : {}", requestParams.getZnodeVersion());
+    }
     return requestParams;
   }
 

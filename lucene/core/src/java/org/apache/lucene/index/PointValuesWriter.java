@@ -43,7 +43,7 @@ class PointValuesWriter {
     this.bytes = new ByteBlockPool(docWriter.byteBlockAllocator);
     docIDs = new int[16];
     iwBytesUsed.addAndGet(16 * Integer.BYTES);
-    packedBytesLength = fieldInfo.getPointDataDimensionCount() * fieldInfo.getPointNumBytes();
+    packedBytesLength = fieldInfo.getPointDimensionCount() * fieldInfo.getPointNumBytes();
   }
 
   // TODO: if exactly the same value is added to exactly the same doc, should we dedup?
@@ -52,7 +52,7 @@ class PointValuesWriter {
       throw new IllegalArgumentException("field=" + fieldInfo.name + ": point value must not be null");
     }
     if (value.length != packedBytesLength) {
-      throw new IllegalArgumentException("field=" + fieldInfo.name + ": this field's value has length=" + value.length + " but should be " + (fieldInfo.getPointDataDimensionCount() * fieldInfo.getPointNumBytes()));
+      throw new IllegalArgumentException("field=" + fieldInfo.name + ": this field's value has length=" + value.length + " but should be " + (fieldInfo.getPointDimensionCount() * fieldInfo.getPointNumBytes()));
     }
 
     if (docIDs.length == numPoints) {
@@ -106,7 +106,7 @@ class PointValuesWriter {
       }
 
       @Override
-      public int getNumDataDimensions() {
+      public int getNumDimensions() {
         throw new UnsupportedOperationException();
       }
 
@@ -234,8 +234,8 @@ class PointValuesWriter {
     }
 
     @Override
-    public int getNumDataDimensions() throws IOException {
-      return in.getNumDataDimensions();
+    public int getNumDimensions() throws IOException {
+      return in.getNumDimensions();
     }
 
     @Override

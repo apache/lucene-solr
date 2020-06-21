@@ -25,7 +25,6 @@ import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.ByteArrayDataInput;
-import org.apache.lucene.store.ByteBufferIndexInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
@@ -53,7 +52,6 @@ public final class FieldReader extends Terms implements Accountable {
   final long sumTotalTermFreq;
   final long sumDocFreq;
   final int docCount;
-  final long indexStartFP;
   final long rootBlockFP;
   final BytesRef rootCode;
   final BytesRef minTerm;
@@ -61,11 +59,10 @@ public final class FieldReader extends Terms implements Accountable {
   final BlockTreeTermsReader parent;
 
   final FST<BytesRef> index;
-  final boolean isFSTOffHeap;
   //private boolean DEBUG;
 
   FieldReader(BlockTreeTermsReader parent, FieldInfo fieldInfo, long numTerms, BytesRef rootCode, long sumTotalTermFreq, long sumDocFreq, int docCount,
-              long indexStartFP, IndexInput indexIn, BytesRef minTerm, BytesRef maxTerm, boolean openedFromWriter, BlockTreeTermsReader.FSTLoadMode fstLoadMode) throws IOException {
+              long indexStartFP, IndexInput metaIn, IndexInput indexIn, BytesRef minTerm, BytesRef maxTerm) throws IOException {
     assert numTerms > 0;
     this.fieldInfo = fieldInfo;
     //DEBUG = BlockTreeTermsReader.DEBUG && fieldInfo.name.equals("id");
@@ -74,7 +71,6 @@ public final class FieldReader extends Terms implements Accountable {
     this.sumTotalTermFreq = sumTotalTermFreq;
     this.sumDocFreq = sumDocFreq;
     this.docCount = docCount;
-    this.indexStartFP = indexStartFP;
     this.rootCode = rootCode;
     this.minTerm = minTerm;
     this.maxTerm = maxTerm;
@@ -82,45 +78,23 @@ public final class FieldReader extends Terms implements Accountable {
     //   System.out.println("BTTR: seg=" + segment + " field=" + fieldInfo.name + " rootBlockCode=" + rootCode + " divisor=" + indexDivisor);
     // }
     rootBlockFP = (new ByteArrayDataInput(rootCode.bytes, rootCode.offset, rootCode.length)).readVLong() >>> BlockTreeTermsReader.OUTPUT_FLAGS_NUM_BITS;
-    // Initialize FST offheap if index is MMapDirectory and
-    // docCount != sumDocFreq implying field is not primary key
-    if (indexIn != null) {
-      switch (fstLoadMode) {
-        case ON_HEAP:
-          isFSTOffHeap = false;
-          break;
-        case OFF_HEAP:
-          isFSTOffHeap = true;
-          break;
-        case OPTIMIZE_UPDATES_OFF_HEAP:
-          isFSTOffHeap = ((this.docCount != this.sumDocFreq) || openedFromWriter == false);
-          break;
-        case AUTO:
-          isFSTOffHeap = ((this.docCount != this.sumDocFreq) || openedFromWriter == false) && indexIn instanceof ByteBufferIndexInput;
-          break;
-        default:
-          throw new IllegalStateException("unknown enum constant: " + fstLoadMode);
-      }
-      final IndexInput clone = indexIn.clone();
-      clone.seek(indexStartFP);
-      if (isFSTOffHeap) {
-        index = new FST<>(clone, ByteSequenceOutputs.getSingleton(), new OffHeapFSTStore());
-      } else {
-        index = new FST<>(clone, ByteSequenceOutputs.getSingleton());
-      }
-      /*
-        if (false) {
-        final String dotFileName = segment + "_" + fieldInfo.name + ".dot";
-        Writer w = new OutputStreamWriter(new FileOutputStream(dotFileName));
-        Util.toDot(index, w, false, false);
-        System.out.println("FST INDEX: SAVED to " + dotFileName);
-        w.close();
-        }
-      */
+    // Initialize FST always off-heap.
+    final IndexInput clone = indexIn.clone();
+    clone.seek(indexStartFP);
+    if (metaIn == indexIn) { // Only true before Lucene 8.6
+      index = new FST<>(clone, clone, ByteSequenceOutputs.getSingleton(), new OffHeapFSTStore());
     } else {
-      isFSTOffHeap = false;
-      index = null;
+      index = new FST<>(metaIn, clone, ByteSequenceOutputs.getSingleton(), new OffHeapFSTStore());
     }
+    /*
+      if (false) {
+      final String dotFileName = segment + "_" + fieldInfo.name + ".dot";
+      Writer w = new OutputStreamWriter(new FileOutputStream(dotFileName));
+      Util.toDot(index, w, false, false);
+      System.out.println("FST INDEX: SAVED to " + dotFileName);
+      w.close();
+      }
+     */
   }
 
   @Override
@@ -224,12 +198,4 @@ public final class FieldReader extends Terms implements Accountable {
   public String toString() {
     return "BlockTreeTerms(seg=" + parent.segment +" terms=" + numTerms + ",postings=" + sumDocFreq + ",positions=" + sumTotalTermFreq + ",docs=" + docCount + ")";
   }
-
-  /**
-   * Returns <code>true</code> iff the FST is read off-heap.
-   */
-  public boolean isFstOffHeap() {
-    return isFSTOffHeap;
-  }
-
 }

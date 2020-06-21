@@ -280,18 +280,22 @@ public class SearchRateTrigger extends TriggerBase {
     lastNodeEvent.clear();
     lastShardEvent.clear();
     lastReplicaEvent.clear();
+    @SuppressWarnings({"unchecked"})
     Map<String, Long> collTimes = (Map<String, Long>)state.get("lastCollectionEvent");
     if (collTimes != null) {
       lastCollectionEvent.putAll(collTimes);
     }
+    @SuppressWarnings({"unchecked"})
     Map<String, Long> nodeTimes = (Map<String, Long>)state.get("lastNodeEvent");
     if (nodeTimes != null) {
       lastNodeEvent.putAll(nodeTimes);
     }
+    @SuppressWarnings({"unchecked"})
     Map<String, Long> shardTimes = (Map<String, Long>)state.get("lastShardEvent");
     if (shardTimes != null) {
       lastShardEvent.putAll(shardTimes);
     }
+    @SuppressWarnings({"unchecked"})
     Map<String, Long> replicaTimes = (Map<String, Long>)state.get("lastReplicaEvent");
     if (replicaTimes != null) {
       lastReplicaEvent.putAll(replicaTimes);
@@ -371,13 +375,13 @@ public class SearchRateTrigger extends TriggerBase {
       }
       Map<String, Object> rates = cloudManager.getNodeStateProvider().getNodeValues(node, metricTags.keySet());
       if (log.isDebugEnabled()) {
-        log.debug("### rates for node " + node);
-        rates.forEach((tag, rate) -> log.debug("###  " + tag + "\t" + rate));
+        log.debug("### rates for node {}", node);
+        rates.forEach((tag, rate) -> log.debug("###  " + tag + "\t" + rate)); // logOk
       }
       rates.forEach((tag, rate) -> {
         ReplicaInfo info = metricTags.get(tag);
         if (info == null) {
-          log.warn("Missing replica info for response tag " + tag);
+          log.warn("Missing replica info for response tag {}", tag);
         } else {
           Map<String, List<ReplicaInfo>> perCollection = collectionRates.computeIfAbsent(info.getCollection(), s -> new HashMap<>());
           List<ReplicaInfo> perShard = perCollection.computeIfAbsent(info.getShard(), s -> new ArrayList<>());
@@ -395,7 +399,7 @@ public class SearchRateTrigger extends TriggerBase {
         log.debug("## Collection: {}", coll);
         collRates.forEach((s, replicas) -> {
           log.debug("##  - {}", s);
-          replicas.forEach(ri -> log.debug("##     {}  {}", ri.getCore(), ri.getVariable(AutoScalingParams.RATE)));
+          replicas.forEach(ri -> log.debug("##     {}  {}", ri.getCore(), ri.getVariable(AutoScalingParams.RATE))); //logOk
         });
       });
     }
@@ -464,7 +468,9 @@ public class SearchRateTrigger extends TriggerBase {
               if (log.isDebugEnabled()) {
                 Long lastTime = lastShardEvent.computeIfAbsent(elapsedKey, s -> now);
                 long elapsed = TimeUnit.SECONDS.convert(now - lastTime, TimeUnit.NANOSECONDS);
-                log.debug("-- waitFor didn't elapse for {}, waitFor={}, elapsed={}", elapsedKey, getWaitForSecond(), elapsed);
+                if (log.isDebugEnabled()) {
+                  log.debug("-- waitFor didn't elapse for {}, waitFor={}, elapsed={}", elapsedKey, getWaitForSecond(), elapsed);
+                }
               }
             }
           } else {
@@ -649,6 +655,7 @@ public class SearchRateTrigger extends TriggerBase {
   /**
    * This method implements a primitive form of proportional controller with a limiter.
    */
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private void addReplicaHints(String collection, String shard, double r, int replicationFactor, List<Pair<String, String>> hints) {
     int numReplicas = (int)Math.round((r - aboveRate) / (double) replicationFactor);
     // in one event add at least 1 replica
@@ -763,7 +770,9 @@ public class SearchRateTrigger extends TriggerBase {
   private boolean waitForElapsed(String name, long now, Map<String, Long> lastEventMap) {
     Long lastTime = lastEventMap.computeIfAbsent(name, s -> now);
     long elapsed = TimeUnit.SECONDS.convert(now - lastTime, TimeUnit.NANOSECONDS);
-    log.trace("name={}, lastTime={}, elapsed={}, waitFor={}", name, lastTime, elapsed, getWaitForSecond());
+    if (log.isTraceEnabled()) {
+      log.trace("name={}, lastTime={}, elapsed={}, waitFor={}", name, lastTime, elapsed, getWaitForSecond());
+    }
     if (TimeUnit.SECONDS.convert(now - lastTime, TimeUnit.NANOSECONDS) < getWaitForSecond()) {
       return false;
     }

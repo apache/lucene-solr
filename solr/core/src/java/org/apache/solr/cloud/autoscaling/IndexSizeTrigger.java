@@ -60,6 +60,7 @@ import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.CORE_
 public class IndexSizeTrigger extends TriggerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  // configuration properties
   public static final String ABOVE_BYTES_PROP = "aboveBytes";
   public static final String ABOVE_DOCS_PROP = "aboveDocs";
   public static final String ABOVE_OP_PROP = "aboveOp";
@@ -72,14 +73,15 @@ public class IndexSizeTrigger extends TriggerBase {
   public static final String SPLIT_METHOD_PROP = CommonAdminParams.SPLIT_METHOD;
   public static final String SPLIT_BY_PREFIX = CommonAdminParams.SPLIT_BY_PREFIX;
 
-  public static final String BYTES_SIZE_PROP = "__bytes__";
-  public static final String TOTAL_BYTES_SIZE_PROP = "__total_bytes__";
-  public static final String DOCS_SIZE_PROP = "__docs__";
-  public static final String MAX_DOC_PROP = "__maxDoc__";
-  public static final String COMMIT_SIZE_PROP = "__commitBytes__";
-  public static final String ABOVE_SIZE_PROP = "aboveSize";
-  public static final String BELOW_SIZE_PROP = "belowSize";
-  public static final String VIOLATION_PROP = "violationType";
+  // event properties
+  public static final String BYTES_SIZE_KEY = "__bytes__";
+  public static final String TOTAL_BYTES_SIZE_KEY = "__total_bytes__";
+  public static final String DOCS_SIZE_KEY = "__docs__";
+  public static final String MAX_DOC_KEY = "__maxDoc__";
+  public static final String COMMIT_SIZE_KEY = "__commitBytes__";
+  public static final String ABOVE_SIZE_KEY = "aboveSize";
+  public static final String BELOW_SIZE_KEY = "belowSize";
+  public static final String VIOLATION_KEY = "violationType";
 
   public static final int DEFAULT_MAX_OPS = 10;
 
@@ -98,8 +100,10 @@ public class IndexSizeTrigger extends TriggerBase {
   public IndexSizeTrigger(String name) {
     super(TriggerEventType.INDEXSIZE, name);
     TriggerUtils.validProperties(validProperties,
-        ABOVE_BYTES_PROP, ABOVE_DOCS_PROP, BELOW_BYTES_PROP, BELOW_DOCS_PROP,
-        COLLECTIONS_PROP, MAX_OPS_PROP, SPLIT_METHOD_PROP, SPLIT_FUZZ_PROP, SPLIT_BY_PREFIX);
+        ABOVE_BYTES_PROP, ABOVE_DOCS_PROP, ABOVE_OP_PROP,
+        BELOW_BYTES_PROP, BELOW_DOCS_PROP, BELOW_OP_PROP,
+        COLLECTIONS_PROP, MAX_OPS_PROP,
+        SPLIT_METHOD_PROP, SPLIT_FUZZ_PROP, SPLIT_BY_PREFIX);
   }
 
   @Override
@@ -214,6 +218,7 @@ public class IndexSizeTrigger extends TriggerBase {
   }
 
   @Override
+  @SuppressWarnings({"unchecked"})
   protected void setState(Map<String, Object> state) {
     this.lastAboveEventMap.clear();
     this.lastBelowEventMap.clear();
@@ -244,10 +249,11 @@ public class IndexSizeTrigger extends TriggerBase {
   }
 
   @Override
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void run() {
     synchronized(this) {
       if (isClosed) {
-        log.warn(getName() + " ran but was already closed");
+        log.warn("{} ran but was already closed", getName());
         return;
       }
     }
@@ -321,29 +327,29 @@ public class IndexSizeTrigger extends TriggerBase {
         sizes.forEach((tag, size) -> {
           final ReplicaInfo info = metricTags.get(tag);
           if (info == null) {
-            log.warn("Missing replica info for response tag " + tag);
+            log.warn("Missing replica info for response tag {}", tag);
           } else {
             // verify that it's a Number
             if (!(size instanceof Number)) {
-              log.warn("invalid size value for tag " + tag + " - not a number: '" + size + "' is " + size.getClass().getName());
+              log.warn("invalid size value for tag {} - not a number: '{}' is {}", tag, size, size.getClass().getName());
               return;
             }
 
             ReplicaInfo currentInfo = currentSizes.computeIfAbsent(info.getCore(), k -> (ReplicaInfo)info.clone());
             if (tag.contains("INDEX")) {
-              currentInfo.getVariables().put(TOTAL_BYTES_SIZE_PROP, ((Number) size).longValue());
+              currentInfo.getVariables().put(TOTAL_BYTES_SIZE_KEY, ((Number) size).longValue());
             } else if (tag.endsWith("SEARCHER.searcher.numDocs")) {
-              currentInfo.getVariables().put(DOCS_SIZE_PROP, ((Number) size).longValue());
+              currentInfo.getVariables().put(DOCS_SIZE_KEY, ((Number) size).longValue());
             } else if (tag.endsWith("SEARCHER.searcher.maxDoc")) {
-              currentInfo.getVariables().put(MAX_DOC_PROP, ((Number) size).longValue());
+              currentInfo.getVariables().put(MAX_DOC_KEY, ((Number) size).longValue());
             } else if (tag.endsWith("SEARCHER.searcher.indexCommitSize")) {
-              currentInfo.getVariables().put(COMMIT_SIZE_PROP, ((Number) size).longValue());
+              currentInfo.getVariables().put(COMMIT_SIZE_KEY, ((Number) size).longValue());
             }
           }
         });
       }
     } catch (IOException e) {
-      log.warn("Error running trigger " + getName(), e);
+      log.warn("Error running trigger {}", getName(), e);
       return;
     }
 
@@ -358,25 +364,25 @@ public class IndexSizeTrigger extends TriggerBase {
 
     currentSizes.forEach((coreName, info) -> {
       // calculate estimated bytes
-      long maxDoc = (Long)info.getVariable(MAX_DOC_PROP);
-      long numDocs = (Long)info.getVariable(DOCS_SIZE_PROP);
-      long commitSize = (Long)info.getVariable(COMMIT_SIZE_PROP, 0L);
+      long maxDoc = (Long)info.getVariable(MAX_DOC_KEY);
+      long numDocs = (Long)info.getVariable(DOCS_SIZE_KEY);
+      long commitSize = (Long)info.getVariable(COMMIT_SIZE_KEY, 0L);
       if (commitSize <= 0) {
-        commitSize = (Long)info.getVariable(TOTAL_BYTES_SIZE_PROP);
+        commitSize = (Long)info.getVariable(TOTAL_BYTES_SIZE_KEY);
       }
       // calculate estimated size as a side-effect
       commitSize = estimatedSize(maxDoc, numDocs, commitSize);
-      info.getVariables().put(BYTES_SIZE_PROP, commitSize);
+      info.getVariables().put(BYTES_SIZE_KEY, commitSize);
 
-      if ((Long)info.getVariable(BYTES_SIZE_PROP) > aboveBytes ||
-          (Long)info.getVariable(DOCS_SIZE_PROP) > aboveDocs) {
+      if ((Long)info.getVariable(BYTES_SIZE_KEY) > aboveBytes ||
+          (Long)info.getVariable(DOCS_SIZE_KEY) > aboveDocs) {
         if (waitForElapsed(coreName, now, lastAboveEventMap)) {
           List<ReplicaInfo> infos = aboveSize.computeIfAbsent(info.getCollection(), c -> new ArrayList<>());
           if (!infos.contains(info)) {
-            if ((Long)info.getVariable(BYTES_SIZE_PROP) > aboveBytes) {
-              info.getVariables().put(VIOLATION_PROP, ABOVE_BYTES_PROP);
+            if ((Long)info.getVariable(BYTES_SIZE_KEY) > aboveBytes) {
+              info.getVariables().put(VIOLATION_KEY, ABOVE_BYTES_PROP);
             } else {
-              info.getVariables().put(VIOLATION_PROP, ABOVE_DOCS_PROP);
+              info.getVariables().put(VIOLATION_KEY, ABOVE_DOCS_PROP);
             }
             infos.add(info);
             splittable.add(info.getName());
@@ -392,17 +398,17 @@ public class IndexSizeTrigger extends TriggerBase {
     Map<String, List<ReplicaInfo>> belowSize = new HashMap<>();
 
     currentSizes.forEach((coreName, info) -> {
-      if (((Long)info.getVariable(BYTES_SIZE_PROP) < belowBytes ||
-          (Long)info.getVariable(DOCS_SIZE_PROP) < belowDocs) &&
+      if (((Long)info.getVariable(BYTES_SIZE_KEY) < belowBytes ||
+          (Long)info.getVariable(DOCS_SIZE_KEY) < belowDocs) &&
           // make sure we don't produce conflicting ops
           !splittable.contains(info.getName())) {
         if (waitForElapsed(coreName, now, lastBelowEventMap)) {
           List<ReplicaInfo> infos = belowSize.computeIfAbsent(info.getCollection(), c -> new ArrayList<>());
           if (!infos.contains(info)) {
-            if ((Long)info.getVariable(BYTES_SIZE_PROP) < belowBytes) {
-              info.getVariables().put(VIOLATION_PROP, BELOW_BYTES_PROP);
+            if ((Long)info.getVariable(BYTES_SIZE_KEY) < belowBytes) {
+              info.getVariables().put(VIOLATION_KEY, BELOW_BYTES_PROP);
             } else {
-              info.getVariables().put(VIOLATION_PROP, BELOW_DOCS_PROP);
+              info.getVariables().put(VIOLATION_KEY, BELOW_DOCS_PROP);
             }
             infos.add(info);
           }
@@ -429,7 +435,7 @@ public class IndexSizeTrigger extends TriggerBase {
       // sort by decreasing size to first split the largest ones
       // XXX see the comment below about using DOCS_SIZE_PROP in lieu of BYTES_SIZE_PROP
       replicas.sort((r1, r2) -> {
-        long delta = (Long) r1.getVariable(DOCS_SIZE_PROP) - (Long) r2.getVariable(DOCS_SIZE_PROP);
+        long delta = (Long) r1.getVariable(DOCS_SIZE_KEY) - (Long) r2.getVariable(DOCS_SIZE_KEY);
         if (delta > 0) {
           return -1;
         } else if (delta < 0) {
@@ -471,7 +477,7 @@ public class IndexSizeTrigger extends TriggerBase {
         // then we should be sorting by BYTES_SIZE_PROP. However, since DOCS and BYTES are
         // loosely correlated it's simpler to sort just by docs (which better reflects the "too small"
         // condition than index size, due to possibly existing deleted docs that still occupy space)
-        long delta = (Long) r1.getVariable(DOCS_SIZE_PROP) - (Long) r2.getVariable(DOCS_SIZE_PROP);
+        long delta = (Long) r1.getVariable(DOCS_SIZE_KEY) - (Long) r2.getVariable(DOCS_SIZE_KEY);
         if (delta > 0) {
           return 1;
         } else if (delta < 0) {
@@ -545,12 +551,12 @@ public class IndexSizeTrigger extends TriggerBase {
       // avoid passing very large amounts of data here - just use replica names
       TreeMap<String, String> above = new TreeMap<>();
       aboveSize.forEach((coll, replicas) ->
-          replicas.forEach(r -> above.put(r.getCore(), "docs=" + r.getVariable(DOCS_SIZE_PROP) + ", bytes=" + r.getVariable(BYTES_SIZE_PROP))));
-      properties.put(ABOVE_SIZE_PROP, above);
+          replicas.forEach(r -> above.put(r.getCore(), "docs=" + r.getVariable(DOCS_SIZE_KEY) + ", bytes=" + r.getVariable(BYTES_SIZE_KEY))));
+      properties.put(ABOVE_SIZE_KEY, above);
       TreeMap<String, String> below = new TreeMap<>();
       belowSize.forEach((coll, replicas) ->
-          replicas.forEach(r -> below.put(r.getCore(), "docs=" + r.getVariable(DOCS_SIZE_PROP) + ", bytes=" + r.getVariable(BYTES_SIZE_PROP))));
-      properties.put(BELOW_SIZE_PROP, below);
+          replicas.forEach(r -> below.put(r.getCore(), "docs=" + r.getVariable(DOCS_SIZE_KEY) + ", bytes=" + r.getVariable(BYTES_SIZE_KEY))));
+      properties.put(BELOW_SIZE_KEY, below);
     }
   }
 

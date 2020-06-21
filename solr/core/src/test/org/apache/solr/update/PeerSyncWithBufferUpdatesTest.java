@@ -216,6 +216,7 @@ public class PeerSyncWithBufferUpdatesTest  extends BaseDistributedSearchTestCas
 
   void assertSync(SolrClient client, int numVersions, boolean expectedResult, String syncWith) throws IOException, SolrServerException {
     QueryRequest qr = new QueryRequest(params("qt","/get", "getVersions",Integer.toString(numVersions), "syncWithLeader", syncWith));
+    @SuppressWarnings({"rawtypes"})
     NamedList rsp = client.request(qr);
     assertEquals(expectedResult, (Boolean) rsp.get("syncWithLeader"));
   }

@@ -50,6 +50,7 @@ public abstract class DocRouter {
 
   public String getRouteField(DocCollection coll) {
     if (coll == null) return null;
+    @SuppressWarnings({"rawtypes"})
     Map m = (Map) coll.get(DOC_ROUTER);
     if (m == null) return null;
     return (String) m.get("field");
@@ -169,6 +170,7 @@ public abstract class DocRouter {
    *        of variation in resulting ranges - odd ranges will be larger and even ranges will be smaller
    *        by up to that percentage.
    */
+  @SuppressWarnings({"unchecked"})
   public List<Range> partitionRange(int partitions, Range range, float fuzz) {
     int min = range.min;
     int max = range.max;

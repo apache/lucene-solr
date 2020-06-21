@@ -61,6 +61,7 @@ public class ConfigSetsAPITest extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testSharedSchema() throws Exception {
     CollectionAdminRequest.createCollection("col1", "cShare", 1, 1)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);

@@ -72,12 +72,12 @@ public class TestUtilizeNode extends SolrCloudTestCase {
 
   @Test
   public void test() throws Exception {
-    int REPLICATION = 2;
+    cluster.waitForAllNodes(5);
     String coll = "utilizenodecoll";
     CloudSolrClient cloudClient = cluster.getSolrClient();
     
     log.info("Creating Collection...");
-    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(coll, "conf1", 2, REPLICATION)
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(coll, "conf1", 2, 2)
         .setMaxShardsPerNode(2);
     cloudClient.request(create);
 
@@ -87,7 +87,9 @@ public class TestUtilizeNode extends SolrCloudTestCase {
 
     assertNoReplicas("jettyX should not yet be utilized: ", coll, jettyX);
 
-    log.info("Sending UTILIZE command for jettyX ({})", jettyX.getNodeName());
+    if (log.isInfoEnabled()) {
+      log.info("Sending UTILIZE command for jettyX ({})", jettyX.getNodeName());
+    }
     cloudClient.request(new CollectionAdminRequest.UtilizeNode(jettyX.getNodeName()));
 
     // TODO: aparently we can't assert this? ...
@@ -103,7 +105,9 @@ public class TestUtilizeNode extends SolrCloudTestCase {
     //
     // should we skip spinning up a *new* jettyX, and instead just pick an existing jetty?
 
-    log.info("jettyX replicas prior to being blacklisted: {}", getReplicaList(coll, jettyX));
+    if (log.isInfoEnabled()) {
+      log.info("jettyX replicas prior to being blacklisted: {}", getReplicaList(coll, jettyX));
+    }
     
     String setClusterPolicyCommand = "{" +
       " 'set-cluster-policy': [" +
@@ -111,8 +115,11 @@ public class TestUtilizeNode extends SolrCloudTestCase {
       "     , 'replica':0}" +
       "  ]" +
       "}";
-    log.info("Setting new policy to blacklist jettyX ({}) port={}",
-             jettyX.getNodeName(), jettyX.getLocalPort());
+    if (log.isInfoEnabled()) {
+      log.info("Setting new policy to blacklist jettyX ({}) port={}",
+          jettyX.getNodeName(), jettyX.getLocalPort());
+    }
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     NamedList<Object> response = cloudClient.request(req);
     assertEquals(req + " => " + response,
@@ -123,16 +130,13 @@ public class TestUtilizeNode extends SolrCloudTestCase {
     cluster.waitForAllNodes(30);
     
     assertNoReplicas("jettyY should not yet be utilized: ", coll, jettyY);
-
-    log.info("jettyX replicas prior to utilizing jettyY: {}", getReplicaList(coll, jettyX));
-    log.info("Sending UTILIZE command for jettyY ({})", jettyY.getNodeName());
+    if (log.isInfoEnabled()) {
+      log.info("jettyX replicas prior to utilizing jettyY: {}", getReplicaList(coll, jettyX));
+      log.info("Sending UTILIZE command for jettyY ({})", jettyY.getNodeName()); // logOk
+    }
     cloudClient.request(new CollectionAdminRequest.UtilizeNode(jettyY.getNodeName()));
 
     assertSomeReplicas("jettyY should now be utilized: ", coll, jettyY);
-    
-    assertNoReplicas("jettyX should no longer be utilized: ", coll, jettyX); 
-    
-
   }
 
   /**
