@@ -16,8 +16,11 @@
  */
 package org.apache.solr.handler.admin;
 
+import static java.util.stream.Collectors.toMap;
 import javax.imageio.ImageIO;
-import java.awt.Color;
+
+import com.google.common.annotations.VisibleForTesting;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -27,20 +30,8 @@ import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Set;
-import java.util.TimeZone;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -51,8 +42,6 @@ import java.util.concurrent.atomic.DoubleAdder;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.client.solrj.SolrClient;
@@ -67,23 +56,13 @@ import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.cloud.LeaderElector;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.*;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Base64;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.JavaBinCodec;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.Pair;
-import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.common.util.Utils;
+import org.apache.solr.common.util.*;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.rrd.SolrRrdBackendFactory;
@@ -91,25 +70,15 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.zookeeper.KeeperException;
 import org.rrd4j.ConsolFun;
 import org.rrd4j.DsType;
-import org.rrd4j.core.ArcDef;
-import org.rrd4j.core.Archive;
-import org.rrd4j.core.Datasource;
-import org.rrd4j.core.DsDef;
-import org.rrd4j.core.FetchData;
-import org.rrd4j.core.FetchRequest;
-import org.rrd4j.core.RrdDb;
-import org.rrd4j.core.RrdDef;
-import org.rrd4j.core.Sample;
+import org.rrd4j.core.*;
 import org.rrd4j.graph.RrdGraph;
 import org.rrd4j.graph.RrdGraphDef;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.stream.Collectors.toMap;
 import static org.apache.solr.common.params.CommonParams.ID;
 
 /**
@@ -493,8 +462,8 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
         shards.forEach((sh, replicas) -> {
           String registry = SolrMetricManager.getRegistryName(Group.collection, coll);
           Map<String, Number> perReg = totals
-              .computeIfAbsent(Group.collection, g -> new HashMap<>())
-              .computeIfAbsent(registry, r -> new HashMap<>());
+              .computeIfAbsent(Group.collection, ( Function<Group, Map<String, Map<String, Number>>>)Utils.NEW_HASHMAP_FUN)
+              .computeIfAbsent(registry, Utils.NEW_HASHMAP_FUN);
           replicas.forEach(ri -> {
             collTags.forEach(tag -> {
               double value = ((Number)ri.getVariable(tag, 0.0)).doubleValue();
@@ -510,7 +479,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
         String registry = SolrMetricManager.getRegistryName(g);
         Map<String, Number> perReg = totals
             .computeIfAbsent(g, gr -> new HashMap<>())
-            .computeIfAbsent(registry, r -> new HashMap<>());
+            .computeIfAbsent(registry, Utils.NEW_HASHMAP_FUN);
         Set<String> names = new HashSet<>();
         names.addAll(counters.get(g.toString()));
         names.addAll(gauges.get(g.toString()));
@@ -527,7 +496,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
     String nodeReg = SolrMetricManager.getRegistryName(Group.node);
     Map<String, Number> perNodeReg = totals
         .computeIfAbsent(Group.node, gr -> new HashMap<>())
-        .computeIfAbsent(nodeReg, r -> new HashMap<>());
+        .computeIfAbsent(nodeReg, Utils.NEW_HASHMAP_FUN);
     perNodeReg.put(NUM_NODES_KEY, nodes.size());
 
     // add some global collection-level stats
@@ -537,7 +506,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
         String registry = SolrMetricManager.getRegistryName(Group.collection, coll.getName());
         Map<String, Number> perReg = totals
             .computeIfAbsent(Group.collection, g -> new HashMap<>())
-            .computeIfAbsent(registry, r -> new HashMap<>());
+            .computeIfAbsent(registry, Utils.NEW_HASHMAP_FUN);
         Slice[] slices = coll.getActiveSlicesArr();
         perReg.put(NUM_SHARDS_KEY, slices.length);
         DoubleAdder numActiveReplicas = new DoubleAdder();

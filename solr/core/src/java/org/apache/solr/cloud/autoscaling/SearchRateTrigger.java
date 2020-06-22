@@ -16,25 +16,18 @@
  */
 package org.apache.solr.cloud.autoscaling;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.util.concurrent.AtomicDouble;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.util.concurrent.AtomicDouble;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
-import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.common.SolrException;
@@ -50,6 +43,9 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.util.Utils.NEW_ARRAYLIST_FUN;
+import static org.apache.solr.common.util.Utils.NEW_HASHMAP_FUN;
 
 /**
  * Trigger for the {@link org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType#SEARCHRATE} event.
@@ -350,7 +346,7 @@ public class SearchRateTrigger extends TriggerBase {
       // coll, shard, replica
       Map<String, Map<String, List<ReplicaInfo>>> infos = cloudManager.getNodeStateProvider().getReplicaInfo(node, Collections.emptyList());
       infos.forEach((coll, shards) -> {
-        Map<String, AtomicInteger> replPerShard = searchableReplicationFactors.computeIfAbsent(coll, c -> new HashMap<>());
+        Map<String, AtomicInteger> replPerShard = searchableReplicationFactors.computeIfAbsent(coll, NEW_HASHMAP_FUN);
         shards.forEach((sh, replicas) -> {
           AtomicInteger repl = replPerShard.computeIfAbsent(sh, s -> new AtomicInteger());
           replicas.forEach(replica -> {
@@ -383,8 +379,8 @@ public class SearchRateTrigger extends TriggerBase {
         if (info == null) {
           log.warn("Missing replica info for response tag {}", tag);
         } else {
-          Map<String, List<ReplicaInfo>> perCollection = collectionRates.computeIfAbsent(info.getCollection(), s -> new HashMap<>());
-          List<ReplicaInfo> perShard = perCollection.computeIfAbsent(info.getShard(), s -> new ArrayList<>());
+          Map<String, List<ReplicaInfo>> perCollection = collectionRates.computeIfAbsent(info.getCollection(), NEW_HASHMAP_FUN);
+          List<ReplicaInfo> perShard = perCollection.computeIfAbsent(info.getShard(), NEW_ARRAYLIST_FUN);
           info = (ReplicaInfo)info.clone();
           info.getVariables().put(AutoScalingParams.RATE, ((Number)rate).doubleValue());
           perShard.add(info);
@@ -458,11 +454,11 @@ public class SearchRateTrigger extends TriggerBase {
             (shard.equals(Policy.ANY) || shard.equals(sh))) {
           if (shardRate > aboveRate) {
             if (waitForElapsed(elapsedKey, now, lastShardEvent)) {
-              hotShards.computeIfAbsent(coll, s -> new HashMap<>()).put(sh, shardRate);
+              hotShards.computeIfAbsent(coll, NEW_HASHMAP_FUN).put(sh, shardRate);
             }
           } else if (shardRate < belowRate) {
             if (waitForElapsed(elapsedKey, now, lastShardEvent)) {
-              coldShards.computeIfAbsent(coll, s -> new HashMap<>()).put(sh, shardRate);
+              coldShards.computeIfAbsent(coll, NEW_HASHMAP_FUN).put(sh, shardRate);
               log.debug("-- coldShard waitFor elapsed {}", elapsedKey);
             } else {
               if (log.isDebugEnabled()) {
@@ -636,7 +632,7 @@ public class SearchRateTrigger extends TriggerBase {
     hotShards.forEach((coll, shards) -> shards.forEach((s, r) -> {
       List<Pair<String, String>> perShard = hints
           .computeIfAbsent(coll, c -> new HashMap<>())
-          .computeIfAbsent(s, sh -> new ArrayList<>());
+          .computeIfAbsent(s, NEW_ARRAYLIST_FUN);
       addReplicaHints(coll, s, r, searchableReplicationFactors.get(coll).get(s).get(), perShard);
       violations.add(HOT_SHARDS);
     }));
@@ -697,7 +693,7 @@ public class SearchRateTrigger extends TriggerBase {
     Map<String, Map<String, List<ReplicaInfo>>> byCollectionByShard = new HashMap<>();
     coldReplicas.forEach(ri -> {
       byCollectionByShard.computeIfAbsent(ri.getCollection(), c -> new HashMap<>())
-          .computeIfAbsent(ri.getShard(), s -> new ArrayList<>())
+          .computeIfAbsent(ri.getShard(), NEW_ARRAYLIST_FUN)
           .add(ri);
     });
     coldShards.forEach((coll, perShard) -> {

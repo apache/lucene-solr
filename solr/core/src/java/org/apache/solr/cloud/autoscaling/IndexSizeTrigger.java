@@ -19,19 +19,10 @@ package org.apache.solr.cloud.autoscaling;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.Locale;
-
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
@@ -377,7 +368,7 @@ public class IndexSizeTrigger extends TriggerBase {
       if ((Long)info.getVariable(BYTES_SIZE_KEY) > aboveBytes ||
           (Long)info.getVariable(DOCS_SIZE_KEY) > aboveDocs) {
         if (waitForElapsed(coreName, now, lastAboveEventMap)) {
-          List<ReplicaInfo> infos = aboveSize.computeIfAbsent(info.getCollection(), c -> new ArrayList<>());
+          List<ReplicaInfo> infos = aboveSize.computeIfAbsent(info.getCollection(), Utils.NEW_ARRAYLIST_FUN);
           if (!infos.contains(info)) {
             if ((Long)info.getVariable(BYTES_SIZE_KEY) > aboveBytes) {
               info.getVariables().put(VIOLATION_KEY, ABOVE_BYTES_PROP);
@@ -403,7 +394,7 @@ public class IndexSizeTrigger extends TriggerBase {
           // make sure we don't produce conflicting ops
           !splittable.contains(info.getName())) {
         if (waitForElapsed(coreName, now, lastBelowEventMap)) {
-          List<ReplicaInfo> infos = belowSize.computeIfAbsent(info.getCollection(), c -> new ArrayList<>());
+          List<ReplicaInfo> infos = belowSize.computeIfAbsent(info.getCollection(), Utils.NEW_ARRAYLIST_FUN);
           if (!infos.contains(info)) {
             if ((Long)info.getVariable(BYTES_SIZE_KEY) < belowBytes) {
               info.getVariables().put(VIOLATION_KEY, BELOW_BYTES_PROP);

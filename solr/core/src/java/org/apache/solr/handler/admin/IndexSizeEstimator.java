@@ -19,44 +19,17 @@ package org.apache.solr.handler.admin;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
-
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.lucene.codecs.StoredFieldsReader;
-import org.apache.lucene.index.BinaryDocValues;
-import org.apache.lucene.index.CodecReader;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.index.PointValues;
-import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.index.SortedNumericDocValues;
-import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.index.StandardDirectoryReader;
-import org.apache.lucene.index.StoredFieldVisitor;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.*;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PriorityQueue;
-import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.SuppressForbidden;
-import org.apache.lucene.util.UnicodeUtil;
+import org.apache.lucene.util.*;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
@@ -223,7 +196,7 @@ public class IndexSizeEstimator {
       Map<String, Object> perType = (Map<String, Object>)((Map<String, Object>)perField).get("perType");
       perType.forEach((type, size) -> {
         if (type.contains("_lengths")) {
-          AtomicLong totalSize = typeSizes.computeIfAbsent(type.replace("_lengths", ""), t -> new AtomicLong());
+          AtomicLong totalSize = typeSizes.computeIfAbsent(type.replace("_lengths", ""), Utils.NEW_ATOMICLONG_FUN);
           totalSize.addAndGet(((AtomicLong)size).get());
         }
       });
@@ -273,16 +246,16 @@ public class IndexSizeEstimator {
     log.info("- preparing summary...");
     details.forEach((type, perType) -> {
       ((Map<String, Object>)perType).forEach((field, perField) -> {
-        Map<String, Object> perFieldSummary = (Map<String, Object>)summary.computeIfAbsent(field, f -> new HashMap<>());
+        Map<String, Object> perFieldSummary = (Map<String, Object>)summary.computeIfAbsent(field,Utils.NEW_HASHMAP_FUN);
         ((Map<String, Object>)perField).forEach((k, val) -> {
           if (val instanceof SummaryStatistics) {
             SummaryStatistics stats = (SummaryStatistics)val;
             if (k.startsWith("lengths")) {
-              AtomicLong total = (AtomicLong)perFieldSummary.computeIfAbsent("totalSize", kt -> new AtomicLong());
+              AtomicLong total = (AtomicLong)perFieldSummary.computeIfAbsent("totalSize",Utils.NEW_ATOMICLONG_FUN);
               total.addAndGet((long)stats.getSum());
             }
-            Map<String, Object> perTypeSummary = (Map<String, Object>)perFieldSummary.computeIfAbsent("perType", pt -> new HashMap<>());
-            AtomicLong total = (AtomicLong)perTypeSummary.computeIfAbsent(type + "_" + k, t -> new AtomicLong());
+            Map<String, Object> perTypeSummary = (Map<String, Object>)perFieldSummary.computeIfAbsent("perType", Utils.NEW_HASHMAP_FUN);
+            AtomicLong total = (AtomicLong)perTypeSummary.computeIfAbsent(type + "_" + k, Utils.NEW_ATOMICLONG_FUN);
             total.addAndGet((long)stats.getSum());
           }
         });
@@ -301,8 +274,8 @@ public class IndexSizeEstimator {
         if (norms == null) {
           continue;
         }
-        Map<String, Object> perField = stats.computeIfAbsent(info.name, n -> new HashMap<>());
-        SummaryStatistics lengthSummary = (SummaryStatistics)perField.computeIfAbsent("lengths", s -> new MapWriterSummaryStatistics());
+        Map<String, Object> perField = stats.computeIfAbsent(info.name, Utils.NEW_HASHMAP_FUN);
+        SummaryStatistics lengthSummary = (SummaryStatistics)perField.computeIfAbsent("lengths", MapWriterSummaryStatistics.NEW_INST_FUN);
         while (norms.advance(norms.docID() + samplingStep) != DocIdSetIterator.NO_MORE_DOCS) {
           for (int i = 0; i < samplingStep; i++) {
             lengthSummary.addValue(8);
@@ -324,8 +297,8 @@ public class IndexSizeEstimator {
         if (values == null) {
           continue;
         }
-        Map<String, Object> perField = stats.computeIfAbsent(info.name, n -> new HashMap<>());
-        SummaryStatistics lengthSummary = (SummaryStatistics)perField.computeIfAbsent("lengths", s -> new MapWriterSummaryStatistics());
+        Map<String, Object> perField = stats.computeIfAbsent(info.name, Utils.NEW_HASHMAP_FUN);
+        SummaryStatistics lengthSummary = (SummaryStatistics)perField.computeIfAbsent("lengths", MapWriterSummaryStatistics.NEW_INST_FUN);
         lengthSummary.addValue(values.size() * values.getBytesPerDimension() * values.getNumIndexDimensions());
       }
     }
@@ -414,7 +387,7 @@ public class IndexSizeEstimator {
       return;
     }
     Map<String, Object> perField = stats.computeIfAbsent(field, n -> new HashMap<>());
-    SummaryStatistics lengthSummary = (SummaryStatistics)perField.computeIfAbsent("lengths_" + type, s -> new MapWriterSummaryStatistics());
+    SummaryStatistics lengthSummary = (SummaryStatistics)perField.computeIfAbsent("lengths_" + type, MapWriterSummaryStatistics.NEW_INST_FUN);
     while (values.advance(values.docID() + samplingStep) != DocIdSetIterator.NO_MORE_DOCS) {
       int len = valueLength.apply(values);
       for (int i = 0; i < samplingStep; i++) {
@@ -442,14 +415,14 @@ public class IndexSizeEstimator {
 
   private void estimateTermStats(String field, Terms terms, Map<String, Map<String, Object>> stats, boolean isSampling) throws IOException {
     Map<String, Object> perField = stats.computeIfAbsent(field, n -> new HashMap<>());
-    SummaryStatistics lengthSummary = (SummaryStatistics)perField.computeIfAbsent("lengths_terms", s -> new MapWriterSummaryStatistics());
-    SummaryStatistics docFreqSummary = (SummaryStatistics)perField.computeIfAbsent("docFreqs", s -> new MapWriterSummaryStatistics());
-    SummaryStatistics totalFreqSummary = (SummaryStatistics)perField.computeIfAbsent("lengths_postings", s -> new MapWriterSummaryStatistics());
+    SummaryStatistics lengthSummary = (SummaryStatistics)perField.computeIfAbsent("lengths_terms", MapWriterSummaryStatistics.NEW_INST_FUN);
+    SummaryStatistics docFreqSummary = (SummaryStatistics)perField.computeIfAbsent("docFreqs", MapWriterSummaryStatistics.NEW_INST_FUN);
+    SummaryStatistics totalFreqSummary = (SummaryStatistics)perField.computeIfAbsent("lengths_postings", MapWriterSummaryStatistics.NEW_INST_FUN);
     // TODO: add this at some point
     //SummaryStatistics impactsSummary = (SummaryStatistics)perField.computeIfAbsent("lengths_impacts", s -> new MapWriterSummaryStatistics());
     SummaryStatistics payloadSummary = null;
     if (terms.hasPayloads()) {
-      payloadSummary = (SummaryStatistics)perField.computeIfAbsent("lengths_payloads", s -> new MapWriterSummaryStatistics());
+      payloadSummary = (SummaryStatistics)perField.computeIfAbsent("lengths_payloads",MapWriterSummaryStatistics.NEW_INST_FUN);
     }
     ItemPriorityQueue topLen = (ItemPriorityQueue)perField.computeIfAbsent("topLen", s -> new ItemPriorityQueue(topN));
     ItemPriorityQueue topTotalFreq = (ItemPriorityQueue)perField.computeIfAbsent("topTotalFreq", s -> new ItemPriorityQueue(topN));
@@ -547,6 +520,7 @@ public class IndexSizeEstimator {
   }
 
   public static class MapWriterSummaryStatistics extends SummaryStatistics implements MapWriter {
+    public static final  Function<String, Object> NEW_INST_FUN = s -> new MapWriterSummaryStatistics();
 
     @Override
     public void writeMap(EntryWriter ew) throws IOException {
@@ -662,8 +636,8 @@ public class IndexSizeEstimator {
     }
 
     private void countItem(String field, Object value, int size) {
-      Map<String, Object> perField = stats.computeIfAbsent(field, n -> new HashMap<>());
-      SummaryStatistics summary = (SummaryStatistics)perField.computeIfAbsent("lengths", s -> new MapWriterSummaryStatistics());
+      Map<String, Object> perField = stats.computeIfAbsent(field, Utils.NEW_HASHMAP_FUN);
+      SummaryStatistics summary = (SummaryStatistics)perField.computeIfAbsent("lengths", MapWriterSummaryStatistics.NEW_INST_FUN);
       for (int i = 0; i < samplingStep; i++) {
         summary.addValue(size);
       }

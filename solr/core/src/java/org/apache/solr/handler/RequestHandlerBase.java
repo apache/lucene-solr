@@ -16,15 +16,15 @@
  */
 package org.apache.solr.handler;
 
-import java.lang.invoke.MethodHandles;
-import java.util.Collection;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
 import com.google.common.collect.ImmutableList;
+import java.lang.invoke.MethodHandles;
+import java.util.Collection;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.ApiSupport;
@@ -184,6 +184,8 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
 
   public abstract void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception;
 
+  public static final Function<String, Counter> NEW_COUNTER_FUN = s -> new Counter();
+
   @Override
   public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
     requests.inc();
@@ -191,12 +193,12 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
     boolean distrib = req.getParams().getBool(CommonParams.DISTRIB,
         req.getCore() != null ? req.getCore().getCoreContainer().isZooKeeperAware() : false);
     if (req.getParams().getBool(ShardParams.IS_SHARD, false)) {
-      shardPurposes.computeIfAbsent("total", name -> new Counter()).inc();
+      shardPurposes.computeIfAbsent("total", NEW_COUNTER_FUN).inc();
       int purpose = req.getParams().getInt(ShardParams.SHARDS_PURPOSE, 0);
       if (purpose != 0) {
         String[] names = SolrPluginUtils.getRequestPurposeNames(purpose);
         for (String n : names) {
-          shardPurposes.computeIfAbsent(n, name -> new Counter()).inc();
+          shardPurposes.computeIfAbsent(n, NEW_COUNTER_FUN).inc();
         }
       }
     }

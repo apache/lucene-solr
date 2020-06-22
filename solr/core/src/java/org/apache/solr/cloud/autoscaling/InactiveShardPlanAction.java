@@ -17,14 +17,12 @@
 package org.apache.solr.cloud.autoscaling;
 
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -81,7 +79,7 @@ public class InactiveShardPlanAction extends TriggerActionBase {
     state.forEachCollection(coll ->
       coll.getSlices().forEach(s -> {
         if (Slice.State.INACTIVE.equals(s.getState())) {
-          inactive.computeIfAbsent(coll.getName(), c -> new ArrayList<>()).add(s.getName());
+          inactive.computeIfAbsent(coll.getName(), Utils.NEW_ARRAYLIST_FUN).add(s.getName());
           String tstampStr = s.getStr(ZkStateReader.STATE_TIMESTAMP_PROP);
           if (tstampStr == null || tstampStr.isEmpty()) {
             return;
@@ -98,9 +96,9 @@ public class InactiveShardPlanAction extends TriggerActionBase {
               log.debug("-- delete inactive {} / {}", coll.getName(), s.getName());
             }
             @SuppressWarnings({"unchecked", "rawtypes"})
-            List<SolrRequest> operations = (List<SolrRequest>)context.getProperties().computeIfAbsent("operations", k -> new ArrayList<>());
+            List<SolrRequest> operations = (List<SolrRequest>)context.getProperties().computeIfAbsent("operations", Utils.NEW_ARRAYLIST_FUN);
             operations.add(CollectionAdminRequest.deleteShard(coll.getName(), s.getName()));
-            cleanup.computeIfAbsent(coll.getName(), c -> new ArrayList<>()).add(s.getName());
+            cleanup.computeIfAbsent(coll.getName(), Utils.NEW_ARRAYLIST_FUN).add(s.getName());
           }
         }
         // check for stale shard split locks

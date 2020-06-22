@@ -16,26 +16,10 @@
  */
 package org.apache.solr.handler.admin;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
-
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.Aliases;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.DocRouter;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.cloud.*;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -65,7 +49,7 @@ public class ClusterStatus {
       List<String> colls = entry.getValue();
       for (String coll : colls) {
         if (collection == null || collection.equals(coll))  {
-          List<String> list = collectionVsAliases.computeIfAbsent(coll, k -> new ArrayList<>());
+          List<String> list = collectionVsAliases.computeIfAbsent(coll, Utils.NEW_ARRAYLIST_FUN);
           list.add(alias);
         }
       }

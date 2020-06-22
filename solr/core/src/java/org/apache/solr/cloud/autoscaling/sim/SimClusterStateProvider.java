@@ -17,24 +17,10 @@
 
 package org.apache.solr.cloud.autoscaling.sim;
 
+import com.google.common.util.concurrent.AtomicDouble;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Random;
-import java.util.Set;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -44,20 +30,10 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
-
-import com.google.common.util.concurrent.AtomicDouble;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
-import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
-import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
-import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
-import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
-import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
-import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
-import org.apache.solr.client.solrj.cloud.autoscaling.Variable;
+import org.apache.solr.client.solrj.cloud.autoscaling.*;
 import org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type;
-import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -66,34 +42,16 @@ import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.cloud.ActionThrottle;
 import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.cloud.Overseer;
-import org.apache.solr.cloud.api.collections.AddReplicaCmd;
-import org.apache.solr.cloud.api.collections.Assign;
-import org.apache.solr.cloud.api.collections.CreateCollectionCmd;
-import org.apache.solr.cloud.api.collections.CreateShardCmd;
-import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
-import org.apache.solr.cloud.api.collections.SplitShardCmd;
+import org.apache.solr.cloud.api.collections.*;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.cloud.overseer.CollectionMutator;
 import org.apache.solr.cloud.overseer.ZkWriteCommand;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.DocRouter;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.ReplicaPosition;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.cloud.*;
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
-import org.apache.solr.common.params.CollectionAdminParams;
-import org.apache.solr.common.params.CollectionParams;
-import org.apache.solr.common.params.CommonAdminParams;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.params.UpdateParams;
+import org.apache.solr.common.params.*;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrInfoBean;
@@ -104,16 +62,10 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
-import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
-import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.*;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MODIFYCOLLECTION;
 import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.common.util.Utils.NEW_HASHMAP_FUN;
 
 /**
  * Simulated {@link ClusterStateProvider}.
@@ -199,7 +151,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
                 props.put(ZkStateReader.STATE_PROP, ri.getState().toString());
                 Replica r = new Replica(ri.getName(), props, ri.getCollection(), ri.getShard());
                 collMap.computeIfAbsent(ri.getCollection(), c -> new HashMap<>())
-                    .computeIfAbsent(ri.getShard(), s -> new HashMap<>())
+                    .computeIfAbsent(ri.getShard(), NEW_HASHMAP_FUN)
                     .put(ri.getName(), r);
               });
             }
@@ -351,10 +303,10 @@ public class SimClusterStateProvider implements ClusterStateProvider {
         // DocCollection will be created later
         collectionsStatesRef.put(dc.getName(), new CachedCollectionRef(dc.getName(), dc.getZNodeVersion()));
         collProperties.computeIfAbsent(dc.getName(), name -> new ConcurrentHashMap<>()).putAll(dc.getProperties());
-        opDelays.computeIfAbsent(dc.getName(), Utils.NEW_HASHMAP_FUN).putAll(defaultOpDelays);
+        opDelays.computeIfAbsent(dc.getName(), NEW_HASHMAP_FUN).putAll(defaultOpDelays);
         dc.getSlices().forEach(s -> {
           sliceProperties.computeIfAbsent(dc.getName(), name -> new ConcurrentHashMap<>())
-              .computeIfAbsent(s.getName(), Utils.NEW_HASHMAP_FUN).putAll(s.getProperties());
+              .computeIfAbsent(s.getName(), NEW_HASHMAP_FUN).putAll(s.getProperties());
           Replica leader = s.getLeader();
           s.getReplicas().forEach(r -> {
             Map<String, Object> props = new HashMap<>(r.getProperties());
@@ -368,7 +320,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
             if (liveNodes.get().contains(r.getNodeName())) {
               nodeReplicaMap.computeIfAbsent(r.getNodeName(), Utils.NEW_SYNCHRONIZED_ARRAYLIST_FUN).add(ri);
               colShardReplicaMap.computeIfAbsent(ri.getCollection(), name -> new ConcurrentHashMap<>())
-                  .computeIfAbsent(ri.getShard(), shard -> new ArrayList<>()).add(ri);
+                  .computeIfAbsent(ri.getShard(), Utils.NEW_ARRAYLIST_FUN).add(ri);
             } else {
               log.warn("- dropping replica because its node {} is not live: {}", r.getNodeName(), r);
             }
@@ -2301,7 +2253,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     }
     // core_node_name is not unique across collections
     Map<String, Map<String, ReplicaInfo>> infoMap = new HashMap<>();
-    infos.forEach(ri -> infoMap.computeIfAbsent(ri.getCollection(), Utils.NEW_HASHMAP_FUN).put(ri.getName(), ri));
+    infos.forEach(ri -> infoMap.computeIfAbsent(ri.getCollection(), NEW_HASHMAP_FUN).put(ri.getName(), ri));
     source.forEach((coll, shards) -> shards.forEach((shard, replicas) -> replicas.forEach(r -> {
       ReplicaInfo target = infoMap.getOrDefault(coll, Collections.emptyMap()).get(r.getName());
       if (target == null) {

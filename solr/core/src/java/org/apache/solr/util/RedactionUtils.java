@@ -17,13 +17,9 @@
 
 package org.apache.solr.util;
 
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.regex.Pattern;
+import org.apache.solr.common.util.Utils;
 
 public class RedactionUtils {
   public static final String SOLR_REDACTION_SYSTEM_PATTERN_PROP = "solr.redaction.system.pattern";
@@ -75,7 +71,7 @@ public class RedactionUtils {
       }
       int codeSpace = codeSpaces.computeIfAbsent(redactionPrefix, p -> 4);
       int code = Math.abs(name.hashCode() % codeSpace);
-      Set<Integer> uniqueCode = uniqueCodes.computeIfAbsent(redactionPrefix, p -> new HashSet<>());
+      Set<Integer> uniqueCode = uniqueCodes.computeIfAbsent(redactionPrefix, Utils.NEW_HASHSET_FUN);
       while (uniqueCode.contains(code)) {
         codeSpace = codeSpace << 1;
         codeSpaces.put(redactionPrefix, codeSpace);

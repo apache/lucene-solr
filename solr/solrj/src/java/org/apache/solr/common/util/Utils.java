@@ -16,6 +16,26 @@
  */
 package org.apache.solr.common.util;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Collections.*;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+
+import java.io.*;
+import java.lang.invoke.MethodHandles;
+import java.net.URL;
+import java.net.URLDecoder;
+import java.nio.BufferOverflowException;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -24,12 +44,7 @@ import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
-import org.apache.solr.common.IteratorWriter;
-import org.apache.solr.common.LinkedHashMapWriter;
-import org.apache.solr.common.MapWriter;
-import org.apache.solr.common.MapWriterMap;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SpecProvider;
+import org.apache.solr.common.*;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkOperation;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -44,51 +59,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Reader;
-import java.io.StringReader;
-import java.io.Writer;
-import java.lang.invoke.MethodHandles;
-import java.net.URL;
-import java.net.URLDecoder;
-import java.nio.BufferOverflowException;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Objects;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
-import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Collections.singletonList;
-import static java.util.Collections.unmodifiableList;
-import static java.util.Collections.unmodifiableSet;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
-
 public class Utils {
+  @SuppressWarnings({"rawtypes"})
+  public static final Function NEW_CONCURRENT_HASHMAP_FUN = o -> new ConcurrentHashMap<>();
+
   @SuppressWarnings({"rawtypes"})
   public static final Function NEW_HASHMAP_FUN = o -> new HashMap<>();
   @SuppressWarnings({"rawtypes"})

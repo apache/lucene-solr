@@ -17,6 +17,12 @@
 
 package org.apache.solr.cloud.autoscaling;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.*;
@@ -28,16 +34,10 @@ import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import static org.apache.solr.cloud.autoscaling.TriggerEvent.NODE_NAMES;
 
@@ -247,7 +247,7 @@ public class ComputePlanAction extends TriggerActionBase {
         suggester = session.getSuggester(op.getAction());
         if (suggester instanceof UnsupportedSuggester) {
           @SuppressWarnings({"unchecked"})
-          List<TriggerEvent.Op> unsupportedOps = (List<TriggerEvent.Op>)context.getProperties().computeIfAbsent(TriggerEvent.UNSUPPORTED_OPS, k -> new ArrayList<TriggerEvent.Op>());
+          List<TriggerEvent.Op> unsupportedOps = (List<TriggerEvent.Op>)context.getProperties().computeIfAbsent(TriggerEvent.UNSUPPORTED_OPS, Utils.NEW_ARRAYLIST_FUN);
           unsupportedOps.add(op);
         }
         for (Map.Entry<Suggester.Hint, Object> e : op.getHints().entrySet()) {
