@@ -100,7 +100,7 @@ public class AssertingSimilarity extends Similarity {
 
   @Override
   public String toString() {
-    return "Asserting(" + super.toString() + ")";
+    return "Asserting(" + delegate + ")";
   }
 
 }
