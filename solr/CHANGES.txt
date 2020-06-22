@@ -175,6 +175,8 @@ Optimizations
 
 * SOLR-14552: Add BlockMax-WAND support to ReRank queries (Tomás Fernández Löbbe)
 
+* SOLR-14554: Add BlockMax-WAND support for queries where the score is requested (Tomás Fernández Löbbe)
+
 Bug Fixes
 ---------------------
 * SOLR-13264: IndexSizeTrigger aboveOp / belowOp properties not in valid properties.
