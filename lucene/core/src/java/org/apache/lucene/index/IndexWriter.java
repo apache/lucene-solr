@@ -3234,15 +3234,23 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
               // corresponding add from an updateDocument) can
               // sneak into the commit point:
               toCommit = segmentInfos.clone();
-
+              pendingCommitChangeCount = changeCount.get();
+              // This protects the segmentInfos we are now going
+              // to commit.  This is important in case, eg, while
+              // we are trying to sync all referenced files, a
+              // merge completes which would otherwise have
+              // removed the files we are now syncing.
+              deleter.incRef(toCommit.files(false));
               if (anyChanges && maxCommitMergeWaitSeconds > 0) {
                 SegmentInfos committingSegmentInfos = toCommit;
                 onCommitMerges = updatePendingMerges(new OneMergeWrappingMergePolicy(config.getMergePolicy(), toWrap ->
                     new MergePolicy.OneMerge(toWrap.segments) {
                       @Override
-                      public void mergeFinished(boolean committed) throws IOException {
+                      public void mergeFinished(boolean committed, boolean segmentDropped) throws IOException {
                         assert Thread.holdsLock(IndexWriter.this);
-                        if (committed && includeInCommit.get()) {
+                        if (segmentDropped == false
+                            && committed
+                            && includeInCommit.get()) {
                           deleter.incRef(info.files());
                           Set<String> mergedSegmentNames = new HashSet<>();
                           for (SegmentCommitInfo sci : segments) {
@@ -3262,8 +3270,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
                           committingSegmentInfos.counter = Math.max(committingSegmentInfos.counter, segmentCounter + 1);
                           committingSegmentInfos.applyMergeChanges(applicableMerge, false);
                         }
-                        toWrap.mergeFinished(committed);
-                        super.mergeFinished(committed);
+                        toWrap.mergeFinished(committed, false);
+                        super.mergeFinished(committed, segmentDropped);
                       }
 
                       @Override
@@ -3274,14 +3282,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
                 ), MergeTrigger.COMMIT, UNBOUNDED_MAX_MERGE_SEGMENTS);
               }
 
-              pendingCommitChangeCount = changeCount.get();
 
-              // This protects the segmentInfos we are now going
-              // to commit.  This is important in case, eg, while
-              // we are trying to sync all referenced files, a
-              // merge completes which would otherwise have
-              // removed the files we are now syncing.    
-              deleter.incRef(toCommit.files(false));
             }
             success = true;
           } finally {
@@ -4019,7 +4020,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       // Must close before checkpoint, otherwise IFD won't be
       // able to delete the held-open files from the merge
       // readers:
-      closeMergeReaders(merge, false);
+      closeMergeReaders(merge, false, dropSegment);
     }
 
     if (infoStream.isEnabled("IW")) {
@@ -4341,27 +4342,33 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   }
 
   @SuppressWarnings("try")
-  private synchronized void closeMergeReaders(MergePolicy.OneMerge merge, boolean suppressExceptions) throws IOException {
+  private synchronized void closeMergeReaders(MergePolicy.OneMerge merge, boolean suppressExceptions, boolean droppedSegment) throws IOException {
     final boolean drop = suppressExceptions == false;
-    try (Closeable finalizer = () -> merge.mergeFinished(suppressExceptions == false)) {
-      IOUtils.applyToAll(merge.readers, sr -> {
-        final ReadersAndUpdates rld = getPooledInstance(sr.getOriginalSegmentInfo(), false);
-        // We still hold a ref so it should not have been removed:
-        assert rld != null;
-        if (drop) {
-          rld.dropChanges();
-        } else {
-          rld.dropMergingUpdates();
-        }
-        rld.release(sr);
-        release(rld);
-        if (drop) {
-          readerPool.drop(rld.info);
-        }
-      });
+    try {
+      // first call mergeFinished before we potentially drop the reader and the last reference.
+      merge.mergeFinished(suppressExceptions == false, droppedSegment);
     } finally {
-      Collections.fill(merge.readers, null);
+      try {
+        IOUtils.applyToAll(merge.readers, sr -> {
+          final ReadersAndUpdates rld = getPooledInstance(sr.getOriginalSegmentInfo(), false);
+          // We still hold a ref so it should not have been removed:
+          assert rld != null;
+          if (drop) {
+            rld.dropChanges();
+          } else {
+            rld.dropMergingUpdates();
+          }
+          rld.release(sr);
+          release(rld);
+          if (drop) {
+            readerPool.drop(rld.info);
+          }
+        });
+      } finally {
+        Collections.fill(merge.readers, null);
+      }
     }
+
   }
 
   private void countSoftDeletes(CodecReader reader, Bits wrappedLiveDocs, Bits hardLiveDocs, Counter softDeleteCounter,
@@ -4661,7 +4668,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       // Readers are already closed in commitMerge if we didn't hit
       // an exc:
       if (success == false) {
-        closeMergeReaders(merge, true);
+        closeMergeReaders(merge, true, false);
       }
     }
 
