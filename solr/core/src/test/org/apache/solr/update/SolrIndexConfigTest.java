@@ -177,6 +177,8 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     ++mSizeExpected; assertTrue(m.get("maxBufferedDocs") instanceof Integer);
 
     ++mSizeExpected; assertTrue(m.get("ramBufferSizeMB") instanceof Double);
+    
+    ++mSizeExpected; assertTrue(m.get("maxCommitMergeWaitSeconds") instanceof Integer);
 
     ++mSizeExpected; assertTrue(m.get("ramPerThreadHardLimitMB") instanceof Integer);
 
@@ -207,5 +209,17 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     ++mSizeExpected; assertNotNull(m.get("metrics"));
 
     assertEquals(mSizeExpected, m.size());
+  }
+  
+  public void testMaxCommitMergeWaitSeconds() throws Exception {
+    SolrConfig sc = new SolrConfig(TEST_PATH().resolve("collection1"), "solrconfig-test-misc.xml");
+    assertEquals(-1, sc.indexConfig.maxCommitMergeWaitSeconds);
+    assertEquals(IndexWriterConfig.DEFAULT_MAX_COMMIT_MERGE_WAIT_SECONDS, sc.indexConfig.toIndexWriterConfig(h.getCore()).getMaxCommitMergeWaitSeconds());
+    System.setProperty("solr.tests.maxCommitMergeWaitSeconds", "10");
+    sc = new SolrConfig(TEST_PATH().resolve("collection1"), "solrconfig-test-misc.xml");
+    assertEquals(10, sc.indexConfig.maxCommitMergeWaitSeconds);
+    assertEquals(10, sc.indexConfig.toIndexWriterConfig(h.getCore()).getMaxCommitMergeWaitSeconds());
+    System.clearProperty("solr.tests.maxCommitMergeWaitSeconds");
+    
   }
 }
