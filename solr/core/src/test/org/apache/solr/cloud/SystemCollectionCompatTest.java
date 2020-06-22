@@ -180,6 +180,7 @@ public class SystemCollectionCompatTest extends SolrCloudTestCase {
     }
     assertNotNull(overseerNode);
     LogWatcherConfig watcherCfg = new LogWatcherConfig(true, null, "WARN", 100);
+    @SuppressWarnings({"rawtypes"})
     LogWatcher watcher = LogWatcher.newRegisteredLogWatcher(watcherCfg, null);
 
     watcher.reset();

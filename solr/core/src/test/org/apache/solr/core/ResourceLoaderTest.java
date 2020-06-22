@@ -204,7 +204,7 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
 
   @SuppressWarnings({"rawtypes", "deprecation"})
   public void testLoadDeprecatedFactory() throws Exception {
-    SolrResourceLoader loader = new SolrResourceLoader(Paths.get("solr/collection1"));
+    SolrResourceLoader loader = new SolrResourceLoader(Paths.get("solr/collection1").toAbsolutePath());
     // ensure we get our exception
     loader.newInstance(DeprecatedTokenFilterFactory.class.getName(), TokenFilterFactory.class, null,
         new Class[] { Map.class }, new Object[] { new HashMap<String,String>() });

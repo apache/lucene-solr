@@ -1195,7 +1195,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
    * Executes each of the specified Similarity-accepting validators.
    */
   @SafeVarargs
-  @SuppressWarnings({"unchecked"})
+  @SuppressWarnings({"unchecked", "varargs"})
   private static <T extends Similarity> void assertFieldSimilarity(String fieldname, Class<T> expected, Consumer<T>... validators) {
     CoreContainer cc = jetty.getCoreContainer();
     try (SolrCore core = cc.getCore("collection1")) {

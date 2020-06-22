@@ -382,19 +382,23 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
   }
   
   private void disableAutoAddReplicasInCluster() throws SolrServerException, IOException {
+    @SuppressWarnings({"rawtypes"})
     Map m = makeMap(
         "action", CollectionParams.CollectionAction.CLUSTERPROP.toLower(),
         "name", ZkStateReader.AUTO_ADD_REPLICAS,
         "val", "false");
+    @SuppressWarnings({"unchecked"})
     QueryRequest request = new QueryRequest(new MapSolrParams(m));
     request.setPath("/admin/collections");
     cluster.getSolrClient().request(request);
   }
 
   private void enableAutoAddReplicasInCluster() throws SolrServerException, IOException {
+    @SuppressWarnings({"rawtypes"})
     Map m = makeMap(
         "action", CollectionParams.CollectionAction.CLUSTERPROP.toLower(),
         "name", ZkStateReader.AUTO_ADD_REPLICAS);
+    @SuppressWarnings({"unchecked"})
     QueryRequest request = new QueryRequest(new MapSolrParams(m));
     request.setPath("/admin/collections");
     cluster.getSolrClient().request(request);

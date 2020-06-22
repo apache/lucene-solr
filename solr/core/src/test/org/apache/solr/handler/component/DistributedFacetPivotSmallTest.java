@@ -1610,10 +1610,20 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
       }
       return true;
     }
+
+    @Override
+    public int hashCode() {
+      throw new UnsupportedOperationException("Calling hashCode in ComparablePivotField");
+    }
   }
   
   public static class UnorderedEqualityArrayList<T> extends ArrayList<T> {
-    
+
+    @Override
+    public int hashCode() {
+      throw new UnsupportedOperationException("Calling hashCode in UnorderedEqualityArrayList");
+    }
+
     @Override
     public boolean equals(Object o) {
       boolean equal = false;

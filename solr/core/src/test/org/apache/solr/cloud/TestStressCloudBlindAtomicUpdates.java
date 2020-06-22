@@ -105,8 +105,9 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
    * initial index seeding has finished (we're focusing on testing atomic updates, not basic indexing).
    */
   private String testInjection = null;
-  
+
   @BeforeClass
+  @SuppressWarnings({"unchecked"})
   private static void createMiniSolrCloudCluster() throws Exception {
     // NOTE: numDocsToCheck uses atLeast, so nightly & multiplier are alreayd a factor in index size
     // no need to redundently factor them in here as well
@@ -143,8 +144,6 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
       assertNotNull("Jetty has null baseUrl: " + jetty.toString(), baseUrl);
       CLIENTS.add(getHttpSolrClient(baseUrl + "/" + COLLECTION_NAME + "/"));
     }
-
-    final boolean usingPoints = Boolean.getBoolean(NUMERIC_POINTS_SYSPROP);
 
     // sanity check no one broke the assumptions we make about our schema
     checkExpectedSchemaType( map("name","long",
@@ -207,6 +206,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
 
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void test_dv() throws Exception {
     String field = "long_dv";
     checkExpectedSchemaField(map("name", field,
@@ -219,6 +219,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
   }
   
   @Test
+  @SuppressWarnings({"unchecked"})
   public void test_dv_stored() throws Exception {
     String field = "long_dv_stored";
     checkExpectedSchemaField(map("name", field,
@@ -230,6 +231,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
     checkField(field);
 
   }
+  @SuppressWarnings({"unchecked"})
   public void test_dv_stored_idx() throws Exception {
     String field = "long_dv_stored_idx";
     checkExpectedSchemaField(map("name", field,
@@ -241,6 +243,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
     checkField(field);
   }
 
+  @SuppressWarnings({"unchecked"})
   public void test_dv_idx() throws Exception {
     String field = "long_dv_idx";
     checkExpectedSchemaField(map("name", field,
@@ -251,6 +254,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
     
     checkField(field);
   }
+  @SuppressWarnings({"unchecked"})
   public void test_stored_idx() throws Exception {
     String field = "long_stored_idx";
     checkExpectedSchemaField(map("name", field,
@@ -282,7 +286,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
       UpdateResponse rsp = update(doc).process(CLOUD_CLIENT);
       assertEquals(doc.toString() + " => " + rsp.toString(), 0, rsp.getStatus());
       if (0 == id % DOC_ID_INCR) {
-        expected[(int)(id / DOC_ID_INCR)] = new AtomicLong(initValue);
+        expected[id / DOC_ID_INCR] = new AtomicLong(initValue);
       }
     }
     assertNotNull("Sanity Check no off-by-one in expected init: ", expected[expected.length-1]);
@@ -337,7 +341,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
     for (int id = 0; id < numDocsInIndex; id += DOC_ID_INCR) {
       assert 0 == id % DOC_ID_INCR : "WTF? " + id;
       
-      final long expect = expected[(int)(id / DOC_ID_INCR)].longValue();
+      final long expect = expected[id / DOC_ID_INCR].longValue();
       
       final String docId = "" + id;
       
@@ -397,7 +401,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
       UpdateResponse rsp = update(doc).process(client);
       assertEquals(doc + " => " + rsp, 0, rsp.getStatus());
       
-      AtomicLong counter = expected[(int)(docId / DOC_ID_INCR)];
+      AtomicLong counter = expected[docId / DOC_ID_INCR];
       assertNotNull("null counter for " + docId + "/" + DOC_ID_INCR, counter);
       counter.getAndAdd(delta);
 

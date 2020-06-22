@@ -239,3 +239,8 @@
 # change the value to true. The option is configured as a system property as defined in SOLR_START_OPTS in the start
 # scripts.
 # SOLR_ADMIN_UI_DISABLED=false
+
+# Solr is by default allowed to read and write data from/to SOLR_HOME and a few other well defined locations
+# Sometimes it may be necessary to place a core or a backup on a different location or a different disk
+# This parameter lets you specify file system path(s) to explicitly allow. The special value of '*' will allow any path
+#SOLR_OPTS="$SOLR_OPTS -Dsolr.allowPaths=/mnt/bigdisk,/other/path"

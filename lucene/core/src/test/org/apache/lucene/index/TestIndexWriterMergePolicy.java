@@ -18,17 +18,42 @@ package org.apache.lucene.index;
 
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.store.Directory;
 
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestIndexWriterMergePolicy extends LuceneTestCase {
-  
+
+  private static final MergePolicy MERGE_ON_COMMIT_POLICY = new LogDocMergePolicy() {
+    @Override
+    public MergeSpecification findFullFlushMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext) {
+      // Optimize down to a single segment on commit
+      if (mergeTrigger == MergeTrigger.COMMIT && segmentInfos.size() > 1) {
+        List<SegmentCommitInfo> nonMergingSegments = new ArrayList<>();
+        for (SegmentCommitInfo sci : segmentInfos) {
+          if (mergeContext.getMergingSegments().contains(sci) == false) {
+            nonMergingSegments.add(sci);
+          }
+        }
+        if (nonMergingSegments.size() > 1) {
+          MergeSpecification mergeSpecification = new MergeSpecification();
+          mergeSpecification.add(new OneMerge(nonMergingSegments));
+          return mergeSpecification;
+        }
+      }
+      return null;
+    }
+  };
+
   // Test the normal case
   public void testNormalCase() throws IOException {
     Directory dir = newDirectory();
@@ -276,6 +301,50 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
   public void testSetters() {
     assertSetters(new LogByteSizeMergePolicy());
     assertSetters(new LogDocMergePolicy());
+  }
+
+  // Test basic semantics of merge on commit
+  public void testMergeOnCommit() throws IOException {
+    Directory dir = newDirectory();
+
+    IndexWriter firstWriter = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
+        .setMergePolicy(NoMergePolicy.INSTANCE));
+    for (int i = 0; i < 5; i++) {
+      TestIndexWriter.addDoc(firstWriter);
+      firstWriter.flush();
+    }
+    DirectoryReader firstReader = DirectoryReader.open(firstWriter);
+    assertEquals(5, firstReader.leaves().size());
+    firstReader.close();
+    firstWriter.close(); // When this writer closes, it does not merge on commit.
+
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()))
+        .setMergePolicy(MERGE_ON_COMMIT_POLICY).setMaxCommitMergeWaitSeconds(30);
+
+
+    IndexWriter writerWithMergePolicy = new IndexWriter(dir, iwc);
+    writerWithMergePolicy.commit(); // No changes. Commit doesn't trigger a merge.
+
+    DirectoryReader unmergedReader = DirectoryReader.open(writerWithMergePolicy);
+    assertEquals(5, unmergedReader.leaves().size());
+    unmergedReader.close();
+
+    TestIndexWriter.addDoc(writerWithMergePolicy);
+    writerWithMergePolicy.commit(); // Doc added, do merge on commit.
+    assertEquals(1, writerWithMergePolicy.getSegmentCount()); //
+
+    DirectoryReader mergedReader = DirectoryReader.open(writerWithMergePolicy);
+    assertEquals(1, mergedReader.leaves().size());
+    mergedReader.close();
+
+    try (IndexReader reader = writerWithMergePolicy.getReader()) {
+      IndexSearcher searcher = new IndexSearcher(reader);
+      assertEquals(6, reader.numDocs());
+      assertEquals(6, searcher.count(new MatchAllDocsQuery()));
+    }
+
+    writerWithMergePolicy.close();
+    dir.close();
   }
 
   private void assertSetters(MergePolicy lmp) {

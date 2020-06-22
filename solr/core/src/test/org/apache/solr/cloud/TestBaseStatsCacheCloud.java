@@ -108,6 +108,7 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testBasicStats() throws Exception {
     QueryResponse cloudRsp = solrClient.query(collectionName,
         params("q", "foo_t:\"bar baz\"", "fl", "*,score", "rows", "" + NUM_DOCS, "debug", "true"));

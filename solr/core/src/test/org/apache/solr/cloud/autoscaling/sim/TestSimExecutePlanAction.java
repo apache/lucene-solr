@@ -132,6 +132,7 @@ public class TestSimExecutePlanAction extends SimSolrCloudTestCase {
               if (!children.isEmpty()) {
                 String child = children.get(0);
                 VersionedData data = cluster.getDistribStateManager().getData(parentPath + "/" + child);
+                @SuppressWarnings({"rawtypes"})
                 Map m = (Map) Utils.fromJSON(data.getData());
                 if (m.containsKey("requestid")) {
                   znodeCreated.set(m.get("requestid").equals(asyncId));
@@ -153,6 +154,7 @@ public class TestSimExecutePlanAction extends SimSolrCloudTestCase {
       action.process(nodeLostEvent, actionContext);
 
 //      assertTrue("ExecutePlanAction should have stored the requestid in ZK before executing the request", znodeCreated.get());
+      @SuppressWarnings({"unchecked"})
       List<NamedList<Object>> responses = (List<NamedList<Object>>) actionContext.getProperty("responses");
       assertNotNull(responses);
       assertEquals(2, responses.size());
@@ -180,6 +182,7 @@ public class TestSimExecutePlanAction extends SimSolrCloudTestCase {
         "'actions' : [{'name':'compute_plan', 'class' : 'solr.ComputePlanAction'}," +
         "{'name':'execute_plan','class':'solr.ExecutePlanAction'}]" +
         "}}";
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");

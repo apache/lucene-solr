@@ -32,6 +32,8 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.metrics.AggregateMetric;
 import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +46,16 @@ public class SolrShardReporterTest extends AbstractFullDistribZkTestBase {
 
   public SolrShardReporterTest() {
     schemaString = "schema15.xml";      // we need a string id
+  }
+
+  @BeforeClass
+  public static void shardReporterBeforeClass() {
+    System.setProperty("solr.allowPaths", "*");
+  }
+
+  @AfterClass
+  public static void shardReporterAfterClass() {
+    System.clearProperty("solr.allowPaths");
   }
 
   @Override
