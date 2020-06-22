@@ -21,7 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -57,7 +57,6 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.CoreDescriptor;
-import org.apache.solr.core.SolrPaths;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -99,7 +98,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     // Create a collection for use by the filestream() expression, and place some files there for it to read.
     CollectionAdminRequest.createCollection(FILESTREAM_COLLECTION, "conf", 1, 1).process(cluster.getSolrClient());
     cluster.waitForActiveCollection(FILESTREAM_COLLECTION, 1, 1);
-    final String dataDir = findUserFilesDataDir();
+    final Path dataDir = findUserFilesDataDir();
     populateFileStreamData(dataDir);
   }
 
@@ -3550,12 +3549,12 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
 
-  private static String findUserFilesDataDir() {
+  private static Path findUserFilesDataDir() {
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       final String baseDir = cluster.getBaseDir().toAbsolutePath().toString();
       for (CoreDescriptor coreDescriptor : jetty.getCoreContainer().getCoreDescriptors()) {
         if (coreDescriptor.getCollectionName().equals(FILESTREAM_COLLECTION)) {
-          return Paths.get(jetty.getSolrHome(), SolrPaths.USER_FILES_DIRECTORY).toAbsolutePath().toString();
+          return jetty.getCoreContainer().getUserFilesPath();
         }
       }
     }
@@ -3578,29 +3577,22 @@ public class StreamExpressionTest extends SolrCloudTestCase {
    *
    * Each file contains 4 lines.  Each line looks like: "<filename> line <linenumber>"
    */
-  private static void populateFileStreamData(String dataDir) throws Exception {
-    final File baseDataDir = new File(dataDir);
-    if (! baseDataDir.exists()) baseDataDir.mkdir();
-    final File directory1 = new File(Paths.get(dataDir, "directory1").toString());
-    directory1.mkdir();
+  private static void populateFileStreamData(Path dataDir) throws Exception {
+    Files.createDirectories(dataDir);
+    Files.createDirectories(dataDir.resolve("directory1"));
 
-    final File topLevel1 = new File(Paths.get(dataDir, "topLevel1.txt").toString());
-    final File topLevel2 = new File(Paths.get(dataDir, "topLevel2.txt").toString());
-    final File topLevelEmpty = new File(Paths.get(dataDir, "topLevel-empty.txt").toString());
-    final File secondLevel1 = new File(Paths.get(dataDir, "directory1", "secondLevel1.txt").toString());
-    final File secondLevel2 = new File(Paths.get(dataDir, "directory1", "secondLevel2.txt").toString());
-    populateFileWithData(topLevel1);
-    populateFileWithData(topLevel2);
-    topLevelEmpty.createNewFile();
-    populateFileWithData(secondLevel1);
-    populateFileWithData(secondLevel2);
+    populateFileWithData(dataDir.resolve("topLevel1.txt"));
+    populateFileWithData(dataDir.resolve("topLevel2.txt"));
+    Files.createFile(dataDir.resolve("topLevel-empty.txt"));
+    populateFileWithData(dataDir.resolve("directory1").resolve("secondLevel1.txt"));
+    populateFileWithData(dataDir.resolve("directory1").resolve("secondLevel2.txt"));
   }
 
-  private static void populateFileWithData(File dataFile) throws Exception {
-    dataFile.createNewFile();
-    try (final BufferedWriter writer = Files.newBufferedWriter(Paths.get(dataFile.toURI()), StandardCharsets.UTF_8)) {
+  private static void populateFileWithData(Path dataFile) throws Exception {
+    Files.createFile(dataFile);
+    try (final BufferedWriter writer = Files.newBufferedWriter(dataFile, StandardCharsets.UTF_8)) {
       for (int i = 1; i <=4; i++) {
-        writer.write(dataFile.getName() + " line " + String.valueOf(i));
+        writer.write(dataFile.getFileName() + " line " + i);
         writer.newLine();
       }
     }
