@@ -254,8 +254,10 @@ public abstract class MergePolicy {
     }
 
     /** Called by {@link IndexWriter} after the merge is done and all readers have been closed.
-     * @param success true iff the merge finished successfully ie. was committed */
-    public void mergeFinished(boolean success) throws IOException {
+     * @param success true iff the merge finished successfully ie. was committed
+     * @param segmentDropped true iff the merged segment was dropped since it was fully deleted
+     */
+    public void mergeFinished(boolean success, boolean segmentDropped) throws IOException {
       mergeCompleted.complete(success);
       // https://issues.apache.org/jira/browse/LUCENE-9408
       // if (mergeCompleted.complete(success) == false) {
