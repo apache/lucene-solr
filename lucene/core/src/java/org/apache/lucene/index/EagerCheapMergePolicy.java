@@ -29,10 +29,10 @@ import org.apache.lucene.util.InfoStream;
 /**
  * Eagerly proposes cheap merges on a commit. The goal is to help keep the segment count low where
  * we can do so cheaply, particularly on a commit so that the IndexSearcher has fewer segments to
- * search over.
+ * search over.  This policy only overrides {@link #findFullFlushMerges(MergeTrigger, SegmentInfos, MergeContext)}; the
+ * rest are delegated to another policy.
  */
-public class EagerCheapMergePolicy extends TieredMergePolicy {
-  // Extends TieredMergePolicy for convenience but we could adjust to delegate or modify TieredMergePolicy
+public class EagerCheapMergePolicy extends FilterMergePolicy {
 
   private static final String INFO_STREAM_CATEGORY = "CHEAP_MP";
 
@@ -41,8 +41,13 @@ public class EagerCheapMergePolicy extends TieredMergePolicy {
   private double cheapMaxSizeRatio = 1.0;
   private int cheapLimitConcurrentMergeSegments = 0; // thus only when no merges in-progress
 
-  /** Sole constructor. */
-  public EagerCheapMergePolicy() {
+  /**
+   * Decorates the given merge policy.
+   *
+   * @param in the wrapped {@link MergePolicy}
+   */
+  public EagerCheapMergePolicy(MergePolicy in) {
+    super(in);
   }
 
   /** Returns {@link #setCheapMergeThresholdMB(double)}. */
@@ -117,32 +122,30 @@ public class EagerCheapMergePolicy extends TieredMergePolicy {
   }
 
   @Override
-  public MergeSpecification findMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext) throws IOException {
+  public MergeSpecification findFullFlushMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext) throws IOException {
     InfoStream infoStream = mergeContext.getInfoStream();
     boolean verbose = infoStream.isEnabled(INFO_STREAM_CATEGORY);
 
-    if (mergeTrigger == MergeTrigger.FULL_FLUSH) { // i.e. commit
-      if (mergeContext.getMergingSegments().size() <= cheapLimitConcurrentMergeSegments) {
-        OneMerge cheapMerge = findCheapMerge(segmentInfos, mergeContext);
-        if (cheapMerge != null) {
-          if (verbose) {
-            infoStream.message(INFO_STREAM_CATEGORY,
-                "Found a cheap merge: " + toSummaryString(cheapMerge.segments));
-            //FYI further IW infoStream message "registerMerge" will have segment details
-          }
-          MergeSpecification spec = new MergeSpecification();
-          spec.add(cheapMerge);
-          return spec;
-        }
-      } else {
+    if (mergeContext.getMergingSegments().size() <= cheapLimitConcurrentMergeSegments) {
+      OneMerge cheapMerge = findCheapMerge(segmentInfos, mergeContext);
+      if (cheapMerge != null) {
         if (verbose) {
           infoStream.message(INFO_STREAM_CATEGORY,
-              "Don't look for a cheap merge because " +
-                  mergeContext.getMergingSegments().size() + " segments are already merging.");
+              "Found a cheap merge: " + toSummaryString(cheapMerge.segments));
+          //FYI further IW infoStream message "registerMerge" will have segment details
         }
+        MergeSpecification spec = new MergeSpecification();
+        spec.add(cheapMerge);
+        return spec;
+      }
+    } else {
+      if (verbose) {
+        infoStream.message(INFO_STREAM_CATEGORY,
+            "Don't look for a cheap merge because " +
+                mergeContext.getMergingSegments().size() + " segments are already merging.");
       }
     }
-    return super.findMerges(mergeTrigger, segmentInfos, mergeContext); // note: could still be null
+    return null;
   }
 
   private String toSummaryString(List<SegmentCommitInfo> segments) {
@@ -164,7 +167,6 @@ public class EagerCheapMergePolicy extends TieredMergePolicy {
         .filter(o -> !alreadyMerging.contains(o))
         .filter(o -> size(o) <= cheapMergeThresholdBytes)
         .sorted(Comparator.comparingLong(EagerCheapMergePolicy::size))
-        .limit(getMaxMergeAtOnce())
         .collect(Collectors.toList());
 
     // Maximize how many of these we can merge while keeping in budget

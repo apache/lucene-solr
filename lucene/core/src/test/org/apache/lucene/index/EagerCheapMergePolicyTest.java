@@ -26,11 +26,12 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.StringHelper;
 
 public class EagerCheapMergePolicyTest extends LuceneTestCase {
 
   public void testMergeSelection() {
-    EagerCheapMergePolicy mergePolicy = new EagerCheapMergePolicy();
+    EagerCheapMergePolicy mergePolicy = new EagerCheapMergePolicy(new TieredMergePolicy());
     mergePolicy.setCheapMergeThresholdMB(2.0);
     mergePolicy.setCheapMinMergeAtOnce(2);
     mergePolicy.setCheapMaxSizeRatio(1.5);
@@ -71,7 +72,7 @@ public class EagerCheapMergePolicyTest extends LuceneTestCase {
     List<SegmentCommitInfo> infoPerCommits = new ArrayList<>(sizes.length);
     for (long size : sizes) {
       // a hack implementation to specify the size explicitly
-      infoPerCommits.add(new SegmentCommitInfo(null, 0, 0, 0, 0, 0) {
+      infoPerCommits.add(new SegmentCommitInfo(null, 0, 0, -1, -1, -1, StringHelper.randomId()) {
         final long szField = size; // necessary since "size" must be final
 
         @Override
