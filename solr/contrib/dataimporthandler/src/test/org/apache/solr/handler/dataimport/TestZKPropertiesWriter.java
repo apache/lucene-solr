@@ -181,6 +181,7 @@ public class TestZKPropertiesWriter extends SolrCloudTestCase {
   /**
    * Code copied with some adaptations from {@link org.apache.solr.util.TestHarness.LocalRequestFactory#makeRequest(String...)}.
    */
+  @SuppressWarnings({"unchecked"})
   private static LocalSolrQueryRequest localMakeRequest(SolrCore core, String ... q) {
     if (q.length==1) {
       Map<String, String> args = new HashMap<>();

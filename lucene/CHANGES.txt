@@ -148,6 +148,9 @@ Other
 * LUCENE-9267: Update MatchingQueries documentation to correct
   time unit. (Pierre-Luc Perron via Mike Drob)
 
+* LUCENE-9411: Fail complation on warnings, 9x gradle-only (Erick Erickson, Dawid Weiss)
+  Deserves mention here as well as Lucene CHANGES.txt since it affects both.
+
 ======================= Lucene 8.6.0 =======================
 
 API Changes
