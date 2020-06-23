@@ -79,6 +79,9 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
    * @return Memory usage in bytes
    */
   protected long calculateLiveMemoryUsage() {
+    // NOTE: MemoryUsageGaugeSet provides memory usage statistics but we do not use them
+    // here since MemoryUsageGaugeSet provides combination of heap and non heap usage and
+    // we are not looking into non heap usage hereg
     return MEMORY_MX_BEAN.getHeapMemoryUsage().getUsed();
   }
 }
