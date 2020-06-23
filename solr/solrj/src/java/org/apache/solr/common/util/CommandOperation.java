@@ -73,7 +73,6 @@ public class CommandOperation {
   @SuppressWarnings({"unchecked"})
   public Map<String, Object> getDataMap() {
     if (commandData instanceof Map) {
-      //noinspection unchecked
       return (Map<String, Object>) commandData;
     }
     addError(StrUtils.formatString("The command ''{0}'' should have the values as a json object '{'key:val'}' format but is ''{1}''", name, commandData));
