@@ -82,20 +82,20 @@ public class RegexpQuery extends AutomatonQuery {
   /**
    * Constructs a query for terms matching <code>term</code>.
    * 
+   * @param flags optional RegExp syntax features from {@link RegExp}
+   * @param match_flags boolean 'or' of match behavior options such as case insensitivity
    * @param term regular expression.
-   * @param flags optional RegExp features from {@link RegExp}
-   * @param caseSensitive set to false for case insensitive matching of ASCII characters 
    */
-  public RegexpQuery(Term term, int flags, boolean caseSensitive) {
+  public RegexpQuery(int flags, int match_flags, Term term) {
     this(term, flags, defaultProvider,
-      Operations.DEFAULT_MAX_DETERMINIZED_STATES, caseSensitive);
+      Operations.DEFAULT_MAX_DETERMINIZED_STATES, match_flags);
   }
   
   /**
    * Constructs a query for terms matching <code>term</code>.
    * 
    * @param term regular expression.
-   * @param flags optional RegExp features from {@link RegExp}
+   * @param flags optional RegExp syntax features from {@link RegExp}
    * @param maxDeterminizedStates maximum number of states that compiling the
    *  automaton for the regexp can result in.  Set higher to allow more complex
    *  queries and lower to prevent memory exhaustion.
@@ -108,14 +108,14 @@ public class RegexpQuery extends AutomatonQuery {
    * Constructs a query for terms matching <code>term</code>.
    * 
    * @param term regular expression.
-   * @param flags optional RegExp features from {@link RegExp}
+   * @param flags optional RegExp syntax features from {@link RegExp}
    * @param maxDeterminizedStates maximum number of states that compiling the
    *  automaton for the regexp can result in.  Set higher to allow more complex
    *  queries and lower to prevent memory exhaustion.
-   * @param caseSensitive set to false for case insensitive matching of ASCII characters 
+   * @param match_flags boolean 'or' of match behavior options such as case insensitivity
    */
-  public RegexpQuery(Term term, int flags, int maxDeterminizedStates, boolean caseSensitive) {
-    this(term, flags, defaultProvider, maxDeterminizedStates, caseSensitive);
+  public RegexpQuery(Term term, int flags, int maxDeterminizedStates, int match_flags) {
+    this(term, flags, defaultProvider, maxDeterminizedStates, match_flags);
   }
   
   /**
@@ -130,7 +130,7 @@ public class RegexpQuery extends AutomatonQuery {
    */
   public RegexpQuery(Term term, int flags, AutomatonProvider provider,
       int maxDeterminizedStates) {
-    this(term, flags, provider, maxDeterminizedStates, true);
+    this(term, flags, provider, maxDeterminizedStates, 0);
   }
   
   /**
@@ -142,12 +142,12 @@ public class RegexpQuery extends AutomatonQuery {
    * @param maxDeterminizedStates maximum number of states that compiling the
    *  automaton for the regexp can result in.  Set higher to allow more complex
    *  queries and lower to prevent memory exhaustion.
-   * @param caseSensitive set to false for case insensitive matching of ASCII characters 
+   * @param match_flags boolean 'or' of match behavior options such as case insensitivity
    */
   public RegexpQuery(Term term, int flags, AutomatonProvider provider,
-      int maxDeterminizedStates, boolean caseSensitive) {
+      int maxDeterminizedStates, int match_flags) {
     super(term,
-          new RegExp(term.text(), flags, caseSensitive).toAutomaton(
+          new RegExp(term.text(), flags, match_flags).toAutomaton(
                        provider, maxDeterminizedStates), maxDeterminizedStates);
   }
 

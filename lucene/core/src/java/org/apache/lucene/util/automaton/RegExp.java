@@ -448,12 +448,12 @@ public class RegExp {
    */
   public static final int NONE = 0x0000;
   
-  //-----  Non-syntax flags ( > 0xff )  ------
+  //-----  Matching flags ( > 0xff )  ------
   
   /**
    * Allows case insensitive matching of ASCII characters.
    */
-  static final int ASCII_CASE_INSENSITIVE = 0x0100;    
+  public static final int ASCII_CASE_INSENSITIVE = 0x0100;    
 
   //Immutable parsed state
   /**
@@ -508,7 +508,7 @@ public class RegExp {
    *              regular expression
    */
   public RegExp(String s, int syntax_flags) throws IllegalArgumentException {
-    this(s, syntax_flags, true);
+    this(s, syntax_flags, 0);
   }
   /**
    * Constructs new <code>RegExp</code> from a string.
@@ -516,20 +516,19 @@ public class RegExp {
    * @param s regexp string
    * @param syntax_flags boolean 'or' of optional syntax constructs to be
    *          enabled
-   * @param caseSensitive case sensitive matching of ASCII characters
+   * @param match_flags boolean 'or' of match behavior options such as case insensitivity
    * @exception IllegalArgumentException if an error occurred while parsing the
    *              regular expression
    */
-  public RegExp(String s, int syntax_flags, boolean caseSensitive) throws IllegalArgumentException {    
-    originalString = s;
-    // Trim any bits unrelated to syntax flags
+  public RegExp(String s, int syntax_flags, int match_flags) throws IllegalArgumentException {    
+    // (for BWC reasons we don't validate invalid bits, just trim instead)
     syntax_flags  = syntax_flags & 0xff;
-    if (caseSensitive) {
-      flags = syntax_flags;
-    } else {      
-      // Add in the case-insensitive setting
-      flags = syntax_flags | ASCII_CASE_INSENSITIVE;
+    
+    if (match_flags > 0 && match_flags <= ALL) {
+      throw new IllegalArgumentException("Illegal match flag");
     }
+    flags = syntax_flags | match_flags;
+    originalString = s;
     RegExp e;
     if (s.length() == 0) e = makeString(flags, "");
     else {

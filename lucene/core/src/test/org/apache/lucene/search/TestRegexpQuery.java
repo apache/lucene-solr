@@ -74,7 +74,8 @@ public class TestRegexpQuery extends LuceneTestCase {
   }
   
   private long caseInsensitiveRegexQueryNrHits(String regex) throws IOException {
-    RegexpQuery query = new RegexpQuery(newTerm(regex), RegExp.ALL, false);
+    RegexpQuery query = new RegexpQuery( RegExp.ALL, RegExp.ASCII_CASE_INSENSITIVE,         
+        newTerm(regex));
     return searcher.count(query);
   }  
   
