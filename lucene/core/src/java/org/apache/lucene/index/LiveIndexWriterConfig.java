@@ -416,7 +416,7 @@ public class LiveIndexWriterConfig {
    * </p>
    */
   public LiveIndexWriterConfig setUseCompoundFile(boolean useCompoundFile) {
-    this.useCompoundFile = useCompoundFile;
+    this.useCompoundFile = false;
     return this;
   }
   

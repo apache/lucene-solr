@@ -110,7 +110,7 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
   /** Default value for compound file system for newly written segments
    *  (set to <code>true</code>). For batch indexing with very large 
    *  ram buffers use <code>false</code> */
-  public final static boolean DEFAULT_USE_COMPOUND_FILE_SYSTEM = true;
+  public final static boolean DEFAULT_USE_COMPOUND_FILE_SYSTEM = false;
   
   /** Default value for whether calls to {@link IndexWriter#close()} include a commit. */
   public final static boolean DEFAULT_COMMIT_ON_CLOSE = true;
