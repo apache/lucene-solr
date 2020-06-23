@@ -33,6 +33,10 @@ import org.apache.lucene.util.NumericUtils;
  * Stores information about how to sort documents by terms in an individual
  * field.  Fields must be indexed in order to sort by them.
  *
+ * Sorting on a numeric field that is indexed with both doc values and points may use an
+ * optimization to skip non-competitive documents. This optimization relies on the assumption
+ * that the same data is stored in these points and doc values.
+ *
  * <p>Created: Feb 11, 2004 1:25:29 PM
  *
  * @since   lucene 1.4
