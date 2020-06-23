@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.index.ExitableDirectoryReader;
@@ -51,13 +52,18 @@ import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.SolrPluginUtils;
+import org.apache.solr.util.circuitbreaker.CircuitBreaker;
+import org.apache.solr.util.circuitbreaker.CircuitBreakerManager;
+import org.apache.solr.util.circuitbreaker.CircuitBreakerType;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
+import static org.apache.solr.common.params.CommonParams.FAILURE;
 import static org.apache.solr.common.params.CommonParams.PATH;
+import static org.apache.solr.common.params.CommonParams.STATUS;
 
 
 /**
@@ -287,6 +293,19 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
     ResponseBuilder rb = newResponseBuilder(req, rsp, components);
     if (rb.requestInfo != null) {
       rb.requestInfo.setResponseBuilder(rb);
+    }
+
+    //TODO: Should this be for indexing requests as well?
+    CircuitBreakerManager circuitBreakerManager = req.getCore().getCircuitBreakerManager();
+    Map<CircuitBreakerType, CircuitBreaker> trippedCircuitBreakers = circuitBreakerManager.checkAllCircuitBreakers();
+
+    if (trippedCircuitBreakers != null) {
+      assert trippedCircuitBreakers.size() > 0;
+
+      String errorMessage = CircuitBreakerManager.constructFinalErrorMessageString(trippedCircuitBreakers);
+      rsp.add(STATUS, FAILURE);
+      rsp.setException(new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Circuit Breakers tripped " + errorMessage));
+      return;
     }
 
     boolean dbg = req.getParams().getBool(CommonParams.DEBUG_QUERY, false);

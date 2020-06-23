@@ -224,6 +224,9 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     queryResultWindowSize = Math.max(1, getInt("query/queryResultWindowSize", 1));
     queryResultMaxDocsCached = getInt("query/queryResultMaxDocsCached", Integer.MAX_VALUE);
     enableLazyFieldLoading = getBool("query/enableLazyFieldLoading", false);
+
+    useCircuitBreakers = getBool("query/useCircuitBreakers", false);
+    memoryCircuitBreakerThreshold = getInt("query/memoryCircuitBreakerThreshold", 100);
     
     useRangeVersionsForPeerSync = getBool("peerSync/useRangeVersions", true);
 
@@ -522,6 +525,10 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
   public final int queryResultWindowSize;
   public final int queryResultMaxDocsCached;
   public final boolean enableLazyFieldLoading;
+
+  // Circuit Breaker Configuration
+  public final boolean useCircuitBreakers;
+  public final int memoryCircuitBreakerThreshold;
   
   public final boolean useRangeVersionsForPeerSync;
   
@@ -873,6 +880,8 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     m.put("queryResultMaxDocsCached", queryResultMaxDocsCached);
     m.put("enableLazyFieldLoading", enableLazyFieldLoading);
     m.put("maxBooleanClauses", booleanQueryMaxClauseCount);
+    m.put("useCircuitBreakers", useCircuitBreakers);
+    m.put("memoryCircuitBreakerThreshold", memoryCircuitBreakerThreshold);
     for (SolrPluginInfo plugin : plugins) {
       List<PluginInfo> infos = getPluginInfos(plugin.clazz.getName());
       if (infos == null || infos.isEmpty()) continue;
