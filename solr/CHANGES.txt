@@ -257,6 +257,9 @@ Bug Fixes
 * SOLR-14577: Return 400 BAD REQUEST when field is missing on a Terms query parser request
   (Tomás Fernández Löbbe)
 
+* SOLR-14584: Correct SOLR_SSL_KEY_STORE and SOLR_SSL_TRUST_STORE example comments in solr.in.sh and solr.in.cmd files
+  (Aren Cambre via Christine Poerschke)
+
 Other Changes
 ---------------------
 * SOLR-14197: SolrResourceLoader: marked many methods as deprecated, and in some cases rerouted exiting logic to avoid
