@@ -21,8 +21,12 @@ import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
+/**
+ * Holds the deserialized object for each command and also holds request , response objects
+ */
 public class PayloadObj<T> extends CommandOperation {
 
+    //the deserialized object parameter
     private T obj;
     final SolrQueryRequest req;
     final SolrQueryResponse rsp;

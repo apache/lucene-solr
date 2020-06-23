@@ -17,7 +17,11 @@
 
 package org.apache.solr.common.util;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.Collections.emptyList;
@@ -80,7 +84,7 @@ public class PathTrie<T> {
     return parts;
   }
 
-  public T unregister(List<String> path) {
+  public T remove(List<String> path) {
     Node node = root.lookupNode(path, 0, null, null);
     T result = null;
     if (node != null) {

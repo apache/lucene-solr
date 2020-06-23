@@ -18,6 +18,22 @@
 package org.apache.solr.api;
 
 
+import java.io.Closeable;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
@@ -33,12 +49,6 @@ import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.SolrJacksonAnnotationInspector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.Closeable;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.lang.reflect.*;
-import java.util.*;
 
 /**
  * This class implements an Api just from  an annotated java class
@@ -314,8 +324,8 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
   public static Map<String, Object> createSchema(Method m) {
     Type[] types = m.getGenericParameterTypes();
     Type t = null;
-    if (types.length == 3) t = types[2];
-    if(types.length == 1) t = types[0];
+    if (types.length == 3) t = types[2]; // (SolrQueryRequest req, SolrQueryResponse rsp, PayloadObj<PluginMeta>)
+    if(types.length == 1) t = types[0];// (PayloadObj<PluginMeta>)
     if (t != null) {
       if (t instanceof ParameterizedType) {
         ParameterizedType typ = (ParameterizedType) t;

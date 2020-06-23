@@ -77,7 +77,7 @@ public class TestPathTrie extends SolrTestCaseJ4 {
     templateValues.clear();
     assertEquals("a", pathTrie.lookup("/1/2/3/4", templateValues));
     assertEquals(templateValues.get("x"), "3");
-    pathTrie.unregister(PathTrie.getPathSegments("/1/2/3/4"));
+    pathTrie.remove(PathTrie.getPathSegments("/1/2/3/4"));
     assertEquals(null, pathTrie.lookup("/1/2/3/4", null));
   }
 }

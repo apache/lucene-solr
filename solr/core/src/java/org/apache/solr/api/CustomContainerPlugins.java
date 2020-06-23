@@ -17,12 +17,28 @@
 
 package org.apache.solr.api;
 
+import java.io.Closeable;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.cloud.ClusterPropertiesListener;
-import org.apache.solr.common.util.*;
+import org.apache.solr.common.util.Pair;
+import org.apache.solr.common.util.PathTrie;
+import org.apache.solr.common.util.ReflectMapWriter;
+import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.ContainerPluginsApi;
 import org.apache.solr.pkg.PackageLoader;
@@ -31,13 +47,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.SolrJacksonAnnotationInspector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.Closeable;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Modifier;
-import java.util.*;
 
 import static org.apache.lucene.util.IOUtils.closeWhileHandlingException;
 
@@ -142,7 +151,7 @@ public class CustomContainerPlugins implements ClusterPropertiesListener {
     }
   }
 
-  private class ApiHolder extends Api {
+  private static class ApiHolder extends Api {
     final AnnotatedApi api;
 
     protected ApiHolder(AnnotatedApi api) {
@@ -197,14 +206,14 @@ public class CustomContainerPlugins implements ClusterPropertiesListener {
           klas = pkgVersion.getLoader().findClass(klassInfo.second(), Object.class);
         } catch (Exception e) {
           log.error("Error loading class", e);
-          errs.add("Error loading class " + e.getMessage());
+          errs.add("Error loading class " + e.toString());
           return;
         }
       } else {
         try {
           klas = Class.forName(klassInfo.second());
         } catch (ClassNotFoundException e) {
-          errs.add("Error loading class " + e.getMessage());
+          errs.add("Error loading class " + e.toString());
           return;
         }
         pkgVersion = null;
@@ -232,7 +241,7 @@ public class CustomContainerPlugins implements ClusterPropertiesListener {
 
         }
       } catch (Exception e) {
-        errs.add(e.getMessage());
+        errs.add(e.toString());
       }
       if (!errs.isEmpty()) return;
 

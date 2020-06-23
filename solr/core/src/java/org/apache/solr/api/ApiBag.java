@@ -155,8 +155,8 @@ public class ApiBag {
     List<String> l = PathTrie.getPathSegments(path);
     List<String> introspectPath = new ArrayList<>(l);
     introspectPath.add("_introspect");
-    getRegistry(method.toString()).unregister(introspectPath);
-    return getRegistry(method.toString()).unregister(l);
+    getRegistry(method.toString()).remove(introspectPath);
+    return getRegistry(method.toString()).remove(l);
   }
 
   public static class IntrospectApi extends Api {

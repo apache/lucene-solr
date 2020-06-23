@@ -17,13 +17,18 @@
 
 package org.apache.solr.handler;
 
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+
 import com.google.common.collect.ImmutableMap;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteExecutionException;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.request.beans.Package;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
@@ -43,17 +48,11 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Callable;
-
 import static java.util.Collections.singletonMap;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.filestore.TestDistribPackageStore.readFile;
 import static org.apache.solr.filestore.TestDistribPackageStore.uploadKey;
-import static org.hamcrest.CoreMatchers.containsString;
 
 public class TestContainerPlugin extends SolrCloudTestCase {
 
@@ -297,12 +296,8 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     }
 
   private void expectError(V2Request req, SolrClient client, String errPath, String expectErrorMsg) throws IOException, SolrServerException {
-    try {
-      req.process(client);
-      fail("should have failed with message : " + expectErrorMsg);
-    } catch (BaseHttpSolrClient.RemoteExecutionException e) {
-      String msg = e.getMetaData()._getStr(errPath, "");
-      assertThat(msg, containsString(expectErrorMsg));
-    }
+    RemoteExecutionException e = expectThrows(RemoteExecutionException.class, () -> req.process(client));
+    String msg = e.getMetaData()._getStr(errPath, "");
+    assertTrue(expectErrorMsg, msg.contains(expectErrorMsg));
   }
 }

@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.logging.MDCLoggingContext;
@@ -69,7 +70,7 @@ public class PackageListeners {
         invokeListeners(pkgInfo);
       }
     } finally {
-      if(core != null) MDCLoggingContext.clear();
+      MDCLoggingContext.clear();
     }
   }
 
