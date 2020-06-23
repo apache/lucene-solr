@@ -20,10 +20,12 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -362,5 +364,50 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     });
     
     // TODO: Add more checks for other non-double setters!
+  }
+
+  public void testCarryOverNewDeletes() throws IOException, InterruptedException {
+    try (Directory directory = newDirectory()) {
+      CountDownLatch waitForMerge = new CountDownLatch(1);
+      CountDownLatch waitForUpdate = new CountDownLatch(1);
+      try (IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig()
+          .setMergePolicy(MERGE_ON_COMMIT_POLICY).setMaxCommitMergeWaitSeconds(30)
+          .setMergeScheduler(new ConcurrentMergeScheduler())) {
+        @Override
+        protected void merge(MergePolicy.OneMerge merge) throws IOException {
+          waitForMerge.countDown();
+          try {
+            waitForUpdate.await();
+          } catch (InterruptedException e) {
+            throw new AssertionError(e);
+          }
+          super.merge(merge);
+        }
+      }) {
+        Document d1 = new Document();
+        d1.add(new StringField("id", "1", Field.Store.NO));
+        Document d2 = new Document();
+        d2.add(new StringField("id", "2", Field.Store.NO));
+        writer.addDocument(d1);
+        writer.flush();
+        writer.addDocument(d2);
+        Thread t = new Thread(() -> {
+          try {
+            waitForMerge.await();
+            writer.updateDocument(new Term("id", "2"), d2);
+            writer.flush();
+            waitForUpdate.countDown();
+          } catch (Exception e) {
+            throw new AssertionError(e);
+          }
+        });
+        t.start();
+        writer.commit();
+        t.join();
+        try (DirectoryReader open = DirectoryReader.open(directory)) {
+          assertEquals(2, open.numDocs());
+        }
+      }
+    }
   }
 }
