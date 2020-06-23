@@ -70,19 +70,6 @@ public class RegexpQuery extends AutomatonQuery {
   
   /**
    * Constructs a query for terms matching <code>term</code>.
-   * <p>
-   * By default, all regular expression features are enabled.
-   * </p>
-   * 
-   * @param term regular expression.
-   * @param caseSensitive set to false for case insensitive matching 
-   */
-  public RegexpQuery(Term term, boolean caseSensitive) {
-    this(term, RegExp.ALL, caseSensitive);
-  }  
-  
-  /**
-   * Constructs a query for terms matching <code>term</code>.
    * 
    * @param term regular expression.
    * @param flags optional RegExp features from {@link RegExp}
@@ -97,7 +84,7 @@ public class RegexpQuery extends AutomatonQuery {
    * 
    * @param term regular expression.
    * @param flags optional RegExp features from {@link RegExp}
-   * @param caseSensitive set to false for case insensitive matching 
+   * @param caseSensitive set to false for case insensitive matching of ASCII characters 
    */
   public RegexpQuery(Term term, int flags, boolean caseSensitive) {
     this(term, flags, defaultProvider,
@@ -125,7 +112,7 @@ public class RegexpQuery extends AutomatonQuery {
    * @param maxDeterminizedStates maximum number of states that compiling the
    *  automaton for the regexp can result in.  Set higher to allow more complex
    *  queries and lower to prevent memory exhaustion.
-   * @param caseSensitive set to false for case insensitive matching 
+   * @param caseSensitive set to false for case insensitive matching of ASCII characters 
    */
   public RegexpQuery(Term term, int flags, int maxDeterminizedStates, boolean caseSensitive) {
     this(term, flags, defaultProvider, maxDeterminizedStates, caseSensitive);
@@ -155,7 +142,7 @@ public class RegexpQuery extends AutomatonQuery {
    * @param maxDeterminizedStates maximum number of states that compiling the
    *  automaton for the regexp can result in.  Set higher to allow more complex
    *  queries and lower to prevent memory exhaustion.
-   * @param caseSensitive set to false for case insensitive matching 
+   * @param caseSensitive set to false for case insensitive matching of ASCII characters 
    */
   public RegexpQuery(Term term, int flags, AutomatonProvider provider,
       int maxDeterminizedStates, boolean caseSensitive) {

@@ -32,6 +32,7 @@ package org.apache.lucene.util.automaton;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -450,9 +451,9 @@ public class RegExp {
   //-----  Non-syntax flags ( > 0xff )  ------
   
   /**
-   * Allows case insensitive matching.
+   * Allows case insensitive matching of ASCII characters.
    */
-  static final int UNICODE_CASE_INSENSITIVE = 0x0100;    
+  static final int ASCII_CASE_INSENSITIVE = 0x0100;    
 
   //Immutable parsed state
   /**
@@ -498,19 +499,6 @@ public class RegExp {
   }
   
   /**
-   * Constructs new <code>RegExp</code> from a string. Same as
-   * <code>RegExp(s, ALL)</code>.
-   * 
-   * @param s regexp string
-   * @param caseSensitive case sensitive matching
-   * @exception IllegalArgumentException if an error occurred while parsing the
-   *              regular expression
-   */
-  public RegExp(String s, boolean caseSensitive) throws IllegalArgumentException {
-    this(s, ALL, caseSensitive);
-  }  
-  
-  /**
    * Constructs new <code>RegExp</code> from a string.
    * 
    * @param s regexp string
@@ -528,7 +516,7 @@ public class RegExp {
    * @param s regexp string
    * @param syntax_flags boolean 'or' of optional syntax constructs to be
    *          enabled
-   * @param caseSensitive case sensitive matching
+   * @param caseSensitive case sensitive matching of ASCII characters
    * @exception IllegalArgumentException if an error occurred while parsing the
    *              regular expression
    */
@@ -540,7 +528,7 @@ public class RegExp {
       flags = syntax_flags;
     } else {      
       // Add in the case-insensitive setting
-      flags = syntax_flags  | UNICODE_CASE_INSENSITIVE;
+      flags = syntax_flags | ASCII_CASE_INSENSITIVE;
     }
     RegExp e;
     if (s.length() == 0) e = makeString(flags, "");
@@ -744,7 +732,7 @@ public class RegExp {
         a = MinimizationOperations.minimize(a, maxDeterminizedStates);
         break;
       case REGEXP_CHAR:
-        if (check(UNICODE_CASE_INSENSITIVE)) {
+        if (check(ASCII_CASE_INSENSITIVE)) {
           a = toCaseInsensitiveChar(c, maxDeterminizedStates);
         } else {
           a = Automata.makeChar(c);          
@@ -760,7 +748,7 @@ public class RegExp {
         a = Automata.makeEmpty();
         break;
       case REGEXP_STRING:
-        if (check(UNICODE_CASE_INSENSITIVE)) {
+        if (check(ASCII_CASE_INSENSITIVE)) {
           a = toCaseInsensitiveString(maxDeterminizedStates);
         } else {
           a = Automata.makeString(s);
@@ -794,6 +782,10 @@ public class RegExp {
   }
   private Automaton toCaseInsensitiveChar(int codepoint, int maxDeterminizedStates) {
     Automaton case1 = Automata.makeChar(codepoint);
+    // For now we only work with ASCII characters
+    if (codepoint > 128) {
+      return case1;
+    }
     int altCase = Character.isLowerCase(codepoint) ? Character.toUpperCase(codepoint) : Character.toLowerCase(codepoint);
     Automaton result;
     if (altCase != codepoint) {
@@ -807,11 +799,11 @@ public class RegExp {
   
   private Automaton toCaseInsensitiveString(int maxDeterminizedStates) {
     List<Automaton> list = new ArrayList<>();
-    s.codePoints().forEach(
-        p -> {
-          list.add(toCaseInsensitiveChar(p, maxDeterminizedStates));
-        }
-    );
+    
+    Iterator<Integer> iter = s.codePoints().iterator();
+    while (iter.hasNext()) {
+      list.add(toCaseInsensitiveChar(iter.next(), maxDeterminizedStates));
+    }
     Automaton a = Operations.concatenate(list);
     a = MinimizationOperations.minimize(a, maxDeterminizedStates);
     return a;
