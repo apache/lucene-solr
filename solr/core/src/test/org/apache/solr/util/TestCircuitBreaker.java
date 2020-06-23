@@ -53,8 +53,6 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
       assertU(adoc("name", "john smith", "id", "1"));
       assertU(adoc("name", "johathon smith", "id", "2"));
       assertU(adoc("name", "john percival smith", "id", "3"));
-      assertU(commit());
-      assertU(optimize());
 
       //commit inside the loop to get multiple segments to make search as realistic as possible
       assertU(commit());

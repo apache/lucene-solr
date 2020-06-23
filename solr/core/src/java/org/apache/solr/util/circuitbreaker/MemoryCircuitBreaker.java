@@ -28,8 +28,8 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
   private final long currentMaxHeap = MEMORY_MX_BEAN.getHeapMemoryUsage().getMax();
 
   // Assumption -- the value of these parameters will be set correctly before invoking printDebugInfo()
-  private double seenMemory;
-  private double allowedMemory;
+  private long seenMemory;
+  private long allowedMemory;
 
   public MemoryCircuitBreaker(SolrCore solrCore) {
     super(solrCore);
@@ -46,11 +46,6 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
 
     allowedMemory = getCurrentMemoryThreshold();
 
-    if (allowedMemory < 0) {
-      // No threshold
-      return false;
-    }
-
     seenMemory = calculateLiveMemoryUsage();
 
     return (seenMemory >= allowedMemory);
@@ -61,15 +56,15 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
     return "seen memory=" + seenMemory + " allowed memory=" + allowedMemory;
   }
 
-  private double getCurrentMemoryThreshold() {
+  private long getCurrentMemoryThreshold() {
     int thresholdValueInPercentage = solrCore.getSolrConfig().memoryCircuitBreakerThreshold;
 
     if (currentMaxHeap <= 0) {
       return Long.MIN_VALUE;
     }
 
-    double thresholdInFraction = (double) thresholdValueInPercentage / 100;
-    double actualLimit = currentMaxHeap * thresholdInFraction;
+    long thresholdInFraction = thresholdValueInPercentage / 100;
+    long actualLimit = currentMaxHeap * thresholdInFraction;
 
     if (actualLimit <= 0) {
       throw new IllegalStateException("Memory limit cannot be less than or equal to zero");
