@@ -109,6 +109,7 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
       base = new SweepCountAccStruct(fcontext.base, true, countAcc);
       others = Collections.emptyList();
     }
+    assert null != base;
     
     // TODO: refactor some of this logic into a base class
     boolean countOnly = collectAcc==null && allBucketsAcc==null;
@@ -134,7 +135,7 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
 
     if (freq.perSeg != null) accumSeg = canDoPerSeg && freq.perSeg;  // internal - override perSeg heuristic
 
-    final int maxSize = others.size() + (base == null ? 0 : 1);
+    final int maxSize = others.size() + 1; // others + base
     final List<LeafReaderContext> leaves = fcontext.searcher.getIndexReader().leaves();
     final DocIdSetIterator[] subIterators = new DocIdSetIterator[maxSize];
     final CountSlotAcc[] activeCountAccs = new CountSlotAcc[maxSize];
