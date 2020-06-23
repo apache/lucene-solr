@@ -668,7 +668,6 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     }
 
     if (context != null) {
-      //noinspection unchecked
       context.put(BOOSTED_DOCIDS, boostDocs);
     }
 

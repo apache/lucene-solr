@@ -295,6 +295,8 @@ Other Changes
   Only mentioned in 8.6 because I backported some more warning suppressions but not
   the fail-on-warnings.
 
+* SOLR-14589: Remove IntelliJ //noinspection comments (Erick Erickson)
+
 ==================  8.5.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
