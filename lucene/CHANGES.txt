@@ -106,6 +106,14 @@ Optimizations
 
 * LUCENE-9148: Points now write their index in a separate file. (Adrien Grand)
 
+* LUCENE-9280: Add an ability for field comparators to skip non-competitive documents.
+  Creating a TopFieldCollector with totalHitsThreshold less than Integer.MAX_VALUE
+  instructs Lucene to skip non-competitive documents whenever possible. For numeric
+  sort fields the skipping functionality works when the same field is indexed both
+  with doc values and points. To indicate that the same data is stored in these points
+  and doc values SortField#setCanSkipNonCompetitiveDocs method should be used.
+  (Mayya Sharipova, Jim Ferenczi, Adrien Grand)
+
 Bug Fixes
 ---------------------
 * LUCENE-9259: Fix wrong NGramFilterFactory argument name for preserveOriginal option (Paul Pazderski)
