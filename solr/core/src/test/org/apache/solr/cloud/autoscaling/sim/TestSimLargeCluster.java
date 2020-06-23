@@ -18,22 +18,12 @@
 package org.apache.solr.cloud.autoscaling.sim;
 
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
@@ -45,14 +35,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.CloudTestUtils;
 import org.apache.solr.cloud.CloudUtil;
-import org.apache.solr.cloud.autoscaling.ActionContext;
-import org.apache.solr.cloud.autoscaling.CapturedEvent;
-import org.apache.solr.cloud.autoscaling.ComputePlanAction;
-import org.apache.solr.cloud.autoscaling.ExecutePlanAction;
-import org.apache.solr.cloud.autoscaling.SearchRateTrigger;
-import org.apache.solr.cloud.autoscaling.TriggerActionBase;
-import org.apache.solr.cloud.autoscaling.TriggerEvent;
-import org.apache.solr.cloud.autoscaling.TriggerListenerBase;
+import org.apache.solr.cloud.autoscaling.*;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -132,7 +115,7 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
         if (0 == latch.getCount()) {
           log.warn("Ignoring captured event since latch is 'full': {}", ev);
         } else {
-          List<CapturedEvent> lst = listenerEvents.computeIfAbsent(config.name, s -> new ArrayList<>());
+          List<CapturedEvent> lst = listenerEvents.computeIfAbsent(config.name, Utils.NEW_ARRAYLIST_FUN);
           lst.add(ev);
           latch.countDown();
         }

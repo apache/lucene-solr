@@ -17,16 +17,10 @@
 
 package org.apache.solr.cloud.autoscaling.sim;
 
+import com.google.common.util.concurrent.AtomicDouble;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedSet;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -34,7 +28,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
-
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
@@ -44,21 +37,7 @@ import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.CloudTestUtils;
 import org.apache.solr.cloud.CloudUtil;
-import org.apache.solr.cloud.autoscaling.ActionContext;
-import org.apache.solr.cloud.autoscaling.AutoScaling;
-import org.apache.solr.cloud.autoscaling.CapturedEvent;
-import org.apache.solr.cloud.autoscaling.ComputePlanAction;
-import org.apache.solr.cloud.autoscaling.ExecutePlanAction;
-import org.apache.solr.cloud.autoscaling.NodeAddedTrigger;
-import org.apache.solr.cloud.autoscaling.NodeLostTrigger;
-import org.apache.solr.cloud.autoscaling.ScheduledTriggers;
-import org.apache.solr.cloud.autoscaling.SearchRateTrigger;
-import org.apache.solr.cloud.autoscaling.TriggerActionBase;
-import org.apache.solr.cloud.autoscaling.TriggerBase;
-import org.apache.solr.cloud.autoscaling.TriggerEvent;
-import org.apache.solr.cloud.autoscaling.TriggerEventQueue;
-import org.apache.solr.cloud.autoscaling.TriggerListenerBase;
-import org.apache.solr.cloud.autoscaling.TriggerValidationException;
+import org.apache.solr.cloud.autoscaling.*;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.LiveNodesListener;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -74,11 +53,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.util.concurrent.AtomicDouble;
-
-import static org.apache.solr.cloud.autoscaling.OverseerTriggerThread.MARKER_ACTIVE;
-import static org.apache.solr.cloud.autoscaling.OverseerTriggerThread.MARKER_INACTIVE;
-import static org.apache.solr.cloud.autoscaling.OverseerTriggerThread.MARKER_STATE;
+import static org.apache.solr.cloud.autoscaling.OverseerTriggerThread.*;
 
 /**
  * An end-to-end integration test for triggers
@@ -1099,7 +1074,7 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
         if (0 == latch.getCount()) {
           log.warn("Ignoring captured event since latch is 'full': {}", ev);
         } else {
-          List<CapturedEvent> lst = listenerEvents.computeIfAbsent(config.name, s -> new ArrayList<>());
+          List<CapturedEvent> lst = listenerEvents.computeIfAbsent(config.name, Utils.NEW_ARRAYLIST_FUN);
           lst.add(ev);
           allListenerEvents.add(ev);
           latch.countDown();

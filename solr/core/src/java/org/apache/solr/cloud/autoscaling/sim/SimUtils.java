@@ -19,26 +19,11 @@ package org.apache.solr.cloud.autoscaling.sim;
 import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
-import org.apache.solr.client.solrj.cloud.autoscaling.Cell;
-import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
-import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
-import org.apache.solr.client.solrj.cloud.autoscaling.Row;
-import org.apache.solr.client.solrj.cloud.autoscaling.Variable;
+import org.apache.solr.client.solrj.cloud.autoscaling.*;
 import org.apache.solr.client.solrj.request.CollectionApiMapping;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.common.cloud.ClusterState;
@@ -178,14 +163,14 @@ public class SimUtils {
     Map<String, Map<String, Number>> collStats = new TreeMap<>();
     Policy.Session session = config.getPolicy().createSession(cloudManager);
     clusterState.forEachCollection(coll -> {
-      Map<String, Number> perColl = collStats.computeIfAbsent(coll.getName(), n -> new LinkedHashMap<>());
+      Map<String, Number> perColl = collStats.computeIfAbsent(coll.getName(), Utils.NEW_LINKED_HASHMAP_FUN);
       AtomicInteger numCores = new AtomicInteger();
       HashMap<String, Map<String, AtomicInteger>> nodes = new HashMap<>();
       coll.getSlices().forEach(s -> {
         numCores.addAndGet(s.getReplicas().size());
         s.getReplicas().forEach(r -> {
           nodes.computeIfAbsent(r.getNodeName(), n -> new HashMap<>())
-              .computeIfAbsent(s.getName(), slice -> new AtomicInteger()).incrementAndGet();
+              .computeIfAbsent(s.getName(), Utils.NEW_ATOMICINT_FUN).incrementAndGet();
         });
       });
       int maxCoresPerNode = 0;
@@ -262,7 +247,7 @@ public class SimUtils {
       }
       row.forEachReplica(ri -> {
         Map<String, Object> perReplica = collReplicas.computeIfAbsent(ri.getCollection(), c -> new TreeMap<>())
-            .computeIfAbsent(ri.getCore().substring(ri.getCollection().length() + 1), core -> new LinkedHashMap<>());
+            .computeIfAbsent(ri.getCore().substring(ri.getCollection().length() + 1), Utils.NEW_LINKED_HASHMAP_FUN);
 //            if (ri.getVariable(Variable.Type.CORE_IDX.tagName) != null) {
 //              perReplica.put(Variable.Type.CORE_IDX.tagName, ri.getVariable(Variable.Type.CORE_IDX.tagName));
 //            }
@@ -278,7 +263,7 @@ public class SimUtils {
         perReplica.put("coreNode", ri.getName());
         if (ri.isLeader || ri.getBool("leader", false)) {
           perReplica.put("leader", true);
-          Double totalSize = (Double)collStats.computeIfAbsent(ri.getCollection(), c -> new HashMap<>())
+          Double totalSize = (Double)collStats.computeIfAbsent(ri.getCollection(), Utils.NEW_HASHMAP_FUN)
               .computeIfAbsent("avgShardSize", size -> 0.0);
           Number riSize = (Number)ri.getVariable(Variable.Type.CORE_IDX.metricsAttribute);
           if (riSize != null) {

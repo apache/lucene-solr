@@ -17,13 +17,11 @@
 package org.apache.solr.util;
 
 import java.io.IOException;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -34,6 +32,8 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+
+import static org.apache.solr.common.util.Utils.NEW_LINKED_HASHMAP_FUN;
 
 /**
  * Simple mock client that collects added documents and supports simple search by id
@@ -68,7 +68,7 @@ public class MockSearchableSolrClient extends SolrClient {
         docList.forEach(doc -> {
           String id = (String) doc.getFieldValue("id");
           Objects.requireNonNull(id, doc.toString());
-          docs.computeIfAbsent(collection, c -> new LinkedHashMap<>()).put(id, doc);
+          docs.computeIfAbsent(collection, NEW_LINKED_HASHMAP_FUN).put(id, doc);
           numUpdates.incrementAndGet();
         });
       }

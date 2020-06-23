@@ -17,17 +17,15 @@
 
 package org.apache.solr.cloud.autoscaling;
 
+import com.carrotsearch.randomizedtesting.annotations.Nightly;
+import com.google.common.util.concurrent.AtomicDouble;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import com.carrotsearch.randomizedtesting.annotations.Nightly;
-import com.google.common.util.concurrent.AtomicDouble;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
@@ -60,6 +58,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.cloud.autoscaling.TriggerIntegrationTest.WAIT_FOR_DELTA_NANOS;
 import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_PATH;
+import static org.apache.solr.common.util.Utils.NEW_ARRAYLIST_FUN;
 
 /**
  * Integration test for {@link SearchRateTrigger}
@@ -720,7 +719,7 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
         if (0 == latch.getCount()) {
           log.warn("Ignoring captured event since latch is 'full': {}", ev);
         } else {
-          List<CapturedEvent> lst = listenerEvents.computeIfAbsent(config.name, s -> new ArrayList<>());
+          List<CapturedEvent> lst = listenerEvents.computeIfAbsent(config.name, NEW_ARRAYLIST_FUN);
           log.info("=======> {}", ev);
           lst.add(ev);
           latch.countDown();
