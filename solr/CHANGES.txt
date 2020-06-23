@@ -371,6 +371,8 @@ Other Changes
 
 * SOLR-14574: Fix or suppress warnings in solr/core/src/test (parts 1 and 2) (Erick Erickson)
 
+* SOLR-13268: Clean up any test failures resulting from defaulting to async logging (Erick Erickson)
+
 ==================  8.5.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
