@@ -61,6 +61,9 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 public class Utils {
+
+  //These static variables are created because these are used across the codebase and avoids
+  //creating small unnecessary objects
   @SuppressWarnings({"rawtypes"})
   public static final Function NEW_CONCURRENT_HASHMAP_FUN = o -> new ConcurrentHashMap<>();
 
