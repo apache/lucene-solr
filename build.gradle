@@ -150,6 +150,7 @@ apply from: file('gradle/documentation/documentation.gradle')
 apply from: file('gradle/documentation/changes-to-html.gradle')
 apply from: file('gradle/documentation/markdown.gradle')
 apply from: file('gradle/render-javadoc.gradle')
+apply from: file('gradle/hacks/findbugs.gradle')
 
 allprojects {
   task ufclasspath {
