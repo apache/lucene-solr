@@ -112,7 +112,7 @@ Improvements
   instructs Lucene to skip non-competitive documents whenever possible. For numeric
   sort fields the skipping functionality works when the same field is indexed both
   with doc values and points. In this case, there is an assumption that the same data is
-  stored in these points and doc values
+  stored in these points and doc values (Mayya Sharipova, Jim Ferenczi, Adrien Grand)
 
 
 Bug fixes
