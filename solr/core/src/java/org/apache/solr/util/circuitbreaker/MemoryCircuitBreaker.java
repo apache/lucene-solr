@@ -25,6 +25,8 @@ import org.apache.solr.core.SolrCore;
 public class MemoryCircuitBreaker extends CircuitBreaker {
   private static final MemoryMXBean MEMORY_MX_BEAN = ManagementFactory.getMemoryMXBean();
 
+  private final long currentMaxHeap = MEMORY_MX_BEAN.getHeapMemoryUsage().getMax();
+
   // Assumption -- the value of these parameters will be set correctly before invoking printDebugInfo()
   private double seenMemory;
   private double allowedMemory;
@@ -56,12 +58,11 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
 
   @Override
   public String printDebugInfo() {
-    return "seen memory " + seenMemory + " allowed memory " + allowedMemory;
+    return "seen memory=" + seenMemory + " allowed memory=" + allowedMemory;
   }
 
   private double getCurrentMemoryThreshold() {
     int thresholdValueInPercentage = solrCore.getSolrConfig().memoryCircuitBreakerThreshold;
-    long currentMaxHeap = MEMORY_MX_BEAN.getHeapMemoryUsage().getMax();
 
     if (currentMaxHeap <= 0) {
       return Long.MIN_VALUE;

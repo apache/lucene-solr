@@ -55,12 +55,12 @@ public class CircuitBreakerManager {
   public Map<CircuitBreakerType, CircuitBreaker> checkAllCircuitBreakers() {
     Map<CircuitBreakerType, CircuitBreaker> triggeredCircuitBreakers = new HashMap<>();
 
-    for (CircuitBreakerType circuitBreakerType : circuitBreakerMap.keySet()) {
-      CircuitBreaker circuitBreaker = circuitBreakerMap.get(circuitBreakerType);
+    for (Map.Entry<CircuitBreakerType, CircuitBreaker> entry : circuitBreakerMap.entrySet()) {
+      CircuitBreaker circuitBreaker = entry.getValue();
 
       if (circuitBreaker.isCircuitBreakerEnabled() &&
           circuitBreaker.isCircuitBreakerGauntletTripped()) {
-        triggeredCircuitBreakers.put(circuitBreakerType, circuitBreaker);
+        triggeredCircuitBreakers.put(entry.getKey(), circuitBreaker);
       }
     }
 

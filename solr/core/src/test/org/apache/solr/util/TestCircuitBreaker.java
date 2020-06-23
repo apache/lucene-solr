@@ -63,6 +63,7 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
 
   @Override
   public void tearDown() throws Exception {
+    assertTrue(executor.isShutdown());
     executor = null;
     super.tearDown();
   }
@@ -117,7 +118,6 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
     h.getCore().getCircuitBreakerManager().registerCircuitBreaker(CircuitBreakerType.MEMORY, circuitBreaker);
 
     for (int i = 0; i < 5; i++) {
-      System.out.println("i is " + i);
       executor.submit(() -> {
         try {
           h.query(req("name:\"john smith\""));
@@ -136,7 +136,7 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
       throw new RuntimeException(e.getMessage());
     }
 
-    assert failureCount.get() == 1;
+    assertEquals("Number of failed queries is not correct", failureCount.get());
   }
 
   private class MockCircuitBreaker extends CircuitBreaker {
