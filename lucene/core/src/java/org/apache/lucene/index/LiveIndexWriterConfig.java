@@ -18,6 +18,7 @@ package org.apache.lucene.index;
 
 
 import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -80,6 +81,10 @@ public class LiveIndexWriterConfig {
   /** {@link MergePolicy} for selecting merges. */
   protected volatile MergePolicy mergePolicy;
 
+  /** {@code DocumentsWriterPerThreadPool} to control how
+   *  threads are allocated to {@code DocumentsWriterPerThread}. */
+  protected volatile DocumentsWriterPerThreadPool indexerThreadPool;
+
   /** True if readers should be pooled. */
   protected volatile boolean readerPooling;
 
@@ -109,6 +114,9 @@ public class LiveIndexWriterConfig {
   /** soft deletes field */
   protected String softDeletesField = null;
 
+  /** the attributes for the NRT readers */
+  protected Map<String, String> readerAttributes = Collections.emptyMap();
+
 
   // used by IndexWriterConfig
   LiveIndexWriterConfig(Analyzer analyzer) {
@@ -131,6 +139,7 @@ public class LiveIndexWriterConfig {
     mergePolicy = new TieredMergePolicy();
     flushPolicy = new FlushByRamOrCountsPolicy();
     readerPooling = IndexWriterConfig.DEFAULT_READER_POOLING;
+    indexerThreadPool = new DocumentsWriterPerThreadPool();
     perThreadHardLimitMB = IndexWriterConfig.DEFAULT_RAM_PER_THREAD_HARD_LIMIT_MB;
   }
   
@@ -343,6 +352,16 @@ public class LiveIndexWriterConfig {
   }
   
   /**
+   * Returns the configured {@link DocumentsWriterPerThreadPool} instance.
+   * 
+   * @see IndexWriterConfig#setIndexerThreadPool(DocumentsWriterPerThreadPool)
+   * @return the configured {@link DocumentsWriterPerThreadPool} instance.
+   */
+  DocumentsWriterPerThreadPool getIndexerThreadPool() {
+    return indexerThreadPool;
+  }
+
+  /**
    * Returns {@code true} if {@link IndexWriter} should pool readers even if
    * {@link DirectoryReader#open(IndexWriter)} has not been called.
    */
@@ -397,7 +416,7 @@ public class LiveIndexWriterConfig {
    * </p>
    */
   public LiveIndexWriterConfig setUseCompoundFile(boolean useCompoundFile) {
-    this.useCompoundFile = useCompoundFile;
+    this.useCompoundFile = false;
     return this;
   }
   
@@ -477,6 +496,7 @@ public class LiveIndexWriterConfig {
     sb.append("codec=").append(getCodec()).append("\n");
     sb.append("infoStream=").append(getInfoStream().getClass().getName()).append("\n");
     sb.append("mergePolicy=").append(getMergePolicy()).append("\n");
+    sb.append("indexerThreadPool=").append(getIndexerThreadPool()).append("\n");
     sb.append("readerPooling=").append(getReaderPooling()).append("\n");
     sb.append("perThreadHardLimitMB=").append(getRAMPerThreadHardLimitMB()).append("\n");
     sb.append("useCompoundFile=").append(getUseCompoundFile()).append("\n");
@@ -484,6 +504,14 @@ public class LiveIndexWriterConfig {
     sb.append("indexSort=").append(getIndexSort()).append("\n");
     sb.append("checkPendingFlushOnUpdate=").append(isCheckPendingFlushOnUpdate()).append("\n");
     sb.append("softDeletesField=").append(getSoftDeletesField()).append("\n");
+    sb.append("readerAttributes=").append(getReaderAttributes()).append("\n");
     return sb.toString();
+  }
+
+  /**
+   * Returns the reader attributes passed to all published readers opened on or within the IndexWriter
+   */
+  public Map<String, String> getReaderAttributes() {
+    return this.readerAttributes;
   }
 }

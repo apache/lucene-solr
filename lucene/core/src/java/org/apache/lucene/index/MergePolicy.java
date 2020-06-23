@@ -23,12 +23,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
@@ -42,7 +37,6 @@ import org.apache.lucene.store.MergeInfo;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOSupplier;
 import org.apache.lucene.util.InfoStream;
-import org.apache.lucene.util.ThreadInterruptedException;
 
 /**
  * <p>Expert: a MergePolicy determines the sequence of
@@ -82,7 +76,7 @@ public abstract class MergePolicy {
    * @lucene.experimental */
   public static class OneMergeProgress {
     /** Reason for pausing the merge thread. */
-    public enum PauseReason {
+    public static enum PauseReason {
       /** Stopped (because of throughput rate set to 0, typically). */
       STOPPED,
       /** Temporarily paused because of exceeded throughput rate. */
@@ -202,7 +196,6 @@ public abstract class MergePolicy {
    *
    * @lucene.experimental */
   public static class OneMerge {
-    private final CompletableFuture<Boolean> mergeCompleted = new CompletableFuture<>();
     SegmentCommitInfo info;         // used by IndexWriter
     boolean registerDone;           // used by IndexWriter
     long mergeGen;                  // used by IndexWriter
@@ -229,7 +222,7 @@ public abstract class MergePolicy {
     volatile long mergeStartNS = -1;
 
     /** Total number of documents in segments to be merged, not accounting for deletions. */
-    final int totalMaxDoc;
+    public final int totalMaxDoc;
     Throwable error;
 
     /** Sole constructor.
@@ -240,8 +233,13 @@ public abstract class MergePolicy {
         throw new RuntimeException("segments must include at least one segment");
       }
       // clone the list, as the in list may be based off original SegmentInfos and may be modified
-      this.segments = List.copyOf(segments);
-      totalMaxDoc = segments.stream().mapToInt(i -> i.info.maxDoc()).sum();
+      this.segments = new ArrayList<>(segments);
+      int count = 0;
+      for(SegmentCommitInfo info : segments) {
+        count += info.info.maxDoc();
+      }
+      totalMaxDoc = count;
+
       mergeProgress = new OneMergeProgress();
     }
 
@@ -252,15 +250,9 @@ public abstract class MergePolicy {
     public void mergeInit() throws IOException {
       mergeProgress.setMergeThread(Thread.currentThread());
     }
-
-    /** Called by {@link IndexWriter} after the merge is done and all readers have been closed.
-     * @param success true iff the merge finished successfully ie. was committed */
-    public void mergeFinished(boolean success) throws IOException {
-      mergeCompleted.complete(success);
-      // https://issues.apache.org/jira/browse/LUCENE-9408
-      // if (mergeCompleted.complete(success) == false) {
-      //   throw new IllegalStateException("merge has already finished");
-      // }
+    
+    /** Called by {@link IndexWriter} after the merge is done and all readers have been closed. */
+    public void mergeFinished() throws IOException {
     }
 
     /** Wrap the reader in order to add/remove information to the merged segment. */
@@ -370,37 +362,6 @@ public abstract class MergePolicy {
     public OneMergeProgress getMergeProgress() {
       return mergeProgress;
     }
-
-    /**
-     * Waits for this merge to be completed
-     * @return true if the merge finished within the specified timeout
-     */
-    boolean await(long timeout, TimeUnit timeUnit) {
-      try {
-        mergeCompleted.get(timeout, timeUnit);
-        return true;
-      } catch (InterruptedException e) {
-        throw new ThreadInterruptedException(e);
-      } catch (ExecutionException | TimeoutException e) {
-        return false;
-      }
-    }
-
-    /**
-     * Returns true if the merge has finished or false if it's still running or
-     * has not been started. This method will not block.
-     */
-    boolean isDone() {
-      return mergeCompleted.isDone();
-    }
-
-    /**
-     * Returns true iff the merge completed successfully or false if the merge succeeded with a failure.
-     * This method will not block and return an empty Optional if the merge has not finished yet
-     */
-    Optional<Boolean> hasCompletedSuccessfully() {
-      return Optional.ofNullable(mergeCompleted.getNow(null));
-    }
   }
 
   /**
@@ -438,34 +399,28 @@ public abstract class MergePolicy {
       }
       return b.toString();
     }
-
-    /**
-     * Waits if necessary for at most the given time for all merges.
-     */
-    boolean await(long timeout, TimeUnit unit) {
-      try {
-        CompletableFuture<Void> future = CompletableFuture.allOf(merges.stream()
-            .map(m -> m.mergeCompleted).collect(Collectors.toList()).toArray(CompletableFuture<?>[]::new));
-        future.get(timeout, unit);
-        return true;
-      } catch (InterruptedException e) {
-        throw new ThreadInterruptedException(e);
-      } catch (ExecutionException | TimeoutException e) {
-        return false;
-      }
-    }
   }
 
   /** Exception thrown if there are any problems while executing a merge. */
   public static class MergeException extends RuntimeException {
+    private Directory dir;
+
     /** Create a {@code MergeException}. */
-    public MergeException(String message) {
+    public MergeException(String message, Directory dir) {
       super(message);
+      this.dir = dir;
     }
 
     /** Create a {@code MergeException}. */
-    public MergeException(Throwable exc) {
+    public MergeException(Throwable exc, Directory dir) {
       super(exc);
+      this.dir = dir;
+    }
+
+    /** Returns the {@link Directory} of the index that hit
+     *  the exception. */
+    public Directory getDirectory() {
+      return dir;
     }
   }
 
@@ -487,7 +442,7 @@ public abstract class MergePolicy {
   }
   
   /**
-   * Default ratio for compound file system usage. Set to <code>1.0</code>, always use 
+   * Default ratio for compound file system usage. Set to <tt>1.0</tt>, always use 
    * compound file system.
    */
   protected static final double DEFAULT_NO_CFS_RATIO = 1.0;
@@ -587,13 +542,13 @@ public abstract class MergePolicy {
       return false;
     }
     if (getNoCFSRatio() >= 1.0) {
-      return true;
+      return false;
     }
     long totalSize = 0;
     for (SegmentCommitInfo info : infos) {
       totalSize += size(info, mergeContext);
     }
-    return mergedInfoSize <= getNoCFSRatio() * totalSize;
+    return false;
   }
   
   /** Return the byte size of the provided {@link

@@ -19,6 +19,11 @@ package org.apache.lucene.index;
 
 import java.io.PrintStream;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -31,9 +36,9 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.PrintStreamInfoStream;
-import org.apache.lucene.util.SetOnce;
 import org.apache.lucene.util.SetOnce.AlreadySetException;
 import org.apache.lucene.util.Version;
+import org.apache.lucene.util.SetOnce;
 
 /**
  * Holds all the configuration that is used to create an {@link IndexWriter}.
@@ -105,7 +110,7 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
   /** Default value for compound file system for newly written segments
    *  (set to <code>true</code>). For batch indexing with very large 
    *  ram buffers use <code>false</code> */
-  public final static boolean DEFAULT_USE_COMPOUND_FILE_SYSTEM = true;
+  public final static boolean DEFAULT_USE_COMPOUND_FILE_SYSTEM = false;
   
   /** Default value for whether calls to {@link IndexWriter#close()} include a commit. */
   public final static boolean DEFAULT_COMMIT_ON_CLOSE = true;
@@ -311,6 +316,28 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
     return mergePolicy;
   }
 
+  /** Expert: Sets the {@link DocumentsWriterPerThreadPool} instance used by the
+   * IndexWriter to assign thread-states to incoming indexing threads.
+   * <p>
+   * NOTE: The given {@link DocumentsWriterPerThreadPool} instance must not be used with
+   * other {@link IndexWriter} instances once it has been initialized / associated with an
+   * {@link IndexWriter}.
+   * </p>
+   * <p>
+   * NOTE: This only takes effect when IndexWriter is first created.</p>*/
+  IndexWriterConfig setIndexerThreadPool(DocumentsWriterPerThreadPool threadPool) {
+    if (threadPool == null) {
+      throw new IllegalArgumentException("threadPool must not be null");
+    }
+    this.indexerThreadPool = threadPool;
+    return this;
+  }
+
+  @Override
+  DocumentsWriterPerThreadPool getIndexerThreadPool() {
+    return indexerThreadPool;
+  }
+
   /** By default, IndexWriter does not pool the
    *  SegmentReaders it must open for deletions and
    *  merging, unless a near-real-time reader has been
@@ -459,13 +486,21 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
     return this;
   }
 
+  /** We only allow sorting on these types */
+  private static final EnumSet<SortField.Type> ALLOWED_INDEX_SORT_TYPES = EnumSet.of(SortField.Type.STRING,
+                                                                                     SortField.Type.LONG,
+                                                                                     SortField.Type.INT,
+                                                                                     SortField.Type.DOUBLE,
+                                                                                     SortField.Type.FLOAT);
+
   /**
    * Set the {@link Sort} order to use for all (flushed and merged) segments.
    */
   public IndexWriterConfig setIndexSort(Sort sort) {
-    for (SortField sortField : sort.getSort()) {
-      if (sortField.getIndexSorter() == null) {
-        throw new IllegalArgumentException("Cannot sort index with sort field " + sortField);
+    for(SortField sortField : sort.getSort()) {
+      final SortField.Type sortType = Sorter.getSortFieldType(sortField);
+      if (ALLOWED_INDEX_SORT_TYPES.contains(sortType) == false) {
+        throw new IllegalArgumentException("invalid SortField type: must be one of " + ALLOWED_INDEX_SORT_TYPES + " but got: " + sortField);
       }
     }
     this.indexSort = sort;
@@ -512,4 +547,15 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
     this.softDeletesField = softDeletesField;
     return this;
   }
+
+  /**
+   * Sets the reader attributes used for all readers pulled from the IndexWriter. Reader attributes allow configuration
+   * of low-level aspects like ram utilization on a per-reader basis.
+   * Note: This method make a shallow copy of the provided map.
+   */
+  public IndexWriterConfig setReaderAttributes(Map<String, String> readerAttributes) {
+    this.readerAttributes = Collections.unmodifiableMap(new HashMap<>(Objects.requireNonNull(readerAttributes)));
+    return this;
+  }
+  
 }
