@@ -128,9 +128,12 @@ class ExportBuffers {
         }
         buffer = getFillBuffer();
         log.debug("--- filler final got buffer {}", buffer);
-      } catch (Exception e) {
+      } catch (Throwable e) {
         log.error("filler", e);
         error(e);
+        if (e instanceof InterruptedException) {
+          Thread.currentThread().interrupt();
+        }
         shutdownNow();
       }
     };
@@ -159,7 +162,7 @@ class ExportBuffers {
   }
 
   private void flushOutput() throws IOException {
-    os.flush();
+    //os.flush();
   }
 
   // initial output buffer

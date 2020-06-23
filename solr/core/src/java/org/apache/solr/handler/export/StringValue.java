@@ -29,11 +29,11 @@ import org.apache.lucene.util.LongValues;
 
 class StringValue implements SortValue {
 
-  protected SortedDocValues globalDocValues;
+  private final SortedDocValues globalDocValues;
 
-  final protected OrdinalMap ordinalMap;
-  final protected String field;
-  final protected IntComp comp;
+  private final OrdinalMap ordinalMap;
+  private final String field;
+  private final IntComp comp;
 
   protected LongValues toGlobal = LongValues.IDENTITY; // this segment to global ordinal. NN;
   protected SortedDocValues docValues;
