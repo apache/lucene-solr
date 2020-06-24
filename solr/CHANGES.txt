@@ -109,8 +109,6 @@ New Features
 
 * SOLR-14470: Add streaming expressions to /export handler. (ab, Joel Bernstein)
 
-* SOLR-14404: CoreContainer level custom requesthandlers (noble)
-
 Improvements
 ---------------------
 * SOLR-14316: Remove unchecked type conversion warning in JavaBinCodec's readMapEntry's equals() method
@@ -264,6 +262,9 @@ Bug Fixes
 * SOLR-14577: Return 400 BAD REQUEST when field is missing on a Terms query parser request
   (Tomás Fernández Löbbe)
 
+* SOLR-14584: Correct SOLR_SSL_KEY_STORE and SOLR_SSL_TRUST_STORE example comments in solr.in.sh and solr.in.cmd files
+  (Aren Cambre via Christine Poerschke)
+
 Other Changes
 ---------------------
 * SOLR-14197: SolrResourceLoader: marked many methods as deprecated, and in some cases rerouted exiting logic to avoid
@@ -372,6 +373,14 @@ Other Changes
 * SOLR-14573: Fix or suppress warnings in solrj/src/test (Erick Erickson)
 
 * SOLR-14574: Fix or suppress warnings in solr/core/src/test (parts 1 and 2) (Erick Erickson)
+
+* SOLR-13268: Clean up any test failures resulting from defaulting to async logging (Erick Erickson)
+
+* LUCENE-9411: Fail complation on warnings, 9x gradle-only (Erick Erickson, Dawid Weiss)
+  Only mentioned in 8.6 because I backported some more warning suppressions but not
+  the fail-on-warnings.
+
+* SOLR-14589: Remove IntelliJ //noinspection comments (Erick Erickson)
 
 ==================  8.5.2 ==================
 
