@@ -20,8 +20,7 @@ package org.apache.solr.util.circuitbreaker;
 import org.apache.solr.core.SolrCore;
 
 /**
- * Default class to define circuit breakers for Solr. Use CircuitBreakerTriggeredException
- * to raise back status. This is a per core configurable parameter.
+ * Default class to define circuit breakers for Solr.
  *
  * TODO: This class should be grown as the scope of circuit breakers grow.
  */
