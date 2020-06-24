@@ -31,7 +31,7 @@ import org.apache.lucene.search.IndexSearcher;
 /**
  * A {@link DoubleValuesSource} which evaluates a {@link Expression} given the context of an {@link Bindings}.
  */
-final class ExpressionValueSource extends DoubleValuesSource {
+class ExpressionValueSource extends DoubleValuesSource {
   final DoubleValuesSource[] variables;
   final Expression expression;
   final boolean needsScores;
@@ -79,7 +79,7 @@ final class ExpressionValueSource extends DoubleValuesSource {
     return new ExpressionFunctionValues(expression, externalValues);
   }
 
-  private static DoubleValues zeroWhenUnpositioned(DoubleValues in) {
+  static DoubleValues zeroWhenUnpositioned(DoubleValues in) {
     return new DoubleValues() {
 
       boolean positioned = false;
