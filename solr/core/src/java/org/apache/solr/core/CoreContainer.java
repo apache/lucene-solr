@@ -170,6 +170,9 @@ public class CoreContainer {
 
   private volatile PluginBag<SolrRequestHandler> containerHandlers = new PluginBag<>(SolrRequestHandler.class, null);
 
+  /**
+   * Minimize exposure to CoreContainer. Mostly only ZK interface is required
+   */
   public final Supplier<SolrZkClient> zkClientSupplier = () -> getZkController().getZkClient();
 
   private final CustomContainerPlugins customContainerPlugins =  new CustomContainerPlugins(this, containerHandlers.getApiBag());

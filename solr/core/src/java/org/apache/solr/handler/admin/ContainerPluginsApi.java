@@ -62,12 +62,10 @@ public class ContainerPluginsApi {
     this.coreContainer = coreContainer;
   }
 
-  @EndPoint(method = METHOD.GET,
-      path = "/cluster/plugin",
-      permission = PermissionNameProvider.Name.COLL_READ_PERM)
   public class Read {
-
-    @Command
+    @EndPoint(method = METHOD.GET,
+        path = "/cluster/plugin",
+        permission = PermissionNameProvider.Name.COLL_READ_PERM)
     public void list(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
       rsp.add(PLUGIN, plugins(zkClientSupplier));
     }
