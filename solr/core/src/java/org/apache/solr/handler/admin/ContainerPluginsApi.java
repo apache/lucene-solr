@@ -159,6 +159,7 @@ public class ContainerPluginsApi {
     }
   }
 
+  @SuppressWarnings({"rawtypes", "unchecked"})
   private void persistPlugins(Function<Map<String,Object>, Map<String,Object>> modifier) throws IOException {
     try {
       zkClientSupplier.get().atomicUpdate(ZkStateReader.CLUSTER_PROPS, bytes -> {
