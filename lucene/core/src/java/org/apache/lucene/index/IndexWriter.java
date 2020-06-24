@@ -3298,7 +3298,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
                 ), MergeTrigger.COMMIT, UNBOUNDED_MAX_MERGE_SEGMENTS);
                 if (onCommitMerges != null) {
                   for (MergePolicy.OneMerge merge : onCommitMerges.merges) {
-                    // TODO we need to release these readers in the case of an aborted merge
                     merge.initMergeReaders(IOContext.DEFAULT, sci -> getPooledInstance(sci, true));
                   }
                 }
