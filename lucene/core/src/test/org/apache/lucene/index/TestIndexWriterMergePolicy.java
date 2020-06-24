@@ -416,6 +416,12 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
         t.join();
         try (DirectoryReader open = new SoftDeletesDirectoryReaderWrapper(DirectoryReader.open(directory), "soft_delete")) {
           assertEquals(2, open.numDocs());
+          assertEquals("we should not have any deletes", 2, open.maxDoc());
+        }
+
+        try (DirectoryReader open = DirectoryReader.open(writer)) {
+          assertEquals(2, open.numDocs());
+          assertEquals("we should not have one delete", 3, open.maxDoc());
         }
       }
     }
