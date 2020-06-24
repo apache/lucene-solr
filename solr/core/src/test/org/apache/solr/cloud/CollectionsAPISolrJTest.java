@@ -38,6 +38,7 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
@@ -75,8 +76,6 @@ import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import com.google.common.collect.ImmutableList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -144,6 +143,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
           .process(cluster.getSolrClient());
 
       for (int i = 0; i < 300; i++) {
+        @SuppressWarnings({"rawtypes"})
         Map m = cluster.getSolrClient().getZkStateReader().getClusterProperty(COLLECTION_DEF, null);
         if (m != null) break;
         Thread.sleep(10);
@@ -228,6 +228,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
           .process(cluster.getSolrClient());
 
       for (int i = 0; i < 300; i++) {
+        @SuppressWarnings({"rawtypes"})
         Map m = cluster.getSolrClient().getZkStateReader().getClusterProperty(COLLECTION_DEF, null);
         if (m != null) break;
         Thread.sleep(10);
@@ -475,6 +476,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     Path tmpDir = createTempDir("testPropertyParamsForCreate");
     Path dataDir = tmpDir.resolve("dataDir-" + TestUtil.randomSimpleString(random(), 1, 5));
     Path ulogDir = tmpDir.resolve("ulogDir-" + TestUtil.randomSimpleString(random(), 1, 5));
+    cluster.getJettySolrRunners().forEach(j -> j.getCoreContainer().getAllowPaths().add(tmpDir));
 
     CollectionAdminResponse response = CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1)
         .withProperty(CoreAdminParams.DATA_DIR, dataDir.toString())
@@ -643,9 +645,11 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     req.setWithSizeInfo(true);
     CollectionAdminResponse rsp = req.process(cluster.getSolrClient());
     assertEquals(0, rsp.getStatus());
+    @SuppressWarnings({"unchecked"})
     List<Object> nonCompliant = (List<Object>)rsp.getResponse().findRecursive(collectionName, "schemaNonCompliant");
     assertEquals(nonCompliant.toString(), 1, nonCompliant.size());
     assertTrue(nonCompliant.toString(), nonCompliant.contains("(NONE)"));
+    @SuppressWarnings({"unchecked"})
     NamedList<Object> segInfos = (NamedList<Object>) rsp.getResponse().findRecursive(collectionName, "shards", "shard1", "leader", "segInfos");
     assertNotNull(Utils.toJSONString(rsp), segInfos.findRecursive("info", "core", "startTime"));
     assertNotNull(Utils.toJSONString(rsp), segInfos.get("fieldInfoLegend"));

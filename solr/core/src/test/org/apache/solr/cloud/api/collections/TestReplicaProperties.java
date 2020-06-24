@@ -73,10 +73,12 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
     try (CloudSolrClient client = createCloudClient(null)) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.LIST.toString());
+      @SuppressWarnings({"rawtypes"})
       SolrRequest request = new QueryRequest(params);
       request.setPath("/admin/collections");
 
       NamedList<Object> rsp = client.request(request);
+      @SuppressWarnings({"unchecked"})
       List<String> collections = (List<String>) rsp.get("collections");
       assertTrue("control_collection was not found in list", collections.contains("control_collection"));
       assertTrue(DEFAULT_COLLECTION + " was not found in list", collections.contains(DEFAULT_COLLECTION));

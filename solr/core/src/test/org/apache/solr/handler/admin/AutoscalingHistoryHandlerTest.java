@@ -130,6 +130,7 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
         "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}" +
         "    ]" +
         "}";
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     solrClient.request(req);
 

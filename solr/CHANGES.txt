@@ -76,8 +76,16 @@ Other Changes
 * SOLR-14486: Autoscaling simulation framework no longer creates /clusterstate.json (format 1),
   instead it creates individual per-collection /state.json files (format 2). (ab)
 
- * SOLR-12823: Remove /clusterstate.json support: support for collections created with stateFormat=1,
-   as well as support for Collection API MIGRATESTATEFORMAT action and support for the legacyCloud flag (Ilan Ginzburg).
+* SOLR-12823: Remove /clusterstate.json support, including support for collections created with stateFormat=1,
+  as well as support for Collection API MIGRATESTATEFORMAT action and support for the legacyCloud flag (Ilan Ginzburg).
+
+* LUCENE-9411: Fail complation on warnings, 9x gradle-only (Erick Erickson, Dawid Weiss)
+  Deserves mention here as well as Lucene CHANGES.txt since it affects both.
+
+Bug Fixes
+---------------------
+* SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
+  of Collection API tasks competing for a lock (Ilan Ginzburg).
 
 ==================  8.6.0 ==================
 
@@ -147,6 +155,10 @@ Improvements
   Also fixes SolrIndexSearcher.warm which should have re-instated previous SRI.
   (Nazerke Seidan, David Smiley)
 
+* SOLR-14561: CoreAdminAPI's parameters instanceDir and dataDir are now validated, and must be relative to either
+  SOLR_HOME, SOLR_DATA_HOME or coreRootDir. Added new solr.xml config 'allowPaths', controlled by system property
+  'solr.allowPaths' that allows you to add other allowed paths when needed.
+
 Optimizations
 ---------------------
 * SOLR-8306: Do not collect expand documents when expand.rows=0 (Marshall Sanders, Amelia Henderson)
@@ -170,6 +182,8 @@ Optimizations
   (David Smiley)
 
 * SOLR-14552: Add BlockMax-WAND support to ReRank queries (Tomás Fernández Löbbe)
+
+* SOLR-14554: Add BlockMax-WAND support for queries where the score is requested (Tomás Fernández Löbbe)
 
 Bug Fixes
 ---------------------
@@ -244,6 +258,12 @@ Bug Fixes
 * SOLR-14345: Return proper error message when non-BinaryResponseParser is used in solrJ (Munendra S N)
 
 * SOLR-14516: NPE in JsonTextWriter (noble)
+
+* SOLR-14577: Return 400 BAD REQUEST when field is missing on a Terms query parser request
+  (Tomás Fernández Löbbe)
+
+* SOLR-14584: Correct SOLR_SSL_KEY_STORE and SOLR_SSL_TRUST_STORE example comments in solr.in.sh and solr.in.cmd files
+  (Aren Cambre via Christine Poerschke)
 
 Other Changes
 ---------------------
@@ -351,6 +371,16 @@ Other Changes
 * SOLR-14556: Fix or suppress warnings in solrj/cloud/autoscaling (Erick Erickson)
 
 * SOLR-14573: Fix or suppress warnings in solrj/src/test (Erick Erickson)
+
+* SOLR-14574: Fix or suppress warnings in solr/core/src/test (parts 1 and 2) (Erick Erickson)
+
+* SOLR-13268: Clean up any test failures resulting from defaulting to async logging (Erick Erickson)
+
+* LUCENE-9411: Fail complation on warnings, 9x gradle-only (Erick Erickson, Dawid Weiss)
+  Only mentioned in 8.6 because I backported some more warning suppressions but not
+  the fail-on-warnings.
+
+* SOLR-14589: Remove IntelliJ //noinspection comments (Erick Erickson)
 
 ==================  8.5.2 ==================
 

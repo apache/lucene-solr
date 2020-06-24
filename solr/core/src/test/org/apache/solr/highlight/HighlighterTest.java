@@ -200,7 +200,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
     try (Analyzer a1 = new WhitespaceAnalyzer()) {
       TokenStream tokenStream = a1.tokenStream("", "a b c d e f g h i j k l m n");
 
-      try (OffsetWindowTokenFilter tots = new OffsetWindowTokenFilter(tokenStream)) {
+      try (DefaultSolrHighlighter.OffsetWindowTokenFilter tots = new DefaultSolrHighlighter.OffsetWindowTokenFilter(tokenStream)) {
         for (String v : multivalued) {
           TokenStream ts1 = tots.advanceToNextWindowOfLength(v.length());
           ts1.reset();

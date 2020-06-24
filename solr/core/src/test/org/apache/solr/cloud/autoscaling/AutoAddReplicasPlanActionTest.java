@@ -113,7 +113,9 @@ public class AutoAddReplicasPlanActionTest extends SolrCloudTestCase{
         "'removeListeners': true" +
         "}" +
         "}";
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, removeTriggerCommand);
+    @SuppressWarnings({"rawtypes"})
     NamedList response = cluster.getSolrClient().request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -132,6 +134,7 @@ public class AutoAddReplicasPlanActionTest extends SolrCloudTestCase{
     reader.waitForLiveNodes(30, TimeUnit.SECONDS, missingLiveNode(lostNodeName));
 
 
+    @SuppressWarnings({"rawtypes"})
     List<SolrRequest> operations = getOperations(jetty3, lostNodeName);
     assertOperations(collection1, operations, lostNodeName, cloudDescriptors,  null);
 
@@ -210,22 +213,25 @@ public class AutoAddReplicasPlanActionTest extends SolrCloudTestCase{
   }
 
   @SuppressForbidden(reason = "Needs currentTimeMillis to create unique id")
+  @SuppressWarnings({"rawtypes"})
   private List<SolrRequest> getOperations(JettySolrRunner actionJetty, String lostNodeName) throws Exception {
     try (AutoAddReplicasPlanAction action = new AutoAddReplicasPlanAction()) {
       action.configure(actionJetty.getCoreContainer().getResourceLoader(), actionJetty.getCoreContainer().getZkController().getSolrCloudManager(), new HashMap<>());
       TriggerEvent lostNode = new NodeLostTrigger.NodeLostEvent(TriggerEventType.NODELOST, ".auto_add_replicas", Collections.singletonList(System.currentTimeMillis()), Collections.singletonList(lostNodeName), CollectionParams.CollectionAction.MOVEREPLICA.toLower());
       ActionContext context = new ActionContext(actionJetty.getCoreContainer().getZkController().getSolrCloudManager(), null, new HashMap<>());
       action.process(lostNode, context);
+      @SuppressWarnings({"unchecked", "rawtypes"})
       List<SolrRequest> operations = (List) context.getProperty("operations");
       return operations;
     }
   }
 
-  private void assertOperations(String collection, List<SolrRequest> operations, String lostNodeName,
+  private void assertOperations(String collection,
+                                @SuppressWarnings({"rawtypes"})List<SolrRequest> operations, String lostNodeName,
                                 List<CloudDescriptor> cloudDescriptors, JettySolrRunner destJetty) {
     assertEquals("Replicas of " + collection + " is not fully moved, operations="+operations,
         cloudDescriptors.stream().filter(cd -> cd.getCollectionName().equals(collection)).count(), operations.size());
-    for (SolrRequest solrRequest : operations) {
+    for (@SuppressWarnings({"rawtypes"})SolrRequest solrRequest : operations) {
       assertTrue(solrRequest instanceof CollectionAdminRequest.MoveReplica);
       SolrParams params = solrRequest.getParams();
 

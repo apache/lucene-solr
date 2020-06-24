@@ -78,6 +78,7 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
     }
   }
 
+  @SuppressWarnings({"rawtypes"})
   private void testReqParams() throws Exception {
     CloudSolrClient cloudClient = cluster.getSolrClient();
     DocCollection coll = cloudClient.getZkStateReader().getClusterState().getCollection(COLL_NAME);
@@ -282,6 +283,7 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
     compareValues(result, new Predicate() {
       @Override
       public boolean test(Object o) {
+        @SuppressWarnings({"rawtypes"})
         List l = (List) o;
         return l.contains("first") && l.contains("second");
       }

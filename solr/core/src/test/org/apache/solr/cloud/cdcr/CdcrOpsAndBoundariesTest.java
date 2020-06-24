@@ -70,7 +70,7 @@ public class CdcrOpsAndBoundariesTest extends SolrTestCaseJ4 {
    * Check the ops statistics.
    */
   @Test
-  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
+  @SuppressWarnings({"rawtypes"})
   public void testOps() throws Exception {
     createCollections();
 
@@ -150,9 +150,12 @@ public class CdcrOpsAndBoundariesTest extends SolrTestCaseJ4 {
     while (cnt > 0) {
       try {
         QueryResponse rsp = CdcrTestsUtil.invokeCdcrAction(sourceSolrClient, CdcrParams.CdcrAction.ERRORS);
+        @SuppressWarnings({"rawtypes"})
         NamedList collections = (NamedList) ((NamedList) rsp.getResponse().get(CdcrParams.ERRORS)).getVal(0);
+        @SuppressWarnings({"rawtypes"})
         NamedList errors = (NamedList) collections.get(TARGET_COLLECTION);
         assertTrue(0 < (Long) errors.get(CdcrParams.CONSECUTIVE_ERRORS));
+        @SuppressWarnings({"rawtypes"})
         NamedList lastErrors = (NamedList) errors.get(CdcrParams.LAST);
         assertNotNull(lastErrors);
         assertTrue(0 < lastErrors.size());

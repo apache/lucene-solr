@@ -94,16 +94,20 @@ public class TestModelManagerPersistence extends TestRerankBase {
         .readFileToString(mstorefile, "UTF-8");
 
     //check feature/model stores on deletion
+    @SuppressWarnings({"unchecked"})
     final ArrayList<Object> fStore = (ArrayList<Object>) ((Map<String,Object>)
         Utils.fromJSONString(fstorecontent)).get("managedList");
     for (int idx = 0;idx < fStore.size(); ++ idx) {
+      @SuppressWarnings({"unchecked"})
       String store = (String) ((Map<String,Object>)fStore.get(idx)).get("store");
       assertTrue(store.equals("test") || store.equals("test2") || store.equals("test1"));
     }
 
+    @SuppressWarnings({"unchecked"})
     final ArrayList<Object> mStore = (ArrayList<Object>) ((Map<String,Object>)
         Utils.fromJSONString(mstorecontent)).get("managedList");
     for (int idx = 0;idx < mStore.size(); ++ idx) {
+      @SuppressWarnings({"unchecked"})
       String store = (String) ((Map<String,Object>)mStore.get(idx)).get("store");
       assertTrue(store.equals("test") || store.equals("test1"));
     }

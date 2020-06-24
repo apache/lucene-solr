@@ -83,6 +83,7 @@ public class RoutingToNodesWithPropertiesTest extends SolrCloudTestCase {
         "    'shard':'#EACH'," +
         "    'sysprop.zone':'#EACH'}]}";
 
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = CloudTestUtils.AutoScalingRequest.create(SolrRequest.METHOD.POST, commands);
     cluster.getSolrClient().request(req);
 

@@ -100,6 +100,7 @@ public class MetricsHistoryIntegrationTest extends SolrCloudTestCase {
     NamedList<Object> rsp = solrClient.request(createHistoryRequest(params(CommonParams.ACTION, "list")));
     assertNotNull(rsp);
     // expected solr.jvm, solr.node and solr.collection..system
+    @SuppressWarnings({"unchecked"})
     SimpleOrderedMap<Object> lst = (SimpleOrderedMap<Object>) rsp.get("metrics");
     assertNotNull(lst);
     assertEquals(lst.toString(), 3, lst.size());
@@ -109,6 +110,7 @@ public class MetricsHistoryIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testStatus() throws Exception {
     NamedList<Object> rsp = solrClient.request(createHistoryRequest(
         params(CommonParams.ACTION, "status", CommonParams.NAME, "solr.jvm")));
@@ -129,6 +131,7 @@ public class MetricsHistoryIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testGet() throws Exception {
     NamedList<Object> rsp = solrClient.request(createHistoryRequest(params(
         CommonParams.ACTION, "get", CommonParams.NAME, "solr.jvm")));
@@ -192,6 +195,7 @@ public class MetricsHistoryIntegrationTest extends SolrCloudTestCase {
     });
   }
 
+  @SuppressWarnings({"rawtypes"})
   public static SolrRequest createHistoryRequest(SolrParams params) {
     return new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics/history", params);
   }

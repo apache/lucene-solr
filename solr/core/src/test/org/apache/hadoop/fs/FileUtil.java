@@ -726,6 +726,7 @@ public class FileUtil {
     try {
       // Consume stdout and stderr, to avoid blocking the command
       executor = Executors.newFixedThreadPool(2);
+      @SuppressWarnings({"rawtypes"})
       Future output = executor.submit(() -> {
         try {
           // Read until the output stream receives an EOF and closed.
@@ -751,6 +752,7 @@ public class FileUtil {
           }
         }
       });
+      @SuppressWarnings({"rawtypes"})
       Future error = executor.submit(() -> {
         try {
           // Read until the error stream receives an EOF and closed.

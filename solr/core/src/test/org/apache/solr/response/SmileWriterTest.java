@@ -71,6 +71,7 @@ public class SmileWriterTest extends SolrTestCaseJ4 {
     SmileResponseWriter smileResponseWriter = new SmileResponseWriter();
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     smileResponseWriter.write(baos,req,rsp);
+    @SuppressWarnings({"rawtypes"})
     Map m = (Map) decodeSmile(new ByteArrayInputStream(baos.toByteArray()));
     CharArr out = new CharArr();
     JSONWriter jsonWriter = new JSONWriter(out, 2);
@@ -83,12 +84,14 @@ public class SmileWriterTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testJSON() throws IOException {
     SolrQueryRequest req = req("wt","json","json.nl","arrarr");
     SolrQueryResponse rsp = new SolrQueryResponse();
     SmileResponseWriter w = new SmileResponseWriter();
 
     ByteArrayOutputStream buf = new ByteArrayOutputStream();
+    @SuppressWarnings({"rawtypes"})
     NamedList nl = new NamedList();
     nl.add("data1", "he\u2028llo\u2029!");       // make sure that 2028 and 2029 are both escaped (they are illegal in javascript)
     nl.add(null, 42);
@@ -98,7 +101,9 @@ public class SmileWriterTest extends SolrTestCaseJ4 {
     rsp.add("short", Short.valueOf((short)-4));
     String expected = "{\"nl\":[[\"data1\",\"he\\u2028llo\\u2029!\"],[null,42]],byte:-3,short:-4}";
     w.write(buf, req, rsp);
+    @SuppressWarnings({"rawtypes"})
     Map m = (Map) decodeSmile(new ByteArrayInputStream(buf.toByteArray()));
+    @SuppressWarnings({"rawtypes"})
     Map o2 = (Map) new ObjectBuilder(new JSONParser(new StringReader(expected))).getObject();
     assertEquals(Utils.toJSONString(m), Utils.toJSONString(o2));
     req.close();
@@ -133,9 +138,12 @@ public class SmileWriterTest extends SolrTestCaseJ4 {
     w.write(buf, req, rsp);
 
     byte[] bytes = buf.toByteArray();
+    @SuppressWarnings({"rawtypes"})
     Map m = (Map) decodeSmile(new ByteArrayInputStream(bytes));
     m = (Map) m.get("response");
+    @SuppressWarnings({"rawtypes"})
     List l = (List) m.get("docs");
+    @SuppressWarnings({"rawtypes"})
     Map doc = (Map) l.get(0);
     assertFalse(doc.containsKey("subject"));
     assertFalse(doc.containsKey("title"));
@@ -146,6 +154,7 @@ public class SmileWriterTest extends SolrTestCaseJ4 {
 
 
   @Test
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void test10Docs() throws IOException {
     SolrQueryResponse response = new SolrQueryResponse();
     SolrDocumentList l = constructSolrDocList(response);
@@ -166,6 +175,7 @@ public class SmileWriterTest extends SolrTestCaseJ4 {
 
   }
 
+  @SuppressWarnings({"unchecked"})
   public static SolrDocumentList constructSolrDocList(SolrQueryResponse response) {
     SolrDocumentList l = new SolrDocumentList();
     for(int i=0;i<10; i++){
@@ -219,6 +229,7 @@ public class SmileWriterTest extends SolrTestCaseJ4 {
   }
 
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public static Object getVal(JsonNode value) {
     if (value instanceof NullNode) {
       return null;

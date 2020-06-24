@@ -73,6 +73,7 @@ public class ReplaceNodeNoTargetTest extends SolrCloudTestCase {
     String setClusterPolicyCommand = "{" +
         " 'set-cluster-policy': [" +
         "      {'replica':'<5', 'shard': '#EACH', 'node': '#ANY'}]}";
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     solrClient.request(req);
 

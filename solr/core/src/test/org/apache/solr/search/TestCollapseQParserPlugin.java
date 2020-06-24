@@ -283,8 +283,8 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
   @Test
   public void testMergeBoost() throws Exception {
 
-    Set<Integer> boosted = new HashSet();
-    Set<Integer> results = new HashSet();
+    Set<Integer> boosted = new HashSet<>();
+    Set<Integer> results = new HashSet<>();
 
     for(int i=0; i<200; i++) {
       boosted.add(random().nextInt(1000));
@@ -314,7 +314,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
 
     CollapsingQParserPlugin.MergeBoost mergeBoost = new CollapsingQParserPlugin.MergeBoost(boostedArray);
 
-    List<Integer> boostedResults = new ArrayList();
+    List<Integer> boostedResults = new ArrayList<>();
 
     for(int i=0; i<resultsArray.length; i++) {
       int result = resultsArray[i];
@@ -323,7 +323,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
       }
     }
 
-    List<Integer> controlResults = new ArrayList();
+    List<Integer> controlResults = new ArrayList<>();
 
     for(int i=0; i<resultsArray.length; i++) {
       int result = resultsArray[i];
