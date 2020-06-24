@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -30,6 +32,7 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 
 import org.apache.lucene.util.LuceneTestCase;
@@ -322,7 +325,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     firstWriter.close(); // When this writer closes, it does not merge on commit.
 
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()))
-        .setMergePolicy(MERGE_ON_COMMIT_POLICY).setMaxCommitMergeWaitSeconds(30);
+        .setMergePolicy(MERGE_ON_COMMIT_POLICY).setMaxCommitMergeWaitMillis(30);
 
 
     IndexWriter writerWithMergePolicy = new IndexWriter(dir, iwc);
@@ -373,7 +376,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
       CountDownLatch waitForMerge = new CountDownLatch(1);
       CountDownLatch waitForUpdate = new CountDownLatch(1);
       try (IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig()
-          .setMergePolicy(MERGE_ON_COMMIT_POLICY).setMaxCommitMergeWaitSeconds(30)
+          .setMergePolicy(MERGE_ON_COMMIT_POLICY).setMaxCommitMergeWaitMillis(30 * 1000)
           .setSoftDeletesField("soft_delete")
           .setMergeScheduler(new ConcurrentMergeScheduler())) {
         @Override
@@ -444,7 +447,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
       CountDownLatch waitForMerge = new CountDownLatch(1);
       CountDownLatch waitForDeleteAll = new CountDownLatch(1);
       try (IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig()
-          .setMergePolicy(MERGE_ON_COMMIT_POLICY).setMaxCommitMergeWaitSeconds(30)
+          .setMergePolicy(MERGE_ON_COMMIT_POLICY).setMaxCommitMergeWaitMillis(30 * 1000)
           .setMergeScheduler(new SerialMergeScheduler() {
             @Override
             public synchronized void merge(MergeSource mergeSource, MergeTrigger trigger) throws IOException {
@@ -479,6 +482,54 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
         writer.deleteAll();
         waitForDeleteAll.countDown();
         t.join();
+      }
+    }
+  }
+
+  public void testStressUpdateSameDocumentWithMergeOnCommit() throws IOException, InterruptedException {
+    try (Directory directory = newDirectory()) {
+      try (RandomIndexWriter writer = new RandomIndexWriter(random(), directory, newIndexWriterConfig()
+          .setMergePolicy(MERGE_ON_COMMIT_POLICY).setMaxCommitMergeWaitMillis(10 + random().nextInt(2000))
+          .setSoftDeletesField("soft_delete")
+          .setMergeScheduler(new ConcurrentMergeScheduler()))) {
+        Document d1 = new Document();
+        d1.add(new StringField("id", "1", Field.Store.NO));
+        writer.updateDocument(new Term("id", "1"), d1);
+        writer.commit();
+
+        AtomicInteger iters = new AtomicInteger(100 + random().nextInt(TEST_NIGHTLY ? 5000 : 1000));
+        AtomicBoolean done = new AtomicBoolean(false);
+        Thread[] threads = new Thread[1 + random().nextInt(4)];
+        for (int i = 0; i < threads.length; i++) {
+          Thread t = new Thread(() -> {
+            try {
+              while (iters.decrementAndGet() > 0) {
+                writer.updateDocument(new Term("id", "1"), d1);
+              }
+            } catch (Exception e) {
+              throw new AssertionError(e);
+            } finally {
+              done.set(true);
+            }
+
+          });
+          t.start();
+          threads[i] = t;
+        }
+        try {
+          while (done.get() == false) {
+            if (random().nextBoolean()) {
+              writer.commit();
+            }
+            try (DirectoryReader open = new SoftDeletesDirectoryReaderWrapper(DirectoryReader.open(directory), "___soft_deletes")) {
+              assertEquals(1, open.numDocs());
+            }
+          }
+        } finally {
+          for (Thread t : threads) {
+            t.join();
+          }
+        }
       }
     }
   }

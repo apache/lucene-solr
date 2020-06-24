@@ -618,7 +618,7 @@ public abstract class MergePolicy {
    * Identifies merges that we want to execute (synchronously) on commit. By default, do not synchronously merge on commit.
    *
    * Any merges returned here will make {@link IndexWriter#commit()} or {@link IndexWriter#prepareCommit()} block until
-   * the merges complete or until {@link IndexWriterConfig#getMaxCommitMergeWaitSeconds()} have elapsed. This may be
+   * the merges complete or until {@link IndexWriterConfig#getMaxCommitMergeWaitMillis()} have elapsed. This may be
    * used to merge small segments that have just been flushed as part of the commit, reducing the number of segments in
    * the commit. If a merge does not complete in the allotted time, it will continue to execute, but will not be reflected
    * in the commit.

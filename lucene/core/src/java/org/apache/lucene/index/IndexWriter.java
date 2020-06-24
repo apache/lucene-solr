@@ -29,7 +29,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -3183,7 +3182,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       long seqNo;
       MergePolicy.MergeSpecification onCommitMerges = null;
       AtomicBoolean includeInCommit = new AtomicBoolean(true);
-      final long maxCommitMergeWaitSeconds = config.getMaxCommitMergeWaitSeconds();
+      final long maxCommitMergeWaitMillis = config.getMaxCommitMergeWaitMillis();
       // This is copied from doFlush, except it's modified to
       // clone & incRef the flushed SegmentInfos inside the
       // sync block:
@@ -3243,7 +3242,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
               // merge completes which would otherwise have
               // removed the files we are now syncing.
               deleter.incRef(toCommit.files(false));
-              if (anyChanges && maxCommitMergeWaitSeconds > 0) {
+              if (anyChanges && maxCommitMergeWaitMillis > 0) {
                 SegmentInfos committingSegmentInfos = toCommit;
                 onCommitMerges = updatePendingMerges(new OneMergeWrappingMergePolicy(config.getMergePolicy(), toWrap ->
                     new MergePolicy.OneMerge(toWrap.segments) {
@@ -3297,8 +3296,16 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
                     }
                 ), MergeTrigger.COMMIT, UNBOUNDED_MAX_MERGE_SEGMENTS);
                 if (onCommitMerges != null) {
-                  for (MergePolicy.OneMerge merge : onCommitMerges.merges) {
-                    merge.initMergeReaders(IOContext.DEFAULT, sci -> getPooledInstance(sci, true));
+                  boolean closeReaders = true;
+                  try {
+                    for (MergePolicy.OneMerge merge : onCommitMerges.merges) {
+                      merge.initMergeReaders(IOContext.DEFAULT, sci -> getPooledInstance(sci, true));
+                    }
+                    closeReaders = false;
+                  } finally {
+                    if (closeReaders) {
+                      IOUtils.applyToAll(onCommitMerges.merges, merge -> closeMergeReaders(merge, true, false));
+                    }
                   }
                 }
               }
@@ -3325,7 +3332,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
       if (onCommitMerges != null) {
         mergeScheduler.merge(mergeSource, MergeTrigger.COMMIT);
-        onCommitMerges.await(maxCommitMergeWaitSeconds, TimeUnit.SECONDS);
+        onCommitMerges.await(maxCommitMergeWaitMillis, TimeUnit.MILLISECONDS);
         synchronized (this) {
           // we need to call this under lock since mergeFinished above is also called under the IW lock
           includeInCommit.set(false);
