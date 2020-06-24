@@ -146,6 +146,7 @@ public class ContainerPluginsApi {
     }
   }
 
+  @SuppressWarnings("unchecked")
   public static Map<String, Object> plugins(Supplier<SolrZkClient> zkClientSupplier) throws IOException {
     SolrZkClient zkClient = zkClientSupplier.get();
     try {
