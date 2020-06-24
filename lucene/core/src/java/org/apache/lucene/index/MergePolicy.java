@@ -260,11 +260,9 @@ public abstract class MergePolicy {
      * @param segmentDropped true iff the merged segment was dropped since it was fully deleted
      */
     public void mergeFinished(boolean success, boolean segmentDropped) throws IOException {
-      mergeCompleted.complete(success);
-      // https://issues.apache.org/jira/browse/LUCENE-9408
-      // if (mergeCompleted.complete(success) == false) {
-      //   throw new IllegalStateException("merge has already finished");
-      // }
+      if (mergeCompleted.complete(success) == false) {
+        throw new IllegalStateException("merge has already finished");
+      }
     }
 
     /** Wrap the reader in order to add/remove information to the merged segment. */
@@ -394,7 +392,7 @@ public abstract class MergePolicy {
      * Returns true if the merge has finished or false if it's still running or
      * has not been started. This method will not block.
      */
-    boolean isDone() {
+    boolean hasFinished() {
       return mergeCompleted.isDone();
     }
 

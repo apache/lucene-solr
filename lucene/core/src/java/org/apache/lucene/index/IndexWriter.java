@@ -29,6 +29,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -4362,27 +4363,32 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
   @SuppressWarnings("try")
   private synchronized void closeMergeReaders(MergePolicy.OneMerge merge, boolean suppressExceptions, boolean droppedSegment) throws IOException {
-    final boolean drop = suppressExceptions == false;
-    try {
-      // first call mergeFinished before we potentially drop the reader and the last reference.
-      merge.mergeFinished(suppressExceptions == false, droppedSegment);
-    } finally {
-      IOUtils.applyToAll(merge.clearMergeReader(), mr -> {
-        final SegmentReader sr = mr.reader;
-        final ReadersAndUpdates rld = getPooledInstance(sr.getOriginalSegmentInfo(), false);
-        // We still hold a ref so it should not have been removed:
-        assert rld != null;
-        if (drop) {
-          rld.dropChanges();
-        } else {
-          rld.dropMergingUpdates();
-        }
-        rld.release(sr);
-        release(rld);
-        if (drop) {
-          readerPool.drop(rld.info);
-        }
-      });
+    if (merge.hasFinished() == false) {
+      final boolean drop = suppressExceptions == false;
+      try {
+        // first call mergeFinished before we potentially drop the reader and the last reference.
+        merge.mergeFinished(suppressExceptions == false, droppedSegment);
+      } finally {
+        IOUtils.applyToAll(merge.clearMergeReader(), mr -> {
+          final SegmentReader sr = mr.reader;
+          final ReadersAndUpdates rld = getPooledInstance(sr.getOriginalSegmentInfo(), false);
+          // We still hold a ref so it should not have been removed:
+          assert rld != null;
+          if (drop) {
+            rld.dropChanges();
+          } else {
+            rld.dropMergingUpdates();
+          }
+          rld.release(sr);
+          release(rld);
+          if (drop) {
+            readerPool.drop(rld.info);
+          }
+        });
+      }
+    } else {
+      assert merge.getMergeReader().isEmpty() : "we are done but still have readers: " + merge.getMergeReader();
+      assert suppressExceptions : "can't be done and not suppressing exceptions";
     }
 
   }
