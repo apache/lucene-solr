@@ -35,6 +35,7 @@ import org.junit.Test;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.shape.Point;
 import org.locationtech.spatial4j.shape.Shape;
+import org.locationtech.spatial4j.shape.ShapeFactory;
 
 public class DistanceStrategyTest extends StrategyTestCase {
   @ParametersFactory(argumentFormatting = "strategy=%s")
@@ -81,20 +82,21 @@ public class DistanceStrategyTest extends StrategyTestCase {
 
   @Test
   public void testDistanceOrder() throws IOException {
-    adoc("100", ctx.makePoint(2, 1));
-    adoc("101", ctx.makePoint(-1, 4));
+    ShapeFactory shapeFactory = ctx.getShapeFactory();
+    adoc("100", shapeFactory.pointXY(2, 1));
+    adoc("101", shapeFactory.pointXY(-1, 4));
     adoc("103", (Shape)null);//test score for nothing
     commit();
     //FYI distances are in docid order
-    checkDistValueSource(ctx.makePoint(4, 3), 2.8274937f, 5.0898066f, 180f);
-    checkDistValueSource(ctx.makePoint(0, 4), 3.6043684f, 0.9975641f, 180f);
+    checkDistValueSource(shapeFactory.pointXY(4, 3), 2.8274937f, 5.0898066f, 180f);
+    checkDistValueSource(shapeFactory.pointXY(0, 4), 3.6043684f, 0.9975641f, 180f);
   }
 
   @Test
   public void testRecipScore() throws IOException {
-    Point p100 = ctx.makePoint(2.02, 0.98);
+    Point p100 = ctx.getShapeFactory().pointXY(2.02, 0.98);
     adoc("100", p100);
-    Point p101 = ctx.makePoint(-1.001, 4.001);
+    Point p101 = ctx.getShapeFactory().pointXY(-1.001, 4.001);
     adoc("101", p101);
     adoc("103", (Shape)null);//test score for nothing
     commit();

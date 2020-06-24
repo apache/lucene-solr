@@ -17,6 +17,8 @@
 
 apply plugin: 'java-library'
 
+description = 'Framework for testing Lucene-based applications'
+
 dependencies {
   api project(':lucene:core')
 

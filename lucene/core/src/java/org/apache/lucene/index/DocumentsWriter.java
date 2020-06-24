@@ -30,7 +30,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import java.util.function.ToLongFunction;
 
-import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.DocumentsWriterPerThread.FlushedSegment;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.AlreadyClosedException;
@@ -126,7 +125,6 @@ final class DocumentsWriter implements Closeable, Accountable {
   private volatile boolean pendingChangesInCurrentFullFlush;
 
   final DocumentsWriterPerThreadPool perThreadPool;
-  final FlushPolicy flushPolicy;
   final DocumentsWriterFlushControl flushControl;
 
   DocumentsWriter(FlushNotifications flushNotifications, int indexCreatedVersionMajor, AtomicLong pendingNumDocs, boolean enableTestPoints,
@@ -139,10 +137,9 @@ final class DocumentsWriter implements Closeable, Accountable {
       final FieldInfos.Builder infos = new FieldInfos.Builder(globalFieldNumberMap);
       return new DocumentsWriterPerThread(indexCreatedVersionMajor,
           segmentNameSupplier.get(), directoryOrig,
-          directory, config, infoStream, deleteQueue, infos,
+          directory, config, deleteQueue, infos,
           pendingNumDocs, enableTestPoints);
     });
-    flushPolicy = config.getFlushPolicy();
     this.pendingNumDocs = pendingNumDocs;
     flushControl = new DocumentsWriterFlushControl(this, config);
     this.flushNotifications = flushNotifications;
@@ -151,7 +148,6 @@ final class DocumentsWriter implements Closeable, Accountable {
   long deleteQueries(final Query... queries) throws IOException {
     return applyDeleteOrUpdate(q -> q.addDelete(queries));
   }
-
 
   long deleteTerms(final Term... terms) throws IOException {
     return applyDeleteOrUpdate(q -> q.addDelete(terms));
@@ -406,7 +402,7 @@ final class DocumentsWriter implements Closeable, Accountable {
     return hasEvents;
   }
 
-  long updateDocuments(final Iterable<? extends Iterable<? extends IndexableField>> docs, final Analyzer analyzer,
+  long updateDocuments(final Iterable<? extends Iterable<? extends IndexableField>> docs,
                        final DocumentsWriterDeleteQueue.Node<?> delNode) throws IOException {
     boolean hasEvents = preUpdate();
 
@@ -420,7 +416,7 @@ final class DocumentsWriter implements Closeable, Accountable {
       ensureOpen();
       final int dwptNumDocs = dwpt.getNumDocsInRAM();
       try {
-        seqNo = dwpt.updateDocuments(docs, analyzer, delNode, flushNotifications);
+        seqNo = dwpt.updateDocuments(docs, delNode, flushNotifications);
       } finally {
         if (dwpt.isAborted()) {
           flushControl.doOnAbort(dwpt);

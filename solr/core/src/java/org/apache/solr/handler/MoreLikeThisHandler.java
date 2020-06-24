@@ -91,7 +91,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
       "MoreLikeThis does not support multiple ContentStreams";
 
   @Override
-  public void init(NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     super.init(args);
   }
 
@@ -261,6 +261,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
         // TODO resolve duplicated code with DebugComponent.  Perhaps it should be added to doStandardDebug?
         if (dbg == true) {
           try {
+            @SuppressWarnings({"unchecked"})
             NamedList<Object> dbgInfo = SolrPluginUtils.doStandardDebug(req, q, mlt.getRawMLTQuery(), mltDocs.docList, dbgQuery, dbgResults);
             if (null != dbgInfo) {
               if (null != filters) {
@@ -279,7 +280,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
           }
         }
       } catch (ExitableDirectoryReader.ExitingReaderException ex) {
-        log.warn( "Query: " + req.getParamString() + "; " + ex.getMessage());
+        log.warn( "Query: {}; {}", req.getParamString(), ex.getMessage());
       } finally {
         SolrQueryTimeoutImpl.reset();
       }

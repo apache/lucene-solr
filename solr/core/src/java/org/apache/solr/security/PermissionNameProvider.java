@@ -38,6 +38,7 @@ public interface PermissionNameProvider {
     COLL_READ_PERM("collection-admin-read", null),
     CORE_READ_PERM("core-admin-read", null),
     CORE_EDIT_PERM("core-admin-edit", null),
+    ZK_READ_PERM("zk-read", null),
     READ_PERM("read", "*"),
     UPDATE_PERM("update", "*"),
     CONFIG_EDIT_PERM("config-edit", unmodifiableSet(new HashSet<>(asList("*", null)))),
@@ -61,6 +62,7 @@ public interface PermissionNameProvider {
     final String name;
     final Set<String> collName;
 
+    @SuppressWarnings({"unchecked"})
     Name(String s, Object collName) {
       name = s;
       this.collName = collName instanceof Set? (Set<String>)collName : singleton((String)collName);

@@ -41,14 +41,14 @@ public class MaxDocValueSource extends ValueSource {
   }
 
   @Override
-  public void createWeight(Map context, IndexSearcher searcher) throws IOException {
-    context.put("searcher",searcher);
+  public void createWeight(Map<Object, Object> context, IndexSearcher searcher) throws IOException {
+    context.put("searcher", searcher);
   }
 
   @Override
-  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
     IndexSearcher searcher = (IndexSearcher)context.get("searcher");
-    return new ConstIntDocValues(searcher.getIndexReader().maxDoc(), this);
+    return new DocFreqValueSource.ConstIntDocValues(searcher.getIndexReader().maxDoc(), this);
   }
 
   @Override

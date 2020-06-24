@@ -106,7 +106,7 @@ public abstract class SolrScraper implements Closeable {
         queryResponse = client.request(queryRequest, query.getCollection().get());
       }
     } catch (SolrServerException | IOException e) {
-      log.error("failed to request: " + queryRequest.getPath() + " " + e.getMessage());
+      log.error("failed to request: {} {}", queryRequest.getPath(), e.getMessage());
     }
 
     JsonNode jsonNode = OBJECT_MAPPER.readTree((String) queryResponse.get("response"));
@@ -164,7 +164,7 @@ public abstract class SolrScraper implements Closeable {
               name, labelNames, labelValues, value));
         }
       } catch (JsonQueryException e) {
-        log.error("Error apply JSON query={} to result", jsonQuery.toString(), e);
+        log.error("Error apply JSON query={} to result", jsonQuery, e);
         scrapeErrorTotal.inc();
       }
     }

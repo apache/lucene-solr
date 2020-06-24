@@ -45,6 +45,10 @@ class SortDoc {
     return null;
   }
 
+  public SortValue[] getSortValues() {
+    return sortValues;
+  }
+
   public void setNextReader(LeafReaderContext context) throws IOException {
     this.ord = context.ord;
     this.docBase = context.docBase;

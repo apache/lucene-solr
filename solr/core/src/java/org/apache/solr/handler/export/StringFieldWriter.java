@@ -72,9 +72,21 @@ class StringFieldWriter extends FieldWriter {
     if (ew instanceof JavaBinCodec.BinEntryWriter) {
       ew.put(this.field, utf8.reset(ref.bytes, ref.offset, ref.length, null));
     } else {
-      fieldType.indexedToReadable(ref, cref);
-      String v = cref.toString();
+      String v = null;
+      if(sortValue != null) {
+        v = ((StringValue) sortValue).getLastString();
+        if(v == null) {
+          fieldType.indexedToReadable(ref, cref);
+          v = cref.toString();
+          ((StringValue) sortValue).setLastString(v);
+        }
+      } else {
+        fieldType.indexedToReadable(ref, cref);
+        v = cref.toString();
+      }
+
       ew.put(this.field, v);
+
     }
     return true;
   }

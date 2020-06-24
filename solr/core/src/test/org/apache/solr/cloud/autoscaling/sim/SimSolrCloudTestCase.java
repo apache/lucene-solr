@@ -109,7 +109,9 @@ public class SimSolrCloudTestCase extends SolrTestCaseJ4 {
   public void tearDown() throws Exception {
     super.tearDown();
     if (cluster != null) {
-      log.info(cluster.dumpClusterState(false));
+      if (log.isInfoEnabled()) {
+        log.info(cluster.dumpClusterState(false));
+      }
     }
   }
 
@@ -223,6 +225,7 @@ public class SimSolrCloudTestCase extends SolrTestCaseJ4 {
     assertReplicaPropsEquals(one.getProperties(), two.getProperties());
   }
 
+  @SuppressWarnings({"unchecked"})
   public static void assertReplicaInfoEquals(ReplicaInfo one, ReplicaInfo two) {
     assertEquals(one.getName(), two.getName());
     assertEquals(one.getNode(), two.getNode());

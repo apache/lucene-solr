@@ -233,8 +233,7 @@ public class FileUtil {
     }
     final boolean ex = f.exists();
     if (doLog && ex) {
-      LOG.warn("Failed to delete file or dir ["
-          + f.getAbsolutePath() + "]: it still exists.");
+      LOG.warn("Failed to delete file or dir [{}]: it still exists.", f.getAbsolutePath());
     }
     return !ex;
   }
@@ -727,6 +726,7 @@ public class FileUtil {
     try {
       // Consume stdout and stderr, to avoid blocking the command
       executor = Executors.newFixedThreadPool(2);
+      @SuppressWarnings({"rawtypes"})
       Future output = executor.submit(() -> {
         try {
           // Read until the output stream receives an EOF and closed.
@@ -747,9 +747,12 @@ public class FileUtil {
                 new IOUtils.NullOutputStream());
           }
         } catch (IOException e) {
-          LOG.debug(e.getMessage());
+          if (LOG.isDebugEnabled()) {
+            LOG.debug(e.getMessage());
+          }
         }
       });
+      @SuppressWarnings({"rawtypes"})
       Future error = executor.submit(() -> {
         try {
           // Read until the error stream receives an EOF and closed.
@@ -770,7 +773,9 @@ public class FileUtil {
                 new IOUtils.NullOutputStream());
           }
         } catch (IOException e) {
-          LOG.debug(e.getMessage());
+          if (LOG.isDebugEnabled()) {
+            LOG.debug(e.getMessage());
+          }
         }
       });
 
@@ -1042,8 +1047,7 @@ public class FileUtil {
   public static int symLink(String target, String linkname) throws IOException{
 
     if (target == null || linkname == null) {
-      LOG.warn("Can not create a symLink with a target = " + target
-          + " and link =" + linkname);
+      LOG.warn("Can not create a symLink with a target = {} and link = {}", target, linkname);
       return 1;
     }
 
@@ -1080,14 +1084,13 @@ public class FileUtil {
             + "administrators and all non-administrators from creating symbolic links. "
             + "This behavior can be changed in the Local Security Policy management console");
       } else if (returnVal != 0) {
-        LOG.warn("Command '" + StringUtils.join(" ", cmd) + "' failed "
-            + returnVal + " with: " + ec.getMessage());
+        LOG.warn("Command '{}' failed {} with: {}",StringUtils.join(" ", cmd)
+            , returnVal, ec.getMessage());
       }
       return returnVal;
     } catch (IOException e) {
       if (LOG.isDebugEnabled()) {
-        LOG.debug("Error while create symlink " + linkname + " to " + target
-            + "." + " Exception: " + StringUtils.stringifyException(e));
+        LOG.debug("Error while create symlink {} to {}. Exception: {}", linkname, target, StringUtils.stringifyException(e));
       }
       throw e;
     }
@@ -1126,8 +1129,7 @@ public class FileUtil {
       shExec.execute();
     }catch(IOException e) {
       if(LOG.isDebugEnabled()) {
-        LOG.debug("Error while changing permission : " + filename
-            +" Exception: " + StringUtils.stringifyException(e));
+        LOG.debug("Error while changing permission : {} Exception: {}", filename, StringUtils.stringifyException(e));
       }
     }
     return shExec.getExitCode();
@@ -1501,7 +1503,7 @@ public class FileUtil {
       // then this is acceptable.  If it returns false due to some other I/O
       // error, then this method will fail later with an IOException while saving
       // the jar.
-      LOG.debug("mkdirs false for " + workingDir + ", execution will continue");
+      LOG.debug("mkdirs false for {}, execution will continue", workingDir);
     }
 
     StringBuilder unexpandedWildcardClasspath = new StringBuilder();

@@ -18,20 +18,88 @@
 package org.apache.solr.handler;
 
 
+import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
+import org.apache.solr.client.solrj.io.ModelCache;
+import org.apache.solr.client.solrj.io.SolrClientCache;
+import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.handler.export.ExportWriter;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.JSON;
 
 public class ExportHandler extends SearchHandler {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  private ModelCache modelCache = null;
+  @SuppressWarnings({"rawtypes"})
+  private ConcurrentMap objectCache = new ConcurrentHashMap();
+  private SolrDefaultStreamFactory streamFactory = new ExportHandlerStreamFactory();
+  private String coreName;
+  private SolrClientCache solrClientCache;
+  private StreamContext initialStreamContext;
+
+  public static class ExportHandlerStreamFactory extends SolrDefaultStreamFactory {
+    static final String[] forbiddenStreams = new String[] {
+        // source streams
+        "search", "facet", "facet2D", "update", "delete", "jdbc", "topic",
+        "commit", "random", "knnSearch",
+        // execution streams
+        "parallel", "executor", "daemon"
+        // other streams?
+    };
+
+    public ExportHandlerStreamFactory() {
+      super();
+      for (String function : forbiddenStreams) {
+        this.withoutFunctionName(function);
+      }
+      this.withFunctionName("input", ExportWriter.ExportWriterStream.class);
+    }
+  }
+
+  @Override
+  public void inform(SolrCore core) {
+    super.inform(core);
+    String defaultCollection;
+    String defaultZkhost;
+    CoreContainer coreContainer = core.getCoreContainer();
+    this.solrClientCache = coreContainer.getSolrClientCache();
+    this.coreName = core.getName();
+
+    if (coreContainer.isZooKeeperAware()) {
+      defaultCollection = core.getCoreDescriptor().getCollectionName();
+      defaultZkhost = core.getCoreContainer().getZkController().getZkServerAddress();
+      streamFactory.withCollectionZkHost(defaultCollection, defaultZkhost);
+      streamFactory.withDefaultZkHost(defaultZkhost);
+      modelCache = new ModelCache(250,
+          defaultZkhost,
+          solrClientCache);
+    }
+    streamFactory.withSolrResourceLoader(core.getResourceLoader());
+    StreamHandler.addExpressiblePlugins(streamFactory, core);
+    initialStreamContext = new StreamContext();
+    initialStreamContext.setStreamFactory(streamFactory);
+    initialStreamContext.setSolrClientCache(solrClientCache);
+    initialStreamContext.setModelCache(modelCache);
+    initialStreamContext.setObjectCache(objectCache);
+    initialStreamContext.put("core", this.coreName);
+    initialStreamContext.put("solr-core", core);
+  }
+
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     try {
@@ -44,6 +112,6 @@ public class ExportHandler extends SearchHandler {
     Map<String, String> map = new HashMap<>(1);
     map.put(CommonParams.WT, ReplicationHandler.FILE_STREAM);
     req.setParams(SolrParams.wrapDefaults(new MapSolrParams(map),req.getParams()));
-    rsp.add(ReplicationHandler.FILE_STREAM, new ExportWriter(req, rsp, wt));
+    rsp.add(ReplicationHandler.FILE_STREAM, new ExportWriter(req, rsp, wt, initialStreamContext));
   }
 }

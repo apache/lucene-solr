@@ -311,9 +311,8 @@ public class SolrIndexSplitter {
           t.resume();
           for (int segmentNumber = 0; segmentNumber<leaves.size(); segmentNumber++) {
             if (log.isInfoEnabled()) {
-              log.info("SolrIndexSplitter: partition #{} partitionCount={} segment #{} segmentCount={}"
-              , partitionNumber, numPieces + (ranges != null ? " range=" + ranges.get(partitionNumber) : "")
-              , segmentNumber, leaves.size()); //LOGOK
+              log.info("SolrIndexSplitter: partition # {} partitionCount={} {} segment #={} segmentCount={}", partitionNumber, numPieces
+                  , (ranges != null ? " range=" + ranges.get(partitionNumber) : ""), segmentNumber, leaves.size()); // logOk
             }
             CodecReader subReader = SlowCodecReaderWrapper.wrap(leaves.get(segmentNumber).reader());
             iw.addIndexes(new LiveDocsReader(subReader, segmentDocSets.get(segmentNumber)[partitionNumber]));
@@ -431,6 +430,7 @@ public class SolrIndexSplitter {
   }
 
   private void openNewSearcher(SolrCore core) throws Exception {
+    @SuppressWarnings({"rawtypes"})
     Future[] waitSearcher = new Future[1];
     core.getSearcher(true, false, waitSearcher, true);
     if (waitSearcher[0] != null) {

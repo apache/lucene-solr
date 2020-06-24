@@ -44,6 +44,7 @@ Authentication makes sure you know the identity of your users. The authenticatio
 * <<basic-authentication-plugin.adoc#basic-authentication-plugin,Basic Authentication Plugin>>
 * <<hadoop-authentication-plugin.adoc#hadoop-authentication-plugin,Hadoop Authentication Plugin>>
 * <<jwt-authentication-plugin.adoc#jwt-authentication-plugin,JWT Authentication Plugin>>
+* <<cert-authentication-plugin.adoc#cert-authentication-plugin,Certificate Authentication Plugin>>
 // end::list-of-authentication-plugins[]
 
 === Authorization Plugins
@@ -52,6 +53,7 @@ Authorization makes sure that only users with the necessary roles/permissions ca
 
 // tag::list-of-authorization-plugins[]
 * <<rule-based-authorization-plugin.adoc#rule-based-authorization-plugin,Rule-Based Authorization Plugin>>
+* <<rule-based-authorization-plugin.adoc#rule-based-authorization-plugin,External Role Rule-Based Authorization Plugin>>
 // end::list-of-authorization-plugins[]
 
 === Audit Logging Plugins

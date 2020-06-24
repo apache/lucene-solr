@@ -95,5 +95,3 @@ asciidoctor:
     icons: "font"
     source-highlighter: "rouge"
     rouge-theme: "thankful-eyes"
-    # NOTE: do *NOT* use an self-empty div tag (ie: <div/>) here - it will break jquery
-    section-toc: "<div class=\"toc section-toc\"></div>"

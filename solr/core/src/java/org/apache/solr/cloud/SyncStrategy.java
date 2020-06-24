@@ -96,7 +96,9 @@ public class SyncStrategy {
 
     recoveryRequests.clear();
 
-    log.info("Sync replicas to " + ZkCoreNodeProps.getCoreUrl(leaderProps));
+    if (log.isInfoEnabled()) {
+      log.info("Sync replicas to {}", ZkCoreNodeProps.getCoreUrl(leaderProps));
+    }
 
     if (core.getUpdateHandler().getUpdateLog() == null) {
       log.error("No UpdateLog found - cannot sync");
@@ -152,7 +154,7 @@ public class SyncStrategy {
   }
   
   private PeerSync.PeerSyncResult syncWithReplicas(ZkController zkController, SolrCore core,
-      ZkNodeProps props, String collection, String shardId, boolean peerSyncOnlyWithActive) {
+      ZkNodeProps props, String collection, String shardId, boolean peerSyncOnlyWithActive) throws Exception {
     List<ZkCoreNodeProps> nodes = zkController.getZkStateReader()
         .getReplicaProps(collection, shardId,core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName());
     
@@ -177,8 +179,9 @@ public class SyncStrategy {
     // Fingerprinting here is off because the we currently rely on having at least one of the nodes return "true", and if replicas are out-of-sync
     // we still need to pick one as leader.  A followup sync from the replica to the new leader (with fingerprinting on) should then fail and
     // initiate recovery-by-replication.
-    PeerSync peerSync = new PeerSync(core, syncWith, core.getUpdateHandler().getUpdateLog().getNumRecordsToKeep(), true, peerSyncOnlyWithActive, false);
-    return peerSync.sync();
+    try (PeerSync peerSync = new PeerSync(core, syncWith, core.getUpdateHandler().getUpdateLog().getNumRecordsToKeep(), true, peerSyncOnlyWithActive, false)) {
+      return peerSync.sync();
+    }
   }
   
   private void syncToMe(ZkController zkController, String collection,
@@ -197,14 +200,18 @@ public class SyncStrategy {
         .getReplicaProps(collection, shardId,
             cd.getCloudDescriptor().getCoreNodeName());
     if (nodes == null) {
-      log.info(ZkCoreNodeProps.getCoreUrl(leaderProps) + " has no replicas");
+      if (log.isInfoEnabled()) {
+        log.info("{} has no replicas", ZkCoreNodeProps.getCoreUrl(leaderProps));
+      }
       return;
     }
 
     ZkCoreNodeProps zkLeader = new ZkCoreNodeProps(leaderProps);
     for (ZkCoreNodeProps node : nodes) {
       try {
-        log.info(ZkCoreNodeProps.getCoreUrl(leaderProps) + ": try and ask " + node.getCoreUrl() + " to sync");
+        if (log.isInfoEnabled()) {
+          log.info("{}: try and ask {} to sync", ZkCoreNodeProps.getCoreUrl(leaderProps), node.getCoreUrl());
+        }
         
         requestSync(node.getBaseUrl(), node.getCoreUrl(), zkLeader.getCoreUrl(), node.getCoreName(), nUpdates);
         
@@ -223,8 +230,10 @@ public class SyncStrategy {
       }
       
       if (!success) {
-        log.info(ZkCoreNodeProps.getCoreUrl(leaderProps) + ": Sync failed - we will ask replica (" + srsp.getShardAddress()
-            + ") to recover.");
+        if (log.isInfoEnabled()) {
+          log.info("{}: Sync failed - we will ask replica ({}) to recover."
+              , ZkCoreNodeProps.getCoreUrl(leaderProps), srsp.getShardAddress());
+        }
         if (isClosed) {
           log.info("We have been closed, don't request that a replica recover");
         } else {
@@ -235,7 +244,9 @@ public class SyncStrategy {
           recoveryRequests.add(rr);
         }
       } else {
-        log.info(ZkCoreNodeProps.getCoreUrl(leaderProps) + ": " + " sync completed with " + srsp.getShardAddress());
+        if (log.isInfoEnabled()) {
+          log.info("{}: sync completed with {}", ZkCoreNodeProps.getCoreUrl(leaderProps), srsp.getShardAddress());
+        }
       }
       
     }

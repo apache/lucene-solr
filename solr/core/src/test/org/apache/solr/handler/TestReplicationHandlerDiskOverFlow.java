@@ -205,11 +205,14 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
         .add("qt", "/replication")
         .add("command", ReplicationHandler.CMD_DETAILS)
     );
-    log.info("DETAILS" + Utils.writeJson(response, new StringWriter(), true).toString());
+    if (log.isInfoEnabled()) {
+      log.info("DETAILS {}", Utils.writeJson(response, new StringWriter(), true).toString());
+    }
     assertEquals("slave's clearedLocalIndexFirst (from rep details)",
                  "true", response._getStr("details/slave/clearedLocalIndexFirst", null));
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private long indexDocs(SolrClient client, int totalDocs, int start) throws Exception {
     for (int i = 0; i < totalDocs; i++)
       TestReplicationHandler.index(client, "id", i + start, "name", TestUtil.randomSimpleString(random(), 1000, 5000));

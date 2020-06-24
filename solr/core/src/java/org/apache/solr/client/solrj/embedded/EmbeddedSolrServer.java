@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import org.apache.commons.io.output.ByteArrayOutputStream;
+import org.apache.lucene.search.TotalHits.Relation;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -157,7 +158,8 @@ public class EmbeddedSolrServer extends SolrClient {
   // It *should* be able to convert the response directly into a named list.
 
   @Override
-  public NamedList<Object> request(SolrRequest request, String coreName) throws SolrServerException, IOException {
+  @SuppressWarnings({"unchecked"})
+  public NamedList<Object> request(@SuppressWarnings({"rawtypes"})SolrRequest request, String coreName) throws SolrServerException, IOException {
 
     String path = request.getPath();
     if (path == null || !path.startsWith("/")) {
@@ -238,6 +240,7 @@ public class EmbeddedSolrServer extends SolrClient {
                   // write an empty list...
                   SolrDocumentList docs = new SolrDocumentList();
                   docs.setNumFound(ctx.getDocList().matches());
+                  docs.setNumFoundExact(ctx.getDocList().hitCountRelation() == Relation.EQUAL_TO);
                   docs.setStart(ctx.getDocList().offset());
                   docs.setMaxScore(ctx.getDocList().maxScore());
                   codec.writeSolrDocumentList(docs);
@@ -268,12 +271,14 @@ public class EmbeddedSolrServer extends SolrClient {
     } catch (Exception ex) {
       throw new SolrServerException(ex);
     } finally {
-      if (req != null) req.close();
-      SolrRequestInfo.clearRequestInfo();
+      if (req != null) {
+        req.close();
+        SolrRequestInfo.clearRequestInfo();
+      }
     }
   }
 
-  private Set<ContentStream> getContentStreams(SolrRequest request) throws IOException {
+  private Set<ContentStream> getContentStreams(@SuppressWarnings({"rawtypes"})SolrRequest request) throws IOException {
     if (request.getMethod() == SolrRequest.METHOD.GET) return null;
     if (request instanceof ContentStreamUpdateRequest) {
       final ContentStreamUpdateRequest csur = (ContentStreamUpdateRequest) request;

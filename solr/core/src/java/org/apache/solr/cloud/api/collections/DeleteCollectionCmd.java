@@ -74,7 +74,7 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
+  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     Object o = message.get(MaintainRoutedAliasCmd.INVOKED_BY_ROUTED_ALIAS);
     if (o != null) {
       ((Runnable)o).run(); // this will ensure the collection is removed from the alias before it disappears.
@@ -138,6 +138,7 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       okayExceptions.add(NonExistentCoreException.class.getName());
       ZkNodeProps internalMsg = message.plus(NAME, collection);
 
+      @SuppressWarnings({"unchecked"})
       List<Replica> failedReplicas = ocmh.collectionCmd(internalMsg, params, results, null, asyncId, okayExceptions);
       for (Replica failedReplica : failedReplicas) {
         boolean isSharedFS = failedReplica.getBool(ZkStateReader.SHARED_STORAGE_PROP, false) && failedReplica.get("dataDir") != null;

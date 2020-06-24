@@ -50,6 +50,7 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
     createFile(tmpdir, "a.xml", "a.xml".getBytes(StandardCharsets.UTF_8), false);
     createFile(tmpdir, "b.xml", "b.xml".getBytes(StandardCharsets.UTF_8), false);
     createFile(tmpdir, "c.props", "c.props".getBytes(StandardCharsets.UTF_8), false);
+    @SuppressWarnings({"rawtypes"})
     Map attrs = createMap(
             FileListEntityProcessor.FILE_NAME, "xml$",
             FileListEntityProcessor.BASE_DIR, tmpdir.getAbsolutePath());
@@ -68,6 +69,7 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
   }
   
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testBiggerSmallerFiles() throws IOException {
     File tmpdir = createTempDir().toFile();
 
@@ -91,6 +93,7 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
       minLength = content.length;
       smallestFile = "c.props";
     }
+    @SuppressWarnings({"rawtypes"})
     Map attrs = createMap(
             FileListEntityProcessor.FILE_NAME, ".*",
             FileListEntityProcessor.BASE_DIR, tmpdir.getAbsolutePath(),
@@ -120,7 +123,7 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
   }
 
   @SuppressWarnings("unchecked")
-  static List<String> getFiles(VariableResolver resolver, Map attrs) {
+  static List<String> getFiles(VariableResolver resolver, @SuppressWarnings({"rawtypes"})Map attrs) {
     Context c = getContext(null,
             resolver, null, Context.FULL_DUMP, Collections.EMPTY_LIST, attrs);
     FileListEntityProcessor fileListEntityProcessor = new FileListEntityProcessor();
@@ -137,12 +140,14 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
 
   @SuppressForbidden(reason = "Needs currentTimeMillis to set last modified time")
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testNTOT() throws IOException {
     File tmpdir = createTempDir().toFile();
 
     createFile(tmpdir, "a.xml", "a.xml".getBytes(StandardCharsets.UTF_8), true);
     createFile(tmpdir, "b.xml", "b.xml".getBytes(StandardCharsets.UTF_8), true);
     createFile(tmpdir, "c.props", "c.props".getBytes(StandardCharsets.UTF_8), true);
+    @SuppressWarnings({"rawtypes"})
     Map attrs = createMap(
             FileListEntityProcessor.FILE_NAME, "xml$",
             FileListEntityProcessor.BASE_DIR, tmpdir.getAbsolutePath(),
@@ -178,6 +183,7 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
     createFile(childdir, "a.xml", "a.xml".getBytes(StandardCharsets.UTF_8), true);
     createFile(childdir, "b.xml", "b.xml".getBytes(StandardCharsets.UTF_8), true);
     createFile(childdir, "c.props", "c.props".getBytes(StandardCharsets.UTF_8), true);
+    @SuppressWarnings({"rawtypes"})
     Map attrs = createMap(
             FileListEntityProcessor.FILE_NAME, "^.*\\.xml$",
             FileListEntityProcessor.BASE_DIR, childdir.getAbsolutePath(),

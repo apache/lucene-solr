@@ -42,6 +42,7 @@ import org.junit.Test;
  * @since solr 1.3
  */
 @Limit(bytes=20000)
+@SuppressWarnings({"rawtypes"})
 public class QueryResponseTest extends SolrTestCase {
   @Test
   // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018

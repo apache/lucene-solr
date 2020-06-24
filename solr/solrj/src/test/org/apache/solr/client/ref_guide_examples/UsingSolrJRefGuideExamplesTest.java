@@ -58,7 +58,7 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
   private static final int NUM_INDEXED_DOCUMENTS = 3;
   private static final int NUM_LIVE_NODES = 1;
   
-  private Queue<String> expectedLines = new ArrayDeque();
+  private Queue<String> expectedLines = new ArrayDeque<>();
 
   @BeforeClass
   public static void setUpCluster() throws Exception {
@@ -219,10 +219,13 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
     // tag::solrj-other-apis[]
     final SolrClient client = getSolrClient();
 
+    @SuppressWarnings({"rawtypes"})
     final SolrRequest request = new CollectionAdminRequest.ClusterStatus();
 
     final NamedList<Object> response = client.request(request);
+    @SuppressWarnings({"unchecked"})
     final NamedList<Object> cluster = (NamedList<Object>) response.get("cluster");
+    @SuppressWarnings({"unchecked"})
     final List<String> liveNodes = (List<String>) cluster.get("live_nodes");
 
     print("Found " + liveNodes.size() + " live nodes");

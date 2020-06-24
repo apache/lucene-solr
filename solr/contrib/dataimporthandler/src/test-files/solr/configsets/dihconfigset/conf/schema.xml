@@ -1,0 +1,70 @@
+<schema name="dih_test" version="4.0">
+
+  <fieldType name="string" class="solr.StrField" sortMissingLast="true" omitNorms="true"/>
+  <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true" omitNorms="true"/>
+  <fieldType name="tint" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" positionIncrementGap="0"/>
+  <fieldType name="tfloat" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" positionIncrementGap="0"/>
+  <fieldType name="tlong" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" positionIncrementGap="0"/>
+  <fieldType name="tdouble" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" positionIncrementGap="0"/>
+  <fieldType name="date" class="${solr.tests.DateFieldType}" docValues="${solr.tests.numeric.dv}" sortMissingLast="true" omitNorms="true"/>
+  <fieldType name="text" class="solr.TextField" positionIncrementGap="100">
+    <analyzer type="index">
+      <tokenizer class="solr.MockTokenizerFactory"/>
+      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1"
+              catenateNumbers="1" catenateAll="0" splitOnCaseChange="1"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+      <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
+      <filter class="solr.FlattenGraphFilterFactory" />
+    </analyzer>
+    <analyzer type="query">
+      <tokenizer class="solr.MockTokenizerFactory"/>
+      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="0"
+              catenateNumbers="0" catenateAll="0" splitOnCaseChange="1"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+      <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
+    </analyzer>
+  </fieldType>
+  <fieldType name="textTight" class="solr.TextField" positionIncrementGap="100">
+    <analyzer type="index">
+      <tokenizer class="solr.MockTokenizerFactory"/>
+      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="0" generateNumberParts="0" catenateWords="1"
+              catenateNumbers="1" catenateAll="0"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+      <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
+      <filter class="solr.FlattenGraphFilterFactory" />
+    </analyzer>
+    <analyzer type="query">
+      <tokenizer class="solr.MockTokenizerFactory"/>
+      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="0" generateNumberParts="0" catenateWords="1"
+              catenateNumbers="1" catenateAll="0"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+      <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
+    </analyzer>
+  </fieldType>
+  <fieldType name="ignored" stored="false" indexed="false" class="solr.StrField"/>
+
+  <field name="id" type="string" indexed="true" stored="true" required="true"/>
+  <field name="desc" type="string" indexed="true" stored="true" multiValued="true"/>
+  <field name="date" type="date" indexed="true" stored="true"/>
+  <field name="timestamp" type="date" indexed="true" stored="true" default="NOW" multiValued="false"/>
+
+  <field name="NAME" type="text" indexed="true" stored="true" multiValued="false"/>
+  <field name="COUNTRY_NAME" type="text" indexed="true" stored="true" multiValued="true"/>
+  <field name="SPORT_NAME" type="text" indexed="true" stored="true" multiValued="true"/>
+  <field name="DO_NOT_INDEX" type="ignored"/>
+
+  <field name="_version_" type="tlong" indexed="true" stored="true" multiValued="false"/>
+  <field name="_root_" type="string" indexed="true" stored="true" multiValued="false"/>
+
+  <dynamicField name="*_i" type="tint" indexed="true" stored="true"/>
+  <dynamicField name="*_s" type="string" indexed="true" stored="true"/>
+  <dynamicField name="*_mult_s" type="string" indexed="true" stored="true" multiValued="true"/>
+  <dynamicField name="*_l" type="tlong" indexed="true" stored="true"/>
+  <dynamicField name="*_t" type="text" indexed="true" stored="true"/>
+  <dynamicField name="*_b" type="boolean" indexed="true" stored="true"/>
+  <dynamicField name="*_f" type="tfloat" indexed="true" stored="true"/>
+  <dynamicField name="*_d" type="tdouble" indexed="true" stored="true"/>
+  <dynamicField name="*_dt" type="date" indexed="true" stored="true"/>
+
+  <uniqueKey>id</uniqueKey>
+</schema>

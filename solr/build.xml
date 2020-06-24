@@ -207,7 +207,7 @@
     </xslt>
     
     <markdown todir="${javadoc.dir}">
-      <fileset dir="site" includes="**/*.md"/>
+      <fileset dir="site" includes="**/*.md" excludes="**/*.template.md"/>
       <globmapper from="*.md" to="*.html"/>
     </markdown>
 

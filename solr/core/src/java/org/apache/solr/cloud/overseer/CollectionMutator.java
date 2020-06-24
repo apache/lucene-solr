@@ -59,6 +59,7 @@ public class CollectionMutator {
     DocCollection collection = clusterState.getCollection(collectionName);
     Slice slice = collection.getSlice(shardId);
     if (slice == null) {
+      @SuppressWarnings({"unchecked"})
       Map<String, Replica> replicas = Collections.EMPTY_MAP;
       Map<String, Object> sliceProps = new HashMap<>();
       String shardRange = message.getStr(ZkStateReader.SHARD_RANGE_PROP);
@@ -136,7 +137,7 @@ public class CollectionMutator {
     }
 
     return new ZkWriteCommand(coll.getName(),
-        new DocCollection(coll.getName(), coll.getSlicesMap(), m, coll.getRouter(), coll.getZNodeVersion(), coll.getZNode()));
+        new DocCollection(coll.getName(), coll.getSlicesMap(), m, coll.getRouter(), coll.getZNodeVersion()));
   }
 
   public static DocCollection updateSlice(String collectionName, DocCollection collection, Slice slice) {

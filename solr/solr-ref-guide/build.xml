@@ -209,7 +209,6 @@
                    doctype="book"
                    safemode="unsafe">
         <attribute key="attribute-missing" value="warn" />
-        <attribute key="section-toc" value='' />
         <attribute key="icons" value="font" />
         <attribute key="icon-set" value="fa" />
         <attribute key="figure-caption!" value='' />

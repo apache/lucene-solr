@@ -66,7 +66,7 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
+  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     String extCollectionName = message.getStr(COLLECTION_PROP);
     boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
     String collectionName;
@@ -113,8 +113,8 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
     String configName = ocmh.zkStateReader.readConfigName(collectionName);
     backupMgr.downloadConfigDir(location, backupName, configName);
 
-    //Save the collection's state. Can be part of the monolithic clusterstate.json or a individual state.json
-    //Since we don't want to distinguish we extract the state and back it up as a separate json
+    //Save the collection's state (coming from the collection's state.json)
+    //We extract the state and back it up as a separate json
     DocCollection collectionState = ocmh.zkStateReader.getClusterState().getCollection(collectionName);
     backupMgr.writeCollectionState(location, backupName, collectionName, collectionState);
 
@@ -165,7 +165,8 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
     return r.get();
   }
 
-  private void copyIndexFiles(URI backupPath, String collectionName, ZkNodeProps request, NamedList results) throws Exception {
+  @SuppressWarnings({"unchecked"})
+  private void copyIndexFiles(URI backupPath, String collectionName, ZkNodeProps request, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     String backupName = request.getStr(NAME);
     String asyncId = request.getStr(ASYNC);
     String repoName = request.getStr(CoreAdminParams.BACKUP_REPOSITORY);

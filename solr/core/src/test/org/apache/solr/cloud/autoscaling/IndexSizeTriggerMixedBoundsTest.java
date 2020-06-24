@@ -106,7 +106,7 @@ public class IndexSizeTriggerMixedBoundsTest extends SolrCloudTestCase {
                                      ActionContext context, Throwable error, String message) {
       List<CapturedEvent> lst = listenerEvents.computeIfAbsent(config.name, s -> new ArrayList<>());
       CapturedEvent ev = new CapturedEvent(cloudManager.getTimeSource().getTimeNs(), context, config, stage, actionName, event, message);
-      log.info("=======> " + ev);
+      log.info("=======> {}", ev);
       lst.add(ev);
     }
   }
@@ -120,6 +120,7 @@ public class IndexSizeTriggerMixedBoundsTest extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testMixedBounds() throws Exception {
     String collectionName = "testMixedBounds_collection";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
@@ -181,6 +182,7 @@ public class IndexSizeTriggerMixedBoundsTest extends SolrCloudTestCase {
         "'actions' : [{'name' : 'compute_plan', 'class' : 'solr.ComputePlanAction'}," +
         "{'name' : 'execute_plan', 'class' : '" + ExecutePlanAction.class.getName() + "'}]" +
         "}}";
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");

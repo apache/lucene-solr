@@ -79,6 +79,7 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
   public static final String RERANK_DOCS = "reRankDocs";
 
   @Override
+  @SuppressWarnings({"unchecked"})
   public void init(@SuppressWarnings("rawtypes") NamedList args) {
     super.init(args);
     threadManager = LTRThreadModule.getInstance(args);

@@ -44,11 +44,11 @@ class TermVectorsConsumer extends TermsHash {
   final ByteSliceReader vectorSliceReaderOff = new ByteSliceReader();
 
   boolean hasVectors;
-  int numVectorFields;
+  private int numVectorFields;
   int lastDocID;
   private TermVectorsConsumerPerField[] perFields = new TermVectorsConsumerPerField[1];
 
-  public TermVectorsConsumer(DocumentsWriterPerThread docWriter) {
+  TermVectorsConsumer(DocumentsWriterPerThread docWriter) {
     super(docWriter, false, null);
     this.docWriter = docWriter;
   }
@@ -91,7 +91,7 @@ class TermVectorsConsumer extends TermsHash {
   }
 
   @Override
-  void finishDocument() throws IOException {
+  void finishDocument(int docID) throws IOException {
 
     if (!hasVectors) {
       return;
@@ -102,7 +102,7 @@ class TermVectorsConsumer extends TermsHash {
 
     initTermVectorsWriter();
 
-    fill(docState.docID);
+    fill(docID);
 
     // Append term vectors to the real outputs:
     writer.startDocument(numVectorFields);
@@ -111,7 +111,7 @@ class TermVectorsConsumer extends TermsHash {
     }
     writer.finishDocument();
 
-    assert lastDocID == docState.docID: "lastDocID=" + lastDocID + " docState.docID=" + docState.docID;
+    assert lastDocID == docID: "lastDocID=" + lastDocID + " docID=" + docID;
 
     lastDocID++;
 

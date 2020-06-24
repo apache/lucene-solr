@@ -77,10 +77,13 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     while (!timeOut.hasTimedOut()) {
       byte[] data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
       ZkNodeProps loaded = ZkNodeProps.load(data);
+      @SuppressWarnings({"rawtypes"})
       Map triggers = (Map) loaded.get("triggers");
       if (triggers != null && triggers.containsKey(".auto_add_replicas")) {
+        @SuppressWarnings({"unchecked"})
         Map<String, Object> autoAddReplicasTrigger = (Map<String, Object>) triggers.get(".auto_add_replicas");
         assertNotNull(autoAddReplicasTrigger);
+        @SuppressWarnings({"unchecked"})
         List<Map<String, Object>> actions = (List<Map<String, Object>>) autoAddReplicasTrigger.get("actions");
         assertNotNull(actions);
         assertEquals(2, actions.size());
@@ -116,6 +119,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         "  'cluster-policy': [{'replica': 0, 'node': '_NODE'}]\n" +
         "}";
     configPayload = configPayload.replaceAll("_NODE", aReplica.getNodeName());
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, "/suggestions", configPayload);
     NamedList<Object> response = solrClient.request(req);
     assertFalse(((Collection) response.get("suggestions")).isEmpty());
@@ -149,6 +153,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         "  'cluster-policy': [{'replica': 0, 'node': '_NODE'}]\n" +
         "}";
     configPayload = configPayload.replaceAll("_NODE", aReplica.getNodeName());
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, "/diagnostics", configPayload);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response._getStr("diagnostics/violations[0]/node",null),response._getStr("diagnostics/violations[0]/node",null));
@@ -157,6 +162,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testSuspendTrigger() throws Exception {
     CloudSolrClient solrClient = cluster.getSolrClient();
     String suspendEachCommand = "{\n" +
@@ -170,6 +176,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         "\t}\n" +
         "}";
     // these should be no-ops because there are no triggers, and it should succeed
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, suspendEachCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
@@ -319,6 +326,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void test() throws Exception {
     CloudSolrClient solrClient = cluster.getSolrClient();
     String setTriggerCommand = "{" +
@@ -332,6 +340,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         "'name' : 'compute_plan'," +
         "'class' : 'solr.ComputePlanAction'" +
         "}]}}";
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
 
     NamedList<Object> response = solrClient.request(req);
@@ -474,6 +483,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         "    ]" +
         "}";
     try {
+      @SuppressWarnings({"rawtypes"})
       SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
       solrClient.request(req);
       fail("expect exception");
@@ -501,6 +511,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         "'name' : 'compute_plan'," +
         "'class' : 'solr.ComputePlanAction'" +
         "}]}}";
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
 
     try {
@@ -601,6 +612,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testPolicyAndPreferences() throws Exception {
     CloudSolrClient solrClient = cluster.getSolrClient();
     // add multiple policies
@@ -614,6 +626,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}" +
         "    ]" +
         "}}";
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setPolicyCommand);
     NamedList<Object> response = null;
     try {
@@ -658,6 +671,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
     loaded = ZkNodeProps.load(data);
     policies = (Map<String, Object>) loaded.get("policies");
+    @SuppressWarnings({"rawtypes"})
     List conditions = (List) policies.get("xyz");
     assertEquals(1, conditions.size());
 
@@ -683,6 +697,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     assertEquals(response.get("result").toString(), "success");
     data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
     loaded = ZkNodeProps.load(data);
+    @SuppressWarnings({"rawtypes"})
     List preferences = (List) loaded.get("cluster-preferences");
     assertEquals(3, preferences.size());
 
@@ -711,6 +726,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     assertEquals(response.get("result").toString(), "success");
     data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
     loaded = ZkNodeProps.load(data);
+    @SuppressWarnings({"rawtypes"})
     List clusterPolicy = (List) loaded.get("cluster-policy");
     assertNotNull(clusterPolicy);
     assertEquals(3, clusterPolicy.size());
@@ -734,6 +750,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
 
   @Test
   // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 17-Aug-2018
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void testReadApi() throws Exception  {
     CloudSolrClient solrClient = cluster.getSolrClient();
     // first trigger
@@ -874,12 +891,16 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
       assertEquals(3l, getObjectByPath(violation, true, "violation/replica/NRT"));
       assertNotNull(violation.get("clause"));
     }
-    log.info("Before starting new jetty ,{}", cluster.getJettySolrRunners()
-        .stream()
-        .map(jettySolrRunner -> jettySolrRunner.getNodeName()).collect(Collectors.toList()));
+    if (log.isInfoEnabled()) {
+      log.info("Before starting new jetty ,{}", cluster.getJettySolrRunners()
+          .stream()
+          .map(jettySolrRunner -> jettySolrRunner.getNodeName()).collect(Collectors.toList()));
+    }
     JettySolrRunner runner1 = cluster.startJettySolrRunner();
     cluster.waitForAllNodes(30);
-    log.info("started new jetty {}", runner1.getNodeName());
+    if (log.isInfoEnabled()) {
+      log.info("started new jetty {}", runner1.getNodeName());
+    }
 
     response = waitForResponse(namedList -> {
           List l = (List) namedList._get("diagnostics/liveNodes",null);
@@ -923,6 +944,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
             "'waitFor' : '0s'," +
             "'enabled' : true" +
             "}}";
+        @SuppressWarnings({"rawtypes"})
         SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
         NamedList<Object> response = null;
         try {
@@ -941,13 +963,16 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     t2.start();
     boolean await = updateLatch.await(60, TimeUnit.SECONDS);
     assertTrue("not all updates executed in time, remaining=" + updateLatch.getCount(), await);
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.GET, null);
     NamedList<Object> response = solrClient.request(req);
 
+    @SuppressWarnings({"rawtypes"})
     Map triggers = (Map) response.get("triggers");
     assertNotNull(triggers);
     assertEquals(1, countNotImplicitTriggers(triggers));
     assertTrue(triggers.containsKey("node_added_trigger1"));
+    @SuppressWarnings({"rawtypes"})
     Map node_added_trigger1 = (Map) triggers.get("node_added_trigger1");
     assertEquals(4, node_added_trigger1.size());
     assertEquals(0L, node_added_trigger1.get("waitFor"));
@@ -956,7 +981,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
 
   }
 
-  private int countNotImplicitTriggers(Map triggers) {
+  private int countNotImplicitTriggers(@SuppressWarnings({"rawtypes"})Map triggers) {
     if (triggers == null) return 0;
     int count = 0;
     for (Object trigger : triggers.keySet()) {
@@ -999,8 +1024,10 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         "\t}\n" +
         "}";
     solrClient.request(AutoScalingRequest.create(SolrRequest.METHOD.POST, setPropertiesCommand));
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.GET, null);
     NamedList<Object> response = solrClient.request(req);
+    @SuppressWarnings({"rawtypes"})
     Map properties = (Map) response.get("properties");
     assertNotNull(properties);
     assertEquals(1, properties.size());
@@ -1073,6 +1100,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     String setPropertiesCommand = "{'set-cluster-policy': [" +
         "{'cores': '<4','node': '#ANY'}]}";
     solrClient.request(AutoScalingRequest.create(SolrRequest.METHOD.POST, setPropertiesCommand));
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.GET, null);
     NamedList<Object> response = solrClient.request(req);
     assertEquals("<4", response._get("cluster-policy[0]/cores", null));

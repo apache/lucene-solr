@@ -18,6 +18,8 @@
 
 apply plugin: 'java-library'
 
+description = 'Prometheus exporter for exposing metrics from Solr using Metrics API and Search API'
+
 dependencies {
   implementation project(':solr:core')
   implementation project(':lucene:analysis:common')

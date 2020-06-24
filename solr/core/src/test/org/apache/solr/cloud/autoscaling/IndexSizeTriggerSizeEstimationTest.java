@@ -119,7 +119,7 @@ public class IndexSizeTriggerSizeEstimationTest extends SolrCloudTestCase {
                                      ActionContext context, Throwable error, String message) {
       List<CapturedEvent> lst = listenerEvents.computeIfAbsent(config.name, s -> new ArrayList<>());
       CapturedEvent ev = new CapturedEvent(timeSource.getTimeNs(), context, config, stage, actionName, event, message);
-      log.info("=======> " + ev);
+      log.info("=======> {}", ev);
       lst.add(ev);
     }
   }
@@ -184,6 +184,7 @@ public class IndexSizeTriggerSizeEstimationTest extends SolrCloudTestCase {
         "'actions' : [{'name' : 'compute_plan', 'class' : 'solr.ComputePlanAction'}," +
         "{'name' : 'execute_plan', 'class' : '" + ExecutePlanAction.class.getName() + "'}]" +
         "}}";
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
@@ -250,12 +251,14 @@ public class IndexSizeTriggerSizeEstimationTest extends SolrCloudTestCase {
     assertNotNull(listenerEvents.toString(), events);
     assertFalse("empty events?", events.isEmpty());
     CapturedEvent ev = events.get(0);
+    @SuppressWarnings({"unchecked"})
     List<TriggerEvent.Op> ops = (List< TriggerEvent.Op>)ev.event.properties.get(TriggerEvent.REQUESTED_OPS);
     assertNotNull("no requested ops in " + ev, ops);
     assertFalse("empty list of ops in " + ev, ops.isEmpty());
     Set<String> parentShards = new HashSet<>();
     ops.forEach(op -> {
       assertTrue(op.toString(), op.getAction() == CollectionParams.CollectionAction.SPLITSHARD);
+      @SuppressWarnings({"unchecked"})
       Collection<Pair<String, String>> hints = (Collection<Pair<String, String>>)op.getHints().get(Suggester.Hint.COLL_SHARD);
       assertNotNull("no hints in op " + op, hints);
       hints.forEach(h -> parentShards.add(h.second()));

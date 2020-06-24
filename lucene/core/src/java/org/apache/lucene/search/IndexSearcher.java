@@ -31,6 +31,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.function.Supplier;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
@@ -47,6 +48,7 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ThreadInterruptedException;
+import org.apache.lucene.util.automaton.ByteRunAutomaton;
 
 /** Implements search over a single IndexReader.
  *
@@ -785,6 +787,14 @@ public class IndexSearcher {
 
       @Override
       public void consumeTerms(Query query, Term... terms) {
+        if (numClauses > maxClauseCount) {
+          throw new TooManyClauses();
+        }
+        ++numClauses;
+      }
+
+      @Override
+      public void consumeTermsMatching(Query query, String field, Supplier<ByteRunAutomaton> automaton) {
         if (numClauses > maxClauseCount) {
           throw new TooManyClauses();
         }

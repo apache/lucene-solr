@@ -63,6 +63,7 @@ public class TemporalEvaluatorsTest {
   StreamFactory factory;
   Map<String, Object> values;
 
+  @SuppressWarnings({"unchecked"})
   public TemporalEvaluatorsTest() {
     super();
 

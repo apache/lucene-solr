@@ -85,6 +85,7 @@ public class RestoreTriggerStateTest extends SolrCloudTestCase {
         "'enabled' : true," +
         "'actions' : [{'name':'test','class':'" + TestTriggerAction.class.getName() + "'}]" +
         "}}";
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
@@ -116,6 +117,7 @@ public class RestoreTriggerStateTest extends SolrCloudTestCase {
     triggerFiredLatch = new CountDownLatch(1);
     NodeAddedTrigger.NodeAddedEvent nodeAddedEvent = (NodeAddedTrigger.NodeAddedEvent) events.iterator().next();
     assertNotNull(nodeAddedEvent);
+    @SuppressWarnings({"unchecked"})
     List<String> nodeNames = (List<String>) nodeAddedEvent.getProperty(TriggerEvent.NODE_NAMES);
     assertTrue(nodeNames.contains(newNode.getNodeName()));
     // add a second node - state of the trigger will change but it won't fire for waitFor sec.

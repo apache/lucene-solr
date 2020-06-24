@@ -50,7 +50,6 @@ import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.OverseerMessageHandler;
 import org.apache.solr.cloud.OverseerNodePrioritizer;
 import org.apache.solr.cloud.OverseerSolrResponse;
-import org.apache.solr.cloud.OverseerTaskProcessor;
 import org.apache.solr.cloud.Stats;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.overseer.OverseerAction;
@@ -220,7 +219,6 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
         .put(MOCK_COLL_TASK, this::mockOperation)
         .put(MOCK_SHARD_TASK, this::mockOperation)
         .put(MOCK_REPLICA_TASK, this::mockOperation)
-        .put(MIGRATESTATEFORMAT, this::migrateStateFormat)
         .put(CREATESHARD, new CreateShardCmd(this))
         .put(MIGRATE, new MigrateCmd(this))
         .put(CREATE, new CreateCollectionCmd(this))
@@ -255,6 +253,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     MDCLoggingContext.setReplica(message.getStr(REPLICA_PROP));
     log.debug("OverseerCollectionMessageHandler.processMessage : {} , {}", operation, message);
 
+    @SuppressWarnings({"rawtypes"})
     NamedList results = new NamedList();
     try {
       CollectionAction action = getCollectionAction(operation);
@@ -286,7 +285,8 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   }
 
   @SuppressForbidden(reason = "Needs currentTimeMillis for mock requests")
-  private void mockOperation(ClusterState state, ZkNodeProps message, NamedList results) throws InterruptedException {
+  @SuppressWarnings({"unchecked"})
+  private void mockOperation(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws InterruptedException {
     //only for test purposes
     Thread.sleep(message.getInt("sleep", 1));
     if (log.isInfoEnabled()) {
@@ -303,7 +303,8 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     return action;
   }
 
-  private void reloadCollection(ClusterState clusterState, ZkNodeProps message, NamedList results) {
+  @SuppressWarnings({"unchecked"})
+  private void reloadCollection(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(CoreAdminParams.ACTION, CoreAdminAction.RELOAD.toString());
 
@@ -312,7 +313,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   }
 
   @SuppressWarnings("unchecked")
-  private void processRebalanceLeaders(ClusterState clusterState, ZkNodeProps message, NamedList results)
+  private void processRebalanceLeaders(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
       throws Exception {
     checkRequired(message, COLLECTION_PROP, SHARD_ID_PROP, CORE_NAME_PROP, ELECTION_NODE_PROP,
         CORE_NODE_NAME_PROP, BASE_URL_PROP, REJOIN_AT_HEAD_PROP);
@@ -341,7 +342,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   }
 
   @SuppressWarnings("unchecked")
-  private void processReplicaAddPropertyCommand(ClusterState clusterState, ZkNodeProps message, NamedList results)
+  private void processReplicaAddPropertyCommand(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
       throws Exception {
     checkRequired(message, COLLECTION_PROP, SHARD_ID_PROP, REPLICA_PROP, PROPERTY_PROP, PROPERTY_VALUE_PROP);
     SolrZkClient zkClient = zkStateReader.getZkClient();
@@ -352,7 +353,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     overseer.offerStateUpdate(Utils.toJSON(m));
   }
 
-  private void processReplicaDeletePropertyCommand(ClusterState clusterState, ZkNodeProps message, NamedList results)
+  private void processReplicaDeletePropertyCommand(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
       throws Exception {
     checkRequired(message, COLLECTION_PROP, SHARD_ID_PROP, REPLICA_PROP, PROPERTY_PROP);
     SolrZkClient zkClient = zkStateReader.getZkClient();
@@ -363,7 +364,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     overseer.offerStateUpdate(Utils.toJSON(m));
   }
 
-  private void balanceProperty(ClusterState clusterState, ZkNodeProps message, NamedList results) throws Exception {
+  private void balanceProperty(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     if (StringUtils.isBlank(message.getStr(COLLECTION_PROP)) || StringUtils.isBlank(message.getStr(PROPERTY_PROP))) {
       throw new SolrException(ErrorCode.BAD_REQUEST,
           "The '" + COLLECTION_PROP + "' and '" + PROPERTY_PROP +
@@ -409,7 +410,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   }
 
   @SuppressWarnings("unchecked")
-  void deleteReplica(ClusterState clusterState, ZkNodeProps message, NamedList results, Runnable onComplete)
+  void deleteReplica(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results, Runnable onComplete)
       throws Exception {
     ((DeleteReplicaCmd) commandMap.get(DELETEREPLICA)).deleteReplica(clusterState, message, results, onComplete);
 
@@ -468,37 +469,8 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     }
   }
 
-
-  //TODO should we not remove in the next release ?
-  private void migrateStateFormat(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
-    final String collectionName = message.getStr(COLLECTION_PROP);
-
-    boolean firstLoop = true;
-    // wait for a while until the state format changes
-    TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, timeSource);
-    while (! timeout.hasTimedOut()) {
-      DocCollection collection = zkStateReader.getClusterState().getCollection(collectionName);
-      if (collection == null) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "Collection: " + collectionName + " not found");
-      }
-      if (collection.getStateFormat() == 2) {
-        // Done.
-        results.add("success", new SimpleOrderedMap<>());
-        return;
-      }
-
-      if (firstLoop) {
-        // Actually queue the migration command.
-        firstLoop = false;
-        ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, MIGRATESTATEFORMAT.toLower(), COLLECTION_PROP, collectionName);
-        overseer.offerStateUpdate(Utils.toJSON(m));
-      }
-      timeout.sleep(100);
-    }
-    throw new SolrException(ErrorCode.SERVER_ERROR, "Could not migrate state format for collection: " + collectionName);
-  }
-
-  void commit(NamedList results, String slice, Replica parentShardLeader) {
+  @SuppressWarnings({"unchecked"})
+  void commit(@SuppressWarnings({"rawtypes"})NamedList results, String slice, Replica parentShardLeader) {
     log.debug("Calling soft commit to make sub shard updates visible");
     String coreUrl = new ZkCoreNodeProps(parentShardLeader).getCoreUrl();
     // HttpShardHandler is hard coded to send a QueryRequest hence we go direct
@@ -616,7 +588,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   }
 
 
-  private void modifyCollection(ClusterState clusterState, ZkNodeProps message, NamedList results)
+  private void modifyCollection(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
       throws Exception {
 
     final String collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
@@ -627,8 +599,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     if(configName != null) {
       validateConfigOrThrowSolrException(configName);
 
-      boolean isLegacyCloud =  Overseer.isLegacy(zkStateReader);
-      createConfNode(cloudManager.getDistribStateManager(), configName, collectionName, isLegacyCloud);
+      createConfNode(cloudManager.getDistribStateManager(), configName, collectionName);
       reloadCollection(null, new ZkNodeProps(NAME, collectionName), results);
     }
 
@@ -668,7 +639,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     }
   }
 
-  void cleanupCollection(String collectionName, NamedList results) throws Exception {
+  void cleanupCollection(String collectionName, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     log.error("Cleaning up collection [{}].", collectionName);
     Map<String, Object> props = makeMap(
         Overseer.QUEUE_OPERATION, DELETE.toLower(),
@@ -707,7 +678,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     }
   }
 
-  List<ZkNodeProps> addReplica(ClusterState clusterState, ZkNodeProps message, NamedList results, Runnable onComplete)
+  List<ZkNodeProps> addReplica(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results, Runnable onComplete)
       throws Exception {
 
     return ((AddReplicaCmd) commandMap.get(ADDREPLICA)).addReplica(clusterState, message, results, onComplete);
@@ -724,7 +695,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
    * This doesn't validate the config (path) itself and is just responsible for creating the confNode.
    * That check should be done before the config node is created.
    */
-  public static void createConfNode(DistribStateManager stateManager, String configName, String coll, boolean isLegacyCloud) throws IOException, AlreadyExistsException, BadVersionException, KeeperException, InterruptedException {
+  public static void createConfNode(DistribStateManager stateManager, String configName, String coll) throws IOException, AlreadyExistsException, BadVersionException, KeeperException, InterruptedException {
 
     if (configName != null) {
       String collDir = ZkStateReader.COLLECTIONS_ZKNODE + "/" + coll;
@@ -736,11 +707,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
         stateManager.makePath(collDir, data, CreateMode.PERSISTENT, false);
       }
     } else {
-      if(isLegacyCloud){
-        log.warn("Could not obtain config name");
-      } else {
-        throw new SolrException(ErrorCode.BAD_REQUEST,"Unable to get config name");
-      }
+      throw new SolrException(ErrorCode.BAD_REQUEST,"Unable to get config name");
     }
   }
 
@@ -899,26 +866,31 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   }
 
 
+  // -1 is not a possible batchSessionId so -1 will force initialization of lockSession
   private long sessionId = -1;
   private LockTree.Session lockSession;
 
+  /**
+   * Grabs an exclusive lock for this particular task.
+   * @return <code>null</code> if locking is not possible. When locking is not possible, it will remain
+   * impossible for the passed value of <code>batchSessionId</code>. This is to guarantee tasks are executed
+   * in queue order (and a later task is not run earlier than its turn just because it happens that a lock got released).
+   */
   @Override
-  public Lock lockTask(ZkNodeProps message, OverseerTaskProcessor.TaskBatch taskBatch) {
-    if (lockSession == null || sessionId != taskBatch.getId()) {
+  public Lock lockTask(ZkNodeProps message, long batchSessionId) {
+    if (sessionId != batchSessionId) {
       //this is always called in the same thread.
       //Each batch is supposed to have a new taskBatch
       //So if taskBatch changes we must create a new Session
-      // also check if the running tasks are empty. If yes, clear lockTree
-      // this will ensure that locks are not 'leaked'
-      if(taskBatch.getRunningTasks() == 0) lockTree.clear();
       lockSession = lockTree.getSession();
+      sessionId = batchSessionId;
     }
+
     return lockSession.lock(getCollectionAction(message.getStr(Overseer.QUEUE_OPERATION)),
         Arrays.asList(
             getTaskKey(message),
             message.getStr(ZkStateReader.SHARD_ID_PROP),
             message.getStr(ZkStateReader.REPLICA_PROP))
-
     );
   }
 
@@ -939,7 +911,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   }
 
   protected interface Cmd {
-    void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception;
+    void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception;
   }
 
   /*

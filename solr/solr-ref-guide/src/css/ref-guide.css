@@ -1,3 +1,14 @@
+/** This CSS is used for styling general textual elements in the content
+    It is organized by general styles that affect most content and then
+    styles for specific sections like blocks, tables, code samples, etc. **/
+
+/** IF YOU EDIT THIS CSS please take care to place changes in the correct
+    section and include comments as appropriate. **/
+
+
+/** === OVERALL CONTENT === **/
+/* General rules that impact most content and general-use classes */
+
 /* Load Noto Sans for body and header text */
 @font-face {
     font-family: 'Noto Sans';
@@ -22,6 +33,26 @@
    src: url(../fonts/Inconsolata/Inconsolata-Bold.ttf);
 }
 
+html,
+body,
+p {
+    font-family: 'Noto Sans', sans-serif;
+    -ms-text-size-adjust: 100%;
+    -webkit-text-size-adjust: 100%;
+}
+
+body,
+html
+{
+    font-size: 100%;
+}
+
+.antialiased,
+body
+{
+    -webkit-font-smoothing: antialiased;
+}
+
 article,
 aside,
 details,
@@ -37,297 +68,6 @@ summary {
     display: block;
 }
 
-audio,
-canvas,
-video {
-    display: inline-block;
-}
-
-audio:not([controls]) {
-    display: none;
-    height: 0;
-}
-
-[hidden],
-template {
-    display: none;
-}
-
-script {
-    display: none!important;
-}
-
-html {
-    font-family: 'Noto Sans', sans-serif;
-    -ms-text-size-adjust: 100%;
-    -webkit-text-size-adjust: 100%;
-}
-
-body {
-    margin: 0;
-}
-
-body.DRAFT {
-    background-image: url("../images/draft-background.png");
-}
-
-a {
-    background: transparent;
-}
-
-a:focus {
-    outline: thin dotted;
-   outline-offset: -2px;
-}
-
-a:active,
-a:hover {
-    outline: 0;
-}
-
-/* this part adds an icon after external links, using FontAwesome */
-a[href^="http://"]:after,
-a[href^="https://"]:after {
-    content: "\f08e";
-    font-family: FontAwesome;
-    font-weight: normal;
-    font-style: normal;
-    display: inline-block;
-    text-decoration: none;
-    padding-left: 3px;
-    font-size: 12pt;
-}
-
-/* Strip the outbound icon when this class is present */
-a[href].noCrossRef::after,
-a.no_icon:after {
-    content:"" !important;
-    padding-left: 0;
-}
-
-/* indent extra nav levels
-   TODO: is there any easy way to do this that just incrementally applies to anything below sb-level2?
-         ...w/o assuming sb-level4 is as deep as we go?
-*/
-ul#mysidebar li.sb-level3 a {
-   padding-left: 20px;
-}
-ul#mysidebar li.sb-level4 a {
-   padding-left: 40px;
-}
-
-/* we can style the 'current-tree' hierarchy in the sidebar independently of the 'active' page as
-   the user clicks around expanding/collapsing the nav menus w/o clicking a link to load a diff page
-
-   For now:
-    - the 'current' page title is always bolder if 'active' (ie: visible)
-    - if the 'current' page is not 'active'/visible, then the closest ancestor that *is* 'active'/visible
-      will be bolded -- reminding the reader what section of the doc they are currently in.
-*/
-ul#mysidebar li.current-tree > a {
-    font-weight: bolder;
-}
-ul#mysidebar li.current-tree.active > a {
-    font-weight: inherit;
-}
-ul#mysidebar li.current.active > a {
-    font-weight: bolder;
-}
-
-
-abbr[title] {
-    border-bottom: 1px dotted;
-}
-
-b,
-strong {
-    font-weight: bold;
-}
-
-dfn
-{
-    font-style: italic;
-}
-
-hr
-{
-    -moz-box-sizing: content-box;
-         box-sizing: content-box;
-    height: 0;
-}
-
-mark
-{
-    background: #ff0;
-    color: #000;
-}
-
-code,
-kbd,
-pre,
-samp
-{
-    font-size: 1em;
-    font-family: 'Inconsolata', monospace;
-}
-
-pre
-{
-    white-space: pre-wrap;
-}
-
-q
-{
-    quotes: '\201C' '\201D' '\2018' '\2019';
-}
-
-small
-{
-    font-size: 80%;
-   line-height: inherit;
-}
-
-sub,
-sup
-{
-    position: relative;
-    vertical-align: baseline;
-    font-size: 75%;
-    line-height: 0;
-}
-
-sup
-{
-    top: -.5em;
-}
-
-sub
-{
-    bottom: -.25em;
-}
-
-img
-{
-    border: 0;
-}
-
-svg:not(:root)
-{
-    overflow: hidden;
-}
-
-figure
-{
-    margin: 0;
-}
-
-fieldset
-{
-    margin: 0 2px;
-    padding: .35em .625em .75em;
-    border: 1px solid silver;
-}
-
-legend
-{
-    padding: 0;
-    border: 0;
-}
-
-button,
-input,
-select,
-textarea
-{
-    margin: 0;
-    font-size: 100%;
-    font-family: inherit;
-}
-
-button,
-input
-{
-    line-height: normal;
-}
-
-button,
-select
-{
-    text-transform: none;
-}
-
-button,
-html input[type='button'],
-input[type='reset'],
-input[type='submit']
-{
-    cursor: pointer;
-
-    -webkit-appearance: button;
-}
-
-button[disabled],
-html input[disabled]
-{
-    cursor: default;
-}
-
-input[type='checkbox'],
-input[type='radio']
-{
-    box-sizing: border-box;
-    padding: 0;
-}
-
-input[type='search']
-{
-    -webkit-box-sizing: content-box;
-       -moz-box-sizing: content-box;
-            box-sizing: content-box;
-
-    -webkit-appearance: textfield;
-}
-
-input[type='search']::-webkit-search-cancel-button,
-input[type='search']::-webkit-search-decoration
-{
-    -webkit-appearance: none;
-}
-
-button::-moz-focus-inner,
-input::-moz-focus-inner
-{
-    padding: 0;
-    border: 0;
-}
-
-textarea
-{
-    overflow: auto;
-    vertical-align: top;
-}
-
-table
-{
-    border-spacing: 0;
-    border-collapse: collapse;
-}
-
-*,
-*:after,
-*:before
-{
-    -webkit-box-sizing: border-box;
-       -moz-box-sizing: border-box;
-            box-sizing: border-box;
-}
-
-body,
-html
-{
-    font-size: 100%;
-}
-
 body
 {
     position: relative;
@@ -341,138 +81,89 @@ body
     cursor: auto;
 }
 
-a:hover
-{
-    cursor: pointer;
+body.DRAFT {
+    background-image: url("../images/draft-background.png");
 }
 
-embed,
-img,
-object
+*,
+*:after,
+*:before
 {
-    max-width: 100%;
-    height: auto;
+    -webkit-box-sizing: border-box;
+       -moz-box-sizing: border-box;
+            box-sizing: border-box;
 }
 
-embed,
-object
+.print-only
 {
-    height: 100%;
+    display: none!important;
 }
 
-img
+b,
+strong
 {
-    -ms-interpolation-mode: bicubic;
+    font-weight: bold;
+    line-height: inherit;
 }
 
-#map_canvas embed,
-#map_canvas img,
-#map_canvas object,
-.map_canvas embed,
-.map_canvas img,
-.map_canvas object
+em,
+i
 {
-    max-width: none!important;
+    font-style: italic;
+    line-height: inherit;
 }
 
-.left
+/* Ref Guide paragraph content is in a <section> tag with id="content" selector */
+#content
 {
-    float: left!important;
+    margin-top: 1.25em;
+    padding-left: 10px;
 }
 
-.right
+#content:after,
+#content:before
 {
-    float: right!important;
+    display: table;
+    content: ' ';
 }
 
-.text-left
+#content:after,
 {
-    text-align: left!important;
+    clear: both;
 }
 
-.text-right
+#content:before
 {
-    text-align: right!important;
+    content: none;
 }
 
-.text-center
-{
-    text-align: center!important;
-}
-
-.text-justify
-{
-    text-align: justify!important;
-}
-
-.hide
-{
-    display: none;
-}
-
-.antialiased,
-body
-{
-    -webkit-font-smoothing: antialiased;
-}
-
-img
-{
-    display: inline-block;
-    vertical-align: middle;
-}
-
-textarea
-{
-    min-height: 50px;
-    height: auto;
-}
-
-select
-{
-    width: 100%;
-}
-
-/* Defines size and line height for "lead" type sections, the first sentence of a page. */
-#preamble > .sectionbody > .paragraph:first-of-type p,
-.paragraph.lead > p,
-p.lead,
-#preamble > p:first-of-type
-{
-    font-size: 1.21875em;
-    line-height: 1.6;
-}
-
-.admonitionblock td.content > .title,
-.audioblock > .title,
-.dlist > .title,
-.exampleblock > .title,
-.hdlist > .title,
-.imageblock > .title,
-.listingblock > .title,
-.literalblock > .title,
-.olist > .title,
-.openblock > .title,
-.paragraph > .title,
-.qlist > .title,
-.quoteblock > .title,
-.stemblock > .title,
-.subheader,
-.ulist > .title,
-.verseblock > .title,
-.videoblock > .title,
-table.tableblock > .title,
-figcaption
+#content > h1:first-child:not([class])
 {
     margin-top: 0;
-    margin-bottom: .25em;
-    color: #7a2518;
-    font-weight: 400;
-    line-height: 1.45;
+    margin-bottom: 1.25rem;
+    padding-top: 1rem;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #ddddd8;
+    color: rgba(0,0,0,.85);
 }
 
-#toctitle,
-.sidebarblock > .title,
+.post-content .homepage {
+  margin: 50px 10px 20px 10px;
+}
+
+/* Special rules for homepage (index.html) so rows are all the same height */
+.row.match-my-cols {
+    display: table;
+}
+
+.row.match-my-cols [class*="col-"] {
+    float: none;
+    display: table-cell;
+    vertical-align: top;
+}
+
+/* General text paragraphs */
+
 blockquote,
 dd,
 div,
@@ -492,24 +183,6 @@ ul
     direction: ltr;
 }
 
-a
-{
-    color: #2156a5;
-    text-decoration: underline;
-    line-height: inherit;
-}
-
-a:focus,
-a:hover
-{
-    color: #1d4b8f;
-}
-
-a img
-{
-    border: none;
-}
-
 p
 {
     margin-bottom: 1.25em;
@@ -526,7 +199,88 @@ p aside
     line-height: 1.35;
 }
 
-#toctitle,
+p,
+td.content
+{
+    letter-spacing: -.01em;
+}
+
+p strong,
+td.content strong
+{
+    letter-spacing: -.005em;
+}
+
+blockquote,
+dt,
+p,
+td.content
+{
+    font-size: 1.0625rem;
+}
+
+
+/* Rules for <code> and <pre> tags */
+code
+{
+    color: rgba(0,0,0,.9);
+    font-weight: 400;
+    font-family: 'Inconsolata', monospace;
+}
+
+code,
+kbd,
+pre,
+samp
+{
+    font-size: 1em;
+    font-family: 'Inconsolata', monospace;
+}
+
+pre
+{
+    white-space: pre-wrap;
+}
+
+*:not(pre) > code
+{
+    padding: .1em .5ex;
+    -webkit-border-radius: 4px;
+            border-radius: 4px;
+    background-color: #f7f7f8;
+    word-spacing: -.15em;
+    letter-spacing: 0;
+    font-style: normal!important;
+    font-size: 1em;
+    line-height: 1.45;
+}
+
+p strong code,
+td strong code {
+  font-weight: bold;
+}
+
+pre,
+pre > code
+{
+    color: rgba(0,0,0,.9);
+    font-weight: 400;
+    font-family: 'Inconsolata', monospace;
+    line-height: 1.45;
+    white-space: pre-wrap;
+}
+
+a code {
+    color: #2156a5;
+}
+
+table th code {
+    color: white;
+}
+
+
+/* Titles and Headings */
+
 .sidebarblock > .title,
 h1,
 h2,
@@ -539,16 +293,27 @@ h6
     font-weight: 300;
     font-style: normal;
     font-family: 'Noto Sans', sans-serif;
-   margin: 40px 0 0 0;
-   padding: 0;
-   direction: ltr;
-   word-spacing: -.05em;
-   line-height: 1.2;
-   letter-spacing: -.01em;
+    margin: 40px 0 0 0;
+    padding: 0;
+    direction: ltr;
+    word-spacing: -.05em;
+    line-height: 1.2;
+    letter-spacing: -.01em;
     page-break-after: avoid;
 }
 
-#toctitle small,
+/* make room for the nav bar */
+h1[id],
+h2[id],
+h3[id],
+h4[id],
+h5[id],
+h6[id],
+dt[id]{
+   padding-top: 60px;
+   margin-top: -40px
+}
+
 .sidebarblock > .title small,
 h1 small,
 h2 small,
@@ -562,10 +327,9 @@ h6 small
     line-height: 0;
 }
 
-/* Pad the page title and sidebar header */
-h1.title-main,
-li.sidebarTitle {
-  padding-top: 20px;
+/* Pad the page title */
+h1.title-main {
+  padding: 20px 0px 10px 10px;
 }
 
 h1
@@ -578,7 +342,6 @@ h2
     font-size: 1.6875em;
 }
 
-#toctitle,
 .sidebarblock > .title,
 h3
 {
@@ -596,34 +359,183 @@ h6
     font-size: 1em;
 }
 
-hr
+h6.block-title
+{
+    margin-top: 0;
+    text-align: center;
+    padding-bottom: 10px;
+    font-size: 1.6875em;
+}
+
+.sidebarblock > .title strong,
+h1 strong,
+h2 strong,
+h3 strong,
+h4 strong,
+h5 strong,
+h6 strong
+{
+    font-weight: 400;
+}
+
+@media only screen
+       and (min-width : 768px)
+{
+    .sidebarblock > .title,
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6
+    {
+        line-height: 1.2;
+    }
+
+    h1
+    {
+        font-size: 2.75em;
+    }
+
+    h2
+    {
+        font-size: 2.3125em;
+    }
+
+    .sidebarblock > .title,
+    h3
+    {
+        font-size: 1.6875em;
+    }
+
+    h4
+    {
+        font-size: 1.4375em;
+    }
+}
+
+.clearfix:after,
+.clearfix:before,
+.float-group:after,
+.float-group:before
+{
+    display: table;
+    content: ' ';
+}
+
+.clearfix:after,
+.float-group:after
 {
     clear: both;
-    margin: 1.25em 0 1.1875em;
-    height: 0;
-    border: solid #ddddd8;
-    border-width: 1px 0 0;
 }
 
-em,
-i
+.clearfix {
+    clear: both;
+}
+
+/* === End OVERALL CONTENT === */
+
+
+
+/** === GENERAL LINKS (<a href>) === **/
+/* See also link styling for nav elements in navs.css and
+   special content sections throughout this file */
+
+a
 {
-    font-style: italic;
+    color: #2156a5;
+    text-decoration: underline;
     line-height: inherit;
+    background: transparent;
 }
 
-b,
-strong
+a:focus,
+a:hover
 {
-    font-weight: bold;
-    line-height: inherit;
+    color: #1d4b8f;
 }
 
-code
+a:focus {
+   outline: thin dotted;
+   outline-offset: -2px;
+}
+
+a:active,
+a:hover {
+    outline: 0;
+}
+
+a[data-toggle] {
+    color: #305CB3;
+}
+
+a.fa.fa-envelope-o.mailto {
+    font-weight: 600;
+}
+
+/* Adds an icon after external links, using FontAwesome */
+a[href^="http://"]:after,
+a[href^="https://"]:after {
+    content: "\f08e";
+    font-family: FontAwesome;
+    font-weight: normal;
+    font-style: normal;
+    display: inline-block;
+    text-decoration: none;
+    padding-left: 3px;
+    font-size: 12pt;
+}
+
+/* Strip the outbound icon when this class is present */
+a[href].noCrossRef::after,
+a.no_icon:after {
+    content:"" !important;
+    padding-left: 0;
+}
+
+a:hover
+{
+    cursor: pointer;
+}
+
+p a > code:hover
 {
     color: rgba(0,0,0,.9);
-    font-weight: 400;
-    font-family: 'Inconsolata', monospace;
+}
+
+#content h1 > a.link,
+.sidebarblock > .title > a.link,
+h2 > a.link,
+h3 > a.link,
+h4 > a.link,
+h5 > a.link,
+h6 > a.link
+{
+    color: #d9411e;
+    text-decoration: none;
+}
+
+#content h1 > a.link:hover,
+.sidebarblock > .title > a.link:hover,
+h2 > a.link:hover,
+h3 > a.link:hover,
+h4 > a.link:hover,
+h5 > a.link:hover,
+h6 > a.link:hover
+{
+    color: #a53221;
+}
+
+/** === End GENERAL LINKS === */
+
+
+/** === LISTS === **/
+
+/* Ordered (<ol>) and Unordered (<ul>) Lists Only */
+
+.post-content ol li,
+.post-content ul li {
+    margin: 10px 0;
 }
 
 dl,
@@ -645,6 +557,18 @@ ul.no-bullet
     margin-left: 1.5em;
 }
 
+ol
+{
+    margin-left: 1.75em;
+}
+
+ol li ol,
+ol li ul
+{
+    margin-bottom: 0;
+    margin-left: 1.25em;
+}
+
 ul li ol,
 ul li ul
 {
@@ -652,6 +576,82 @@ ul li ul
     margin-left: .25em;
     font-size: 1em;
     padding-left: 10px;
+}
+
+ol li ol li {
+  list-style-type: lower-alpha;
+}
+
+ol li ul li {
+  list-style-type: disc;
+}
+
+ol li ul li ol li {
+    list-style: decimal;
+}
+
+ol li ul li ol li ul li {
+    list-style: disc;
+}
+
+.olist .olist,
+.olist .ulist,
+.ulist .olist,
+.ulist .ulist,
+ol > li p,
+ol dd,
+ul > li p,
+ul dd
+{
+    margin-bottom: .625em;
+}
+
+ol.unnumbered,
+ul.checklist,
+ul.none,
+ul.unstyled
+{
+    list-style-type: none;
+}
+
+ol.unnumbered,
+ul.checklist,
+ul.unstyled
+{
+    margin-left: .625em;
+}
+
+ul.checklist li > p:first-child > .fa-check-square-o:first-child,
+ul.checklist li > p:first-child > input[type='checkbox']:first-child
+{
+    margin-right: .25em;
+}
+
+ul.checklist li > p:first-child > input[type='checkbox']:first-child
+{
+    position: relative;
+    top: 1px;
+}
+
+ul.inline
+{
+    margin: 0 auto .625em auto;
+    margin-right: 0;
+    margin-left: -1.375em;
+    padding: 0;
+}
+
+ul.inline > li
+{
+    display: block;
+    float: left;
+    margin-left: 1.375em;
+    list-style: none;
+}
+
+ul.inline > li > *
+{
+    display: block;
 }
 
 ul.circle li ul,
@@ -681,11 +681,56 @@ ul.no-bullet
     list-style: none;
 }
 
-ol li ol,
-ol li ul
+ol.arabic
+{
+    list-style-type: decimal;
+}
+
+ol.decimal
+{
+    list-style-type: decimal-leading-zero;
+}
+
+ol.loweralpha
+{
+    list-style-type: lower-alpha;
+}
+
+ol.upperalpha
+{
+    list-style-type: upper-alpha;
+}
+
+ol.lowerroman
+{
+    list-style-type: lower-roman;
+}
+
+ol.upperroman
+{
+    list-style-type: upper-roman;
+}
+
+ol.lowergreek
+{
+    list-style-type: lower-greek;
+}
+
+/* Description Lists (<dl>) Only */
+
+dl dd
+{
+    margin-left: 1.125em;
+}
+
+dl dd:last-child,
+dl dd:last-child > :last-child
 {
     margin-bottom: 0;
-    margin-left: 1.25em;
+}
+
+dl dt p {
+    margin-left:20px;
 }
 
 dl dt,
@@ -695,101 +740,219 @@ dl dt code
     font-weight: bold;
 }
 
+dl dd {
+    margin-top:10px;
+    margin-bottom:10px;
+}
+
 dl dd
 {
     margin-bottom: 1.25em;
 }
 
-abbr,
-acronym
-{
-    border-bottom: 1px dotted #ddd;
-    color: rgba(0,0,0,.8);
-    text-transform: uppercase;
-    font-size: 90%;
-    cursor: help;
+dl.dl-horizontal dd {
+    padding-top: 20px;
 }
 
-abbr
-{
-    text-transform: none;
+dd {
+  margin-left:20px;
 }
 
-blockquote
+.unstyled dl dt
 {
-    margin: 0 0 1.25em;
-    padding: .5625em 1.25em 0 1.1875em;
-    border-left: 1px solid #ddd;
+    font-weight: 400;
+    font-style: normal;
 }
 
-blockquote cite
+
+/* Callout lists (class="colist" - the items that correspond to a callout
+   number) and Horiztonal-format description lists (class="hdlist") */
+
+.colist > table,
+.hdlist > table
 {
-    display: block;
-    color: rgba(0,0,0,.6);
-    font-size: .9375em;
+    border: 0;
+    background: none;
 }
 
-blockquote cite:before
+.colist > table > tbody>tr,
+.hdlist > table > tbody > tr,
+th.hdlist1
 {
-    content: '\2014 \0020';
+    background: none;
 }
 
-blockquote cite a,
-blockquote cite a:visited
+td.hdlist1,
+td.hdlist1 > code
 {
-    color: rgba(0,0,0,.6);
+    padding-right: .75em;
+    font-weight: bold;
 }
 
-blockquote,
-blockquote p
+td.hdlist1,
+th.hdlist1,
+td.hdlist2
 {
-    color: rgba(0,0,0,.85);
-    line-height: 1.6;
+    vertical-align: top;
 }
 
-@media only screen
-       and (min-width : 768px)
+.listingblock + .colist,
+.literalblock + .colist
 {
-    #toctitle,
-    .sidebarblock > .title,
-    h1,
-    h2,
-    h3,
-    h4,
-    h5,
-    h6
-    {
-        line-height: 1.2;
-    }
-
-    h1
-    {
-        font-size: 2.75em;
-    }
-
-    h2
-    {
-        font-size: 2.3125em;
-    }
-
-    #toctitle,
-    .sidebarblock > .title,
-    h3
-    {
-        font-size: 1.6875em;
-    }
-
-    h4
-    {
-        font-size: 1.4375em;
-    }
+    margin-top: -.5em;
 }
+
+.colist > table tr > td:first-of-type
+{
+    padding: 0 .75em;
+    line-height: 1;
+}
+
+.colist > table tr > td:last-of-type
+{
+    padding: .25em 0;
+}
+
+/** === End LISTS === **/
+
+
+
+/** === IMAGES - FIGURES - CAPTIONS === **/
+
+img
+{
+    display: inline-block;
+    vertical-align: middle;
+    -ms-interpolation-mode: bicubic;
+}
+
+.post-content img {
+    margin: 12px 0 3px 0;
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: 100%;
+    border-width: .1em;
+    border-style: solid;
+    border-color: #E6E7E8;
+}
+
+.post-content img.inline {
+    margin:0;
+    margin-bottom:6px;
+}
+
+li img {
+  clear:both;
+}
+
+a img
+{
+    border: none;
+}
+
+svg:not(:root)
+{
+    overflow: hidden;
+}
+
+figure
+{
+    margin: 0;
+}
+
+embed,
+img,
+object
+{
+    max-width: 100%;
+    height: auto;
+}
+
+figcaption {
+    padding-bottom:12px;
+    padding-top:6px;
+    max-width: 90%;
+    margin-bottom:20px;
+    font-style: italic;
+    color: gray;
+}
+
+.th,
+.thumb
+{
+    display: inline-block;
+    border: solid 4px #fff;
+    -webkit-box-shadow: 0 0 0 1px #ddd;
+            box-shadow: 0 0 0 1px #ddd;
+    line-height: 0;
+}
+
+.imageblock.left,
+.imageblock[style*='float: left']
+{
+    margin: .25em .625em 1.25em 0;
+}
+
+.imageblock.right,
+.imageblock[style*='float: right']
+{
+    margin: .25em 0 1.25em .625em;
+}
+
+.imageblock > .title
+{
+    margin-bottom: 0;
+}
+
+.imageblock.th,
+.imageblock.thumb
+{
+    border-width: 6px;
+}
+
+.imageblock.th > .title,
+.imageblock.thumb > .title
+{
+    padding: 0 .125em;
+}
+
+.image.left,
+.image.right
+{
+    display: inline-block;
+    margin-top: .25em;
+    margin-bottom: .25em;
+    line-height: 0;
+}
+
+.image.left
+{
+    margin-right: .625em;
+}
+
+.image.right
+{
+    margin-left: .625em;
+}
+
+a.image
+{
+    text-decoration: none;
+}
+
+/** End === IMAGES - FIGURES - CAPTIONS === **/
+
+
+/** === TABLES === **/
 
 table
 {
     margin-bottom: 1.25em;
     border: solid 1px #dedede;
     background: #fff;
+    border-spacing: 0;
+    border-collapse: collapse;
 }
 
 table tfoot,
@@ -835,620 +998,6 @@ table tr td
     line-height: 1.6;
 }
 
-#toctitle strong,
-.sidebarblock > .title strong,
-h1 strong,
-h2 strong,
-h3 strong,
-h4 strong,
-h5 strong,
-h6 strong
-{
-    font-weight: 400;
-}
-
-.clearfix:after,
-.clearfix:before,
-.float-group:after,
-.float-group:before
-{
-    display: table;
-    content: ' ';
-}
-
-.clearfix:after,
-.float-group:after
-{
-    clear: both;
-}
-
-*:not(pre) > code
-{
-    padding: .1em .5ex;
-    -webkit-border-radius: 4px;
-            border-radius: 4px;
-    background-color: #f7f7f8;
-    word-spacing: -.15em;
-    letter-spacing: 0;
-    font-style: normal!important;
-    font-size: 1em;
-    line-height: 1.45;
-}
-
-p strong code,
-td strong code {
-  font-weight: bold;
-}
-
-pre,
-pre > code
-{
-    color: rgba(0,0,0,.9);
-    font-weight: 400;
-    font-family: 'Inconsolata', monospace;
-    line-height: 1.45;
-   white-space: pre-wrap;
-}
-
-.keyseq
-{
-    color: rgba(51,51,51,.8);
-}
-
-kbd
-{
-    display: inline-block;
-    margin: -.15em .15em 0 .15em;
-    padding: .2em .6em .2em .5em;
-    border: 1px solid #ccc;
-    -webkit-border-radius: 3px;
-            border-radius: 3px;
-    background-color: #f7f7f7;
-    -webkit-box-shadow: 0 1px 0 rgba(0,0,0,.2),
-    0 0 0 .1em white inset;
-            box-shadow: 0 1px 0 rgba(0,0,0,.2),
-    0 0 0 .1em #fff inset;
-    color: rgba(0,0,0,.8);
-    vertical-align: middle;
-    white-space: nowrap;
-    font-size: .75em;
-    line-height: 1.4;
-}
-
-.keyseq kbd:first-child
-{
-    margin-left: 0;
-}
-
-.keyseq kbd:last-child
-{
-    margin-right: 0;
-}
-
-.menu,
-.menuseq
-{
-    color: rgba(0,0,0,.8);
-}
-
-b.button:after,
-b.button:before
-{
-    position: relative;
-    top: -1px;
-    font-weight: 400;
-}
-
-b.button:before
-{
-    padding: 0 3px 0 2px;
-    content: '[';
-}
-
-b.button:after
-{
-    padding: 0 2px 0 3px;
-    content: ']';
-}
-
-p a > code:hover
-{
-    color: rgba(0,0,0,.9);
-}
-
-#content,
-#footer,
-#footnotes,
-#header
-{
-    margin: 0 auto 0 auto;
-    max-width: 62.5em;
-    width: 100%;
-}
-
-#content:after,
-#content:before,
-#footer:after,
-#footer:before,
-#footnotes:after,
-#footnotes:before,
-#header:after,
-#header:before
-{
-    display: table;
-    content: ' ';
-}
-
-#content:after,
-#footer:after,
-#footnotes:after,
-#header:after
-{
-    clear: both;
-}
-
-#content
-{
-    margin-top: 1.25em;
-}
-
-#content:before
-{
-    content: none;
-}
-
-span.projectTitle
-{
-    font-weight: bold;
-    font-family: 'Noto Sans', sans-serif;
-    font-size: 14pt;
-}
-
-#header > h1:first-child
-{
-    margin-top: 2.25rem;
-    margin-bottom: 0;
-    color: rgba(0,0,0,.85);
-}
-
-#header > h1:first-child + #toc
-{
-    margin-top: 8px;
-    border-top: 1px solid #ddddd8;
-}
-
-#header > h1:only-child,
-body.toc2 #header > h1:nth-last-child(2)
-{
-    padding-bottom: 8px;
-    border-bottom: 1px solid #ddddd8;
-}
-
-#header .details
-{
-    display: -ms-flexbox;
-    display: -webkit-flex;
-    display:         flex;
-    padding-top: .25em;
-    padding-bottom: .25em;
-    padding-left: .25em;
-    border-bottom: 1px solid #ddddd8;
-    color: rgba(0,0,0,.6);
-    line-height: 1.45;
-}
-
-#header .details span:first-child
-{
-    margin-left: -.125em;
-}
-
-#header .details span.email a
-{
-    color: rgba(0,0,0,.85);
-}
-
-#header .details br
-{
-    display: none;
-}
-
-#header .details br + span:before
-{
-    content: '\00a0\2013\00a0';
-}
-
-#header .details br + span.author:before
-{
-    color: rgba(0,0,0,.85);
-    content: '\00a0\22c5\00a0';
-}
-
-#header .details br + span#revremark:before
-{
-    content: '\00a0|\00a0';
-}
-
-#header #revnumber
-{
-    text-transform: capitalize;
-}
-
-#header #revnumber:after
-{
-    content: '\00a0';
-}
-
-#content > h1:first-child:not([class])
-{
-    margin-top: 0;
-    margin-bottom: 1.25rem;
-    padding-top: 1rem;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #ddddd8;
-    color: rgba(0,0,0,.85);
-}
-
-#toc
-{
-    padding-bottom: .5em;
-    border-bottom: 1px solid #efefed;
-}
-
-@media only screen
-       and (min-width : 768px)
-{
-    #toc.toc-right
-    {
-        float: right;
-        margin-left: 1em;
-        border: none;
-        max-width: 300px;
-    }
-    #toc.toc-column
-    {
-      -moz-column-count: 3;
-      -moz-column-gap: 20px;
-      -webkit-column-count: 3;
-      -webkit-column-gap: 20px;
-      column-count: 3;
-      column-gap: 20px;
-      margin-top: 1em;
-    }
-}
-.toc > ul
-{
-    margin-left: .125em;
-}
-
-.toc ul.sectlevel0 > li > a
-{
-    font-weight: bold;
-}
-
-.toc ul.sectlevel0 ul.sectlevel1
-{
-    margin: .5em 0;
-}
-
-.toc ul
-{
-    list-style-type: none;
-    font-family: 'Noto Sans', sans-serif;
-}
-
-.toc a
-{
-    text-decoration: none;
-}
-
-.toc a:active
-{
-    text-decoration: underline;
-}
-
-.toctitle
-{
-    color: #7a2518;
-    font-size: 1.2em;
-}
-
-nav.toc ul li {
-    margin: 8px 0 8px 22px;
-    list-style: disc;
-    line-height: 1.25;
-}
-
-nav.toc ul {
-    background-color: #f1f1f1;;
-    padding: 5px;
-    border-radius: 5px;
-    color: gray;
-}
-
-nav.toc ul li ul {
-    padding-left: 8px;
-}
-
-nav.toc ul li ul li {
-    list-style: circle;
-    margin: 5px 0 0 0;
-}
-
-nav.toc ul li ul li ul li {
-  list-style: square;
-}
-
-nav.toc.section-toc >ul::before {
-    content: "In this section";
-}
-nav.toc >ul::before {
-    content: "On this Page";
-    font-weight: bold;
-    color: #555;
-    text-align:center;
-    margin-left:auto;
-    margin-right:auto;
-    width:70px;
-    padding-top:20px;
-    padding-bottom:20px;
-    padding-left:10px;
-}
-
-@media only screen
-       and (min-width : 768px)
-{
-    #toctitle
-    {
-        font-size: 1.375em;
-    }
-
-    body.toc2
-    {
-        padding-right: 0;
-        padding-left: 15em;
-    }
-
-    #toc.toc2
-    {
-        position: fixed;
-        top: 0;
-        left: 0;
-        z-index: 1000;
-        overflow: auto;
-        margin-top: 0!important;
-        padding: 1.25em 1em;
-        width: 15em;
-        height: 100%;
-        border-top-width: 0!important;
-        border-right: 1px solid #efefed;
-        border-bottom-width: 0!important;
-        background-color: #f8f8f7;
-    }
-
-    #toc.toc2 #toctitle
-    {
-        margin-top: 0;
-        font-size: 1.2em;
-    }
-
-    #toc.toc2 > ul
-    {
-        margin-bottom: 0;
-        font-size: .9em;
-    }
-
-    #toc.toc2 ul ul
-    {
-        margin-left: 0;
-        padding-left: 1em;
-    }
-
-    #toc.toc2 ul.sectlevel0 ul.sectlevel1
-    {
-        margin-top: .5em;
-        margin-bottom: .5em;
-        padding-left: 0;
-    }
-
-    body.toc2.toc-right
-    {
-        padding-right: 15em;
-        padding-left: 0;
-    }
-
-    body.toc2.toc-right #toc.toc2
-    {
-        right: 0;
-        left: auto;
-        border-right-width: 0;
-        border-left: 1px solid #efefed;
-    }
-}
-
-@media only screen
-       and (min-width : 1280px)
-{
-    body.toc2
-    {
-        padding-right: 0;
-        padding-left: 20em;
-    }
-
-    #toc.toc2
-    {
-        width: 20em;
-    }
-
-    #toc.toc2 #toctitle
-    {
-        font-size: 1.375em;
-    }
-
-    #toc.toc2 > ul
-    {
-        font-size: .95em;
-    }
-
-    #toc.toc2 ul ul
-    {
-        padding-left: 1.25em;
-    }
-
-    body.toc2.toc-right
-    {
-        padding-right: 20em;
-        padding-left: 0;
-    }
-}
-
-#content #toc
-{
-    margin-bottom: 1.25em;
-    padding: 1.25em;
-    border-width: 1px;
-    border-style: solid;
-    border-color: #e0e0dc;
-    -webkit-border-radius: 4px;
-            border-radius: 4px;
-    background: #f8f8f7;
-}
-
-#content .toc > :first-child
-{
-    margin-top: 0;
-}
-
-#content .toc > :last-child
-{
-    margin-bottom: 0;
-}
-
-#footer
-{
-    margin: 30px 0;
-    padding: 1.25em;
-    max-width: 100%;
-    background-color: none;
-}
-
-#footer-text
-{
-    color: rgba(255,255,255,.8);
-    line-height: 1.44;
-}
-
-.sect1
-{
-    padding-bottom: .625em;
-}
-
-@media only screen
-       and (min-width : 768px)
-{
-    .sect1
-    {
-        padding-bottom: 1.25em;
-    }
-}
-
-.sect1 + .sect1
-{
-    border-top: 1px solid #efefed;
-}
-
-#content h1 > a.anchor,
-#toctitle > a.anchor,
-.sidebarblock > .title > a.anchor,
-h2 > a.anchor,
-h3 > a.anchor,
-h4 > a.anchor,
-h5 > a.anchor,
-h6 > a.anchor
-{
-    position: absolute;
-    z-index: 1001;
-    display: block;
-    visibility: hidden;
-    margin-left: -1.5ex;
-    width: 1.5ex;
-    text-align: center;
-    text-decoration: none!important;
-    font-weight: 400;
-}
-
-#content h1 > a.anchor:before,
-#toctitle > a.anchor:before,
-.sidebarblock > .title > a.anchor:before,
-h2 > a.anchor:before,
-h3 > a.anchor:before,
-h4 > a.anchor:before,
-h5 > a.anchor:before,
-h6 > a.anchor:before
-{
-    display: block;
-    padding-top: .1em;
-    content: '\00A7';
-    font-size: .85em;
-}
-
-#content h1:hover > a.anchor,
-#content h1 > a.anchor:hover,
-#toctitle:hover > a.anchor,
-#toctitle > a.anchor:hover,
-.sidebarblock > .title:hover > a.anchor,
-.sidebarblock > .title > a.anchor:hover,
-h2:hover > a.anchor,
-h2 > a.anchor:hover,
-h3:hover > a.anchor,
-h3 > a.anchor:hover,
-h4:hover > a.anchor,
-h4 > a.anchor:hover,
-h5:hover > a.anchor,
-h5 > a.anchor:hover,
-h6:hover > a.anchor,
-h6 > a.anchor:hover
-{
-    visibility: visible;
-}
-
-#content h1 > a.link,
-#toctitle > a.link,
-.sidebarblock > .title > a.link,
-h2 > a.link,
-h3 > a.link,
-h4 > a.link,
-h5 > a.link,
-h6 > a.link
-{
-    color: #d9411e;
-    text-decoration: none;
-}
-
-#content h1 > a.link:hover,
-#toctitle > a.link:hover,
-.sidebarblock > .title > a.link:hover,
-h2 > a.link:hover,
-h3 > a.link:hover,
-h4 > a.link:hover,
-h5 > a.link:hover,
-h6 > a.link:hover
-{
-    color: #a53221;
-}
-
-.audioblock,
-.imageblock,
-.listingblock,
-.literalblock,
-.stemblock,
-.videoblock
-{
-    margin-bottom: 1.25em;
-    overflow: auto;
-}
-
-
-
 table.tableblock > caption.title
 {
     overflow: visible;
@@ -1456,427 +1005,36 @@ table.tableblock > caption.title
     white-space: nowrap;
 }
 
-/* Defines color for "lead" type sections, the first text on a page. */
-#preamble > .sectionbody > .paragraph:first-of-type p,
-.paragraph.lead > p,
-#preamble > p:first-of-type
-{
-    color: rgba(0,0,0,.85);
+table.dataTable thead {
+    background-color: #444;
+}
+
+section table tr.success {
+    background-color: #dff0d8 !important;
+}
+
+table tr.info {
+    background-color: #d9edf7 !important;
+}
+
+section table tr.warning, table tr.testing, table tr.testing > td.sorting_1  {
+    background-color: #fcf8e3 !important;
+}
+section table tr.danger, table tr.preference, table tr.preference > td.sorting_1  {
+    background-color: #f2dede !important;
+}
+
+table.profile thead tr th {
+    background-color: #248ec2;
+}
+
+table.request thead tr th {
+    background-color: #ED1951;
 }
 
 table.tableblock #preamble > .sectionbody > .paragraph:first-of-type p
 {
     font-size: inherit;
-}
-
-.admonitionblock > table
-{
-    width: auto;
-    border: 0;
-    border-collapse: separate;
-    background: none;
-}
-
-.admonitionblock > table td.icon
-{
-    width: 80px;
-    text-align: center;
-}
-
-.admonitionblock > table td.icon img
-{
-    max-width: none;
-}
-
-.admonitionblock > table td.icon .title
-{
-    text-transform: uppercase;
-    font-weight: bold;
-    font-family: 'Noto Sans', sans-serif;
-}
-
-.admonitionblock > table td.content
-{
-    padding-right: 1.25em;
-    padding-left: 1.125em;
-    border-left: 1px solid #ddddd8;
-    color: rgba(0,0,0,.6);
-}
-
-.admonitionblock > table td.content > :last-child > :last-child
-{
-    margin-bottom: 0;
-}
-
-.exampleblock
-{
-    margin-bottom: 1.25em;
-    padding: 0 1em 1em 1em;
-    border-width: 1px;
-    border-style: solid;
-    border-color: #e6e6e6;
-    background-color: transparent;
-    -webkit-box-shadow: 0 1px 4px #e0e0dc;
-            box-shadow: 0 1px 4px #e0e0dc;
-    background: #fff;
-}
-
-.exampleblock > :first-child
-{
-    margin-top: 0;
-}
-
-.exampleblock > :last-child
-{
-    margin-bottom: 0;
-}
-
-.sidebarblock
-{
-    margin-bottom: 1.25em;
-    padding: 1.25em;
-    border-width: 1px;
-    border-style: solid;
-    border-color: #e0e0dc;
-    -webkit-border-radius: 4px;
-            border-radius: 4px;
-    background: #f8f8f7;
-}
-
-.sidebarblock > :first-child
-{
-    margin-top: 0;
-}
-
-.sidebarblock > :last-child
-{
-    margin-bottom: 0;
-}
-
-h6.block-title
-{
-    margin-top: 0;
-    color: #7a2518;
-    text-align: center;
-    padding-bottom: 10px;
-    font-size: 1.6875em;
-}
-
-.exampleblock > :last-child>:last-child,
-.exampleblock > .olist > ol > li:last-child>:last-child,
-.exampleblock > .qlist > ol > li:last-child>:last-child,
-.exampleblock > .ulist > ul > li:last-child>:last-child,
-.sidebarblock > :last-child>:last-child,
-.sidebarblock > .olist > ol > li:last-child>:last-child,
-.sidebarblock > .qlist > ol > li:last-child>:last-child,
-.sidebarblock > .ulist > ul > li:last-child>:last-child
-{
-    margin-bottom: 0;
-}
-
-.listingblock pre,
-.listingblock pre.CodeRay,
-.listingblock pre.prettyprint,
-.listingblock pre:not(.highlight),
-.listingblock pre[class='highlight'],
-.listingblock pre[class^='highlight '],
-.literalblock pre
-{
-    background: #f7f7f8;
-}
-
-.sidebarblock .listingblock pre.CodeRay,
-.sidebarblock .listingblock pre.prettyprint,
-.sidebarblock .listingblock pre:not(.highlight),
-.sidebarblock .listingblock pre[class='highlight'],
-.sidebarblock .listingblock pre[class^='highlight '],
-.sidebarblock .literalblock pre
-{
-    background: #f7f7f8;
-}
-
-.listingblock pre,
-.listingblock pre[class],
-.literalblock pre,
-.literalblock pre[class]
-{
-    padding: 1em;
-    -webkit-border-radius: 4px;
-            border-radius: 4px;
-    word-wrap: break-word;
-    font-size: .8125em;
-}
-
-.listingblock pre.nowrap,
-.listingblock pre[class].nowrap,
-.literalblock pre.nowrap,
-.literalblock pre[class].nowrap
-{
-    overflow-x: auto;
-    white-space: pre;
-    word-wrap: normal;
-}
-
-@media only screen
-       and (min-width : 768px)
-{
-    .listingblock pre,
-    .listingblock pre[class],
-    .literalblock pre,
-    .literalblock pre[class]
-    {
-        font-size: .90625em;
-    }
-}
-
-@media only screen
-       and (min-width : 1280px)
-{
-    .listingblock pre,
-    .listingblock pre[class],
-    .literalblock pre,
-    .literalblock pre[class]
-    {
-        font-size: 1em;
-    }
-}
-
-.literalblock.output pre
-{
-    background-color: rgba(0,0,0,.9);
-    color: #f7f7f8;
-}
-
-.listingblock pre.highlightjs
-{
-    padding: 0;
-}
-
-.listingblock pre.highlightjs > code
-{
-    padding: 1em;
-    -webkit-border-radius: 4px;
-            border-radius: 4px;
-}
-
-.listingblock pre.prettyprint
-{
-    border-width: 0;
-}
-
-.listingblock
-{
-    position: relative;
-}
-
-.listingblock code[data-lang]:before
-{
-    position: absolute;
-    top: .425rem;
-    right: .5rem;
-    display: none;
-    color: #999;
-    content: attr(data-lang);
-    text-transform: uppercase;
-    font-size: .75em;
-    line-height: 1;
-}
-
-.listingblock:hover code[data-lang]:before
-{
-    display: block;
-}
-
-.listingblock.terminal pre .command:before
-{
-    padding-right: .5em;
-    color: #999;
-    content: attr(data-prompt);
-}
-
-.listingblock.terminal pre .command:not([data-prompt]):before
-{
-    content: '$';
-}
-
-table.pyhltable
-{
-    margin-bottom: 0;
-    border: 0;
-    border-collapse: separate;
-    background: none;
-}
-
-table.pyhltable td
-{
-    padding-top: 0;
-    padding-bottom: 0;
-    vertical-align: top;
-}
-
-table.pyhltable td.code
-{
-    padding-right: 0;
-    padding-left: .75em;
-}
-
-pre.pygments .lineno,
-table.pyhltable td:not(.code)
-{
-    padding-right: .5em;
-    padding-left: 0;
-    border-right: 1px solid #ddddd8;
-    color: #999;
-}
-
-pre.pygments .lineno
-{
-    display: inline-block;
-    margin-right: .25em;
-}
-
-table.pyhltable .linenodiv
-{
-    padding-right: 0!important;
-    background: none!important;
-}
-
-.quoteblock
-{
-    display: table;
-    margin: 0 1em 1.25em 1.5em;
-}
-
-.quoteblock > .title
-{
-    margin-bottom: .75em;
-    margin-left: -1.5em;
-}
-
-.quoteblock blockquote,
-.quoteblock blockquote p
-{
-    color: rgba(0,0,0,.85);
-    text-align: justify;
-    word-spacing: .1em;
-    letter-spacing: 0;
-    font-style: italic;
-    font-size: inherit;
-    line-height: 1.75;
-}
-
-.quoteblock blockquote
-{
-    margin: 0;
-    padding: 0;
-    border: 0;
-}
-
-.quoteblock blockquote:before
-{
-    float: left;
-    margin-left: -.6em;
-    color: #7a2518;
-    content: '\201c';
-    text-shadow: 0 1px 2px rgba(0,0,0,.1);
-    font-weight: bold;
-    font-size: 2.75em;
-    line-height: .6em;
-}
-
-.quoteblock blockquote > .paragraph:last-child p
-{
-    margin-bottom: 0;
-}
-
-.quoteblock .attribution
-{
-    margin-top: .5em;
-    margin-right: .5ex;
-    text-align: right;
-}
-
-.quoteblock .quoteblock
-{
-    margin-right: 0;
-    margin-left: 0;
-    padding: .5em 0;
-    border-left: 3px solid rgba(0,0,0,.6);
-}
-
-.quoteblock .quoteblock blockquote
-{
-    padding: 0 0 0 .75em;
-}
-
-.quoteblock .quoteblock blockquote:before
-{
-    display: none;
-}
-
-.verseblock
-{
-    margin: 0 1em 1.25em 1em;
-}
-
-.verseblock pre
-{
-    color: rgba(0,0,0,.85);
-    font-weight: 300;
-    font-size: 1.15rem;
-    font-family: 'Noto Sans', sans-serif;
-}
-
-.verseblock pre strong
-{
-    font-weight: 400;
-}
-
-.verseblock .attribution
-{
-    margin-top: 1.25rem;
-    margin-left: .5ex;
-}
-
-.quoteblock .attribution,
-.verseblock .attribution
-{
-    font-style: italic;
-    font-size: .9375em;
-    line-height: 1.45;
-}
-
-.quoteblock .attribution br,
-.verseblock .attribution br
-{
-    display: none;
-}
-
-.quoteblock .attribution cite,
-.verseblock .attribution cite
-{
-    display: block;
-    color: rgba(0,0,0,.6);
-    letter-spacing: -.05em;
-}
-
-.quoteblock.abstract
-{
-    display: block;
-    margin: 0 0 1.25em 0;
-}
-
-.quoteblock.abstract blockquote,
-.quoteblock.abstract blockquote p
-{
-    text-align: left;
-    word-spacing: 0;
-}
-
-.quoteblock.abstract blockquote:before,
-.quoteblock.abstract blockquote p:first-of-type:before
-{
-    display: none;
 }
 
 table.tableblock
@@ -2034,309 +1192,588 @@ td > div.verse
     white-space: pre;
 }
 
-ol
+/** End === TABLES === **/
+
+
+/** === CODE CALLOUTS === **/
+/* Callout Numbers are displayed inline in code examples with explanations
+   underneath. See Callout lists above for styles of the explanations. */
+
+.conum[data-value]
 {
-    margin-left: 1.75em;
+   display: inline-block;
+   width: 1.67em;
+   height: 1.67em;
+   -webkit-border-radius: 100px;
+           border-radius: 100px;
+   background-color: rgba(0,0,0,.8);
+   color: #fff!important;
+   text-align: center;
+   font-weight: bold;
+   font-style: normal;
+   font-size: .75em;
+   font-family: 'Noto Sans', sans-serif;
+   line-height: 1.67em;
 }
 
-ul li ol
+.conum[data-value] *
 {
-    margin-left: 1.5em;
+   color: #fff!important;
 }
 
-dl dd
+.conum[data-value] + b
 {
-    margin-left: 1.125em;
+   display: none;
 }
 
-dl dd:last-child,
-dl dd:last-child > :last-child
+.conum[data-value]:after
+{
+   content: attr(data-value);
+}
+
+pre .conum[data-value]
+{
+   position: relative;
+   top: -.125em;
+}
+
+b.conum *
+{
+   color: inherit!important;
+}
+
+.conum:not([data-value]):empty
+{
+   display: none;
+}
+
+/** End === CODE CALLOUTS === **/
+
+
+/** === BLOCKS === **/
+/* Asciidoctor blocks for Notes, warnings, code samples, etc. */
+
+.admonitionblock td.icon [class^='fa icon-']
+{
+    text-shadow: 1px 1px 2px rgba(0,0,0,.5);
+    font-size: 2.5em;
+    cursor: default;
+}
+
+/* font awesome icon info-circle: http://fontawesome.io/icon/info-circle/ */
+.admonitionblock td.icon .icon-note:before
+{
+    color: #19407c;
+    content: '\f05a';
+}
+
+/* font awesome icon lightbulb-o: http://fontawesome.io/icon/lightbulb-o/ */
+.admonitionblock td.icon .icon-tip:before
+{
+    color: #428b30;
+    content: '\f0eb';
+    text-shadow: 1px 1px 2px rgba(155,155,0,.8);
+}
+
+/* font awesome icon exclamation-triangle: http://fontawesome.io/icon/exclamation-triangle/ */
+.admonitionblock td.icon .icon-warning:before
+{
+    color: #bf0000;
+    content: '\f071';
+}
+
+/* font awesome icon fire: http://fontawesome.io/icon/fire/ */
+.admonitionblock td.icon .icon-caution:before
+{
+    color: #bf6900;
+    content: '\f06d';
+}
+
+/* font awesome icon bolt: http://fontawesome.io/icon/bolt/ */
+.admonitionblock td.icon .icon-important:before
+{
+    color: #eeea74;
+    content: '\f0e7';
+}
+
+.admonitionblock td.content > .title,
+.audioblock > .title,
+.dlist > .title,
+.exampleblock > .title,
+.hdlist > .title,
+.imageblock > .title,
+.listingblock > .title,
+.literalblock > .title,
+.olist > .title,
+.openblock > .title,
+.paragraph > .title,
+.qlist > .title,
+.quoteblock > .title,
+.stemblock > .title,
+.subheader,
+.ulist > .title,
+.verseblock > .title,
+.videoblock > .title,
+table.tableblock > .title,
+figcaption
+{
+    margin-top: 0;
+    margin-bottom: .25em;
+    color: #7a2518;
+    font-weight: 400;
+    line-height: 1.45;
+}
+
+.admonitionblock > table
+{
+    width: auto;
+    border: 0;
+    border-collapse: separate;
+    background: none;
+}
+
+.admonitionblock > table td.icon
+{
+    width: 80px;
+    text-align: center;
+}
+
+.admonitionblock > table td.icon img
+{
+    max-width: none;
+}
+
+.admonitionblock > table td.icon .title
+{
+    text-transform: uppercase;
+    font-weight: bold;
+    font-family: 'Noto Sans', sans-serif;
+}
+
+.admonitionblock > table td.content
+{
+    padding-right: 1.25em;
+    padding-left: 1.125em;
+    border-left: 1px solid #ddddd8;
+    color: rgba(0,0,0,.6);
+}
+
+.admonitionblock > table td.content > :last-child > :last-child
 {
     margin-bottom: 0;
 }
 
-.olist .olist,
-.olist .ulist,
-.ulist .olist,
-.ulist .ulist,
-ol > li p,
-ol dd,
-ul > li p,
-ul dd
+blockquote
 {
-    margin-bottom: .625em;
+    margin: 0 0 1.25em;
+    padding: .5625em 1.25em 0 1.1875em;
+    border-left: 1px solid #ddd;
 }
 
-ol.unnumbered,
-ul.checklist,
-ul.none,
-ul.unstyled
+blockquote,
+blockquote p
 {
-    list-style-type: none;
+    color: rgba(0,0,0,.85);
+    line-height: 1.6;
 }
 
-ol.unnumbered,
-ul.checklist,
-ul.unstyled
+blockquote cite
 {
-    margin-left: .625em;
+    display: block;
+    color: rgba(0,0,0,.6);
+    font-size: .9375em;
 }
 
-ul.checklist li > p:first-child > .fa-check-square-o:first-child,
-ul.checklist li > p:first-child > input[type='checkbox']:first-child
+blockquote cite:before
 {
-    margin-right: .25em;
+    content: '\2014 \0020';
 }
 
-ul.checklist li > p:first-child > input[type='checkbox']:first-child
+blockquote cite a,
+blockquote cite a:visited
 {
-    position: relative;
-    top: 1px;
+    color: rgba(0,0,0,.6);
 }
 
-ul.inline
+.audioblock,
+.imageblock,
+.listingblock,
+.literalblock,
+.stemblock,
+.videoblock
 {
-    margin: 0 auto .625em auto;
-    margin-right: 0;
-    margin-left: -1.375em;
+    margin-bottom: 1.25em;
+    overflow: auto;
+}
+
+.exampleblock
+{
+    margin-bottom: 1.25em;
+    padding: 0 1em 1em 1em;
+    border-width: 1px;
+    border-style: solid;
+    border-color: #e6e6e6;
+    background-color: transparent;
+    -webkit-box-shadow: 0 1px 4px #e0e0dc;
+            box-shadow: 0 1px 4px #e0e0dc;
+    background: #fff;
+    width: 100%;
+}
+
+.exampleblock > :first-child
+{
+    margin-top: 0;
+}
+
+.exampleblock > :last-child
+{
+    margin-bottom: 0;
+}
+
+/** Not navigation sidebar; asciidoc concept of "sidebar" in text **/
+.sidebarblock
+{
+    margin-bottom: 1.25em;
+    padding: 1.25em;
+    border-width: 1px;
+    border-style: solid;
+    border-color: #e0e0dc;
+    -webkit-border-radius: 4px;
+            border-radius: 4px;
+    background: #f8f8f7;
+}
+
+.sidebarblock > :first-child
+{
+    margin-top: 0;
+}
+
+.sidebarblock > :last-child
+{
+    margin-bottom: 0;
+}
+
+.sidebarblock dt,
+.sidebarblock p,
+.sidebarblock td.content,
+p.tableblock
+{
+    font-size: 1em;
+}
+
+.exampleblock > :last-child>:last-child,
+.exampleblock > .olist > ol > li:last-child>:last-child,
+.exampleblock > .qlist > ol > li:last-child>:last-child,
+.exampleblock > .ulist > ul > li:last-child>:last-child,
+.sidebarblock > :last-child>:last-child,
+.sidebarblock > .olist > ol > li:last-child>:last-child,
+.sidebarblock > .qlist > ol > li:last-child>:last-child,
+.sidebarblock > .ulist > ul > li:last-child>:last-child
+{
+    margin-bottom: 0;
+}
+
+.listingblock pre,
+.listingblock pre.CodeRay,
+.listingblock pre.prettyprint,
+.listingblock pre:not(.highlight),
+.listingblock pre[class='highlight'],
+.listingblock pre[class^='highlight '],
+.literalblock pre
+{
+    background: #f7f7f8;
+}
+
+.sidebarblock .listingblock pre.CodeRay,
+.sidebarblock .listingblock pre.prettyprint,
+.sidebarblock .listingblock pre:not(.highlight),
+.sidebarblock .listingblock pre[class='highlight'],
+.sidebarblock .listingblock pre[class^='highlight '],
+.sidebarblock .literalblock pre
+{
+    background: #f7f7f8;
+}
+
+.listingblock pre,
+.listingblock pre[class],
+.literalblock pre,
+.literalblock pre[class]
+{
+    padding: 1em;
+    -webkit-border-radius: 4px;
+            border-radius: 4px;
+    word-wrap: break-word;
+    font-size: .8125em;
+}
+
+.listingblock pre.nowrap,
+.listingblock pre[class].nowrap,
+.literalblock pre.nowrap,
+.literalblock pre[class].nowrap
+{
+    overflow-x: auto;
+    white-space: pre;
+    word-wrap: normal;
+}
+
+@media only screen
+       and (min-width : 768px)
+{
+    .listingblock pre,
+    .listingblock pre[class],
+    .literalblock pre,
+    .literalblock pre[class]
+    {
+        font-size: .90625em;
+    }
+}
+
+@media only screen
+       and (min-width : 1280px)
+{
+    .listingblock pre,
+    .listingblock pre[class],
+    .literalblock pre,
+    .literalblock pre[class]
+    {
+        font-size: 1em;
+    }
+}
+
+.literalblock.output pre
+{
+    background-color: rgba(0,0,0,.9);
+    color: #f7f7f8;
+}
+
+.listingblock pre.highlightjs
+{
     padding: 0;
 }
 
-ul.inline > li
+.listingblock pre.highlightjs > code
 {
-    display: block;
-    float: left;
-    margin-left: 1.375em;
-    list-style: none;
+    padding: 1em;
+    -webkit-border-radius: 4px;
+            border-radius: 4px;
 }
 
-ul.inline > li > *
+.listingblock pre.prettyprint
 {
-    display: block;
+    border-width: 0;
 }
 
-.unstyled dl dt
+.listingblock
 {
-    font-weight: 400;
-    font-style: normal;
+    position: relative;
 }
 
-ol.arabic
+.listingblock code[data-lang]:before
 {
-    list-style-type: decimal;
-}
-
-ol.decimal
-{
-    list-style-type: decimal-leading-zero;
-}
-
-ol.loweralpha
-{
-    list-style-type: lower-alpha;
-}
-
-ol.upperalpha
-{
-    list-style-type: upper-alpha;
-}
-
-ol.lowerroman
-{
-    list-style-type: lower-roman;
-}
-
-ol.upperroman
-{
-    list-style-type: upper-roman;
-}
-
-ol.lowergreek
-{
-    list-style-type: lower-greek;
-}
-
-.colist > table,
-.hdlist > table
-{
-    border: 0;
-    background: none;
-}
-
-.colist > table > tbody>tr,
-.hdlist > table > tbody > tr,
-th.hdlist1
-{
-    background: none;
-}
-
-td.hdlist1,
-td.hdlist1 > code
-{
-    padding-right: .75em;
-    font-weight: bold;
-}
-
-td.hdlist1,
-th.hdlist1,
-td.hdlist2
-{
-    vertical-align: top;
-}
-
-.listingblock + .colist,
-.literalblock + .colist
-{
-    margin-top: -.5em;
-}
-
-.colist > table tr > td:first-of-type
-{
-    padding: 0 .75em;
+    position: absolute;
+    top: .425rem;
+    right: .5rem;
+    display: none;
+    color: #999;
+    content: attr(data-lang);
+    text-transform: uppercase;
+    font-size: .75em;
     line-height: 1;
 }
 
-.colist > table tr > td:last-of-type
+.listingblock:hover code[data-lang]:before
 {
-    padding: .25em 0;
+    display: block;
 }
 
-.th,
-.thumb
+.listingblock.terminal pre .command:before
 {
-    display: inline-block;
-    border: solid 4px #fff;
-    -webkit-box-shadow: 0 0 0 1px #ddd;
-            box-shadow: 0 0 0 1px #ddd;
-    line-height: 0;
+    padding-right: .5em;
+    color: #999;
+    content: attr(data-prompt);
 }
 
-.imageblock.left,
-.imageblock[style*='float: left']
+.listingblock.terminal pre .command:not([data-prompt]):before
 {
-    margin: .25em .625em 1.25em 0;
+    content: '$';
 }
 
-.imageblock.right,
-.imageblock[style*='float: right']
+.quoteblock
 {
-    margin: .25em 0 1.25em .625em;
+    display: table;
+    margin: 0 1em 1.25em 1.5em;
 }
 
-.imageblock > .title
+.quoteblock > .title
 {
-    margin-bottom: 0;
+    margin-bottom: .75em;
+    margin-left: -1.5em;
 }
 
-.imageblock.th,
-.imageblock.thumb
+.quoteblock blockquote,
+.quoteblock blockquote p
 {
-    border-width: 6px;
+    color: rgba(0,0,0,.85);
+    text-align: justify;
+    word-spacing: .1em;
+    letter-spacing: 0;
+    font-style: italic;
+    font-size: inherit;
+    line-height: 1.75;
 }
 
-.imageblock.th > .title,
-.imageblock.thumb > .title
+.quoteblock blockquote
 {
-    padding: 0 .125em;
-}
-
-.image.left,
-.image.right
-{
-    display: inline-block;
-    margin-top: .25em;
-    margin-bottom: .25em;
-    line-height: 0;
-}
-
-.image.left
-{
-    margin-right: .625em;
-}
-
-.image.right
-{
-    margin-left: .625em;
-}
-
-a.image
-{
-    text-decoration: none;
-}
-
-span.footnote,
-span.footnoteref
-{
-    vertical-align: super;
-    font-size: .875em;
-}
-
-span.footnote a,
-span.footnoteref a
-{
-    text-decoration: none;
-}
-
-span.footnote a:active,
-span.footnoteref a:active
-{
-    text-decoration: underline;
-}
-
-#footnotes
-{
-    margin-bottom: .625em;
-    padding-top: .75em;
-    padding-bottom: .75em;
-}
-
-#footnotes hr
-{
-    margin: -.25em 0 .75em 0;
-    min-width: 6.25em;
-    width: 20%;
-    border-width: 1px 0 0 0;
-}
-
-#footnotes .footnote
-{
-    margin-bottom: .2em;
-    margin-left: 1.2em;
-    padding: 0 .375em;
-    text-indent: -1.2em;
-    font-size: .875em;
-    line-height: 1.3;
-}
-
-#footnotes .footnote a:first-of-type
-{
-    text-decoration: none;
-    font-weight: bold;
-}
-
-#footnotes .footnote:last-of-type
-{
-    margin-bottom: 0;
-}
-
-#content #footnotes
-{
-    margin-top: -.625em;
-    margin-bottom: 0;
-    padding: .75em 0;
-}
-
-.gist .file-data > table
-{
-    margin-bottom: 0;
-    width: 100%;
+    margin: 0;
+    padding: 0;
     border: 0;
-    background: #fff;
 }
 
-.gist .file-data > table td.line-data
+.quoteblock blockquote:before
 {
-    width: 99%;
+    float: left;
+    margin-left: -.6em;
+    color: #7a2518;
+    content: '\201c';
+    text-shadow: 0 1px 2px rgba(0,0,0,.1);
+    font-weight: bold;
+    font-size: 2.75em;
+    line-height: .6em;
+}
+
+.quoteblock blockquote > .paragraph:last-child p
+{
+    margin-bottom: 0;
+}
+
+.quoteblock .attribution
+{
+    margin-top: .5em;
+    margin-right: .5ex;
+    text-align: right;
+}
+
+.quoteblock .quoteblock
+{
+    margin-right: 0;
+    margin-left: 0;
+    padding: .5em 0;
+    border-left: 3px solid rgba(0,0,0,.6);
+}
+
+.quoteblock .quoteblock blockquote
+{
+    padding: 0 0 0 .75em;
+}
+
+.quoteblock .quoteblock blockquote:before
+{
+    display: none;
+}
+
+.verseblock
+{
+    margin: 0 1em 1.25em 1em;
+}
+
+.verseblock pre
+{
+    color: rgba(0,0,0,.85);
+    font-weight: 300;
+    font-size: 1.15rem;
+    font-family: 'Noto Sans', sans-serif;
+}
+
+.verseblock pre strong
+{
+    font-weight: 400;
+}
+
+.verseblock .attribution
+{
+    margin-top: 1.25rem;
+    margin-left: .5ex;
+}
+
+.quoteblock .attribution,
+.verseblock .attribution
+{
+    font-style: italic;
+    font-size: .9375em;
+    line-height: 1.45;
+}
+
+.quoteblock .attribution br,
+.verseblock .attribution br
+{
+    display: none;
+}
+
+.quoteblock .attribution cite,
+.verseblock .attribution cite
+{
+    display: block;
+    color: rgba(0,0,0,.6);
+    letter-spacing: -.05em;
+}
+
+.quoteblock.abstract
+{
+    display: block;
+    margin: 0 0 1.25em 0;
+}
+
+.quoteblock.abstract blockquote,
+.quoteblock.abstract blockquote p
+{
+    text-align: left;
+    word-spacing: 0;
+}
+
+.quoteblock.abstract blockquote:before,
+.quoteblock.abstract blockquote p:first-of-type:before
+{
+    display: none;
+}
+
+
+/** ASCIIDOCTOR ROLES **/
+/* These classes are defined in Asciidoctor docs as available so keeping
+   in case someone decides to use them */
+
+.left
+{
+   float: left!important;
+}
+
+.right
+{
+   float: right!important;
+}
+
+.text-left
+{
+   text-align: left!important;
+}
+
+.text-right
+{
+   text-align: right!important;
+}
+
+.text-center
+{
+   text-align: center!important;
+}
+
+.text-justify
+{
+   text-align: justify!important;
+}
+
+.hide
+{
+   display: none;
 }
 
 div.unbreakable
@@ -2529,141 +1966,203 @@ div.unbreakable
     background-color: #fafa00;
 }
 
-span.icon > .fa
+/** End === ASCIIDOCTOR ROLES === **/
+
+
+/** === SPECIAL CONTENT TYPES === **/
+/* These are rarely used as of 1 Jan 2020 */
+
+abbr,
+acronym
 {
-    cursor: default;
+    border-bottom: 1px dotted #ddd;
+    color: rgba(0,0,0,.8);
+    text-transform: uppercase;
+    font-size: 90%;
+    cursor: help;
 }
 
-
-.admonitionblock td.icon [class^='fa icon-']
+abbr
 {
-    text-shadow: 1px 1px 2px rgba(0,0,0,.5);
-    font-size: 2.5em;
-    cursor: default;
+    text-transform: none;
 }
 
-/* font awesome icon info-circle: http://fontawesome.io/icon/info-circle/ */
-.admonitionblock td.icon .icon-note:before
-{
-    color: #19407c;
-    content: '\f05a';
-}
-
-/* font awesome icon lightbulb-o: http://fontawesome.io/icon/lightbulb-o/ */
-.admonitionblock td.icon .icon-tip:before
-{
-    color: #428b30;
-    content: '\f0eb';
-    text-shadow: 1px 1px 2px rgba(155,155,0,.8);
-}
-
-/* font awesome icon exclamation-triangle: http://fontawesome.io/icon/exclamation-triangle/ */
-.admonitionblock td.icon .icon-warning:before
-{
-    color: #bf0000;
-    content: '\f071';
-}
-
-/* font awesome icon fire: http://fontawesome.io/icon/fire/ */
-.admonitionblock td.icon .icon-caution:before
-{
-    color: #bf6900;
-    content: '\f06d';
-}
-
-/* font awesome icon bolt: http://fontawesome.io/icon/bolt/ */
-.admonitionblock td.icon .icon-important:before
-{
-    color: #eeea74;
-    content: '\f0e7';
-}
-
-.conum[data-value]
-{
+audio,
+canvas,
+video {
     display: inline-block;
-    width: 1.67em;
-    height: 1.67em;
-    -webkit-border-radius: 100px;
-            border-radius: 100px;
-    background-color: rgba(0,0,0,.8);
-    color: #fff!important;
-    text-align: center;
-    font-weight: bold;
-    font-style: normal;
-    font-size: .75em;
-    font-family: 'Noto Sans', sans-serif;
-    line-height: 1.67em;
 }
 
-.conum[data-value] *
-{
-    color: #fff!important;
+audio:not([controls]) {
+    display: none;
+    height: 0;
 }
 
-.conum[data-value] + b
-{
+[hidden],
+template {
     display: none;
 }
 
-.conum[data-value]:after
-{
-    content: attr(data-value);
-}
-
-pre .conum[data-value]
-{
-    position: relative;
-    top: -.125em;
-}
-
-b.conum *
-{
-    color: inherit!important;
-}
-
-.conum:not([data-value]):empty
-{
-    display: none;
-}
-
-
-p,
-td.content
-{
-    letter-spacing: -.01em;
-}
-
-p strong,
-td.content strong
-{
-    letter-spacing: -.005em;
-}
-
-blockquote,
-dt,
-p,
-td.content
-{
-    font-size: 1.0625rem;
-}
-
-p
-{
-    margin-bottom: 1.25rem;
-}
-
-.sidebarblock dt,
-.sidebarblock p,
-.sidebarblock td.content,
-p.tableblock
-{
-    font-size: 1em;
-}
-
-.print-only
-{
+script {
     display: none!important;
 }
+
+abbr[title] {
+    border-bottom: 1px dotted;
+}
+
+dfn
+{
+    font-style: italic;
+}
+
+mark
+{
+    background: #ff0;
+    color: #000;
+}
+
+q
+{
+    quotes: '\201C' '\201D' '\2018' '\2019';
+}
+
+small
+{
+   font-size: 80%;
+   line-height: inherit;
+}
+
+sub,
+sup
+{
+    position: relative;
+    vertical-align: baseline;
+    font-size: 75%;
+    line-height: 0;
+}
+
+sup
+{
+    top: -.5em;
+}
+
+sub
+{
+    bottom: -.25em;
+}
+
+fieldset
+{
+    margin: 0 2px;
+    padding: .35em .625em .75em;
+    border: 1px solid silver;
+}
+
+legend
+{
+    padding: 0;
+    border: 0;
+}
+
+video {
+    display: block;
+    margin: 30px 0;
+    border: 1px solid #c0c0c0;
+}
+
+embed,
+object
+{
+    height: 100%;
+}
+
+#map_canvas embed,
+#map_canvas img,
+#map_canvas object,
+.map_canvas embed,
+.map_canvas img,
+.map_canvas object
+{
+    max-width: none!important;
+}
+
+span.footnote,
+span.footnoteref
+{
+    vertical-align: super;
+    font-size: .875em;
+}
+
+span.footnote a,
+span.footnoteref a
+{
+    text-decoration: none;
+}
+
+span.footnote a:active,
+span.footnoteref a:active
+{
+    text-decoration: underline;
+}
+
+#footnotes
+{
+    margin-bottom: .625em;
+    padding-top: .75em;
+    padding-bottom: .75em;
+}
+
+#footnotes hr
+{
+    margin: -.25em 0 .75em 0;
+    min-width: 6.25em;
+    width: 20%;
+    border-width: 1px 0 0 0;
+}
+
+#footnotes .footnote
+{
+    margin-bottom: .2em;
+    margin-left: 1.2em;
+    padding: 0 .375em;
+    text-indent: -1.2em;
+    font-size: .875em;
+    line-height: 1.3;
+}
+
+#footnotes .footnote a:first-of-type
+{
+    text-decoration: none;
+    font-weight: bold;
+}
+
+#footnotes .footnote:last-of-type
+{
+    margin-bottom: 0;
+}
+
+#content #footnotes
+{
+    margin-top: -.625em;
+    margin-bottom: 0;
+    padding: .75em 0;
+}
+
+.gist .file-data > table
+{
+    margin-bottom: 0;
+    width: 100%;
+    border: 0;
+    background: #fff;
+}
+
+.gist .file-data > table td.line-data
+{
+    width: 99%;
+}
+
+/** End === SPECIAL CONTENT TYPES === **/
 
 @media print
 {

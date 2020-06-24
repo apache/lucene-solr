@@ -585,6 +585,7 @@ public class XPathRecordReader {
      * records values. If a fields value is a List then they have to be
      * deep-copied for thread safety
      */
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private static Map<String, Object> getDeepCopy(Map<String, Object> values) {
       Map<String, Object> result = new HashMap<>();
       for (Map.Entry<String, Object> entry : values.entrySet()) {
@@ -645,7 +646,7 @@ public class XPathRecordReader {
     } catch (IllegalArgumentException ex) {
       // Other implementations will likely throw this exception since "reuse-instance"
       // isimplementation specific.
-      log.debug("Unable to set the 'reuse-instance' property for the input chain: " + factory);
+      log.debug("Unable to set the 'reuse-instance' property for the input chain: {}", factory);
     }
   }
 

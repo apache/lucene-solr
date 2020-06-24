@@ -251,6 +251,7 @@ public class QueryParsing {
 
       out.append(q.includesUpper() ? ']' : '}');
     } else if (query instanceof LegacyNumericRangeQuery) {
+      @SuppressWarnings({"rawtypes"})
       LegacyNumericRangeQuery q = (LegacyNumericRangeQuery) query;
       String fname = q.getField();
       FieldType ft = writeFieldName(fname, schema, out, flags);

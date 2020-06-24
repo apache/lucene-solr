@@ -139,15 +139,19 @@ class CdcrUpdateLogSynchronizer implements CdcrStateManager.CdcrStateObserver {
         ModifiableSolrParams params = new ModifiableSolrParams();
         params.set(CommonParams.ACTION, CdcrParams.CdcrAction.LASTPROCESSEDVERSION.toString());
 
+        @SuppressWarnings({"rawtypes"})
         SolrRequest request = new QueryRequest(params);
         request.setPath(path);
 
         long lastVersion;
         try {
+          @SuppressWarnings({"rawtypes"})
           NamedList response = server.request(request);
           lastVersion = (Long) response.get(CdcrParams.LAST_PROCESSED_VERSION);
-          log.debug("My leader {} says its last processed _version_ number is: {}. I am {}", leaderUrl, lastVersion,
-              core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName());
+          if (log.isDebugEnabled()) {
+            log.debug("My leader {} says its last processed _version_ number is: {}. I am {}", leaderUrl, lastVersion,
+                core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName());
+          }
         } catch (IOException | SolrServerException e) {
           log.warn("Couldn't get last processed version from leader {}: {}", leaderUrl, e.getMessage());
           return;

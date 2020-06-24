@@ -75,9 +75,8 @@ public class CoreMergeIndexesAdminHandlerTest extends SolrTestCaseJ4 {
 
     final CoreContainer cores = h.getCoreContainer();
 
-    final CoreAdminHandler admin = new CoreAdminHandler(cores);
-
-    try (SolrCore core = cores.getCore("collection1")) {
+    try (final CoreAdminHandler admin = new CoreAdminHandler(cores);
+         SolrCore core = cores.getCore("collection1")) {
       DirectoryFactory df = core.getDirectoryFactory();
       FailingDirectoryFactory dirFactory = (FailingDirectoryFactory) df;
 

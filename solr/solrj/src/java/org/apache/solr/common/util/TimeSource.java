@@ -188,12 +188,12 @@ public abstract class TimeSource {
         String[] parts = t.split(":");
         double mul = 1.0;
         if (parts.length != 2) {
-          log.warn("Invalid simTime specification, assuming multiplier==1.0: '" + type + "'");
+          log.warn("Invalid simTime specification, assuming multiplier==1.0: '{}'.", type);
         } else {
           try {
             mul = Double.parseDouble(parts[1]);
           } catch (Exception e) {
-            log.warn("Invalid simTime specification, assuming multiplier==1.0: '" + type + "'");
+            log.warn("Invalid simTime specification, assuming multiplier==1.0: '{}'.", type);
           }
         }
         return new SimTimeSource(mul);

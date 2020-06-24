@@ -143,7 +143,9 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
       rsp = getSolrClient().query(new SolrQuery("*:*").setRows(20));
     }
 
-    log.info("time taken to execute {} queries is {} ms",count, timer.getTime());
+    if (log.isInfoEnabled()) {
+      log.info("time taken to execute {} queries is {} ms", count, timer.getTime());
+    }
 
   }
 
@@ -152,6 +154,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
    * query the example
    */
   @Test
+  @SuppressWarnings({"rawtypes"})
   public void testExampleConfig() throws Exception
   {    
     SolrClient client = getSolrClient();
@@ -550,7 +553,9 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
       assertTrue("Unexpected exception message: " + concurrentClient.lastError.getMessage(), 
           concurrentClient.lastError.getMessage().contains("Remote error message: Document contains multiple values for uniqueKey"));
     } else {
-      log.info("Ignoring update test for client:" + client.getClass().getName());
+      if (log.isInfoEnabled()) {
+        log.info("Ignoring update test for client: {}", client.getClass().getName());
+      }
     }
   }
   
@@ -598,6 +603,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     assertTrue( "should be bigger ["+id1+","+id2+"]", id2 > id1 );
     
     // The score from explain should be the same as the score
+    @SuppressWarnings({"rawtypes"})
     NamedList explain = (NamedList)out1.getFieldValue( "[explain]" );
     assertEquals( out1.get( "score"), explain.get( "value" ) );
     
@@ -783,6 +789,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
   }
 
   @Test
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void testMultiContentWriterRequest() throws Exception {
     SolrClient client = getSolrClient();
     client.deleteByQuery("*:*");// delete everything!
@@ -807,7 +814,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
 
   }
 
-  private ByteBuffer getFileContent(NamedList nl, String name) throws IOException {
+  private ByteBuffer getFileContent(@SuppressWarnings({"rawtypes"})NamedList nl, String name) throws IOException {
     try (InputStream is = new FileInputStream(getFile(name))) {
       return MultiContentWriterRequest.readByteBuffer(is);
     }
@@ -1301,6 +1308,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
   }
 
   @Test
+  @SuppressWarnings({"rawtypes"})
   public void testPivotFacetsRanges() throws Exception {
     SolrClient client = getSolrClient();
 
@@ -1387,6 +1395,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
         assertEquals(0, ((Float)range.getStart()).intValue());
         assertEquals(200, ((Float)range.getEnd()).intValue());
         assertEquals(50, ((Float)range.getGap()).intValue());
+        @SuppressWarnings({"unchecked"})
         List<Count> counts = range.getCounts();
         assertEquals(4, counts.size());
         for (Count count : counts) {
@@ -1402,6 +1411,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
         assertEquals(0, ((Float) range.getStart()).intValue());
         assertEquals(200, ((Float) range.getEnd()).intValue());
         assertEquals(50, ((Float) range.getGap()).intValue());
+        @SuppressWarnings({"unchecked"})
         List<Count> counts = range.getCounts();
         assertEquals(4, counts.size());
         for (Count count : counts) {
@@ -1425,6 +1435,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
         assertEquals(0, ((Float)range.getStart()).intValue());
         assertEquals(200, ((Float)range.getEnd()).intValue());
         assertEquals(50, ((Float)range.getGap()).intValue());
+        @SuppressWarnings({"unchecked"})
         List<Count> counts = range.getCounts();
         assertEquals(4, counts.size());
         for (Count count : counts) {
@@ -1440,6 +1451,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
         assertEquals(0, ((Float)range.getStart()).intValue());
         assertEquals(200, ((Float)range.getEnd()).intValue());
         assertEquals(50, ((Float)range.getGap()).intValue());
+        @SuppressWarnings({"unchecked"})
         List<Count> counts = range.getCounts();
         assertEquals(4, counts.size());
         for (Count count : counts) {
@@ -1823,6 +1835,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testUpdateMultiValuedField() throws Exception {
     SolrClient solrClient = getSolrClient();
     SolrInputDocument doc = new SolrInputDocument();

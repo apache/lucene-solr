@@ -25,6 +25,7 @@ import java.net.ConnectException;
 import java.net.MalformedURLException;
 import java.net.SocketTimeoutException;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.util.Arrays;
@@ -67,7 +68,6 @@ import org.apache.http.entity.mime.content.InputStreamBody;
 import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicNameValuePair;
-import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -95,7 +95,7 @@ import static org.apache.solr.common.util.Utils.getObjectByPath;
  */
 public class HttpSolrClient extends BaseHttpSolrClient {
 
-  private static final String UTF_8 = StandardCharsets.UTF_8.name();
+  private static final Charset FALLBACK_CHARSET = StandardCharsets.UTF_8;
   private static final String DEFAULT_PATH = "/select";
   private static final long serialVersionUID = -946812319974801896L;
   
@@ -239,7 +239,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
    *      org.apache.solr.client.solrj.ResponseParser)
    */
   @Override
-  public NamedList<Object> request(final SolrRequest request, String collection)
+  public NamedList<Object> request(@SuppressWarnings({"rawtypes"})final SolrRequest request, String collection)
       throws SolrServerException, IOException {
     ResponseParser responseParser = request.getResponseParser();
     if (responseParser == null) {
@@ -248,15 +248,16 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     return request(request, responseParser, collection);
   }
 
-  public NamedList<Object> request(final SolrRequest request, final ResponseParser processor) throws SolrServerException, IOException {
+  public NamedList<Object> request(@SuppressWarnings({"rawtypes"})final SolrRequest request, final ResponseParser processor) throws SolrServerException, IOException {
     return request(request, processor, null);
   }
   
-  public NamedList<Object> request(final SolrRequest request, final ResponseParser processor, String collection)
+  public NamedList<Object> request(@SuppressWarnings({"rawtypes"})final SolrRequest request, final ResponseParser processor, String collection)
       throws SolrServerException, IOException {
     HttpRequestBase method = createMethod(request, collection);
     setBasicAuthHeader(request, method);
     if (request.getHeaders() != null) {
+      @SuppressWarnings({"unchecked"})
       Map<String, String> headers = request.getHeaders();
       for (Map.Entry<String, String> entry : headers.entrySet()) {
         method.setHeader(entry.getKey(), entry.getValue());
@@ -265,14 +266,14 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     return executeMethod(method, request.getUserPrincipal(), processor, isV2ApiRequest(request));
   }
 
-  private boolean isV2ApiRequest(final SolrRequest request) {
+  private boolean isV2ApiRequest(@SuppressWarnings({"rawtypes"})final SolrRequest request) {
     return request instanceof V2Request || request.getPath().contains("/____v2");
   }
 
-  private void setBasicAuthHeader(SolrRequest request, HttpRequestBase method) throws UnsupportedEncodingException {
+  private void setBasicAuthHeader(@SuppressWarnings({"rawtypes"})SolrRequest request, HttpRequestBase method) throws UnsupportedEncodingException {
     if (request.getBasicAuthUser() != null && request.getBasicAuthPassword() != null) {
       String userPass = request.getBasicAuthUser() + ":" + request.getBasicAuthPassword();
-      String encoded = Base64.byteArrayToBase64(userPass.getBytes(UTF_8));
+      String encoded = Base64.byteArrayToBase64(userPass.getBytes(FALLBACK_CHARSET));
       method.setHeader(new BasicHeader("Authorization", "Basic " + encoded));
     }
   }
@@ -288,7 +289,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
   /**
    * @lucene.experimental
    */
-  public HttpUriRequestResponse httpUriRequest(final SolrRequest request)
+  public HttpUriRequestResponse httpUriRequest(@SuppressWarnings({"rawtypes"})final SolrRequest request)
       throws SolrServerException, IOException {
     ResponseParser responseParser = request.getResponseParser();
     if (responseParser == null) {
@@ -300,7 +301,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
   /**
    * @lucene.experimental
    */
-  public HttpUriRequestResponse httpUriRequest(final SolrRequest request, final ResponseParser processor) throws SolrServerException, IOException {
+  public HttpUriRequestResponse httpUriRequest(@SuppressWarnings({"rawtypes"})final SolrRequest request, final ResponseParser processor) throws SolrServerException, IOException {
     HttpUriRequestResponse mrr = new HttpUriRequestResponse();
     final HttpRequestBase method = createMethod(request, null);
     ExecutorService pool = ExecutorUtil.newMDCAwareFixedThreadPool(1, new SolrNamedThreadFactory("httpUriRequest"));
@@ -340,7 +341,8 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     return new URL(oldURL.getProtocol(), oldURL.getHost(), oldURL.getPort(), newPath).toString();
   }
 
-  protected HttpRequestBase createMethod(SolrRequest request, String collection) throws IOException, SolrServerException {
+  @SuppressWarnings({"unchecked"})
+  protected HttpRequestBase createMethod(@SuppressWarnings({"rawtypes"})SolrRequest request, String collection) throws IOException, SolrServerException {
     if (request instanceof V2RequestSupport) {
       request = ((V2RequestSupport) request).getV2Request();
     }
@@ -474,7 +476,11 @@ public class HttpSolrClient extends BaseHttpSolrClient {
 
   }
 
-  private HttpEntityEnclosingRequestBase fillContentStream(SolrRequest request, Collection<ContentStream> streams, ModifiableSolrParams wparams, boolean isMultipart, LinkedList<NameValuePair> postOrPutParams, String fullQueryUrl) throws IOException {
+  private HttpEntityEnclosingRequestBase fillContentStream(
+          @SuppressWarnings({"rawtypes"})SolrRequest request,
+          Collection<ContentStream> streams, ModifiableSolrParams wparams,
+          boolean isMultipart, LinkedList<NameValuePair> postOrPutParams,
+          String fullQueryUrl) throws IOException {
     HttpEntityEnclosingRequestBase postOrPut = SolrRequest.METHOD.POST == request.getMethod() ?
         new HttpPost(fullQueryUrl) : new HttpPut(fullQueryUrl);
 
@@ -533,6 +539,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
 
   private static final List<String> errPath = Arrays.asList("metadata", "error-class");//Utils.getObjectByPath(err, false,"metadata/error-class")
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   protected NamedList<Object> executeMethod(HttpRequestBase method, Principal userPrincipal, final ResponseParser processor, final boolean isV2Api) throws SolrServerException {
     method.addHeader("User-Agent", AGENT);
  
@@ -568,12 +575,18 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       // Read the contents
       entity = response.getEntity();
       respBody = entity.getContent();
-      Header ctHeader = response.getLastHeader("content-type");
-      String contentType;
-      if (ctHeader != null) {
-        contentType = ctHeader.getValue();
-      } else {
-        contentType = "";
+      String mimeType = null;
+      Charset charset = null;
+      String charsetName = null;
+
+      ContentType contentType = ContentType.get(entity);
+      if (contentType != null) {
+        mimeType = contentType.getMimeType().trim().toLowerCase(Locale.ROOT);
+        charset = contentType.getCharset();
+
+        if (charset != null) {
+          charsetName = charset.name();
+        }
       }
 
       // handle some http level checks before trying to parse the response
@@ -590,7 +603,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
           }
           break;
         default:
-          if (processor == null || "".equals(contentType)) {
+          if (processor == null || contentType == null) {
             throw new RemoteSolrException(baseUrl, httpStatus, "non ok status: " + httpStatus
                 + ", message:" + response.getStatusLine().getReasonPhrase(),
                 null);
@@ -606,34 +619,26 @@ public class HttpSolrClient extends BaseHttpSolrClient {
         shouldClose = false;
         return rsp;
       }
-      
+
       String procCt = processor.getContentType();
       if (procCt != null) {
         String procMimeType = ContentType.parse(procCt).getMimeType().trim().toLowerCase(Locale.ROOT);
-        String mimeType = ContentType.parse(contentType).getMimeType().trim().toLowerCase(Locale.ROOT);
         if (!procMimeType.equals(mimeType)) {
           // unexpected mime type
           String msg = "Expected mime type " + procMimeType + " but got " + mimeType + ".";
-          Header encodingHeader = response.getEntity().getContentEncoding();
-          String encoding;
-          if (encodingHeader != null) {
-            encoding = encodingHeader.getValue();
-          } else {
-            encoding = "UTF-8"; // try UTF-8
-          }
+          Charset exceptionCharset = charset != null? charset : FALLBACK_CHARSET;
           try {
-            msg = msg + " " + IOUtils.toString(respBody, encoding);
+            msg = msg + " " + IOUtils.toString(respBody, exceptionCharset);
           } catch (IOException e) {
-            throw new RemoteSolrException(baseUrl, httpStatus, "Could not parse response with encoding " + encoding, e);
+            throw new RemoteSolrException(baseUrl, httpStatus, "Could not parse response with encoding " + exceptionCharset, e);
           }
           throw new RemoteSolrException(baseUrl, httpStatus, msg, null);
         }
       }
       
       NamedList<Object> rsp = null;
-      String charset = EntityUtils.getContentCharSet(response.getEntity());
       try {
-        rsp = processor.processResponse(respBody, charset);
+        rsp = processor.processResponse(respBody, charsetName);
       } catch (Exception e) {
         throw new RemoteSolrException(baseUrl, httpStatus, e.getMessage(), e);
       }
@@ -645,13 +650,24 @@ public class HttpSolrClient extends BaseHttpSolrClient {
         NamedList<String> metadata = null;
         String reason = null;
         try {
-          NamedList err = (NamedList) rsp.get("error");
-          if (err != null) {
-            reason = (String) err.get("msg");
+          if (error != null) {
+            reason = (String) Utils.getObjectByPath(error, false, Collections.singletonList("msg"));
             if(reason == null) {
-              reason = (String) err.get("trace");
+              reason = (String) Utils.getObjectByPath(error, false, Collections.singletonList("trace"));
             }
-            metadata = (NamedList<String>)err.get("metadata");
+            Object metadataObj = Utils.getObjectByPath(error, false, Collections.singletonList("metadata"));
+            if  (metadataObj instanceof NamedList) {
+              metadata = (NamedList<String>) metadataObj;
+            } else if (metadataObj instanceof List) {
+              // NamedList parsed as List convert to NamedList again
+              List<Object> list = (List<Object>) metadataObj;
+              metadata = new NamedList<>(list.size()/2);
+              for (int i = 0; i < list.size(); i+=2) {
+                metadata.add((String)list.get(i), (String) list.get(i+1));
+              }
+            } else if (metadataObj instanceof Map) {
+              metadata = new NamedList((Map) metadataObj);
+            }
           }
         } catch (Exception ex) {}
         if (reason == null) {
@@ -660,7 +676,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
             .append("\n\n")
             .append("request: ")
             .append(method.getURI());
-          reason = java.net.URLDecoder.decode(msg.toString(), UTF_8);
+          reason = java.net.URLDecoder.decode(msg.toString(), FALLBACK_CHARSET);
         }
         RemoteSolrException rss = new RemoteSolrException(baseUrl, httpStatus, reason, null);
         if (metadata != null) rss.setMetadata(metadata);

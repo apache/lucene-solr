@@ -529,7 +529,7 @@ public class TestFSTs extends LuceneTestCase {
 
         Directory dir = FSDirectory.open(dirOut);
         IndexOutput out = dir.createOutput("fst.bin", IOContext.DEFAULT);
-        fst.save(out);
+        fst.save(out, out);
         out.close();
         System.out.println("Saved FST to fst.bin.");
 
@@ -570,7 +570,7 @@ public class TestFSTs extends LuceneTestCase {
               } else {
                 // Get by output
                 final Long output = (Long) getOutput(intsRef.get(), ord);
-                @SuppressWarnings("unchecked") final IntsRef actual = Util.getByOutput((FST<Long>) fst, output.longValue());
+                @SuppressWarnings({"unchecked", "deprecation"}) final IntsRef actual = Util.getByOutput((FST<Long>) fst, output.longValue());
                 if (actual == null) {
                   throw new RuntimeException("unexpected null input from output=" + output);
                 }
@@ -833,13 +833,17 @@ public class TestFSTs extends LuceneTestCase {
     assertEquals(b, seekResult.input);
     assertEquals(42, (long) seekResult.output);
 
-    assertEquals(Util.toIntsRef(new BytesRef("c"), new IntsRefBuilder()),
-                 Util.getByOutput(fst, 13824324872317238L));
-    assertNull(Util.getByOutput(fst, 47));
-    assertEquals(Util.toIntsRef(new BytesRef("b"), new IntsRefBuilder()),
-                 Util.getByOutput(fst, 42));
-    assertEquals(Util.toIntsRef(new BytesRef("a"), new IntsRefBuilder()),
-                 Util.getByOutput(fst, 17));
+    @SuppressWarnings("deprecation") IntsRef byOutput = Util.getByOutput(fst, 13824324872317238L);
+    assertEquals(Util.toIntsRef(new BytesRef("c"), new IntsRefBuilder()), byOutput);
+
+    @SuppressWarnings("deprecation") IntsRef byOutput47 = Util.getByOutput(fst, 47);
+    assertNull(byOutput47);
+
+    @SuppressWarnings("deprecation") IntsRef byOutput42 = Util.getByOutput(fst, 42);
+    assertEquals(Util.toIntsRef(new BytesRef("b"), new IntsRefBuilder()), byOutput42);
+
+    @SuppressWarnings("deprecation") IntsRef byOutput17 = Util.getByOutput(fst, 17);
+    assertEquals(Util.toIntsRef(new BytesRef("a"), new IntsRefBuilder()), byOutput17);
   }
 
   public void testPrimaryKeys() throws Exception {
@@ -1191,11 +1195,11 @@ public class TestFSTs extends LuceneTestCase {
     // Make sure it still works after save/load:
     Directory dir = newDirectory();
     IndexOutput out = dir.createOutput("fst", IOContext.DEFAULT);
-    fst.save(out);
+    fst.save(out, out);
     out.close();
 
     IndexInput in = dir.openInput("fst", IOContext.DEFAULT);
-    final FST<Long> fst2 = new FST<>(in, outputs);
+    final FST<Long> fst2 = new FST<>(in, in, outputs);
     checkStopNodes(fst2, outputs);
     in.close();
     dir.close();

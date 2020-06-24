@@ -272,15 +272,15 @@ public class CloudSolrStream extends TupleStream implements Expressible {
   *
   ***/
   public void open() throws IOException {
-    this.tuples = new TreeSet();
-    this.solrStreams = new ArrayList();
-    this.eofTuples = Collections.synchronizedMap(new HashMap());
+    this.tuples = new TreeSet<>();
+    this.solrStreams = new ArrayList<>();
+    this.eofTuples = Collections.synchronizedMap(new HashMap<>());
     constructStreams();
     openStreams();
   }
 
 
-  public Map getEofTuples() {
+  public Map<String, Tuple> getEofTuples() {
     return this.eofTuples;
   }
 
@@ -288,9 +288,11 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     return solrStreams;
   }
 
+  @SuppressWarnings({"unchecked"})
   private StreamComparator parseComp(String sort, String fl) throws IOException {
 
     String[] fls = fl.split(",");
+    @SuppressWarnings({"rawtypes"})
     HashSet fieldSet = new HashSet();
     for(String f : fls) {
       fieldSet.add(f.trim()); //Handle spaces in the field list.
@@ -339,7 +341,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
 
     // check for alias or collection
 
-    List<String> allCollections = new ArrayList();
+    List<String> allCollections = new ArrayList<>();
     String[] collectionNames = collectionName.split(",");
     for(String col : collectionNames) {
       List<String> collections = checkAlias
@@ -397,7 +399,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
   private void openStreams() throws IOException {
     ExecutorService service = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("CloudSolrStream"));
     try {
-      List<Future<TupleWrapper>> futures = new ArrayList();
+      List<Future<TupleWrapper>> futures = new ArrayList<>();
       for (TupleStream solrStream : solrStreams) {
         StreamOpener so = new StreamOpener((SolrStream) solrStream, comp);
         Future<TupleWrapper> future = service.submit(so);
@@ -453,17 +455,15 @@ public class CloudSolrStream extends TupleStream implements Expressible {
       }
       return t;
     } else {
-      Map m = new HashMap();
+      Tuple tuple = Tuple.EOF();
       if(trace) {
-        m.put("_COLLECTION_", this.collection);
+        tuple.put("_COLLECTION_", this.collection);
       }
-
-      m.put("EOF", true);
-
-      return new Tuple(m);
+      return tuple;
     }
   }
 
+  @SuppressWarnings({"overrides"})
   protected class TupleWrapper implements Comparable<TupleWrapper> {
     private Tuple tuple;
     private SolrStream stream;

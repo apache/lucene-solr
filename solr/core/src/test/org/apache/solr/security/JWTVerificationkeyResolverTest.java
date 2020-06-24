@@ -65,9 +65,11 @@ public class JWTVerificationkeyResolverTest extends SolrTestCaseJ4 {
   private KeyHolder k4;
   private KeyHolder k5;
   private List<JsonWebKey> keysToReturnFromSecondJwk;
+  @SuppressWarnings({"rawtypes"})
   private Iterator refreshSequenceForSecondJwk;
 
   @Before
+  @SuppressWarnings({"unchecked"})
   public void setUp() throws Exception {
     super.setUp();
     k1 = new KeyHolder("k1");
@@ -90,7 +92,7 @@ public class JWTVerificationkeyResolverTest extends SolrTestCaseJ4 {
     when(httpsJwksFactory.createList(anyList())).thenReturn(asList(firstJwkList, secondJwkList));
 
     JWTIssuerConfig issuerConfig = new JWTIssuerConfig("primary").setIss("foo").setJwksUrl(asList("url1", "url2"));
-    issuerConfig.setHttpsJwksFactory(httpsJwksFactory);
+    JWTIssuerConfig.setHttpsJwksFactory(httpsJwksFactory);
     resolver = new JWTVerificationkeyResolver(Arrays.asList(issuerConfig), true);
 
     assumeWorkingMockito();

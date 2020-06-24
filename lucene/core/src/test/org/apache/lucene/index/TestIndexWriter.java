@@ -3448,12 +3448,12 @@ public class TestIndexWriter extends LuceneTestCase {
     d.add(new StringField("id", "doc-1", Field.Store.YES));
     writer.addDocument(d);
     writer.deleteDocuments(new Term("id", "doc-1"));
-    assertEquals(1, writer.listOfSegmentCommitInfos().size());
+    assertEquals(1, writer.cloneSegmentInfos().size());
     writer.flush();
-    assertEquals(1, writer.listOfSegmentCommitInfos().size());
+    assertEquals(1, writer.cloneSegmentInfos().size());
     writer.commit();
     assertFiles(writer);
-    assertEquals(1, writer.listOfSegmentCommitInfos().size());
+    assertEquals(1, writer.cloneSegmentInfos().size());
     IOUtils.close(writer, dir);
   }
 
@@ -4164,6 +4164,40 @@ public class TestIndexWriter extends LuceneTestCase {
         segmentCommitInfos = SegmentInfos.readLatestCommit(dir);
         id = StringHelper.idToString(segmentCommitInfos.info(0).getId());
         assertTrue(ids.add(id));
+      }
+    }
+  }
+
+  public void testMergeZeroDocsMergeIsClosedOnce() throws IOException {
+    LogDocMergePolicy keepAllSegments = new LogDocMergePolicy() {
+      @Override
+      public boolean keepFullyDeletedSegment(IOSupplier<CodecReader> readerIOSupplier) {
+        return true;
+      }
+    };
+    try (Directory dir = newDirectory()) {
+      try (IndexWriter writer = new IndexWriter(dir,
+          new IndexWriterConfig().setMergePolicy(new OneMergeWrappingMergePolicy(keepAllSegments, merge -> {
+            SetOnce<Boolean> onlyFinishOnce = new SetOnce<>();
+            return new MergePolicy.OneMerge(merge.segments) {
+              @Override
+              public void mergeFinished(boolean success) {
+                onlyFinishOnce.set(true);
+              }
+            };
+          })))) {
+          Document doc = new Document();
+          doc.add(new StringField("id", "1", Field.Store.NO));
+          writer.addDocument(doc);
+          writer.flush();
+          writer.addDocument(doc);
+          writer.flush();
+          writer.deleteDocuments(new Term("id", "1"));
+          writer.flush();
+          assertEquals(2, writer.getSegmentCount());
+          assertEquals(0, writer.getDocStats().numDocs);
+          assertEquals(2, writer.getDocStats().maxDoc);
+          writer.forceMerge(1);
       }
     }
   }

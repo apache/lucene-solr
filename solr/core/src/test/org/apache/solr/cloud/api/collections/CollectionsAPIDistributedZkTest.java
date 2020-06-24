@@ -100,6 +100,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     System.setProperty("createCollectionWaitTimeTillActive", "5");
     TestInjection.randomDelayInCoreCreation = "true:5";
     System.setProperty("validateAfterInactivity", "200");
+    System.setProperty("solr.allowPaths", "*");
 
     configureCluster(4)
         .addConfig("conf", configset(getConfigSet()))
@@ -114,6 +115,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
       shutdownCluster();
     } finally {
       System.clearProperty("createCollectionWaitTimeTillActive");
+      System.clearProperty("solr.allowPaths");
       super.tearDown();
     }
   }
@@ -213,6 +215,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     params.set("action", CollectionAction.CREATE.toString());
     params.set("numShards", 2);
     // missing required collection parameter
+    @SuppressWarnings({"rawtypes"})
     final SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
@@ -223,6 +226,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
 
   @Test
   public void testTooManyReplicas() {
+    @SuppressWarnings({"rawtypes"})
     CollectionAdminRequest req = CollectionAdminRequest.createCollection("collection", "conf", 2, 10);
 
     expectThrows(Exception.class, () -> {
@@ -239,6 +243,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     params.set(REPLICATION_FACTOR, 10);
     params.set("collection.configName", "conf");
 
+    @SuppressWarnings({"rawtypes"})
     final SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
@@ -256,6 +261,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     params.set("numShards", 0);
     params.set("collection.configName", "conf");
 
+    @SuppressWarnings({"rawtypes"})
     final SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
     expectThrows(Exception.class, () -> {

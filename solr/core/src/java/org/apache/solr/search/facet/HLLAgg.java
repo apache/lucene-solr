@@ -75,7 +75,7 @@ public class HLLAgg extends StrAggValueSource {
     return new Merger();
   }
 
-  private static class Merger extends FacetSortableMerger {
+  private static class Merger extends FacetModule.FacetSortableMerger {
     HLL aggregate = null;
     long answer = -1; // -1 means unset
 
@@ -86,6 +86,9 @@ public class HLLAgg extends StrAggValueSource {
         return;
       }
 
+
+
+      @SuppressWarnings({"rawtypes"})
       SimpleOrderedMap map = (SimpleOrderedMap)facetResult;
       byte[] serialized = ((byte[])map.get("hll"));
       HLL subHLL = HLL.fromBytes(serialized);
@@ -109,7 +112,7 @@ public class HLLAgg extends StrAggValueSource {
     }
 
     @Override
-    public int compareTo(FacetSortableMerger other, FacetRequest.SortDirection direction) {
+    public int compareTo(FacetModule.FacetSortableMerger other, FacetRequest.SortDirection direction) {
       return Long.compare( getLong(), ((Merger)other).getLong() );
     }
   }
@@ -160,6 +163,7 @@ public class HLLAgg extends StrAggValueSource {
       return set == null ? 0 : set.cardinality();
     }
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public Object getShardValue(int slot) throws IOException {
       HLL hll = sets[slot];
       if (hll == null) return NO_VALUES;

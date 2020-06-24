@@ -1,5 +1,14 @@
 # Apache Lucene Migration Guide
 
+## RegExpQuery now rejects invalid backslashes (LUCENE-9370)
+
+We now follow the [Java rules](https://docs.oracle.com/javase/8/docs/api/java/util/regex/Pattern.html#bs) for accepting backslashes. 
+Alphabetic characters other than s, S, w, W, d or D that are preceded by a backslash are considered illegal syntax and will throw an exception.  
+
+## RegExp certain regular expressions now match differently (LUCENE-9336)
+
+The commonly used regular expressions \w \W \d \D \s and \S now work the same way [Java Pattern](https://docs.oracle.com/javase/tutorial/essential/regex/pre_char_classes.html#CHART) matching works. Previously these expressions were (mis)interpreted as searches for the literal characters w, d, s etc. 
+
 ## NGramFilterFactory "keepShortTerm" option was fixed to "preserveOriginal" (LUCENE-9259)
 
 The factory option name to output the original term was corrected in accordance with its Javadoc.
@@ -278,3 +287,9 @@ TopDocsCollector shall no longer return an empty TopDocs for malformed arguments
 Rather, an IllegalArgumentException shall be thrown. This is introduced for better
 defence and to ensure that there is no bubbling up of errors when Lucene is
 used in multi level applications
+
+## Assumption of data consistency between different data-structures sharing the same field name
+
+Sorting on a numeric field that is indexed with both doc values and points may use an
+optimization to skip non-competitive documents. This optimization relies on the assumption
+that the same data is stored in these points and doc values.

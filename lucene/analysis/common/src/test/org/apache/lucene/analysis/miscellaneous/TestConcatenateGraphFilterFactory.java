@@ -64,8 +64,9 @@ public class TestConcatenateGraphFilterFactory extends BaseTokenStreamFactoryTes
     tokenizer.setReader(reader);
     TokenStream stream = tokenizer;
     stream = new StopFilter(stream, StopFilter.makeStopSet("B2"));
+    @SuppressWarnings("deprecation") Version LUCENE_8_0_0 = Version.LUCENE_8_0_0;
     stream = tokenFilterFactory("ConcatenateGraph",
-        Version.LUCENE_8_0_0,
+        LUCENE_8_0_0,
         "preserveSep", "false"
     ).create(stream);
     assertTokenStreamContents(stream, new String[]{output});

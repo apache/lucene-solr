@@ -139,6 +139,7 @@ public class TestWithCollection extends SolrCloudTestCase {
         "      {'cores':'<10', 'node':'#ANY'}," +
         "    ]" +
         "}";
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     solrClient.request(req);
 
@@ -258,6 +259,7 @@ public class TestWithCollection extends SolrCloudTestCase {
         "      {'replica':'<2', 'node':'#ANY'}," +
         "    ]" +
         "}";
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     solrClient.request(req);
 
@@ -299,6 +301,7 @@ public class TestWithCollection extends SolrCloudTestCase {
         "      {'replica':'<2', 'node':'#ANY'}," +
         "    ]" +
         "}";
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     solrClient.request(req);
 
@@ -349,6 +352,7 @@ public class TestWithCollection extends SolrCloudTestCase {
         "      {'replica':'<2', 'node':'#ANY'}," +
         "    ]" +
         "}";
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     solrClient.request(req);
 
@@ -411,6 +415,7 @@ public class TestWithCollection extends SolrCloudTestCase {
         "      {'replica':'<2', 'node':'#ANY'}," +
         "    ]" +
         "}";
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     solrClient.request(req);
 
@@ -528,6 +533,7 @@ public class TestWithCollection extends SolrCloudTestCase {
         "      {'replica':'<2', 'node':'#ANY'}," +
         "    ]" +
         "}";
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     solrClient.request(req);
 
