@@ -517,6 +517,7 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
     System.out.println(suggestions);
   }
 
+  @SuppressWarnings({"unchecked"})
   public void testAddTooManyPerPolicy() {
     Map<String, Object> m = (Map<String, Object>) loadFromResource("testAddTooManyPerPolicy.json");
     SolrCloudManager cloudManagerFromDiagnostics = createCloudManagerFromDiagnostics(m);
