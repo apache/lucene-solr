@@ -18,7 +18,6 @@ package org.apache.lucene.index;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -3284,9 +3283,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
                       }
 
                       @Override
-                      void setMergeReaders(IOContext mergeContext, ReaderPool readerPool) throws IOException {
+                      void initMergeReaders(IOContext mergeContext, Function<SegmentCommitInfo, ReadersAndUpdates> readerFactory) throws IOException {
                         if (onlyOnce.compareAndSet(false, true)) {
-                          super.setMergeReaders(mergeContext, readerPool);
+                          super.initMergeReaders(mergeContext, readerFactory);
                         }
                       }
 
@@ -3299,7 +3298,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
                 if (onCommitMerges != null) {
                   for (MergePolicy.OneMerge merge : onCommitMerges.merges) {
                     // TODO we need to release these readers in the case of an aborted merge
-                    merge.setMergeReaders(IOContext.DEFAULT, readerPool);
+                    merge.initMergeReaders(IOContext.DEFAULT, sci -> getPooledInstance(sci, true));
                   }
                 }
               }
@@ -3773,7 +3772,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       MergeState.DocMap segDocMap = mergeState.docMaps[i];
       MergeState.DocMap segLeafDocMap = mergeState.leafDocMaps[i];
 
-      carryOverHardDeletes(mergedDeletesAndUpdates, maxDoc, mergeState.liveDocs[i],  merge.hardLiveDocs.get(i), rld.getHardLiveDocs(),
+      carryOverHardDeletes(mergedDeletesAndUpdates, maxDoc, mergeState.liveDocs[i],  merge.getMergeReader().get(i).hardLiveDocs, rld.getHardLiveDocs(),
           segDocMap, segLeafDocMap);
 
       // Now carry over all doc values updates that were resolved while we were merging, remapping the docIDs to the newly merged docIDs.
@@ -3926,7 +3925,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
   @SuppressWarnings("try")
   private synchronized boolean commitMerge(MergePolicy.OneMerge merge, MergeState mergeState) throws IOException {
-
     merge.onMergeCommit();
     testPoint("startCommitMerge");
 
@@ -4369,25 +4367,22 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       // first call mergeFinished before we potentially drop the reader and the last reference.
       merge.mergeFinished(suppressExceptions == false, droppedSegment);
     } finally {
-      try {
-        IOUtils.applyToAll(merge.readers, sr -> {
-          final ReadersAndUpdates rld = getPooledInstance(sr.getOriginalSegmentInfo(), false);
-          // We still hold a ref so it should not have been removed:
-          assert rld != null;
-          if (drop) {
-            rld.dropChanges();
-          } else {
-            rld.dropMergingUpdates();
-          }
-          rld.release(sr);
-          release(rld);
-          if (drop) {
-            readerPool.drop(rld.info);
-          }
-        });
-      } finally {
-        Collections.fill(merge.readers, null);
-      }
+      IOUtils.applyToAll(merge.clearMergeReader(), mr -> {
+        final SegmentReader sr = mr.reader;
+        final ReadersAndUpdates rld = getPooledInstance(sr.getOriginalSegmentInfo(), false);
+        // We still hold a ref so it should not have been removed:
+        assert rld != null;
+        if (drop) {
+          rld.dropChanges();
+        } else {
+          rld.dropMergingUpdates();
+        }
+        rld.release(sr);
+        release(rld);
+        if (drop) {
+          readerPool.drop(rld.info);
+        }
+      });
     }
 
   }
@@ -4444,17 +4439,17 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     // closed:
     boolean success = false;
     try {
-      merge.setMergeReaders(context, readerPool);
+      merge.initMergeReaders(context, sci -> getPooledInstance(sci, true));
       // Let the merge wrap readers
       List<CodecReader> mergeReaders = new ArrayList<>();
       Counter softDeleteCount = Counter.newCounter(false);
-      for (int r = 0; r < merge.readers.size(); r++) {
-        SegmentReader reader = merge.readers.get(r);
+      for (MergePolicy.MergeReader mergeReader : merge.getMergeReader()) {
+        SegmentReader reader = mergeReader.reader;
         CodecReader wrappedReader = merge.wrapForMerge(reader);
         validateMergeReader(wrappedReader);
         if (softDeletesEnabled) {
           if (reader != wrappedReader) { // if we don't have a wrapped reader we won't preserve any soft-deletes
-            Bits hardLiveDocs = merge.hardLiveDocs.get(r);
+            Bits hardLiveDocs = mergeReader.hardLiveDocs;
             if (hardLiveDocs != null) { // we only need to do this accounting if we have mixed deletes
               Bits wrappedLiveDocs = wrappedReader.getLiveDocs();
               Counter hardDeleteCounter = Counter.newCounter(false);

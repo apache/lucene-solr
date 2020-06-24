@@ -34,7 +34,6 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -218,8 +217,7 @@ public abstract class MergePolicy {
     // Sum of sizeInBytes of all SegmentInfos; set by IW.mergeInit
     volatile long totalMergeBytes;
 
-    final List<SegmentReader> readers;        // used by IndexWriter
-    final List<Bits> hardLiveDocs;        // used by IndexWriter
+    private List<MergeReader> mergeReaders;        // used by IndexWriter
 
     /** Segments to be merged. */
     public final List<SegmentCommitInfo> segments;
@@ -246,9 +244,7 @@ public abstract class MergePolicy {
       this.segments = List.copyOf(segments);
       totalMaxDoc = segments.stream().mapToInt(i -> i.info.maxDoc()).sum();
       mergeProgress = new OneMergeProgress();
-      hardLiveDocs = new ArrayList<>(segments.size());
-      readers = new ArrayList<>(segments.size());
-
+      mergeReaders = List.of();
     }
 
     /** 
@@ -410,20 +406,45 @@ public abstract class MergePolicy {
       return Optional.ofNullable(mergeCompleted.getNow(null));
     }
 
+
+    /**
+     * Called before the merge is committed
+     */
     void onMergeCommit() {
     }
 
-    void setMergeReaders(IOContext mergeContext, ReaderPool readerPool) throws IOException {
+    /**
+     * Sets the merge readers for this merge.
+     */
+    void initMergeReaders(IOContext mergeContext, Function<SegmentCommitInfo, ReadersAndUpdates> readerFactory) throws IOException {
+      assert mergeReaders.isEmpty() : "merge readers must be empty";
+      assert mergeCompleted.isDone() == false : "merge is already done";
+      ArrayList<MergeReader> readers = new ArrayList<>(segments.size());
       for (final SegmentCommitInfo info : segments) {
         // Hold onto the "live" reader; we will use this to
         // commit merged deletes
-        final ReadersAndUpdates rld = readerPool.get(info, true);
+        final ReadersAndUpdates rld = readerFactory.apply(info);
         rld.setIsMerging();
-        ReadersAndUpdates.MergeReader mr = rld.getReaderForMerge(mergeContext);
-        SegmentReader reader = mr.reader;
-        hardLiveDocs.add(mr.hardLiveDocs);
-        readers.add(reader);
+        readers.add(rld.getReaderForMerge(mergeContext));
       }
+      this.mergeReaders = List.copyOf(readers);
+    }
+
+    /**
+     * Returns the merge readers or an empty list if the readers were not initialized yet.
+     */
+    List<MergeReader> getMergeReader() {
+      return mergeReaders;
+    }
+
+    /**
+     * Clears the list of merge readers;
+     */
+    List<MergeReader> clearMergeReader() {
+      assert mergeCompleted.isDone();
+      List<MergeReader> readers = mergeReaders;
+      mergeReaders = List.of();
+      return readers;
     }
   }
 
@@ -792,5 +813,15 @@ public abstract class MergePolicy {
      * Returns an unmodifiable set of segments that are currently merging.
      */
     Set<SegmentCommitInfo> getMergingSegments();
+  }
+
+  final static class MergeReader {
+    final SegmentReader reader;
+    final Bits hardLiveDocs;
+
+    MergeReader(SegmentReader reader, Bits hardLiveDocs) {
+      this.reader = reader;
+      this.hardLiveDocs = hardLiveDocs;
+    }
   }
 }

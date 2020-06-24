@@ -392,9 +392,17 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
         d1.add(new StringField("id", "1", Field.Store.NO));
         Document d2 = new Document();
         d2.add(new StringField("id", "2", Field.Store.NO));
+        Document d3 = new Document();
+        d3.add(new StringField("id", "3", Field.Store.NO));
         writer.addDocument(d1);
         writer.flush();
         writer.addDocument(d2);
+        boolean addThreeDocs = random().nextBoolean();
+        int expectedNumDocs = 2;
+        if (addThreeDocs) { // sometimes add another doc to ensure we don't have a fully deleted segment
+          expectedNumDocs = 3;
+          writer.addDocument(d3);
+        }
         Thread t = new Thread(() -> {
           try {
             waitForMerge.await();
@@ -415,13 +423,13 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
         writer.commit();
         t.join();
         try (DirectoryReader open = new SoftDeletesDirectoryReaderWrapper(DirectoryReader.open(directory), "soft_delete")) {
-          assertEquals(2, open.numDocs());
-          assertEquals("we should not have any deletes", 2, open.maxDoc());
+          assertEquals(expectedNumDocs, open.numDocs());
+          assertEquals("we should not have any deletes", expectedNumDocs, open.maxDoc());
         }
 
         try (DirectoryReader open = DirectoryReader.open(writer)) {
-          assertEquals(2, open.numDocs());
-          assertEquals("we should not have one delete", 3, open.maxDoc());
+          assertEquals(expectedNumDocs, open.numDocs());
+          assertEquals("we should not have one delete", expectedNumDocs+1, open.maxDoc());
         }
       }
     }
