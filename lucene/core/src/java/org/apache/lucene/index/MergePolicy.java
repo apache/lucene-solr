@@ -418,14 +418,18 @@ public abstract class MergePolicy {
       assert mergeReaders.isEmpty() : "merge readers must be empty";
       assert mergeCompleted.isDone() == false : "merge is already done";
       ArrayList<MergeReader> readers = new ArrayList<>(segments.size());
-      for (final SegmentCommitInfo info : segments) {
-        // Hold onto the "live" reader; we will use this to
-        // commit merged deletes
-        final ReadersAndUpdates rld = readerFactory.apply(info);
-        rld.setIsMerging();
-        readers.add(rld.getReaderForMerge(mergeContext));
+      try {
+        for (final SegmentCommitInfo info : segments) {
+          // Hold onto the "live" reader; we will use this to
+          // commit merged deletes
+          final ReadersAndUpdates rld = readerFactory.apply(info);
+          rld.setIsMerging();
+          readers.add(rld.getReaderForMerge(mergeContext));
+        }
+      } finally {
+        // ensure we assign this to close them in the case of an exception
+        this.mergeReaders = List.copyOf(readers);
       }
-      this.mergeReaders = List.copyOf(readers);
     }
 
     /**

@@ -2479,13 +2479,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       mergeFinish(merge);
     });
     pendingMerges.clear();
-    IOUtils.applyToAll(runningMerges, merge -> {
+
+    for (final MergePolicy.OneMerge merge : runningMerges) {
       if (infoStream.isEnabled("IW")) {
         infoStream.message("IW", "now abort running merge " + segString(merge.segments));
       }
-      abortOneMerge(merge);
-      mergeFinish(merge);
-    });
+      merge.setAborted();
+    }
 
     // We wait here to make all merges stop.  It should not
     // take very long because they periodically check if
