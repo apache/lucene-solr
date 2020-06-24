@@ -30,8 +30,11 @@ import org.apache.solr.core.SolrCore;
  * 1. Check if any circuit breaker has triggered -- and know which circuit breaker has triggered.
  * 2. Get an instance of a specific circuit breaker and perform checks.
  *
- * It is a good practise to register new circuit breakers here if you want them checked for every
+ * It is a good practice to register new circuit breakers here if you want them checked for every
  * request.
+ *
+ * NOTE: The current way of registering new default circuit breakers is minimal and not a long term
+ * solution. There will be a follow up with a SIP for a schema API design.
  */
 public class CircuitBreakerManager {
 
@@ -39,8 +42,6 @@ public class CircuitBreakerManager {
 
   // Allows replacing of existing circuit breaker
   public void registerCircuitBreaker(CircuitBreakerType circuitBreakerType, CircuitBreaker circuitBreaker) {
-    assert circuitBreakerType != null && circuitBreaker != null;
-
     circuitBreakerMap.put(circuitBreakerType, circuitBreaker);
   }
 

@@ -28,11 +28,15 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
   private final long currentMaxHeap = MEMORY_MX_BEAN.getHeapMemoryUsage().getMax();
 
   // Assumption -- the value of these parameters will be set correctly before invoking printDebugInfo()
-  private long seenMemory;
-  private long allowedMemory;
+  private ThreadLocal<Long> seenMemory = new ThreadLocal<>();
+  private ThreadLocal<Long> allowedMemory = new ThreadLocal<>();
 
   public MemoryCircuitBreaker(SolrCore solrCore) {
     super(solrCore);
+
+    if (currentMaxHeap <= 0) {
+      throw new IllegalArgumentException("Invalid JVM state for the max heap usage");
+    }
   }
 
   // TODO: An optimization can be to trip the circuit breaker for a duration of time
@@ -44,25 +48,20 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
       return false;
     }
 
-    allowedMemory = getCurrentMemoryThreshold();
+    allowedMemory.set(getCurrentMemoryThreshold());
 
-    seenMemory = calculateLiveMemoryUsage();
+    seenMemory.set(calculateLiveMemoryUsage());
 
-    return (seenMemory >= allowedMemory);
+    return (seenMemory.get() >= allowedMemory.get());
   }
 
   @Override
   public String printDebugInfo() {
-    return "seen memory=" + seenMemory + " allowed memory=" + allowedMemory;
+    return "seenMemory=" + seenMemory + " allowedMemory=" + allowedMemory;
   }
 
   private long getCurrentMemoryThreshold() {
     int thresholdValueInPercentage = solrCore.getSolrConfig().memoryCircuitBreakerThreshold;
-
-    if (currentMaxHeap <= 0) {
-      return Long.MIN_VALUE;
-    }
-
     double thresholdInFraction = thresholdValueInPercentage / (double) 100;
     long actualLimit = (long) (currentMaxHeap * thresholdInFraction);
 
@@ -81,7 +80,8 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
   protected long calculateLiveMemoryUsage() {
     // NOTE: MemoryUsageGaugeSet provides memory usage statistics but we do not use them
     // here since MemoryUsageGaugeSet provides combination of heap and non heap usage and
-    // we are not looking into non heap usage here
+    // we are not looking into non heap usage here. Ideally, this call should not add noticeable
+    // latency to a query -- but if it does, please signify on SOLR-14588
     return MEMORY_MX_BEAN.getHeapMemoryUsage().getUsed();
   }
 }

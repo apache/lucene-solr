@@ -108,30 +108,36 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
 
     AtomicInteger failureCount = new AtomicInteger();
 
-    CircuitBreaker circuitBreaker = new BuildingUpMemoryPressureCircuitBreaker(h.getCore());
-
-    h.getCore().getCircuitBreakerManager().registerCircuitBreaker(CircuitBreakerType.MEMORY, circuitBreaker);
-
-    for (int i = 0; i < 5; i++) {
-      executor.submit(() -> {
-        try {
-          h.query(req("name:\"john smith\""));
-        } catch (SolrException e) {
-          failureCount.incrementAndGet();
-        } catch (Exception e) {
-          throw new RuntimeException(e.getMessage());
-        }
-      });
-    }
-
-    executor.shutdown();
     try {
-      executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-    } catch (InterruptedException e) {
-      throw new RuntimeException(e.getMessage());
-    }
+      CircuitBreaker circuitBreaker = new BuildingUpMemoryPressureCircuitBreaker(h.getCore());
 
-    assertEquals("Number of failed queries is not correct", 1, failureCount.get());
+      h.getCore().getCircuitBreakerManager().registerCircuitBreaker(CircuitBreakerType.MEMORY, circuitBreaker);
+
+      for (int i = 0; i < 5; i++) {
+        executor.submit(() -> {
+          try {
+            h.query(req("name:\"john smith\""));
+          } catch (SolrException e) {
+            failureCount.incrementAndGet();
+          } catch (Exception e) {
+            throw new RuntimeException(e.getMessage());
+          }
+        });
+      }
+
+      executor.shutdown();
+      try {
+        executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e.getMessage());
+      }
+
+      assertEquals("Number of failed queries is not correct", 1, failureCount.get());
+    } finally {
+      if (!executor.isShutdown()) {
+        executor.shutdown();
+      }
+    }
   }
 
   private class MockCircuitBreaker extends CircuitBreaker {

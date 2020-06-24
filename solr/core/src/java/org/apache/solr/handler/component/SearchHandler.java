@@ -300,8 +300,12 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
     Map<CircuitBreakerType, CircuitBreaker> trippedCircuitBreakers = circuitBreakerManager.checkAllCircuitBreakers();
 
     if (trippedCircuitBreakers != null) {
-      assert trippedCircuitBreakers.size() > 0;
+      final RTimerTree timer = rb.isDebug() ? req.getRequestTimer() : null;
 
+      if (timer != null) {
+        RTimerTree subt = timer.sub("circuitbreaker");
+        rb.setTimer(subt.sub("circuitbreaker"));
+      }
       String errorMessage = CircuitBreakerManager.constructFinalErrorMessageString(trippedCircuitBreakers);
       rsp.add(STATUS, FAILURE);
       rsp.setException(new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Circuit Breakers tripped " + errorMessage));
@@ -327,7 +331,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
       // debugging prepare phase
       RTimerTree subt = timer.sub( "prepare" );
       for( SearchComponent c : components ) {
-        rb.setTimer( subt.sub( c.getName() ) );
+        rb.setTimer(subt.sub( c.getName() ) );
         c.prepare(rb);
         rb.getTimer().stop();
       }
