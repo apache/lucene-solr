@@ -20,6 +20,8 @@ package org.apache.solr.util.circuitbreaker;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.solr.core.SolrCore;
+
 /**
  * Manages all registered circuit breaker instances. Responsible for a holistic view
  * of whether a circuit breaker has tripped or not.
@@ -82,5 +84,21 @@ public class CircuitBreakerManager {
     }
 
     return sb.toString();
+  }
+
+  /**
+   * Register default circuit breakers and return a constructed CircuitBreakerManager
+   * instance which serves the given circuit breakers.
+   *
+   * Any default circuit breakers should be registered here
+   */
+  public static CircuitBreakerManager buildDefaultCircuitBreakerManager(SolrCore solrCore) {
+    CircuitBreakerManager circuitBreakerManager = new CircuitBreakerManager();
+
+    // Install the default circuit breakers
+    CircuitBreaker memoryCircuitBreaker = new MemoryCircuitBreaker(solrCore);
+    circuitBreakerManager.registerCircuitBreaker(CircuitBreakerType.MEMORY, memoryCircuitBreaker);
+
+    return circuitBreakerManager;
   }
 }

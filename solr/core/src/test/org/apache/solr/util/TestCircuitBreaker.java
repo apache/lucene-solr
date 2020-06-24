@@ -38,7 +38,6 @@ import org.junit.BeforeClass;
 
 public class TestCircuitBreaker extends SolrTestCaseJ4 {
   private final static int NUM_DOCS = 20;
-  private static ExecutorService executor;
 
   @BeforeClass
   public static void setUpClass() throws Exception {
@@ -46,8 +45,6 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
     System.setProperty("queryResultCache.enabled", "false");
     System.setProperty("documentCache.enabled", "true");
 
-    executor = ExecutorUtil.newMDCAwareCachedThreadPool(
-        new SolrNamedThreadFactory("TestCircuitBreaker"));
     initCore("solrconfig-memory-circuitbreaker.xml", "schema.xml");
     for (int i = 0 ; i < NUM_DOCS ; i ++) {
       assertU(adoc("name", "john smith", "id", "1"));
@@ -61,8 +58,6 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
 
   @Override
   public void tearDown() throws Exception {
-    assertTrue(executor.isShutdown());
-    executor = null;
     super.tearDown();
   }
 
@@ -103,7 +98,9 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
     });
   }
 
-  public void testBuildingMemoryPressure() throws Exception {
+  public void testBuildingMemoryPressure() {
+    ExecutorService executor = ExecutorUtil.newMDCAwareCachedThreadPool(
+        new SolrNamedThreadFactory("TestCircuitBreaker"));
     HashMap<String, String> args = new HashMap<String, String>();
 
     args.put(QueryParsing.DEFTYPE, CircuitBreaker.NAME);
@@ -134,7 +131,7 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
       throw new RuntimeException(e.getMessage());
     }
 
-    assertEquals("Number of failed queries is not correct", failureCount.get());
+    assertEquals("Number of failed queries is not correct", 1, failureCount.get());
   }
 
   private class MockCircuitBreaker extends CircuitBreaker {

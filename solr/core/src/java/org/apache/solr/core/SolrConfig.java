@@ -228,9 +228,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     useCircuitBreakers = getBool("query/useCircuitBreakers", false);
     memoryCircuitBreakerThreshold = getInt("query/memoryCircuitBreakerThreshold", 100);
 
-    if (memoryCircuitBreakerThreshold > 100 || memoryCircuitBreakerThreshold < 0) {
-      throw new IllegalArgumentException("memoryCircuitBReakerThreshold is not a valid percentage");
-    }
+    validateMemoryBreakerThreshold();
     
     useRangeVersionsForPeerSync = getBool("peerSync/useRangeVersions", true);
 
@@ -813,6 +811,14 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
     loader.addToClassLoader(urls);
     loader.reloadLuceneSPI();
+  }
+
+  private void validateMemoryBreakerThreshold() {
+    if (useCircuitBreakers) {
+      if (memoryCircuitBreakerThreshold > 100 || memoryCircuitBreakerThreshold < 0) {
+        throw new IllegalArgumentException("memoryCircuitBreakerThreshold is not a valid percentage");
+      }
+    }
   }
 
   public int getMultipartUploadLimitKB() {

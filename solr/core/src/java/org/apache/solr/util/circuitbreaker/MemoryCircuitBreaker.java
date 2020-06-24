@@ -63,8 +63,8 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
       return Long.MIN_VALUE;
     }
 
-    long thresholdInFraction = thresholdValueInPercentage / 100;
-    long actualLimit = currentMaxHeap * thresholdInFraction;
+    double thresholdInFraction = thresholdValueInPercentage / (double) 100;
+    long actualLimit = (long) (currentMaxHeap * thresholdInFraction);
 
     if (actualLimit <= 0) {
       throw new IllegalStateException("Memory limit cannot be less than or equal to zero");
@@ -81,7 +81,7 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
   protected long calculateLiveMemoryUsage() {
     // NOTE: MemoryUsageGaugeSet provides memory usage statistics but we do not use them
     // here since MemoryUsageGaugeSet provides combination of heap and non heap usage and
-    // we are not looking into non heap usage hereg
+    // we are not looking into non heap usage here
     return MEMORY_MX_BEAN.getHeapMemoryUsage().getUsed();
   }
 }
