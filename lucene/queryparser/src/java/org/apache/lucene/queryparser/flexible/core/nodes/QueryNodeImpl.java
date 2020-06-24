@@ -198,7 +198,7 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
   }
 
   /**
-   * If set to true the the method toQueryString will not write field names
+   * If set to true the method toQueryString will not write field names
    */
   protected boolean toQueryStringIgnoreFields = false;
 

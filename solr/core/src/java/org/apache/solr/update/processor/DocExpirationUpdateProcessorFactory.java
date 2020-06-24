@@ -99,7 +99,7 @@ import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
  *  </li>
  *  <li><code>ttlParamName</code> - Name of an update request param this process should 
  *      look for in each request when processing document additions, defaulting to  
- *      <code>_ttl_</code>. If the the specified param name exists in an update request, 
+ *      <code>_ttl_</code>. If the specified param name exists in an update request, 
  *      the param value will be parsed as a {@linkplain DateMathParser Date Math Expression}
  *      relative to <code>NOW</code> and the result will be used as a default for any 
  *      document included in that request that does not already have a value in the 
@@ -352,7 +352,7 @@ public final class DocExpirationUpdateProcessorFactory
 
   /**
    * <p>
-   * Runnable that uses the the <code>deleteChainName</code> configured for 
+   * Runnable that uses the <code>deleteChainName</code> configured for 
    * this factory to execute a delete by query (using the configured 
    * <code>expireField</code>) followed by a soft commit to re-open searchers (if needed)
    * </p>
