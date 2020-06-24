@@ -82,18 +82,6 @@ public class RegexpQuery extends AutomatonQuery {
   /**
    * Constructs a query for terms matching <code>term</code>.
    * 
-   * @param flags optional RegExp syntax features from {@link RegExp}
-   * @param match_flags boolean 'or' of match behavior options such as case insensitivity
-   * @param term regular expression.
-   */
-  public RegexpQuery(int flags, int match_flags, Term term) {
-    this(term, flags, defaultProvider,
-      Operations.DEFAULT_MAX_DETERMINIZED_STATES, match_flags);
-  }
-  
-  /**
-   * Constructs a query for terms matching <code>term</code>.
-   * 
    * @param term regular expression.
    * @param flags optional RegExp syntax features from {@link RegExp}
    * @param maxDeterminizedStates maximum number of states that compiling the
@@ -108,46 +96,46 @@ public class RegexpQuery extends AutomatonQuery {
    * Constructs a query for terms matching <code>term</code>.
    * 
    * @param term regular expression.
-   * @param flags optional RegExp syntax features from {@link RegExp}
    * @param maxDeterminizedStates maximum number of states that compiling the
+   * @param syntax_flags optional RegExp syntax features from {@link RegExp}
    *  automaton for the regexp can result in.  Set higher to allow more complex
    *  queries and lower to prevent memory exhaustion.
    * @param match_flags boolean 'or' of match behavior options such as case insensitivity
    */
-  public RegexpQuery(Term term, int flags, int maxDeterminizedStates, int match_flags) {
-    this(term, flags, defaultProvider, maxDeterminizedStates, match_flags);
+  public RegexpQuery(Term term,  int maxDeterminizedStates, int syntax_flags, int match_flags) {
+    this(term, defaultProvider, maxDeterminizedStates, syntax_flags, match_flags);
   }
   
   /**
    * Constructs a query for terms matching <code>term</code>.
    * 
    * @param term regular expression.
-   * @param flags optional RegExp features from {@link RegExp}
+   * @param syntax_flags optional RegExp features from {@link RegExp}
    * @param provider custom AutomatonProvider for named automata
    * @param maxDeterminizedStates maximum number of states that compiling the
    *  automaton for the regexp can result in.  Set higher to allow more complex
    *  queries and lower to prevent memory exhaustion.
    */
-  public RegexpQuery(Term term, int flags, AutomatonProvider provider,
+  public RegexpQuery(Term term, int syntax_flags, AutomatonProvider provider,
       int maxDeterminizedStates) {
-    this(term, flags, provider, maxDeterminizedStates, 0);
+    this(term, provider, maxDeterminizedStates, syntax_flags, 0);
   }
   
   /**
    * Constructs a query for terms matching <code>term</code>.
    * 
    * @param term regular expression.
-   * @param flags optional RegExp features from {@link RegExp}
+   * @param syntax_flags optional RegExp features from {@link RegExp}
    * @param provider custom AutomatonProvider for named automata
    * @param maxDeterminizedStates maximum number of states that compiling the
    *  automaton for the regexp can result in.  Set higher to allow more complex
    *  queries and lower to prevent memory exhaustion.
    * @param match_flags boolean 'or' of match behavior options such as case insensitivity
    */
-  public RegexpQuery(Term term, int flags, AutomatonProvider provider,
-      int maxDeterminizedStates, int match_flags) {
+  public RegexpQuery(Term term, AutomatonProvider provider,
+      int maxDeterminizedStates, int syntax_flags, int match_flags) {
     super(term,
-          new RegExp(term.text(), flags, match_flags).toAutomaton(
+          new RegExp(term.text(), syntax_flags, match_flags).toAutomaton(
                        provider, maxDeterminizedStates), maxDeterminizedStates);
   }
 
