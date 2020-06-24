@@ -18,6 +18,7 @@ package org.apache.lucene.index;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -39,6 +40,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
 import java.util.function.IntPredicate;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -3245,13 +3247,15 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
                 SegmentInfos committingSegmentInfos = toCommit;
                 onCommitMerges = updatePendingMerges(new OneMergeWrappingMergePolicy(config.getMergePolicy(), toWrap ->
                     new MergePolicy.OneMerge(toWrap.segments) {
+                      SegmentCommitInfo origInfo;
+                      AtomicBoolean onlyOnce = new AtomicBoolean(false);
                       @Override
                       public void mergeFinished(boolean committed, boolean segmentDropped) throws IOException {
                         assert Thread.holdsLock(IndexWriter.this);
                         if (segmentDropped == false
                             && committed
                             && includeInCommit.get()) {
-                          deleter.incRef(info.files());
+                          deleter.incRef(origInfo.files());
                           Set<String> mergedSegmentNames = new HashSet<>();
                           for (SegmentCommitInfo sci : segments) {
                             mergedSegmentNames.add(sci.info.name);
@@ -3265,8 +3269,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
                           }
                           // Construct a OneMerge that applies to toCommit
                           MergePolicy.OneMerge applicableMerge = new MergePolicy.OneMerge(toCommitMergedAwaySegments);
-                          applicableMerge.info = info.clone();
-                          long segmentCounter = Long.parseLong(info.info.name.substring(1), Character.MAX_RADIX);
+                          applicableMerge.info = origInfo;
+                          long segmentCounter = Long.parseLong(origInfo.info.name.substring(1), Character.MAX_RADIX);
                           committingSegmentInfos.counter = Math.max(committingSegmentInfos.counter, segmentCounter + 1);
                           committingSegmentInfos.applyMergeChanges(applicableMerge, false);
                         }
@@ -3275,14 +3279,30 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
                       }
 
                       @Override
+                      void onMergeCommit() {
+                        origInfo = this.info.clone();
+                      }
+
+                      @Override
+                      void setMergeReaders(IOContext mergeContext, ReaderPool readerPool) throws IOException {
+                        if (onlyOnce.compareAndSet(false, true)) {
+                          super.setMergeReaders(mergeContext, readerPool);
+                        }
+                      }
+
+                      @Override
                       public CodecReader wrapForMerge(CodecReader reader) throws IOException {
                         return toWrap.wrapForMerge(reader);
                       }
                     }
                 ), MergeTrigger.COMMIT, UNBOUNDED_MAX_MERGE_SEGMENTS);
+                if (onCommitMerges != null) {
+                  for (MergePolicy.OneMerge merge : onCommitMerges.merges) {
+                    // TODO we need to release these readers in the case of an aborted merge
+                    merge.setMergeReaders(IOContext.DEFAULT, readerPool);
+                  }
+                }
               }
-
-
             }
             success = true;
           } finally {
@@ -3907,6 +3927,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   @SuppressWarnings("try")
   private synchronized boolean commitMerge(MergePolicy.OneMerge merge, MergeState mergeState) throws IOException {
 
+    merge.onMergeCommit();
     testPoint("startCommitMerge");
 
     if (tragedy.get() != null) {
@@ -4419,35 +4440,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       infoStream.message("IW", "merging " + segString(merge.segments));
     }
 
-    merge.readers = new ArrayList<>(sourceSegments.size());
-    merge.hardLiveDocs = new ArrayList<>(sourceSegments.size());
-
     // This is try/finally to make sure merger's readers are
     // closed:
     boolean success = false;
     try {
-      int segUpto = 0;
-      while(segUpto < sourceSegments.size()) {
-
-        final SegmentCommitInfo info = sourceSegments.get(segUpto);
-
-        // Hold onto the "live" reader; we will use this to
-        // commit merged deletes
-        final ReadersAndUpdates rld = getPooledInstance(info, true);
-        rld.setIsMerging();
-
-        ReadersAndUpdates.MergeReader mr = rld.getReaderForMerge(context);
-        SegmentReader reader = mr.reader;
-
-        if (infoStream.isEnabled("IW")) {
-          infoStream.message("IW", "seg=" + segString(info) + " reader=" + reader);
-        }
-
-        merge.hardLiveDocs.add(mr.hardLiveDocs);
-        merge.readers.add(reader);
-        segUpto++;
-      }
-
+      merge.setMergeReaders(context, readerPool);
       // Let the merge wrap readers
       List<CodecReader> mergeReaders = new ArrayList<>();
       Counter softDeleteCount = Counter.newCounter(false);

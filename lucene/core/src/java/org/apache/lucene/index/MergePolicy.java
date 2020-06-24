@@ -33,11 +33,14 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BooleanSupplier;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.MergeInfo;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOSupplier;
@@ -215,8 +218,8 @@ public abstract class MergePolicy {
     // Sum of sizeInBytes of all SegmentInfos; set by IW.mergeInit
     volatile long totalMergeBytes;
 
-    List<SegmentReader> readers;        // used by IndexWriter
-    List<Bits> hardLiveDocs;        // used by IndexWriter
+    final List<SegmentReader> readers;        // used by IndexWriter
+    final List<Bits> hardLiveDocs;        // used by IndexWriter
 
     /** Segments to be merged. */
     public final List<SegmentCommitInfo> segments;
@@ -243,6 +246,9 @@ public abstract class MergePolicy {
       this.segments = List.copyOf(segments);
       totalMaxDoc = segments.stream().mapToInt(i -> i.info.maxDoc()).sum();
       mergeProgress = new OneMergeProgress();
+      hardLiveDocs = new ArrayList<>(segments.size());
+      readers = new ArrayList<>(segments.size());
+
     }
 
     /** 
@@ -402,6 +408,22 @@ public abstract class MergePolicy {
      */
     Optional<Boolean> hasCompletedSuccessfully() {
       return Optional.ofNullable(mergeCompleted.getNow(null));
+    }
+
+    void onMergeCommit() {
+    }
+
+    void setMergeReaders(IOContext mergeContext, ReaderPool readerPool) throws IOException {
+      for (final SegmentCommitInfo info : segments) {
+        // Hold onto the "live" reader; we will use this to
+        // commit merged deletes
+        final ReadersAndUpdates rld = readerPool.get(info, true);
+        rld.setIsMerging();
+        ReadersAndUpdates.MergeReader mr = rld.getReaderForMerge(mergeContext);
+        SegmentReader reader = mr.reader;
+        hardLiveDocs.add(mr.hardLiveDocs);
+        readers.add(reader);
+      }
     }
   }
 

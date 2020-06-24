@@ -404,10 +404,12 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
               writer.updateDocument(new Term("id", "2"), d2);
             }
             writer.flush();
-            waitForUpdate.countDown();
           } catch (Exception e) {
             throw new AssertionError(e);
+          } finally {
+            waitForUpdate.countDown();
           }
+
         });
         t.start();
         writer.commit();
