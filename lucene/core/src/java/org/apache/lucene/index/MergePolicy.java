@@ -388,7 +388,7 @@ public abstract class MergePolicy {
      * Returns true if the merge has finished or false if it's still running or
      * has not been started. This method will not block.
      */
-    boolean isDone() {
+    boolean hasFinished() {
       return mergeCompleted.isDone();
     }
 

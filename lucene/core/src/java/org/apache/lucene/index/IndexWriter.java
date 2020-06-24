@@ -4287,7 +4287,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
   @SuppressWarnings("try")
   private synchronized void closeMergeReaders(MergePolicy.OneMerge merge, boolean suppressExceptions) throws IOException {
-    if (merge.isDone() == false) {
+    if (merge.hasFinished() == false) {
       final boolean drop = suppressExceptions == false;
       try (Closeable finalizer = () -> merge.mergeFinished(suppressExceptions == false)) {
         IOUtils.applyToAll(merge.readers, sr -> {
