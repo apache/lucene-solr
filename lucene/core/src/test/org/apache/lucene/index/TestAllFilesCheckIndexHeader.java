@@ -90,14 +90,6 @@ public class TestAllFilesCheckIndexHeader extends LuceneTestCase {
     try (BaseDirectoryWrapper dirCopy = new MockDirectoryWrapper(random(), new ByteBuffersDirectory())) {
       dirCopy.setCheckIndexOnClose(false);
 
-      long victimLength = dir.fileLength(victim);
-      int wrongBytes = TestUtil.nextInt(random(), 1, (int) Math.min(100, victimLength));
-      assert victimLength > 0;
-
-      if (VERBOSE) {
-        System.out.println("TEST: now break file " + victim + " by randomizing first " + wrongBytes + " of " + victimLength);
-      }
-
       for(String name : dir.listAll()) {
         if (name.equals(victim) == false) {
           dirCopy.copyFrom(dir, name, name, IOContext.DEFAULT);
@@ -108,6 +100,12 @@ public class TestAllFilesCheckIndexHeader extends LuceneTestCase {
           while (true) {
             try(IndexOutput out = dirCopy.createOutput(name, IOContext.DEFAULT);
                 IndexInput in = dir.openInput(name, IOContext.DEFAULT)) {
+              long victimLength = in.length();
+              int wrongBytes = TestUtil.nextInt(random(), 1, (int) Math.min(100, victimLength));
+              assert victimLength > 0;
+              if (VERBOSE) {
+                System.out.println("TEST: now break file " + victim + " by randomizing first " + wrongBytes + " of " + victimLength);
+              }
               // keeps same file length, but replaces the first wrongBytes with random bytes:
               byte[] bytes = new byte[wrongBytes];
               random().nextBytes(bytes);

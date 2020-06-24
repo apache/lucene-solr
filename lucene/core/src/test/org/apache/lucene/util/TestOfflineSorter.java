@@ -210,7 +210,7 @@ public class TestOfflineSorter extends LuceneTestCase {
          IndexInput in1 = dir.openInput(golden, IOContext.READONCE);
          IndexInput in2 = dir.openInput(sorted, IOContext.READONCE)
          ) {
-      long left = numBytes;
+      long left = in1.length();
       while (left > 0) {
         int chunk = (int) Math.min(buf1.length, left);
         left -= chunk;

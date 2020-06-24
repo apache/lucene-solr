@@ -220,8 +220,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
   private void readFile(Directory dir, String name) throws Exception {
     IndexInput input = dir.openInput(name, newIOContext(random()));
     try {
-      long size = dir.fileLength(name);
-      long bytesLeft = size;
+      long bytesLeft = input.length();
       while (bytesLeft > 0) {
         final int numToRead;
         if (bytesLeft < buffer.length)

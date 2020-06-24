@@ -224,7 +224,7 @@ public class TestDirectMonotonic extends LuceneTestCase {
     try (IndexInput metaIn = dir.openInput("meta", IOContext.READONCE);
         IndexInput dataIn = dir.openInput("data", IOContext.READ)) {
       DirectMonotonicReader.Meta meta = DirectMonotonicReader.loadMeta(metaIn, array.length, blockShift);
-      DirectMonotonicReader reader = DirectMonotonicReader.getInstance(meta, dataIn.randomAccessSlice(0L, dir.fileLength("data")));
+      DirectMonotonicReader reader = DirectMonotonicReader.getInstance(meta, dataIn.randomAccessSlice(0L, dataIn.length()));
 
       if (array.length == 0) {
         assertEquals(-1, reader.binarySearch(0, array.length, 42L));
