@@ -189,6 +189,15 @@ public class RelatednessAgg extends AggValueSource {
 
     private static final int NO_ALL_BUCKETS = -2;
     private static final int ALL_BUCKETS_UNINITIALIZED = -1;
+
+    // nocommit: still need to decide if we want to consider an alternative solution to dealing with allBuckets slotNum when sweeping...
+    // nocommit: https://issues.apache.org/jira/browse/SOLR-13132?focusedCommentId=17130827&page=com.atlassian.jira.plugin.system.issuetabpanels:comment-tabpanel#comment-17130827
+    //
+    // we can't get the allBuckets info from the slotContext in collect(), b/c the whole point of
+    // sweep collection is that the "collect" methods aren't called.
+    // So this is the compromise: note in construction either that we're using a processor w/NO_ALL_BUCKETS
+    // or that we don't know the bucket yet (ALL_BUCKETS_UNINITIALIZED) and fill it in in getValues
+    // where we can check against the processor
     private int allBucketsSlot;
 
     public SweepSKGSlotAcc(double minPopularity, FacetContext fcontext, int numSlots, long fgSize, long bgSize, ReadOnlyCountSlotAcc fgCount, ReadOnlyCountSlotAcc bgCount) {
@@ -200,7 +209,15 @@ public class RelatednessAgg extends AggValueSource {
       this.bgCount = bgCount;
       relatedness = new double[numSlots];
       Arrays.fill(relatedness, 0, numSlots, Double.NaN);
-      this.allBucketsSlot =  ((FacetFieldProcessor)fcontext.processor).freq.allBuckets ? ALL_BUCKETS_UNINITIALIZED : NO_ALL_BUCKETS;;
+      
+      // any processor that can (currently) result in the use of SweepSKGSlotAcc *should* be a 
+      // FacetFieldProcessor -- but don't assume that will always be true...
+      this.allBucketsSlot = NO_ALL_BUCKETS;
+      if (fcontext.processor instanceof FacetFieldProcessor
+          // NOTE: if this instanceof/cast changes, getValues needs updated as well
+          && ((FacetFieldProcessor)fcontext.processor).freq.allBuckets) {
+        this.allBucketsSlot = ALL_BUCKETS_UNINITIALIZED;
+      }
     }
 
     @Override
@@ -245,11 +262,15 @@ public class RelatednessAgg extends AggValueSource {
     @Override
     public Object getValue(int slotNum) {
       final BucketData slotVal;
-      if (allBucketsSlot == ALL_BUCKETS_UNINITIALIZED) {
-        //nocommit: we can't get this slotContext in collect, b/c the whole point of sweep collection is that the "collect"
-        //nocommit: methods aren't called. This is an awkward construction, but illustrates the problem by way of presenting
-        //nocommit: a crude solution?
-        allBucketsSlot = ((FacetFieldProcessor)fcontext.processor).allBucketsAcc.collectAccSlot;
+      if (NO_ALL_BUCKETS != allBucketsSlot) {
+          // there's no reason why a processor should be resizing SlotAccs in the middle of getValue,
+          // but we're going to be vigilent against that possibility just in case...
+        if (ALL_BUCKETS_UNINITIALIZED == allBucketsSlot
+            || allBucketsSlot == slotNum) {
+          assert fcontext.processor instanceof FacetFieldProcessor
+            : "code changed, non FacetFieldProcessor sweeping w/allBuckets?!?";
+          allBucketsSlot = ((FacetFieldProcessor)fcontext.processor).allBucketsAcc.collectAccSlot;
+        }
       }
       if (slotNum == allBucketsSlot) {
         slotVal = new BucketData(null);
