@@ -59,6 +59,8 @@ Each cache implementation also supports a `maxIdleTime` attribute that controls 
 
 `FastLRUCache` and `LFUCache` support `showItems` attribute. This is the number of cache items to display in the stats page for the cache. It is for debugging.
 
+All caches can be disabled using the parameter `enabled` with a value of `false`. Caches can also be disabled on a query-by-query basis with the `cache` parameter, as described in the section <<common-query-parameters.adoc#cache-parameter,cache Parameter>>. 
+
 Details of each cache are described below.
 
 === filterCache
