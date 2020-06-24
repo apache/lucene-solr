@@ -17,7 +17,20 @@
 
 package org.apache.solr.handler.admin;
 
-import org.apache.solr.api.*;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
+import org.apache.solr.api.AnnotatedApi;
+import org.apache.solr.api.Command;
+import org.apache.solr.api.CustomContainerPlugins;
+import org.apache.solr.api.EndPoint;
+import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -31,15 +44,6 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 import static org.apache.lucene.util.IOUtils.closeWhileHandlingException;
 
@@ -106,7 +110,7 @@ public class ContainerPluginsApi {
       validateConfig(payload, info);
       if(payload.hasError()) return;
       persistPlugins(map -> {
-        Map existing = (Map) map.get(info.name);
+        Map<String, Object> existing = (Map<String, Object>) map.get(info.name);
         if (existing == null) {
           payload.addError("No such plugin: " + info.name);
           return null;
@@ -155,7 +159,7 @@ public class ContainerPluginsApi {
     }
   }
 
-  private void persistPlugins(Function<Map, Map> modifier) throws IOException {
+  private void persistPlugins(Function<Map<String,Object>, Map<String,Object>> modifier) throws IOException {
     try {
       zkClientSupplier.get().atomicUpdate(ZkStateReader.CLUSTER_PROPS, bytes -> {
         Map rawJson = bytes == null ? new LinkedHashMap() :

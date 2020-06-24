@@ -57,7 +57,7 @@ public class CustomContainerPlugins implements ClusterPropertiesListener {
   final CoreContainer coreContainer;
   final ApiBag containerApiBag;
 
-  private Map<String, ApiInfo> currentPlugins = new HashMap();
+  private Map<String, ApiInfo> currentPlugins = new HashMap<>();
 
   @Override
   public boolean onChange(Map<String, Object> properties) {
@@ -224,7 +224,7 @@ public class CustomContainerPlugins implements ClusterPropertiesListener {
       }
 
       try {
-        List apis = AnnotatedApi.getApis(klas, null);
+        List<Api> apis = AnnotatedApi.getApis(klas, null);
         for (Object api : apis) {
           EndPoint endPoint = ((AnnotatedApi) api).getEndPoint();
           if (endPoint.path().length > 1 || endPoint.method().length > 1) {
