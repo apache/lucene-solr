@@ -434,4 +434,52 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
       }
     }
   }
+
+  /**
+   * This test makes sure we release the merge readers on abort. MDW will fail if it
+   * can't close all files
+   */
+  public void testAbortCommitMerge() throws IOException, InterruptedException {
+    try (Directory directory = newDirectory()) {
+      CountDownLatch waitForMerge = new CountDownLatch(1);
+      CountDownLatch waitForDeleteAll = new CountDownLatch(1);
+      try (IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig()
+          .setMergePolicy(MERGE_ON_COMMIT_POLICY).setMaxCommitMergeWaitSeconds(30)
+          .setMergeScheduler(new SerialMergeScheduler() {
+            @Override
+            public synchronized void merge(MergeSource mergeSource, MergeTrigger trigger) throws IOException {
+              waitForMerge.countDown();
+              try {
+                waitForDeleteAll.await();
+              } catch (InterruptedException e) {
+                throw new AssertionError(e);
+              }
+              super.merge(mergeSource, trigger);
+            }
+          }))) {
+
+        Document d1 = new Document();
+        d1.add(new StringField("id", "1", Field.Store.NO));
+        Document d2 = new Document();
+        d2.add(new StringField("id", "2", Field.Store.NO));
+        Document d3 = new Document();
+        d3.add(new StringField("id", "3", Field.Store.NO));
+        writer.addDocument(d1);
+        writer.flush();
+        writer.addDocument(d2);
+        Thread t = new Thread(() -> {
+          try {
+            writer.commit();
+          } catch (IOException e) {
+            throw new AssertionError(e);
+          }
+        });
+        t.start();
+        waitForMerge.await();
+        writer.deleteAll();
+        waitForDeleteAll.countDown();
+        t.join();
+      }
+    }
+  }
 }

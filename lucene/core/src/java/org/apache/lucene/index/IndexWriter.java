@@ -2470,23 +2470,23 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   /** Aborts running merges.  Be careful when using this
    *  method: when you abort a long-running merge, you lose
    *  a lot of work that must later be redone. */
-  private synchronized void abortMerges() {
+  private synchronized void abortMerges() throws IOException {
     // Abort all pending & running merges:
-    for (final MergePolicy.OneMerge merge : pendingMerges) {
+    IOUtils.applyToAll(pendingMerges, merge -> {
       if (infoStream.isEnabled("IW")) {
         infoStream.message("IW", "now abort pending merge " + segString(merge.segments));
       }
-      merge.setAborted();
+      abortOneMerge(merge);
       mergeFinish(merge);
-    }
+    });
     pendingMerges.clear();
-
-    for (final MergePolicy.OneMerge merge : runningMerges) {
+    IOUtils.applyToAll(runningMerges, merge -> {
       if (infoStream.isEnabled("IW")) {
         infoStream.message("IW", "now abort running merge " + segString(merge.segments));
       }
-      merge.setAborted();
-    }
+      abortOneMerge(merge);
+      mergeFinish(merge);
+    });
 
     // We wait here to make all merges stop.  It should not
     // take very long because they periodically check if
@@ -4102,11 +4102,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       try {
         try {
           mergeInit(merge);
-
           if (infoStream.isEnabled("IW")) {
             infoStream.message("IW", "now merge\n  merge=" + segString(merge.segments) + "\n  index=" + segString());
           }
-
           mergeMiddle(merge, mergePolicy);
           mergeSuccess(merge);
           success = true;
@@ -4115,7 +4113,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
         }
       } finally {
         synchronized(this) {
-
+          // Readers are already closed in commitMerge if we didn't hit
+          // an exc:
+          if (success == false) {
+            closeMergeReaders(merge, true, false);
+          }
           mergeFinish(merge);
 
           if (success == false) {
@@ -4147,6 +4149,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   /** Hook that's called when the specified merge is complete. */
   protected void mergeSuccess(MergePolicy.OneMerge merge) {}
 
+  private void abortOneMerge(MergePolicy.OneMerge merge) throws IOException {
+    merge.setAborted();
+    closeMergeReaders(merge, true, false);
+  }
+
   /** Checks whether this merge involves any segments
    *  already participating in a merge.  If not, this merge
    *  is "registered", meaning we record that its segments
@@ -4161,7 +4168,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     assert merge.segments.size() > 0;
 
     if (stopMerges) {
-      merge.setAborted();
+      abortOneMerge(merge);
       throw new MergePolicy.MergeAbortedException("merge is aborted: " + segString(merge.segments));
     }
 
@@ -4431,8 +4438,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     merge.checkAborted();
 
     Directory mergeDirectory = mergeScheduler.wrapForMerge(merge, directory);
-    List<SegmentCommitInfo> sourceSegments = merge.segments;
-    
     IOContext context = new IOContext(merge.getStoreMergeInfo());
 
     final TrackingDirectoryWrapper dirWrapper = new TrackingDirectoryWrapper(mergeDirectory);
@@ -4488,7 +4493,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       }
       final SegmentMerger merger = new SegmentMerger(mergeReaders,
                                                      merge.info.info, infoStream, dirWrapper,
-                                                     globalFieldNumberMap, 
+                                                     globalFieldNumberMap,
                                                      context);
       merge.info.setSoftDelCount(Math.toIntExact(softDeleteCount.get()));
       merge.checkAborted();
@@ -4509,8 +4514,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
           String pauseInfo = merge.getMergeProgress().getPauseTimes().entrySet()
             .stream()
             .filter((e) -> e.getValue() > 0)
-            .map((e) -> String.format(Locale.ROOT, "%.1f sec %s", 
-                e.getValue() / 1000000000., 
+            .map((e) -> String.format(Locale.ROOT, "%.1f sec %s",
+                e.getValue() / 1000000000.,
                 e.getKey().name().toLowerCase(Locale.ROOT)))
             .collect(Collectors.joining(", "));
           if (!pauseInfo.isEmpty()) {
@@ -4522,9 +4527,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
           double segmentMB = (merge.info.sizeInBytes()/1024./1024.);
           infoStream.message("IW", "merge codec=" + codec + " maxDoc=" + merge.info.info.maxDoc() + "; merged segment has " +
                              (mergeState.mergeFieldInfos.hasVectors() ? "vectors" : "no vectors") + "; " +
-                             (mergeState.mergeFieldInfos.hasNorms() ? "norms" : "no norms") + "; " + 
-                             (mergeState.mergeFieldInfos.hasDocValues() ? "docValues" : "no docValues") + "; " + 
-                             (mergeState.mergeFieldInfos.hasProx() ? "prox" : "no prox") + "; " + 
+                             (mergeState.mergeFieldInfos.hasNorms() ? "norms" : "no norms") + "; " +
+                             (mergeState.mergeFieldInfos.hasDocValues() ? "docValues" : "no docValues") + "; " +
+                             (mergeState.mergeFieldInfos.hasProx() ? "prox" : "no prox") + "; " +
                              (mergeState.mergeFieldInfos.hasProx() ? "freqs" : "no freqs") + "; " +
                              (mergeState.mergeFieldInfos.hasPointValues() ? "points" : "no points") + "; " +
                              String.format(Locale.ROOT,
@@ -4634,7 +4639,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
       // TODO: ideally we would freeze merge.info here!!
       // because any changes after writing the .si will be
-      // lost... 
+      // lost...
 
       if (infoStream.isEnabled("IW")) {
         infoStream.message("IW", String.format(Locale.ROOT, "merged segment size=%.3f MB vs estimate=%.3f MB", merge.info.sizeInBytes()/1024./1024., merge.estimatedMergeBytes/1024/1024.));
