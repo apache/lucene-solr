@@ -100,9 +100,8 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
 
     final SweepCountAccStruct base;
     final List<SweepCountAccStruct> others;
-    if (countAcc instanceof SweepingCountSlotAcc) {
+    if (countAcc instanceof SweepingCountSlotAcc) { // nocommit: refactor into reusable helper
       SweepingCountSlotAcc sweepingCountAcc = (SweepingCountSlotAcc) countAcc;
-      registerSweepingAccIfSupportedByCollectAcc(sweepingCountAcc);
       base = sweepingCountAcc.base;
       others = sweepingCountAcc.others;
     } else {

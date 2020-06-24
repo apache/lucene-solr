@@ -601,6 +601,7 @@ public abstract class SlotAcc implements Closeable {
   /**
    * Implemented by some SlotAccs if they are capable of being used for
    * sweep collecting in compatible facet processors
+   * @see FacetFieldProcessor#registerSweepingAccIfSupportedByCollectAcc()
    */
   static interface SweepableSlotAcc<T extends SlotAcc> {
     /**
@@ -738,7 +739,6 @@ public abstract class SlotAcc implements Closeable {
      * @param toAcc - the replacement {@link SlotAcc}
      * 
      * @see SweepableSlotAcc#registerSweepingAccs(SweepingCountSlotAcc)
-     * @see FacetFieldProcessor#registerSweepingAccIfSupportedByCollectAcc(SweepingCountSlotAcc)
      */
     public void registerMapping(SlotAcc fromAcc, SlotAcc toAcc) {
       assert fromAcc.key.equals(toAcc.key);

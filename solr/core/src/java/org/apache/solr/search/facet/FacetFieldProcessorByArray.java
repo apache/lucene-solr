@@ -85,6 +85,7 @@ abstract class FacetFieldProcessorByArray extends FacetFieldProcessor {
       countAcc = new SweepingCountSlotAcc(numSlots, this);
     }
     super.createCollectAcc(numDocs, numSlots);
+    registerSweepingAccIfSupportedByCollectAcc();
   }
 
   @Override

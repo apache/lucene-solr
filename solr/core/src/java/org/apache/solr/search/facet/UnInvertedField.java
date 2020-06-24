@@ -332,9 +332,8 @@ public class UnInvertedField extends DocTermOrds {
 
     SweepCountAccStruct baseCountAccStruct;
     final List<SweepCountAccStruct> others;
-    if (processor.countAcc instanceof SweepingCountSlotAcc) {
+    if (processor.countAcc instanceof SweepingCountSlotAcc) { // nocommit: refactor into reusable helper
       SweepingCountSlotAcc sweepCountAcc = (SweepingCountSlotAcc) processor.countAcc;
-      processor.registerSweepingAccIfSupportedByCollectAcc(sweepCountAcc);
       baseCountAccStruct = sweepCountAcc.base;
       others = sweepCountAcc.others;
     } else {
@@ -461,9 +460,8 @@ public class UnInvertedField extends DocTermOrds {
     final CountSlotAcc countAcc = processor.countAcc;
     final SweepCountAccStruct baseCountAccStruct;
     final List<SweepCountAccStruct> others;
-    if (countAcc instanceof SweepingCountSlotAcc) {
+    if (countAcc instanceof SweepingCountSlotAcc) { // nocommit: refactor into reusable helper
       SweepingCountSlotAcc sweepCountAcc = (SweepingCountSlotAcc) countAcc;
-      processor.registerSweepingAccIfSupportedByCollectAcc(sweepCountAcc);
       baseCountAccStruct = sweepCountAcc.base;
       others = sweepCountAcc.others;
     } else {

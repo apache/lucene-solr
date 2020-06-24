@@ -781,17 +781,19 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
 
   /**
    * Helper method that subclasses can use to indicate they with to use sweeping.
-   * If sweeping is supported by the {@link #collectAcc} this method will: 
+   * If {@link #countAcc} and {@link #collectAcc} support sweeping, then this method will: 
    * <ul>
    * <li>replace {@link #collectAcc} with it's sweeping equivalent</li>
    * <li>update {@link #allBucketsAcc}'s reference to {@link #collectAcc} (if it exists)</li>
    * </ul>
    *
    * @return true if the above actions were taken
+   * @see SweepableSlotAcc
+   * @see SweepingCountSlotAcc
    */
-  protected boolean registerSweepingAccIfSupportedByCollectAcc(SweepingCountSlotAcc sweepingCountAcc) {
-    assert countAcc == sweepingCountAcc;
-    if (collectAcc instanceof SweepableSlotAcc) {
+  protected boolean registerSweepingAccIfSupportedByCollectAcc() {
+    if (countAcc instanceof SweepingCountSlotAcc && collectAcc instanceof SweepableSlotAcc) {
+      final SweepingCountSlotAcc sweepingCountAcc = (SweepingCountSlotAcc)countAcc;
       collectAcc = ((SweepableSlotAcc<?>)collectAcc).registerSweepingAccs(sweepingCountAcc);
       if (allBucketsAcc != null) {
         allBucketsAcc.collectAcc = collectAcc;
