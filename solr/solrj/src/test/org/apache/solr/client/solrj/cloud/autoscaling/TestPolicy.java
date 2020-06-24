@@ -1763,14 +1763,17 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
   @Test
   public void testMultiSessionsCache() throws IOException, InterruptedException {
+    @SuppressWarnings({"rawtypes", "unchecked"})
     Map<String, Map> nodeValues = (Map<String, Map>) Utils.fromJSONString(" {" +
         "    'node1':{ 'node':'10.0.0.4:8987_solr', 'cores':1 }," +
         "    'node2':{ 'node':'10.0.0.4:8989_solr', 'cores':1 }," +
         "    'node3':{ 'node':'10.0.0.4:7574_solr', 'cores':1 }" +
         "}");
 
+    @SuppressWarnings({"rawtypes"})
     Map policies = (Map) Utils.fromJSONString("{ 'cluster-preferences': [{ 'minimize': 'cores', 'precision': 1}]}");
 
+    @SuppressWarnings({"unchecked"})
     AutoScalingConfig config = new AutoScalingConfig(policies);
     final SolrCloudManager solrCloudManager = new DelegatingCloudManager(getSolrCloudManager(nodeValues, clusterState)) {
       @Override
@@ -1783,21 +1786,21 @@ public class TestPolicy extends SolrTestCaseJ4 {
     // Must skip the wait time otherwise test takes a few seconds to run (and s1 is not returned now anyway so no point waiting).
     PolicyHelper.SessionWrapper s2 = PolicyHelper.getSession(solrCloudManager, false);
     // Got two sessions, they are different
-    assertFalse(s1 == s2);
+    assertNotSame(s1, s2);
 
     // Done COMPUTING with first session, it can be reused
     s1.returnSession(s1.get());
 
     PolicyHelper.SessionWrapper s3 = PolicyHelper.getSession(solrCloudManager);
     // First session indeed reused when a new session is requested
-    assertTrue(s3 == s1);
+    assertSame(s3, s1);
 
     // Done COMPUTING with second session, it can be reused
     s2.returnSession(s2.get());
 
     PolicyHelper.SessionWrapper s4 = PolicyHelper.getSession(solrCloudManager);
     // Second session indeed reused when a new session is requested
-    assertTrue(s4 == s2);
+    assertSame(s4, s2);
 
     s4.returnSession(s4.get());
     s4.release();
@@ -1824,14 +1827,17 @@ public class TestPolicy extends SolrTestCaseJ4 {
   @Test
   @Slow
   public void testMultiThreadedSessionsCache() throws IOException, InterruptedException {
+    @SuppressWarnings({"rawtypes", "unchecked"})
     Map<String, Map> nodeValues = (Map<String, Map>) Utils.fromJSONString(" {" +
         "    'node1':{ 'node':'10.0.0.4:8987_solr', 'cores':1 }," +
         "    'node2':{ 'node':'10.0.0.4:8989_solr', 'cores':1 }," +
         "    'node3':{ 'node':'10.0.0.4:7574_solr', 'cores':1 }" +
         "}");
 
+    @SuppressWarnings({"rawtypes"})
     Map policies = (Map) Utils.fromJSONString("{ 'cluster-preferences': [{ 'minimize': 'cores', 'precision': 1}]}");
 
+    @SuppressWarnings({"unchecked"})
     AutoScalingConfig config = new AutoScalingConfig(policies);
     final SolrCloudManager solrCloudManager = new DelegatingCloudManager(getSolrCloudManager(nodeValues, clusterState)) {
       @Override
@@ -1847,21 +1853,19 @@ public class TestPolicy extends SolrTestCaseJ4 {
     Thread[] threads = new Thread[COUNT_THREADS];
 
     for (int i = 0; i < COUNT_THREADS; i++) {
-      threads[i] = new Thread(new Runnable() {
-        public void run() {
-          try {
-            // This thread requests a session, computes using it for 50ms then returns is, executes for 1000ms more,
-            // releases the sessions and finishes.
-            PolicyHelper.SessionWrapper session = PolicyHelper.getSession(solrCloudManager);
-            seenSessions.add(session);
-            Thread.sleep(50);
-            session.returnSession(session.get());
-            Thread.sleep(1000);
-            session.release();
+      threads[i] = new Thread(() -> {
+        try {
+          // This thread requests a session, computes using it for 50ms then returns is, executes for 1000ms more,
+          // releases the sessions and finishes.
+          PolicyHelper.SessionWrapper session = PolicyHelper.getSession(solrCloudManager);
+          seenSessions.add(session);
+          Thread.sleep(50);
+          session.returnSession(session.get());
+          Thread.sleep(1000);
+          session.release();
 
-            completedThreads.incrementAndGet();
-          } catch (InterruptedException | IOException e) {
-          }
+          completedThreads.incrementAndGet();
+        } catch (InterruptedException | IOException ignored) {
         }
       });
       threads[i].start();
