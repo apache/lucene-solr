@@ -29,6 +29,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -4286,25 +4287,30 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
   @SuppressWarnings("try")
   private synchronized void closeMergeReaders(MergePolicy.OneMerge merge, boolean suppressExceptions) throws IOException {
-    final boolean drop = suppressExceptions == false;
-    try (Closeable finalizer = () -> merge.mergeFinished(suppressExceptions == false)) {
-      IOUtils.applyToAll(merge.readers, sr -> {
-        final ReadersAndUpdates rld = getPooledInstance(sr.getOriginalSegmentInfo(), false);
-        // We still hold a ref so it should not have been removed:
-        assert rld != null;
-        if (drop) {
-          rld.dropChanges();
-        } else {
-          rld.dropMergingUpdates();
-        }
-        rld.release(sr);
-        release(rld);
-        if (drop) {
-          readerPool.drop(rld.info);
-        }
-      });
-    } finally {
-      Collections.fill(merge.readers, null);
+    if (merge.hasFinished() == false) {
+      final boolean drop = suppressExceptions == false;
+      try (Closeable finalizer = () -> merge.mergeFinished(suppressExceptions == false)) {
+        IOUtils.applyToAll(merge.readers, sr -> {
+          final ReadersAndUpdates rld = getPooledInstance(sr.getOriginalSegmentInfo(), false);
+          // We still hold a ref so it should not have been removed:
+          assert rld != null;
+          if (drop) {
+            rld.dropChanges();
+          } else {
+            rld.dropMergingUpdates();
+          }
+          rld.release(sr);
+          release(rld);
+          if (drop) {
+            readerPool.drop(rld.info);
+          }
+        });
+      } finally {
+        Collections.fill(merge.readers, null);
+      }
+    } else {
+      assert merge.readers.stream().filter(Objects::nonNull).count() == 0 : "we are done but still have readers: " + merge.readers;
+      assert suppressExceptions : "can't be done and not suppressing exceptions";
     }
   }
 
