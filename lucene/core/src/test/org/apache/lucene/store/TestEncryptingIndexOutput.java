@@ -37,13 +37,11 @@ import static org.apache.lucene.store.EncryptingUtil.IV_LENGTH;
 public class TestEncryptingIndexOutput extends BaseDataOutputTestCase<EncryptingIndexOutput> {
 
   private byte[] key;
-  private CipherPool cipherPool;
   private boolean shouldSimulateWrongKey;
 
   @Before
   public void initializeEncryption() {
     key = randomBytesOfLength(32);
-    cipherPool = new CipherPool();
     shouldSimulateWrongKey = false;
   }
 
@@ -53,7 +51,7 @@ public class TestEncryptingIndexOutput extends BaseDataOutputTestCase<Encrypting
     OutputStreamIndexOutput delegateIndexOutput = new OutputStreamIndexOutput("test", "test", baos, 10);
     byte[] key = new byte[32];
     Arrays.fill(key, (byte) 1);
-    EncryptingIndexOutput indexOutput = new EncryptingIndexOutput(delegateIndexOutput, key, new CipherPool()) {
+    EncryptingIndexOutput indexOutput = new EncryptingIndexOutput(delegateIndexOutput, key) {
       @Override
       protected int getBufferCapacity() {
         return EncryptingUtil.AES_BLOCK_SIZE;
@@ -82,7 +80,7 @@ public class TestEncryptingIndexOutput extends BaseDataOutputTestCase<Encrypting
   @Override
   protected EncryptingIndexOutput newInstance() {
     try {
-      return new MyBufferedEncryptingIndexOutput(new ByteBuffersDataOutput(), key, cipherPool) {
+      return new MyBufferedEncryptingIndexOutput(new ByteBuffersDataOutput(), key) {
         @Override
         protected byte[] generateRandomIv() {
           byte[] iv = new byte[IV_LENGTH];
@@ -108,7 +106,7 @@ public class TestEncryptingIndexOutput extends BaseDataOutputTestCase<Encrypting
     if (shouldSimulateWrongKey) {
       key[0]++;
     }
-    try (EncryptingIndexInput encryptingIndexInput = new EncryptingIndexInput(indexInput, key, cipherPool)) {
+    try (EncryptingIndexInput encryptingIndexInput = new EncryptingIndexInput(indexInput, key)) {
       byte[] b = new byte[(int) encryptingIndexInput.length()];
       encryptingIndexInput.readBytes(b, 0, b.length);
       return b;
@@ -125,8 +123,8 @@ public class TestEncryptingIndexOutput extends BaseDataOutputTestCase<Encrypting
 
     private final ByteBuffersDataOutput dataOutput;
 
-    MyBufferedEncryptingIndexOutput(ByteBuffersDataOutput dataOutput, byte[] key, CipherPool cipherPool) throws IOException {
-      super(new ByteBuffersIndexOutput(dataOutput, "Test", "Test"), key, cipherPool);
+    MyBufferedEncryptingIndexOutput(ByteBuffersDataOutput dataOutput, byte[] key) throws IOException {
+      super(new ByteBuffersIndexOutput(dataOutput, "Test", "Test"), key);
       this.dataOutput = dataOutput;
     }
   }

@@ -20,7 +20,6 @@ package org.apache.lucene.codecs.encrypting;
 import java.util.Arrays;
 
 import org.apache.lucene.store.ByteBuffersDirectory;
-import org.apache.lucene.store.CipherPool;
 import org.apache.lucene.store.EncryptingDirectory;
 import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.SingleInstanceLockFactory;
@@ -38,7 +37,7 @@ public class SimpleEncryptingDirectory extends EncryptingDirectory {
   }
 
   public SimpleEncryptingDirectory(LockFactory lockFactory) {
-    super(new ByteBuffersDirectory(lockFactory), SimpleEncryptingDirectory::getEncryptionKey, new CipherPool());
+    super(new ByteBuffersDirectory(lockFactory), SimpleEncryptingDirectory::getEncryptionKey);
   }
 
   private static byte[] getEncryptionKey(String fileName) {

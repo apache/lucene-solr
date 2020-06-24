@@ -51,7 +51,6 @@ public class EncryptingIndexInput extends IndexInput {
   private final long sliceEnd;
   private IndexInput indexInput;
   private final Key key;
-  private final CipherPool cipherPool;
   private Cipher cipher;
   private final byte[] initialIv;
   private byte[] iv;
@@ -61,15 +60,16 @@ public class EncryptingIndexInput extends IndexInput {
   private byte[] inArray;
   private byte[] oneByteBuf;
   private int padding;
+  private boolean closed;
 
-  public EncryptingIndexInput(IndexInput indexInput, byte[] key, CipherPool cipherPool) throws IOException {
+  public EncryptingIndexInput(IndexInput indexInput, byte[] key) throws IOException {
     this("Decrypting " + indexInput.toString(),
         HEADER_IV_LENGTH, indexInput.length() - HEADER_IV_LENGTH - CodecUtil.footerLength(), false,
-        indexInput, createAesKey(key), cipherPool, readInitialIv(indexInput));
+        indexInput, createAesKey(key), readInitialIv(indexInput));
   }
 
   private EncryptingIndexInput(String resourceDescription, long sliceOffset, long sliceLength, boolean isClone,
-                               IndexInput indexInput, Key key, CipherPool cipherPool, byte[] initialIv) throws IOException {
+                               IndexInput indexInput, Key key, byte[] initialIv) throws IOException {
     super(resourceDescription);
     assert sliceOffset >= 0 && sliceLength >= 0;
     this.sliceOffset = sliceOffset;
@@ -77,10 +77,9 @@ public class EncryptingIndexInput extends IndexInput {
     this.isClone = isClone;
     this.indexInput = indexInput;
     this.key = key;
-    this.cipherPool = cipherPool;
     this.initialIv = initialIv;
 
-    cipher = cipherPool.get(CipherPool.AES_CTR_TRANSFORMATION);
+    cipher = createAesCtrCipher();
     assert cipher.getBlockSize() == AES_BLOCK_SIZE : "Invalid AES block size: " + cipher.getBlockSize();
     iv = initialIv.clone();
     ivParameterSpec = new ReusableIvParameterSpec(iv);
@@ -118,14 +117,10 @@ public class EncryptingIndexInput extends IndexInput {
 
   @Override
   public void close() throws IOException {
-    if (cipher != null) {
-      try {
-        if (!isClone) {
-          indexInput.close();
-        }
-      } finally {
-        cipherPool.release(cipher);
-        cipher = null;
+    if (!closed) {
+      closed = true;
+      if (!isClone) {
+        indexInput.close();
       }
     }
   }
@@ -192,7 +187,7 @@ public class EncryptingIndexInput extends IndexInput {
     if (offset < 0 || length < 0 || offset + length > length()) {
       throw new IllegalArgumentException("Slice \"" + sliceDescription + "\" out of bounds (offset=" + offset + ", sliceLength=" + length + ", fileLength=" + length() + ") of " + this);
     }
-    EncryptingIndexInput slice = new EncryptingIndexInput(getFullSliceDescription(sliceDescription), sliceOffset + offset, length, true, indexInput.clone(), key, cipherPool, initialIv);
+    EncryptingIndexInput slice = new EncryptingIndexInput(getFullSliceDescription(sliceDescription), sliceOffset + offset, length, true, indexInput.clone(), key, initialIv);
     slice.seek(0);
     return slice;
   }
@@ -270,7 +265,7 @@ public class EncryptingIndexInput extends IndexInput {
     clone.indexInput = indexInput.clone();
     assert clone.indexInput.getFilePointer() == indexInput.getFilePointer();
     // key, cipherPool and initialIv are the same references.
-    clone.cipher = cipherPool.get(CipherPool.AES_CTR_TRANSFORMATION);
+    clone.cipher = createAesCtrCipher();
     clone.iv = initialIv.clone();
     clone.ivParameterSpec = new ReusableIvParameterSpec(clone.iv);
     clone.inBuffer = ByteBuffer.allocate(getBufferSize());

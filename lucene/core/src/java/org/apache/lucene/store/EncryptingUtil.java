@@ -17,8 +17,11 @@
 
 package org.apache.lucene.store;
 
+import javax.crypto.Cipher;
+import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 
 public class EncryptingUtil {
@@ -32,6 +35,8 @@ public class EncryptingUtil {
    * AES/CTR IV length. It is equal to {@link #AES_BLOCK_SIZE}. It is defined separately mainly for code clarity.
    */
   public static final int IV_LENGTH = AES_BLOCK_SIZE;
+
+  public static final String AES_CTR_TRANSFORMATION = "AES/CTR/NoPadding";
 
   /**
    * Creates a secret key for AES using the bytes provided.
@@ -87,6 +92,14 @@ public class EncryptingUtil {
         counter >>>= 8;
       }
       iv[ivIndex] = (byte) sum;
+    }
+  }
+
+  public static Cipher createAesCtrCipher() {
+    try {
+      return Cipher.getInstance(AES_CTR_TRANSFORMATION);
+    } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
+      throw new RuntimeException(e);
     }
   }
 

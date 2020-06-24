@@ -26,7 +26,6 @@ import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.store.CipherPool;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.EncryptingDirectory;
 import org.apache.lucene.util.TestUtil;
@@ -34,7 +33,6 @@ import org.apache.lucene.util.TestUtil;
 public class EncryptingPostingsFormat extends PostingsFormat {
 
   private final PostingsFormat delegate = TestUtil.getDefaultPostingsFormat();
-  private final CipherPool cipherPool = new CipherPool();
 
   public EncryptingPostingsFormat() {
     super("Encrypting");
@@ -42,14 +40,14 @@ public class EncryptingPostingsFormat extends PostingsFormat {
   
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    Directory encryptingDirectory = new EncryptingDirectory(state.directory, this::getEncryptionKey, cipherPool, state.segmentInfo);
+    Directory encryptingDirectory = new EncryptingDirectory(state.directory, this::getEncryptionKey, state.segmentInfo);
     SegmentWriteState encryptingState = new SegmentWriteState(state.infoStream, encryptingDirectory, state.segmentInfo, state.fieldInfos, state.segUpdates, state.context, state.segmentSuffix);
     return delegate.fieldsConsumer(encryptingState);
   }
 
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-    Directory encryptingDirectory = new EncryptingDirectory(state.directory, this::getEncryptionKey, cipherPool, state.segmentInfo);
+    Directory encryptingDirectory = new EncryptingDirectory(state.directory, this::getEncryptionKey, state.segmentInfo);
     SegmentReadState decryptingState = new SegmentReadState(encryptingDirectory, state.segmentInfo, state.fieldInfos, state.context, state.segmentSuffix);
     return delegate.fieldsProducer(decryptingState);
   }

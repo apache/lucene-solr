@@ -25,22 +25,19 @@ public class EncryptingDirectory extends FilterDirectory {
 
   private final KeySupplier keySupplier;
   private final SegmentKeySupplier segmentKeySupplier;
-  private final CipherPool cipherPool;
   private final SegmentInfo segmentInfo;
 
-  public EncryptingDirectory(Directory directory, KeySupplier keySupplier, CipherPool cipherPool) {
+  public EncryptingDirectory(Directory directory, KeySupplier keySupplier) {
     super(directory);
     this.keySupplier = keySupplier;
     segmentKeySupplier = null;
-    this.cipherPool = cipherPool;
     this.segmentInfo = null;
   }
 
-  public EncryptingDirectory(Directory directory, SegmentKeySupplier keySupplier, CipherPool cipherPool, SegmentInfo segmentInfo) {
+  public EncryptingDirectory(Directory directory, SegmentKeySupplier keySupplier, SegmentInfo segmentInfo) {
     super(directory);
     this.keySupplier = null;
     segmentKeySupplier = keySupplier;
-    this.cipherPool = cipherPool;
     this.segmentInfo = segmentInfo;
   }
 
@@ -49,14 +46,14 @@ public class EncryptingDirectory extends FilterDirectory {
       throws IOException {
     IndexOutput indexOutput = in.createOutput(name, context);
     byte[] key = getKey(name);
-    return key == null ? indexOutput : new EncryptingIndexOutput(indexOutput, key, cipherPool, getSegmentId());
+    return key == null ? indexOutput : new EncryptingIndexOutput(indexOutput, key, getSegmentId());
   }
 
   @Override
   public IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException {
     IndexOutput indexOutput = in.createTempOutput(prefix, suffix, context);
     byte[] key = getKey(indexOutput.getName());
-    return key == null ? indexOutput : new EncryptingIndexOutput(indexOutput, key, cipherPool, getSegmentId());
+    return key == null ? indexOutput : new EncryptingIndexOutput(indexOutput, key, getSegmentId());
   }
 
   @Override
@@ -64,7 +61,7 @@ public class EncryptingDirectory extends FilterDirectory {
       throws IOException {
     IndexInput indexInput = in.openInput(name, context);
     byte[] key = getKey(name);
-    return key == null ? indexInput : new EncryptingIndexInput(indexInput, key, cipherPool);
+    return key == null ? indexInput : new EncryptingIndexInput(indexInput, key);
   }
 
   private byte[] getKey(String fileName) {

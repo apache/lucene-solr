@@ -36,12 +36,10 @@ import static org.junit.Assert.assertTrue;
 public class TestEncryptingIndexInput extends RandomizedTest {
 
   private byte[] key;
-  private CipherPool cipherPool;
 
   @Before
   public void initializeEncryption() {
     key = randomBytesOfLength(randomIntBetween(2, 4) * 8);
-    cipherPool = new CipherPool();
   }
 
   @Test
@@ -232,10 +230,10 @@ public class TestEncryptingIndexInput extends RandomizedTest {
   }
 
   private EncryptingIndexOutput createEncryptingIndexOutput(ByteBuffersDataOutput dataOutput) throws IOException {
-    return new EncryptingIndexOutput(new ByteBuffersIndexOutput(dataOutput, "Test", "Test"), key, cipherPool);
+    return new EncryptingIndexOutput(new ByteBuffersIndexOutput(dataOutput, "Test", "Test"), key);
   }
 
   private EncryptingIndexInput createEncryptingIndexInput(ByteBuffersDataOutput dataOutput) throws IOException {
-    return new EncryptingIndexInput(new ByteBuffersIndexInput(dataOutput.toDataInput(), "Test"), key, cipherPool);
+    return new EncryptingIndexInput(new ByteBuffersIndexInput(dataOutput.toDataInput(), "Test"), key);
   }
 }

@@ -52,23 +52,23 @@ public class EncryptingIndexOutput extends IndexOutput {
 
   private final IndexOutput indexOutput;
   private final boolean footerMatters;
-  private final CipherPool cipherPool;
-  private Cipher cipher;
+  private final Cipher cipher;
   private final ByteBuffer inBuffer;
   private final ByteBuffer outBuffer;
   private final byte[] outArray;
   private final byte[] oneByteBuf;
   private final Checksum clearChecksum;
   private long filePointer;
+  private boolean closed;
 
-  public EncryptingIndexOutput(IndexOutput indexOutput, byte[] key, CipherPool cipherPool) throws IOException {
-    this(indexOutput, key, cipherPool, null);
+  public EncryptingIndexOutput(IndexOutput indexOutput, byte[] key) throws IOException {
+    this(indexOutput, key, null);
   }
 
   /**
    * @param segmentId may be null, in this case it is replaced by a fake id.
    */
-  public EncryptingIndexOutput(IndexOutput indexOutput, byte[] key, CipherPool cipherPool, byte[] segmentId) throws IOException {
+  public EncryptingIndexOutput(IndexOutput indexOutput, byte[] key, byte[] segmentId) throws IOException {
     super("Encrypting " + indexOutput.toString(), indexOutput.getName());
     this.indexOutput = indexOutput;
 
@@ -78,8 +78,7 @@ public class EncryptingIndexOutput extends IndexOutput {
     // Only write the real footer when it matters because it computes a checksum.
     footerMatters = segmentId != null;
 
-    this.cipherPool = cipherPool;
-    cipher = cipherPool.get(CipherPool.AES_CTR_TRANSFORMATION);
+    cipher = createAesCtrCipher();
     assert cipher.getBlockSize() == AES_BLOCK_SIZE : "Invalid AES block size: " + cipher.getBlockSize();
 
     byte[] iv = generateRandomIv();
@@ -119,16 +118,15 @@ public class EncryptingIndexOutput extends IndexOutput {
 
   @Override
   public void close() throws IOException {
-    if (cipher != null) {
+    if (!closed) {
+      closed = true;
       try {
         if (inBuffer.position() != 0) {
           encryptBufferAndWrite();
         }
         writeFooter();
-        indexOutput.close();
       } finally {
-        cipherPool.release(cipher);
-        cipher = null;
+        indexOutput.close();
       }
     }
   }
