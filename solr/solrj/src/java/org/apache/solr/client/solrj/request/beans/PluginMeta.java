@@ -25,6 +25,7 @@ import org.apache.solr.common.util.ReflectMapWriter;
 /**
  * POJO for a plugin metadata used in container plugins
  */
+@SuppressWarnings({"overrides"})
 public class PluginMeta implements ReflectMapWriter {
   @JsonProperty(required = true)
   public String name;
