@@ -51,13 +51,13 @@ import org.slf4j.LoggerFactory;
 import static org.apache.lucene.util.IOUtils.closeWhileHandlingException;
 
 public class CustomContainerPlugins implements ClusterPropertiesListener {
-  private ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper();
+  private final ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper();
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   final CoreContainer coreContainer;
   final ApiBag containerApiBag;
 
-  private Map<String, ApiInfo> currentPlugins = new HashMap<>();
+  private final Map<String, ApiInfo> currentPlugins = new HashMap<>();
 
   @Override
   public boolean onChange(Map<String, Object> properties) {
@@ -174,6 +174,7 @@ public class CustomContainerPlugins implements ClusterPropertiesListener {
     }
   }
 
+  @SuppressWarnings({"rawtypes"})
   public class ApiInfo implements ReflectMapWriter {
     List<ApiHolder> holders;
     @JsonProperty
@@ -187,6 +188,7 @@ public class CustomContainerPlugins implements ClusterPropertiesListener {
     Object instance;
 
 
+    @SuppressWarnings({"unchecked","rawtypes"})
     public ApiInfo(PluginMeta info, List<String> errs) {
       this.info = info;
       Pair<String, String> klassInfo = org.apache.solr.core.PluginInfo.parseClassName(info.klass);
@@ -257,6 +259,7 @@ public class CustomContainerPlugins implements ClusterPropertiesListener {
       }
     }
 
+    @SuppressWarnings({"rawtypes"})
     public void init() throws Exception {
       if (this.holders != null) return;
       Constructor constructor = klas.getConstructors()[0];

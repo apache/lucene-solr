@@ -103,6 +103,7 @@ public class ContainerPluginsApi {
     }
 
     @Command(name = "update")
+    @SuppressWarnings("unchecked")
     public void update(PayloadObj<PluginMeta> payload) throws IOException {
       PluginMeta info = payload.get();
       validateConfig(payload, info);
