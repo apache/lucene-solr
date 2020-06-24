@@ -150,7 +150,7 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
   }
 
   @Override
-  public Lock lockTask(ZkNodeProps message, OverseerTaskProcessor.TaskBatch taskBatch) {
+  public Lock lockTask(ZkNodeProps message, long ignored) {
     String configSetName = getTaskKey(message);
     if (canExecute(configSetName, message)) {
       markExclusiveTask(configSetName, message);

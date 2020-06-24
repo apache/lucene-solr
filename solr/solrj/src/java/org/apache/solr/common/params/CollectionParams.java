@@ -42,31 +42,30 @@ public interface CollectionParams {
 
 
   enum LockLevel {
-    CLUSTER(0),
-    COLLECTION(1),
-    SHARD(2),
-    REPLICA(3),
-    NONE(10);
+    NONE(10, null),
+    REPLICA(3, null),
+    SHARD(2, REPLICA),
+    COLLECTION(1, SHARD),
+    CLUSTER(0, COLLECTION);
 
-    public final int level;
+    private final int height;
+    private final LockLevel child;
 
-    LockLevel(int i) {
-      this.level = i;
+    LockLevel(int height, LockLevel child) {
+      this.height = height;
+      this.child = child;
     }
 
     public LockLevel getChild() {
-      return getLevel(level + 1);
+      return this.child;
     }
 
-    public static LockLevel getLevel(int i) {
-      for (LockLevel v : values()) {
-        if (v.level == i) return v;
-      }
-      return null;
+    public int getHeight() {
+      return this.height;
     }
 
     public boolean isHigherOrEqual(LockLevel that) {
-      return that.level <= level;
+      return height >= that.height;
     }
   }
 

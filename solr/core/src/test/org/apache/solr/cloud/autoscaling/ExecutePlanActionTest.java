@@ -167,6 +167,7 @@ public class ExecutePlanActionTest extends SolrCloudTestCase {
               if (!children.isEmpty()) {
                 String child = children.get(0);
                 byte[] data = zkClient().getData(parentPath + "/" + child, null, null, true);
+                @SuppressWarnings({"rawtypes"})
                 Map m = (Map) Utils.fromJSON(data);
                 if (m.containsKey("requestid")) {
                   znodeCreated.set(m.get("requestid").equals(asyncId));
@@ -190,6 +191,7 @@ public class ExecutePlanActionTest extends SolrCloudTestCase {
       action.process(nodeLostEvent, actionContext);
 
 //      assertTrue("ExecutePlanAction should have stored the requestid in ZK before executing the request", znodeCreated.get());
+      @SuppressWarnings({"unchecked"})
       List<NamedList<Object>> responses = (List<NamedList<Object>>) actionContext.getProperty("responses");
       assertNotNull(responses);
       assertEquals(2, responses.size());
@@ -215,6 +217,7 @@ public class ExecutePlanActionTest extends SolrCloudTestCase {
         "'actions' : [{'name':'compute_plan', 'class' : 'solr.ComputePlanAction'}," +
         "{'name':'execute_plan','class':'solr.ExecutePlanAction'}]" +
         "}}";
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
@@ -281,6 +284,7 @@ public class ExecutePlanActionTest extends SolrCloudTestCase {
         "{'name':'execute_plan','class':'solr.ExecutePlanAction', 'taskTimeoutSeconds' : '1','taskTimeoutFail':'" + taskTimeoutFail + "'}," +
         "{'name':'finish','class':'" + FinishAction.class.getName() + "'}]" +
         "}}";
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
@@ -339,6 +343,7 @@ public class ExecutePlanActionTest extends SolrCloudTestCase {
         "{'name':'execute_plan','class':'solr.ExecutePlanAction'}," +
         "{'name':'finish','class':'" + FinishAction.class.getName() + "'}]" +
         "}}";
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");

@@ -32,7 +32,9 @@ ant clean-jars      => (NO REPLACEMENT)
 ant precommit       => gradlew precommit    [better: gradlew check -x test]
 
 ant get-maven-poms  => gradlew mavenLocal
- 
+
+ant idea            => gradlew idea         [better: import as a Gradle project in IntelliJ, it will build automatically]
+
 Solr-specific targets
 ---------------------
 

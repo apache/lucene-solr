@@ -89,6 +89,7 @@ public class HttpTriggerListenerTest extends SolrCloudTestCase {
         "{'name':'test','class':'" + TestDummyAction.class.getName() + "'}" +
         "]" +
         "}}";
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");

@@ -118,7 +118,9 @@ public class CheckHdfsIndexTest extends AbstractFullDistribZkTestBase {
     {
       SolrClient client = clients.get(0);
       NamedList<Object> response = client.query(new SolrQuery().setRequestHandler("/admin/system")).getResponse();
+      @SuppressWarnings({"unchecked"})
       NamedList<Object> coreInfo = (NamedList<Object>) response.get("core");
+      @SuppressWarnings({"unchecked"})
       String indexDir = ((NamedList<Object>) coreInfo.get("directory")).get("data") + "/index";
 
       args = new String[] {indexDir};

@@ -123,6 +123,9 @@ public class TermsQParserPlugin extends QParserPlugin {
       @Override
       public Query parse() throws SyntaxError {
         String fname = localParams.get(QueryParsing.F);
+        if (fname == null || fname.isEmpty()) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing field to query");
+        }
         FieldType ft = req.getSchema().getFieldType(fname);
         String separator = localParams.get(SEPARATOR, ",");
         String qstr = localParams.get(QueryParsing.V);//never null
