@@ -33,15 +33,9 @@ public class UnionFieldMetadataBuilder {
   private BytesRef maxLastTerm;
 
   public UnionFieldMetadataBuilder() {
-    reset();
-  }
-
-  public UnionFieldMetadataBuilder reset() {
     dictionaryStartFP = -1;
     minStartBlockFP = Long.MAX_VALUE;
     maxEndBlockFP = Long.MIN_VALUE;
-    maxLastTerm = null;
-    return this;
   }
 
   public UnionFieldMetadataBuilder addFieldMetadata(FieldMetadata fieldMetadata) {

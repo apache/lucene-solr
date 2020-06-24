@@ -61,6 +61,7 @@ public abstract class ConfigSetService {
    * @param dcore the core's CoreDescriptor
    * @return a ConfigSet
    */
+  @SuppressWarnings({"rawtypes"})
   public final ConfigSet loadConfigSet(CoreDescriptor dcore) {
 
     SolrResourceLoader coreLoader = createCoreResourceLoader(dcore);
@@ -158,6 +159,7 @@ public abstract class ConfigSetService {
    * @param loader the core's resource loader
    * @return the ConfigSet properties
    */
+  @SuppressWarnings({"rawtypes"})
   protected NamedList loadConfigSetProperties(CoreDescriptor cd, SolrResourceLoader loader) {
     return ConfigSetProperties.readFromResourceLoader(loader, cd.getConfigSetPropertiesName());
   }
@@ -166,6 +168,7 @@ public abstract class ConfigSetService {
    * Return the ConfigSet flags or null if none.
    */
   // TODO should fold into configSetProps -- SOLR-14059
+  @SuppressWarnings({"rawtypes"})
   protected NamedList loadConfigSetFlags(CoreDescriptor cd, SolrResourceLoader loader) {
     return null;
   }

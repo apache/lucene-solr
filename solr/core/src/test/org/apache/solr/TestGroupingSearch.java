@@ -772,6 +772,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
       types.add(new FldType("foo_bdv", ZERO_ONE, new BVal()));
 
       clearIndex();
+      @SuppressWarnings({"rawtypes"})
       Map<Comparable, Doc> model = indexDocs(types, null, indexSize);
       //System.out.println("############### model=" + model);
 
@@ -848,6 +849,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
           rows=1; start=0; group_offset=1; group_limit=1;
         }
 
+        @SuppressWarnings({"rawtypes"})
         Map<Comparable, Grp> groups = groupBy(model.values(), groupField);
 
         // first sort the docs in each group
@@ -888,7 +890,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
               continue;
             }
 
-            for (Comparable field : doc.getValues(FOO_STRING_FIELD)) {
+            for (@SuppressWarnings({"rawtypes"})Comparable field : doc.getValues(FOO_STRING_FIELD)) {
               String key = field.toString();
               boolean exists = facetCounts.containsKey(key);
               int count = exists ? facetCounts.get(key) : 0;
@@ -896,6 +898,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
             }
           }
         }
+        @SuppressWarnings({"rawtypes"})
         List<Comparable> expectedFacetResponse = new ArrayList<>();
         for (Map.Entry<String, Integer> stringIntegerEntry : facetCounts.entrySet()) {
           expectedFacetResponse.add(stringIntegerEntry.getKey());
@@ -950,7 +953,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     }
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("q", FOO_STRING_FIELD + ":Book1");
-    assertQ(req(params, CommonParams.MIN_EXACT_HITS, "2", CommonParams.ROWS, "2")
+    assertQ(req(params, CommonParams.MIN_EXACT_COUNT, "2", CommonParams.ROWS, "2")
         ,"/response/result[@numFoundExact='false']"
     );
     params.set("group", true);
@@ -959,7 +962,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
         ,"/response/lst[@name='grouped']/lst[@name='"+FOO_STRING_FIELD+"']/arr[@name='groups']/lst[1]/result[@numFoundExact='true']"
     );
     
-    assertQ(req(params, CommonParams.MIN_EXACT_HITS, "2", CommonParams.ROWS, "2")
+    assertQ(req(params, CommonParams.MIN_EXACT_COUNT, "2", CommonParams.ROWS, "2")
         ,"/response/lst[@name='grouped']/lst[@name='"+FOO_STRING_FIELD+"']/arr[@name='groups']/lst[1]/result[@numFoundExact='true']"
     );
     
@@ -1023,6 +1026,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     };
   }
 
+  @SuppressWarnings({"rawtypes"})
   public static Map<Comparable, Grp> groupBy(Collection<Doc> docs, String field) {
     Map<Comparable, Grp> groups = new HashMap<>();
     for (Doc doc : docs) {
@@ -1055,6 +1059,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
 
 
   public static class Grp {
+    @SuppressWarnings({"rawtypes"})
     public Comparable groupValue;
     public List<Doc> docs;
     public Doc maxDoc;  // the document highest according to the "sort" param

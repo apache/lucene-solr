@@ -246,7 +246,7 @@ public class TestNearest extends LuceneTestCase {
 
   private IndexWriterConfig getIndexWriterConfig() {
     IndexWriterConfig iwc = newIndexWriterConfig();
-    iwc.setCodec(Codec.forName("Lucene84"));
+    iwc.setCodec(Codec.forName("Lucene86"));
     return iwc;
   }
 }

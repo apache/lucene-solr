@@ -46,7 +46,7 @@ public class BJQFilterAccessibleTest  extends SolrTestCaseJ4 {
       TermQuery childQuery = new TermQuery(new Term("child_s", "l"));
       Query parentQuery = new WildcardQuery(new Term("parent_s", "*"));
       ToParentBlockJoinQuery tpbjq = new ToParentBlockJoinQuery(childQuery,
-          BlockJoinParentQParser.getCachedFilter(req,parentQuery).getFilter(), ScoreMode.Max);
+          BlockJoinParentQParser.getCachedBitSetProducer(req,parentQuery), ScoreMode.Max);
       Assert.assertEquals(6, req.getSearcher().search(tpbjq,10).totalHits.value);
     }
   }

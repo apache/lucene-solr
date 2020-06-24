@@ -45,7 +45,7 @@ public class LiteralValueSource extends ValueSource {
   }
 
   @Override
-  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
 
     return new StrDocValues(this) {
       @Override

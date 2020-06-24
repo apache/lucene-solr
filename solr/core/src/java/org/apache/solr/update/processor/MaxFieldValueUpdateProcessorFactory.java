@@ -55,8 +55,9 @@ import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.SELE
 public final class MaxFieldValueUpdateProcessorFactory extends FieldValueSubsetUpdateProcessorFactory {
 
   @Override
-  @SuppressWarnings("unchecked")
-  public Collection pickSubset(Collection values) {
+  @SuppressWarnings({"unchecked"})
+  public Collection<Object> pickSubset(@SuppressWarnings({"rawtypes"})Collection values) {
+    @SuppressWarnings({"rawtypes"})
     Collection result = values;
     try {
       // NOTE: the extra cast to Object is needed to prevent compile

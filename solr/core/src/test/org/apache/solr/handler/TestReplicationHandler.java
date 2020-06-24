@@ -205,6 +205,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     return s.add(doc).getStatus();
   }
 
+  @SuppressWarnings({"rawtypes"})
   NamedList query(String query, SolrClient s) throws SolrServerException, IOException {
     ModifiableSolrParams params = new ModifiableSolrParams();
 
@@ -216,6 +217,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
 
   /** will sleep up to 30 seconds, looking for expectedDocCount */
+  @SuppressWarnings({"rawtypes"})
   private NamedList rQuery(int expectedDocCount, String query, SolrClient client) throws Exception {
     int timeSlept = 0;
     NamedList res = query(query, client);
@@ -232,7 +234,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     return res;
   }
   
-  private long numFound(NamedList res) {
+  private long numFound(@SuppressWarnings({"rawtypes"})NamedList res) {
     return ((SolrDocumentList) res.get("response")).getNumFound();
   }
 
@@ -329,10 +331,11 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
       if (i > 0) {
         rQuery(i, "*:*", slaveClient);
+        @SuppressWarnings({"rawtypes"})
         List replicatedAtCount = (List) ((NamedList) details.get("slave")).get("indexReplicatedAtList");
         int tries = 0;
         while ((replicatedAtCount == null || replicatedAtCount.size() < i) && tries++ < 5) {
-          Thread.currentThread().sleep(1000);
+          Thread.sleep(1000);
           details = getDetails(slaveClient);
           replicatedAtCount = (List) ((NamedList) details.get("slave")).get("indexReplicatedAtList");
         }
@@ -514,11 +517,13 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     masterClient.commit();
 
+    @SuppressWarnings({"rawtypes"})
     NamedList masterQueryRsp = rQuery(nDocs, "*:*", masterClient);
     SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
     assertEquals(nDocs, numFound(masterQueryRsp));
 
     //get docs from slave and check if number is equal to master
+    @SuppressWarnings({"rawtypes"})
     NamedList slaveQueryRsp = rQuery(nDocs, "*:*", slaveClient);
     SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
     assertEquals(nDocs, numFound(slaveQueryRsp));
@@ -591,11 +596,13 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     masterClient.commit();
 
+    @SuppressWarnings({"rawtypes"})
     NamedList masterQueryRsp = rQuery(nDocs, "*:*", masterClient);
     SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
     assertEquals(nDocs, numFound(masterQueryRsp));
 
     //get docs from slave and check if number is equal to master
+    @SuppressWarnings({"rawtypes"})
     NamedList slaveQueryRsp = rQuery(nDocs, "*:*", slaveClient);
     SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
     assertEquals(nDocs, numFound(slaveQueryRsp));
@@ -653,11 +660,13 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
       masterClient.commit();
 
+      @SuppressWarnings({"rawtypes"})
       NamedList masterQueryRsp = rQuery(nDocs, "*:*", masterClient);
       SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
       assertEquals(nDocs, numFound(masterQueryRsp));
 
       //get docs from slave and check if number is equal to master
+      @SuppressWarnings({"rawtypes"})
       NamedList slaveQueryRsp = rQuery(nDocs, "*:*", slaveClient);
       SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
       assertEquals(nDocs, numFound(slaveQueryRsp));
@@ -748,7 +757,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     QueryResponse response = slaveClient.query(params);
 
     // details/slave/timesIndexReplicated
+    @SuppressWarnings({"unchecked"})
     NamedList<Object> details = (NamedList<Object>) response.getResponse().get("details");
+    @SuppressWarnings({"unchecked"})
     NamedList<Object> slave = (NamedList<Object>) details.get("slave");
     return slave;
   }
@@ -778,6 +789,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     masterClient.commit();
 
+    @SuppressWarnings({"rawtypes"})
     NamedList masterQueryRsp = rQuery(nDocs, "*:*", masterClient);
     SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
     assertEquals(nDocs, masterQueryResult.getNumFound());
@@ -790,6 +802,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     stream.close();
     
     //get docs from slave and check if number is equal to master
+    @SuppressWarnings({"rawtypes"})
     NamedList slaveQueryRsp = rQuery(nDocs, "*:*", slaveClient);
     SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
     assertEquals(nDocs, slaveQueryResult.getNumFound());
@@ -936,6 +949,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         totalDocs += docs;
         masterClient.commit();
         
+        @SuppressWarnings({"rawtypes"})
         NamedList masterQueryRsp = rQuery(totalDocs, "*:*", masterClient);
         SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp
             .get("response");
@@ -949,6 +963,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         }
 
         // get docs from slave and check if number is equal to master
+        @SuppressWarnings({"rawtypes"})
         NamedList slaveQueryRsp = rQuery(totalDocs, "*:*", slaveClient);
         SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp
             .get("response");
@@ -1116,6 +1131,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
   private void assertVersions(SolrClient client1, SolrClient client2) throws Exception {
     NamedList<Object> details = getDetails(client1);
+    @SuppressWarnings({"unchecked"})
     ArrayList<NamedList<Object>> commits = (ArrayList<NamedList<Object>>) details.get("commits");
     Long maxVersionClient1 = getVersion(client1);
     Long maxVersionClient2 = getVersion(client2);
@@ -1142,6 +1158,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     assertEquals(maxVersionClient2, version);
   }
 
+  @SuppressWarnings({"unchecked"})
   private Long getVersion(SolrClient client) throws Exception {
     NamedList<Object> details;
     ArrayList<NamedList<Object>> commits;
@@ -1201,6 +1218,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     masterClient.commit();
     
+    @SuppressWarnings({"rawtypes"})
     NamedList masterQueryRsp = rQuery(nDocs, "*:*", masterClient);
     SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
     assertEquals(nDocs, masterQueryResult.getNumFound());
@@ -1215,6 +1233,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     slaveClient = createNewSolrClient(slaveJetty.getLocalPort());
 
     //get docs from slave and check if number is equal to master
+    @SuppressWarnings({"rawtypes"})
     NamedList slaveQueryRsp = rQuery(nDocs, "*:*", slaveClient);
     SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
     assertEquals(nDocs, slaveQueryResult.getNumFound());
@@ -1261,6 +1280,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       
       // masterClient = createNewSolrClient(masterJetty.getLocalPort());
       
+      @SuppressWarnings({"rawtypes"})
       NamedList masterQueryRsp = rQuery(nDocs, "*:*", masterClient);
       SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp
           .get("response");
@@ -1275,6 +1295,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       slaveClient = createNewSolrClient(slaveJetty.getLocalPort());
       
       // get docs from slave and check if number is equal to master
+      @SuppressWarnings({"rawtypes"})
       NamedList slaveQueryRsp = rQuery(nDocs, "*:*", slaveClient);
       SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp
           .get("response");
@@ -1314,6 +1335,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     masterClient.commit();
 
+    @SuppressWarnings({"rawtypes"})
     NamedList masterQueryRsp = rQuery(docs, "*:*", masterClient);
     SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
     assertEquals(docs, masterQueryResult.getNumFound());
@@ -1327,6 +1349,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     slaveClient = createNewSolrClient(slaveJetty.getLocalPort());
     
     //get docs from slave and check if number is equal to master
+    @SuppressWarnings({"rawtypes"})
     NamedList slaveQueryRsp = rQuery(docs, "*:*", slaveClient);
     SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
     assertEquals(docs, slaveQueryResult.getNumFound());
@@ -1346,6 +1369,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     masterClient.commit();
     
+    @SuppressWarnings({"rawtypes"})
     NamedList resp =  rQuery(docs + 2, "*:*", masterClient);
     masterQueryResult = (SolrDocumentList) resp.get("response");
     assertEquals(docs + 2, masterQueryResult.getNumFound());
@@ -1368,11 +1392,13 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     masterClient.commit();
 
+    @SuppressWarnings({"rawtypes"})
     NamedList masterQueryRsp = rQuery(nDocs, "*:*", masterClient);
     SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
     assertEquals(nDocs, masterQueryResult.getNumFound());
 
     //get docs from slave and check if number is equal to master
+    @SuppressWarnings({"rawtypes"})
     NamedList slaveQueryRsp = rQuery(nDocs, "*:*", slaveClient);
     SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
 
@@ -1429,10 +1455,12 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     // wait for slave to reload core by watching updated startTime
     watchCoreStartAt(slaveClient, 30*1000, slaveStartTime);
 
+    @SuppressWarnings({"rawtypes"})
     NamedList masterQueryRsp2 = rQuery(1, "id:2000", masterClient);
     SolrDocumentList masterQueryResult2 = (SolrDocumentList) masterQueryRsp2.get("response");
     assertEquals(1, masterQueryResult2.getNumFound());
 
+    @SuppressWarnings({"rawtypes"})
     NamedList slaveQueryRsp2 = rQuery(1, "id:2000", slaveClient);
     SolrDocumentList slaveQueryResult2 = (SolrDocumentList) slaveQueryRsp2.get("response");
     assertEquals(1, slaveQueryResult2.getNumFound());
@@ -1502,6 +1530,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     new Thread(new AddExtraDocs(masterClient, totalDocs)).start();
 
     //Wait and make sure that it actually replicated correctly.
+    @SuppressWarnings({"rawtypes"})
     NamedList slaveQueryRsp = rQuery(totalDocs, "*:*", slaveClient);
     SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
     assertEquals(totalDocs, slaveQueryResult.getNumFound());
@@ -1710,6 +1739,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         QueryRequest req = new QueryRequest(p);
         req.setPath("/admin/cores");
         try {
+          @SuppressWarnings({"rawtypes"})
           NamedList data = adminClient.request(req);
           for (String k : new String[]{"status", "collection1"}) {
             Object o = data.get(k);
@@ -1736,7 +1766,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     }
   }
 
-  private void assertReplicationResponseSucceeded(NamedList response) {
+  private void assertReplicationResponseSucceeded(@SuppressWarnings({"rawtypes"})NamedList response) {
     assertNotNull("null response from server", response);
     assertNotNull("Expected replication response to have 'status' field", response.get("status"));
     assertEquals("OK", response.get("status"));

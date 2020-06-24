@@ -162,6 +162,7 @@ class FacetFieldProcessorByHashDV extends FacetFieldProcessor {
 
     /** To be returned in "buckets"/"val" */
     @Override
+    @SuppressWarnings({"rawtypes"})
     public Comparable bitsToValue(long globalOrd) {
       BytesRef bytesRef = lookupOrdFunction.apply((int) globalOrd);
       // note FacetFieldProcessorByArray.findTopSlots also calls SchemaFieldType.toObject
@@ -169,16 +170,19 @@ class FacetFieldProcessorByHashDV extends FacetFieldProcessor {
     }
 
     @Override
+    @SuppressWarnings({"rawtypes"})
     public String formatValue(Comparable val) {
       return (String) val;
     }
 
     @Override
+    @SuppressWarnings({"rawtypes"})
     protected Comparable parseStr(String rawval) throws ParseException {
       throw new UnsupportedOperationException();
     }
 
     @Override
+    @SuppressWarnings({"rawtypes"})
     protected Comparable parseAndAddGap(Comparable value, String gap) throws ParseException {
       throw new UnsupportedOperationException();
     }
@@ -189,7 +193,7 @@ class FacetFieldProcessorByHashDV extends FacetFieldProcessor {
   LongCounts table;
   int allBucketsSlot = -1;
 
-  FacetFieldProcessorByHashDV(FacetRequest.FacetContext fcontext, FacetField freq, SchemaField sf) {
+  FacetFieldProcessorByHashDV(FacetContext fcontext, FacetField freq, SchemaField sf) {
     super(fcontext, freq, sf);
     if (freq.mincount == 0) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
@@ -285,7 +289,7 @@ class FacetFieldProcessorByHashDV extends FacetFieldProcessor {
       }
     };
 
-    countAcc = new CountSlotAcc(fcontext) {
+    countAcc = new SlotAcc.CountSlotAcc(fcontext) {
       @Override
       public void incrementCount(int slot, long count) {
         throw new UnsupportedOperationException();
@@ -437,6 +441,7 @@ class FacetFieldProcessorByHashDV extends FacetFieldProcessor {
    */
   private IntFunction<SlotContext> slotContext = (slotNum) -> {
     long val = table.vals[slotNum];
+    @SuppressWarnings({"rawtypes"})
     Comparable value = calc.bitsToValue(val);
     return new SlotContext(sf.getType().getFieldQuery(null, sf, calc.formatValue(value)));
   };

@@ -227,7 +227,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     this.requestRLTGenerator = new RequestReplicaListTransformerGenerator();
   }
 
-  /** Sets the cache ttl for DocCollection Objects cached  . This is only applicable for collections which are persisted outside of clusterstate.json
+  /** Sets the cache ttl for DocCollection Objects cached.
    * @param seconds ttl value in seconds
    */
   public void setCollectionCacheTTl(int seconds){
@@ -463,6 +463,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     assertZKStateProvider().zkStateReader.registerDocCollectionWatcher(collection, watcher);
   }
 
+  @SuppressWarnings({"unchecked"})
   private NamedList<Object> directUpdate(AbstractUpdateRequest request, String collection) throws SolrServerException {
     UpdateRequest updateRequest = (UpdateRequest) request;
     SolrParams params = request.getParams();
@@ -522,6 +523,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     }
 
     final NamedList<Throwable> exceptions = new NamedList<>();
+    @SuppressWarnings({"rawtypes"})
     final NamedList<NamedList> shardResponses = new NamedList<>(routes.size()+1); // +1 for deleteQuery
 
     long start = System.nanoTime();
@@ -612,6 +614,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
 
     long end = System.nanoTime();
 
+    @SuppressWarnings({"rawtypes"})
     RouteResponse rr = condenseResponse(shardResponses, (int) TimeUnit.MILLISECONDS.convert(end - start, TimeUnit.NANOSECONDS));
     rr.setRouteResponses(shardResponses);
     rr.setRoutes(routes);
@@ -670,6 +673,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     return urlMap;
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   protected <T extends RouteResponse> T condenseResponse(NamedList response, int timeMillis, Supplier<T> supplier) {
     T condensed = supplier.get();
     int status = 0;
@@ -766,18 +770,22 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     return condensed;
   }
 
+  @SuppressWarnings({"rawtypes"})
   public RouteResponse condenseResponse(NamedList response, int timeMillis) {
     return condenseResponse(response, timeMillis, RouteResponse::new);
   }
 
+  @SuppressWarnings({"rawtypes"})
   public static class RouteResponse<T extends LBSolrClient.Req> extends NamedList {
+    @SuppressWarnings({"rawtypes"})
     private NamedList routeResponses;
     private Map<String, T> routes;
 
-    public void setRouteResponses(NamedList routeResponses) {
+    public void setRouteResponses(@SuppressWarnings({"rawtypes"})NamedList routeResponses) {
       this.routeResponses = routeResponses;
     }
 
+    @SuppressWarnings({"rawtypes"})
     public NamedList getRouteResponses() {
       return routeResponses;
     }
@@ -829,7 +837,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
   }
 
   @Override
-  public NamedList<Object> request(SolrRequest request, String collection) throws SolrServerException, IOException {
+  public NamedList<Object> request(@SuppressWarnings({"rawtypes"})SolrRequest request, String collection) throws SolrServerException, IOException {
     // the collection parameter of the request overrides that of the parameter to this method
     String requestCollection = request.getCollection();
     if (requestCollection != null) {
@@ -847,7 +855,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
    * there's a chance that the request will fail due to cached stale state,
    * which means the state must be refreshed from ZK and retried.
    */
-  protected NamedList<Object> requestWithRetryOnStaleState(SolrRequest request, int retryCount, List<String> inputCollections)
+  protected NamedList<Object> requestWithRetryOnStaleState(@SuppressWarnings({"rawtypes"})SolrRequest request, int retryCount, List<String> inputCollections)
       throws SolrServerException, IOException {
     connect(); // important to call this before you start working with the ZkStateReader
 
@@ -877,18 +885,16 @@ public abstract class BaseCloudSolrClient extends SolrClient {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection not found: " + requestedCollection);
         }
         int collVer = coll.getZNodeVersion();
-        if (coll.getStateFormat()>1) {
-          if(requestedCollections == null) requestedCollections = new ArrayList<>(requestedCollectionNames.size());
-          requestedCollections.add(coll);
+        if(requestedCollections == null) requestedCollections = new ArrayList<>(requestedCollectionNames.size());
+        requestedCollections.add(coll);
 
-          if (stateVerParamBuilder == null) {
-            stateVerParamBuilder = new StringBuilder();
-          } else {
-            stateVerParamBuilder.append("|"); // hopefully pipe is not an allowed char in a collection name
-          }
-
-          stateVerParamBuilder.append(coll.getName()).append(":").append(collVer);
+        if (stateVerParamBuilder == null) {
+          stateVerParamBuilder = new StringBuilder();
+        } else {
+          stateVerParamBuilder.append("|"); // hopefully pipe is not an allowed char in a collection name
         }
+
+        stateVerParamBuilder.append(coll.getName()).append(":").append(collVer);
       }
 
       if (stateVerParamBuilder != null) {
@@ -913,8 +919,10 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       if(o != null && o instanceof Map) {
         //remove this because no one else needs this and tests would fail if they are comparing responses
         resp.remove(resp.size()-1);
+        @SuppressWarnings({"rawtypes"})
         Map invalidStates = (Map) o;
         for (Object invalidEntries : invalidStates.entrySet()) {
+          @SuppressWarnings({"rawtypes"})
           Map.Entry e = (Map.Entry) invalidEntries;
           getDocCollection((String) e.getKey(), (Integer) e.getValue());
         }
@@ -1032,7 +1040,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     return resp;
   }
 
-  protected NamedList<Object> sendRequest(SolrRequest request, List<String> inputCollections)
+  protected NamedList<Object> sendRequest(@SuppressWarnings({"rawtypes"})SolrRequest request, List<String> inputCollections)
       throws SolrServerException, IOException {
     connect();
 
@@ -1207,6 +1215,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       //it is readily available just return it
       return ref.get();
     }
+    @SuppressWarnings({"rawtypes"})
     List locks = this.locks;
     final Object lock = locks.get(Math.abs(Hash.murmurhash3_x86_32(collection, 0, collection.length(), 0) % locks.size()));
     DocCollection fetchedCol = null;
@@ -1226,8 +1235,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
         cacheEntry.setRetriedAt();//we retried and found that it is the same version
         cacheEntry.maybeStale = false;
       } else {
-        if (fetchedCol.getStateFormat() > 1)
-          collectionStateCache.put(collection, new ExpiringCachedDocCollection(fetchedCol));
+        collectionStateCache.put(collection, new ExpiringCachedDocCollection(fetchedCol));
       }
       return fetchedCol;
     }
@@ -1265,7 +1273,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
    * the replication factor that was achieved in each shard involved in the request.
    * For single doc updates, there will be only one shard in the return value.
    */
-  @SuppressWarnings("rawtypes")
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public Map<String,Integer> getShardReplicationFactor(String collection, NamedList resp) {
     connect();
 
@@ -1285,6 +1293,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
         }
       }
 
+      @SuppressWarnings({"unchecked"})
       Iterator<Map.Entry<String,Object>> routeIter = routes.iterator();
       while (routeIter.hasNext()) {
         Map.Entry<String,Object> next = routeIter.next();

@@ -66,6 +66,7 @@ public interface MergeStrategy {
   * */
   public int getCost();
 
+  @SuppressWarnings({"rawtypes"})
   final Comparator MERGE_COMP = (o1, o2) -> {
     MergeStrategy m1 = (MergeStrategy) o1;
     MergeStrategy m2 = (MergeStrategy) o2;

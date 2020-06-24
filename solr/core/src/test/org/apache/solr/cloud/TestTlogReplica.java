@@ -92,11 +92,6 @@ public class TestTlogReplica extends SolrCloudTestCase {
     configureCluster(2) // 2 + random().nextInt(3)
         .addConfig("conf", configset("cloud-minimal-inplace-updates"))
         .configure();
-    Boolean useLegacyCloud = rarely();
-    log.info("Using legacyCloud?: {}", useLegacyCloud);
-    CollectionAdminRequest.ClusterProp clusterPropRequest = CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, String.valueOf(useLegacyCloud));
-    CollectionAdminResponse response = clusterPropRequest.process(cluster.getSolrClient());
-    assertEquals(0, response.getStatus());
   }
 
   @AfterClass
@@ -248,7 +243,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
                 "stats", "true");
             QueryResponse statsResponse = tlogReplicaClient.query(req);
             assertEquals("Append replicas should recive all updates. Replica: " + r + ", response: " + statsResponse,
-                1L, ((Map<String, Object>)((NamedList<Object>)statsResponse.getResponse()).findRecursive("plugins", "UPDATE", "updateHandler", "stats")).get("UPDATE.updateHandler.cumulativeAdds.count"));
+                1L, ((Map<String, Object>)(statsResponse.getResponse()).findRecursive("plugins", "UPDATE", "updateHandler", "stats")).get("UPDATE.updateHandler.cumulativeAdds.count"));
             break;
           } catch (AssertionError e) {
             if (t.hasTimedOut()) {

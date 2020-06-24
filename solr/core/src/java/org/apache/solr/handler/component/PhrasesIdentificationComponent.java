@@ -217,8 +217,10 @@ public class PhrasesIdentificationComponent extends SearchComponent {
             if (null == rsp) continue;
             final NamedList<Object> top = rsp.getResponse();
             if (null == top) continue;
+            @SuppressWarnings({"unchecked"})
             final NamedList<Object> phrasesWrapper = (NamedList<Object>) top.get("phrases");
             if (null == phrasesWrapper) continue;
+            @SuppressWarnings({"unchecked"})
             final List<NamedList<Object>> shardPhrases = (List<NamedList<Object>>) phrasesWrapper.get("_all");
             if (null == shardPhrases) continue;
             
@@ -660,6 +662,7 @@ public class PhrasesIdentificationComponent extends SearchComponent {
      * Populates the phrases with (merged) stats from a remote shard
      * @see #formatShardResponse
      */
+    @SuppressWarnings({"unchecked"})
     public static void populateStats(final List<Phrase> phrases, final List<NamedList<Object>> shardData) {
       final int numPhrases = phrases.size();
       if (shardData.size() != numPhrases) {
@@ -800,6 +803,7 @@ public class PhrasesIdentificationComponent extends SearchComponent {
         + "[" + position_start + ":" + position_end + "]";
     }
 
+    @SuppressWarnings({"rawtypes"})
     public NamedList getDetails() {
       SimpleOrderedMap<Object> out = new SimpleOrderedMap<Object>();
       out.add("text", subSequence);

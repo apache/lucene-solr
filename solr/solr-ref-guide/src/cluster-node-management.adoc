@@ -131,7 +131,7 @@ Add, edit or delete a cluster-wide property.
 === CLUSTERPROP Parameters
 
 `name`::
-The name of the property. Supported properties names are `autoAddReplicas`, `legacyCloud`, `location`, `maxCoresPerNode` and `urlScheme`. Other properties can be set
+The name of the property. Supported properties names are `autoAddReplicas`, `location`, `maxCoresPerNode`, `urlScheme` and `defaultShardPreferences`. Other properties can be set
 (for example, if you need them for custom plugins) but they must begin with the prefix `ext.`. Unknown properties that don't begin with `ext.` will be rejected.
 
 `val`::
@@ -212,6 +212,23 @@ NOTE: Until Solr 7.5, cluster properties supported a `collectionDefaults` key wh
 replaced with `defaults`. Using the `collectionDefaults` parameter in Solr 7.4 or 7.5 will continue to work
  but the format of the properties will automatically be converted to the new nested structure.
 Support for the "collectionDefaults" key will be removed in Solr 9.
+
+=== Default Shard Preferences
+
+Using the `defaultShardPreferences` parameter, you can implement rack or availability zone awareness. First, make sure to "label" your nodes using a <<configuring-solrconfig-xml.adoc#jvm-system-properties,system property>> (e.g. `-Drack=rack1`). Then, set the value of `defaultShardPreferences` to `node.sysprop:sysprop.YOUR_PROPERTY_NAME` like this:
+
+[source,bash]
+----
+curl -X POST -H 'Content-type:application/json' --data-binary '
+{
+  "set-property" : {
+    "name" : "defaultShardPreferences",
+    "val" : "node.sysprop:sysprop.rack"
+  }
+}' http://localhost:8983/api/cluster
+----
+
+At this point, if you run a query on a node having e.g. `rack=rack1`, Solr will try to hit only replicas from `rack1`.
 
 [[balanceshardunique]]
 == BALANCESHARDUNIQUE: Balance a Property Across Nodes
@@ -482,20 +499,3 @@ http://localhost:8983/solr/admin/collections?action=OVERSEERSTATUS
   "..."
  }
 ----
-
-[[migratestateformat]]
-== MIGRATESTATEFORMAT: Migrate Cluster State
-
-A expert level utility API to move a collection from shared `clusterstate.json` ZooKeeper node (created with `stateFormat=1`, the default in all Solr releases prior to 5.0) to the per-collection `state.json` stored in ZooKeeper (created with `stateFormat=2`, the current default) seamlessly without any application down-time.
-
-`/admin/collections?action=MIGRATESTATEFORMAT&collection=<collection_name>`
-
-=== MIGRATESTATEFORMAT Parameters
-
-`collection`::
-The name of the collection to be migrated from `clusterstate.json` to its own `state.json` ZooKeeper node. This parameter is required.
-
-`async`::
-Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
-
-This API is useful in migrating any collections created prior to Solr 5.0 to the more scalable cluster state format now used by default. If a collection was created in any Solr 5.x version or higher, then executing this command is not necessary.

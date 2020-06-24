@@ -33,14 +33,70 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * <p>
  * Update processor which examines a URL and outputs to various other fields
  * characteristics of that URL, including length, number of path levels, whether
  * it is a top level URL (levels==0), whether it looks like a landing/index page,
  * a canonical representation of the URL (e.g. stripping index.html), the domain
  * and path parts of the URL etc.
+ * </p>
+ *
  * <p>
  * This processor is intended used in connection with processing web resources,
  * and helping to produce values which may be used for boosting or filtering later.
+ * </p>
+ *
+ * <p>
+ * In the example configuration below, we construct a custom
+ * <code>updateRequestProcessorChain</code> and then instruct the
+ * <code>/update</code> requesthandler to use it for every incoming document.
+ * </p>
+ * <pre class="prettyprint">
+ * &lt;updateRequestProcessorChain name="urlProcessor"&gt;
+ *   &lt;processor class="org.apache.solr.update.processor.URLClassifyProcessorFactory"&gt;
+ *     &lt;bool name="enabled"&gt;true&lt;/bool&gt;
+ *     &lt;str name="inputField"&gt;id&lt;/str&gt;
+ *     &lt;str name="domainOutputField"&gt;hostname&lt;/str&gt;
+ *   &lt;/processor&gt;
+ *   &lt;processor class="solr.RunUpdateProcessorFactory" /&gt;
+ * &lt;/updateRequestProcessorChain&gt;
+ *
+ * &lt;requestHandler name="/update" class="solr.UpdateRequestHandler"&gt;
+ * &lt;lst name="defaults"&gt;
+ * &lt;str name="update.chain"&gt;urlProcessor&lt;/str&gt;
+ * &lt;/lst&gt;
+ * &lt;/requestHandler&gt;
+ * </pre>
+ * <p>
+ * Then, at index time, Solr will look at the <code>id</code> field value and extract
+ * it's domain portion into a new <code>hostname</code> field. By default, the
+ * following fields will also be added:
+ * </p>
+ * <ul>
+ *  <li>url_length</li>
+ *  <li>url_levels</li>
+ *  <li>url_toplevel</li>
+ *  <li>url_landingpage</li>
+ * </ul>
+ * <p>
+ * For example, adding the following document
+ * <pre class="prettyprint">
+ * { "id":"http://wwww.mydomain.com/subpath/document.html" }
+ * </pre>
+ * <p>
+ * will result in this document in Solr:
+ * </p>
+ * <pre class="prettyprint">
+ * {
+ *  "id":"http://wwww.mydomain.com/subpath/document.html",
+ *  "url_length":["46"],
+ *  "url_levels":["2"],
+ *  "url_toplevel":["0"],
+ *  "url_landingpage":["0"],
+ *  "hostname":["wwww.mydomain.com"],
+ *  "_version_":1603193062117343232}]
+ * }
+ * </pre>
  */
 public class URLClassifyProcessor extends UpdateRequestProcessor {
 

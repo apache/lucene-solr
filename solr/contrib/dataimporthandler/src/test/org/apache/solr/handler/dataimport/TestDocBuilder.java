@@ -52,6 +52,7 @@ public class TestDocBuilder extends AbstractDataImportHandlerTestCase {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void singleEntityNoRows() {
     DataImporter di = new DataImporter();
     di.loadAndInit(dc_singleEntity);
@@ -71,6 +72,7 @@ public class TestDocBuilder extends AbstractDataImportHandlerTestCase {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testDeltaImportNoRows_MustNotCommit() {
     DataImporter di = new DataImporter();
     di.loadAndInit(dc_deltaConfig);
@@ -93,6 +95,7 @@ public class TestDocBuilder extends AbstractDataImportHandlerTestCase {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void singleEntityOneRow() {
     DataImporter di = new DataImporter();
     di.loadAndInit(dc_singleEntity);
@@ -122,6 +125,7 @@ public class TestDocBuilder extends AbstractDataImportHandlerTestCase {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testImportCommand() {
     DataImporter di = new DataImporter();
     di.loadAndInit(dc_singleEntity);
@@ -142,7 +146,7 @@ public class TestDocBuilder extends AbstractDataImportHandlerTestCase {
     assertEquals(1, di.getDocBuilder().importStatistics.rowsCount.get());
 
     for (int i = 0; i < l.size(); i++) {
-      Map<String, Object> map = (Map<String, Object>) l.get(i);
+      Map<String, Object> map = l.get(i);
       SolrInputDocument doc = swi.docs.get(i);
       for (Map.Entry<String, Object> entry : map.entrySet()) {
         assertEquals(entry.getValue(), doc.getFieldValue(entry.getKey()));
@@ -151,6 +155,7 @@ public class TestDocBuilder extends AbstractDataImportHandlerTestCase {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void singleEntityMultipleRows() {
     DataImporter di = new DataImporter();
     di.loadAndInit(dc_singleEntity);
@@ -170,7 +175,7 @@ public class TestDocBuilder extends AbstractDataImportHandlerTestCase {
     assertEquals(Boolean.TRUE, swi.finishCalled);
     assertEquals(3, swi.docs.size());
     for (int i = 0; i < l.size(); i++) {
-      Map<String, Object> map = (Map<String, Object>) l.get(i);
+      Map<String, Object> map = l.get(i);
       SolrInputDocument doc = swi.docs.get(i);
       for (Map.Entry<String, Object> entry : map.entrySet()) {
         assertEquals(entry.getValue(), doc.getFieldValue(entry.getKey()));
@@ -183,6 +188,7 @@ public class TestDocBuilder extends AbstractDataImportHandlerTestCase {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void templateXPath() {
     DataImporter di = new DataImporter();
     di.loadAndInit(dc_variableXpath);

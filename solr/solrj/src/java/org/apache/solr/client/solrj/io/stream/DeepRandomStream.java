@@ -257,9 +257,9 @@ public class DeepRandomStream extends TupleStream implements Expressible {
   }
 
   public void open() throws IOException {
-    this.tuples = new LinkedList();
-    this.solrStreams = new ArrayList();
-    this.eofTuples = Collections.synchronizedMap(new HashMap());
+    this.tuples = new LinkedList<>();
+    this.solrStreams = new ArrayList<>();
+    this.eofTuples = Collections.synchronizedMap(new HashMap<>());
     constructStreams();
     openStreams();
   }
@@ -278,7 +278,7 @@ public class DeepRandomStream extends TupleStream implements Expressible {
 
     // check for alias or collection
 
-    List<String> allCollections = new ArrayList();
+    List<String> allCollections = new ArrayList<>();
     String[] collectionNames = collectionName.split(",");
     for(String col : collectionNames) {
       List<String> collections = checkAlias
@@ -349,7 +349,7 @@ public class DeepRandomStream extends TupleStream implements Expressible {
   private void openStreams() throws IOException {
     ExecutorService service = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("DeepRandomStream"));
     try {
-      List<Future<TupleWrapper>> futures = new ArrayList();
+      List<Future<TupleWrapper>> futures = new ArrayList<>();
       for (TupleStream solrStream : solrStreams) {
         StreamOpener so = new StreamOpener((SolrStream) solrStream, comp);
         Future<TupleWrapper> future = service.submit(so);
@@ -403,17 +403,15 @@ public class DeepRandomStream extends TupleStream implements Expressible {
       }
       return t;
     } else {
-      Map m = new HashMap();
+      Tuple tuple = Tuple.EOF();
       if(trace) {
-        m.put("_COLLECTION_", this.collection);
+        tuple.put("_COLLECTION_", this.collection);
       }
-
-      m.put("EOF", true);
-
-      return new Tuple(m);
+      return tuple;
     }
   }
 
+  @SuppressWarnings({"overrides"})
   protected class TupleWrapper implements Comparable<TupleWrapper> {
     private Tuple tuple;
     private SolrStream stream;

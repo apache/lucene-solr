@@ -25,6 +25,8 @@ Improvements
 
 Other Changes
 ----------------------
+* LUCENE-9391: Upgrade HPPC to 0.8.2. (Haoyu Zhai)
+
 * SOLR-10288: Remove non-minified JavaScript from the webapp. (Erik Hatcher, marcussorealheis)
 
 * SOLR-13655:Upgrade Collections.unModifiableSet to Set.of and Set.copyOf (Atri Sharma via Tomás Fernández Löbbe)
@@ -74,6 +76,17 @@ Other Changes
 * SOLR-14486: Autoscaling simulation framework no longer creates /clusterstate.json (format 1),
   instead it creates individual per-collection /state.json files (format 2). (ab)
 
+* SOLR-12823: Remove /clusterstate.json support, including support for collections created with stateFormat=1,
+  as well as support for Collection API MIGRATESTATEFORMAT action and support for the legacyCloud flag (Ilan Ginzburg).
+
+* LUCENE-9411: Fail complation on warnings, 9x gradle-only (Erick Erickson, Dawid Weiss)
+  Deserves mention here as well as Lucene CHANGES.txt since it affects both.
+
+Bug Fixes
+---------------------
+* SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
+  of Collection API tasks competing for a lock (Ilan Ginzburg).
+
 ==================  8.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -83,13 +96,18 @@ New Features
 * SOLR-14210: HealthCheckHandler can now require that all cores are healthy before returning 'OK'
   To enable, add &requireHealthyCores=true to enable (janhoy, Houston Putman, shalin)
 
-* SOLR-13942: A read API at /api/cluster/zk/* to fetch raw ZK data and view contents of a ZK direcory (noble)
+* SOLR-13942: A read API at /api/cluster/zk/* to fetch raw ZK data and view contents of a ZK directory (noble)
 
 * SOLR-14237: A new panel with security info in admin UI's dashboard (Ishan Chattopadhyaya, Moshe Bla)
 
 * SOLR-12131: ExternalRoleRuleBasedAuthorizationPlugin which gets user's roles from request (janhoy)
 
 * SOLR-14478: Allow the diff Stream Evaluator to operate on the rows of a matrix (Joel Bernstein)
+
+* SOLR-14476: Add percentiles and standard deviation aggregations to stats, facet and
+  timeseries Streaming Expressions (Joel Bernstein)
+
+* SOLR-14470: Add streaming expressions to /export handler. (ab, Joel Bernstein)
 
 Improvements
 ---------------------
@@ -119,6 +137,28 @@ Improvements
 
 * SOLR-14407: Handle shards.purpose in the postlogs tool (Joel Bernstein)
 
+* SOLR-13325: ComputePlanAction now supports a collection selector of the form `collections: {policy: my_policy}`
+  which can be used to select multiple collections that match collection property/value pairs. This is useful to
+  maintain a whitelist of collections for which actions are taken without needing to hard code the collection names
+  themselves. The collection hints are pushed down to the policy engine so operations for non-matching collections
+  are not computed at all. (ab, shalin)
+
+* SOLR-14419: json.queries as well as other parameters might be referred via {"param":"ref"} in Query DSL (Mikhail Khludnev)
+
+* SOLR-11334: hl.fl and tv.fl now parse field lists when they have both commas and spaces
+  (David Smiley, Yasufumi Mizoguchi)
+
+* SOLR-14442: bin/solr and bin\solr.cmd invoke jstack <SOLR_PID> before forceful termination, if jstack is available.
+  Also, bin\solr.cmd executes forceful termination even port is unbinded  already (Christine Poerschke via Mikhail Khludnev).
+
+* SOLR-14384: SolrRequestInfo now stacks internally when a new request is set/clear'ed.
+  Also fixes SolrIndexSearcher.warm which should have re-instated previous SRI.
+  (Nazerke Seidan, David Smiley)
+
+* SOLR-14561: CoreAdminAPI's parameters instanceDir and dataDir are now validated, and must be relative to either
+  SOLR_HOME, SOLR_DATA_HOME or coreRootDir. Added new solr.xml config 'allowPaths', controlled by system property
+  'solr.allowPaths' that allows you to add other allowed paths when needed.
+
 Optimizations
 ---------------------
 * SOLR-8306: Do not collect expand documents when expand.rows=0 (Marshall Sanders, Amelia Henderson)
@@ -133,13 +173,17 @@ Optimizations
 
 * LUCENE-7788: fail precommit on unparameterised log messages and examine for wasted work/objects (Erick Erickson)
 
-* SOLR-13289: When the "minExactHits" parameters is provided in queries and it's value is lower than the number of hits,
+* SOLR-13289: When the "minExactCount" parameters is provided in queries and it's value is lower than the number of hits,
   Solr can speedup the query resolution by using the Block-Max WAND algorithm (see LUCENE-8135). When doing this, the
   value of matching documents in the response (numFound) will be an approximation.
-  (Ishan Chattopadhyaya, Munendra S N, Tomás Fernández Löbbe)
+  (Ishan Chattopadhyaya, Munendra S N, Tomás Fernández Löbbe, David Smiley)
 
 * SOLR-14472: Autoscaling "cores" preference now retrieves the core count more efficiently, and counts all cores.
   (David Smiley)
+
+* SOLR-14552: Add BlockMax-WAND support to ReRank queries (Tomás Fernández Löbbe)
+
+* SOLR-14554: Add BlockMax-WAND support for queries where the score is requested (Tomás Fernández Löbbe)
 
 Bug Fixes
 ---------------------
@@ -166,8 +210,6 @@ Bug Fixes
 
 * SOLR-14291: Handle dotted fields in legacy Analytics Component (Anatolii Siuniaev via Mikhail Khludnev)
 
-* SOLR-14411: Fix Admin UI collection/core drop-downs placeholder text. Completes work started in SOLR-14359 (janhoy)
-
 * SOLR-14371: Zk StatusHandler now parse dynamic zk server config if supported, fixing Admin UI Zookeeper Status
   screen in case dynamic reconfig host list differs from static zkHost string (janhoy)
 
@@ -180,11 +222,48 @@ Bug Fixes
 * SOLR-14456: Fix Content-Type header usage when a request is forwarded from Solr node to Solr
   node with compression enabled (samuelgmartinez via Houston Putman)
 
-* SOLR-14471: Fix bug in shards.preference behavior, base replica selection strategy not applied to the last group of
-  equivalent replicas. (Michael Gibney via Tomás Fernández Löbbe)
-
 * SOLR-8394: /admin/luke was always showing 0 for indexHeapUsageBytes. It should work now.
   (Steve Molloy, Isabelle Giguere, David Smiley)
+
+* SOLR-14492: Fix ArrayIndexOutOfBoundsException in json.facet 'terms' when FacetFieldProcessorByHashDV is
+  used with aggregations over multivalued numeric fields (hossman)
+
+* SOLR-14477: Fix incorrect 'relatedness()' calculations in json.facet 'terms' when 'prefix' option is used
+  (hossman)
+
+* SOLR-14504: ZkController LiveNodesListener has NullPointerException in startup race.
+  (Colvin Cowie via ab)
+
+* SOLR-14498: Upgrade to Caffeine 2.8.4, which fixes the cache poisoning issue. (Jakub Zytka, ab)
+
+* SOLR-14517: Dont ignore 'mm' localparam on edismax queries using operators (Yuriy Koval via Jason Gerlowski)
+
+* SOLR-14491: Intercepting internode requests in KerberosPlugin when HTTP/2 client is used (Ishan Chattopadhyaya, Moshe Bla)
+
+* SOLR-14525: SolrCoreAware, ResourceLoaderAware should be honored for plugin loaded from packages (noble)
+
+* SOLR-9679: When removing zk node /security.json, security is now disabled gracefully (janhoy)
+
+* SOLR-14520: Fixed server errors from the json.facet allBuckets:true option when combined with refine:true
+  (Michael Gibney, hossman)
+
+* SOLR-14467: Fix relatedness() stat in json.facets to no longer cause server errors (or nonsense results)
+  when combined with allBuckets:true.  (Michael Gibney, hossman)
+
+* SOLR-13203: Return 400 status code on invalid dynamic field for Edismax's user Fields
+  (Johannes Kloos, mrsoong via Munendra S N)
+
+* SOLR-14550: Fix duplicates issue in Atomic updates with add-distinct (Thomas Corthals, Munendra S N)
+
+* SOLR-14345: Return proper error message when non-BinaryResponseParser is used in solrJ (Munendra S N)
+
+* SOLR-14516: NPE in JsonTextWriter (noble)
+
+* SOLR-14577: Return 400 BAD REQUEST when field is missing on a Terms query parser request
+  (Tomás Fernández Löbbe)
+
+* SOLR-14584: Correct SOLR_SSL_KEY_STORE and SOLR_SSL_TRUST_STORE example comments in solr.in.sh and solr.in.cmd files
+  (Aren Cambre via Christine Poerschke)
 
 Other Changes
 ---------------------
@@ -224,6 +303,8 @@ Other Changes
 
 * SOLR-14173: Major redesign of the Solr Reference Guide (Cassandra Targett)
 
+* SOLR-14461: Replaced commons-fileupload dependency with using Jetty's facilities. (David Smiley)
+
 * SOLR-14466: Upgrade log4j2 to latest release (2.13.2) (Erick Erickson)
 
 * SOLR-11934: Visit Solr logging, it's too noisy. Note particularly that the messages for
@@ -234,7 +315,84 @@ Other Changes
 * SOLR-14226: Fix or suppress 14 resource leak warnings in apache/solr/core (Andras Salaman via
   Erick Erickson)
 
-* SOLR-14485: Fix or suppress 11 resource leak warnings in apache/solr/cloud (Andras Salaman via Erick Erickson)
+* SOLR-14482: Fix or suppress warnings in solr/search/facet (Erick Erickson)
+
+* SOLR-14485: Fix or suppress 11 resource leak warnings in apache/solr/cloud (Andras Salaman via
+  Erick Erickson)
+
+* SOLR-14495: Fix or suppress warnings in solr/search/function (Erick Erickson)
+
+* SOLR-14280: Improve error reporting in SolrConfig (Andras Salamon via Jason Gerlowski)
+
+* SOLR-14474: Fix remaining auxilliary class warnings in Solr (Erick Erickson)
+
+* SOLR-14519: Fix or suppress warnings in solr/cloud/autoscaling/ (Erick Erickson)
+
+* SOLR-14526: fix or suppress warnings in apache/solr/core (Erick Erickson)
+
+* SOLR-14533: Fix or suppress warnings in solr/handler/admin (Andras Salamon, Erick Erickson)
+
+* SOLR-14535: Fix or suppress warnings in apache/solr/handler/component (Erick Erickson)
+
+* SOLR-14538: Fix or suppress remaining warnings in apache/solr/handler (Erick Erickson)
+
+* SOLR-14536: Fix or suppress warnings in apache/solr/common (Erick Erickson)
+
+* SOLR-14480: Fix or suppress warnings in solr/cloud/api (Erick Erickson)
+
+* SOLR-13492: Ensure explicit GCs are concurrent by adding '+ExplicitGCInvokesConcurrent'.
+  (Guna Sekhar Dora, Shawn Heisey, Munendra S N)
+
+* SOLR-14542: Fix or suppress warnings in solr/handler/dataimport (Erick Erickson)
+
+* SOLR-14544: Fix or suppress warnings in solr/client/solrj/io/eval (Erick Erickson)
+
+* SOLR-14543: Fix or suppress warnings in apache/solr/search (Erick Erickson)
+
+* SOLR-14545: Fix or suppress warnings in apache/solr/update (Erick Erickson)
+
+* SOLR-14548: Address warning: static member should be qualified by type name (Mike Drob)
+
+* SOLR-14547: Fix or suppress warnings in solr/client/solrj/io/stream (Erick Erickson)
+
+* SOLR-14455: Fix or suppress warnings in solr/test-framework (Erick Erickson)
+
+* SOLR-14559: Fix or suppress warnings in solr/core/src/java/org/apache/solr/util,
+  response, cloud, security, schema, api (Erick Erickson)
+
+* SOLR-14563: Fix or suppress warnings in solr/contrib (Erick Erickson)
+
+* SOLR-14565: Fix or suppress warnings in solrj/impl and solrj/io/graph (Erick Erickson)
+
+* SOLR-14564: Fix or suppress remaining warnings in solr/core (Erick Erickson)
+
+* SOLR-14567: Fix or suppress remaining warnings in solrj (Erick Erickson)
+
+* SOLR-14556: Fix or suppress warnings in solrj/cloud/autoscaling (Erick Erickson)
+
+* SOLR-14573: Fix or suppress warnings in solrj/src/test (Erick Erickson)
+
+* SOLR-14574: Fix or suppress warnings in solr/core/src/test (parts 1 and 2) (Erick Erickson)
+
+* SOLR-13268: Clean up any test failures resulting from defaulting to async logging (Erick Erickson)
+
+* LUCENE-9411: Fail complation on warnings, 9x gradle-only (Erick Erickson, Dawid Weiss)
+  Only mentioned in 8.6 because I backported some more warning suppressions but not
+  the fail-on-warnings.
+
+* SOLR-14589: Remove IntelliJ //noinspection comments (Erick Erickson)
+
+==================  8.5.2 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Bug Fixes
+---------------------
+
+* SOLR-14411: Fix Admin UI collection/core drop-downs placeholder text. Completes work started in SOLR-14359 (janhoy)
+
+* SOLR-14471: Fix bug in shards.preference behavior, base replica selection strategy not applied to the last group of
+  equivalent replicas. (Michael Gibney via Tomás Fernández Löbbe)
 
 ==================  8.5.1 ==================
 

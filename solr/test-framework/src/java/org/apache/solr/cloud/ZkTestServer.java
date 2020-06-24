@@ -21,7 +21,6 @@ import com.google.common.util.concurrent.AtomicLongMap;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.TimeSource;
@@ -846,9 +845,6 @@ public class ZkTestServer {
     ops.add(Op.create(path, null, chRootClient.getZkACLProvider().getACLsToAdd(path),  CreateMode.PERSISTENT));
     chRootClient.multi(ops, true);
 
-    // this workaround is acceptable until we remove legacyCloud because we just init a single core here
-    String defaultClusterProps = "{\""+ZkStateReader.LEGACY_CLOUD+"\":\"true\"}";
-    chRootClient.makePath(ZkStateReader.CLUSTER_PROPS, defaultClusterProps.getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT, true);
     // for now, always upload the config and schema to the canonical names
     putConfig("conf1", chRootClient, solrhome, config, "solrconfig.xml");
     putConfig("conf1", chRootClient, solrhome, schema, "schema.xml");

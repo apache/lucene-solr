@@ -41,7 +41,7 @@ public abstract class UpdateRequestProcessorFactory implements NamedListInitiali
   public interface RunAlways {}
 
   @Override
-  public void init( NamedList args )
+  public void init( @SuppressWarnings({"rawtypes"})NamedList args )
   {
     // could process the Node
   }

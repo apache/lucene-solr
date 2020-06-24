@@ -381,6 +381,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   }
 
   // test inspired by SOLR-6511
+  @SuppressWarnings({"try"})
   protected void testLeaderZkSessionLoss() throws Exception {
 
     String testCollectionName = "c8n_1x2_leader_session_loss";
@@ -567,12 +568,14 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   }
 
   protected void assertDocNotExists(HttpSolrClient solr, String coll, String docId) throws Exception {
+    @SuppressWarnings({"rawtypes"})
     NamedList rsp = realTimeGetDocId(solr, docId);
     String match = JSONTestUtil.matchObj("/id", rsp.get("doc"), Integer.valueOf(docId));
     assertTrue("Doc with id=" + docId + " is found in " + solr.getBaseURL()
         + " due to: " + match + "; rsp="+rsp, match != null);
   }
 
+  @SuppressWarnings({"rawtypes"})
   private NamedList realTimeGetDocId(HttpSolrClient solr, String docId) throws SolrServerException, IOException {
     QueryRequest qr = new QueryRequest(params("qt", "/get", "id", docId, "distrib", "false"));
     return solr.request(qr);

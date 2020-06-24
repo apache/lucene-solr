@@ -60,6 +60,11 @@ public class SolrPackageInstance implements ReflectMapWriter {
   }
 
   @Override
+  public int hashCode() {
+    throw new UnsupportedOperationException("TODO unimplemented");
+  }
+
+  @Override
   public String toString() {
     return jsonStr();
   }

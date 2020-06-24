@@ -37,7 +37,7 @@ public class CountValsAgg extends SimpleAggValueSource {
   }
 
   @Override
-  public SlotAcc createSlotAcc(FacetRequest.FacetContext fcontext, long numDocs, int numSlots) throws IOException {
+  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots) throws IOException {
     ValueSource vs = getArg();
     if (vs instanceof FieldNameValueSource) {
       String field = ((FieldNameValueSource)vs).getFieldName();
@@ -64,12 +64,12 @@ public class CountValsAgg extends SimpleAggValueSource {
 
   @Override
   public FacetMerger createFacetMerger(Object prototype) {
-    return new FacetLongMerger();
+    return new FacetModule.FacetLongMerger();
   }
 
-  class CountValSlotAcc extends LongFuncSlotAcc {
+  class CountValSlotAcc extends SlotAcc.LongFuncSlotAcc {
 
-    public CountValSlotAcc(ValueSource values, FacetRequest.FacetContext fcontext, int numSlots) {
+    public CountValSlotAcc(ValueSource values, FacetContext fcontext, int numSlots) {
       super(values, fcontext, numSlots, 0);
     }
 
@@ -81,9 +81,9 @@ public class CountValsAgg extends SimpleAggValueSource {
     }
   }
 
-  class CountSortedNumericDVAcc extends LongSortedNumericDVAcc {
+  class CountSortedNumericDVAcc extends DocValuesAcc.LongSortedNumericDVAcc {
 
-    public CountSortedNumericDVAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public CountSortedNumericDVAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots, 0);
     }
 
@@ -93,9 +93,9 @@ public class CountValsAgg extends SimpleAggValueSource {
     }
   }
 
-  class CountSortedSetDVAcc extends LongSortedSetDVAcc {
+  class CountSortedSetDVAcc extends DocValuesAcc.LongSortedSetDVAcc {
 
-    public CountSortedSetDVAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public CountSortedSetDVAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots, 0);
     }
 
@@ -111,7 +111,7 @@ public class CountValsAgg extends SimpleAggValueSource {
     private int currentSlot;
     long[] result;
 
-    public CountMultiValuedAcc(FacetRequest.FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public CountMultiValuedAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots);
       result = new long[numSlots];
     }
@@ -140,7 +140,7 @@ public class CountValsAgg extends SimpleAggValueSource {
 
     @Override
     public void resize(Resizer resizer) {
-      resizer.resize(result, 0);
+      this.result = resizer.resize(result, 0);
     }
 
     @Override

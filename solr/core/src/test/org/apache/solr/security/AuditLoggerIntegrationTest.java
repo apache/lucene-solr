@@ -162,7 +162,7 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
     gate.release(preShutdownEventsAllowed);
     runThreeTestAdminCommands();
 
-    final List<AuditEvent> events = new ArrayList
+    final List<AuditEvent> events = new ArrayList<>
       (harness.receiver.waitForAuditEvents(preShutdownEventsAllowed));
     assertEquals(preShutdownEventsAllowed, events.size());
 
@@ -435,6 +435,10 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
   /**
    * Listening for socket callbacks in background thread from the custom CallbackAuditLoggerPlugin
    */
+  // we don't really care about the InterruptedException that could be thrown from close in test code
+  // This all goes back to MiniSolrCloudCluster.close, which really _can_ throw
+  // an InterruptedException
+  @SuppressWarnings({"try"})
   private class CallbackReceiver implements Runnable, AutoCloseable {
     private final ServerSocket serverSocket;
     private BlockingQueue<AuditEvent> queue = new LinkedBlockingDeque<>();
@@ -491,6 +495,10 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
     }
   }
 
+  // we don't really care about the InterruptedException that could be thrown from close in test code
+  // This all goes back to MiniSolrCloudCluster.close, which really _can_ throw
+  // an InterruptedException
+  @SuppressWarnings({"try"})
   private class AuditTestHarness implements AutoCloseable {
     CallbackReceiver receiver;
     int callbackPort;

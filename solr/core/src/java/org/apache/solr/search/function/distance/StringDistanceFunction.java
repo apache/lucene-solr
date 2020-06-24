@@ -43,8 +43,11 @@ public class StringDistanceFunction extends ValueSource {
   }
 
   @Override
+  @SuppressWarnings({"rawtypes"})
   public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+    @SuppressWarnings({"unchecked"})
     final FunctionValues str1DV = str1.getValues(context, readerContext);
+    @SuppressWarnings({"unchecked"})
     final FunctionValues str2DV = str2.getValues(context, readerContext);
     return new FloatDocValues(this) {
 

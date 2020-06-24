@@ -30,8 +30,8 @@ import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.PointsFormat;
 import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.codecs.PointsWriter;
-import org.apache.lucene.codecs.lucene60.Lucene60PointsReader;
-import org.apache.lucene.codecs.lucene60.Lucene60PointsWriter;
+import org.apache.lucene.codecs.lucene86.Lucene86PointsReader;
+import org.apache.lucene.codecs.lucene86.Lucene86PointsWriter;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
@@ -1190,18 +1190,18 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
     // Else seeds may not reproduce:
     iwc.setMergeScheduler(new SerialMergeScheduler());
     int pointsInLeaf = 2 + random().nextInt(4);
-    iwc.setCodec(new FilterCodec("Lucene84", TestUtil.getDefaultCodec()) {
+    iwc.setCodec(new FilterCodec("Lucene86", TestUtil.getDefaultCodec()) {
       @Override
       public PointsFormat pointsFormat() {
         return new PointsFormat() {
           @Override
           public PointsWriter fieldsWriter(SegmentWriteState writeState) throws IOException {
-            return new Lucene60PointsWriter(writeState, pointsInLeaf, BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP);
+            return new Lucene86PointsWriter(writeState, pointsInLeaf, BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP);
           }
 
           @Override
           public PointsReader fieldsReader(SegmentReadState readState) throws IOException {
-            return new Lucene60PointsReader(readState);
+            return new Lucene86PointsReader(readState);
           }
         };
       }

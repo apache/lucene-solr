@@ -135,8 +135,8 @@ public class DirectSolrConnection
     } finally {
       if (req != null) {
         req.close();
+        SolrRequestInfo.clearRequestInfo();
       }
-      SolrRequestInfo.clearRequestInfo();            
     }
   }
 

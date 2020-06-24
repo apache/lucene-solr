@@ -228,6 +228,7 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
 
   private MissedUpdatesRequest buildMissedUpdatesRequest(NamedList<Object> rsp) {
     // we retrieved the last N updates from the replica
+    @SuppressWarnings({"unchecked"})
     List<Long> otherVersions = (List<Long>)rsp.get("versions");
     if (log.isInfoEnabled()) {
       log.info("{} Received {} versions from {}", msg(), otherVersions.size(), leaderUrl);
@@ -264,6 +265,7 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
 
   private boolean handleUpdates(NamedList<Object> rsp, long numRequestedUpdates, IndexFingerprint leaderFingerprint) {
     // missed updates from leader, it does not contains updates from bufferedUpdates
+    @SuppressWarnings({"unchecked"})
     List<Object> updates = (List<Object>)rsp.get("updates");
 
     if (updates.size() < numRequestedUpdates) {
@@ -285,6 +287,7 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
     // TODO leader should do fingerprint and retrieve recent updates version in atomic
     if (leaderFingerprint != null) {
       boolean existDBIOrDBQInTheGap = updates.stream().anyMatch(e -> {
+        @SuppressWarnings({"unchecked"})
         List<Object> u = (List<Object>) e;
         long version = (Long) u.get(1);
         int oper = (Integer)u.get(0) & UpdateLog.OPERATION_MASK;
@@ -294,6 +297,7 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
       if (!existDBIOrDBQInTheGap) {
         // it is safe to use leaderFingerprint.maxVersionEncountered as cut point now.
         updates.removeIf(e -> {
+          @SuppressWarnings({"unchecked"})
           List<Object> u = (List<Object>) e;
           long version = (Long) u.get(1);
           return version > leaderFingerprint.getMaxVersionEncountered();

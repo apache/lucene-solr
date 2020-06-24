@@ -185,6 +185,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
     }
     // override from ZK if available
     if (cloudManager != null) {
+      @SuppressWarnings({"unchecked"})
       Map<String, Object> props = (Map<String, Object>)cloudManager.getClusterStateProvider()
           .getClusterProperty("metrics", Collections.emptyMap())
           .getOrDefault("history", Collections.emptyMap());
@@ -379,6 +380,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
     ExecutorUtil.setServerThreadFlag(false);
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private void collectLocalReplicaMetrics() {
     List<Group> groups = new ArrayList<>();
     if (enableNodes) {
@@ -800,6 +802,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
     rsp.getResponseHeader().add("zkConnected", cloudManager != null);
   }
 
+  @SuppressWarnings({"unchecked"})
   private NamedList<Object> handleRemoteRequest(String nodeName, SolrQueryRequest req) {
     String baseUrl = Utils.getBaseUrlForNodeName(nodeName, overseerUrlScheme);
     String url;
@@ -827,6 +830,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
     }
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private void mergeRemoteRes(SolrQueryResponse rsp, NamedList<Object> remoteRes) {
     if (remoteRes == null || remoteRes.get("metrics") == null) {
       return;

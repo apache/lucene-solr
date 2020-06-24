@@ -230,7 +230,8 @@ public class TestPhraseWildcardQuery extends LuceneTestCase {
     for (ScoreDoc scoreDoc : searcher.search(testQuery, MAX_DOCS).scoreDocs) {
       Explanation explanation = searcher.explain(testQuery, scoreDoc.doc);
       assertTrue(explanation.getValue().doubleValue() > 0);
-      assertEquals("weight(phraseWildcard(title:\"t?e b* b*\") in 1) [AssertingSimilarity], result of:", explanation.getDescription());
+      assertTrue("Unexpected explanation \"" + explanation.getDescription() + "\"",
+          explanation.getDescription().startsWith("weight(phraseWildcard(title:\"t?e b* b*\")"));
     }
 
     // Verify that if we call PhraseWildcardQuery.PhraseWildcardWeight.scorer() twice,

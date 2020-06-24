@@ -58,7 +58,6 @@ import io.opentracing.Span;
 import io.opentracing.SpanContext;
 import io.opentracing.Tracer;
 import io.opentracing.tag.Tags;
-import org.apache.commons.io.FileCleaningTracker;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHeaders;
 import org.apache.http.client.HttpClient;
@@ -79,11 +78,11 @@ import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.OperatingSystemMetricSet;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.security.AuditEvent;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.PublicKeyHandler;
-import org.apache.solr.util.SolrFileCleaningTracker;
 import org.apache.solr.util.tracing.GlobalTracer;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
@@ -151,8 +150,6 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     }
     CoreContainer coresInit = null;
     try{
-
-    SolrRequestParsers.fileCleaningTracker = new SolrFileCleaningTracker();
 
     StartupLoggingUtils.checkLogDir();
     if (log.isInfoEnabled()) {
@@ -324,19 +321,6 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     CoreContainer cc = cores;
     cores = null;
     try {
-      try {
-        FileCleaningTracker fileCleaningTracker = SolrRequestParsers.fileCleaningTracker;
-        if (fileCleaningTracker != null) {
-          fileCleaningTracker.exitWhenFinished();
-        }
-      } catch (NullPointerException e) {
-        // okay
-      } catch (Exception e) {
-        log.warn("Exception closing FileCleaningTracker", e);
-      } finally {
-        SolrRequestParsers.fileCleaningTracker = null;
-      }
-
       if (metricManager != null) {
         try {
           metricManager.unregisterGauges(registryName, metricTag);
@@ -456,6 +440,8 @@ public class SolrDispatchFilter extends BaseSolrFilter {
 
       GlobalTracer.get().clearContext();
       consumeInputFully(request, response);
+      SolrRequestInfo.reset();
+      SolrRequestParsers.cleanupMultipartFiles(request);
     }
   }
   

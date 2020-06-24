@@ -73,8 +73,8 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
     return Category.ADMIN;
   }
 
-  @SuppressWarnings("rawtypes")
   @Override
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     NamedList values = rsp.getValues();
     if (cores.isZooKeeperAware()) {
@@ -94,6 +94,7 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
    * @param zkDynamicConfig list of zk dynamic config objects
    * @return map of zookeeper config and status per zk host
    */
+  @SuppressWarnings({"unchecked"})
   protected Map<String, Object> getZkStatus(String zkHost, ZkDynamicConfig zkDynamicConfig) {
     final ZkDynamicConfig hostsFromConnectionString = ZkDynamicConfig.fromZkConnectString(zkHost);
     final ZkDynamicConfig zookeepers;

@@ -80,6 +80,7 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void integrationTest() {
     assumeWorkingMockito();
 
@@ -124,6 +125,7 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
         Map<String, Replica> replicaMap = replicas.stream().collect(Collectors.toMap(Replica::getName, Function.identity()));
         sliceMap.put(slice, new Slice(slice, replicaMap, map(), collection));
       }
+      @SuppressWarnings({"unchecked"})
       DocCollection col = new DocCollection(collection, sliceMap, map(), DocRouter.DEFAULT);
       collToState.put(collection, col);
     }
@@ -181,6 +183,7 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
   }
 
   private CoreDescriptor newCoreDescriptor(Replica r) {
+    @SuppressWarnings({"unchecked"})
     Map<String,String> props = map(
         CoreDescriptor.CORE_SHARD, r.getSlice(),
         CoreDescriptor.CORE_COLLECTION, r.getCollection(),
@@ -192,6 +195,7 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
   protected Replica addNewReplica(List<Replica> replicaList, String collection, String slice, List<String> possibleNodes) {
     String replica = "r" + replicaList.size();
     String node = possibleNodes.get(random().nextInt(possibleNodes.size())); // place on a random node
+    @SuppressWarnings({"unchecked"})
     Replica r = new Replica(replica, map("core", replica, "node_name", node), collection, slice);
     replicaList.add(r);
     return r;

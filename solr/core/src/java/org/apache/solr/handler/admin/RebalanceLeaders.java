@@ -110,6 +110,7 @@ class RebalanceLeaders {
   final static String INACTIVE_PREFERREDS = "inactivePreferreds";
   final static String ALREADY_LEADERS = "alreadyLeaders";
   final static String SUMMARY = "Summary";
+  @SuppressWarnings({"rawtypes"})
   final SimpleOrderedMap results = new SimpleOrderedMap();
   final Map<String, String> pendingOps = new HashMap<>();
   private String collectionName;
@@ -122,6 +123,7 @@ class RebalanceLeaders {
     coreContainer = collectionsHandler.getCoreContainer();
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   void execute() throws KeeperException, InterruptedException {
     DocCollection dc = checkParams();
 
@@ -286,6 +288,7 @@ class RebalanceLeaders {
 
   // Provide some feedback to the user about what actually happened, or in this case where no action was
   // possible
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private void addInactiveToResults(Slice slice, Replica replica) {
     SimpleOrderedMap inactives = (SimpleOrderedMap) results.get(INACTIVE_PREFERREDS);
     if (inactives == null) {
@@ -300,6 +303,7 @@ class RebalanceLeaders {
 
   // Provide some feedback to the user about what actually happened, or in this case where no action was
   // necesary since this preferred replica was already the leader
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private void addAlreadyLeaderToResults(Slice slice, Replica replica) {
     SimpleOrderedMap alreadyLeaders = (SimpleOrderedMap) results.get(ALREADY_LEADERS);
     if (alreadyLeaders == null) {
@@ -458,6 +462,7 @@ class RebalanceLeaders {
   }
 
   // If we actually changed the leader, we should send that fact back in the response.
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private void addToSuccesses(Slice slice, Replica replica) {
     SimpleOrderedMap successes = (SimpleOrderedMap) results.get("successes");
     if (successes == null) {
@@ -476,7 +481,8 @@ class RebalanceLeaders {
   // If for any reason we were supposed to change leadership, that should be recorded in changingLeaders. Any
   // time we verified that the change actually occurred, that entry should have been removed. So report anything
   // left over as a failure.
-    private void addAnyFailures() {
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  private void addAnyFailures() {
     if (pendingOps.size() == 0) {
       return;
     }

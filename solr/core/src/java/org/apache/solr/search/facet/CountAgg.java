@@ -24,12 +24,12 @@ public class CountAgg extends SimpleAggValueSource {
   }
 
   @Override
-  public SlotAcc createSlotAcc(FacetRequest.FacetContext fcontext, long numDocs, int numSlots) throws IOException {
-    return new CountSlotArrAcc(fcontext, numSlots);
+  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots) throws IOException {
+    return new SlotAcc.CountSlotArrAcc(fcontext, numSlots);
   }
 
   @Override
   public FacetMerger createFacetMerger(Object prototype) {
-    return new FacetLongMerger();
+    return new FacetModule.FacetLongMerger();
   }
 }
