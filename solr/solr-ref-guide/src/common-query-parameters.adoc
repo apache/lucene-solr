@@ -66,7 +66,7 @@ Regarding the sort parameter's arguments:
 ** When more than one sort criteria is provided, the second entry will only be used if the first entry results in a tie. If there is a third entry, it will only be used if the first AND second entries are tied. And so on.
 ** If documents tie in all of the explicit sort criteria, Solr uses each document's Lucene document ID as the final tie-breaker.
 This internal property is subject to change during segment merges and document updates, which can lead to unexpected result ordering changes.
-Users looking to avoid this behavior can add an additional sort criteria on a unique or rarely-shared field such as `id` to prevent ties from occurring (e.g. `price desc,id asc`).
+Users looking to avoid this behavior can add an additional sort criteria on a unique or rarely-shared field such as `id` to prevent ties from occurring (e.g., `price desc,id asc`).
 
 == start Parameter
 
@@ -382,8 +382,8 @@ q=quick brown fox&minExactCount=100&rows=10
     "numFound": 153,
     "start": 0,
     "numFoundExact": false,
-    "docs": Array[10]
-...
+    "docs": [{"doc1"}]
+}
 ----
 Since `numFoundExact=false`, we know the number of documents matching the query is greater or equal to 153. If we specify a higher value for `minExactCount`:
 
@@ -396,7 +396,7 @@ q=quick brown fox&minExactCount=200&rows=10
     "numFound": 163,
     "start": 0,
     "numFoundExact": true,
-    "docs": Array[10]
-...
+    "docs": [{"doc1"}]
+}
 ----
 In this case we know that `163` is the exact number of hits for the query. Both queries must have returned the same number of documents in the top 10.
