@@ -67,44 +67,34 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
     // this node should have 2 replicas on it
     CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
         .setNode(nodeName)
+        .withProperty("name", "bogus2")
         .process(cluster.getSolrClient());
 
     // equivalent to maxShardsPerNode=1
     String commands =  "{ set-cluster-policy: [ {replica: '<2', shard: '#ANY', node: '#ANY', strict: true} ] }";
     cluster.getSolrClient().request(CloudTestUtils.AutoScalingRequest.create(SolrRequest.METHOD.POST, commands));
 
-    for (int i = 0; i < 10; i++) {
-      // Three replicas so far, should be able to create another one "normally"
+    // this should fail because the policy prevents it
+    Exception e = expectThrows(Exception.class, () -> {
       CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
+          .setNode(nodeName)
           .process(cluster.getSolrClient());
-    }
+    });
+    assertTrue(e.toString(), e.toString().contains("No node can satisfy"));
+
+    // this should succeed because it places the replica on a different node
     CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
         .process(cluster.getSolrClient());
-    // This one should fail though, no "node" parameter specified
-//    Exception e = expectThrows(Exception.class, () -> {
-//      CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
-//          .process(cluster.getSolrClient());
-//    });
 
-//    assertTrue("Should have gotten the right error message back",
-//          e.getMessage().contains("given the current number of eligible live nodes"));
-
-
-    // Oddly, we should succeed next just because setting property.name will not check for nodes being "full up"
-    // TODO: Isn't this a bug?
-    CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
-        .withProperty("name", "bogus2")
-        .setNode(nodeName)
-        .process(cluster.getSolrClient());
 
     DocCollection collectionState = getCollectionState(collectionName);
     Slice slice = collectionState.getSlice("shard1");
     Replica replica = getRandomReplica(slice, r -> r.getCoreName().equals("bogus2"));
     assertNotNull("Should have found a replica named 'bogus2'", replica);
-    assertEquals("Replica should have been put on correct core", nodeName, replica.getNodeName());
+    assertEquals("Replica should have been put on correct node", nodeName, replica.getNodeName());
 
-    // Shard1 should have 4 replicas
-    assertEquals("There should be 4 replicas for shard 1", 4, slice.getReplicas().size());
+    // Shard1 should have 2 replicas
+    assertEquals("There should be 3 replicas for shard 1", 3, slice.getReplicas().size());
 
     // And let's fail one more time because to ensure that the math doesn't do weird stuff it we have more replicas
     // than simple calcs would indicate.
@@ -114,7 +104,7 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
     });
 
     assertTrue("Should have gotten the right error message back",
-        e2.getMessage().contains("given the current number of eligible live nodes"));
+        e2.getMessage().contains("No node can satisfy"));
 
     // wait for recoveries to finish, for a clean shutdown - see SOLR-9645
     waitForState("Expected to see all replicas active", collectionName, (n, c) -> {
