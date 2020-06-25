@@ -32,7 +32,6 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.MapWriter;
