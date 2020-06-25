@@ -160,7 +160,6 @@ public class ShardFieldSortedHitQueue extends PriorityQueue<ShardDoc> {
       @Override
       @SuppressWarnings({"unchecked"})
       public int compare(final ShardDoc o1, final ShardDoc o2) {
-        //noinspection unchecked
         return -fieldComparator.compareValues(sortVal(o1), sortVal(o2));
       }
     };

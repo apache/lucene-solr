@@ -1875,7 +1875,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
    * Boolean param for tests that can be specified when using
    * {@link #CMD_FETCH_INDEX} to force the current request to block until
    * the fetch is complete.  <b>NOTE:</b> This param is not advised for
-   * non-test code, since the the duration of the fetch for non-trivial
+   * non-test code, since the duration of the fetch for non-trivial
    * indexes will likeley cause the request to time out.
    *
    * @lucene.internal
