@@ -50,6 +50,9 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
       assertU(adoc("name", "john smith", "id", "1"));
       assertU(adoc("name", "johathon smith", "id", "2"));
       assertU(adoc("name", "john percival smith", "id", "3"));
+      assertU(adoc("id", "1", "title", "this is a title.", "inStock_b1", "true"));
+      assertU(adoc("id", "2", "title", "this is another title.", "inStock_b1", "true"));
+      assertU(adoc("id", "3", "title", "Mary had a little lamb.", "inStock_b1", "false"));
 
       //commit inside the loop to get multiple segments to make search as realistic as possible
       assertU(commit());
@@ -68,6 +71,28 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
     System.clearProperty("documentCache.enabled");
   }
 
+  public void testResponseWithCBTiming() {
+    assertQ(req("q", "*:*", CommonParams.DEBUG_QUERY, "true"),
+        "//str[@name='rawquerystring']='*:*'",
+        "//str[@name='querystring']='*:*'",
+        "//str[@name='parsedquery']='MatchAllDocsQuery(*:*)'",
+        "//str[@name='parsedquery_toString']='*:*'",
+        "count(//lst[@name='explain']/*)=3",
+        "//lst[@name='explain']/str[@name='1']",
+        "//lst[@name='explain']/str[@name='2']",
+        "//lst[@name='explain']/str[@name='3']",
+        "//str[@name='QParser']",
+        "count(//lst[@name='timing']/*)=4",
+        "//lst[@name='timing']/double[@name='time']",
+        "count(//lst[@name='circuitbreaker']/*)>0",
+        "//lst[@name='circuitbreaker']/double[@name='time']",
+        "count(//lst[@name='prepare']/*)>0",
+        "//lst[@name='prepare']/double[@name='time']",
+        "count(//lst[@name='process']/*)>0",
+        "//lst[@name='process']/double[@name='time']"
+    );
+  }
+
   public void testCBAlwaysTrips() throws IOException {
     HashMap<String, String> args = new HashMap<String, String>();
 
@@ -81,6 +106,10 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
     expectThrows(SolrException.class, () -> {
       h.query(req("name:\"john smith\""));
     });
+
+    circuitBreaker = new MemoryCircuitBreaker(h.getCore());
+
+    h.getCore().getCircuitBreakerManager().registerCircuitBreaker(CircuitBreakerType.MEMORY, circuitBreaker);
   }
 
   public void testCBFakeMemoryPressure() throws IOException {
@@ -96,6 +125,10 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
     expectThrows(SolrException.class, () -> {
       h.query(req("name:\"john smith\""));
     });
+
+    circuitBreaker = new MemoryCircuitBreaker(h.getCore());
+
+    h.getCore().getCircuitBreakerManager().registerCircuitBreaker(CircuitBreakerType.MEMORY, circuitBreaker);
   }
 
   public void testBuildingMemoryPressure() {
@@ -133,6 +166,10 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
       }
 
       assertEquals("Number of failed queries is not correct", 1, failureCount.get());
+
+      circuitBreaker = new MemoryCircuitBreaker(h.getCore());
+
+      h.getCore().getCircuitBreakerManager().registerCircuitBreaker(CircuitBreakerType.MEMORY, circuitBreaker);
     } finally {
       if (!executor.isShutdown()) {
         executor.shutdown();
