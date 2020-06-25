@@ -1,0 +1,152 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.solr.search;
+
+import java.util.Locale;
+import java.util.Objects;
+
+import org.apache.lucene.document.FeatureField;
+import org.apache.lucene.search.Query;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.SchemaField;
+
+public class RankQParserPlugin extends QParserPlugin {
+  
+  public static final String NAME = "rank";
+  public static final String FIELD = "f";
+  public static final String FUNCTION = "function";
+  public static final String WEIGHT = "weight";
+  public static final String PIVOT = "pivot";
+  public static final String SCALING_FACTOR = "scalingFactor";
+  public static final String EXPONENT = "exponent";
+
+  @Override
+  public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+    Objects.requireNonNull(qstr, "Query String can't be null for rank queries");
+    Objects.requireNonNull(localParams, "LocalParams String can't be null");
+    Objects.requireNonNull(req, "SolrQueryRequest can't be null");
+    return new RankQParser(qstr, localParams, params, req);
+  }
+  
+  public static class RankQParser extends QParser {
+    
+    private final static FeatureFieldFunction DEFAULT_FUNCTION = FeatureFieldFunction.SATU;
+    
+    private enum FeatureFieldFunction {
+      SATU {
+        @Override
+        public Query createQuery(String fieldName, String featureName, SolrParams params) throws SyntaxError {
+          Float weight = params.getFloat(WEIGHT);
+          Float pivot = params.getFloat(PIVOT);
+          if (pivot == null && (weight == null || Float.compare(weight.floatValue(), 1f) == 0)) {
+            // No IAE expected in this case
+            return FeatureField.newSaturationQuery(fieldName, featureName);
+          }
+          if (pivot == null) {
+            throw new SyntaxError("A pivot value needs to be provided if the weight is not 1 on \"satu\" function");
+          }
+          if (weight == null) {
+            weight = Float.valueOf(1);
+          }
+          try {
+            return FeatureField.newSaturationQuery(fieldName, featureName, weight, pivot);
+          } catch (IllegalArgumentException iae) {
+            throw new SyntaxError(iae.getMessage());
+          }
+        }
+      },
+      LOG {
+        @Override
+        public Query createQuery(String fieldName, String featureName, SolrParams params) throws SyntaxError {
+          float weight = params.getFloat(WEIGHT, 1f);
+          float scalingFactor = params.getFloat(SCALING_FACTOR, 1f);
+          try {
+            return FeatureField.newLogQuery(fieldName, featureName, weight, scalingFactor);
+          } catch (IllegalArgumentException iae) {
+            throw new SyntaxError(iae.getMessage());
+          }
+        }
+      },
+      SIGM {
+        @Override
+        public Query createQuery(String fieldName, String featureName, SolrParams params) throws SyntaxError {
+          float weight = params.getFloat(WEIGHT, 1f);
+          Float pivot = params.getFloat(PIVOT);
+          if (pivot == null) {
+            throw new SyntaxError("A pivot value needs to be provided when using \"sigm\" function");
+          }
+          Float exponent = params.getFloat(EXPONENT);
+          if (exponent == null) {
+            throw new SyntaxError("An exponent value needs to be provided when using \"sigm\" function");
+          }
+          try {
+            return FeatureField.newSigmoidQuery(fieldName, featureName, weight, pivot, exponent);
+          } catch (IllegalArgumentException iae) {
+            throw new SyntaxError(iae.getMessage());
+          }
+        }
+      };
+      
+      public abstract Query createQuery(String fieldName, String featureName, SolrParams params) throws SyntaxError;
+      
+      
+    }
+    
+    private final String feature;
+    private final String field;
+
+    public RankQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+      super(qstr, localParams, params, req);
+      this.field = localParams.get(FIELD);
+      this.feature = qstr;
+    }
+
+    @Override
+    public Query parse() throws SyntaxError {
+      if (this.field == null || this.field.isEmpty()) {
+        throw new SyntaxError("Field can't be empty in rank queries");
+      }
+      SchemaField schemaField = req.getSchema().getFieldOrNull(field);
+      if (schemaField == null) {
+        throw new SyntaxError("Field \"" + this.field + "\" not found");
+      }
+      //TODO assert field is feature Field
+      if (feature == null || feature.isEmpty()) {
+        throw new SyntaxError("Feature can't be empty in rank queries");
+      }
+      return getFeatureFieldFunction(localParams.get(FUNCTION))
+          .createQuery(field, feature, localParams);
+    }
+
+    private FeatureFieldFunction getFeatureFieldFunction(String function) throws SyntaxError {
+      FeatureFieldFunction f = null;
+      if (function == null || function.isEmpty()) {
+        f = DEFAULT_FUNCTION;
+      } else {
+        try {
+          f = FeatureFieldFunction.valueOf(function.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException iae) {
+          throw new SyntaxError("Unknown function in rank query: \"" + function + "\"");
+        }
+      }
+      return f;
+    }
+    
+  }
+
+}
