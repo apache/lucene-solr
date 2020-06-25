@@ -59,8 +59,10 @@ public class DebugComponentTest extends SolrTestCaseJ4 {
             "//lst[@name='explain']/str[@name='2']",
             "//lst[@name='explain']/str[@name='3']",
             "//str[@name='QParser']",// make sure the QParser is specified
-            "count(//lst[@name='timing']/*)=3", //should be three pieces to timings
+            "count(//lst[@name='timing']/*)=4", //should be four pieces to timings
             "//lst[@name='timing']/double[@name='time']", //make sure we have a time value, but don't specify its result
+            "count(//lst[@name='circuitbreaker']/*)>0",
+            "//lst[@name='circuitbreaker']/double[@name='time']",
             "count(//lst[@name='prepare']/*)>0",
             "//lst[@name='prepare']/double[@name='time']",
             "count(//lst[@name='process']/*)>0",
@@ -83,8 +85,10 @@ public class DebugComponentTest extends SolrTestCaseJ4 {
             "//lst[@name='explain']/str[@name='1']",
             "//lst[@name='explain']/str[@name='2']",
             "//lst[@name='explain']/str[@name='3']",
-            "count(//lst[@name='timing']/*)=3", //should be three pieces to timings
+            "count(//lst[@name='timing']/*)=4", //should be four pieces to timings
             "//lst[@name='timing']/double[@name='time']", //make sure we have a time value, but don't specify its result
+            "count(//lst[@name='circuitbreaker']/*)>0",
+            "//lst[@name='circuitbreaker']/double[@name='time']",
             "count(//lst[@name='prepare']/*)>0",
             "//lst[@name='prepare']/double[@name='time']",
             "count(//lst[@name='process']/*)>0",
@@ -98,8 +102,10 @@ public class DebugComponentTest extends SolrTestCaseJ4 {
             "count(//str[@name='parsedquery_toString'])=0",
             "count(//lst[@name='explain']/*)=0",
             "count(//str[@name='QParser'])=0",// make sure the QParser is specified
-            "count(//lst[@name='timing']/*)=3", //should be three pieces to timings
+            "count(//lst[@name='timing']/*)=4", //should be four pieces to timings
             "//lst[@name='timing']/double[@name='time']", //make sure we have a time value, but don't specify its result
+            "count(//lst[@name='circuitbreaker']/*)>0",
+            "//lst[@name='circuitbreaker']/double[@name='time']",
             "count(//lst[@name='prepare']/*)>0",
             "//lst[@name='prepare']/double[@name='time']",
             "count(//lst[@name='process']/*)>0",
