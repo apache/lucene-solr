@@ -110,7 +110,6 @@ public class TestMergePolicy extends LuceneTestCase {
     }
   }
 
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-9408")
   public void testFinishTwice() throws IOException {
     try (Directory dir = newDirectory()) {
       MergePolicy.MergeSpecification spec = createRandomMergeSpecification(dir, 1);

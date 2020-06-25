@@ -97,7 +97,7 @@ import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME_IN_OVERLAY
 
 /**
  * Provides a static reference to a Config object modeling the main
- * configuration data for a a Solr instance -- typically found in
+ * configuration data for a Solr instance -- typically found in
  * "solrconfig.xml".
  */
 public class SolrConfig extends XmlConfigFile implements MapSerializable {

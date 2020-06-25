@@ -107,6 +107,14 @@ Improvements
 
 * LUCENE-9074: Introduce Slice Executor For Dynamic Runtime Execution Of Slices (Atri Sharma)
 
+* LUCENE-9280: Add an ability for field comparators to skip non-competitive documents.
+  Creating a TopFieldCollector with totalHitsThreshold less than Integer.MAX_VALUE
+  instructs Lucene to skip non-competitive documents whenever possible. For numeric
+  sort fields the skipping functionality works when the same field is indexed both
+  with doc values and points. In this case, there is an assumption that the same data is
+  stored in these points and doc values (Mayya Sharipova, Jim Ferenczi, Adrien Grand)
+
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
@@ -139,6 +147,9 @@ Other
 
 * LUCENE-9267: Update MatchingQueries documentation to correct
   time unit. (Pierre-Luc Perron via Mike Drob)
+
+* LUCENE-9411: Fail complation on warnings, 9x gradle-only (Erick Erickson, Dawid Weiss)
+  Deserves mention here as well as Lucene CHANGES.txt since it affects both.
 
 ======================= Lucene 8.6.0 =======================
 
@@ -404,10 +415,6 @@ Improvements
   the tokenizer emits original (compound) tokens when the mode is not NORMAL. (Kazuaki Hiraga via Tomoko Uchida)
 
 * LUCENE-9253: KoreanTokenizer now supports custom dictionaries(system, unknown). (Namgyu Kim)
-
-* LUCENE-8962: Add IndexWriter merge-on-commit feature to selectively merge small segments on commit,
-  subject to a configurable timeout, to improve search performance by reducing the number of small
-  segments for searching (Michael Froh, Mike Mccandless, Simon Willnauer)
 
 * LUCENE-9171: QueryBuilder can now use BoostAttributes on input token streams to selectively
   boost particular terms or synonyms in parsed queries. (Alessandro Benedetti, Alan Woodward)

@@ -135,10 +135,10 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
    */
   public SolrResourceLoader(Path instanceDir, ClassLoader parent) {
     if (instanceDir == null) {
-      this.instanceDir = SolrPaths.locateSolrHome().toAbsolutePath().normalize();
+      this.instanceDir = SolrPaths.locateSolrHome();
       log.debug("new SolrResourceLoader for deduced Solr Home: '{}'", this.instanceDir);
     } else {
-      this.instanceDir = instanceDir.toAbsolutePath().normalize();
+      this.instanceDir = instanceDir;
       log.debug("new SolrResourceLoader for directory: '{}'", this.instanceDir);
     }
 
@@ -338,11 +338,11 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   public String resourceLocation(String resource) {
     Path inConfigDir = getInstancePath().resolve("conf").resolve(resource);
     if (Files.exists(inConfigDir) && Files.isReadable(inConfigDir))
-      return inConfigDir.toAbsolutePath().normalize().toString();
+      return inConfigDir.normalize().toString();
 
     Path inInstanceDir = getInstancePath().resolve(resource);
     if (Files.exists(inInstanceDir) && Files.isReadable(inInstanceDir))
-      return inInstanceDir.toAbsolutePath().normalize().toString();
+      return inInstanceDir.normalize().toString();
 
     try (InputStream is = classLoader.getResourceAsStream(resource.replace(File.separatorChar, '/'))) {
       if (is != null)
@@ -673,14 +673,8 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   }
 
   /**
-   * Determines the solrhome from the environment.
-   * Tries JNDI (java:comp/env/solr/home) then system property (solr.solr.home);
-   * if both fail, defaults to solr/
-   * @return the instance directory name
-   */
-
-  /**
-   * @return the instance path for this resource loader
+   * The instance path for this resource loader, as passed in from the constructor.
+   * It's absolute when this is for Solr Home or a Solr Core instance dir.
    */
   public Path getInstancePath() {
     return instanceDir;

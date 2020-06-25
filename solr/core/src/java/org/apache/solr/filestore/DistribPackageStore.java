@@ -531,7 +531,7 @@ public class DistribPackageStore implements PackageStore {
   }
 
   public static Path getPackageStoreDirPath(Path solrHome) {
-    return Paths.get(solrHome.toAbsolutePath().toString(), PackageStoreAPI.PACKAGESTORE_DIRECTORY).toAbsolutePath();
+    return solrHome.resolve(PackageStoreAPI.PACKAGESTORE_DIRECTORY);
   }
 
   private static String _getMetapath(String path) {

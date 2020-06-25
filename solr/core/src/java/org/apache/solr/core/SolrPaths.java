@@ -58,10 +58,8 @@ public final class SolrPaths {
    * <li>Look in the current working directory for a solr/ directory</li>
    * </ol>
    * <p>
-   * The return value is normalized.  Normalization essentially means it ends in a trailing slash.
    *
-   * @return A normalized solrhome
-   * @see #normalizeDir(String)
+   * @return the Solr home, absolute and normalized.
    */
   public static Path locateSolrHome() {
 
@@ -93,7 +91,7 @@ public final class SolrPaths {
       home = "solr/";
       logOnceInfo("home_default", "solr home defaulted to '" + home + "' (could not find system property or JNDI)");
     }
-    return Paths.get(home);
+    return Paths.get(home).toAbsolutePath().normalize();
   }
 
   public static void ensureUserFilesDataDir(Path solrHome) {

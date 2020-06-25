@@ -76,8 +76,16 @@ Other Changes
 * SOLR-14486: Autoscaling simulation framework no longer creates /clusterstate.json (format 1),
   instead it creates individual per-collection /state.json files (format 2). (ab)
 
- * SOLR-12823: Remove /clusterstate.json support: support for collections created with stateFormat=1,
-   as well as support for Collection API MIGRATESTATEFORMAT action and support for the legacyCloud flag (Ilan Ginzburg).
+* SOLR-12823: Remove /clusterstate.json support, including support for collections created with stateFormat=1,
+  as well as support for Collection API MIGRATESTATEFORMAT action and support for the legacyCloud flag (Ilan Ginzburg).
+
+* LUCENE-9411: Fail complation on warnings, 9x gradle-only (Erick Erickson, Dawid Weiss)
+  Deserves mention here as well as Lucene CHANGES.txt since it affects both.
+
+Bug Fixes
+---------------------
+* SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
+  of Collection API tasks competing for a lock (Ilan Ginzburg).
 
 ==================  8.6.0 ==================
 
@@ -175,6 +183,8 @@ Optimizations
 
 * SOLR-14552: Add BlockMax-WAND support to ReRank queries (Tomás Fernández Löbbe)
 
+* SOLR-14554: Add BlockMax-WAND support for queries where the score is requested (Tomás Fernández Löbbe)
+
 Bug Fixes
 ---------------------
 * SOLR-13264: IndexSizeTrigger aboveOp / belowOp properties not in valid properties.
@@ -253,6 +263,9 @@ Bug Fixes
   (Tomás Fernández Löbbe)
 
 * SOLR-14409: Existing violations allow bypassing policy rules when adding new replicas (noble, ab)
+
+* SOLR-14584: Correct SOLR_SSL_KEY_STORE and SOLR_SSL_TRUST_STORE example comments in solr.in.sh and solr.in.cmd files
+  (Aren Cambre via Christine Poerschke)
 
 Other Changes
 ---------------------
@@ -362,6 +375,14 @@ Other Changes
 * SOLR-14573: Fix or suppress warnings in solrj/src/test (Erick Erickson)
 
 * SOLR-14574: Fix or suppress warnings in solr/core/src/test (parts 1 and 2) (Erick Erickson)
+
+* SOLR-13268: Clean up any test failures resulting from defaulting to async logging (Erick Erickson)
+
+* LUCENE-9411: Fail complation on warnings, 9x gradle-only (Erick Erickson, Dawid Weiss)
+  Only mentioned in 8.6 because I backported some more warning suppressions but not
+  the fail-on-warnings.
+
+* SOLR-14589: Remove IntelliJ //noinspection comments (Erick Erickson)
 
 ==================  8.5.2 ==================
 

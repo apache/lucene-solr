@@ -132,9 +132,9 @@ REM to enable https module with custom jetty configuration.
 REM set SOLR_SSL_ENABLED=true
 REM Uncomment to set SSL-related system properties
 REM Be sure to update the paths to the correct keystore for your environment
-REM set SOLR_SSL_KEY_STORE=etc/solr-ssl.keystore.jks
+REM set SOLR_SSL_KEY_STORE=etc/solr-ssl.keystore.p12
 REM set SOLR_SSL_KEY_STORE_PASSWORD=secret
-REM set SOLR_SSL_TRUST_STORE=etc/solr-ssl.keystore.jks
+REM set SOLR_SSL_TRUST_STORE=etc/solr-ssl.keystore.p12
 REM set SOLR_SSL_TRUST_STORE_PASSWORD=secret
 REM Require clients to authenticate
 REM set SOLR_SSL_NEED_CLIENT_AUTH=false
