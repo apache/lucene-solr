@@ -18,11 +18,12 @@ package org.apache.solr.search;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
@@ -47,6 +48,7 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.StringHelper;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
@@ -56,19 +58,21 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieField;
+import org.apache.solr.search.join.CrossCollectionJoinQParser;
 import org.apache.solr.search.join.GraphPointsCollector;
 import org.apache.solr.search.join.ScoreJoinQParserPlugin;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class JoinQParserPlugin extends QParserPlugin {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String NAME = "join";
   /** Choose the internal algorithm */
   private static final String METHOD = "method";
+
+  private String routerField;
+
+  private Set<String> allowSolrUrls;
 
   private static class JoinParams {
     final String fromField;
@@ -89,7 +93,7 @@ public class JoinQParserPlugin extends QParserPlugin {
   private enum Method {
     index {
       @Override
-      Query makeFilter(QParser qparser) throws SyntaxError {
+      Query makeFilter(QParser qparser, JoinQParserPlugin plugin) throws SyntaxError {
         final JoinParams jParams = parseJoin(qparser);
         final JoinQuery q = new JoinQuery(jParams.fromField, jParams.toField, jParams.fromCore, jParams.fromQuery);
         q.fromCoreOpenTime = jParams.fromCoreOpenTime;
@@ -98,21 +102,28 @@ public class JoinQParserPlugin extends QParserPlugin {
     },
     dvWithScore {
       @Override
-      Query makeFilter(QParser qparser) throws SyntaxError {
+      Query makeFilter(QParser qparser, JoinQParserPlugin plugin) throws SyntaxError {
         return new ScoreJoinQParserPlugin().createParser(qparser.qstr, qparser.localParams, qparser.params, qparser.req).parse();
       }
     },
     topLevelDV {
       @Override
-      Query makeFilter(QParser qparser) throws SyntaxError {
+      Query makeFilter(QParser qparser, JoinQParserPlugin plugin) throws SyntaxError {
         final JoinParams jParams = parseJoin(qparser);
         final JoinQuery q = new TopLevelJoinQuery(jParams.fromField, jParams.toField, jParams.fromCore, jParams.fromQuery);
         q.fromCoreOpenTime = jParams.fromCoreOpenTime;
         return q;
       }
+    },
+    crossCollection {
+      @Override
+      Query makeFilter(QParser qparser, JoinQParserPlugin plugin) throws SyntaxError {
+        return new CrossCollectionJoinQParser(qparser.qstr, qparser.localParams, qparser.params, qparser.req,
+                plugin.routerField, plugin.allowSolrUrls).parse();
+      }
     };
 
-    abstract Query makeFilter(QParser qparser) throws SyntaxError;
+    abstract Query makeFilter(QParser qparser, JoinQParserPlugin plugin) throws SyntaxError;
 
     JoinParams parseJoin(QParser qparser) throws SyntaxError {
       final String fromField = qparser.getParam("from");
@@ -161,7 +172,22 @@ public class JoinQParserPlugin extends QParserPlugin {
   }
 
   @Override
+  @SuppressWarnings({"unchecked"})
+  public void init(@SuppressWarnings({"rawtypes"}) NamedList args) {
+    routerField = (String) args.get("routerField");
+
+    if (args.get("allowSolrUrls") != null) {
+      allowSolrUrls = new HashSet<>();
+      allowSolrUrls.addAll((List<String>) args.get("allowSolrUrls"));
+    } else {
+      allowSolrUrls = null;
+    }
+  }
+
+  @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+    final JoinQParserPlugin plugin = this;
+
     return new QParser(qstr, localParams, params, req) {
 
       @Override
@@ -169,14 +195,14 @@ public class JoinQParserPlugin extends QParserPlugin {
         if (localParams != null && localParams.get(METHOD) != null) {
           // TODO Make sure 'method' is valid value here and give users a nice error
           final Method explicitMethod = Method.valueOf(localParams.get(METHOD));
-          return explicitMethod.makeFilter(this);
+          return explicitMethod.makeFilter(this, plugin);
         }
 
         // Legacy join behavior before introduction of SOLR-13892
         if(localParams!=null && localParams.get(ScoreJoinQParserPlugin.SCORE)!=null) {
           return new ScoreJoinQParserPlugin().createParser(qstr, localParams, params, req).parse();
         } else {
-          return Method.index.makeFilter(this);
+          return Method.index.makeFilter(this, plugin);
         }
       }
     };
@@ -207,11 +233,11 @@ class JoinQuery extends Query {
     assert null != fromField;
     assert null != toField;
     assert null != subQuery;
-    
+
     this.fromField = fromField;
     this.toField = toField;
     this.q = subQuery;
-    
+
     this.fromIndex = coreName; // may be null
   }
 

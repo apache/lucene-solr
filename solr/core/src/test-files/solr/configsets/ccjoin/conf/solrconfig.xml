@@ -48,25 +48,15 @@
          initialSize="0"
          regenerator="solr.NoOpRegenerator"/>
 
-  <queryParser name="xcjf" class="org.apache.solr.search.join.XCJFQParserPlugin">
+  <queryParser name="join" class="org.apache.solr.search.JoinQParserPlugin">
     <str name="routerField">product_id_s</str>
-    <arr name="solrUrl">
-      <str>${test.xcjf.solr.url.1:}</str>
-      <str>${test.xcjf.solr.url.2:}</str>
-      <str>${test.xcjf.solr.url.3:}</str>
+    <arr name="allowSolrUrls">
+      <str>${test.ccjoin.solr.url.1:}</str>
+      <str>${test.ccjoin.solr.url.2:}</str>
+      <str>${test.ccjoin.solr.url.3:}</str>
     </arr>
   </queryParser>
 
-  <queryParser name="xcjf_nonrouted" class="org.apache.solr.search.join.XCJFQParserPlugin" />
-
-  <queryParser name="xcjf_whitelist" class="org.apache.solr.search.join.XCJFQParserPlugin">
-    <str name="routerField">product_id_s</str>
-    <arr name="solrUrl">
-      <str>${test.xcjf.solr.url.1:}</str>
-      <str>${test.xcjf.solr.url.2:}</str>
-      <str>${test.xcjf.solr.url.3:}</str>
-    </arr>
-  </queryParser>
-
+  <queryParser name="join_nonrouted" class="org.apache.solr.search.JoinQParserPlugin" />
 
 </config>

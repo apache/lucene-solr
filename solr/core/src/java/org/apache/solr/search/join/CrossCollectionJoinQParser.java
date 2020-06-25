@@ -31,11 +31,11 @@ import java.util.Iterator;
 import java.util.Set;
 
 @SuppressWarnings("WeakerAccess")
-public class XCJFQParser extends QParser {
+public class CrossCollectionJoinQParser extends QParser {
 
   public static final String ZK_HOST = "zkHost";
   public static final String SOLR_URL = "solrUrl";
-  public static final String COLLECTION = "collection";
+  public static final String FROM_INDEX = "fromIndex";
   public static final String FROM = "from";
   public static final String TO = "to";
   public static final String ROUTED_BY_JOIN_KEY = "routed";
@@ -44,16 +44,17 @@ public class XCJFQParser extends QParser {
   public static final int TTL_DEFAULT = 60 * 60; // in seconds
 
   private static final Set<String> OWN_PARAMS = new HashSet<>(Arrays.asList(
-          QueryParsing.TYPE, QueryParsing.V, ZK_HOST, SOLR_URL, COLLECTION, FROM, TO, ROUTED_BY_JOIN_KEY, TTL));
+          QueryParsing.TYPE, QueryParsing.V, ZK_HOST, SOLR_URL, FROM_INDEX, FROM, TO, ROUTED_BY_JOIN_KEY, TTL));
 
   private final String routerField;
-  private final Set<String> solrUrlWhitelist;
+  private final Set<String> allowSolrUrls;
 
-  public XCJFQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req, String routerField, Set<String> solrUrlWhiteList) {
+  public CrossCollectionJoinQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req,
+                                    String routerField, Set<String> allowSolrUrls) {
     super(qstr, localParams, params, req);
     this.routerField = routerField;
     // If specified in the config, this will limit which solr url's the parser can connect to.
-    this.solrUrlWhitelist = solrUrlWhiteList;
+    this.allowSolrUrls = allowSolrUrls;
   }
 
   @Override
@@ -63,17 +64,18 @@ public class XCJFQParser extends QParser {
     String solrUrl = localParams.get(SOLR_URL);
     // Test if this is a valid solr url.
     if (solrUrl != null) {
-      if (solrUrlWhitelist == null) {
-        throw new SyntaxError("White list must be configured to use solrUrl parameter.");
+      if (allowSolrUrls == null) {
+        throw new SyntaxError("allowSolrUrls list must be configured to use solrUrl parameter.");
       }
-      if (!solrUrlWhitelist.contains(solrUrl)) {
-        throw new SyntaxError("Solr Url was not in the whitelist.  Please check your configuration.");
+      if (!allowSolrUrls.contains(solrUrl)) {
+        throw new SyntaxError("Solr URL was not in allowSolrUrls list.  Please check your configuration.");
       }
     }
 
-    String collection = localParams.get(COLLECTION);
+    String collection = localParams.get(FROM_INDEX);
     String fromField = localParams.get(FROM);
     String toField = localParams.get(TO);
+
     boolean routedByJoinKey = localParams.getBool(ROUTED_BY_JOIN_KEY, toField.equals(routerField));
     int ttl = localParams.getInt(TTL, TTL_DEFAULT);
 
@@ -85,6 +87,6 @@ public class XCJFQParser extends QParser {
       }
     }
 
-    return new XCJFQuery(query, zkHost, solrUrl, collection, fromField, toField, routedByJoinKey, ttl, otherParams);
+    return new CrossCollectionJoinQuery(query, zkHost, solrUrl, collection, fromField, toField, routedByJoinKey, ttl, otherParams);
   }
 }
