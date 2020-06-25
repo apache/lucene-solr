@@ -360,6 +360,13 @@ public class CoreContainer {
         log.info("Allowing use of paths: {}", cfg.getAllowPaths());
       }
     }
+
+    Path userFilesPath = getUserFilesPath(); // TODO make configurable on cfg?
+    try {
+      Files.createDirectories(userFilesPath); // does nothing if already exists
+    } catch (Exception e) {
+      log.warn("Unable to create [{}].  Features requiring this directory may fail.", userFilesPath, e);
+    }
   }
 
   @SuppressWarnings({"unchecked"})
@@ -2001,6 +2008,16 @@ public class CoreContainer {
   //TODO return Path
   public String getSolrHome() {
     return solrHome.toString();
+  }
+
+  /**
+   * A path where Solr users can retrieve arbitrary files from.  Absolute.
+   * <p>
+   * This directory is generally created by each node on startup.  Files located in this directory can then be
+   * manipulated using select Solr features (e.g. streaming expressions).
+   */
+  public Path getUserFilesPath() {
+    return solrHome.resolve("userfiles");
   }
 
   public boolean isZooKeeperAware() {
