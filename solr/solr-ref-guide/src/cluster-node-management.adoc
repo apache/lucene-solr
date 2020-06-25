@@ -499,7 +499,6 @@ http://localhost:8983/solr/admin/collections?action=OVERSEERSTATUS
   "..."
  }
 ----
-<<<<<<< HEAD
 
 [[migratestateformat]]
 == MIGRATESTATEFORMAT: Migrate Cluster State
@@ -517,5 +516,3 @@ The name of the collection to be migrated from `clusterstate.json` to its own `s
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
 
 This API is useful in migrating any collections created prior to Solr 5.0 to the more scalable cluster state format now used by default. If a collection was created in any Solr 5.x version or higher, then executing this command is not necessary.
-=======
->>>>>>> f1650d5f47c... Ref Guide: prep for 8.6: upgrade notes, typos
