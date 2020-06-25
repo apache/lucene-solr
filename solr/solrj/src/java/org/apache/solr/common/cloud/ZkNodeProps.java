@@ -17,10 +17,7 @@
 package org.apache.solr.common.cloud;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.Utils;
@@ -31,7 +28,6 @@ import static org.apache.solr.common.util.Utils.toJSONString;
 /**
  * ZkNodeProps contains generic immutable properties.
  */
-@SuppressWarnings({"overrides"})
 public class ZkNodeProps implements JSONWriter.Writable {
 
   protected final Map<String,Object> propMap;
@@ -171,8 +167,9 @@ public class ZkNodeProps implements JSONWriter.Writable {
   public boolean equals(Object that) {
     return that instanceof ZkNodeProps && ((ZkNodeProps)that).propMap.equals(this.propMap);
   }
-//  @Override
-//  public int hashCode() {
-//    throw new UnsupportedOperationException("TODO unimplemented ZkNodeProps.hashCode");
-//  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(propMap);
+  }
 }
