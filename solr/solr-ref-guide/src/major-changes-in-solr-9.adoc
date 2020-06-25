@@ -70,7 +70,7 @@ _(raw; not yet edited)_
 * SOLR-13854, SOLR-13858: SolrMetricProducer / SolrInfoBean APIs have changed and third-party components that implement these APIs need to be updated. (ab)
 
 * SOLR-13783: In situations where a NamedList must be output as plain text, commas between key-value pairs will now be
-  followed by a space (e.g. {shape=square, color=yellow} rather than {shape=square,color=yellow}) for consistency with
+  followed by a space (e.g., {shape=square, color=yellow} rather than {shape=square,color=yellow}) for consistency with
   other java.util.Map implementations based on AbstractMap (Chris Hennick).
 
 * SOLR-13817: Legacy SolrCache implementations (LRUCache, LFUCache, FastLRUCache) have been removed.
