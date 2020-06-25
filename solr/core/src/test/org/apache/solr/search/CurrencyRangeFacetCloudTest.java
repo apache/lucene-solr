@@ -394,7 +394,7 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
         for (int i = 0; i < 2; i++) {
           final NamedList<Object> bucket = bar_buckets.get(i);
           assertEquals((i * 10) + ".00,EUR", bucket.get("val"));
-          assertEquals("bucket #" + i, 4L, bucket.get("count"));
+          assertEqualsHACK("bucket #" + i, 4L, bucket.get("count"));
           @SuppressWarnings({"unchecked"})
           final List<NamedList<Object>> foo_buckets = ((NamedList<List<NamedList<Object>>>)bucket.get("foo")).get("buckets");
           assertEquals("bucket #" + i + " foo num buckets", 2, foo_buckets.size());
