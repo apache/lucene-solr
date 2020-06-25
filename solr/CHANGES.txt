@@ -252,6 +252,8 @@ Bug Fixes
 * SOLR-14577: Return 400 BAD REQUEST when field is missing on a Terms query parser request
   (Tomás Fernández Löbbe)
 
+* SOLR-14409: Existing violations allow bypassing policy rules when adding new replicas (noble, ab)
+
 Other Changes
 ---------------------
 * SOLR-14197: SolrResourceLoader: marked many methods as deprecated, and in some cases rerouted exiting logic to avoid
