@@ -34,6 +34,67 @@ public class RankQParserPlugin extends QParserPlugin {
   public static final String PIVOT = "pivot";
   public static final String SCALING_FACTOR = "scalingFactor";
   public static final String EXPONENT = "exponent";
+  
+  private final static FeatureFieldFunction DEFAULT_FUNCTION = FeatureFieldFunction.SATU;
+  
+  private enum FeatureFieldFunction {
+    SATU {
+      @Override
+      public Query createQuery(String fieldName, String featureName, SolrParams params) throws SyntaxError {
+        Float weight = params.getFloat(WEIGHT);
+        Float pivot = params.getFloat(PIVOT);
+        if (pivot == null && (weight == null || Float.compare(weight.floatValue(), 1f) == 0)) {
+          // No IAE expected in this case
+          return FeatureField.newSaturationQuery(fieldName, featureName);
+        }
+        if (pivot == null) {
+          throw new SyntaxError("A pivot value needs to be provided if the weight is not 1 on \"satu\" function");
+        }
+        if (weight == null) {
+          weight = Float.valueOf(1);
+        }
+        try {
+          return FeatureField.newSaturationQuery(fieldName, featureName, weight, pivot);
+        } catch (IllegalArgumentException iae) {
+          throw new SyntaxError(iae.getMessage());
+        }
+      }
+    },
+    LOG {
+      @Override
+      public Query createQuery(String fieldName, String featureName, SolrParams params) throws SyntaxError {
+        float weight = params.getFloat(WEIGHT, 1f);
+        float scalingFactor = params.getFloat(SCALING_FACTOR, 1f);
+        try {
+          return FeatureField.newLogQuery(fieldName, featureName, weight, scalingFactor);
+        } catch (IllegalArgumentException iae) {
+          throw new SyntaxError(iae.getMessage());
+        }
+      }
+    },
+    SIGM {
+      @Override
+      public Query createQuery(String fieldName, String featureName, SolrParams params) throws SyntaxError {
+        float weight = params.getFloat(WEIGHT, 1f);
+        Float pivot = params.getFloat(PIVOT);
+        if (pivot == null) {
+          throw new SyntaxError("A pivot value needs to be provided when using \"sigm\" function");
+        }
+        Float exponent = params.getFloat(EXPONENT);
+        if (exponent == null) {
+          throw new SyntaxError("An exponent value needs to be provided when using \"sigm\" function");
+        }
+        try {
+          return FeatureField.newSigmoidQuery(fieldName, featureName, weight, pivot, exponent);
+        } catch (IllegalArgumentException iae) {
+          throw new SyntaxError(iae.getMessage());
+        }
+      }
+    };
+    
+    public abstract Query createQuery(String fieldName, String featureName, SolrParams params) throws SyntaxError;
+    
+  }
 
   @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
@@ -44,68 +105,6 @@ public class RankQParserPlugin extends QParserPlugin {
   }
   
   public static class RankQParser extends QParser {
-    
-    private final static FeatureFieldFunction DEFAULT_FUNCTION = FeatureFieldFunction.SATU;
-    
-    private enum FeatureFieldFunction {
-      SATU {
-        @Override
-        public Query createQuery(String fieldName, String featureName, SolrParams params) throws SyntaxError {
-          Float weight = params.getFloat(WEIGHT);
-          Float pivot = params.getFloat(PIVOT);
-          if (pivot == null && (weight == null || Float.compare(weight.floatValue(), 1f) == 0)) {
-            // No IAE expected in this case
-            return FeatureField.newSaturationQuery(fieldName, featureName);
-          }
-          if (pivot == null) {
-            throw new SyntaxError("A pivot value needs to be provided if the weight is not 1 on \"satu\" function");
-          }
-          if (weight == null) {
-            weight = Float.valueOf(1);
-          }
-          try {
-            return FeatureField.newSaturationQuery(fieldName, featureName, weight, pivot);
-          } catch (IllegalArgumentException iae) {
-            throw new SyntaxError(iae.getMessage());
-          }
-        }
-      },
-      LOG {
-        @Override
-        public Query createQuery(String fieldName, String featureName, SolrParams params) throws SyntaxError {
-          float weight = params.getFloat(WEIGHT, 1f);
-          float scalingFactor = params.getFloat(SCALING_FACTOR, 1f);
-          try {
-            return FeatureField.newLogQuery(fieldName, featureName, weight, scalingFactor);
-          } catch (IllegalArgumentException iae) {
-            throw new SyntaxError(iae.getMessage());
-          }
-        }
-      },
-      SIGM {
-        @Override
-        public Query createQuery(String fieldName, String featureName, SolrParams params) throws SyntaxError {
-          float weight = params.getFloat(WEIGHT, 1f);
-          Float pivot = params.getFloat(PIVOT);
-          if (pivot == null) {
-            throw new SyntaxError("A pivot value needs to be provided when using \"sigm\" function");
-          }
-          Float exponent = params.getFloat(EXPONENT);
-          if (exponent == null) {
-            throw new SyntaxError("An exponent value needs to be provided when using \"sigm\" function");
-          }
-          try {
-            return FeatureField.newSigmoidQuery(fieldName, featureName, weight, pivot, exponent);
-          } catch (IllegalArgumentException iae) {
-            throw new SyntaxError(iae.getMessage());
-          }
-        }
-      };
-      
-      public abstract Query createQuery(String fieldName, String featureName, SolrParams params) throws SyntaxError;
-      
-      
-    }
     
     private final String feature;
     private final String field;
