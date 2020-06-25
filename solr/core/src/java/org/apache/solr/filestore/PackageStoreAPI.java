@@ -32,7 +32,6 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.MapWriter;
@@ -128,15 +127,14 @@ public class PackageStoreAPI {
 
   }
 
-  @EndPoint(
-      path = "/cluster/files/*",
-      method = SolrRequest.METHOD.PUT,
-      permission = PermissionNameProvider.Name.FILESTORE_WRITE_PERM)
   public class FSWrite {
 
     static final String TMP_ZK_NODE = "/packageStoreWriteInProgress";
 
-    @Command
+    @EndPoint(
+        path = "/cluster/files/*",
+        method = SolrRequest.METHOD.PUT,
+        permission = PermissionNameProvider.Name.FILESTORE_WRITE_PERM)
     public void upload(SolrQueryRequest req, SolrQueryResponse rsp) {
       if (!coreContainer.getPackageLoader().getPackageAPI().isEnabled()) {
         throw new RuntimeException(PackageAPI.ERR_MSG);
@@ -230,12 +228,11 @@ public class PackageStoreAPI {
     return new MetaData(vals);
   }
 
-  @EndPoint(
-      path = "/node/files/*",
-      method = SolrRequest.METHOD.GET,
-      permission = PermissionNameProvider.Name.FILESTORE_READ_PERM)
   public class FSRead {
-    @Command
+    @EndPoint(
+        path = "/node/files/*",
+        method = SolrRequest.METHOD.GET,
+        permission = PermissionNameProvider.Name.FILESTORE_READ_PERM)
     public void read(SolrQueryRequest req, SolrQueryResponse rsp) {
       String path = req.getPathTemplateValues().get("*");
       String pathCopy = path;

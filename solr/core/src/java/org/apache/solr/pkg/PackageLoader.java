@@ -158,6 +158,10 @@ public class PackageLoader implements Closeable {
       return deleted;
     }
 
+    public Set<String> allVersions() {
+      return myVersions.keySet();
+    }
+
 
     private synchronized void updateVersions(List<PackageAPI.PkgVersion> modified) {
       for (PackageAPI.PkgVersion v : modified) {
@@ -208,6 +212,10 @@ public class PackageLoader implements Closeable {
 
     public Version getLatest() {
       return latest == null ? null : myVersions.get(latest);
+    }
+
+    public Version getVersion(String version) {
+      return myVersions.get(version);
     }
 
     public Version getLatest(String lessThan) {

@@ -40,6 +40,7 @@ import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.impl.SolrClientNodeStateProvider;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.util.Utils;
@@ -514,6 +515,17 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
         , cloudManagerFromDiagnostics, 200, 1200, null);
 
     System.out.println(suggestions);
+  }
+
+  @SuppressWarnings({"unchecked"})
+  public void testAddTooManyPerPolicy() {
+    Map<String, Object> m = (Map<String, Object>) loadFromResource("testAddTooManyPerPolicy.json");
+    SolrCloudManager cloudManagerFromDiagnostics = createCloudManagerFromDiagnostics(m);
+    AutoScalingConfig autoScalingConfig = new AutoScalingConfig((Map<String, Object>) getObjectByPath(m, false, "diagnostics/config"));
+    SolrException exp =  expectThrows(SolrException.class, () -> PolicyHelper.getReplicaLocations("TooManyPerPolicy", autoScalingConfig, cloudManagerFromDiagnostics,
+            EMPTY_MAP, Collections.singletonList("shard1"), 1, 0, 0, null));
+    assertTrue(exp.getMessage().contains("No node can satisfy the rules"));
+
   }
 
   public static Object loadFromResource(String file)  {

@@ -64,7 +64,7 @@ import org.apache.solr.search.DocSetUtil;
 import org.apache.solr.search.Filter;
 import org.apache.solr.search.SolrIndexSearcher;
 
-public class XCJFQuery extends Query {
+public class CrossCollectionJoinQuery extends Query {
 
   protected final String query;
   protected final String zkHost;
@@ -80,8 +80,9 @@ public class XCJFQuery extends Query {
   protected SolrParams otherParams;
   protected String otherParamsString;
 
-  public XCJFQuery(String query, String zkHost, String solrUrl, String collection, String fromField, String toField,
-                   boolean routedByJoinKey, int ttl, SolrParams otherParams) {
+  public CrossCollectionJoinQuery(String query, String zkHost, String solrUrl,
+                                  String collection, String fromField, String toField,
+                                  boolean routedByJoinKey, int ttl, SolrParams otherParams) {
 
     this.query = query;
     this.zkHost = zkHost;
@@ -173,14 +174,14 @@ public class XCJFQuery extends Query {
     }
   }
 
-  private class XCJFQueryWeight extends ConstantScoreWeight {
+  private class CrossCollectionJoinQueryWeight extends ConstantScoreWeight {
 
     private SolrIndexSearcher searcher;
     private ScoreMode scoreMode;
     private Filter filter;
 
-    public XCJFQueryWeight(SolrIndexSearcher searcher, ScoreMode scoreMode, float score) {
-      super(XCJFQuery.this, score);
+    public CrossCollectionJoinQueryWeight(SolrIndexSearcher searcher, ScoreMode scoreMode, float score) {
+      super(CrossCollectionJoinQuery.this, score);
       this.scoreMode = scoreMode;
       this.searcher = searcher;
     }
@@ -329,7 +330,7 @@ public class XCJFQuery extends Query {
 
   @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-    return new XCJFQueryWeight((SolrIndexSearcher) searcher, scoreMode, boost);
+    return new CrossCollectionJoinQueryWeight((SolrIndexSearcher) searcher, scoreMode, boost);
   }
 
   @Override
@@ -359,7 +360,7 @@ public class XCJFQuery extends Query {
             equalsTo(getClass().cast(other));
   }
 
-  private boolean equalsTo(XCJFQuery other) {
+  private boolean equalsTo(CrossCollectionJoinQuery other) {
     return Objects.equals(query, other.query) &&
             Objects.equals(zkHost, other.zkHost) &&
             Objects.equals(solrUrl, other.solrUrl) &&

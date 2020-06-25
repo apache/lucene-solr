@@ -17,17 +17,6 @@
 
 package org.apache.solr.filestore;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.ByteBuffer;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.function.Predicate;
-
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.solr.client.solrj.SolrClient;
@@ -50,6 +39,17 @@ import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.server.ByteBufferInputStream;
 import org.junit.After;
 import org.junit.Before;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.function.Predicate;
 
 import static org.apache.solr.common.util.Utils.JAVABINCONSUMER;
 import static org.apache.solr.core.TestDynamicLoading.getFileContent;
@@ -193,11 +193,12 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
     }
   }
 
+
   @SuppressWarnings({"rawtypes"})
-  static class Fetcher implements Callable {
+  public static class Fetcher implements Callable {
     String url;
     JettySolrRunner jetty;
-    Fetcher(String s, JettySolrRunner jettySolrRunner){
+    public Fetcher(String s, JettySolrRunner jettySolrRunner){
       this.url = s;
       this.jetty = jettySolrRunner;
     }

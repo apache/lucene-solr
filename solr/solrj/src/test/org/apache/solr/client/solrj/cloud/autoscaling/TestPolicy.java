@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -1727,9 +1728,8 @@ public class TestPolicy extends SolrTestCaseJ4 {
     assertTrue(session.getPolicy() == config.getPolicy());
     assertEquals(sessionWrapper.status, PolicyHelper.Status.EXECUTING);
     sessionWrapper.release();
-    assertTrue(sessionRef.getSessionWrapper() == PolicyHelper.SessionWrapper.DEFAULT_INSTANCE);
+    assertTrue(sessionRef.isEmpty());
     PolicyHelper.SessionWrapper s1 = PolicyHelper.getSession(solrCloudManager);
-    assertEquals(sessionRef.getSessionWrapper().getCreateTime(), s1.getCreateTime());
     PolicyHelper.SessionWrapper[] s2 = new PolicyHelper.SessionWrapper[1];
     AtomicLong secondTime = new AtomicLong();
     Thread thread = new Thread(() -> {
@@ -1743,7 +1743,6 @@ public class TestPolicy extends SolrTestCaseJ4 {
     thread.start();
     Thread.sleep(50);
     long beforeReturn = System.nanoTime();
-    assertEquals(s1.getCreateTime(), sessionRef.getSessionWrapper().getCreateTime());
     s1.returnSession(s1.get());
     assertEquals(1, s1.getRefCount());
     thread.join();
@@ -1755,11 +1754,136 @@ public class TestPolicy extends SolrTestCaseJ4 {
     assertEquals(2, s1.getRefCount());
 
     s2[0].release();
-    assertFalse(sessionRef.getSessionWrapper() == PolicyHelper.SessionWrapper.DEFAULT_INSTANCE);
+    assertFalse(sessionRef.isEmpty());
     s1.release();
-    assertTrue(sessionRef.getSessionWrapper() == PolicyHelper.SessionWrapper.DEFAULT_INSTANCE);
+    assertTrue(sessionRef.isEmpty());
 
 
+  }
+
+  @Test
+  public void testMultiSessionsCache() throws IOException, InterruptedException {
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    Map<String, Map> nodeValues = (Map<String, Map>) Utils.fromJSONString(" {" +
+        "    'node1':{ 'node':'10.0.0.4:8987_solr', 'cores':1 }," +
+        "    'node2':{ 'node':'10.0.0.4:8989_solr', 'cores':1 }," +
+        "    'node3':{ 'node':'10.0.0.4:7574_solr', 'cores':1 }" +
+        "}");
+
+    @SuppressWarnings({"rawtypes"})
+    Map policies = (Map) Utils.fromJSONString("{ 'cluster-preferences': [{ 'minimize': 'cores', 'precision': 1}]}");
+
+    @SuppressWarnings({"unchecked"})
+    AutoScalingConfig config = new AutoScalingConfig(policies);
+    final SolrCloudManager solrCloudManager = new DelegatingCloudManager(getSolrCloudManager(nodeValues, clusterState)) {
+      @Override
+      public DistribStateManager getDistribStateManager() {
+        return delegatingDistribStateManager(config);
+      }
+    };
+
+    PolicyHelper.SessionWrapper s1 = PolicyHelper.getSession(solrCloudManager);
+    // Must skip the wait time otherwise test takes a few seconds to run (and s1 is not returned now anyway so no point waiting).
+    PolicyHelper.SessionWrapper s2 = PolicyHelper.getSession(solrCloudManager, false);
+    // Got two sessions, they are different
+    assertNotSame(s1, s2);
+
+    // Done COMPUTING with first session, it can be reused
+    s1.returnSession(s1.get());
+
+    PolicyHelper.SessionWrapper s3 = PolicyHelper.getSession(solrCloudManager);
+    // First session indeed reused when a new session is requested
+    assertSame(s3, s1);
+
+    // Done COMPUTING with second session, it can be reused
+    s2.returnSession(s2.get());
+
+    PolicyHelper.SessionWrapper s4 = PolicyHelper.getSession(solrCloudManager);
+    // Second session indeed reused when a new session is requested
+    assertSame(s4, s2);
+
+    s4.returnSession(s4.get());
+    s4.release();
+
+    s2.release();
+
+    s3.returnSession(s3.get());
+    s3.release();
+
+    PolicyHelper.SessionRef sessionRef = (PolicyHelper.SessionRef) solrCloudManager.getObjectCache().get(PolicyHelper.SessionRef.class.getName());
+
+    // First session not yet released so is still in the cache
+    assertFalse(sessionRef.isEmpty());
+
+    s1.release();
+
+    assertTrue(sessionRef.isEmpty());
+  }
+
+  /**
+   * Verify number of sessions allocated when parallel session requests arrive is reasonable.
+   * Test takes about 3 seconds to run.
+   */
+  @Test
+  @Slow
+  public void testMultiThreadedSessionsCache() throws IOException, InterruptedException {
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    Map<String, Map> nodeValues = (Map<String, Map>) Utils.fromJSONString(" {" +
+        "    'node1':{ 'node':'10.0.0.4:8987_solr', 'cores':1 }," +
+        "    'node2':{ 'node':'10.0.0.4:8989_solr', 'cores':1 }," +
+        "    'node3':{ 'node':'10.0.0.4:7574_solr', 'cores':1 }" +
+        "}");
+
+    @SuppressWarnings({"rawtypes"})
+    Map policies = (Map) Utils.fromJSONString("{ 'cluster-preferences': [{ 'minimize': 'cores', 'precision': 1}]}");
+
+    @SuppressWarnings({"unchecked"})
+    AutoScalingConfig config = new AutoScalingConfig(policies);
+    final SolrCloudManager solrCloudManager = new DelegatingCloudManager(getSolrCloudManager(nodeValues, clusterState)) {
+      @Override
+      public DistribStateManager getDistribStateManager() {
+        return delegatingDistribStateManager(config);
+      }
+    };
+
+    final Set<PolicyHelper.SessionWrapper> seenSessions = Sets.newHashSet();
+    final AtomicInteger completedThreads = new AtomicInteger(0);
+
+    final int COUNT_THREADS = 100;
+    Thread[] threads = new Thread[COUNT_THREADS];
+
+    for (int i = 0; i < COUNT_THREADS; i++) {
+      threads[i] = new Thread(() -> {
+        try {
+          // This thread requests a session, computes using it for 50ms then returns is, executes for 1000ms more,
+          // releases the sessions and finishes.
+          PolicyHelper.SessionWrapper session = PolicyHelper.getSession(solrCloudManager);
+          seenSessions.add(session);
+          Thread.sleep(50);
+          session.returnSession(session.get());
+          Thread.sleep(1000);
+          session.release();
+
+          completedThreads.incrementAndGet();
+        } catch (InterruptedException | IOException ignored) {
+        }
+      });
+      threads[i].start();
+    }
+
+    for (int i = 0; i < COUNT_THREADS; i++) {
+      threads[i].join(12000);
+    }
+
+    assertEquals(COUNT_THREADS, completedThreads.get());
+    // The value asserted below is somewhat arbitrary. Running locally max seen is 10, so hopefully 30 is safe.
+    // Idea is to verify we do not allocate a high number of sessions even if many concurrent session
+    // requests arrive at the same time. The session computing time is short in purpose. If it were long, it would be
+    // expected for more sessions to be allocated.
+    assertTrue("Too many sessions created: " + seenSessions.size(), seenSessions.size() < 30);
+
+    PolicyHelper.SessionRef sessionRef = (PolicyHelper.SessionRef) solrCloudManager.getObjectCache().get(PolicyHelper.SessionRef.class.getName());
+    assertTrue(sessionRef.isEmpty());
   }
 
   private DistribStateManager delegatingDistribStateManager(AutoScalingConfig config) {

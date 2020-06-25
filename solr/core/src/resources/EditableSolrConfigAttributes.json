@@ -55,6 +55,8 @@
     "queryResultMaxDocsCached":1,
     "enableLazyFieldLoading":1,
     "boolTofilterOptimizer":1,
+    "useCircuitBreakers":10,
+    "memoryCircuitBreakerThreshold":20,
     "maxBooleanClauses":1},
   "jmx":{
     "agentId":0,

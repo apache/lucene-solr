@@ -12,6 +12,8 @@ New Features
 ---------------------
 * SOLR-14440: Introduce new Certificate Authentication Plugin to load Principal from certificate subject. (Mike Drob)
 
+* SOLR-14588: Implement Circuit Breakers Infrastructure and add JVM Circuit Breaker (Atri Sharma)
+
 Improvements
 ----------------------
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
@@ -108,6 +110,11 @@ New Features
   timeseries Streaming Expressions (Joel Bernstein)
 
 * SOLR-14470: Add streaming expressions to /export handler. (ab, Joel Bernstein)
+
+* SOLR-14404: CoreContainer level custom requesthandlers (noble)
+
+* SOLR-13749: Join queries can now work cross-collection, even when sharded or when spanning nodes.
+  (Dan Fox, Kevin Watters, via Gus Heck, David Smiley)
 
 Improvements
 ---------------------
@@ -261,6 +268,8 @@ Bug Fixes
 
 * SOLR-14577: Return 400 BAD REQUEST when field is missing on a Terms query parser request
   (Tomás Fernández Löbbe)
+
+* SOLR-14409: Existing violations allow bypassing policy rules when adding new replicas (noble, ab)
 
 * SOLR-14584: Correct SOLR_SSL_KEY_STORE and SOLR_SSL_TRUST_STORE example comments in solr.in.sh and solr.in.cmd files
   (Aren Cambre via Christine Poerschke)

@@ -551,9 +551,9 @@ http://localhost:8983/solr/alt_graph/query?fl=id&q={!graph+from=id+to=out_edge+m
 ----
 == Hash Range Query Parser
 
-The hash range query parser will return documents that have a field that contains a value that would be hashed to a particular range.  This is used by the XCJF query parser.  This query parser has a per segment cache for each field that this query parser will operate on.
+The hash range query parser will return documents that have a field that contains a value that would be hashed to a particular range.  This is used by the join query when using method=crossCollection.  The hash rang query parser has a per segment cache for each field that this query parser will operate on.
 
-When specifying a min/max hash range and a field name with the hash range query parser, only documents who contain a field value that hashes into that range will be returned.  If you want to query for a very large result set, you can query for various hash ranges to return a fraction of the documents with each range request.  In the XCJF case, the hash_range query parser is used to ensure that each shard only gets the set of join keys that would end up on that shard.
+When specifying a min/max hash range and a field name with the hash range query parser, only documents who contain a field value that hashes into that range will be returned.  If you want to query for a very large result set, you can query for various hash ranges to return a fraction of the documents with each range request.  In the cross collection join case, the hash_range query parser is used to ensure that each shard only gets the set of join keys that would end up on that shard.
 
 This query parser uses the MurmurHash3_x86_32.  This is the same as the default hashing for the default composite ID router in Solr.
 
@@ -637,7 +637,7 @@ This parameter is required.
 The name of the index to run the "from" query (`v` parameter) on and where "from" values are gathered.
 Must be located on the same node as the core processing the request.
 This parameter is optional; it defaults to the value of the processing core if not specified.
-See <<Joining Across Collections,Joining Across Collections>> below for more information.
+See <<Joining Across Single Shard Collections,Joining Across Single Shard Collections>> or <<Cross Collection Join,Cross Collection Join>> below for more information.
 
 `score`::
 An optional parameter that instructs Solr to return information about the "from" query scores.
@@ -681,9 +681,9 @@ But they are also expensive to build and need to be lazily populated after each 
 If you commit frequently and your use-case can tolerate a static warming query, consider adding one to `solrconfig.xml` so that this work is done as a part of the commit itself and not attached directly to user requests.
 Consider this method when the "from" query matches a large number of documents and the "to" result set is small to moderate in size, but only if sporadic post-commit slowness is tolerable.
 
-=== Joining Across Collections
+=== Joining Across Single Shard Collections
 
-You can also specify a `fromIndex` parameter to join with a field from another core or collection. If running in SolrCloud mode, then the collection specified in the `fromIndex` parameter must have a single shard and a replica on all Solr nodes where the collection you're joining to has a replica.
+You can also specify a `fromIndex` parameter to join with a field from another core or a single shard collection. If running in SolrCloud mode, then the collection specified in the `fromIndex` parameter must have a single shard and a replica on all Solr nodes where the collection you're joining to has a replica.
 
 Let's consider an example where you want to use a Solr join query to filter movies by directors that have won an Oscar. Specifically, imagine we have two collections with the following fields:
 
@@ -723,6 +723,92 @@ node 4: movie_directors_shard1_replica4
 At query time, the `JoinQParser` will access the local replica of the *movie_directors* collection to perform the join. If a local replica is not available or active, then the query will fail. At this point, it should be clear that since you're limited to a single shard and the data must be replicated across all nodes where it is needed, this approach works better with smaller data sets where there is a one-to-many relationship between the from collection and the to collection. Moreover, if you add a replica to the to collection, then you also need to add a replica for the from collection.
 
 For more information, Erick Erickson has written a blog post about join performance titled https://lucidworks.com/2012/06/20/solr-and-joins/[Solr and Joins].
+
+=== Cross Collection Join
+The Cross Collection Join Filter is a method for the join parser that will execute a query against a remote Solr collection to get back a set of join keys that will be used to as a filter query against the local Solr collection.
+
+The crossCollection join query will create an CrossCollectionQuery object.
+The CrossCollectionQuery will first query a remote Solr collection and get back a streaming expression result of the join keys.
+As the join keys are streamed to the node, a bitset of the matching documents in the local index is built up.
+This avoids keeping the full set of join keys in memory at any given time.
+This bitset is then inserted into the filter cache upon successful execution as with the normal behavior of the Solr filter cache.
+
+If the local index is sharded according to the join key field, the cross collection join can leverage a secondary query parser called the "hash_range" query parser.
+The hash_range query parser is responsible for returning only the documents that hash to a given range of values.
+This allows the CrossCollectionQuery to query the remote Solr collection and return only the join keys that would match a specific shard in the local Solr collection.
+This has the benefit of making sure that network traffic doesn't increase as the number of shards increases and allows for much greater scalability.
+
+The CrossCollection join query works with both String and Point types of fields.
+The fields that are being used for the join key must be single-valued and have docValues enabled.
+
+It's advised to shard the local collection by the join key as this allows for the optimization mentioned above to be utilized.
+
+The cross collection join queries should not be generally used as part of the `q` parameter, but rather it is designed to be used as a filter query (`fq` parameter) to ensure proper caching.
+
+The remote Solr collection that is being queried should have a single-valued field for the join key with docValues enabled.
+
+The remote Solr collection does not have any specific sharding requirements.
+
+==== Join Query Parser Definition in solrconfig.xml
+
+The cross collection join has some configuration options that can be specified in  `solrconfig.xml`.
+
+`routerField`::
+If the documents are routed to shards using the CompositeID router by the join field, then that field name should be specified in the configuration here.  This will allow the parser to optimize the resulting HashRange query.
+
+`solrUrl`::
+If specified, this array of strings specifies the white listed Solr URLs that you can pass to the solrUrl query parameter. Without this configuration the solrUrl parameter cannot be used. This restriction is necessary to prevent an attacker from using Solr to explore the network.
+
+[source,xml]
+----
+  <queryParser name="join" class="org.apache.solr.search.JoinQParserPlugin">
+    <str name="routerField">product_id_s</str>
+    <arr name="allowSolrUrls">
+      <str>http://othersolr.example.com:8983/solr</str>
+    </arr>
+  </queryParser>
+----
+
+==== Cross Collection Join Query Parameters
+
+`fromIndex`::
+The name of the external Solr collection to be queried to retrieve the set of join key values (required).
+
+`zkHost`::
+The connection string to be used to connect to ZooKeeper. `zkHost` and `solrUrl` are both optional parameters, and at most one of them should be specified. If neither `zkHost` nor `solrUrl` are specified, the local ZooKeeper cluster will be used. (optional).
+
+`solrUrl`::
+The URL of the external Solr node to be queried. Must be a character for character exact match of a whitelisted url. (optional, disabled by default for security).
+
+`from`::
+The join key field name in the external collection (required).
+
+`to`::
+The join key field name in the local collection.
+
+`v`::
+The query substituted in as a local param.  This is the query string that will match documents in the remote collection.
+
+`routed`::
+If `true`, the cross collection join query will use each shard's hash range to determine the set of join keys to retrieve for that shard.
+This parameter improves the performance of the cross-collection join, but it depends on the local collection being routed by the `to` field.
+If this parameter is not specified, the cross collection join query will try to determine the correct value automatically.
+
+`ttl`::
+The length of time that a cross colleciton join query in the cache will be considered valid, in seconds.
+Defaults to `3600` (one hour).
+The cross collection join query will not be aware of changes to the remote collection, so if the remote collection is updated, cached cross collection queries may give inaccurate results.
+After the `ttl` period has expired, the cross collection join query will re-execute the join against the remote collection.
+
+Other Parameters::
+Any normal Solr query parameter can also be specified/passed through as a local param.
+
+==== Cross Collection Query Examples
+
+[source,text]
+----
+http://localhost:8983/solr/localCollection/query?fl=id&q={!join method="crossCollection" fromIndex="otherCollection" from="fromField" to="toField" v="*:*"}
+----
 
 == Lucene Query Parser
 
@@ -1114,94 +1200,6 @@ An optional parameter used to determine which of several query implementations s
 [source,text]
 ----
 {!terms f=categoryId method=booleanQuery separator=" "}8 6 7 5309
-----
-
-== XCJF Query Parser
-The Cross Collection Join Filter (XCJF) is a query parser plugin that will execute a query against a remote Solr collection to get back a set of join keys that will be used to as a filter query against the local Solr collection.
-
-The XCJF parser will create an XCJFQuery object.
-The XCJFQuery will first query a remote Solr collection and get back a streaming expression result of the join keys.
-As the join keys are streamed to the node, a bitset of the matching documents in the local index is built up.
-This avoids keeping the full set of join keys in memory at any given time.
-This bitset is then inserted into the filter cache upon successful execution as with the normal behavior of the Solr filter cache.
-
-If the local index is sharded according to the join key field, the XCJF parser can leverage a secondary query parser called the "hash_range" query parser.
-The hash_range query parser is responsible for returning only the documents that hash to a given range of values.
-This allows the XCJFQuery to query the remote Solr collection and return only the join keys that would match a specific shard in the local Solr collection.
-This has the benefit of making sure that network traffic doesn't increase as the number of shards increases and allows for much greater scalability.
-
-The XCJF parser works with both String and Point types of fields.
-The fields that are being used for the join key must be single-valued and have docValues enabled.
-
-It's advised to shard the local collection by the join key as this allows for the optimization mentioned above to be utilized.
-
-The XCJF parser should not be generally used as part of the `q` parameter, but rather it is designed to be used as a filter query (`fq` parameter) to ensure proper caching.
-
-The remote Solr collection that is being queried should have a single-valued field for the join key with docValues enabled.
-
-The remote Solr collection does not have any specific sharding requirements.
-
-=== XCJF Query Parser Definition in solrconfig.xml
-
-The XCJF has some configuration options that can be specified in  `solrconfig.xml`.
-
-`routerField`::
-If the documents are routed to shards using the CompositeID router by the join field, then that field name should be specified in the configuration here.  This will allow the parser to optimize the resulting HashRange query.
-
-`solrUrl`::
-If specified, this array of strings specifies the white listed Solr URLs that you can pass to the solrUrl query parameter. Without this configuration the solrUrl parameter cannot be used. This restriction is necessary to prevent an attacker from using Solr to explore the network.
-
-[source,xml]
-----
-  <queryParser name="xcjf" class="org.apache.solr.search.join.XCJFQParserPlugin">
-    <!-- Define which field has the routing information for the collection to use the hash range query parser. -->
-    <str name="routerField">joinfield_id_s</str>
-    <!-- Demo only, most users will want to remove this parameter -->
-    <arr name="solrUrl">
-      <str>http://othersolr.example.com:8983/solr</str>
-    </arr>
-  </queryParser>
-----
-
-=== XCJF Query Parameters
-
-`collection`::
-The name of the external Solr collection to be queried to retrieve the set of join key values (required).
-
-`zkHost`::
-The connection string to be used to connect to ZooKeeper. `zkHost` and `solrUrl` are both optional parameters, and at most one of them should be specified. If neither `zkHost` nor `solrUrl` are specified, the local ZooKeeper cluster will be used. (optional).
-
-`solrUrl`::
-The URL of the external Solr node to be queried. Must be a character for character exact match of a whitelisted url. (optional, disabled by default for security).
-
-`from`::
-The join key field name in the external collection (required).
-
-`to`::
-The join key field name in the local collection.
-
-`v`::
-The query substituted in as a local param.  This is the query string that will match documents in the remote collection.
-
-`routed`::
-If `true`, the XCJF query will use each shard's hash range to determine the set of join keys to retrieve for that shard.
-This parameter improves the performance of the cross-collection join, but it depends on the local collection being routed by the `to` field.
-If this parameter is not specified, the XCJF query will try to determine the correct value automatically.
-
-`ttl`::
-The length of time that an XCJF query in the cache will be considered valid, in seconds.
-Defaults to `3600` (one hour).
-The XCJF query will not be aware of changes to the remote collection, so if the remote collection is updated, cached XCJF queries may give inaccurate results.
-After the `ttl` period has expired, the XCJF query will re-execute the join against the remote collection.
-
-Other Parameters::
-Any normal Solr query parameter can also be specified/passed through as a local param.
-
-=== XCJF Query Examples
-
-[source,text]
-----
-http://localhost:8983/solr/localCollection/query?fl=id&q={!xcjf collection="otherCollection" from="fromField" to="toField" v="*:*"}
 ----
 
 == XML Query Parser

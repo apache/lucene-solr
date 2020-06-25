@@ -119,6 +119,16 @@
     -->
     <enableLazyFieldLoading>true</enableLazyFieldLoading>
 
+    <!-- Enable Circuit Breakers
+      -->
+    <useCircuitBreakers>false</useCircuitBreakers>
+
+    <!-- Memory Circuit Breaker Threshold In Percentage
+
+    Post this percentage usage of the heap, incoming queries will be rejected
+      -->
+    <memoryCircuitBreakerThreshold>80</memoryCircuitBreakerThreshold>
+
     <!--
 
     <cache name="myUserCache"
