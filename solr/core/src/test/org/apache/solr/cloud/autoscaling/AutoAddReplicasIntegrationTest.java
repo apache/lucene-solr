@@ -99,9 +99,11 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
     final ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
     final JettySolrRunner jetty1 = cluster.getJettySolrRunner(1);
     final JettySolrRunner jetty2 = cluster.getJettySolrRunner(2);
-    log.info("Creating {} using jetty1:{}/{} and jetty2:{}/{}", COLLECTION,
-             jetty1.getNodeName(), jetty1.getLocalPort(),
-             jetty2.getNodeName(), jetty2.getLocalPort());
+    if (log.isInfoEnabled()) {
+      log.info("Creating {} using jetty1:{}/{} and jetty2:{}/{}", COLLECTION,
+          jetty1.getNodeName(), jetty1.getLocalPort(),
+          jetty2.getNodeName(), jetty2.getLocalPort());
+    }
              
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 2)
       .setCreateNodeSet(jetty1.getNodeName()+","+jetty2.getNodeName())
@@ -114,7 +116,9 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
     JettySolrRunner lostJetty = random().nextBoolean() ? jetty1 : jetty2;
     String lostNodeName = lostJetty.getNodeName();
     List<Replica> replacedHdfsReplicas = getReplacedSharedFsReplicas(COLLECTION, zkStateReader, lostNodeName);
-    log.info("Stopping random node: {} / {}", lostNodeName, lostJetty.getLocalPort());
+    if (log.isInfoEnabled()) {
+      log.info("Stopping random node: {} / {}", lostNodeName, lostJetty.getLocalPort());
+    }
     lostJetty.stop();
     
     cluster.waitForJettyToStop(lostJetty);
@@ -124,8 +128,10 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
                  COLLECTION, clusterShapeNoDownReplicas(2,4), 90, TimeUnit.SECONDS);
                  
     checkSharedFsReplicasMovedCorrectly(replacedHdfsReplicas, zkStateReader, COLLECTION);
-    
-    log.info("Re-starting (same) random node: {} / {}", lostNodeName, lostJetty.getLocalPort());
+
+    if (log.isInfoEnabled()) {
+      log.info("Re-starting (same) random node: {} / {}", lostNodeName, lostJetty.getLocalPort());
+    }
     lostJetty.start();
     
     waitForNodeLive(lostJetty);
@@ -146,9 +152,11 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
     final JettySolrRunner jetty1 = cluster.getJettySolrRunner(1);
     final JettySolrRunner jetty2 = cluster.getJettySolrRunner(2);
 
-    log.info("Creating {} using jetty1:{}/{} and jetty2:{}/{}", COLLECTION,
-             jetty1.getNodeName(), jetty1.getLocalPort(),
-             jetty2.getNodeName(), jetty2.getLocalPort());
+    if (log.isInfoEnabled()) {
+      log.info("Creating {} using jetty1:{}/{} and jetty2:{}/{}", COLLECTION,
+          jetty1.getNodeName(), jetty1.getLocalPort(),
+          jetty2.getNodeName(), jetty2.getLocalPort());
+    }
              
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 2)
       .setCreateNodeSet(jetty1.getNodeName()+","+jetty2.getNodeName())
@@ -163,8 +171,10 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
     JettySolrRunner lostJetty = random().nextBoolean() ? jetty1 : jetty2;
     String lostNodeName = lostJetty.getNodeName();
     List<Replica> replacedHdfsReplicas = getReplacedSharedFsReplicas(COLLECTION, zkStateReader, lostNodeName);
-    
-    log.info("Stopping random node: {} / {}", lostNodeName, lostJetty.getLocalPort());
+
+    if (log.isInfoEnabled()) {
+      log.info("Stopping random node: {} / {}", lostNodeName, lostJetty.getLocalPort());
+    }
     lostJetty.stop();
     
     cluster.waitForJettyToStop(lostJetty);
@@ -174,8 +184,10 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
     waitForState(COLLECTION + "=(2,2)", COLLECTION,
                  clusterShape(2, 2), 90, TimeUnit.SECONDS);
                  
-    
-    log.info("Re-starting (same) random node: {} / {}", lostNodeName, lostJetty.getLocalPort());
+
+    if (log.isInfoEnabled()) {
+      log.info("Re-starting (same) random node: {} / {}", lostNodeName, lostJetty.getLocalPort());
+    }
     lostJetty.start();
     
     waitForNodeLive(lostJetty);
@@ -198,9 +210,11 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
     final JettySolrRunner jetty1 = cluster.getJettySolrRunner(1);
     final JettySolrRunner jetty2 = cluster.getJettySolrRunner(2);
 
-    log.info("Creating {} using jetty1:{}/{} and jetty2:{}/{}", COLLECTION,
-             jetty1.getNodeName(), jetty1.getLocalPort(),
-             jetty2.getNodeName(), jetty2.getLocalPort());
+    if (log.isInfoEnabled()) {
+      log.info("Creating {} using jetty1:{}/{} and jetty2:{}/{}", COLLECTION,
+          jetty1.getNodeName(), jetty1.getLocalPort(),
+          jetty2.getNodeName(), jetty2.getLocalPort());
+    }
              
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 2)
       .setCreateNodeSet(jetty1.getNodeName()+","+jetty2.getNodeName())
@@ -224,7 +238,9 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
     String lostNodeName = lostJetty.getNodeName();
     List<Replica> replacedHdfsReplicas = getReplacedSharedFsReplicas(COLLECTION, zkStateReader, lostNodeName);
 
-    log.info("Stopping random node: {} / {}", lostNodeName, lostJetty.getLocalPort());
+    if (log.isInfoEnabled()) {
+      log.info("Stopping random node: {} / {}", lostNodeName, lostJetty.getLocalPort());
+    }
     lostJetty.stop();
     
     cluster.waitForJettyToStop(lostJetty);
@@ -234,8 +250,10 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
     waitForState(COLLECTION + "=(2,4) w/o down replicas",
                  COLLECTION, clusterShapeNoDownReplicas(2,4), 90, TimeUnit.SECONDS);
     checkSharedFsReplicasMovedCorrectly(replacedHdfsReplicas, zkStateReader, COLLECTION);
-    
-    log.info("Re-starting (same) random node: {} / {}", lostNodeName, lostJetty.getLocalPort());
+
+    if (log.isInfoEnabled()) {
+      log.info("Re-starting (same) random node: {} / {}", lostNodeName, lostJetty.getLocalPort());
+    }
     lostJetty.start();
     
     waitForNodeLive(lostJetty);
@@ -268,19 +286,23 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
     final JettySolrRunner jetty1 = cluster.getJettySolrRunner(1);
     final JettySolrRunner jetty2 = cluster.getJettySolrRunner(2);
 
-    log.info("Creating {} using jetty1:{}/{} and jetty2:{}/{}", COLLECTION,
-             jetty1.getNodeName(), jetty1.getLocalPort(),
-             jetty2.getNodeName(), jetty2.getLocalPort());
+    if (log.isInfoEnabled()) {
+      log.info("Creating {} using jetty1:{}/{} and jetty2:{}/{}", COLLECTION,
+          jetty1.getNodeName(), jetty1.getLocalPort(),
+          jetty2.getNodeName(), jetty2.getLocalPort());
+    }
              
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 2)
       .setCreateNodeSet(jetty1.getNodeName()+","+jetty2.getNodeName())
       .setAutoAddReplicas(false) // NOTE: false
       .process(cluster.getSolrClient());
-    
-    log.info("Creating {} using jetty1:{}/{} and jetty2:{}/{}", ALT_COLLECTION,
-             jetty1.getNodeName(), jetty1.getLocalPort(),
-             jetty2.getNodeName(), jetty2.getLocalPort());
-             
+
+    if (log.isInfoEnabled()) {
+      log.info("Creating {} using jetty1:{}/{} and jetty2:{}/{}", ALT_COLLECTION,
+          jetty1.getNodeName(), jetty1.getLocalPort(),
+          jetty2.getNodeName(), jetty2.getLocalPort());
+    }
+
     CollectionAdminRequest.createCollection(ALT_COLLECTION, "conf", 2, 2)
       .setCreateNodeSet(jetty1.getNodeName()+","+jetty2.getNodeName())
       .setAutoAddReplicas(true) // NOTE: true
@@ -293,7 +315,9 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
     String lostNodeName = lostJetty.getNodeName();
     List<Replica> replacedHdfsReplicas = getReplacedSharedFsReplicas(COLLECTION, zkStateReader, lostNodeName);
 
-    log.info("Stopping random node: {} / {}", lostNodeName, lostJetty.getLocalPort());
+    if (log.isInfoEnabled()) {
+      log.info("Stopping random node: {} / {}", lostNodeName, lostJetty.getLocalPort());
+    }
     lostJetty.stop();
     
     cluster.waitForJettyToStop(lostJetty);
@@ -305,8 +329,10 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
                  ALT_COLLECTION, clusterShapeNoDownReplicas(2,4), 90, TimeUnit.SECONDS);
 
     waitForState(COLLECTION + "=(2,2)", COLLECTION, clusterShape(2, 2));
-    
-    log.info("Re-starting (same) random node: {} / {}", lostNodeName, lostJetty.getLocalPort());
+
+    if (log.isInfoEnabled()) {
+      log.info("Re-starting (same) random node: {} / {}", lostNodeName, lostJetty.getLocalPort());
+    }
     lostJetty.start();
     // save time, don't bother waiting for lostJetty to start until after updating collection prop...
     
@@ -324,7 +350,9 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
     // make sure lostJetty is fully up before stopping again...
     waitForNodeLive(lostJetty);
 
-    log.info("Re-Stopping (same) random node: {} / {}", lostNodeName, lostJetty.getLocalPort());
+    if (log.isInfoEnabled()) {
+      log.info("Re-Stopping (same) random node: {} / {}", lostNodeName, lostJetty.getLocalPort());
+    }
     lostJetty.stop();
     
     cluster.waitForJettyToStop(lostJetty);
@@ -336,8 +364,10 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
     waitForState(COLLECTION + "=(2,4) w/o down replicas",
                  COLLECTION, clusterShapeNoDownReplicas(2,4), 90, TimeUnit.SECONDS);
     checkSharedFsReplicasMovedCorrectly(replacedHdfsReplicas, zkStateReader, COLLECTION);
-    
-    log.info("Re-Re-starting (same) random node: {} / {}", lostNodeName, lostJetty.getLocalPort());
+
+    if (log.isInfoEnabled()) {
+      log.info("Re-Re-starting (same) random node: {} / {}", lostNodeName, lostJetty.getLocalPort());
+    }
     lostJetty.start();
     
     waitForNodeLive(lostJetty);
@@ -347,19 +377,23 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
   }
   
   private void disableAutoAddReplicasInCluster() throws SolrServerException, IOException {
+    @SuppressWarnings({"rawtypes"})
     Map m = makeMap(
         "action", CollectionParams.CollectionAction.CLUSTERPROP.toLower(),
         "name", ZkStateReader.AUTO_ADD_REPLICAS,
         "val", "false");
+    @SuppressWarnings({"unchecked"})
     QueryRequest request = new QueryRequest(new MapSolrParams(m));
     request.setPath("/admin/collections");
     cluster.getSolrClient().request(request);
   }
 
   private void enableAutoAddReplicasInCluster() throws SolrServerException, IOException {
+    @SuppressWarnings({"rawtypes"})
     Map m = makeMap(
         "action", CollectionParams.CollectionAction.CLUSTERPROP.toLower(),
         "name", ZkStateReader.AUTO_ADD_REPLICAS);
+    @SuppressWarnings({"unchecked"})
     QueryRequest request = new QueryRequest(new MapSolrParams(m));
     request.setPath("/admin/collections");
     cluster.getSolrClient().request(request);
@@ -400,7 +434,9 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
    */
   private void waitForNodeLive(final JettySolrRunner jetty)
     throws InterruptedException, TimeoutException, IOException {
-    log.info("waitForNodeLive: {}/{}", jetty.getNodeName(), jetty.getLocalPort());
+    if (log.isInfoEnabled()) {
+      log.info("waitForNodeLive: {}/{}", jetty.getNodeName(), jetty.getLocalPort());
+    }
     
     TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     while(!timeout.hasTimedOut()) {

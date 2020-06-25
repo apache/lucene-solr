@@ -1,6 +1,5 @@
 = Collection Management Commands
-:page-toclevels: 1
-:page-tocclass: right
+:toclevels: 1
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -904,7 +903,6 @@ http://localhost:8983/solr/admin/collections?action=COLSTATUS&collection=getting
         "QTime": 50
     },
     "gettingstarted": {
-        "stateFormat": 2,
         "znodeVersion": 16,
         "properties": {
             "autoAddReplicas": "false",
@@ -1050,7 +1048,6 @@ http://localhost:8983/solr/admin/collections?action=COLSTATUS&collection=getting
         "QTime": 26812
     },
     "gettingstarted": {
-        "stateFormat": 2,
         "znodeVersion": 33,
         "properties": {
             "autoAddReplicas": "false",

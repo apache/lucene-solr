@@ -173,6 +173,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
   }
 
   @Before
+  @SuppressWarnings({"rawtypes"})
   public void baseBefore() throws Exception {
     this.createSourceCollection();
     if (this.createTargetCollection) this.createTargetCollection();
@@ -282,6 +283,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
   /**
    * Invokes a CDCR action on a given node.
    */
+  @SuppressWarnings({"rawtypes"})
   protected NamedList invokeCdcrAction(CloudJettyRunner jetty, CdcrParams.CdcrAction action) throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(CommonParams.ACTION, action.toString());
@@ -293,13 +295,15 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
   }
 
   protected void waitForCdcrStateReplication(String collection) throws Exception {
-    log.info("Wait for CDCR state to replicate - collection: " + collection);
+    log.info("Wait for CDCR state to replicate - collection: {}", collection);
 
     int cnt = 30;
     while (cnt > 0) {
+      @SuppressWarnings({"rawtypes"})
       NamedList status = null;
       boolean allEquals = true;
       for (CloudJettyRunner jetty : cloudJettys.get(collection)) { // check all replicas
+        @SuppressWarnings({"rawtypes"})
         NamedList rsp = invokeCdcrAction(jetty, CdcrParams.CdcrAction.STATUS);
         if (status == null) {
           status = (NamedList) rsp.get(CdcrParams.CdcrAction.STATUS.toLower());
@@ -320,7 +324,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
       }
     }
 
-    log.info("CDCR state is identical across nodes - collection: " + collection);
+    log.info("CDCR state is identical across nodes - collection: {}", collection);
   }
 
   /**
@@ -330,7 +334,9 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
   throws Exception {
     this.waitForCdcrStateReplication(collection); // ensure that cdcr state is replicated and stable
     for (CloudJettyRunner jetty : cloudJettys.get(collection)) { // check all replicas
+      @SuppressWarnings({"rawtypes"})
       NamedList rsp = invokeCdcrAction(jetty, CdcrParams.CdcrAction.STATUS);
+      @SuppressWarnings({"rawtypes"})
       NamedList status = (NamedList) rsp.get(CdcrParams.CdcrAction.STATUS.toLower());
       assertEquals(processState.toLower(), status.get(CdcrParams.ProcessState.getParam()));
       assertEquals(bufferState.toLower(), status.get(CdcrParams.BufferState.getParam()));
@@ -457,6 +463,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
       collectionInfos.put(collectionName, list);
     }
     params.set("name", collectionName);
+    @SuppressWarnings({"rawtypes"})
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
@@ -482,7 +489,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
       res = new CollectionAdminResponse();
       res.setResponse(client.request(request));
     } catch (Exception e) {
-      log.warn("Error while deleting the collection " + collectionName, e);
+      log.warn("Error while deleting the collection {}", collectionName, e);
       return new CollectionAdminResponse();
     } finally {
       client.close();
@@ -782,6 +789,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
   }
 
   protected void waitForBootstrapToComplete(String collectionName, String shardId) throws Exception {
+    @SuppressWarnings({"rawtypes"})
     NamedList rsp;// we need to wait until bootstrap is complete otherwise the replicator thread will never start
     TimeOut timeOut = new TimeOut(60, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     while (!timeOut.hasTimedOut())  {
@@ -809,8 +817,11 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
   }
 
   protected long getQueueSize(String collectionName, String shardId) throws Exception {
+    @SuppressWarnings({"rawtypes"})
     NamedList rsp = this.invokeCdcrAction(shardToLeaderJetty.get(collectionName).get(shardId), CdcrParams.CdcrAction.QUEUES);
+    @SuppressWarnings({"rawtypes"})
     NamedList host = (NamedList) ((NamedList) rsp.get(CdcrParams.QUEUES)).getVal(0);
+    @SuppressWarnings({"rawtypes"})
     NamedList status = (NamedList) host.get(TARGET_COLLECTION);
     return (Long) status.get(CdcrParams.QUEUE_SIZE);
   }

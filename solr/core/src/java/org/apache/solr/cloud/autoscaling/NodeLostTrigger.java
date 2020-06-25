@@ -143,10 +143,12 @@ public class NodeLostTrigger extends TriggerBase {
   protected void setState(Map<String, Object> state) {
     this.lastLiveNodes.clear();
     this.nodeNameVsTimeRemoved.clear();
+    @SuppressWarnings({"unchecked"})
     Collection<String> lastLiveNodes = (Collection<String>)state.get("lastLiveNodes");
     if (lastLiveNodes != null) {
       this.lastLiveNodes.addAll(lastLiveNodes);
     }
+    @SuppressWarnings({"unchecked"})
     Map<String,Long> nodeNameVsTimeRemoved = (Map<String,Long>)state.get("nodeNameVsTimeRemoved");
     if (nodeNameVsTimeRemoved != null) {
       this.nodeNameVsTimeRemoved.putAll(nodeNameVsTimeRemoved);

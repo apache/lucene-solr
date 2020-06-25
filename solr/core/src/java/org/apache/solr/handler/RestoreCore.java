@@ -84,7 +84,7 @@ public class RestoreCore implements Callable<Boolean> {
           try {
             checksum = CodecUtil.retrieveChecksum(indexInput);
           } catch (Exception e) {
-            log.warn("Could not read checksum from index file: " + filename, e);
+            log.warn("Could not read checksum from index file: {}", filename, e);
           }
           long length = indexInput.length();
           IndexFetcher.CompareResult compareResult = IndexFetcher.compareFile(indexDir, filename, length, checksum);
@@ -153,6 +153,7 @@ public class RestoreCore implements Callable<Boolean> {
   }
 
   private void openNewSearcher() throws Exception {
+    @SuppressWarnings({"rawtypes"})
     Future[] waitSearcher = new Future[1];
     core.getSearcher(true, false, waitSearcher, true);
     if (waitSearcher[0] != null) {

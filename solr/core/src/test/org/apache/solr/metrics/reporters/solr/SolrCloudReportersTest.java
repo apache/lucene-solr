@@ -139,7 +139,7 @@ public class SolrCloudReportersTest extends SolrCloudTestCase {
         String key = "QUERY./select.requests";
         assertTrue(key, metrics.containsKey(key));
         assertTrue(key, metrics.get(key) instanceof AggregateMetric);
-        key = "UPDATE./update/json.requests";
+        key = "UPDATE./update.requests";
         assertTrue(key, metrics.containsKey(key));
         assertTrue(key, metrics.get(key) instanceof AggregateMetric);
       }
@@ -149,7 +149,7 @@ public class SolrCloudReportersTest extends SolrCloudTestCase {
         String key = "jvm.memory.heap.init";
         assertTrue(key, metrics.containsKey(key));
         assertTrue(key, metrics.get(key) instanceof AggregateMetric);
-        key = "leader.test_collection.shard1.UPDATE./update/json.requests.max";
+        key = "leader.test_collection.shard1.UPDATE./update.requests.max";
         assertTrue(key, metrics.containsKey(key));
         assertTrue(key, metrics.get(key) instanceof AggregateMetric);
       }

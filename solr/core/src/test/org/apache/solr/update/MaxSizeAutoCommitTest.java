@@ -247,7 +247,7 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
     private StringBuffer fail = new StringBuffer();
     
     @Override
-    public void init(NamedList args) {}
+    public void init(@SuppressWarnings({"rawtypes"})NamedList args) {}
     
     @Override
     public void newSearcher(SolrIndexSearcher newSearcher, SolrIndexSearcher currentSearcher) {

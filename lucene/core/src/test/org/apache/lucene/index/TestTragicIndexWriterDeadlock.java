@@ -138,7 +138,7 @@ public class TestTragicIndexWriterDeadlock extends LuceneTestCase {
 
     final IndexWriter w = new IndexWriter(dir, iwc) {
       @Override
-      void mergeSuccess(MergePolicy.OneMerge merge) {
+      protected void mergeSuccess(MergePolicy.OneMerge merge) {
         // tragedy strikes!
         throw new OutOfMemoryError();
       }

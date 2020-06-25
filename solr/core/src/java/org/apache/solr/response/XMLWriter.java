@@ -167,6 +167,28 @@ public class XMLWriter extends TextResponseWriter {
 
   @Override
   public void writeStartDocumentList(String name,
+      long start, int size, long numFound, Float maxScore, Boolean numFoundExact) throws IOException
+  {
+    if (doIndent) indent();
+
+    writer.write("<result");
+    writeAttr(NAME, name);
+    writeAttr("numFound",Long.toString(numFound));
+    writeAttr("start",Long.toString(start));
+    if (maxScore != null) {
+      writeAttr("maxScore",Float.toString(maxScore));
+    }
+    if (numFoundExact != null) {
+      writeAttr("numFoundExact", numFoundExact.toString());
+    }
+    writer.write(">");
+
+    incLevel();
+  }
+  
+  @Override
+  @Deprecated
+  public void writeStartDocumentList(String name,
       long start, int size, long numFound, Float maxScore) throws IOException
   {
     if (doIndent) indent();
@@ -232,7 +254,7 @@ public class XMLWriter extends TextResponseWriter {
   //
 
   @Override
-  public void writeNamedList(String name, NamedList val) throws IOException {
+  public void writeNamedList(String name, @SuppressWarnings({"rawtypes"})NamedList val) throws IOException {
     int sz = val.size();
     startTag("lst", name, sz<=0);
 
@@ -249,7 +271,8 @@ public class XMLWriter extends TextResponseWriter {
   }
 
   @Override
-  public void writeMap(String name, Map map, boolean excludeOuter, boolean isFirstVal) throws IOException {
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  public void writeMap(String name, @SuppressWarnings({"rawtypes"})Map map, boolean excludeOuter, boolean isFirstVal) throws IOException {
     int sz = map.size();
 
     if (!excludeOuter) {
@@ -279,7 +302,7 @@ public class XMLWriter extends TextResponseWriter {
   }
 
   @Override
-  public void writeArray(String name, Iterator iter) throws IOException {
+  public void writeArray(String name, @SuppressWarnings({"rawtypes"})Iterator iter) throws IOException {
     if( iter.hasNext() ) {
       startTag("arr", name, false );
       incLevel();

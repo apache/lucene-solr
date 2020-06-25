@@ -50,11 +50,7 @@ public class CollectionPropsTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupClass() throws Exception {
-    Boolean useLegacyCloud = rarely();
-    log.info("Using legacyCloud?: {}", useLegacyCloud);
-
     configureCluster(4)
-        .withProperty(ZkStateReader.LEGACY_CLOUD, String.valueOf(useLegacyCloud))
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
   }
@@ -205,7 +201,9 @@ public class CollectionPropsTest extends SolrCloudTestCase {
     // Trigger a value change event
     log.info("setting value2");
     collectionProps.setCollectionProperty(collectionName, "property", "value2");
-    log.info("(value2) waitForTrigger=={}", watcher.waitForTrigger());
+    if (log.isInfoEnabled()) {
+      log.info("(value2) waitForTrigger=={}", watcher.waitForTrigger());
+    }
     assertEquals("value2", watcher.getProps().get("property"));
 
     // Delete the properties znode
@@ -286,6 +284,7 @@ public class CollectionPropsTest extends SolrCloudTestCase {
     }
     
     @Override
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public boolean onStateChanged(Map<String, String> collectionProperties) {
       log.info("{}: state changed...", name);
       if (forceReadPropsFromZk) {

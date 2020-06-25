@@ -709,6 +709,24 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     assertQ(req("defType","edismax", "q","Zapp Pig", "qf","myalias^100 name", "f.myalias.qf","trait_ss^0.1"), "//result/doc[1]/str[@name='id']=47", "//result/doc[2]/str[@name='id']=42");//Now the order should be inverse
   }
   
+  /** SOLR-13203 **/
+  public void testUfDynamicField() throws Exception {
+    try {
+      ignoreException("dynamic field");
+
+      SolrException exception = expectThrows(SolrException.class,
+          () -> h.query(req("uf", "fl=trait*,id", "defType", "edismax")));
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
+      assertEquals("dynamic field name must start or end with *",
+          exception.getMessage());
+    } finally {
+      resetExceptionIgnores();
+    }
+
+    // simple test to validate dynamic uf parsing works
+    assertQ(req("uf", "trait* id", "defType", "edismax"));
+  }
+
   public void testCyclicAliasing() throws Exception {
     try {
       ignoreException(".*Field aliases lead to a cycle.*");
@@ -1220,12 +1238,8 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
               "defType", "edismax")
           , "*[count(//doc)=4]");
 
-      assertQ("test minShouldMatch (top level optional terms only and sow=false)",
-          req("q", "stocks oil gold", // +(((text_sw:stock) (text_sw:oil) (text_sw:gold))~1)
-              "qf", "text_sw",
-              "mm", "50%",
-              "sow", sow,
-              "defType", "edismax")
+      assertQ("test minShouldMatch (top level optional terms only) local mm=50%",
+          req("q", "{!edismax qf=text_sw mm=50% sow=" + sow + " v='stocks oil gold'}")
           , "*[count(//doc)=4]");
 
       assertQ("test minShouldMatch (top level optional and negative terms mm=50%)",
@@ -1236,12 +1250,20 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
               "defType", "edismax")
           , "*[count(//doc)=3]");
 
+      assertQ("test minShouldMatch (top level optional and negative terms local mm=50%)",
+          req("q", "{!edismax qf=text_sw mm=50% sow=" + sow + " v='stocks oil gold -stockade'}")
+          , "*[count(//doc)=3]");
+
       assertQ("test minShouldMatch (top level optional and negative terms mm=100%)",
           req("q", "stocks gold -stockade", // +(((text_sw:stock) (text_sw:oil) (text_sw:gold) -(text_sw:stockad))~2)
               "qf", "text_sw",
               "mm", "100%",
               "sow", sow,
               "defType", "edismax")
+          , "*[count(//doc)=1]");
+
+      assertQ("test minShouldMatch (top level optional and negative terms local mm=100%)",
+          req("q", "{!edismax qf=text_sw mm=100% sow=" + sow + " v='stocks gold -stockade'}")
           , "*[count(//doc)=1]");
 
       assertQ("test minShouldMatch (top level required terms only)",
@@ -1252,6 +1274,10 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
               "defType", "edismax")
           , "*[count(//doc)=1]");
 
+      assertQ("test minShouldMatch (top level required terms only) local mm=50%)",
+          req("q", "{!edismax qf=text_sw mm=50% sow=" + sow + " v='stocks AND oil'}")
+          , "*[count(//doc)=1]");
+
       assertQ("test minShouldMatch (top level optional and required terms)",
           req("q", "oil gold +stocks", // +(((text_sw:oil) (text_sw:gold) +(text_sw:stock))~1)
               "qf", "text_sw",
@@ -1260,12 +1286,20 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
               "defType", "edismax")
           , "*[count(//doc)=3]");
 
+      assertQ("test minShouldMatch (top level optional and required terms) local mm=50%)",
+          req("q", "{!edismax qf=text_sw mm=50% sow=" + sow + " v='oil gold +stocks'}")
+          , "*[count(//doc)=3]");
+
       assertQ("test minShouldMatch (top level optional with explicit OR and parens)",
           req("q", "(snake OR stocks) oil",
               "qf", "text_sw",
               "mm", "100%",
               "sow", sow,
               "defType", "edismax")
+          , "*[count(//doc)=2]");
+
+      assertQ("test minShouldMatch (top level optional with explicit OR and parens) local mm=100%)",
+          req("q", "{!edismax qf=text_sw mm=100% sow=" + sow + " v='(snake OR stocks) oil'}")
           , "*[count(//doc)=2]");
 
       // The results for these two appear odd, but are correct as per BooleanQuery processing.
@@ -1280,6 +1314,11 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
               "sow", sow,
               "defType", "edismax")
           , "*[count(//doc)=0]");
+
+      assertQ("test minShouldMatch (top level optional with explicit OR without parens) local mm=100%)",
+          req("q", "{!edismax qf=text_sw q.op=OR mm=100% sow=" + sow + " v='snake OR stocks oil'}")
+          , "*[count(//doc)=0]");
+
       assertQ("test minShouldMatch (top level optional with explicit OR without parens)",
           req("q", "snake OR stocks oil",
               "qf", "text_sw",
@@ -1289,6 +1328,10 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
               "defType", "edismax")
           , "*[count(//doc)=0]");
 
+      assertQ("test minShouldMatch (top level optional with explicit OR without parens) local mm=100%)",
+          req("q", "{!edismax qf=text_sw q.op=AND mm=100% sow=" + sow + " v='snake OR stocks oil'}")
+          , "*[count(//doc)=0]");
+
       // SOLR-9174
       assertQ("test minShouldMatch=1<-1 with explicit OR, one impossible clause, and no explicit q.op",
           req("q", "barbie OR (hair AND nonexistentword)",
@@ -1296,6 +1339,10 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
               "mm", "1<-1",
               "sow", sow,
               "defType", "edismax")
+          , "*[count(//doc)=3]");
+
+      assertQ("test local minShouldMatch=1<-1 with explicit OR, one impossible clause, and no explicit q.op",
+          req("q", "{!edismax qf=text_sw mm=1<-1 sow=" + sow + " v='barbie OR (hair AND nonexistentword)'}")
           , "*[count(//doc)=3]");
     }
   }
@@ -1772,6 +1819,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
         , "/response/numFound==1"
     );
 
+    @SuppressWarnings({"rawtypes"})
     Map all = (Map) Utils.fromJSONString(h.query(req("q", "*:*", "rows", "0", "wt", "json")));
     int totalDocs = Integer.parseInt(((Map)all.get("response")).get("numFound").toString());
     int allDocsExceptOne = totalDocs - 1;

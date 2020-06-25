@@ -308,7 +308,7 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
     if (ignoreOldUpdates) {
       if (log.isDebugEnabled()) {
         log.debug("Dropping update since user version is not high enough: {}; old user version={}",
-            Arrays.toString(newUserVersions), Arrays.toString(oldUserVersions)); // logok
+            Arrays.toString(newUserVersions), Arrays.toString(oldUserVersions));
       }
       return false;
     } else {
@@ -325,7 +325,9 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
    * @param userVersionFieldName Field name of the user versions being compared
    * @return True if acceptable, false if not.
    */
-  protected boolean newUpdateComparePasses(Comparable newUserVersion, Comparable oldUserVersion, String userVersionFieldName) {
+  @SuppressWarnings({"unchecked"})
+  protected boolean newUpdateComparePasses(@SuppressWarnings({"rawtypes"})Comparable newUserVersion,
+                                           @SuppressWarnings({"rawtypes"})Comparable oldUserVersion, String userVersionFieldName) {
     return oldUserVersion.compareTo(newUserVersion) < 0;
   }
 
@@ -351,10 +353,12 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
     return values;
   }
 
+  @SuppressWarnings({"unchecked"})
   private static FunctionValues getFunctionValues(LeafReaderContext segmentContext,
                                           SchemaField field,
                                           SolrIndexSearcher searcher) throws IOException {
     ValueSource vs = field.getType().getValueSource(field, null);
+    @SuppressWarnings({"rawtypes"})
     Map context = ValueSource.newContext(searcher);
     vs.createWeight(context, searcher);
     return vs.getValues(context, segmentContext);

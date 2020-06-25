@@ -117,6 +117,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
   }
   
   @Test
+  @SuppressWarnings({"unchecked"})
   public void test() throws Exception {
     
     assertEquals(clients.size(), jettys.size());
@@ -209,7 +210,10 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     query("q","*:*", "sort",i1+" desc", "fl","*,score");
     query("q","*:*", "sort","n_tl1 asc", "fl","*,score"); 
     query("q","*:*", "sort","n_tl1 desc");
+    
     handle.put("maxScore", SKIPVAL);
+    testMinExactCount();
+    
     query("q","{!func}"+i1);// does not expect maxScore. So if it comes ,ignore it. JavaBinCodec.writeSolrDocumentList()
     //is agnostic of request params.
     handle.remove("maxScore");
@@ -596,7 +600,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
           if (shardReq.params.getBool(StatsParams.STATS, false)) {
             numStatsShardRequests++;
             for (ShardResponse shardRsp : shardReq.sreq.responses) {
-              NamedList<Object> shardStats = 
+              NamedList<Object> shardStats =
                 ((NamedList<NamedList<NamedList<Object>>>)
                  shardRsp.getSolrResponse().getResponse().get("stats")).get("stats_fields").get(i1);
 
@@ -626,7 +630,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
       //
       assertEquals("wrong min", -987.0D, (Double)s.getMin(), 0.0001D );
       assertEquals("wrong mean", 377.153846D, (Double)s.getMean(), 0.0001D );
-      assertEquals("wrong stddev", 1271.76215D, (Double)s.getStddev(), 0.0001D );
+      assertEquals("wrong stddev", 1271.76215D, s.getStddev(), 0.0001D );
       //
       assertNull("expected null for count", s.getCount());
       assertNull("expected null for calcDistinct", s.getCountDistinct());
@@ -680,7 +684,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
 
         // ignore the FieldStatsInfo convinience class, and look directly at the NamedList
         // so we don't need any sort of crazy reflection
-        NamedList<Object> svals = 
+        NamedList<Object> svals =
           ((NamedList<NamedList<NamedList<Object>>>)
            rsp.getResponse().get("stats")).get("stats_fields").get(i1);
 
@@ -803,7 +807,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
       // NOTE: min is expected to be null even though requested because of no values
       assertEquals("wrong min", null, s.getMin()); 
       assertTrue("mean should be NaN", ((Double)s.getMean()).isNaN());
-      assertEquals("wrong stddev", 0.0D, (Double)s.getStddev(), 0.0D );
+      assertEquals("wrong stddev", 0.0D, s.getStddev(), 0.0D );
 
       // things that we didn't ask for, so they better be null
       assertNull("expected null for count", s.getCount());
@@ -1082,9 +1086,36 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     assertEquals(new EnumFieldValue(11, "Critical"),
                  rsp.getFieldStatsInfo().get(fieldName).getMax());
 
-    handle.put("severity", UNORDERED); // this is stupid, but stats.facet doesn't garuntee order
+    handle.put("severity", UNORDERED); // this is stupid, but stats.facet doesn't guarantee order
     query("q", "*:*", "stats", "true", "stats.field", fieldName, 
           "stats.facet", fieldName);
+  }
+
+  private void testMinExactCount() throws Exception {
+    assertIsExactHitCount("q","{!cache=false}dog OR men OR cow OR country OR dumpty", CommonParams.MIN_EXACT_COUNT, "200", CommonParams.ROWS, "2", CommonParams.SORT, "score desc, id asc");
+    assertIsExactHitCount("q","{!cache=false}dog OR men OR cow OR country OR dumpty", CommonParams.MIN_EXACT_COUNT, "-1", CommonParams.ROWS, "2", CommonParams.SORT, "score desc, id asc");
+    assertIsExactHitCount("q","{!cache=false}dog OR men OR cow OR country OR dumpty", CommonParams.MIN_EXACT_COUNT, "1", CommonParams.ROWS, "200", CommonParams.SORT, "score desc, id asc");
+    assertIsExactHitCount("q","{!cache=false}dog OR men OR cow OR country OR dumpty", "facet", "true", "facet.field", s1, CommonParams.MIN_EXACT_COUNT,"1", CommonParams.ROWS, "200", CommonParams.SORT, "score desc, id asc");
+    assertIsExactHitCount("q","{!cache=false}id:1", CommonParams.MIN_EXACT_COUNT,"1", CommonParams.ROWS, "1");
+    assertApproximatedHitCount("q","{!cache=false}dog OR men OR cow OR country OR dumpty", CommonParams.MIN_EXACT_COUNT,"2", CommonParams.ROWS, "2", CommonParams.SORT, "score desc, id asc");
+  }
+  
+  private void assertIsExactHitCount(Object... requestParams) throws Exception {
+    QueryResponse response = query(requestParams);
+    assertNotNull("Expecting exact hit count in response: " + response.getResults().toString(),
+        response.getResults().getNumFoundExact());
+    assertTrue("Expecting exact hit count in response: " + response.getResults().toString(),
+        response.getResults().getNumFoundExact());
+  }
+  
+  private void assertApproximatedHitCount(Object...requestParams) throws Exception {
+    handle.put("numFound", SKIPVAL);
+    QueryResponse response = query(requestParams);
+    assertNotNull("Expecting numFoundExact in response: " + response.getResults().toString(),
+        response.getResults().getNumFoundExact());
+    assertFalse("Expecting aproximated results in response: " + response.getResults().toString(),
+        response.getResults().getNumFoundExact());
+    handle.remove("numFound", SKIPVAL);
   }
 
   /** comparing results with facet.method=uif */
@@ -1124,6 +1155,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     }
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   protected void queryPartialResults(final List<String> upShards,
                                      final List<SolrClient> upClients,
                                      Object... q) throws Exception {

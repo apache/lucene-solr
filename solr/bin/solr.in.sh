@@ -47,6 +47,7 @@
 
 # These GC settings have shown to work well for a number of common Solr workloads
 #GC_TUNE=" \
+#-XX:+ExplicitGCInvokesConcurrent \
 #-XX:SurvivorRatio=4 \
 #-XX:TargetSurvivorRatio=90 \
 #-XX:MaxTenuringThreshold=8 \
@@ -151,9 +152,9 @@
 #SOLR_SSL_ENABLED=true
 # Uncomment to set SSL-related system properties
 # Be sure to update the paths to the correct keystore for your environment
-#SOLR_SSL_KEY_STORE=etc/solr-ssl.keystore.jks
+#SOLR_SSL_KEY_STORE=etc/solr-ssl.keystore.p12
 #SOLR_SSL_KEY_STORE_PASSWORD=secret
-#SOLR_SSL_TRUST_STORE=etc/solr-ssl.keystore.jks
+#SOLR_SSL_TRUST_STORE=etc/solr-ssl.keystore.p12
 #SOLR_SSL_TRUST_STORE_PASSWORD=secret
 # Require clients to authenticate
 #SOLR_SSL_NEED_CLIENT_AUTH=false
@@ -234,4 +235,12 @@
 # You can also tweak via standard JDK files such as ~/.java.policy, see https://s.apache.org/java8policy
 # This is experimental! It may not work at all with Hadoop/HDFS features.
 #SOLR_SECURITY_MANAGER_ENABLED=true
+# This variable provides you with the option to disable the Admin UI. if you uncomment the variable below and
+# change the value to true. The option is configured as a system property as defined in SOLR_START_OPTS in the start
+# scripts.
+# SOLR_ADMIN_UI_DISABLED=false
 
+# Solr is by default allowed to read and write data from/to SOLR_HOME and a few other well defined locations
+# Sometimes it may be necessary to place a core or a backup on a different location or a different disk
+# This parameter lets you specify file system path(s) to explicitly allow. The special value of '*' will allow any path
+#SOLR_OPTS="$SOLR_OPTS -Dsolr.allowPaths=/mnt/bigdisk,/other/path"

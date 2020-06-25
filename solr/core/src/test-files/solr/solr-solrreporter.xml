@@ -17,6 +17,8 @@
 -->
 
 <solr>
+  <str name="allowPaths">${solr.allowPaths:}</str>
+
   <shardHandlerFactory name="shardHandlerFactory" class="HttpShardHandlerFactory">
     <str name="urlScheme">${urlScheme:}</str>
     <int name="socketTimeout">${socketTimeout:90000}</int>
@@ -41,7 +43,7 @@
     </reporter>
     <reporter name="test" group="shard" class="org.apache.solr.metrics.reporters.solr.SolrShardReporter">
       <int name="period">5</int>
-      <str name="filter">UPDATE\./update/.*requests</str>
+      <str name="filter">UPDATE\./update.*requests</str>
       <str name="filter">QUERY\./select.*requests</str>
     </reporter>
     <reporter name="test" group="cluster" class="org.apache.solr.metrics.reporters.solr.SolrClusterReporter">
@@ -60,7 +62,7 @@
         <str name="group">cluster</str>
         <str name="label">leader.$1</str>
         <str name="registry">solr\.collection\.(.*)\.leader</str>
-        <str name="filter">UPDATE\./update/.*</str>
+        <str name="filter">UPDATE\./update.*</str>
       </lst>
     </reporter>
   </metrics>

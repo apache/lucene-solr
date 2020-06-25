@@ -109,15 +109,20 @@ public class TestBulkSchemaAPI extends RestTestBase {
         "    }";
 
     String response = restTestHarness.post("/schema", json(payload));
+    @SuppressWarnings({"rawtypes"})
     Map map = (Map) fromJSONString(response);
+    @SuppressWarnings({"rawtypes"})
     Map error = (Map)map.get("error");
     assertNotNull("No errors", error);
+    @SuppressWarnings({"rawtypes"})
     List details = (List)error.get("details");
     assertNotNull("No details", details);
     assertEquals("Wrong number of details", 2, details.size());
+    @SuppressWarnings({"rawtypes"})
     List firstErrorList = (List)((Map)details.get(0)).get("errorMessages");
     assertEquals(1, firstErrorList.size());
     assertTrue (((String)firstErrorList.get(0)).contains("Field 'a1': Field type 'string1' not found.\n"));
+    @SuppressWarnings({"rawtypes"})
     List secondErrorList = (List)((Map)details.get(1)).get("errorMessages");
     assertEquals(1, secondErrorList.size());
     assertTrue (((String)secondErrorList.get(0)).contains("is a required field"));
@@ -148,12 +153,16 @@ public class TestBulkSchemaAPI extends RestTestBase {
 
     String response = restTestHarness.post("/schema",
         json(addFieldTypeAnalyzerWithClass + ',' + charFilters + tokenizer + filters + suffix));
+    @SuppressWarnings({"rawtypes"})
     Map map = (Map) fromJSONString(response);
+    @SuppressWarnings({"rawtypes"})
     Map error = (Map)map.get("error");
     assertNotNull("No errors", error);
+    @SuppressWarnings({"rawtypes"})
     List details = (List)error.get("details");
     assertNotNull("No details", details);
     assertEquals("Wrong number of details", 1, details.size());
+    @SuppressWarnings({"rawtypes"})
     List errorList = (List)((Map)details.get(0)).get("errorMessages");
     assertEquals(1, errorList.size());
     assertTrue (((String)errorList.get(0)).contains
@@ -191,6 +200,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
 
     map = getObj(restTestHarness, "myNewTextFieldWithAnalyzerClass", "fieldTypes");
     assertNotNull(map);
+    @SuppressWarnings({"rawtypes"})
     Map analyzer = (Map)map.get("analyzer");
     assertEquals("org.apache.lucene.analysis.core.WhitespaceAnalyzer", String.valueOf(analyzer.get("class")));
     assertEquals("5.0.0", String.valueOf(analyzer.get(IndexSchema.LUCENE_MATCH_VERSION_PARAM)));
@@ -214,14 +224,19 @@ public class TestBulkSchemaAPI extends RestTestBase {
         "}}";
 
     String response = restTestHarness.post("/schema", json(addFieldTypeAnalyzer));
+    @SuppressWarnings({"rawtypes"})
     Map map = (Map) fromJSONString(response);
     assertNull(response, map.get("error"));
 
     map = getObj(restTestHarness, "myNewTextField", "fieldTypes");
     assertNotNull(map);
+    @SuppressWarnings({"rawtypes"})
     Map analyzer = (Map)map.get("analyzer");
+    @SuppressWarnings({"rawtypes"})
     Map tokenizer = (Map)analyzer.get("tokenizer");
+    @SuppressWarnings({"rawtypes"})
     List charFilters = (List)analyzer.get("charFilters");
+    @SuppressWarnings({"rawtypes"})
     List tokenFilters = (List)analyzer.get("filters");
     assertEquals("whitespace", String.valueOf(tokenizer.get("name")));
     assertEquals("patternReplace", String.valueOf(((Map)charFilters.get(0)).get("name")));
@@ -240,12 +255,16 @@ public class TestBulkSchemaAPI extends RestTestBase {
         "}}";
 
     String response = restTestHarness.post("/schema", json(addFieldTypeAnalyzer));
+    @SuppressWarnings({"rawtypes"})
     Map map = (Map) fromJSONString(response);
+    @SuppressWarnings({"rawtypes"})
     Map error = (Map)map.get("error");
     assertNotNull("No errors", error);
+    @SuppressWarnings({"rawtypes"})
     List details = (List)error.get("details");
     assertNotNull("No details", details);
     assertEquals("Wrong number of details", 1, details.size());
+    @SuppressWarnings({"rawtypes"})
     List errorList = (List)((Map)details.get(0)).get("errorMessages");
     assertEquals(1, errorList.size());
     assertTrue (((String)errorList.get(0)).contains
@@ -257,6 +276,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
 
     String newFieldName = "attr_non_dynamic";
 
+    @SuppressWarnings({"rawtypes"})
     Map map = getObj(harness, newFieldName, "fields");
     assertNull("Field '" + newFieldName + "' already exists in the schema", map);
 
@@ -299,6 +319,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
         "    }";
 
     String response = harness.post("/schema", json(payload));
+    @SuppressWarnings({"rawtypes"})
     Map map = (Map) fromJSONString(response);
     assertNotNull(response, map.get("error"));
 
@@ -306,6 +327,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
     assertNull(newFieldName + " illegal dynamic field should not have been added to schema", map);
   }
 
+  @SuppressWarnings({"rawtypes"})
   public void testAddIllegalFields() throws Exception {
     RestTestHarness harness = restTestHarness;
 
@@ -348,6 +370,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
     assertNotNull(response, map.get("error"));
   }
 
+  @SuppressWarnings({"rawtypes"})
   public void testAddFieldWithExistingCatchallDynamicField() throws Exception {
     RestTestHarness harness = restTestHarness;
 
@@ -400,6 +423,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
     assertNotNull("Field '" + newFieldName + "' is not in the schema", map);
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void testMultipleCommands() throws Exception{
     RestTestHarness harness = restTestHarness;
 
@@ -679,12 +703,14 @@ public class TestBulkSchemaAPI extends RestTestBase {
   public void testCopyFieldRules() throws Exception {
     RestTestHarness harness = restTestHarness;
 
+    @SuppressWarnings({"rawtypes"})
     Map m = getObj(harness, "name", "fields");
     assertNotNull("'name' field does not exist in the schema", m);
 
     m = getObj(harness, "bind", "fields");
     assertNotNull("'bind' field does not exist in the schema", m);
 
+    @SuppressWarnings({"rawtypes"})
     List l = getSourceCopyFields(harness, "bleh_s");
     assertTrue("'bleh_s' copyField rule exists in the schema", l.isEmpty());
 
@@ -696,6 +722,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
         "          }\n";
     String response = harness.post("/schema", json(payload));
 
+    @SuppressWarnings({"rawtypes"})
     Map map = (Map) fromJSONString(response);
     assertNull(response, map.get("error"));
 
@@ -746,6 +773,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
     assertTrue("'bleh_s' copyField rule exists in the schema", l.isEmpty());
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void testDeleteAndReplace() throws Exception {
     RestTestHarness harness = restTestHarness;
 
@@ -995,9 +1023,11 @@ public class TestBulkSchemaAPI extends RestTestBase {
 
     String response = restTestHarness.post("/schema", json(payload));
 
+    @SuppressWarnings({"rawtypes"})
     Map map = (Map) fromJSONString(response);
     assertNull(response, map.get("errors"));
 
+    @SuppressWarnings({"rawtypes"})
     Map fields = getObj(restTestHarness, fieldName, "fields");
     assertNotNull("field " + fieldName + " not created", fields);
 
@@ -1073,9 +1103,11 @@ public class TestBulkSchemaAPI extends RestTestBase {
 
     String response = harness.post("/schema", json(payload));
 
+    @SuppressWarnings({"rawtypes"})
     Map map = (Map) fromJSONString(response);
     assertNull(response, map.get("error"));
 
+    @SuppressWarnings({"rawtypes"})
     Map fields = getObj(harness, fieldName, "fields");
     assertNotNull("field " + fieldName + " not created", fields);
     
@@ -1110,26 +1142,30 @@ public class TestBulkSchemaAPI extends RestTestBase {
         sim -> assertEquals("Unexpected discountedOverlaps", discountOverlaps, sim.getDiscountOverlaps()));
   }
 
+  @SuppressWarnings({"rawtypes"})
   public static Map getObj(RestTestHarness restHarness, String fld, String key) throws Exception {
     Map map = getRespMap(restHarness);
     List l = (List) ((Map)map.get("schema")).get(key);
     for (Object o : l) {
-      Map m = (Map) o;
+      @SuppressWarnings({"rawtypes"})Map m = (Map) o;
       if (fld.equals(m.get("name"))) 
         return m;
     }
     return null;
   }
 
+  @SuppressWarnings({"rawtypes"})
   public static Map getRespMap(RestTestHarness restHarness) throws Exception {
     return getAsMap("/schema", restHarness);
   }
 
+  @SuppressWarnings({"rawtypes"})
   public static Map getAsMap(String uri, RestTestHarness restHarness) throws Exception {
     String response = restHarness.query(uri);
     return (Map) fromJSONString(response);
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public static List getSourceCopyFields(RestTestHarness harness, String src) throws Exception {
     Map map = getRespMap(harness);
     List l = (List) ((Map)map.get("schema")).get("copyFields");
@@ -1141,6 +1177,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
     return result;
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public static List getDestCopyFields(RestTestHarness harness, String dest) throws Exception {
     Map map = getRespMap(harness);
     List l = (List) ((Map)map.get("schema")).get("copyFields");
@@ -1158,6 +1195,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
    * Executes each of the specified Similarity-accepting validators.
    */
   @SafeVarargs
+  @SuppressWarnings({"unchecked", "varargs"})
   private static <T extends Similarity> void assertFieldSimilarity(String fieldname, Class<T> expected, Consumer<T>... validators) {
     CoreContainer cc = jetty.getCoreContainer();
     try (SolrCore core = cc.getCore("collection1")) {

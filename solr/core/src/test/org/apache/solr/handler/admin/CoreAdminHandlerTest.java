@@ -82,6 +82,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
         new File(subHome, "solrconfig.snippet.randomindexconfig.xml"));
 
     final CoreContainer cores = h.getCoreContainer();
+    cores.getAllowPaths().add(workDir.toPath());
 
     final CoreAdminHandler admin = new CoreAdminHandler(cores);
 
@@ -117,6 +118,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     // Should have segments in the directory pointed to by the ${DATA_TEST}.
     File test = new File(dataDir, "index");
     assertTrue("Should have found index dir at " + test.getAbsolutePath(), test.exists());
+    admin.close();
   }
 
   @Test
@@ -124,6 +126,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     final File workDir = createTempDir().toFile();
     
     final CoreContainer cores = h.getCoreContainer();
+    cores.getAllowPaths().add(workDir.toPath());
 
     final CoreAdminHandler admin = new CoreAdminHandler(cores);
 
@@ -196,6 +199,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
       (Map<String,Exception>) resp.getValues().get("initFailures");
     assertNotNull("core failures is null", failures);
 
+    @SuppressWarnings({"rawtypes"})
     NamedList status = (NamedList)resp.getValues().get("status");
     assertNotNull("core status is null", status);
 
@@ -243,7 +247,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     assertNotNull("Core should have been renamed!", cd);
 
     // :TODO: because of SOLR-3665 we can't ask for status from all cores
-
+    admin.close();
   }
 
   @Test
@@ -417,5 +421,6 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
           , resp);
     });
     assertEquals("Expected error message for non-existent core.", "Missing required parameter: core", e.getMessage());
+    admin.close();
   }
 }

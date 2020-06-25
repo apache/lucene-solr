@@ -27,7 +27,7 @@ import org.apache.solr.core.CoreDescriptor;
 public class MockCoreContainer extends CoreContainer {
   public static class MockCoreDescriptor extends CoreDescriptor {
     public MockCoreDescriptor() {
-      super("mock", Paths.get("path"), Collections.emptyMap(), null, null);
+      super("mock", Paths.get("path").toAbsolutePath(), Collections.emptyMap(), null, null);
     }
   }
   

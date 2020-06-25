@@ -45,11 +45,11 @@ import static org.apache.solr.common.util.Utils.toJSONString;
 /**
  * Models a Collection in zookeeper (but that Java name is obviously taken, hence "DocCollection")
  */
+@SuppressWarnings({"overrides"})
 public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
 
   public static final String DOC_ROUTER = "router";
   public static final String SHARDS = "shards";
-  public static final String STATE_FORMAT = "stateFormat";
   public static final String RULE = "rule";
   public static final String SNITCH = "snitch";
 
@@ -62,7 +62,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   private final Map<String, List<Replica>> nodeNameReplicas;
   private final Map<String, List<Replica>> nodeNameLeaderReplicas;
   private final DocRouter router;
-  private final String znode;
 
   private final Integer replicationFactor;
   private final Integer numNrtReplicas;
@@ -73,15 +72,16 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   private final Boolean readOnly;
 
   public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router) {
-    this(name, slices, props, router, Integer.MAX_VALUE, ZkStateReader.CLUSTER_STATE);
+    this(name, slices, props, router, Integer.MAX_VALUE);
   }
 
   /**
    * @param name  The name of the collection
    * @param slices The logical shards of the collection.  This is used directly and a copy is not made.
    * @param props  The properties of the slice.  This is used directly and a copy is not made.
+   * @param zkVersion The version of the Collection node in Zookeeper (used for conditional updates).
    */
-  public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router, int zkVersion, String znode) {
+  public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router, int zkVersion) {
     super(props==null ? props = new HashMap<>() : props);
     // -1 means any version in ZK CAS, so we choose Integer.MAX_VALUE instead to avoid accidental overwrites
     this.znodeVersion = zkVersion == -1 ? Integer.MAX_VALUE : zkVersion;
@@ -116,7 +116,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     }
     this.activeSlicesArr = activeSlices.values().toArray(new Slice[activeSlices.size()]);
     this.router = router;
-    this.znode = znode == null? ZkStateReader.CLUSTER_STATE : znode;
     assert name != null && slices != null;
   }
 
@@ -168,7 +167,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    * @return the resulting DocCollection
    */
   public DocCollection copyWithSlices(Map<String, Slice> slices){
-    return new DocCollection(getName(), slices, propMap, router, znodeVersion,znode);
+    return new DocCollection(getName(), slices, propMap, router, znodeVersion);
   }
 
   /**
@@ -243,9 +242,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     return znodeVersion;
   }
 
-  public int getStateFormat() {
-    return ZkStateReader.CLUSTER_STATE.equals(znode) ? 1 : 2;
-  }
   /**
    * @return replication factor for this collection or null if no
    *         replication factor exists.
@@ -258,11 +254,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     return autoAddReplicas;
   }
   
-  public String getZNode(){
-    return znode;
-  }
-
-
   public DocRouter getRouter() {
     return router;
   }
@@ -273,7 +264,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
 
   @Override
   public String toString() {
-    return "DocCollection("+name+"/" + znode + "/" + znodeVersion + ")=" + toJSONString(this);
+    return "DocCollection("+name+"/" + znodeVersion + ")=" + toJSONString(this);
   }
 
   @Override
@@ -374,11 +365,16 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
 
   @Override
   public boolean equals(Object that) {
-    if (that instanceof DocCollection == false)
+    if (!(that instanceof DocCollection))
       return false;
     DocCollection other = (DocCollection) that;
-    return super.equals(that) && Objects.equals(this.znode, other.znode) && this.znodeVersion == other.znodeVersion;
+    return super.equals(that) && Objects.equals(this.name, other.name) && this.znodeVersion == other.znodeVersion;
   }
+
+//  @Override
+//  public int hashCode() {
+//    throw new UnsupportedOperationException("TODO unimplemented DocCollection.hashCode");
+//  }
 
   /**
    * @return the number of replicas of type {@link org.apache.solr.common.cloud.Replica.Type#NRT} this collection was created with
@@ -414,6 +410,5 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     if (type == Replica.Type.PULL) result = numPullReplicas;
     if (type == Replica.Type.TLOG) result = numTlogReplicas;
     return result == null ? def : result;
-
   }
 }

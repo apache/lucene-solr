@@ -39,7 +39,9 @@ public class RandomMergePolicy extends FilterMergePolicy {
 
   protected RandomMergePolicy(MergePolicy inner) {
     super(inner);
-    log.info("RandomMergePolicy wrapping {}: {}", inner.getClass(), inner);
+    if (log.isInfoEnabled()) {
+      log.info("RandomMergePolicy wrapping {}: {}", inner.getClass(), inner);
+    }
   }
 
 }

@@ -282,7 +282,7 @@ public class SolrRrdBackendFactory extends RrdBackendFactory implements SolrClos
     backends.forEach((name, db) -> {
       long lastModifiedTime = db.getLastModifiedTime();
       Pair<String, Long> stored = byName.get(name);
-      Pair<String, Long> inMemory = new Pair(name, lastModifiedTime);
+      Pair<String, Long> inMemory = new Pair<>(name, lastModifiedTime);
       if (stored != null) {
         if (stored.second() < lastModifiedTime) {
           byName.put(name, inMemory);

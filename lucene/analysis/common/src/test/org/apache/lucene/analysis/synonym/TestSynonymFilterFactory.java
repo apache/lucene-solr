@@ -27,6 +27,7 @@ import org.apache.lucene.analysis.util.StringMockResourceLoader;
 import org.apache.lucene.analysis.cjk.CJKAnalyzer;
 import org.apache.lucene.util.Version;
 
+@Deprecated
 public class TestSynonymFilterFactory extends BaseTokenStreamFactoryTestCase {
 
   /** checks for synonyms of "GB" in synonyms.txt */

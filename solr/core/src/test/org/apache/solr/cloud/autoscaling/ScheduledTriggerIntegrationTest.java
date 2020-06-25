@@ -94,6 +94,7 @@ public class ScheduledTriggerIntegrationTest extends SolrCloudTestCase {
         "    {\"cores\" : \"<2\", \"node\" : \"#EACH\"}\n" +
         "  ]\n" +
         "}";
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicy);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
@@ -122,10 +123,11 @@ public class ScheduledTriggerIntegrationTest extends SolrCloudTestCase {
     Map<String, Object> actionContextProps = actionContextPropertiesRef.get();
     assertNotNull(actionContextProps);
     TriggerEvent event = events.iterator().next();
+    @SuppressWarnings({"unchecked", "rawtypes"})
     List<SolrRequest> operations = (List<SolrRequest>) actionContextProps.get("operations");
     assertNotNull(operations);
     assertEquals(1, operations.size());
-    for (SolrRequest operation : operations) {
+    for (@SuppressWarnings({"rawtypes"})SolrRequest operation : operations) {
       SolrParams params = operation.getParams();
       assertEquals(newNode.getNodeName(), params.get("targetNode"));
     }

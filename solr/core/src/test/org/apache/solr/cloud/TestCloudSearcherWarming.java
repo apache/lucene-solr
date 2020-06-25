@@ -259,7 +259,9 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
             log.info("Active replica: {}", coreNodeName);
             for (int i = 0; i < cluster.getJettySolrRunners().size(); i++) {
               JettySolrRunner jettySolrRunner = cluster.getJettySolrRunner(i);
-              log.info("Checking node: {}", jettySolrRunner.getNodeName());
+              if (log.isInfoEnabled()) {
+                log.info("Checking node: {}", jettySolrRunner.getNodeName());
+              }
               if (jettySolrRunner.getNodeName().equals(replica.getNodeName())) {
                 SolrDispatchFilter solrDispatchFilter = jettySolrRunner.getSolrDispatchFilter();
                 try (SolrCore core = solrDispatchFilter.getCores().getCore(coreName)) {
@@ -268,7 +270,9 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
                     assert false;
                     return false;
                   }
-                  log.info("Found SolrCore: {}, id: {}", core.getName(), core);
+                  if (log.isInfoEnabled()) {
+                    log.info("Found SolrCore: {}, id: {}", core.getName(), core);
+                  }
                   RefCounted<SolrIndexSearcher> registeredSearcher = core.getRegisteredSearcher();
                   if (registeredSearcher != null) {
                     log.error("registered searcher not null, maxdocs = {}", registeredSearcher.get().maxDoc());
@@ -307,7 +311,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
 
   public static class SleepingSolrEventListener implements SolrEventListener {
     @Override
-    public void init(NamedList args) {
+    public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
       // No-Op
     }
 
@@ -326,13 +330,19 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
       if (sleepTime.get() > 0) {
         TestCloudSearcherWarming.coreNodeNameRef.set(newSearcher.getCore().getCoreDescriptor().getCloudDescriptor().getCoreNodeName());
         TestCloudSearcherWarming.coreNameRef.set(newSearcher.getCore().getName());
-        log.info("Sleeping for {} on newSearcher: {}, currentSearcher: {} belonging to (newest) core: {}, id: {}", sleepTime.get(), newSearcher, currentSearcher, newSearcher.getCore().getName(), newSearcher.getCore());
+        if (log.isInfoEnabled()) {
+          log.info("Sleeping for {} on newSearcher: {}, currentSearcher: {} belonging to (newest) core: {}, id: {}"
+              , sleepTime.get(), newSearcher, currentSearcher, newSearcher.getCore().getName(), newSearcher.getCore());
+        }
         try {
           Thread.sleep(sleepTime.get());
         } catch (InterruptedException e) {
           log.warn("newSearcher was interupdated", e);
         }
-        log.info("Finished sleeping for {} on newSearcher: {}, currentSearcher: {} belonging to (newest) core: {}, id: {}", sleepTime.get(), newSearcher, currentSearcher, newSearcher.getCore().getName(), newSearcher.getCore());
+        if (log.isInfoEnabled()) {
+          log.info("Finished sleeping for {} on newSearcher: {}, currentSearcher: {} belonging to (newest) core: {}, id: {}"
+              , sleepTime.get(), newSearcher, currentSearcher, newSearcher.getCore().getName(), newSearcher.getCore());
+        }
       }
     }
   }

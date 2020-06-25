@@ -109,6 +109,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   }
 
   @Override
+  @SuppressWarnings({"rawtypes"})
   public SolrRequest getV2Request() {
     return usev2 ?
         V1toV2ApiMapper.convert(this).useBinary(useBinaryV2).build() :
@@ -293,6 +294,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     }
   }
 
+  @SuppressWarnings({"rawtypes"})
   protected abstract static class ShardSpecificAdminRequest extends CollectionAdminRequest {
 
     protected String collection;
@@ -443,7 +445,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected Properties properties;
     protected Boolean autoAddReplicas;
     protected String alias;
-    protected Integer stateFormat;
     protected String[] rule , snitch;
     protected String withCollection;
 
@@ -481,7 +482,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public Create setPullReplicas(Integer pullReplicas) { this.pullReplicas = pullReplicas; return this;}
 
     public Create setReplicationFactor(Integer repl) { this.nrtReplicas = repl; return this; }
-    public Create setStateFormat(Integer stateFormat) { this.stateFormat = stateFormat; return this; }
     public Create setRule(String... s){ this.rule = s; return this; }
     public Create setSnitch(String... s){ this.snitch = s; return this; }
 
@@ -501,8 +501,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public Boolean getAutoAddReplicas() { return autoAddReplicas; }
     public Integer getNumTlogReplicas() {return tlogReplicas;}
     public Integer getNumPullReplicas() {return pullReplicas;}
-
-    public Integer getStateFormat() { return stateFormat; }
 
     /**
      * Provide the name of the shards to be created, separated by commas
@@ -569,9 +567,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       }
       if (properties != null) {
         addProperties(params, properties);
-      }
-      if (stateFormat != null) {
-        params.set(DocCollection.STATE_FORMAT, stateFormat);
       }
       if (pullReplicas != null) {
         params.set(ZkStateReader.PULL_REPLICAS, pullReplicas);
@@ -1525,6 +1520,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   public static class RequestStatusResponse extends CollectionAdminResponse {
 
     public RequestStatusState getRequestStatus() {
+      @SuppressWarnings({"rawtypes"})
       NamedList innerResponse = (NamedList) getResponse().get("status");
       return RequestStatusState.fromKey((String) innerResponse.get("state"));
     }
@@ -2681,6 +2677,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   /**
    * Returns a SolrRequest to get a list of collections in the cluster
    */
+  @SuppressWarnings({"unchecked"})
   public static java.util.List<String> listCollections(SolrClient client) throws IOException, SolrServerException {
     CollectionAdminResponse resp = new List().process(client);
     return (java.util.List<String>) resp.getResponse().get("collections");
@@ -2791,35 +2788,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
       params.set(CoreAdminParams.REPLICA, replica);
       params.set("property", propertyName);
-      return params;
-    }
-
-
-  }
-
-  /**
-   * Returns a SolrRequest to migrate a collection state format
-   *
-   * This is an expert-level request, and should not generally be necessary.
-   */
-  public static MigrateClusterState migrateCollectionFormat(String collection) {
-    return new MigrateClusterState(collection);
-  }
-
-  // MIGRATECLUSTERSTATE request
-  public static class MigrateClusterState extends AsyncCollectionAdminRequest {
-
-    protected String collection;
-
-    private MigrateClusterState(String collection) {
-      super(CollectionAction.MIGRATESTATEFORMAT);
-      this.collection = checkNotNull(CoreAdminParams.COLLECTION, collection);
-    }
-
-    @Override
-    public SolrParams getParams() {
-      ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
-      params.set(CoreAdminParams.COLLECTION, collection);
       return params;
     }
   }

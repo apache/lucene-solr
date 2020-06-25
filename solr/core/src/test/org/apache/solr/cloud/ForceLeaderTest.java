@@ -89,7 +89,9 @@ public class ForceLeaderTest extends HttpPartitionTest {
       JettySolrRunner notLeader0 = getJettyOnPort(getReplicaPort(notLeaders.get(0)));
       ZkController zkController = notLeader0.getCoreContainer().getZkController();
 
-      log.info("Before put non leaders into lower term: " + printClusterStateInfo());
+      if (log.isInfoEnabled()) {
+        log.info("Before put non leaders into lower term: {}", printClusterStateInfo());
+      }
       putNonLeadersIntoLowerTerm(testCollectionName, SHARD1, zkController, leader, notLeaders, cloudClient);
 
       for (Replica replica : notLeaders) {
@@ -109,7 +111,9 @@ public class ForceLeaderTest extends HttpPartitionTest {
         }
       }
       assertEquals(2, numReplicasOnLiveNodes);
-      log.info("Before forcing leader: " + printClusterStateInfo());
+      if (log.isInfoEnabled()) {
+        log.info("Before forcing leader: {}", printClusterStateInfo());
+      }
       // Assert there is no leader yet
       assertNull("Expected no leader right now. State: " + clusterState.getCollection(testCollectionName).getSlice(SHARD1),
           clusterState.getCollection(testCollectionName).getSlice(SHARD1).getLeader());
@@ -124,7 +128,9 @@ public class ForceLeaderTest extends HttpPartitionTest {
 
       cloudClient.getZkStateReader().forceUpdateCollection(testCollectionName);
       clusterState = cloudClient.getZkStateReader().getClusterState();
-      log.info("After forcing leader: " + clusterState.getCollection(testCollectionName).getSlice(SHARD1));
+      if (log.isInfoEnabled()) {
+        log.info("After forcing leader: {}", clusterState.getCollection(testCollectionName).getSlice(SHARD1));
+      }
       // we have a leader
       Replica newLeader = clusterState.getCollectionOrNull(testCollectionName).getSlice(SHARD1).getLeader();
       assertNotNull(newLeader);
@@ -195,7 +201,9 @@ public class ForceLeaderTest extends HttpPartitionTest {
     }
 
     // Kill the leader
-    log.info("Killing leader for shard1 of " + collectionName + " on node " + leader.getNodeName() + "");
+    if (log.isInfoEnabled()) {
+      log.info("Killing leader for shard1 of {} on node {}", collectionName, leader.getNodeName());
+    }
     leaderJetty.stop();
 
     // Wait for a steady state, till the shard is leaderless
@@ -243,14 +251,16 @@ public class ForceLeaderTest extends HttpPartitionTest {
     waitForRecoveriesToFinish(collection, cloudClient.getZkStateReader(), true);
     cloudClient.getZkStateReader().forceUpdateCollection(collection);
     ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
-    log.info("After bringing back leader: " + clusterState.getCollection(collection).getSlice(SHARD1));
+    if (log.isInfoEnabled()) {
+      log.info("After bringing back leader: {}", clusterState.getCollection(collection).getSlice(SHARD1));
+    }
     int numActiveReplicas = getNumberOfActiveReplicas(clusterState, collection, SHARD1);
     assertEquals(1+notLeaders.size(), numActiveReplicas);
-    log.info("Sending doc "+docid+"...");
+    log.info("Sending doc {}...", docid);
     sendDoc(docid);
     log.info("Committing...");
     cloudClient.commit();
-    log.info("Doc "+docid+" sent and commit issued");
+    log.info("Doc {} sent and commit issued", docid);
     assertDocsExistInAllReplicas(notLeaders, collection, docid, docid);
     assertDocsExistInAllReplicas(Collections.singletonList(leader), collection, docid, docid);
   }

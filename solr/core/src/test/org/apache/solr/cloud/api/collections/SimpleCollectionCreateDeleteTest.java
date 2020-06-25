@@ -51,14 +51,14 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
     }
     String collectionName = "SimpleCollectionCreateDeleteTest";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,1,1)
-            .setCreateNodeSet(overseerNode)
-            .setStateFormat(2);
+            .setCreateNodeSet(overseerNode);
 
     NamedList<Object> request = create.process(cloudClient).getResponse();
 
     if (request.get("success") != null) {
       assertTrue(cloudClient.getZkStateReader().getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName, false));
 
+      @SuppressWarnings({"rawtypes"})
       CollectionAdminRequest delete = CollectionAdminRequest.deleteCollection(collectionName);
       cloudClient.request(delete);
 
@@ -92,8 +92,7 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
 
       // create collection again on a node other than the overseer leader
       create = CollectionAdminRequest.createCollection(collectionName,1,1)
-              .setCreateNodeSet(notOverseerNode)
-              .setStateFormat(2);
+              .setCreateNodeSet(notOverseerNode);
       request = create.process(cloudClient).getResponse();
       assertTrue("Collection creation should not have failed", request.get("success") != null);
     }

@@ -446,6 +446,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
       params.set("shardUnique", "true");
     }
 
+    @SuppressWarnings({"rawtypes"})
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
     cluster.getSolrClient().request(request);

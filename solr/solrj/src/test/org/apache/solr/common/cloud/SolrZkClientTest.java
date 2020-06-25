@@ -69,7 +69,7 @@ public class SolrZkClientTest extends SolrCloudTestCase {
     final String AUTH = "user:pass";
 
     Path zkDir = createTempDir();
-    log.info("ZooKeeper dataDir:" + zkDir);
+    log.info("ZooKeeper dataDir:{}", zkDir);
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
 

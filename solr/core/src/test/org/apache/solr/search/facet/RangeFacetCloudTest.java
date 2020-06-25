@@ -78,6 +78,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
    * the array indexes represent values in our numeric field, while the array values
    * track the mapping from string field terms to facet counts for docs that have that numeric value
    */
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private static final Map<String,Integer>[] TERM_MODEL = new Map[NUM_RANGE_VALUES];
   
   @BeforeClass
@@ -136,7 +137,9 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
 
           final QueryResponse rsp = cluster.getSolrClient().query(solrQuery);
           try {
+            @SuppressWarnings({"unchecked"})
             final NamedList<Object> foo = ((NamedList<NamedList<Object>>)rsp.getResponse().get("facets")).get("foo");
+            @SuppressWarnings({"unchecked"})
             final List<NamedList<Object>> buckets = (List<NamedList<Object>>) foo.get("buckets");
 
             assertEquals("num buckets", 4, buckets.size());
@@ -168,7 +171,9 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
         
           final QueryResponse rsp = cluster.getSolrClient().query(solrQuery);
           try {
+            @SuppressWarnings({"unchecked"})
             final NamedList<Object> foo = ((NamedList<NamedList<Object>>)rsp.getResponse().get("facets")).get("foo");
+            @SuppressWarnings({"unchecked"})
             final List<NamedList<Object>> buckets = (List<NamedList<Object>>) foo.get("buckets");
             
             assertEquals("num buckets", 3, buckets.size());
@@ -199,7 +204,9 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
         
           final QueryResponse rsp = cluster.getSolrClient().query(solrQuery);
           try {
+            @SuppressWarnings({"unchecked"})
             final NamedList<Object> foo = ((NamedList<NamedList<Object>>)rsp.getResponse().get("facets")).get("foo");
+            @SuppressWarnings({"unchecked"})
             final List<NamedList<Object>> buckets = (List<NamedList<Object>>) foo.get("buckets");
             
             assertEquals("num buckets", 3, buckets.size());
@@ -239,7 +246,9 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
     
         final QueryResponse rsp = cluster.getSolrClient().query(solrQuery);
         try {
+          @SuppressWarnings({"unchecked"})
           final NamedList<Object> foo = ((NamedList<NamedList<Object>>)rsp.getResponse().get("facets")).get("foo");
+          @SuppressWarnings({"unchecked"})
           final List<NamedList<Object>> buckets = (List<NamedList<Object>>) foo.get("buckets");
           
           assertEquals("num buckets", 4, buckets.size());
@@ -267,7 +276,9 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
     
         final QueryResponse rsp = cluster.getSolrClient().query(solrQuery);
         try {
+          @SuppressWarnings({"unchecked"})
           final NamedList<Object> foo = ((NamedList<NamedList<Object>>)rsp.getResponse().get("facets")).get("foo");
+          @SuppressWarnings({"unchecked"})
           final List<NamedList<Object>> buckets = (List<NamedList<Object>>) foo.get("buckets");
           
           assertEquals("num buckets", 2, buckets.size());
@@ -296,7 +307,9 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
         
         final QueryResponse rsp = cluster.getSolrClient().query(solrQuery);
         try {
+          @SuppressWarnings({"unchecked"})
           final NamedList<Object> foo = ((NamedList<NamedList<Object>>)rsp.getResponse().get("facets")).get("foo");
+          @SuppressWarnings({"unchecked"})
           final List<NamedList<Object>> buckets = (List<NamedList<Object>>) foo.get("buckets");
           
           assertEquals("num buckets", 3, buckets.size());
@@ -331,7 +344,9 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
           
           final QueryResponse rsp = cluster.getSolrClient().query(solrQuery);
           try {
+            @SuppressWarnings({"unchecked"})
             final NamedList<Object> foo = ((NamedList<NamedList<Object>>)rsp.getResponse().get("facets")).get("foo");
+            @SuppressWarnings({"unchecked"})
             final List<NamedList<Object>> buckets = (List<NamedList<Object>>) foo.get("buckets");
             
             assertEquals("num buckets", 3, buckets.size());
@@ -364,7 +379,9 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
           
           final QueryResponse rsp = cluster.getSolrClient().query(solrQuery);
           try {
+            @SuppressWarnings({"unchecked"})
             final NamedList<Object> foo = ((NamedList<NamedList<Object>>)rsp.getResponse().get("facets")).get("foo");
+            @SuppressWarnings({"unchecked"})
             final List<NamedList<Object>> buckets = (List<NamedList<Object>>) foo.get("buckets");
             
             assertEquals("num buckets", 3, buckets.size());
@@ -397,7 +414,9 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
           
           final QueryResponse rsp = cluster.getSolrClient().query(solrQuery);
           try {
+            @SuppressWarnings({"unchecked"})
             final NamedList<Object> foo = ((NamedList<NamedList<Object>>)rsp.getResponse().get("facets")).get("foo");
+            @SuppressWarnings({"unchecked"})
             final List<NamedList<Object>> buckets = (List<NamedList<Object>>) foo.get("buckets");
             
             assertEquals("num buckets", 3, buckets.size());
@@ -432,7 +451,9 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
           
           final QueryResponse rsp = cluster.getSolrClient().query(solrQuery);
           try {
+            @SuppressWarnings({"unchecked"})
             final NamedList<Object> foo = ((NamedList<NamedList<Object>>)rsp.getResponse().get("facets")).get("foo");
+            @SuppressWarnings({"unchecked"})
             final List<NamedList<Object>> buckets = (List<NamedList<Object>>) foo.get("buckets");
             
             assertEquals("num buckets", 3, buckets.size());
@@ -479,7 +500,9 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
           
           QueryResponse rsp = cluster.getSolrClient().query(solrQuery);
           try {
+            @SuppressWarnings({"unchecked"})
             final NamedList<Object> foo = ((NamedList<NamedList<Object>>)rsp.getResponse().get("facets")).get("foo");
+            @SuppressWarnings({"unchecked"})
             final List<NamedList<Object>> buckets = (List<NamedList<Object>>) foo.get("buckets");
             
             assertEquals("num buckets", 2, buckets.size());
@@ -514,7 +537,9 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
           
           rsp = cluster.getSolrClient().query(solrQuery);
           try {
+            @SuppressWarnings({"unchecked"})
             final NamedList<Object> foo = ((NamedList<NamedList<Object>>)rsp.getResponse().get("facets")).get("foo");
+            @SuppressWarnings({"unchecked"})
             final List<NamedList<Object>> buckets = (List<NamedList<Object>>) foo.get("buckets");
 
             if (null == expected_mincount_bucket_val) {
@@ -557,7 +582,9 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
           
           final QueryResponse rsp = cluster.getSolrClient().query(solrQuery);
           try {
+            @SuppressWarnings({"unchecked"})
             final NamedList<Object> foo = ((NamedList<NamedList<Object>>)rsp.getResponse().get("facets")).get("foo");
+            @SuppressWarnings({"unchecked"})
             final List<NamedList<Object>> buckets = (List<NamedList<Object>>) foo.get("buckets");
             
             assertEquals("num buckets", 2, buckets.size());
@@ -589,7 +616,9 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
 
         final QueryResponse rsp = cluster.getSolrClient().query(solrQuery);
         try {
+          @SuppressWarnings({"unchecked"})
           final NamedList<Object> foo = ((NamedList<NamedList<Object>>) rsp.getResponse().get("facets")).get("foo");
+          @SuppressWarnings({"unchecked"})
           final List<NamedList<Object>> buckets = (List<NamedList<Object>>) foo.get("buckets");
 
           assertEquals("num buckets", 4, buckets.size());
@@ -619,7 +648,9 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
 
         final QueryResponse rsp = cluster.getSolrClient().query(solrQuery);
         try {
+          @SuppressWarnings({"unchecked"})
           final NamedList<Object> foo = ((NamedList<NamedList<Object>>) rsp.getResponse().get("facets")).get("foo");
+          @SuppressWarnings({"unchecked"})
           final List<NamedList<Object>> buckets = (List<NamedList<Object>>) foo.get("buckets");
 
           assertEquals("num buckets", 4, buckets.size());
@@ -652,7 +683,9 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
 
       QueryResponse rsp = cluster.getSolrClient().query(solrQuery);
       try {
+        @SuppressWarnings({"unchecked"})
         final NamedList<Object> foo = ((NamedList<NamedList<Object>>)rsp.getResponse().get("facets")).get("foo");
+        @SuppressWarnings({"unchecked"})
         final List<NamedList<Object>> buckets = (List<NamedList<Object>>) foo.get("buckets");
 
         assertEquals("num buckets", 2, buckets.size());
@@ -686,7 +719,9 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
 
       rsp = cluster.getSolrClient().query(solrQuery);
       try {
+        @SuppressWarnings({"unchecked"})
         final NamedList<Object> foo = ((NamedList<NamedList<Object>>)rsp.getResponse().get("facets")).get("foo");
+        @SuppressWarnings({"unchecked"})
         final List<NamedList<Object>> buckets = (List<NamedList<Object>>) foo.get("buckets");
 
         if (null == expected_mincount_bucket_val) {
@@ -725,6 +760,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
       assertNotNull("null bucket", actualBucket);
       assertNotNull("expectedRangeValues", expectedRangeValues);
       assertTrue("bucket is not a NamedList", actualBucket instanceof NamedList);
+      @SuppressWarnings({"unchecked"})
       final NamedList<Object> bucket = (NamedList<Object>) actualBucket;
 
       if (null != expectedVal) {
@@ -749,11 +785,13 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
       if (null == subFacetLimitUsed || 0 == expectedCount) {
         assertNull("unexpected subfacets", bucket.get("bar"));
       } else {
+        @SuppressWarnings({"unchecked"})
         NamedList<Object> bar = ((NamedList<Object>)bucket.get("bar"));
         assertNotNull("can't find subfacet 'bar'", bar);
 
         final int numBucketsExpected = subFacetLimitUsed < 0
           ? expectedTermCounts.size() : Math.min(subFacetLimitUsed, expectedTermCounts.size());
+        @SuppressWarnings({"unchecked"})
         final List<NamedList<Object>> subBuckets = (List<NamedList<Object>>) bar.get("buckets");
         // we should either have filled out the expected limit, or 
         assertEquals("num subfacet buckets", numBucketsExpected, subBuckets.size());
@@ -875,7 +913,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
     //
     // NOTE: Don't mix "ALL" or "NONE" with other options so we don't have to make assertBeforeAfterBetween
     // overly complicated
-    ArrayList<EnumSet<FacetRangeOther>> results = new ArrayList(5);
+    ArrayList<EnumSet<FacetRangeOther>> results = new ArrayList<>(5);
     results.add(EnumSet.of(FacetRangeOther.ALL));
     results.add(EnumSet.of(FacetRangeOther.BEFORE, FacetRangeOther.AFTER, FacetRangeOther.BETWEEN));
     results.add(EnumSet.of(FacetRangeOther.BEFORE, FacetRangeOther.AFTER));

@@ -94,8 +94,10 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     testRf2NotUsingDirectUpdates();
         
     waitForThingsToLevelOut(30, TimeUnit.SECONDS);
-    log.info("replication factor testing complete! final clusterState is: "+
-        cloudClient.getZkStateReader().getClusterState());    
+    if (log.isInfoEnabled()) {
+      log.info("replication factor testing complete! final clusterState is: {}",
+          cloudClient.getZkStateReader().getClusterState());
+    }
   }
   
   protected void testRf2NotUsingDirectUpdates() throws Exception {

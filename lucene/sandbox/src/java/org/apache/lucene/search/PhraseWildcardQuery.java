@@ -858,7 +858,7 @@ public class PhraseWildcardQuery extends Query {
     @SuppressWarnings("unchecked")
     protected void setTermStatesForSegment(LeafReaderContext leafReaderContext, List<TermBytesTermState> termStates) {
       if (termStatesPerSegment == null) {
-        termStatesPerSegment = (List<TermBytesTermState>[]) new List[numSegments];
+        termStatesPerSegment = (List<TermBytesTermState>[]) new List<?>[numSegments];
         termsData.numTermsMatching++;
       }
       termStatesPerSegment[leafReaderContext.ord] = termStates;

@@ -200,7 +200,7 @@ public class Assign {
     }
     return defaultValue;
   }
-  
+
   private static int defaultCounterValue(DocCollection collection, boolean newCollection) {
     if (newCollection) return 0;
     int defaultValue = collection.getReplicas().size();
@@ -277,6 +277,7 @@ public class Assign {
     return usePolicyFramework(Optional.of(collection), cloudManager);
   }
 
+  @SuppressWarnings({"unchecked"})
   private static boolean usePolicyFramework(Optional<DocCollection> collection, SolrCloudManager cloudManager) throws IOException, InterruptedException {
     boolean useLegacyAssignment = true;
     Map<String, Object> clusterProperties = cloudManager.getClusterStateProvider().getClusterProperties();
@@ -323,10 +324,12 @@ public class Assign {
   //
   // Gets a list of candidate nodes to put the required replica(s) on. Throws errors if not enough replicas
   // could be created on live nodes given maxShardsPerNode, Replication factor (if from createShard) etc.
+  @SuppressWarnings({"unchecked"})
   public static List<ReplicaPosition> getNodesForNewReplicas(ClusterState clusterState, String collectionName,
                                                           String shard, int nrtReplicas, int tlogReplicas, int pullReplicas,
                                                           Object createNodeSet, SolrCloudManager cloudManager) throws IOException, InterruptedException, AssignmentException {
-    log.debug("getNodesForNewReplicas() shard: {} , nrtReplicas : {} , tlogReplicas: {} , pullReplicas: {} , createNodeSet {}", shard, nrtReplicas, tlogReplicas, pullReplicas, createNodeSet);
+    log.debug("getNodesForNewReplicas() shard: {} , nrtReplicas : {} , tlogReplicas: {} , pullReplicas: {} , createNodeSet {}"
+        , shard, nrtReplicas, tlogReplicas, pullReplicas, createNodeSet);
     DocCollection coll = clusterState.getCollection(collectionName);
     List<String> createNodeList = null;
 
@@ -337,7 +340,10 @@ public class Assign {
       createNodeList = createNodeSet == null ? null : new ArrayList<>(new LinkedHashSet<>(StrUtils.splitSmart((String) createNodeSet, ",", true)));
     }
 
-    HashMap<String, ReplicaCount> nodeNameVsShardCount = getNodeNameVsShardCount(collectionName, clusterState, createNodeList);
+    // produces clear message when down nodes are the root cause, without this the user just
+    // gets a log message of detail about the nodes that are up, and a message that policies could not
+    // be satisfied which then requires study to diagnose the issue.
+    checkLiveNodes(createNodeList,clusterState);
 
     AssignRequest assignRequest = new AssignRequestBuilder()
         .forCollection(collectionName)
@@ -392,24 +398,21 @@ public class Assign {
 
   static HashMap<String, ReplicaCount> getNodeNameVsShardCount(String collectionName,
                                                                        ClusterState clusterState, List<String> createNodeList) {
-    Set<String> nodes = clusterState.getLiveNodes();
-
-    List<String> nodeList = new ArrayList<>(nodes.size());
-    nodeList.addAll(nodes);
-    if (createNodeList != null) nodeList.retainAll(createNodeList);
-
     HashMap<String, ReplicaCount> nodeNameVsShardCount = new HashMap<>();
-    for (String s : nodeList) {
+    List<String> liveNodes = createNodeList == null || createNodeList.isEmpty() ?
+        new ArrayList<>(clusterState.getLiveNodes()) :
+        checkLiveNodes(createNodeList, clusterState);
+
+    for (String s : liveNodes) {
       nodeNameVsShardCount.put(s, new ReplicaCount(s));
     }
+
+    // if we were given a list, just use that, don't worry about counts
     if (createNodeList != null) { // Overrides petty considerations about maxShardsPerNode
-      if (createNodeList.size() != nodeNameVsShardCount.size()) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "At least one of the node(s) specified " + createNodeList + " are not currently active in "
-                + nodeNameVsShardCount.keySet() + ", no action taken.");
-      }
       return nodeNameVsShardCount;
     }
+
+    // if we get here we were not given a createNodeList, build a map with real counts.
     DocCollection coll = clusterState.getCollection(collectionName);
     Map<String, DocCollection> collections = clusterState.getCollectionsMap();
     for (Map.Entry<String, DocCollection> entry : collections.entrySet()) {
@@ -430,6 +433,22 @@ public class Assign {
     }
 
     return nodeNameVsShardCount;
+  }
+
+  // throw an exception if any node int the supplied list is not live.
+  // Empty or null list always succeeds and returns the input.
+  private static List<String> checkLiveNodes(List<String> createNodeList, ClusterState clusterState) {
+    Set<String> liveNodes = clusterState.getLiveNodes();
+    if (createNodeList != null) {
+      if (!liveNodes.containsAll(createNodeList)) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            "At least one of the node(s) specified " + createNodeList + " are not currently active in "
+                + createNodeList + ", no action taken.");
+      }
+      // the logic that was extracted to this method used to create a defensive copy but no code
+      // was modifying the copy, if this method is made protected or public we want to go back to that
+    }
+    return createNodeList; // unmodified, but return for inline use
   }
 
   /**
@@ -529,37 +548,50 @@ public class Assign {
     @Override
     public List<ReplicaPosition> assign(SolrCloudManager solrCloudManager, AssignRequest assignRequest) throws Assign.AssignmentException, IOException, InterruptedException {
       ClusterState clusterState = solrCloudManager.getClusterStateProvider().getClusterState();
-      List<String> nodeList = assignRequest.nodes;
+      List<String> nodeList = assignRequest.nodes; // can this be empty list?
 
-      HashMap<String, Assign.ReplicaCount> nodeNameVsShardCount = Assign.getNodeNameVsShardCount(assignRequest.collectionName, clusterState, assignRequest.nodes);
       if (nodeList == null || nodeList.isEmpty()) {
+        HashMap<String, Assign.ReplicaCount> nodeNameVsShardCount =
+            Assign.getNodeNameVsShardCount(assignRequest.collectionName, clusterState, nodeList);
+        // if nodelist was empty, this map will be empty too. (passing null above however gets a full map)
         ArrayList<Assign.ReplicaCount> sortedNodeList = new ArrayList<>(nodeNameVsShardCount.values());
         sortedNodeList.sort(Comparator.comparingInt(Assign.ReplicaCount::weight));
         nodeList = sortedNodeList.stream().map(replicaCount -> replicaCount.nodeName).collect(Collectors.toList());
       }
 
+      // otherwise we get a div/0 below
+      assert !nodeList.isEmpty();
+
       int i = 0;
       List<ReplicaPosition> result = new ArrayList<>();
-      for (String aShard : assignRequest.shardNames)
-        for (Map.Entry<Replica.Type, Integer> e : ImmutableMap.of(Replica.Type.NRT, assignRequest.numNrtReplicas,
-            Replica.Type.TLOG, assignRequest.numTlogReplicas,
-            Replica.Type.PULL, assignRequest.numPullReplicas
-        ).entrySet()) {
+      for (String aShard : assignRequest.shardNames) {
+        for (Map.Entry<Replica.Type, Integer> e : countsPerReplicaType(assignRequest).entrySet()) {
           for (int j = 0; j < e.getValue(); j++) {
             result.add(new ReplicaPosition(aShard, j, e.getKey(), nodeList.get(i % nodeList.size())));
             i++;
           }
         }
+      }
       return result;
+    }
+
+    // keeps this big ugly construction block out of otherwise legible code
+    private ImmutableMap<Replica.Type, Integer> countsPerReplicaType(AssignRequest assignRequest) {
+      return ImmutableMap.of(
+          Replica.Type.NRT, assignRequest.numNrtReplicas,
+          Replica.Type.TLOG, assignRequest.numTlogReplicas,
+          Replica.Type.PULL, assignRequest.numPullReplicas
+      );
     }
   }
 
   public static class RulesBasedAssignStrategy implements AssignStrategy {
     public List<Rule> rules;
+    @SuppressWarnings({"rawtypes"})
     public List snitches;
     public ClusterState clusterState;
 
-    public RulesBasedAssignStrategy(List<Rule> rules, List snitches, ClusterState clusterState) {
+    public RulesBasedAssignStrategy(List<Rule> rules, @SuppressWarnings({"rawtypes"})List snitches, ClusterState clusterState) {
       this.rules = rules;
       this.snitches = snitches;
       this.clusterState = clusterState;
@@ -629,8 +661,10 @@ public class Assign {
     }
 
     public AssignStrategy create(ClusterState clusterState, DocCollection collection) throws IOException, InterruptedException {
+      @SuppressWarnings({"unchecked", "rawtypes"})
       List<Map> ruleMaps = (List<Map>) collection.get("rule");
       String policyName = collection.getStr(POLICY);
+      @SuppressWarnings({"rawtypes"})
       List snitches = (List) collection.get(SNITCH);
 
       Strategy strategy = null;

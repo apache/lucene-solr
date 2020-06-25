@@ -118,11 +118,13 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     JSONParser parser = new JSONParser(json);
     ObjectBuilder ob = new ObjectBuilder(parser) {
       @Override
+      @SuppressWarnings({"rawtypes"})
       public Object newObject() throws IOException {
         return new SimpleOrderedMap();
       }
 
       @Override
+      @SuppressWarnings({"unchecked", "rawtypes"})
       public void addKeyVal(Object map, Object key, Object val) throws IOException {
         ((SimpleOrderedMap) map).add(key.toString(), val);
       }
@@ -136,7 +138,8 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     try {
       int nShards = responsesAndTests.length / 2;
       Object jsonFacet = Utils.fromJSONString(facet);
-      FacetParser parser = new FacetTopParser(req);
+      @SuppressWarnings({"rawtypes"})
+      FacetParser parser = new FacetParser.FacetTopParser(req);
       FacetRequest facetRequest = parser.parse(jsonFacet);
 
       FacetMerger merger = null;
@@ -1082,7 +1085,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
      , "facets=={foo:555}"
      );
      ****/
-    for (String method : new String[]{"","dvhash","stream","uif","enum","stream","smart"}) {
+    for (String method : new String[]{"","dv", "dvhash","stream","uif","enum","stream","smart"}) {
       if (method.equals("")) {
         p.remove("terms");
       } else {
@@ -1212,10 +1215,13 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
                                     "{ type:func, func:'relatedness($fore,$back)', min_popularity:0.2 }")) {
         client.testJQ(params(p, "rows", "0", "q", "*:*", "fore", "${xy_s}:X", "back", "${num_d}:[0 TO 100]",
                              "json.facet", "{"
-                             + "   cat0:{ ${terms} type:terms, field: ${cat_s}, "
+                             + "   cat0:{ ${terms} type:terms, field: ${cat_s}, allBuckets:true, "
                              + "          sort:'count desc', limit:1, overrequest:0, refine:true, "
                              + "          facet:{ s:"+s+"} } }")
-                      , "facets=={ count:8, cat0:{ buckets:[ "
+                      , "facets=={ count:8, cat0:{ "
+                      // 's' key must not exist in the allBuckets bucket
+                      + "   allBuckets: { count:8 }"
+                      + "   buckets:[ "
                       + "   { val:A, count:4, "
                       + "     s : { relatedness: 0.00496, "
                       //+ "           foreground_count: 3, "
@@ -1231,11 +1237,14 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
       // same query with a high min_pop should result in a -Infinity relatedness score
       client.testJQ(params(p, "rows", "0", "q", "*:*", "fore", "${xy_s}:X", "back", "${num_d}:[0 TO 100]",
                            "json.facet", "{"
-                           + "   cat0:{ ${terms} type:terms, field: ${cat_s}, "
+                           + "   cat0:{ ${terms} type:terms, field: ${cat_s},  allBuckets:true,"
                            + "          sort:'count desc', limit:1, overrequest:0, refine:true, "
                            + "          facet:{ s:{ type:func, func:'relatedness($fore,$back)', "
                            + "                      min_popularity:0.6 } } } }")
-                    , "facets=={ count:8, cat0:{ buckets:[ "
+                    , "facets=={ count:8, cat0:{ "
+                    // 's' key must not exist in the allBuckets bucket
+                    + "   allBuckets: { count:8 }"
+                    + "   buckets:[ "
                     + "   { val:A, count:4, "
                     + "     s : { relatedness: '-Infinity', "
                     //+ "           foreground_count: 3, "
@@ -1247,6 +1256,22 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
                     + "         } } ] }" +
                     "}"
                     );
+
+      // really special case: allBuckets when there are no regular buckets...
+      for (String refine : Arrays.asList("", "refine: true,", "refine:false,")) {
+        client.testJQ(params(p, "rows", "0", "q", "*:*", "fore", "${xy_s}:X", "back", "${num_d}:[0 TO 100]",
+                             "json.facet", "{"
+                             + "   cat0:{ ${terms} type:terms, field: bogus_field_s, allBuckets:true, "
+                             + refine
+                             + "          facet:{ s:{ type:func, func:'relatedness($fore,$back)' } } } }")
+                      , "facets=={ count:8, cat0:{ "
+                      // 's' key must not exist in the allBuckets bucket
+                      + "    allBuckets: { count:0 }"
+                      + "    buckets:[ ]"
+                      + "} }"
+                      );
+      }
+
 
       // SKG under nested facet where some terms only exist on one shard
       { 
@@ -1362,17 +1387,24 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
       );
 
       // test filling in missing "allBuckets"
-      client.testJQ(params(p, "q", "*:*",
+      client.testJQ(params(p, "q", "*:*", 
           "json.facet", "{" +
-              "  cat :{${terms} type:terms, field:${cat_s}, limit:1, overrequest:0, refine:false, allBuckets:true, facet:{  xy:{${terms} type:terms, field:${xy_s}, limit:1, overrequest:0, allBuckets:true, refine:false}  }  }" +
+              "  cat0:{${terms} type:terms, field:${cat_s}, limit:1, overrequest:0, refine:false, allBuckets:true, facet:{  xy:{${terms} type:terms, field:${xy_s}, limit:1, overrequest:0, allBuckets:true, refine:false}  }  }" +
+              ", cat1:{${terms} type:terms, field:${cat_s}, limit:1, overrequest:0, refine:true, allBuckets:true, sort:'min asc', facet:{  min:'min(${num_d})' }  }" +
               ", cat2:{${terms} type:terms, field:${cat_s}, limit:1, overrequest:0, refine:true , allBuckets:true, facet:{  xy:{${terms} type:terms, field:${xy_s}, limit:1, overrequest:0, allBuckets:true, refine:true }  }  }" +
-              ", cat3:{${terms} type:terms, field:${cat_s}, limit:1, overrequest:0, refine:true , allBuckets:true, facet:{  xy:{${terms} type:terms, field:${xy_s}, limit:1, overrequest:0, allBuckets:true, refine:true , facet:{f:'sum(${num_d})'}   }  }  }" +
+              ", cat3:{${terms} type:terms, field:${cat_s}, limit:1, overrequest:0, refine:true , allBuckets:true, facet:{  xy:{${terms} type:terms, field:${xy_s}, limit:1, overrequest:0, allBuckets:true, refine:true , facet:{sum:'sum(${num_d})'}   }  }  }" +
+              ", cat4:{${terms} type:terms, field:${cat_s}, limit:1, overrequest:0, refine:true , allBuckets:true, facet:{  xy:{${terms} type:terms, field:${xy_s}, limit:1, overrequest:0, allBuckets:true, refine:true , sort:'sum asc', facet:{sum:'sum(${num_d})'}   }  }  }" +
+              // using overrefine only so we aren't fooled by 'local maximum' and ask all shards for 'B'
+              ", cat5:{${terms} type:terms, field:${cat_s}, limit:1, overrequest:0, refine:true, overrefine:2, allBuckets:true,  sort:'min desc' facet:{  min:'min(${num_d})', xy:{${terms} type:terms, field:${xy_s}, limit:1, overrequest:0, allBuckets:true, refine:true, facet:{sum:'sum(${num_d})'}   }  }  }" +
               "}"
           )
           , "facets=={ count:8" +
-              ", cat:{ allBuckets:{count:8}, buckets:[  {val:A, count:3, xy:{buckets:[{count:2, val:X}], allBuckets:{count:3}}}]  }" +
+              ",cat0:{ allBuckets:{count:8}, buckets:[  {val:A, count:3, xy:{buckets:[{count:2, val:X}], allBuckets:{count:3}}}]  }" +
+              ",cat1:{ allBuckets:{count:8, min:-19.0 }, buckets:[  {val:A, count:4, min:-19.0 }]  }" +
               ",cat2:{ allBuckets:{count:8}, buckets:[  {val:A, count:4, xy:{buckets:[{count:3, val:X}], allBuckets:{count:4}}}]  }" +
-              ",cat3:{ allBuckets:{count:8}, buckets:[  {val:A, count:4, xy:{buckets:[{count:3, val:X, f:23.0}], allBuckets:{count:4, f:4.0}}}]  }" +
+              ",cat3:{ allBuckets:{count:8}, buckets:[  {val:A, count:4, xy:{buckets:[{count:3, val:X, sum:23.0}], allBuckets:{count:4, sum:4.0}}}]  }" +
+              ",cat4:{ allBuckets:{count:8}, buckets:[  {val:A, count:4, xy:{buckets:[{count:1, val:Y, sum:-19.0}], allBuckets:{count:4, sum:4.0}}}]  }" +
+              ",cat5:{ allBuckets:{count:8, min:-19.0 }, buckets:[  {val:B, count:4, min:-11.0, xy:{buckets:[{count:2, val:X, sum:6.0}], allBuckets:{count:4, sum:-2.0}}}]  }" +
               "}"
       );
 

@@ -36,7 +36,7 @@ import org.junit.Before;
 /**
  * Base class for testing {@link org.apache.lucene.classification.Classifier}s
  */
-public abstract class DocumentClassificationTestBase<T> extends ClassificationTestBase {
+public abstract class DocumentClassificationTestBase<T> extends ClassificationTestBase<T>{
 
   protected static final BytesRef VIDEOGAME_RESULT = new BytesRef("videogames");
   protected static final BytesRef VIDEOGAME_ANALYZED_RESULT = new BytesRef("videogam");

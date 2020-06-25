@@ -152,7 +152,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
             if (port == localPort) {
               try {
                 standaloneSolr.stop();
-                log.info("Stopped standalone Solr instance running on port "+port);
+                log.info("Stopped standalone Solr instance running on port {}", port);
               } catch (Exception e) {
                 if (e instanceof RuntimeException) {
                   throw (RuntimeException)e;
@@ -182,11 +182,11 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
         }
       } else {
         String cmdLine = joinArgs(cmd.getArguments());
-        log.info("Executing command: "+cmdLine);
+        log.info("Executing command: {}", cmdLine);
         try {
           return super.execute(cmd);
         } catch (Exception exc) {
-          log.error("Execute command ["+cmdLine+"] failed due to: "+exc, exc);
+          log.error("Execute command [{}] failed due to: {}", cmdLine, exc, exc);
           throw exc;
         }
       }
@@ -272,7 +272,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
         try {
           solrCloudCluster.shutdown();
         } catch (Exception e) {
-          log.warn("Failed to shutdown MiniSolrCloudCluster due to: " + e);
+          log.warn("Failed to shutdown MiniSolrCloudCluster due to: ", e);
         }
       }
 
@@ -280,7 +280,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
         try {
           standaloneSolr.stop();
         } catch (Exception exc) {
-          log.warn("Failed to shutdown standalone Solr due to: " + exc);
+          log.warn("Failed to shutdown standalone Solr due to: ", exc);
         }
         standaloneSolr = null;
       }
@@ -330,7 +330,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
         bindPort = socket.getLocalPort();
       }
   
-      log.info("Selected port "+bindPort+" to start "+exampleName+" example Solr instance on ...");
+      log.info("Selected port {} to start {} example Solr instance on ...", bindPort, exampleName);
   
       String[] toolArgs = new String[] {
           "-e", exampleName,
@@ -361,8 +361,8 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
         
         assertEquals("it should be ok "+tool+" "+Arrays.toString(toolArgs),0, status);
       } catch (Exception e) {
-        log.error("RunExampleTool failed due to: " + e +
-            "; stdout from tool prior to failure: " + baos.toString(StandardCharsets.UTF_8.name()));
+        log.error("RunExampleTool failed due to: {}; stdout from tool prior to failure: {}"
+            , e , baos.toString(StandardCharsets.UTF_8.name())); // logOk
         throw e;
       }
   
@@ -583,6 +583,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
           "      {'nodeRole':'overseer', 'replica':0}" +
           "    ]" +
           "}";
+      @SuppressWarnings({"rawtypes"})
       SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
       NamedList<Object> response = cloudClient.request(req);
       assertEquals(response.get("result").toString(), "success");
