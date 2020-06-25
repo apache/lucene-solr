@@ -3243,6 +3243,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
               // removed the files we are now syncing.
               deleter.incRef(toCommit.files(false));
               if (anyChanges && maxCommitMergeWaitMillis > 0) {
+                // we can safely call prepareOnCommitMerge since writeReaderPool(true) above wrote all
+                // necessary files to disk and checkpointed them.
                 onCommitMerges = prepareOnCommitMerge(toCommit, includeInCommit);
               }
             }
@@ -3302,6 +3304,15 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     }
   }
 
+  /**
+   * This is a sneaky optimization to allow a commit to wait for merges on smallish segments to reduce the amount of
+   * tiny segments in the commit point. What we do here is, we wrap a OneMerge to update the committingSegmentInfos
+   * one the merge has finished. We replace the source segments in the SIS that we are going to commit with the freshly
+   * merged segment but ignore all updates that are made to the merged segment after it was written. The updates that
+   * are made done belong into the commit point and should therefore not be included. See the clone call in onMergeCommit below.
+   * We also ensure that we pull the merge readers while we hold the IW lock otherwise we'd see updates being applied that
+   * don't belong into the segmetn either if it happens during the merge process.
+   */
   private MergePolicy.MergeSpecification prepareOnCommitMerge(SegmentInfos committingSegmentInfos, AtomicBoolean includeInCommit) throws IOException {
     assert Thread.holdsLock(this);
     MergePolicy.MergeSpecification onCommitMerges = updatePendingMerges(new OneMergeWrappingMergePolicy(config.getMergePolicy(), toWrap ->
@@ -3339,19 +3350,22 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
           @Override
           void onMergeCommit() {
-            origInfo = this.info.clone();
+            // clone the target info to make sure we have the original info without the updated del and update gens.
+            origInfo = info.clone();
           }
 
           @Override
           void initMergeReaders(IOUtils.IOFunction<SegmentCommitInfo, MergePolicy.MergeReader> readerFactory) throws IOException {
             if (onlyOnce.compareAndSet(false, true)) {
+              // we do this only once below to pull readers as point in time readers with respect to the commit point
+              // we try to update.
               super.initMergeReaders(readerFactory);
             }
           }
 
           @Override
           public CodecReader wrapForMerge(CodecReader reader) throws IOException {
-            return toWrap.wrapForMerge(reader);
+            return toWrap.wrapForMerge(reader); // must delegate
           }
         }
     ), MergeTrigger.COMMIT, UNBOUNDED_MAX_MERGE_SEGMENTS);
@@ -3363,6 +3377,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
           merge.initMergeReaders(
               sci -> {
                 final ReadersAndUpdates rld = getPooledInstance(sci, true);
+                // calling setIsMerging is important since it causes the RaU to record all DV updates
+                // in a separate map in order to be applied to the merged segment after it's done
                 rld.setIsMerging();
                 return rld.getReaderForMerge(context);
               });
