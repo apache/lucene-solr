@@ -123,6 +123,17 @@
          The purpose is to enable easy caching of user/application level data.
          The regenerator argument should be specified as an implementation
          of solr.search.CacheRegenerator if autowarming is desired.  -->
+
+    <!-- Enable Circuit Breakers
+  -->
+    <useCircuitBreakers>false</useCircuitBreakers>
+
+    <!-- Memory Circuit Breaker Threshold In Percentage
+
+    Post this percentage usage of the heap, incoming queries will be rejected
+      -->
+    <memoryCircuitBreakerThreshold>100</memoryCircuitBreakerThreshold>
+
     <!--
     <cache name="myUserCache"
       class="solr.CaffeineCache"

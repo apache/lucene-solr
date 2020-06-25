@@ -35,6 +35,10 @@
 
     <queryResultMaxDocsCached>200</queryResultMaxDocsCached>
 
+    <useCircuitBreakers>false</useCircuitBreakers>
+
+    <memoryCircuitBreakerThreshold>100</memoryCircuitBreakerThreshold>
+
     <documentCache size="512"
                    initialSize="512"
                    autowarmCount="0"/>

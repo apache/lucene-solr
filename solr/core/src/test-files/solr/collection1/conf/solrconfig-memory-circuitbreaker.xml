@@ -24,7 +24,7 @@
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
   <requestHandler name="/select" class="solr.SearchHandler" />
-  
+
   <query>
     <!-- Maximum number of clauses in a boolean query... can affect
         range or wildcard queries that expand to big boolean
@@ -55,24 +55,24 @@
 
     <cache
       name="user_definied_cache_XXX"
-      enabled="${user_definied_cache_XXX.enabled:false}"  
+      enabled="${user_definied_cache_XXX.enabled:false}"
       />
     <cache
       name="user_definied_cache_ZZZ"
-      enabled="${user_definied_cache_ZZZ.enabled:false}"  
+      enabled="${user_definied_cache_ZZZ.enabled:false}"
       />
 
 
-    
+
     <!-- If true, stored fields that are not requested will be loaded lazily.
     -->
     <enableLazyFieldLoading>true</enableLazyFieldLoading>
 
     <queryResultWindowSize>10</queryResultWindowSize>
 
-    <useCircuitBreakers>false</useCircuitBreakers>
+    <useCircuitBreakers>true</useCircuitBreakers>
 
-    <memoryCircuitBreakerThreshold>100</memoryCircuitBreakerThreshold>
+    <memoryCircuitBreakerThreshold>75</memoryCircuitBreakerThreshold>
 
     <!-- boolToFilterOptimizer converts boolean clauses with zero boost
          into cached filters if the number of docs selected by the clause exceeds
@@ -89,6 +89,3 @@
   </initParams>
 
 </config>
-
-
-

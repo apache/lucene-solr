@@ -170,6 +170,24 @@ This parameter sets the maximum number of documents to cache for any entry in th
 <queryResultMaxDocsCached>200</queryResultMaxDocsCached>
 ----
 
+=== useCircuitBreakers
+
+This parameter allows enabling circuit breakers for query control.
+
+[source,xml]
+----
+<useCircuitBreakers>true</useCircuitBreakers>
+----
+
+=== memoryCircuitBreakerThreshold
+
+Memory threshold in percentage for JVM heap usage
+
+[source,xml]
+----
+<memoryCircuitBreakerThreshold>75</memoryCircuitBreakerThreshold>
+----
+
 === useColdSearcher
 
 This setting controls whether search requests for which there is not a currently registered searcher should wait for a new searcher to warm up (false) or proceed immediately (true). When set to "false", requests will block until the searcher has warmed its caches.

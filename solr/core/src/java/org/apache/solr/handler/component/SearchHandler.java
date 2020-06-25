@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.index.ExitableDirectoryReader;
@@ -51,13 +52,18 @@ import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.SolrPluginUtils;
+import org.apache.solr.util.circuitbreaker.CircuitBreaker;
+import org.apache.solr.util.circuitbreaker.CircuitBreakerManager;
+import org.apache.solr.util.circuitbreaker.CircuitBreakerType;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
+import static org.apache.solr.common.params.CommonParams.FAILURE;
 import static org.apache.solr.common.params.CommonParams.PATH;
+import static org.apache.solr.common.params.CommonParams.STATUS;
 
 
 /**
@@ -297,6 +303,29 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
 
     final RTimerTree timer = rb.isDebug() ? req.getRequestTimer() : null;
 
+    Map<CircuitBreakerType, CircuitBreaker> trippedCircuitBreakers;
+
+    if (timer != null) {
+      RTimerTree subt = timer.sub("circuitbreaker");
+      rb.setTimer(subt.sub("circuitbreaker"));
+
+      CircuitBreakerManager circuitBreakerManager = req.getCore().getCircuitBreakerManager();
+      trippedCircuitBreakers = circuitBreakerManager.checkAllCircuitBreakers();
+
+      rb.getTimer().stop();
+      subt.stop();
+    } else {
+      CircuitBreakerManager circuitBreakerManager = req.getCore().getCircuitBreakerManager();
+      trippedCircuitBreakers = circuitBreakerManager.checkAllCircuitBreakers();
+    }
+
+    if (trippedCircuitBreakers != null) {
+      String errorMessage = CircuitBreakerManager.constructFinalErrorMessageString(trippedCircuitBreakers);
+      rsp.add(STATUS, FAILURE);
+      rsp.setException(new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Circuit Breakers tripped " + errorMessage));
+      return;
+    }
+
     final ShardHandler shardHandler1 = getAndPrepShardHandler(req, rb); // creates a ShardHandler object only if it's needed
     
     if (timer == null) {
@@ -308,7 +337,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
       // debugging prepare phase
       RTimerTree subt = timer.sub( "prepare" );
       for( SearchComponent c : components ) {
-        rb.setTimer( subt.sub( c.getName() ) );
+        rb.setTimer(subt.sub( c.getName() ) );
         c.prepare(rb);
         rb.getTimer().stop();
       }
