@@ -19,7 +19,6 @@ package org.apache.solr.search.facet;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -330,16 +329,8 @@ public class UnInvertedField extends DocTermOrds {
       return;
     }
 
-    SweepCountAccStruct baseCountAccStruct;
-    final List<SweepCountAccStruct> others;
-    if (processor.countAcc instanceof SweepingCountSlotAcc) { // nocommit: refactor into reusable helper
-      SweepingCountSlotAcc sweepCountAcc = (SweepingCountSlotAcc) processor.countAcc;
-      baseCountAccStruct = sweepCountAcc.base;
-      others = sweepCountAcc.others;
-    } else {
-      baseCountAccStruct = new SweepCountAccStruct(processor.fcontext.base, true, processor.countAcc);
-      others = Collections.emptyList();
-    }
+    SweepCountAccStruct baseCountAccStruct = SweepingCountSlotAcc.baseStructOf(processor);
+    final List<SweepCountAccStruct> others = SweepingCountSlotAcc.otherStructsOf(processor);
 
     final int[] index = this.index;
 
@@ -458,16 +449,8 @@ public class UnInvertedField extends DocTermOrds {
 
     int uniqueTerms = 0;
     final CountSlotAcc countAcc = processor.countAcc;
-    final SweepCountAccStruct baseCountAccStruct;
-    final List<SweepCountAccStruct> others;
-    if (countAcc instanceof SweepingCountSlotAcc) { // nocommit: refactor into reusable helper
-      SweepingCountSlotAcc sweepCountAcc = (SweepingCountSlotAcc) countAcc;
-      baseCountAccStruct = sweepCountAcc.base;
-      others = sweepCountAcc.others;
-    } else {
-      baseCountAccStruct = new SweepCountAccStruct(processor.fcontext.base, true, countAcc);
-      others = Collections.emptyList();
-    }
+    final SweepCountAccStruct baseCountAccStruct = SweepingCountSlotAcc.baseStructOf(processor);
+    final List<SweepCountAccStruct> others = SweepingCountSlotAcc.otherStructsOf(processor);
 
     for (TopTerm tt : bigTerms.values()) {
       if (tt.termNum >= startTermIndex && tt.termNum < endTermIndex) {

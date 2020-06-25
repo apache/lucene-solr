@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.IntFunction;
@@ -777,6 +778,31 @@ public abstract class SlotAcc implements Closeable {
       for (SlotAcc acc : output) {
         acc.setValues(bucket, slotNum);
       }
+    }
+
+    /**
+     * Helper method for code that wants to operating in a sweeping manner even if the current processor
+     * is not using sweeping.
+     *
+     * @returns struct that wraps the {@link FacetContext#base} unless the {@link FacetProcessor#countAcc} is a {@link SweepingCountSlotAcc}
+     */
+    public static SweepCountAccStruct baseStructOf(FacetProcessor processor) {
+      if (processor.countAcc instanceof SweepingCountSlotAcc) {
+        return ((SweepingCountSlotAcc) processor.countAcc).base;
+      }
+      return new SweepCountAccStruct(processor.fcontext.base, true, processor.countAcc);
+    }
+    /**
+     * Helper method for code that wants to operating in a sweeping manner even if the current processor
+     * is not using sweeping
+     *
+     * @returns empty list unless the {@link FacetProcessor#countAcc} is a {@link SweepingCountSlotAcc}
+     */
+    public static List<SweepCountAccStruct> otherStructsOf(FacetProcessor processor) {
+      if (processor.countAcc instanceof SweepingCountSlotAcc) {
+        return ((SweepingCountSlotAcc) processor.countAcc).others;
+      }
+      return Collections.emptyList();
     }
   }
 

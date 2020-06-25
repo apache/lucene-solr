@@ -18,7 +18,6 @@ package org.apache.solr.search.facet;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.index.DocValues;
@@ -98,16 +97,8 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
       return;
     }
 
-    final SweepCountAccStruct base;
-    final List<SweepCountAccStruct> others;
-    if (countAcc instanceof SweepingCountSlotAcc) { // nocommit: refactor into reusable helper
-      SweepingCountSlotAcc sweepingCountAcc = (SweepingCountSlotAcc) countAcc;
-      base = sweepingCountAcc.base;
-      others = sweepingCountAcc.others;
-    } else {
-      base = new SweepCountAccStruct(fcontext.base, true, countAcc);
-      others = Collections.emptyList();
-    }
+    final SweepCountAccStruct base = SweepingCountSlotAcc.baseStructOf(this);
+    final List<SweepCountAccStruct> others = SweepingCountSlotAcc.otherStructsOf(this);
     assert null != base;
     
     // TODO: refactor some of this logic into a base class
