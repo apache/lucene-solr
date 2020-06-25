@@ -222,7 +222,7 @@ public class RelatednessAgg extends AggValueSource {
 
     @Override
     public void collect(int perSegDocId, int slot, IntFunction<SlotContext> slotContext) throws IOException {
-      throw new UnsupportedOperationException("collect() not supported, this SlotAcc impl only usable for sweepingnot supported");
+      throw new UnsupportedOperationException("collect() not supported, this SlotAcc impl only usable for sweeping");
     }
 
     @Override
