@@ -287,13 +287,14 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
   }
 
-    public static void waitForAllNodesToSync(MiniSolrCloudCluster cluster, String path, Map expected ) throws Exception {
-        for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
-            String baseUrl = jettySolrRunner.getBaseUrl().toString().replace("/solr", "/api");
-            String url = baseUrl  + path + "?wt=javabin";
-            TestDistribPackageStore.assertResponseValues(10, new Fetcher(url, jettySolrRunner), expected);
-        }
+  @SuppressWarnings("unchecked")
+  public static void waitForAllNodesToSync(MiniSolrCloudCluster cluster, String path, Map expected) throws Exception {
+    for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
+      String baseUrl = jettySolrRunner.getBaseUrl().toString().replace("/solr", "/api");
+      String url = baseUrl + path + "?wt=javabin";
+      TestDistribPackageStore.assertResponseValues(10, new Fetcher(url, jettySolrRunner), expected);
     }
+  }
 
   private void expectError(V2Request req, SolrClient client, String errPath, String expectErrorMsg) throws IOException, SolrServerException {
     RemoteExecutionException e = expectThrows(RemoteExecutionException.class, () -> req.process(client));
