@@ -57,7 +57,7 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
 
   @Override
   public String printDebugInfo() {
-    return "seenMemory=" + seenMemory + " allowedMemory=" + allowedMemory;
+    return "seenMemory=" + seenMemory.get() + " allowedMemory=" + allowedMemory.get();
   }
 
   private long getCurrentMemoryThreshold() {

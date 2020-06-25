@@ -295,23 +295,6 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
       rb.requestInfo.setResponseBuilder(rb);
     }
 
-    //TODO: Should this be for indexing requests as well?
-    CircuitBreakerManager circuitBreakerManager = req.getCore().getCircuitBreakerManager();
-    Map<CircuitBreakerType, CircuitBreaker> trippedCircuitBreakers = circuitBreakerManager.checkAllCircuitBreakers();
-
-    if (trippedCircuitBreakers != null) {
-      final RTimerTree timer = rb.isDebug() ? req.getRequestTimer() : null;
-
-      if (timer != null) {
-        RTimerTree subt = timer.sub("circuitbreaker");
-        rb.setTimer(subt.sub("circuitbreaker"));
-      }
-      String errorMessage = CircuitBreakerManager.constructFinalErrorMessageString(trippedCircuitBreakers);
-      rsp.add(STATUS, FAILURE);
-      rsp.setException(new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Circuit Breakers tripped " + errorMessage));
-      return;
-    }
-
     boolean dbg = req.getParams().getBool(CommonParams.DEBUG_QUERY, false);
     rb.setDebug(dbg);
     if (dbg == false){//if it's true, we are doing everything anyway.
@@ -319,6 +302,29 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
     }
 
     final RTimerTree timer = rb.isDebug() ? req.getRequestTimer() : null;
+
+    Map<CircuitBreakerType, CircuitBreaker> trippedCircuitBreakers;
+
+    if (timer != null) {
+      RTimerTree subt = timer.sub("circuitbreaker");
+      rb.setTimer(subt.sub("circuitbreaker"));
+
+      CircuitBreakerManager circuitBreakerManager = req.getCore().getCircuitBreakerManager();
+      trippedCircuitBreakers = circuitBreakerManager.checkAllCircuitBreakers();
+
+      rb.getTimer().stop();
+      subt.stop();
+    } else {
+      CircuitBreakerManager circuitBreakerManager = req.getCore().getCircuitBreakerManager();
+      trippedCircuitBreakers = circuitBreakerManager.checkAllCircuitBreakers();
+    }
+
+    if (trippedCircuitBreakers != null) {
+      String errorMessage = CircuitBreakerManager.constructFinalErrorMessageString(trippedCircuitBreakers);
+      rsp.add(STATUS, FAILURE);
+      rsp.setException(new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Circuit Breakers tripped " + errorMessage));
+      return;
+    }
 
     final ShardHandler shardHandler1 = getAndPrepShardHandler(req, rb); // creates a ShardHandler object only if it's needed
     
