@@ -50,7 +50,7 @@ public abstract class EncryptingDirectory extends FilterDirectory {
 
   /**
    * Gets the encryption key for the provided file name.
-   * @return The key; or null if none, in this case the data is not encrypted.
+   * @return The key, this array content is not modified; or null if none, in this case the data is not encrypted.
    */
   protected abstract byte[] getKey(String fileName);
 

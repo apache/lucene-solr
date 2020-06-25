@@ -50,7 +50,8 @@ public class SegmentEncryptingDirectory extends EncryptingDirectory {
   public interface SegmentKeySupplier {
     /**
      * Gets the encryption key for the provided file name of a specific segment.
-     * @return The key; or null if none, in this case the data is not encrypted. It must be either 128, 192 or 256 bits long.
+     * @return The key, this array content is not modified; or null if none, in this case the data is not encrypted.
+     * It must be either 128, 192 or 256 bits long.
      */
     byte[] getKey(SegmentInfo segmentInfo, String fileName);
   }

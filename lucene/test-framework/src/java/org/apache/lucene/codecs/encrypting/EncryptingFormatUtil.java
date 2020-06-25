@@ -17,27 +17,16 @@
 
 package org.apache.lucene.codecs.encrypting;
 
-import org.apache.lucene.codecs.DocValuesFormat;
-import org.apache.lucene.codecs.FilterCodec;
-import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.util.TestUtil;
+import java.util.Arrays;
+import java.util.Random;
 
-public class EncryptingCodec extends FilterCodec {
+import org.apache.lucene.index.SegmentInfo;
 
-  private final PostingsFormat postingsFormat = new EncryptingPostingsFormat();
-  private final DocValuesFormat docValuesFormat = new EncryptingDocValuesFormat();
+class EncryptingFormatUtil {
 
-  public EncryptingCodec() {
-    super("Encrypting", TestUtil.getDefaultCodec());
-  }
-
-  @Override
-  public PostingsFormat postingsFormat() {
-    return postingsFormat;
-  }
-
-  @Override
-  public DocValuesFormat docValuesFormat() {
-    return docValuesFormat;
+  static byte[] getEncryptionKey(SegmentInfo segmentInfo, String fileName) {
+    byte[] key = new byte[32];
+    new Random(Arrays.hashCode(segmentInfo.getId())).nextBytes(key);
+    return key;
   }
 }

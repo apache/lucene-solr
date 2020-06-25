@@ -14,39 +14,39 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.lucene.codecs.encrypting;
 
 import java.io.IOException;
 
-import org.apache.lucene.codecs.FieldsConsumer;
-import org.apache.lucene.codecs.FieldsProducer;
-import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.codecs.DocValuesFormat;
+import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.SegmentEncryptingDirectory;
 import org.apache.lucene.util.TestUtil;
 
-public class EncryptingPostingsFormat extends PostingsFormat {
+public class EncryptingDocValuesFormat extends DocValuesFormat {
 
-  private final PostingsFormat delegate = TestUtil.getDefaultPostingsFormat();
+  private final DocValuesFormat delegate = TestUtil.getDefaultDocValuesFormat();
 
-  public EncryptingPostingsFormat() {
+  public EncryptingDocValuesFormat() {
     super("Encrypting");
   }
-  
+
   @Override
-  public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
+  public DocValuesConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
     Directory encryptingDirectory = new SegmentEncryptingDirectory(state.directory, EncryptingFormatUtil::getEncryptionKey, state.segmentInfo);
     SegmentWriteState encryptingState = new SegmentWriteState(state.infoStream, encryptingDirectory, state.segmentInfo, state.fieldInfos, state.segUpdates, state.context, state.segmentSuffix);
     return delegate.fieldsConsumer(encryptingState);
   }
 
   @Override
-  public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
+  public DocValuesProducer fieldsProducer(SegmentReadState state) throws IOException {
     Directory encryptingDirectory = new SegmentEncryptingDirectory(state.directory, EncryptingFormatUtil::getEncryptionKey, state.segmentInfo);
     SegmentReadState decryptingState = new SegmentReadState(encryptingDirectory, state.segmentInfo, state.fieldInfos, state.context, state.segmentSuffix);
     return delegate.fieldsProducer(decryptingState);
   }
-
 }

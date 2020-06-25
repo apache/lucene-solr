@@ -17,27 +17,16 @@
 
 package org.apache.lucene.codecs.encrypting;
 
-import org.apache.lucene.codecs.DocValuesFormat;
-import org.apache.lucene.codecs.FilterCodec;
-import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.index.BaseCompressingDocValuesFormatTestCase;
 import org.apache.lucene.util.TestUtil;
 
-public class EncryptingCodec extends FilterCodec {
+public class TestEncryptingDocValuesFormat extends BaseCompressingDocValuesFormatTestCase {
 
-  private final PostingsFormat postingsFormat = new EncryptingPostingsFormat();
-  private final DocValuesFormat docValuesFormat = new EncryptingDocValuesFormat();
-
-  public EncryptingCodec() {
-    super("Encrypting", TestUtil.getDefaultCodec());
-  }
+  private final Codec CODEC = TestUtil.alwaysDocValuesFormat(new EncryptingDocValuesFormat());
 
   @Override
-  public PostingsFormat postingsFormat() {
-    return postingsFormat;
-  }
-
-  @Override
-  public DocValuesFormat docValuesFormat() {
-    return docValuesFormat;
+  protected Codec getCodec() {
+    return CODEC;
   }
 }
