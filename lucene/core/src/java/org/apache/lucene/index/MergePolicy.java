@@ -443,7 +443,7 @@ public abstract class MergePolicy {
      * Clears the list of merge readers;
      */
     List<MergeReader> clearMergeReader() {
-      assert mergeCompleted.isDone();
+      assert mergeCompleted.isDone() : this.getClass().getName();
       List<MergeReader> readers = mergeReaders;
       mergeReaders = List.of();
       return readers;
