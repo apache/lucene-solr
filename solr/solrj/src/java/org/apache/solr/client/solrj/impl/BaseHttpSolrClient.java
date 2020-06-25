@@ -22,7 +22,6 @@ import java.util.Collections;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.Utils;
 
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 
@@ -64,9 +63,6 @@ public abstract class BaseHttpSolrClient extends SolrClient {
       if (errObj != null) {
         Number code = (Number) getObjectByPath(errObj, true, Collections.singletonList("code"));
         String msg = (String) getObjectByPath(errObj, true, Collections.singletonList("msg"));
-        if(msg == null) msg = "";
-        msg+= Utils.toJSONString(errObj);
-
         return new RemoteExecutionException(host, code == null ? ErrorCode.UNKNOWN.code : code.intValue(),
             msg == null ? "Unknown Error" : msg, errResponse);
 
