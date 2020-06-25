@@ -3243,71 +3243,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
               // removed the files we are now syncing.
               deleter.incRef(toCommit.files(false));
               if (anyChanges && maxCommitMergeWaitMillis > 0) {
-                SegmentInfos committingSegmentInfos = toCommit;
-                onCommitMerges = updatePendingMerges(new OneMergeWrappingMergePolicy(config.getMergePolicy(), toWrap ->
-                    new MergePolicy.OneMerge(toWrap.segments) {
-                      SegmentCommitInfo origInfo;
-                      AtomicBoolean onlyOnce = new AtomicBoolean(false);
-                      @Override
-                      public void mergeFinished(boolean committed, boolean segmentDropped) throws IOException {
-                        assert Thread.holdsLock(IndexWriter.this);
-                        if (segmentDropped == false
-                            && committed
-                            && includeInCommit.get()) {
-                          deleter.incRef(origInfo.files());
-                          Set<String> mergedSegmentNames = new HashSet<>();
-                          for (SegmentCommitInfo sci : segments) {
-                            mergedSegmentNames.add(sci.info.name);
-                          }
-                          List<SegmentCommitInfo> toCommitMergedAwaySegments = new ArrayList<>();
-                          for (SegmentCommitInfo sci : committingSegmentInfos) {
-                            if (mergedSegmentNames.contains(sci.info.name)) {
-                              toCommitMergedAwaySegments.add(sci);
-                              deleter.decRef(sci.files());
-                            }
-                          }
-                          // Construct a OneMerge that applies to toCommit
-                          MergePolicy.OneMerge applicableMerge = new MergePolicy.OneMerge(toCommitMergedAwaySegments);
-                          applicableMerge.info = origInfo;
-                          long segmentCounter = Long.parseLong(origInfo.info.name.substring(1), Character.MAX_RADIX);
-                          committingSegmentInfos.counter = Math.max(committingSegmentInfos.counter, segmentCounter + 1);
-                          committingSegmentInfos.applyMergeChanges(applicableMerge, false);
-                        }
-                        toWrap.mergeFinished(committed, false);
-                        super.mergeFinished(committed, segmentDropped);
-                      }
-
-                      @Override
-                      void onMergeCommit() {
-                        origInfo = this.info.clone();
-                      }
-
-                      @Override
-                      void initMergeReaders(IOContext mergeContext, Function<SegmentCommitInfo, ReadersAndUpdates> readerFactory) throws IOException {
-                        if (onlyOnce.compareAndSet(false, true)) {
-                          super.initMergeReaders(mergeContext, readerFactory);
-                        }
-                      }
-
-                      @Override
-                      public CodecReader wrapForMerge(CodecReader reader) throws IOException {
-                        return toWrap.wrapForMerge(reader);
-                      }
-                    }
-                ), MergeTrigger.COMMIT, UNBOUNDED_MAX_MERGE_SEGMENTS);
-                if (onCommitMerges != null) {
-                  boolean closeReaders = true;
-                  try {
-                    for (MergePolicy.OneMerge merge : onCommitMerges.merges) {
-                      merge.initMergeReaders(IOContext.DEFAULT, sci -> getPooledInstance(sci, true));
-                    }
-                    closeReaders = false;
-                  } finally {
-                    if (closeReaders) {
-                      IOUtils.applyToAll(onCommitMerges.merges, merge -> closeMergeReaders(merge, true, false));
-                    }
-                  }
-                }
+                onCommitMerges = prepareOnCommitMerge(toCommit, includeInCommit);
               }
             }
             success = true;
@@ -3364,6 +3300,81 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
         throw t;
       }
     }
+  }
+
+  private MergePolicy.MergeSpecification prepareOnCommitMerge(SegmentInfos committingSegmentInfos, AtomicBoolean includeInCommit) throws IOException {
+    assert Thread.holdsLock(this);
+    MergePolicy.MergeSpecification onCommitMerges = updatePendingMerges(new OneMergeWrappingMergePolicy(config.getMergePolicy(), toWrap ->
+        new MergePolicy.OneMerge(toWrap.segments) {
+          SegmentCommitInfo origInfo;
+          AtomicBoolean onlyOnce = new AtomicBoolean(false);
+          @Override
+          public void mergeFinished(boolean committed, boolean segmentDropped) throws IOException {
+            assert Thread.holdsLock(IndexWriter.this);
+            if (segmentDropped == false
+                && committed
+                && includeInCommit.get()) {
+              deleter.incRef(origInfo.files());
+              Set<String> mergedSegmentNames = new HashSet<>();
+              for (SegmentCommitInfo sci : segments) {
+                mergedSegmentNames.add(sci.info.name);
+              }
+              List<SegmentCommitInfo> toCommitMergedAwaySegments = new ArrayList<>();
+              for (SegmentCommitInfo sci : committingSegmentInfos) {
+                if (mergedSegmentNames.contains(sci.info.name)) {
+                  toCommitMergedAwaySegments.add(sci);
+                  deleter.decRef(sci.files());
+                }
+              }
+              // Construct a OneMerge that applies to toCommit
+              MergePolicy.OneMerge applicableMerge = new MergePolicy.OneMerge(toCommitMergedAwaySegments);
+              applicableMerge.info = origInfo;
+              long segmentCounter = Long.parseLong(origInfo.info.name.substring(1), Character.MAX_RADIX);
+              committingSegmentInfos.counter = Math.max(committingSegmentInfos.counter, segmentCounter + 1);
+              committingSegmentInfos.applyMergeChanges(applicableMerge, false);
+            }
+            toWrap.mergeFinished(committed, false);
+            super.mergeFinished(committed, segmentDropped);
+          }
+
+          @Override
+          void onMergeCommit() {
+            origInfo = this.info.clone();
+          }
+
+          @Override
+          void initMergeReaders(IOUtils.IOFunction<SegmentCommitInfo, MergePolicy.MergeReader> readerFactory) throws IOException {
+            if (onlyOnce.compareAndSet(false, true)) {
+              super.initMergeReaders(readerFactory);
+            }
+          }
+
+          @Override
+          public CodecReader wrapForMerge(CodecReader reader) throws IOException {
+            return toWrap.wrapForMerge(reader);
+          }
+        }
+    ), MergeTrigger.COMMIT, UNBOUNDED_MAX_MERGE_SEGMENTS);
+    if (onCommitMerges != null) {
+      boolean closeReaders = true;
+      try {
+        for (MergePolicy.OneMerge merge : onCommitMerges.merges) {
+          IOContext context = new IOContext(merge.getStoreMergeInfo());
+          merge.initMergeReaders(
+              sci -> {
+                final ReadersAndUpdates rld = getPooledInstance(sci, true);
+                rld.setIsMerging();
+                return rld.getReaderForMerge(context);
+              });
+        }
+        closeReaders = false;
+      } finally {
+        if (closeReaders) {
+          IOUtils.applyToAll(onCommitMerges.merges, merge -> closeMergeReaders(merge, true, false));
+        }
+      }
+    }
+    return onCommitMerges;
   }
 
   /**
@@ -4378,27 +4389,23 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   private synchronized void closeMergeReaders(MergePolicy.OneMerge merge, boolean suppressExceptions, boolean droppedSegment) throws IOException {
     if (merge.hasFinished() == false) {
       final boolean drop = suppressExceptions == false;
-      try {
-        // first call mergeFinished before we potentially drop the reader and the last reference.
-        merge.mergeFinished(suppressExceptions == false, droppedSegment);
-      } finally {
-        IOUtils.applyToAll(merge.clearMergeReader(), mr -> {
-          final SegmentReader sr = mr.reader;
-          final ReadersAndUpdates rld = getPooledInstance(sr.getOriginalSegmentInfo(), false);
-          // We still hold a ref so it should not have been removed:
-          assert rld != null;
-          if (drop) {
-            rld.dropChanges();
-          } else {
-            rld.dropMergingUpdates();
-          }
-          rld.release(sr);
-          release(rld);
-          if (drop) {
-            readerPool.drop(rld.info);
-          }
-        });
-      }
+      // first call mergeFinished before we potentially drop the reader and the last reference.
+      merge.close(suppressExceptions == false, droppedSegment, mr -> {
+        final SegmentReader sr = mr.reader;
+        final ReadersAndUpdates rld = getPooledInstance(sr.getOriginalSegmentInfo(), false);
+        // We still hold a ref so it should not have been removed:
+        assert rld != null;
+        if (drop) {
+          rld.dropChanges();
+        } else {
+          rld.dropMergingUpdates();
+        }
+        rld.release(sr);
+        release(rld);
+        if (drop) {
+          readerPool.drop(rld.info);
+        }
+      });
     } else {
       assert merge.getMergeReader().isEmpty() : "we are done but still have readers: " + merge.getMergeReader();
       assert suppressExceptions : "can't be done and not suppressing exceptions";
@@ -4456,7 +4463,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     // closed:
     boolean success = false;
     try {
-      merge.initMergeReaders(context, sci -> getPooledInstance(sci, true));
+      merge.initMergeReaders(sci -> {
+        final ReadersAndUpdates rld = getPooledInstance(sci, true);
+        rld.setIsMerging();
+        return rld.getReaderForMerge(context);
+      });
       // Let the merge wrap readers
       List<CodecReader> mergeReaders = new ArrayList<>();
       Counter softDeleteCount = Counter.newCounter(false);

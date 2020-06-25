@@ -43,6 +43,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.MergeInfo;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOSupplier;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.ThreadInterruptedException;
 
@@ -260,8 +261,22 @@ public abstract class MergePolicy {
      * @param segmentDropped true iff the merged segment was dropped since it was fully deleted
      */
     public void mergeFinished(boolean success, boolean segmentDropped) throws IOException {
+    }
+
+    /**
+     * Closes this merge and releases all merge readers
+     */
+    final void close(boolean success, boolean segmentDropped, IOUtils.IOConsumer<MergeReader> readerConsumer) throws IOException {
+      // this method is final to ensure we never miss a super call to cleanup and finish the merge
       if (mergeCompleted.complete(success) == false) {
         throw new IllegalStateException("merge has already finished");
+      }
+      try {
+        mergeFinished(success, segmentDropped);
+      } finally {
+        List<MergeReader> readers = mergeReaders;
+        IOUtils.applyToAll(readers, readerConsumer);
+        mergeReaders = List.of();
       }
     }
 
@@ -414,7 +429,7 @@ public abstract class MergePolicy {
     /**
      * Sets the merge readers for this merge.
      */
-    void initMergeReaders(IOContext mergeContext, Function<SegmentCommitInfo, ReadersAndUpdates> readerFactory) throws IOException {
+    void initMergeReaders(IOUtils.IOFunction<SegmentCommitInfo, MergeReader> readerFactory) throws IOException {
       assert mergeReaders.isEmpty() : "merge readers must be empty";
       assert mergeCompleted.isDone() == false : "merge is already done";
       ArrayList<MergeReader> readers = new ArrayList<>(segments.size());
@@ -422,9 +437,7 @@ public abstract class MergePolicy {
         for (final SegmentCommitInfo info : segments) {
           // Hold onto the "live" reader; we will use this to
           // commit merged deletes
-          final ReadersAndUpdates rld = readerFactory.apply(info);
-          rld.setIsMerging();
-          readers.add(rld.getReaderForMerge(mergeContext));
+          readers.add(readerFactory.apply(info));
         }
       } finally {
         // ensure we assign this to close them in the case of an exception
@@ -439,15 +452,6 @@ public abstract class MergePolicy {
       return mergeReaders;
     }
 
-    /**
-     * Clears the list of merge readers;
-     */
-    List<MergeReader> clearMergeReader() {
-      assert mergeCompleted.isDone() : this.getClass().getName();
-      List<MergeReader> readers = mergeReaders;
-      mergeReaders = List.of();
-      return readers;
-    }
   }
 
   /**
