@@ -274,9 +274,9 @@ public abstract class MergePolicy {
       try {
         mergeFinished(success, segmentDropped);
       } finally {
-        List<MergeReader> readers = mergeReaders;
-        IOUtils.applyToAll(readers, readerConsumer);
+        final List<MergeReader> readers = mergeReaders;
         mergeReaders = List.of();
+        IOUtils.applyToAll(readers, readerConsumer);
       }
     }
 
