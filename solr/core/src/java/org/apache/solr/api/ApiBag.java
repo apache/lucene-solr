@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.util.CommandOperation;
@@ -148,6 +149,14 @@ public class ApiBag {
     ArrayList<String> copy = new ArrayList<>(l);
     copy.add("_introspect");
     registry.insert(copy, substitutes, introspect);
+  }
+
+  public synchronized Api unregister(SolrRequest.METHOD method, String path) {
+    List<String> l = PathTrie.getPathSegments(path);
+    List<String> introspectPath = new ArrayList<>(l);
+    introspectPath.add("_introspect");
+    getRegistry(method.toString()).remove(introspectPath);
+    return getRegistry(method.toString()).remove(l);
   }
 
   public static class IntrospectApi extends Api {

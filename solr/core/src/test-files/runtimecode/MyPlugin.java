@@ -15,38 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.solr.api;
+package org.apache.solr.handler;
 
-import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.api.Command;
+import org.apache.solr.api.EndPoint;
+import org.apache.solr.client.solrj.SolrRequest.METHOD;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.PermissionNameProvider;
 
-/**
- * Holds the deserialized object for each command and also holds request , response objects
- */
-public class PayloadObj<T> extends CommandOperation {
+@EndPoint(path = "/plugin/my/path",
+    method = METHOD.GET,
+    permission = PermissionNameProvider.Name.CONFIG_READ_PERM)
+public class MyPlugin {
 
-    //the deserialized object parameter
-    private T obj;
-    final SolrQueryRequest req;
-    final SolrQueryResponse rsp;
+  private final CoreContainer coreContainer;
 
-    public PayloadObj(String operationName, Object metaData, T obj, SolrQueryRequest req, SolrQueryResponse rsp) {
-        super(operationName, metaData);
-        this.obj = obj;
-        this.req = req;
-        this.rsp = rsp;
-    }
+  public MyPlugin(CoreContainer coreContainer) {
+    this.coreContainer = coreContainer;
+  }
 
-    public T get() {
-        return obj;
-    }
-
-    public SolrQueryRequest getRequest() {
-        return req;
-    }
-
-    public SolrQueryResponse getResponse() {
-        return rsp;
-    }
+  @Command
+  public void call(SolrQueryRequest req, SolrQueryResponse rsp){
+    rsp.add("myplugin.version", "2.0");
+  }
 }

@@ -32,7 +32,7 @@ import static java.util.Collections.emptyList;
  */
 public class PathTrie<T> {
   private final Set<String> reserved = new HashSet<>();
-  Node root = new Node(emptyList(), null);
+  Node root = new Node(emptyList(), null, null);
 
   public PathTrie() {
   }
@@ -52,7 +52,11 @@ public class PathTrie<T> {
       root.obj = o;
       return;
     }
+    replaceTemplates(parts, replacements);
+    root.insert(parts, o);
+  }
 
+  public static void replaceTemplates(List<String> parts, Map<String, String> replacements) {
     for (int i = 0; i < parts.size(); i++) {
       String part = parts.get(i);
       if (part.charAt(0) == '$') {
@@ -64,8 +68,6 @@ public class PathTrie<T> {
         parts.set(i, replacement);
       }
     }
-
-    root.insert(parts, o);
   }
 
   // /a/b/c will be returned as ["a","b","c"]
@@ -82,6 +84,22 @@ public class PathTrie<T> {
     return parts;
   }
 
+  public T remove(List<String> path) {
+    Node node = root.lookupNode(path, 0, null, null);
+    T result = null;
+    if (node != null) {
+      result = node.obj;
+      node.obj = null;
+      if (node.children == null || node.children.isEmpty()) {
+        if (node.parent != null) {
+          node.parent.children.remove(node.name);
+        }
+      }
+      return result;
+    }
+    return result;
+
+  }
 
   public T lookup(String path, Map<String, String> templateValues) {
     return root.lookup(getPathSegments(path), 0, templateValues);
@@ -107,8 +125,10 @@ public class PathTrie<T> {
     Map<String, Node> children;
     T obj;
     String templateName;
+    final Node parent;
 
-    Node(List<String> path, T o) {
+    Node(List<String> path, T o, Node parent) {
+      this.parent = parent;
       if (path.isEmpty()) {
         obj = o;
         return;
@@ -133,7 +153,7 @@ public class PathTrie<T> {
 
       matchedChild = children.get(key);
       if (matchedChild == null) {
-        children.put(key, matchedChild = new Node(path, o));
+        children.put(key, matchedChild = new Node(path, o, this));
       }
       if (varName != null) {
         if (!matchedChild.templateName.equals(varName)) {
@@ -179,17 +199,23 @@ public class PathTrie<T> {
      * @param availableSubPaths If not null , available sub paths will be returned in this set
      */
     public T lookup(List<String> pathSegments, int index, Map<String, String> templateVariables, Set<String> availableSubPaths) {
-      if (templateName != null) templateVariables.put(templateName, pathSegments.get(index - 1));
+      Node node = lookupNode(pathSegments, index, templateVariables, availableSubPaths);
+      return node == null ? null : node.obj;
+    }
+
+    Node lookupNode(List<String> pathSegments, int index, Map<String, String> templateVariables, Set<String> availableSubPaths) {
+      if (templateName != null && templateVariables != null)
+        templateVariables.put(templateName, pathSegments.get(index - 1));
       if (pathSegments.size() < index + 1) {
         findAvailableChildren("", availableSubPaths);
         if (obj == null) {//this is not a leaf node
           Node n = children.get("*");
           if (n != null) {
-            return n.obj;
+            return n;
           }
 
         }
-        return obj;
+        return this;
       }
       String piece = pathSegments.get(index);
       if (children == null) {
@@ -204,15 +230,15 @@ public class PathTrie<T> {
           for (int i = index; i < pathSegments.size(); i++) {
             sb.append("/").append(pathSegments.get(i));
           }
-          templateVariables.put("*", sb.toString());
-          return n.obj;
+          if (templateVariables != null) templateVariables.put("*", sb.toString());
+          return n;
 
         }
       }
       if (n == null) {
         return null;
       }
-      return n.lookup(pathSegments, index + 1, templateVariables, availableSubPaths);
+      return n.lookupNode(pathSegments, index + 1, templateVariables, availableSubPaths);
     }
   }
 

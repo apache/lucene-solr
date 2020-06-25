@@ -26,6 +26,8 @@ New Features
 
 * SOLR-14470: Add streaming expressions to /export handler. (ab, Joel Bernstein)
 
+* SOLR-14404: CoreContainer level custom requesthandlers (noble)
+
 Improvements
 ---------------------
 * SOLR-14316: Remove unchecked type conversion warning in JavaBinCodec's readMapEntry's equals() method

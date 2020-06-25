@@ -19,6 +19,7 @@ package org.apache.solr.filestore;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.file.Paths;
 import java.util.List;
@@ -53,6 +54,7 @@ import org.junit.Before;
 
 import static org.apache.solr.common.util.Utils.JAVABINCONSUMER;
 import static org.apache.solr.core.TestDynamicLoading.getFileContent;
+import static org.hamcrest.CoreMatchers.containsString;
 
 @LogLevel("org.apache.solr.filestore.PackageStoreAPI=DEBUG;org.apache.solr.filestore.DistribPackageStore=DEBUG")
 public class TestDistribPackageStore extends SolrCloudTestCase {
@@ -88,7 +90,7 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
         );
         fail("should have failed because of wrong signature ");
       } catch (RemoteExecutionException e) {
-        assertTrue(e.getMessage().contains("Signature does not match"));
+        assertThat(e.getMessage(), containsString("Signature does not match"));
       }
 
       postFile(cluster.getSolrClient(), getFileContent("runtimecode/runtimelibs.jar.bin"),
@@ -192,11 +194,12 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
     }
   }
 
+
   @SuppressWarnings({"rawtypes"})
-  static class Fetcher implements Callable {
+  public static class Fetcher implements Callable {
     String url;
     JettySolrRunner jetty;
-    Fetcher(String s, JettySolrRunner jettySolrRunner){
+    public Fetcher(String s, JettySolrRunner jettySolrRunner){
       this.url = s;
       this.jetty = jettySolrRunner;
     }
@@ -288,6 +291,12 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
     assertEquals(name, rsp.getResponse().get(CommonParams.FILE));
   }
 
+  /**
+   * Read and return the contents of the file-like resource
+   * @param fname the name of the resource to read
+   * @return the bytes of the resource
+   * @throws IOException if there is an I/O error reading the contents
+   */
   public static byte[] readFile(String fname) throws IOException {
     byte[] buf = null;
     try (FileInputStream fis = new FileInputStream(getFile(fname))) {

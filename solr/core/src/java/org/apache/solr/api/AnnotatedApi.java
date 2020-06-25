@@ -18,6 +18,8 @@
 package org.apache.solr.api;
 
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -58,7 +60,7 @@ import org.slf4j.LoggerFactory;
  * The third parameter is only valid if it is using a json command payload
  */
 
-public class AnnotatedApi extends Api implements PermissionNameProvider {
+public class AnnotatedApi extends Api implements PermissionNameProvider , Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String ERR = "Error executing commands :";
@@ -67,11 +69,29 @@ public class AnnotatedApi extends Api implements PermissionNameProvider {
   private final Cmd singletonCommand;
   private final Api fallback;
 
-  public static List<Api> getApis(Object obj) {
-    Class<? extends Object> klas = obj.getClass();
-    if (!Modifier.isPublic(klas.getModifiers())) {
-      throw new RuntimeException(obj.getClass().getName() + " is not public");
+  @Override
+  public void close() throws IOException {
+    for (Cmd value : commands.values()) {
+      if (value.obj instanceof Closeable) {
+        ((Closeable) value.obj).close();
+      }
+      break;// all objects are same so close only one
     }
+
+  }
+
+  public EndPoint getEndPoint() {
+    return endPoint;
+  }
+
+  public static List<Api> getApis(Object obj) {
+    return getApis(obj.getClass(), obj);
+  }
+  public static List<Api> getApis(Class<? extends Object> klas , Object obj) {
+    if (!Modifier.isPublic(klas.getModifiers())) {
+      throw new RuntimeException(klas.getName() + " is not public");
+    }
+
     if (klas.getAnnotation(EndPoint.class) != null) {
       EndPoint endPoint = klas.getAnnotation(EndPoint.class);
       List<Method> methods = new ArrayList<>();
@@ -87,7 +107,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider {
         }
       }
       if (commands.isEmpty()) {
-        throw new RuntimeException("No method with @Command in class: " + obj.getClass().getName());
+        throw new RuntimeException("No method with @Command in class: " + klas.getName());
       }
       SpecProvider specProvider = readSpec(endPoint, methods);
       return Collections.singletonList(new AnnotatedApi(specProvider, endPoint, commands, null));
@@ -104,8 +124,9 @@ public class AnnotatedApi extends Api implements PermissionNameProvider {
         apis.add(new AnnotatedApi(specProvider, endPoint, Collections.singletonMap("", cmd), null));
       }
       if (apis.isEmpty()) {
-        throw new RuntimeException("Invalid Class : " + obj.getClass().getName() + " No @EndPoints");
+        throw new RuntimeException("Invalid Class : " + klas.getName() + " No @EndPoints");
       }
+
       return apis;
     }
   }
@@ -207,30 +228,17 @@ public class AnnotatedApi extends Api implements PermissionNameProvider {
         this.method = method;
         Class<?>[] parameterTypes = method.getParameterTypes();
         paramsCount = parameterTypes.length;
-        if (parameterTypes[0] != SolrQueryRequest.class || parameterTypes[1] != SolrQueryResponse.class) {
-          throw new RuntimeException("Invalid params for method " + method);
-        }
-        if (parameterTypes.length == 3) {
-          Type t = method.getGenericParameterTypes()[2];
-          if (t instanceof ParameterizedType) {
-            ParameterizedType typ = (ParameterizedType) t;
-            if (typ.getRawType() == PayloadObj.class) {
-              isWrappedInPayloadObj = true;
-              Type t1 = typ.getActualTypeArguments()[0];
-              if (t1 instanceof ParameterizedType) {
-                ParameterizedType parameterizedType = (ParameterizedType) t1;
-                c = (Class) parameterizedType.getRawType();
-              } else {
-                c = (Class) typ.getActualTypeArguments()[0];
-              }
-            }
-          } else {
-            c = (Class) t;
+        if (parameterTypes.length == 1) {
+          readPayloadType(method.getGenericParameterTypes()[0]);
+        } else if (parameterTypes.length == 3) {
+          if (parameterTypes[0] != SolrQueryRequest.class || parameterTypes[1] != SolrQueryResponse.class) {
+            throw new RuntimeException("Invalid params for method " + method);
           }
+          Type t = method.getGenericParameterTypes()[2];
+          readPayloadType(t);
         }
         if (parameterTypes.length > 3) {
           throw new RuntimeException("Invalid params count for method " + method);
-
         }
       } else {
         throw new RuntimeException(method.toString() + " is not a public static method");
@@ -238,10 +246,43 @@ public class AnnotatedApi extends Api implements PermissionNameProvider {
 
     }
 
+    private void readPayloadType(Type t) {
+      if (t instanceof ParameterizedType) {
+        ParameterizedType typ = (ParameterizedType) t;
+        if (typ.getRawType() == PayloadObj.class) {
+          isWrappedInPayloadObj = true;
+          if(typ.getActualTypeArguments().length == 0){
+            //this is a raw type
+            c = Map.class;
+            return;
+          }
+          Type t1 = typ.getActualTypeArguments()[0];
+          if (t1 instanceof ParameterizedType) {
+            ParameterizedType parameterizedType = (ParameterizedType) t1;
+            c = (Class) parameterizedType.getRawType();
+          } else {
+            c = (Class) typ.getActualTypeArguments()[0];
+          }
+        }
+      } else {
+        c = (Class) t;
+      }
+    }
+
+
     @SuppressWarnings({"unchecked"})
     void invoke(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation cmd) {
       try {
-        if (paramsCount == 2) {
+        if(paramsCount ==1) {
+          Object o = cmd.getCommandData();
+          if (o instanceof Map && c != null && c != Map.class) {
+            o = mapper.readValue(Utils.toJSONString(o), c);
+          }
+          PayloadObj<Object> payloadObj = new PayloadObj<>(cmd.name, cmd.getCommandData(), o, req, rsp);
+          cmd = payloadObj;
+          method.invoke(obj, payloadObj);
+          checkForErrorInPayload(cmd);
+        } else if (paramsCount == 2) {
           method.invoke(obj, req, rsp);
         } else {
           Object o = cmd.getCommandData();
@@ -249,16 +290,13 @@ public class AnnotatedApi extends Api implements PermissionNameProvider {
             o = mapper.readValue(Utils.toJSONString(o), c);
           }
           if (isWrappedInPayloadObj) {
-            PayloadObj<Object> payloadObj = new PayloadObj<>(cmd.name, cmd.getCommandData(), o);
+            PayloadObj<Object> payloadObj = new PayloadObj<>(cmd.name, cmd.getCommandData(), o, req, rsp);
             cmd = payloadObj;
             method.invoke(obj, req, rsp, payloadObj);
           } else {
             method.invoke(obj, req, rsp, o);
           }
-          if (cmd.hasError()) {
-            throw new ApiBag.ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST, "Error executing command",
-                CommandOperation.captureErrors(Collections.singletonList(cmd)));
-          }
+          checkForErrorInPayload(cmd);
         }
 
 
@@ -274,12 +312,21 @@ public class AnnotatedApi extends Api implements PermissionNameProvider {
       }
 
     }
+
+    private void checkForErrorInPayload(CommandOperation cmd) {
+      if (cmd.hasError()) {
+        throw new ApiBag.ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST, "Error executing command",
+            CommandOperation.captureErrors(Collections.singletonList(cmd)));
+      }
+    }
   }
 
   public static Map<String, Object> createSchema(Method m) {
     Type[] types = m.getGenericParameterTypes();
-    if (types.length == 3) {
-      Type t = types[2];
+    Type t = null;
+    if (types.length == 3) t = types[2]; // (SolrQueryRequest req, SolrQueryResponse rsp, PayloadObj<PluginMeta>)
+    if(types.length == 1) t = types[0];// (PayloadObj<PluginMeta>)
+    if (t != null) {
       if (t instanceof ParameterizedType) {
         ParameterizedType typ = (ParameterizedType) t;
         if (typ.getRawType() == PayloadObj.class) {
