@@ -291,7 +291,7 @@ public abstract class Suggester implements MapWriter {
       //the computed value can change over time. So it's better to evaluate it in the end
       if (isTxOpen && v.getClause().hasComputedValue) continue;
       int idx = originalViolations.indexOf(v);
-      if (idx < 0 /*|| originalViolations.get(idx).isLessSerious(v)*/) return true;
+      if (idx < 0 || originalViolations.get(idx).isLessSerious(v)) return true;
     }
     return false;
   }

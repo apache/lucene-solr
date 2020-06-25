@@ -262,6 +262,8 @@ Bug Fixes
 * SOLR-14577: Return 400 BAD REQUEST when field is missing on a Terms query parser request
   (Tomás Fernández Löbbe)
 
+* SOLR-14409: Existing violations allow bypassing policy rules when adding new replicas (noble, ab)
+
 * SOLR-14584: Correct SOLR_SSL_KEY_STORE and SOLR_SSL_TRUST_STORE example comments in solr.in.sh and solr.in.cmd files
   (Aren Cambre via Christine Poerschke)
 
