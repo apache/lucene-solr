@@ -19,26 +19,10 @@ package org.apache.lucene.store;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.SegmentInfo;
+public abstract class EncryptingDirectory extends FilterDirectory {
 
-public class EncryptingDirectory extends FilterDirectory {
-
-  private final KeySupplier keySupplier;
-  private final SegmentKeySupplier segmentKeySupplier;
-  private final SegmentInfo segmentInfo;
-
-  public EncryptingDirectory(Directory directory, KeySupplier keySupplier) {
+  protected EncryptingDirectory(Directory directory) {
     super(directory);
-    this.keySupplier = keySupplier;
-    segmentKeySupplier = null;
-    this.segmentInfo = null;
-  }
-
-  public EncryptingDirectory(Directory directory, SegmentKeySupplier keySupplier, SegmentInfo segmentInfo) {
-    super(directory);
-    this.keySupplier = null;
-    segmentKeySupplier = keySupplier;
-    this.segmentInfo = segmentInfo;
   }
 
   @Override
@@ -46,14 +30,14 @@ public class EncryptingDirectory extends FilterDirectory {
       throws IOException {
     IndexOutput indexOutput = in.createOutput(name, context);
     byte[] key = getKey(name);
-    return key == null ? indexOutput : new EncryptingIndexOutput(indexOutput, key, getSegmentId());
+    return key == null ? indexOutput : createEncryptingIndexOutput(indexOutput, key);
   }
 
   @Override
   public IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException {
     IndexOutput indexOutput = in.createTempOutput(prefix, suffix, context);
     byte[] key = getKey(indexOutput.getName());
-    return key == null ? indexOutput : new EncryptingIndexOutput(indexOutput, key, getSegmentId());
+    return key == null ? indexOutput : createEncryptingIndexOutput(indexOutput, key);
   }
 
   @Override
@@ -61,32 +45,16 @@ public class EncryptingDirectory extends FilterDirectory {
       throws IOException {
     IndexInput indexInput = in.openInput(name, context);
     byte[] key = getKey(name);
-    return key == null ? indexInput : new EncryptingIndexInput(indexInput, key);
+    return key == null ? indexInput : createEncryptingIndexInput(indexInput, key);
   }
 
-  private byte[] getKey(String fileName) {
-    return segmentInfo == null ? keySupplier.getKey(fileName) : segmentKeySupplier.getKey(segmentInfo, fileName);
-  }
+  /**
+   * Gets the encryption key for the provided file name.
+   * @return The key; or null if none, in this case the data is not encrypted.
+   */
+  protected abstract byte[] getKey(String fileName);
 
-  private byte[] getSegmentId() {
-    return segmentInfo == null ? null : segmentInfo.getId();
-  }
+  protected abstract IndexOutput createEncryptingIndexOutput(IndexOutput indexOutput, byte[] key) throws IOException;
 
-  public interface KeySupplier {
-
-    /**
-     * Gets the encryption key for the provided file name.
-     * @return The key; or null if none, in this case the data is not encrypted. It must be either 128, 192 or 256 bits long.
-     */
-    byte[] getKey(String fileName);
-  }
-
-  public interface SegmentKeySupplier {
-
-    /**
-     * Gets the encryption key for the provided file name of a specific segment.
-     * @return The key; or null if none, in this case the data is not encrypted. It must be either 128, 192 or 256 bits long.
-     */
-    byte[] getKey(SegmentInfo segmentInfo, String fileName);
-  }
+  protected abstract IndexInput createEncryptingIndexInput(IndexInput indexInput, byte[] key) throws IOException;
 }

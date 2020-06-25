@@ -20,11 +20,11 @@ package org.apache.lucene.codecs.encrypting;
 import java.util.Arrays;
 
 import org.apache.lucene.store.ByteBuffersDirectory;
-import org.apache.lucene.store.EncryptingDirectory;
+import org.apache.lucene.store.FileEncryptingDirectory;
 import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.SingleInstanceLockFactory;
 
-public class SimpleEncryptingDirectory extends EncryptingDirectory {
+public class SimpleEncryptingDirectory extends FileEncryptingDirectory {
 
   private static final byte[] KEY;
   static {
