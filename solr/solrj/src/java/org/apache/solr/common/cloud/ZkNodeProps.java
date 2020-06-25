@@ -168,9 +168,8 @@ public class ZkNodeProps implements JSONWriter.Writable {
     return that instanceof ZkNodeProps && ((ZkNodeProps)that).propMap.equals(this.propMap);
   }
 
-  //TODO: I'm very uncertain about this
   @Override
   public int hashCode() {
-    return 0;
+    return Objects.hashCode(propMap);
   }
 }

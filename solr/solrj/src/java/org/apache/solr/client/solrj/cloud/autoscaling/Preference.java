@@ -133,10 +133,9 @@ public class Preference implements MapWriter {
     return original.equals(that.original);
   }
 
-  //TODO: I'm really uncertain about this one.
   @Override
   public int hashCode() {
-    return Objects.hash(name, precision, sort);
+    return Objects.hash(getName(), precision, sort, idx);
   }
 
   public Policy.SortParam getName() {

@@ -384,9 +384,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), znodeVersion, name, replicationFactor,
-            numNrtReplicas, numTlogReplicas, numPullReplicas, maxShardsPerNode,
-            autoAddReplicas, policy, readOnly);
+    return Objects.hash(name, znodeVersion);
   }
 
   /**

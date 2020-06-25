@@ -287,11 +287,8 @@ public class Policy implements MapWriter {
     return getClusterPreferences().equals(policy.getClusterPreferences());
   }
 
-  //TODO: Uncertain about this one
   @Override
-  public int hashCode() {
-    return Objects.hash(zkVersion);
-  }
+  public int hashCode() { return Objects.hash(getPolicies()); }
 
   public static Map<String, List<Clause>> clausesFromMap(Map<String, List<Map<String, Object>>> map, List<String> newParams) {
     Map<String, List<Clause>> newPolicies = new HashMap<>();

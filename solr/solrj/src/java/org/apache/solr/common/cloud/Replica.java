@@ -155,7 +155,7 @@ public class Replica extends ZkNodeProps {
 
   @Override
   public int hashCode() {
-    return Objects.hash(name, nodeName, collection);
+    return Objects.hash(name);
   }
 
   /** Also known as coreNodeName. */

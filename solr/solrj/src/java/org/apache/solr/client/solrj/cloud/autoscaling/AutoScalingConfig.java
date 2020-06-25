@@ -264,7 +264,7 @@ public class AutoScalingConfig implements MapWriter {
   public static class ActionConfig implements MapWriter {
     /** Action name. */
     public final String name;
-    /** Class name of action implementtion. */
+    /** Class name of action implementation. */
     public final String actionClass;
     /** Additional action properties. */
     public final Map<String, Object> properties;
@@ -305,7 +305,7 @@ public class AutoScalingConfig implements MapWriter {
 
     @Override
     public int hashCode() {
-      return Objects.hash(name, actionClass);
+      return Objects.hash(properties);
     }
 
     @Override
@@ -588,7 +588,7 @@ public class AutoScalingConfig implements MapWriter {
 
   @Override
   public int hashCode() {
-    return Objects.hash(policy, zkVersion);
+    return Objects.hash(getPolicy());
   }
 
   private static List<Object> getList(String key, Map<String, Object> properties) {

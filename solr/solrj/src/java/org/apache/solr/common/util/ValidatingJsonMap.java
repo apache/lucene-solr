@@ -348,8 +348,6 @@ public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
     return that instanceof Map && this.delegate.equals(that);
   }
 
-  //TODO: Really uncertain about this. Hashing the map itself seems
-  // about as expensive as resolving with equals.
   @Override
   public int hashCode() {
     return Objects.hash(delegate);

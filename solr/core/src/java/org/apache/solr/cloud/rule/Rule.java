@@ -365,7 +365,7 @@ public class Rule {
 
     @Override
     public int hashCode() {
-      return Objects.hash(name, fuzzy);
+      return Objects.hash(name, operand);
     }
 
     @Override

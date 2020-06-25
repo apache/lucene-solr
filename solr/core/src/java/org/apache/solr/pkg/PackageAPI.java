@@ -211,7 +211,7 @@ public class PackageAPI {
 
     @Override
     public int hashCode() {
-      return Objects.hash(version, manifestSHA512);
+      return Objects.hash(version);
     }
 
     @Override
