@@ -720,11 +720,6 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
   @Deprecated
   public static final String USER_FILES_DIRECTORY = "userfiles";
 
-  @Deprecated
-  public static Path getUserFilesPath(Path solrHome) {
-    return SolrPaths.getUserFilesPath(solrHome);
-  }
-
   /**
    * @return the instance path for this resource loader
    */
