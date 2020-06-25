@@ -288,7 +288,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
   }
 
   @SuppressWarnings("unchecked")
-  public static void waitForAllNodesToSync(MiniSolrCloudCluster cluster, String path, Map expected) throws Exception {
+  public static void waitForAllNodesToSync(MiniSolrCloudCluster cluster, String path, Map<String,Object> expected) throws Exception {
     for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
       String baseUrl = jettySolrRunner.getBaseUrl().toString().replace("/solr", "/api");
       String url = baseUrl + path + "?wt=javabin";
