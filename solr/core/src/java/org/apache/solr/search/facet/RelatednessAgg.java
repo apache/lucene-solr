@@ -20,21 +20,15 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Map;
 import java.util.function.IntFunction;
-import org.apache.lucene.index.LeafReader;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.util.BytesRef;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ShardParams;
@@ -43,7 +37,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.WrappedQuery;
 import org.apache.solr.search.facet.SlotAcc.SweepableSlotAcc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -320,13 +313,6 @@ public class RelatednessAgg extends AggValueSource {
       this.bgSize = bgSet.size();
       this.slotvalues = new BucketData[numSlots]; //TODO: avoid initializing array until we know we're not doing sweep collection?
       reset();
-      minDfFilterCache = initMinDfFilterCache();
-      if (minDfFilterCache == ALWAYS_CACHE) {
-        noCacheQ = null;
-      } else {
-        noCacheQ = new WrappedQuery(null);
-        noCacheQ.setCache(false);
-      }
     }
 
     /**
@@ -346,107 +332,6 @@ public class RelatednessAgg extends AggValueSource {
         readOnlyReplacement.key = key;
         baseSweepingAcc.registerMapping(this, readOnlyReplacement);
         return null;
-      }
-    }
-
-    private int initMinDfFilterCache() throws IOException {
-      if (fcontext.processor.freq instanceof FacetField) {
-        // nocommit: need to ensure we have good whitebox tests of the caching effects when
-        // nocommit: using relatedness() under multiple types of parent facets
-        FacetField ffield = (FacetField)fcontext.processor.freq;
-        final int cacheDf = ffield.cacheDf;
-        final int ret;
-        // Minimum term docFreq in order to use the filterCache for that term.
-        switch (cacheDf) {
-          case -1: // -1 means never cache
-            return NEVER_CACHE;
-          case 0: // default; compute as fraction of maxDoc
-            ret = Math.max(fcontext.searcher.maxDoc() >> 4, 3);  // (minimum of 3 is for test coverage purposes)
-            break;
-          default:
-            if (cacheDf < 0) {
-              throw new IllegalArgumentException("illegal negative value for cacheDf: "+cacheDf);
-            } else {
-              ret = cacheDf;
-            }
-        }
-        initializeForMinDf(ffield.field);
-        return ret;
-      } else {
-        return ALWAYS_CACHE;
-      }
-    }
-
-    private final int minDfFilterCache;
-    private final WrappedQuery noCacheQ;
-    private static final Comparator<LeafReaderContext> LEAF_BY_MAX_DOC = new Comparator<LeafReaderContext>() {
-
-      @Override
-      public int compare(LeafReaderContext o1, LeafReaderContext o2) {
-        return Integer.compare(o2.reader().maxDoc(), o1.reader().maxDoc());
-      }
-    };
-    private static final int ALWAYS_CACHE = Integer.MIN_VALUE;
-    private static final int NEVER_CACHE = Integer.MAX_VALUE;
-    private static final float SHORTCIRCUIT_THRESHOLD_ACCEPT_FACTOR = 0.5f;
-    private static final float SHORTCIRCUIT_THRESHOLD_REJECT_FACTOR = 2.0f;
-    private TermsEnum[] tes;
-    private int[] shortcircuitThresholdsAccept;
-    private int[] shortcircuitThresholdsReject;
-    private boolean shouldCache(BytesRef term) throws IOException {
-      int docFreq = 0;
-      for (int i = 0; i < tes.length; i++) {
-        TermsEnum te = tes[i];
-        if (te.seekExact(term) && ((docFreq += te.docFreq()) >= minDfFilterCache || docFreq >= shortcircuitThresholdsAccept[i])) {
-          return true;
-        } else if (docFreq < shortcircuitThresholdsReject[i]) {
-          return false;
-        }
-      }
-      return false;
-    }
-
-    /**
-     * Initialize for checking minDf, including shortcircuit thresholds. Set shortcircuit thresholds such that an
-     * assumption that a given term will occur at a frequency in unexamined segments at 
-     * <code>SHORTCIRCUIT_THRESHOLD_[ACCEPT|REJECT]_FACTOR</code> * the frequency in already-examined segments would
-     * result in the minDf threshold ultimately being met.
-     * @param field the field for which to initialize
-     * @throws IOException from underlying LeafReaders used to determine df for caching determination
-     */
-    private void initializeForMinDf(String field) throws IOException {
-      List<LeafReaderContext> leaves = fcontext.searcher.getIndexReader().leaves();
-      final int leafCount = leaves.size();
-      LeafReaderContext[] sortedLeaves = leaves.toArray(new LeafReaderContext[leafCount]);
-      Arrays.sort(sortedLeaves, LEAF_BY_MAX_DOC);
-      tes = new TermsEnum[leafCount];
-      shortcircuitThresholdsAccept = new int[leafCount];
-      shortcircuitThresholdsReject = new int[leafCount];
-      int i = 0;
-      int totalMaxDoc = 0;
-      for (LeafReaderContext ctx : sortedLeaves) {
-        LeafReader reader = ctx.reader();
-        Terms terms = reader.terms(field);
-        if (terms != null) {
-          int maxDoc = reader.maxDoc();
-          totalMaxDoc += maxDoc;
-          shortcircuitThresholdsAccept[i] = maxDoc;
-          tes[i++] = terms.iterator();
-        }
-      }
-      final int limit = i;
-      int maxDocToHere = 0;
-      for (i = 0; i < limit; i++) {
-        final int maxDoc = shortcircuitThresholdsAccept[i];
-        maxDocToHere += maxDoc;
-        final int maxDocRemaining = totalMaxDoc - maxDocToHere;
-        shortcircuitThresholdsAccept[i] = (int)((minDfFilterCache / (1 + ((maxDocRemaining * SHORTCIRCUIT_THRESHOLD_ACCEPT_FACTOR) / maxDocToHere))) + 1);
-        shortcircuitThresholdsReject[i] = (int)((minDfFilterCache / (1 + ((maxDocRemaining * SHORTCIRCUIT_THRESHOLD_REJECT_FACTOR) / maxDocToHere))) + 1);
-      }
-      if (i < leafCount) {
-        tes = Arrays.copyOf(tes, i);
-        shortcircuitThresholdsAccept = Arrays.copyOf(shortcircuitThresholdsAccept, i);
-        shortcircuitThresholdsReject = Arrays.copyOf(shortcircuitThresholdsReject, i);
       }
     }
 
@@ -483,21 +368,6 @@ public class RelatednessAgg extends AggValueSource {
       if (null == slotQ) {
         slotSet = fcontext.base;
       } else {
-        switch (minDfFilterCache) {
-          case ALWAYS_CACHE:
-            break;
-          default:
-            if (!(slotQ instanceof TermQuery) || shouldCache(((TermQuery)slotQ).getTerm().bytes())) {
-              // nocommit: if we're going to unwrap the (common case) TermQueries to get the Term
-              // nocommit: so shouldCache() can use the TermEnum check their DF, why not just
-              // nocommit: use SolrIndexSearcer.getDocSet(DocsEnumState) using DocsEnumState.minSetSizeCached ?
-              // nocommit: (just like FacetFieldProcessorByEnumTermsStream)
-              break;
-            }
-          case NEVER_CACHE:
-            noCacheQ.setWrappedQuery(slotQ);
-            slotQ = noCacheQ;
-        }
         slotSet = fcontext.searcher.getDocSet(slotQ);
       }
 
