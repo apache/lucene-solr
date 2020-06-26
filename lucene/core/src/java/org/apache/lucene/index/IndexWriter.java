@@ -3385,7 +3385,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
         closeReaders = false;
       } finally {
         if (closeReaders) {
-          IOUtils.applyToAll(onCommitMerges.merges, merge -> closeMergeReaders(merge, true, false));
+          IOUtils.applyToAll(onCommitMerges.merges, merge -> {
+            // that merge is broken we need to clean up after it - it's fine we still have the IW lock to do this
+            assert pendingMerges.contains(merge) : "merge should be pending but isn't: " + merge.segString();
+            abortOneMerge(merge);
+            mergeFinish(merge);
+          });
         }
       }
     }
@@ -4425,7 +4430,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       assert merge.getMergeReader().isEmpty() : "we are done but still have readers: " + merge.getMergeReader();
       assert suppressExceptions : "can't be done and not suppressing exceptions";
     }
-
   }
 
   private void countSoftDeletes(CodecReader reader, Bits wrappedLiveDocs, Bits hardLiveDocs, Counter softDeleteCounter,
