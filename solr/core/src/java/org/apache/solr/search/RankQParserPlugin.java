@@ -23,6 +23,7 @@ import org.apache.lucene.document.FeatureField;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.RankField;
 import org.apache.solr.schema.SchemaField;
 
 public class RankQParserPlugin extends QParserPlugin {
@@ -124,7 +125,9 @@ public class RankQParserPlugin extends QParserPlugin {
       if (schemaField == null) {
         throw new SyntaxError("Field \"" + this.field + "\" not found");
       }
-      //TODO assert field is feature Field
+      if (!(schemaField.getType() instanceof RankField)) {
+        throw new SyntaxError("Field \"" + this.field + "\" is not a RankField");
+      }
       if (feature == null || feature.isEmpty()) {
         throw new SyntaxError("Feature can't be empty in rank queries");
       }
