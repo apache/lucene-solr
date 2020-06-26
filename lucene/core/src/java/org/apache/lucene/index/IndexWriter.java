@@ -3387,9 +3387,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
         if (closeReaders) {
           IOUtils.applyToAll(onCommitMerges.merges, merge -> {
             // that merge is broken we need to clean up after it - it's fine we still have the IW lock to do this
-            assert pendingMerges.contains(merge) : "merge should be pending but isn't: " + merge.segString();
+            boolean removed = pendingMerges.remove(merge);
+            assert removed: "merge should be pending but isn't: " + merge.segString();
             abortOneMerge(merge);
             mergeFinish(merge);
+
           });
         }
       }
