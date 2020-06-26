@@ -430,7 +430,7 @@ public abstract class MergePolicy {
     void initMergeReaders(IOUtils.IOFunction<SegmentCommitInfo, MergeReader> readerFactory) throws IOException {
       assert mergeReaders.isEmpty() : "merge readers must be empty";
       assert mergeCompleted.isDone() == false : "merge is already done";
-      ArrayList<MergeReader> readers = new ArrayList<>(segments.size());
+      final ArrayList<MergeReader> readers = new ArrayList<>(segments.size());
       try {
         for (final SegmentCommitInfo info : segments) {
           // Hold onto the "live" reader; we will use this to
@@ -439,7 +439,7 @@ public abstract class MergePolicy {
         }
       } finally {
         // ensure we assign this to close them in the case of an exception
-        this.mergeReaders = List.copyOf(readers);
+        this.mergeReaders = List.copyOf(readers); // we do a copy here to ensure that mergeReaders are an immutable list
       }
     }
 
