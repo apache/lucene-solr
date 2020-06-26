@@ -25,6 +25,9 @@ Improvements
 
 * SOLR-14387: SolrClient.getById() will escape comma separater within ids (Markus Schuch via Mike Drob)
 
+* SOLR-13286: Metrics will no longer write a (sometimes large) log message every minute. This can be re-enabled
+  via log4j2.xml if desired, or other HttpSolrCall log messages may be quieted on a per handler basis. (Gus Heck)
+
 Other Changes
 ----------------------
 * LUCENE-9391: Upgrade HPPC to 0.8.2. (Haoyu Zhai)
