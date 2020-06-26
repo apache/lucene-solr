@@ -77,10 +77,23 @@ public class RankField extends FieldType {
     }
     return new FeatureField(INTERNAL_RANK_FIELD_NAME, name, featureValue);
   }
+  
+  @Override
+  public Query getExistenceQuery(QParser parser, SchemaField field) {
+    return new TermQuery(new Term(INTERNAL_RANK_FIELD_NAME, field.getName()));
+  }
 
   @Override
   public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
-    return new TermQuery(new Term(INTERNAL_RANK_FIELD_NAME, field.getName()));//nocommit: This would be weird
+    throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+        "Only a \"*\" term query can be done on RankFields");
+  }
+  
+  @Override
+  protected Query getSpecializedRangeQuery(QParser parser, SchemaField field, String part1, String part2,
+      boolean minInclusive, boolean maxInclusive) {
+    throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+        "Range queries not supported on RankFields");
   }
 
   @Override

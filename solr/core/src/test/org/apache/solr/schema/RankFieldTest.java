@@ -181,14 +181,24 @@ public class RankFieldTest extends SolrTestCaseJ4 {
         "facet.field", RANK_1), 400);
   }
   
-  @Ignore //nocommit
   public void testTermQuery() throws IOException {
     assertU(adoc(
         "id", "testTermQuery",
-        RANK_1, "pagerank:1"
+        RANK_1, "1",
+        RANK_2, "1"
+        ));
+    assertU(adoc(
+        "id", "testTermQuery2",
+        RANK_1, "1"
         ));
     assertU(commit());
-    assertQ(req("q", RANK_1 + ":pagerank"), "//*[@numFound='1']");
+    assertQ(req("q", RANK_1 + ":*"), "//*[@numFound='2']");
+    assertQ(req("q", RANK_1 + ":[* TO *]"), "//*[@numFound='2']");
+    assertQ(req("q", RANK_2 + ":*"), "//*[@numFound='1']");
+    assertQ(req("q", RANK_2 + ":[* TO *]"), "//*[@numFound='1']");
+    
+    assertQEx("Term queries not supported", req("q", RANK_1 + ":1"), 400);
+    assertQEx("Range queries not supported", req("q", RANK_1 + ":[1 TO 10]"), 400);
   }
   
   public void testRankQParserQuery() throws IOException {
