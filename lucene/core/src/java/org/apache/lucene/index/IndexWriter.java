@@ -3268,8 +3268,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       }
 
       if (onCommitMerges != null) {
+        if (infoStream.isEnabled("IW")) {
+          infoStream.message("IW", "now run merges during commit: " + onCommitMerges.segString(directory));
+        }
         mergeScheduler.merge(mergeSource, MergeTrigger.COMMIT);
         onCommitMerges.await(maxCommitMergeWaitMillis, TimeUnit.MILLISECONDS);
+        if (infoStream.isEnabled("IW")) {
+          infoStream.message("IW", "done waiting for merges during commit");
+        }
         synchronized (this) {
           // we need to call this under lock since mergeFinished above is also called under the IW lock
           includeInCommit.set(false);
@@ -3334,6 +3340,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
                 && committed
                 && includeInCommit.get()) {
 
+              if (infoStream.isEnabled("IW")) {
+                infoStream.message("IW", "now apply merge during commit: " + toWrap.segString());
+              }
+
               // make sure onMergeComplete really was called:
               assert origInfo != null;
 
@@ -3355,6 +3365,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
               long segmentCounter = Long.parseLong(origInfo.info.name.substring(1), Character.MAX_RADIX);
               committingSegmentInfos.counter = Math.max(committingSegmentInfos.counter, segmentCounter + 1);
               committingSegmentInfos.applyMergeChanges(applicableMerge, false);
+            } else {
+              if (infoStream.isEnabled("IW")) {
+                infoStream.message("IW", "skip apply merge during commit: " + toWrap.segString());
+              }
             }
             toWrap.mergeFinished(committed, false);
             super.mergeFinished(committed, segmentDropped);

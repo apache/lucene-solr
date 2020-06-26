@@ -67,7 +67,9 @@ public class TestPhraseWildcardQuery extends LuceneTestCase {
     super.setUp();
     directory = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), directory,
-        newIndexWriterConfig().setMaxCommitMergeWaitMillis(0)); // want to keep segments separated
+                                                 newIndexWriterConfig().setMergePolicy(newLogMergePolicy())); // do not accidentally merge
+                                                                                                              // the two segments we create
+                                                                                                              // here
     iw.setDoRandomForceMerge(false); // Keep the segments separated.
     addSegments(iw);
     reader = iw.getReader();
