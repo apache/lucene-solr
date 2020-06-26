@@ -64,7 +64,6 @@ import org.apache.solr.handler.component.ShardHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.cloud.DocCollection.STATE_FORMAT;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
@@ -88,6 +87,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   @Override
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
     // TODO maybe we can inherit createCollection's options/code
 
@@ -107,6 +107,14 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
 
     Properties properties = backupMgr.readBackupProperties(location, backupName);
     String backupCollection = properties.getProperty(BackupManager.COLLECTION_NAME_PROP);
+
+    // Test if the collection is of stateFormat 1 (i.e. not 2) supported pre Solr 9, in which case can't restore it.
+    Object format = properties.get("stateFormat");
+    if (format != null && !"2".equals(format)) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Collection " + backupCollection + " is in stateFormat=" + format +
+          " no longer supported in Solr 9 and above. It can't be restored. If it originates in Solr 8 you can restore" +
+          " it there, migrate it to stateFormat=2 and backup again, it will then be restorable on Solr 9");
+    }
     String backupCollectionAlias = properties.getProperty(BackupManager.COLLECTION_ALIAS_PROP);
     DocCollection backupCollectionState = backupMgr.readCollectionState(location, backupName, backupCollection);
 
@@ -160,9 +168,6 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
       Map<String, Object> propMap = new HashMap<>();
       propMap.put(Overseer.QUEUE_OPERATION, CREATE.toString());
       propMap.put("fromApi", "true"); // mostly true.  Prevents autoCreated=true in the collection state.
-      if (properties.get(STATE_FORMAT) == null) {
-        propMap.put(STATE_FORMAT, "2");
-      }
       propMap.put(REPLICATION_FACTOR, numNrtReplicas);
       propMap.put(NRT_REPLICAS, numNrtReplicas);
       propMap.put(TLOG_REPLICAS, numTlogReplicas);
@@ -182,7 +187,6 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
       propMap.put(CollectionAdminParams.COLL_CONF, restoreConfigName);
 
       // router.*
-      @SuppressWarnings("unchecked")
       Map<String, Object> routerProps = (Map<String, Object>) backupCollectionState.getProperties().get(DocCollection.DOC_ROUTER);
       for (Map.Entry<String, Object> pair : routerProps.entrySet()) {
         propMap.put(DocCollection.DOC_ROUTER + "." + pair.getKey(), pair.getValue());

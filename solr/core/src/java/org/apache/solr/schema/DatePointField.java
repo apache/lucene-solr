@@ -219,36 +219,37 @@ public class DatePointField extends PointField implements DateValueFieldType {
   protected StoredField getStoredField(SchemaField sf, Object value) {
     return new StoredField(sf.getName(), ((Date) this.toNativeType(value)).getTime());
   }
+
+  private static class DatePointFieldSource extends LongFieldSource {
+
+    public DatePointFieldSource(String field) {
+      super(field);
+    }
+
+    @Override
+    public String description() {
+      return "date(" + field + ')';
+    }
+
+    @Override
+    protected MutableValueLong newMutableValueLong() {
+      return new MutableValueDate();
+    }
+
+    @Override
+    public Date longToObject(long val) {
+      return new Date(val);
+    }
+
+    @Override
+    public String longToString(long val) {
+      return longToObject(val).toInstant().toString();
+    }
+
+    @Override
+    public long externalToLong(String extVal) {
+      return DateMathParser.parseMath(null, extVal).getTime();
+    }
+  }
 }
 
-class DatePointFieldSource extends LongFieldSource {
-
-  public DatePointFieldSource(String field) {
-    super(field);
-  }
-
-  @Override
-  public String description() {
-    return "date(" + field + ')';
-  }
-
-  @Override
-  protected MutableValueLong newMutableValueLong() {
-    return new MutableValueDate();
-  }
-
-  @Override
-  public Date longToObject(long val) {
-    return new Date(val);
-  }
-
-  @Override
-  public String longToString(long val) {
-    return longToObject(val).toInstant().toString();
-  }
-
-  @Override
-  public long externalToLong(String extVal) {
-    return DateMathParser.parseMath(null, extVal).getTime();
-  }
-}

@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.component;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,7 +29,6 @@ import io.opentracing.Tracer;
 import io.opentracing.propagation.Format;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.LBHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -111,7 +109,6 @@ public class HttpShardHandler extends ShardHandler {
       this.elapsedTime = elapsedTime;
     }
   }
-
 
   // Not thread safe... don't use in Callable.
   // Don't modify the returned URL list.
@@ -200,7 +197,7 @@ public class HttpShardHandler extends ShardHandler {
   }
 
   /**
-   * Subclasses could modify the Response based on the the shard
+   * Subclasses could modify the Response based on the shard
    */
   protected ShardResponse transfomResponse(final ShardRequest sreq, ShardResponse rsp, String shard) {
     return rsp;

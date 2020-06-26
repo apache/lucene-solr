@@ -23,6 +23,7 @@ import java.text.ParseException;
 import java.util.Locale;
 import java.util.Random;
 
+@SuppressWarnings("deprecation")
 public class TestVersion extends LuceneTestCase {
 
   public void testOnOrAfter() throws Exception {

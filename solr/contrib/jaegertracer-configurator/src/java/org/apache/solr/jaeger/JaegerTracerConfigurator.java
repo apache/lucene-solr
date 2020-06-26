@@ -38,7 +38,7 @@ public class JaegerTracerConfigurator extends TracerConfigurator {
   }
 
   @Override
-  public void init(NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     Object host = args.get(AGENT_HOST);
     if (!(host instanceof String)) {
       throw new IllegalArgumentException("Expected a required string for param '" + AGENT_HOST + "'");

@@ -19,6 +19,7 @@ package org.apache.solr.packagemanager;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
@@ -57,6 +58,11 @@ public class SolrPackageInstance implements ReflectMapWriter {
   public boolean equals(Object obj) {
     if (obj == null) return false;
     return name.equals(((SolrPackageInstance)obj).name) && version.equals(((SolrPackageInstance)obj).version);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(name, version);
   }
 
   @Override

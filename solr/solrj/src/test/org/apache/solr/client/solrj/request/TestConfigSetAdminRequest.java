@@ -28,6 +28,7 @@ public class TestConfigSetAdminRequest extends SolrTestCaseJ4 {
 
   @Test
   public void testNoAction() {
+    @SuppressWarnings({"rawtypes"})
     ConfigSetAdminRequest request = new MyConfigSetAdminRequest();
     verifyException(request, "action");
   }
@@ -46,7 +47,7 @@ public class TestConfigSetAdminRequest extends SolrTestCaseJ4 {
     verifyException(delete, "ConfigSet");
   }
 
-  private void verifyException(ConfigSetAdminRequest request, String errorContains) {
+  private void verifyException(@SuppressWarnings({"rawtypes"})ConfigSetAdminRequest request, String errorContains) {
     Exception e = expectThrows(Exception.class, request::getParams);
     assertTrue("Expected exception message to contain: " + errorContains,
         e.getMessage().contains(errorContains));

@@ -112,7 +112,7 @@ public class MailEntityProcessor extends EntityProcessorBase {
     String varName = ConfigNameConstants.IMPORTER_NS_SHORT + "." + cname + "."
         + DocBuilder.LAST_INDEX_TIME;
     Object varValue = context.getVariableResolver().resolve(varName);
-    log.info(varName+"="+varValue);
+    log.info("{}={}", varName, varValue);
     
     if (varValue != null && !"".equals(varValue) && 
         !"".equals(getStringFromContext("fetchMailsSince", ""))) {
@@ -123,21 +123,21 @@ public class MailEntityProcessor extends EntityProcessorBase {
       try {
         tmp = sinceDateParser.parse((String)varValue);
         if (tmp.getTime() == 0) {
-          log.info("Ignoring initial value "+varValue+" for "+varName+
-              " in favor of fetchMailsSince config parameter");
+          log.info("Ignoring initial value {} for {} in favor of fetchMailsSince config parameter"
+              , varValue, varName);
           tmp = null; // don't use this value
         }
       } catch (ParseException e) {
         // probably ok to ignore this since we have other options below
         // as we're just trying to figure out if the date is 0
-        log.warn("Failed to parse "+varValue+" from "+varName+" due to: "+e);
+        log.warn("Failed to parse {} from {} due to", varValue, varName, e);
       }    
       
       if (tmp == null) {
         // favor fetchMailsSince in this case because the value from
         // dataimport.properties is the default/init value
         varValue = getStringFromContext("fetchMailsSince", "");
-        log.info("fetchMailsSince="+varValue);
+        log.info("fetchMailsSince={}", varValue);
       }
     }
     
@@ -145,7 +145,7 @@ public class MailEntityProcessor extends EntityProcessorBase {
       varName = ConfigNameConstants.IMPORTER_NS_SHORT + "."
           + DocBuilder.LAST_INDEX_TIME;
       varValue = context.getVariableResolver().resolve(varName);
-      log.info(varName+"="+varValue);
+      log.info("{}={}", varName, varValue);
     }
       
     if (varValue != null && varValue instanceof String) {
@@ -157,13 +157,13 @@ public class MailEntityProcessor extends EntityProcessorBase {
     if (lastIndexTime == null) 
       lastIndexTime = getStringFromContext("fetchMailsSince", "");
 
-    log.info("Using lastIndexTime "+lastIndexTime+" for mail import");
+    log.info("Using lastIndexTime {} for mail import", lastIndexTime);
     
     this.fetchMailsSince = null;
     if (lastIndexTime != null && lastIndexTime.length() > 0) {
       try {
         fetchMailsSince = sinceDateParser.parse(lastIndexTime);
-        log.info("Parsed fetchMailsSince=" + lastIndexTime);
+        log.info("Parsed fetchMailsSince={}", lastIndexTime);
       } catch (ParseException e) {
         throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
             "Invalid value for fetchMailSince: " + lastIndexTime, e);
@@ -247,12 +247,13 @@ public class MailEntityProcessor extends EntityProcessorBase {
       addPartToDocument(mail, row, true);
       return row;
     } catch (Exception e) {
-      log.error("Failed to convert message [" + mail.toString()
-          + "] to document due to: " + e, e);
+      log.error("Failed to convert message [{}] to document due to: {}"
+          , mail, e, e);
       return null;
     }
   }
   
+  @SuppressWarnings({"unchecked"})
   public void addPartToDocument(Part part, Map<String,Object> row, boolean outerMost) throws Exception {
     if (part instanceof Message) {
       addEnvelopeToDocument(part, row);
@@ -269,9 +270,9 @@ public class MailEntityProcessor extends EntityProcessorBase {
         for (int i = 0; i < count; i++)
           addPartToDocument(mp.getBodyPart(i), row, false);
       } else {
-        log.warn("Multipart content is a not an instance of Multipart! Content is: "
-            + (content != null ? content.getClass().getName() : "null")
-            + ". Typically, this is due to the Java Activation JAR being loaded by the wrong classloader.");
+        log.warn("Multipart content is a not an instance of Multipart! Content is: {}"
+                + ". Typically, this is due to the Java Activation JAR being loaded by the wrong classloader."
+            , (content != null ? content.getClass().getName() : "null"));
       }
     } else if (part.isMimeType("message/rfc822")) {
       addPartToDocument((Part) part.getContent(), row, false);
@@ -374,8 +375,8 @@ public class MailEntityProcessor extends EntityProcessorBase {
       
       if (("imap".equals(protocol) || "imaps".equals(protocol))
           && "imap.gmail.com".equals(host)) {
-        log.info("Consider using 'gimaps' protocol instead of '" + protocol
-            + "' for enabling GMail specific extensions for " + host);
+        log.info("Consider using 'gimaps' protocol instead of '{}' for enabling GMail specific extensions for {}"
+            , protocol, host);
       }
       
       props.setProperty("mail.store.protocol", protocol);
@@ -399,7 +400,7 @@ public class MailEntityProcessor extends EntityProcessorBase {
       } else {
         mailbox.connect(host, user, password);
       }
-      log.info("Connected to " + user + "'s mailbox on " + host);
+      log.info("Connected to {}'s mailbox on {}", user, host);
       
       return true;
     } catch (MessagingException e) {      
@@ -474,7 +475,7 @@ public class MailEntityProcessor extends EntityProcessorBase {
         .append(lineSep);
     config.append("includeSharedFolders : ").append(includeSharedFolders)
         .append(lineSep);
-    log.info(config.toString());
+    log.info("{}", config);
   }
   
   class FolderIterator implements Iterator<Folder> {
@@ -515,14 +516,16 @@ public class MailEntityProcessor extends EntityProcessorBase {
               hasMessages = (next.getType() & Folder.HOLDS_MESSAGES) != 0;
               next.open(Folder.READ_ONLY);
               lastFolder = next;
-              log.info("Opened folder : " + fullName);
+              log.info("Opened folder : {}", fullName);
             }
             if (recurse && ((next.getType() & Folder.HOLDS_FOLDERS) != 0)) {
               Folder[] children = next.list();
               log.info("Added its children to list  : ");
               for (int i = children.length - 1; i >= 0; i--) {
                 folders.add(0, children[i]);
-                log.info("child name : " + children[i].getFullName());
+                if (log.isInfoEnabled()) {
+                  log.info("child name : {}", children[i].getFullName());
+                }
               }
               if (children.length == 0) log.info("NO children : ");
             }
@@ -530,7 +533,7 @@ public class MailEntityProcessor extends EntityProcessorBase {
         } while (!hasMessages);
         return next;
       } catch (Exception e) {
-        log.warn("Failed to read folders due to: "+e);
+        log.warn("Failed to read folders due to: {}", e);
         // throw new
         // DataImportHandlerException(DataImportHandlerException.SEVERE,
         // "Folder open failed", e);
@@ -568,13 +571,13 @@ public class MailEntityProcessor extends EntityProcessorBase {
       try {
         Folder[] ufldrs = mailbox.getUserNamespaces(null);
         if (ufldrs != null) {
-          log.info("Found " + ufldrs.length + " user namespace folders");
+          log.info("Found {} user namespace folders", ufldrs.length);
           for (Folder ufldr : ufldrs)
             folders.add(ufldr);
         }
       } catch (MessagingException me) {
-        log.warn("Messaging exception retrieving user namespaces: "
-            + me.getMessage());
+        log.warn("Messaging exception retrieving user namespaces: {}"
+            , me.getMessage());
       }
     }
     
@@ -582,13 +585,13 @@ public class MailEntityProcessor extends EntityProcessorBase {
       try {
         Folder[] sfldrs = mailbox.getSharedNamespaces();
         if (sfldrs != null) {
-          log.info("Found " + sfldrs.length + " shared namespace folders");
+          log.info("Found {} shared namespace folders", sfldrs.length);
           for (Folder sfldr : sfldrs)
             folders.add(sfldr);
         }
       } catch (MessagingException me) {
-        log.warn("Messaging exception retrieving shared namespaces: "
-            + me.getMessage());
+        log.warn("Messaging exception retrieving shared namespaces: {}"
+            , me.getMessage());
       }
     }
     
@@ -620,14 +623,16 @@ public class MailEntityProcessor extends EntityProcessorBase {
         this.batchSize = batchSize;
         SearchTerm st = getSearchTerm();
         
-        log.info("SearchTerm=" + st);
+        log.info("SearchTerm={}", st);
         
         if (st != null || folder instanceof GmailFolder) {
           doBatching = false;
           // Searching can still take a while even though we're only pulling
           // envelopes; unless you're using gmail server-side filter, which is
           // fast
-          log.info("Searching folder " + folder.getName() + " for messages");
+          if (log.isInfoEnabled()) {
+            log.info("Searching folder {} for messages", folder.getName());
+          }
           final RTimer searchTimer = new RTimer();
 
           // If using GMail, speed up the envelope processing by doing a
@@ -642,12 +647,14 @@ public class MailEntityProcessor extends EntityProcessorBase {
                     
           if (folder instanceof GmailFolder && fetchMailsSince != null) {
             String afterCrit = "after:" + afterFmt.format(fetchMailsSince);
-            log.info("Added server-side gmail filter: " + afterCrit);
+            log.info("Added server-side gmail filter: {}", afterCrit);
             Message[] afterMessages = folder.search(new GmailRawSearchTerm(
                 afterCrit));
-            
-            log.info("GMail server-side filter found " + afterMessages.length
-                + " messages received " + afterCrit + " in folder " + folder.getName());
+
+            if (log.isInfoEnabled()) {
+              log.info("GMail server-side filter found {} messages received {} in folder {}"
+                  , afterMessages.length, afterCrit, folder.getName());
+            }
             
             // now pass in the server-side filtered messages to the local filter
             messagesInCurBatch = folder.search((st != null ? st : this), afterMessages);
@@ -657,11 +664,13 @@ public class MailEntityProcessor extends EntityProcessorBase {
           totalInFolder = messagesInCurBatch.length;
           folder.fetch(messagesInCurBatch, fp);
           current = 0;
-          log.info("Total messages : " + totalInFolder);
-          log.info("Search criteria applied. Batching disabled. Took {} (ms)", searchTimer.getTime());
+          if (log.isInfoEnabled()) {
+            log.info("Total messages : {}", totalInFolder);
+            log.info("Search criteria applied. Batching disabled. Took {} (ms)", searchTimer.getTime()); // logOk
+          }
         } else {
           totalInFolder = folder.getMessageCount();
-          log.info("Total messages : " + totalInFolder);
+          log.info("Total messages : {}", totalInFolder);
           getNextBatch(batchSize, folder);
         }
       } catch (MessagingException e) {
@@ -685,8 +694,8 @@ public class MailEntityProcessor extends EntityProcessorBase {
       folder.fetch(messagesInCurBatch, fp);
       current = 0;
       currentBatch++;
-      log.info("Current Batch  : " + currentBatch);
-      log.info("Messages in this batch  : " + messagesInCurBatch.length);
+      log.info("Current Batch  : {}", currentBatch);
+      log.info("Messages in this batch  : {}", messagesInCurBatch.length);
     }
     
     public boolean hasNext() {
@@ -741,8 +750,10 @@ public class MailEntityProcessor extends EntityProcessorBase {
     
     @SuppressWarnings("serial")
     public SearchTerm getCustomSearch(final Folder folder) {
-      log.info("Building mail filter for messages in " + folder.getName()
-          + " that occur after " + sinceDateParser.format(since));
+      if (log.isInfoEnabled()) {
+        log.info("Building mail filter for messages in {} that occur after {}"
+            , folder.getName(), sinceDateParser.format(since));
+      }
       return new DateTerm(ComparisonTerm.GE, since) {
         private int matched = 0;
         private int seen = 0;
@@ -761,16 +772,20 @@ public class MailEntityProcessor extends EntityProcessorBase {
             } else {
               String msgDateStr = (msgDate != null) ? sinceDateParser.format(msgDate) : "null";
               String sinceDateStr = (since != null) ? sinceDateParser.format(since) : "null";
-              log.debug("Message " + msg.getSubject() + " was received at [" + msgDateStr
-                  + "], since filter is [" + sinceDateStr + "]");
+              if (log.isDebugEnabled()) {
+                log.debug("Message {} was received at [{}], since filter is [{}]"
+                    , msg.getSubject(), msgDateStr, sinceDateStr);
+              }
             }
           } catch (MessagingException e) {
-            log.warn("Failed to process message due to: "+e, e);
+            log.warn("Failed to process message due to: {}", e, e);
           }
           
           if (seen % 100 == 0) {
-            log.info("Matched " + matched + " of " + seen + " messages since: "
-                + sinceDateParser.format(since));
+            if (log.isInfoEnabled()) {
+              log.info("Matched {} of {} messages since: {}"
+                  , matched, seen, sinceDateParser.format(since));
+            }
           }
           
           return isMatch;

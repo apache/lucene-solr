@@ -41,7 +41,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.function.Supplier;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import org.apache.commons.lang3.StringUtils;
@@ -52,6 +54,7 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
+import org.apache.solr.api.CustomContainerPlugins;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
@@ -61,9 +64,9 @@ import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.client.solrj.impl.SolrHttpClientContextBuilder;
 import org.apache.solr.client.solrj.impl.SolrHttpClientContextBuilder.AuthSchemeRegistryProvider;
 import org.apache.solr.client.solrj.impl.SolrHttpClientContextBuilder.CredentialsProviderProvider;
+import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.cloud.CloudDescriptor;
-import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.OverseerTaskQueue;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.autoscaling.AutoScalingHandler;
@@ -73,9 +76,11 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.ObjectCache;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.DirectoryFactory.DirContext;
@@ -87,6 +92,7 @@ import org.apache.solr.handler.SnapShooter;
 import org.apache.solr.handler.admin.AutoscalingHistoryHandler;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
+import org.apache.solr.handler.admin.ContainerPluginsApi;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.admin.HealthCheckHandler;
 import org.apache.solr.handler.admin.InfoHandler;
@@ -100,6 +106,7 @@ import org.apache.solr.handler.admin.ZookeeperInfoHandler;
 import org.apache.solr.handler.admin.ZookeeperReadAPI;
 import org.apache.solr.handler.admin.ZookeeperStatusHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
+import org.apache.solr.handler.sql.CalciteSolrDriver;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrCoreMetricManager;
@@ -161,6 +168,15 @@ public class CoreContainer {
     }
   }
 
+  private volatile PluginBag<SolrRequestHandler> containerHandlers = new PluginBag<>(SolrRequestHandler.class, null);
+
+  /**
+   * Minimize exposure to CoreContainer. Mostly only ZK interface is required
+   */
+  public final Supplier<SolrZkClient> zkClientSupplier = () -> getZkController().getZkClient();
+
+  private final CustomContainerPlugins customContainerPlugins =  new CustomContainerPlugins(this, containerHandlers.getApiBag());
+
   protected final Map<String, CoreLoadFailure> coreInitFailures = new ConcurrentHashMap<>();
 
   protected volatile CoreAdminHandler coreAdminHandler = null;
@@ -186,6 +202,7 @@ public class CoreContainer {
 
   private final OrderedExecutor replayUpdatesExecutor;
 
+  @SuppressWarnings({"rawtypes"})
   protected volatile LogWatcher logging = null;
 
   private volatile CloserThread backgroundCloser = null;
@@ -199,8 +216,6 @@ public class CoreContainer {
   private volatile String hostName;
 
   private final BlobRepository blobRepository = new BlobRepository(this);
-
-  private volatile PluginBag<SolrRequestHandler> containerHandlers = new PluginBag<>(SolrRequestHandler.class, null);
 
   private volatile boolean asyncSolrCoreLoad;
 
@@ -228,9 +243,14 @@ public class CoreContainer {
 
   protected volatile AutoscalingHistoryHandler autoscalingHistoryHandler;
 
+  private volatile SolrClientCache solrClientCache;
+
+  private final ObjectCache objectCache = new ObjectCache();
+
   private PackageStoreAPI packageStoreAPI;
   private PackageLoader packageLoader;
 
+  private Set<Path> allowPaths;
 
   // Bits for the state variable.
   public final static long LOAD_COMPLETE = 0x1L;
@@ -331,8 +351,29 @@ public class CoreContainer {
         ExecutorUtil.newMDCAwareCachedThreadPool(
             cfg.getReplayUpdatesThreads(),
             new SolrNamedThreadFactory("replayUpdatesExecutor")));
+
+    this.allowPaths = new java.util.HashSet<>();
+    this.allowPaths.add(cfg.getSolrHome());
+    this.allowPaths.add(cfg.getCoreRootDirectory());
+    if (cfg.getSolrDataHome() != null) {
+      this.allowPaths.add(cfg.getSolrDataHome());
+    }
+    if (!cfg.getAllowPaths().isEmpty()) {
+      this.allowPaths.addAll(cfg.getAllowPaths());
+      if (log.isInfoEnabled()) {
+        log.info("Allowing use of paths: {}", cfg.getAllowPaths());
+      }
+    }
+
+    Path userFilesPath = getUserFilesPath(); // TODO make configurable on cfg?
+    try {
+      Files.createDirectories(userFilesPath); // does nothing if already exists
+    } catch (Exception e) {
+      log.warn("Unable to create [{}].  Features requiring this directory may fail.", userFilesPath, e);
+    }
   }
 
+  @SuppressWarnings({"unchecked"})
   private synchronized void initializeAuthorizationPlugin(Map<String, Object> authorizationConf) {
     authorizationConf = Utils.getDeepCopy(authorizationConf, 4);
     int newVersion = readVersion(authorizationConf);
@@ -367,6 +408,7 @@ public class CoreContainer {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   private void initializeAuditloggerPlugin(Map<String, Object> auditConf) {
     auditConf = Utils.getDeepCopy(auditConf, 4);
     int newVersion = readVersion(auditConf);
@@ -402,6 +444,7 @@ public class CoreContainer {
   }
 
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private synchronized void initializeAuthenticationPlugin(Map<String, Object> authenticationConfig) {
     authenticationConfig = Utils.getDeepCopy(authenticationConfig, 4);
     int newVersion = readVersion(authenticationConfig);
@@ -499,6 +542,7 @@ public class CoreContainer {
     }
   }
 
+  @SuppressWarnings({"rawtypes"})
   private static int readVersion(Map<String, Object> conf) {
     if (conf == null) return -1;
     Map meta = (Map) conf.get("");
@@ -576,6 +620,15 @@ public class CoreContainer {
   public PackageStoreAPI getPackageStoreAPI() {
     return packageStoreAPI;
   }
+
+  public SolrClientCache getSolrClientCache() {
+    return solrClientCache;
+  }
+
+  public ObjectCache getObjectCache() {
+    return objectCache;
+  }
+
   //-------------------------------------------------------------------
   // Initialization / Cleanup
   //-------------------------------------------------------------------
@@ -635,6 +688,11 @@ public class CoreContainer {
 
     updateShardHandler = new UpdateShardHandler(cfg.getUpdateShardHandlerConfig());
     updateShardHandler.initializeMetrics(solrMetricsContext, "updateShardHandler");
+
+    solrClientCache = new SolrClientCache(updateShardHandler.getDefaultHttpClient());
+
+    // initialize CalciteSolrDriver instance to use this solrClientCache
+    CalciteSolrDriver.INSTANCE.setSolrClientCache(solrClientCache);
 
     solrCores.load(loader);
 
@@ -710,11 +768,11 @@ public class CoreContainer {
         true, "totalSpace", SolrInfoBean.Category.CONTAINER.toString(), "fs");
     solrMetricsContext.gauge(() -> dataHome.toFile().getUsableSpace(),
         true, "usableSpace", SolrInfoBean.Category.CONTAINER.toString(), "fs");
-    solrMetricsContext.gauge(() -> dataHome.toAbsolutePath().toString(),
+    solrMetricsContext.gauge(() -> dataHome.toString(),
         true, "path", SolrInfoBean.Category.CONTAINER.toString(), "fs");
     solrMetricsContext.gauge(() -> {
           try {
-            return org.apache.lucene.util.IOUtils.spins(dataHome.toAbsolutePath());
+            return org.apache.lucene.util.IOUtils.spins(dataHome);
           } catch (IOException e) {
             // default to spinning
             return true;
@@ -725,11 +783,11 @@ public class CoreContainer {
         true, "totalSpace", SolrInfoBean.Category.CONTAINER.toString(), "fs", "coreRoot");
     solrMetricsContext.gauge(() -> cfg.getCoreRootDirectory().toFile().getUsableSpace(),
         true, "usableSpace", SolrInfoBean.Category.CONTAINER.toString(), "fs", "coreRoot");
-    solrMetricsContext.gauge(() -> cfg.getCoreRootDirectory().toAbsolutePath().toString(),
+    solrMetricsContext.gauge(() -> cfg.getCoreRootDirectory().toString(),
         true, "path", SolrInfoBean.Category.CONTAINER.toString(), "fs", "coreRoot");
     solrMetricsContext.gauge(() -> {
           try {
-            return org.apache.lucene.util.IOUtils.spins(cfg.getCoreRootDirectory().toAbsolutePath());
+            return org.apache.lucene.util.IOUtils.spins(cfg.getCoreRootDirectory());
           } catch (IOException e) {
             // default to spinning
             return true;
@@ -824,6 +882,11 @@ public class CoreContainer {
     }
 
     if (isZooKeeperAware()) {
+      customContainerPlugins.refresh();
+      getZkController().zkStateReader.registerClusterPropertiesListener(customContainerPlugins);
+      ContainerPluginsApi containerPluginsApi = new ContainerPluginsApi(this);
+      containerHandlers.getApiBag().registerObject(containerPluginsApi.readAPI);
+      containerHandlers.getApiBag().registerObject(containerPluginsApi.editAPI);
       zkSys.getZkController().checkOverseerDesignate();
       // initialize this handler here when SolrCloudManager is ready
       autoScalingHandler = new AutoScalingHandler(getZkController().getSolrCloudManager(), loader);
@@ -835,6 +898,7 @@ public class CoreContainer {
   }
 
   // MetricsHistoryHandler supports both cloud and standalone configs
+  @SuppressWarnings({"unchecked"})
   private void createMetricsHistoryHandler() {
     PluginInfo plugin = cfg.getMetricsConfig().getHistoryHandler();
     Map<String, Object> initArgs;
@@ -887,6 +951,7 @@ public class CoreContainer {
   /**
    * Make sure securityConfHandler is initialized
    */
+  @SuppressWarnings({"unchecked"})
   private void reloadSecurityProperties() {
     SecurityConfHandler.SecurityConfig securityConfig = securityConfHandler.getSecurityConfig(false);
     initializeAuthorizationPlugin((Map<String, Object>) securityConfig.getData().get("authorization"));
@@ -896,9 +961,9 @@ public class CoreContainer {
 
   private void warnUsersOfInsecureSettings() {
     if (authenticationPlugin == null || authorizationPlugin == null) {
-        log.warn("Not all security plugins configured!  authentication={} authorization={}.  Solr is only as secure as {}{}"
-                , "you make it. Consider configuring authentication/authorization before exposing Solr to users internal or "
-                , "external.  See https://s.apache.org/solrsecurity for more info",
+      log.warn("Not all security plugins configured!  authentication={} authorization={}.  Solr is only as secure as " +
+          "you make it. Consider configuring authentication/authorization before exposing Solr to users internal or " +
+          "external.  See https://s.apache.org/solrsecurity for more info",
             (authenticationPlugin != null) ? "enabled" : "disabled",
             (authorizationPlugin != null) ? "enabled" : "disabled");
     }
@@ -975,6 +1040,8 @@ public class CoreContainer {
       // Now clear all the cores that are being operated upon.
       solrCores.close();
 
+      objectCache.clear();
+
       // It's still possible that one of the pending dynamic load operation is waiting, so wake it up if so.
       // Since all the pending operations queues have been drained, there should be nothing to do.
       synchronized (solrCores.getModifyLock()) {
@@ -1016,6 +1083,9 @@ public class CoreContainer {
         }
       } catch (Exception e) {
         log.warn("Error shutting down CoreAdminHandler. Continuing to close CoreContainer.", e);
+      }
+      if (solrClientCache != null) {
+        solrClientCache.close();
       }
 
     } finally {
@@ -1168,14 +1238,15 @@ public class CoreContainer {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Core with name '" + coreName + "' already exists.");
     }
 
+    // Validate paths are relative to known locations to avoid path traversal
+    assertPathAllowed(cd.getInstanceDir());
+    assertPathAllowed(Paths.get(cd.getDataDir()));
+
     boolean preExisitingZkEntry = false;
     try {
       if (getZkController() != null) {
-        if (!Overseer.isLegacy(getZkController().getZkStateReader())) {
-          if (cd.getCloudDescriptor().getCoreNodeName() == null) {
-            throw new SolrException(ErrorCode.SERVER_ERROR, "non legacy mode coreNodeName missing " + parameters.toString());
-
-          }
+        if (cd.getCloudDescriptor().getCoreNodeName() == null) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, "coreNodeName missing " + parameters.toString());
         }
         preExisitingZkEntry = getZkController().checkIfCoreNodeNameAlreadyExists(cd);
       }
@@ -1228,6 +1299,29 @@ public class CoreContainer {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           "Error CREATEing SolrCore '" + coreName + "': " + ex.getMessage() + rootMsg, ex);
     }
+  }
+
+  /**
+   * Checks that the given path is relative to SOLR_HOME, SOLR_DATA_HOME, coreRootDirectory or one of the paths
+   * specified in solr.xml's allowPaths element. Delegates to {@link SolrPaths#assertPathAllowed(Path, Set)}
+   * @param pathToAssert path to check
+   * @throws SolrException if path is outside allowed paths
+   */
+  public void assertPathAllowed(Path pathToAssert) throws SolrException {
+    SolrPaths.assertPathAllowed(pathToAssert, allowPaths);
+  }
+
+  /**
+   * <p>Return the file system paths that should be allowed for various API requests.
+   * This list is compiled at startup from SOLR_HOME, SOLR_DATA_HOME and the
+   * <code>allowPaths</code> configuration of solr.xml.
+   * These paths are used by the {@link #assertPathAllowed(Path)} method call.</p>
+   * <p><b>NOTE:</b></p> This method is currently only in use in tests in order to
+   * modify the mutable Set directly. Please treat this as a private method.
+   */
+  @VisibleForTesting
+  public Set<Path> getAllowPaths() {
+    return allowPaths;
   }
 
   /**
@@ -1473,7 +1567,6 @@ public class CoreContainer {
     return ImmutableMap.copyOf(coreInitFailures);
   }
 
-
   // ---------------- Core name related methods ---------------
 
   private CoreDescriptor reloadCoreDescriptor(CoreDescriptor oldDesc) {
@@ -1581,7 +1674,7 @@ public class CoreContainer {
       } catch (SolrCoreState.CoreIsClosedException e) {
         throw e;
       } catch (Exception e) {
-        coreInitFailures.put(cd.getName(), new CoreLoadFailure(cd, (Exception) e));
+        coreInitFailures.put(cd.getName(), new CoreLoadFailure(cd, e));
         throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to reload core [" + cd.getName() + "]", e);
       } finally {
         if (!success && newCore != null && newCore.getOpenCount() > 0) {
@@ -1736,6 +1829,7 @@ public class CoreContainer {
     return solrCores.getCoreDescriptor(coreName);
   }
 
+  /** Where cores are created (absolute). */
   public Path getCoreRootDirectory() {
     return cfg.getCoreRootDirectory();
   }
@@ -1815,6 +1909,7 @@ public class CoreContainer {
 
   // ---------------- CoreContainer request handlers --------------
 
+  @SuppressWarnings({"rawtypes"})
   protected <T> T createHandler(String path, String handlerClass, Class<T> clazz) {
     T handler = loader.newInstance(handlerClass, clazz, null, new Class[]{CoreContainer.class}, new Object[]{this});
     if (handler instanceof SolrRequestHandler) {
@@ -1861,6 +1956,7 @@ public class CoreContainer {
     return cfg.getManagementPath();
   }
 
+  @SuppressWarnings({"rawtypes"})
   public LogWatcher getLogging() {
     return logging;
   }
@@ -1892,9 +1988,20 @@ public class CoreContainer {
     return solrCores.getUnloadedCoreDescriptor(cname);
   }
 
+  /** The primary path of a Solr server's config, cores, and misc things. Absolute. */
   //TODO return Path
   public String getSolrHome() {
     return solrHome.toString();
+  }
+
+  /**
+   * A path where Solr users can retrieve arbitrary files from.  Absolute.
+   * <p>
+   * This directory is generally created by each node on startup.  Files located in this directory can then be
+   * manipulated using select Solr features (e.g. streaming expressions).
+   */
+  public Path getUserFilesPath() {
+    return solrHome.resolve("userfiles");
   }
 
   public boolean isZooKeeperAware() {
@@ -1953,43 +2060,6 @@ public class CoreContainer {
     return solrCores.getTransientCacheHandler();
   }
 
-
-  /**
-   * @param cd   CoreDescriptor, presumably a deficient one
-   * @param prop The property that needs to be repaired.
-   * @return true if we were able to successfuly perisist the repaired coreDescriptor, false otherwise.
-   * <p>
-   * See SOLR-11503, This can be removed when there's no chance we'll need to upgrade a
-   * Solr installation created with legacyCloud=true from 6.6.1 through 7.1
-   */
-  public boolean repairCoreProperty(CoreDescriptor cd, String prop) {
-    // So far, coreNodeName is the only property that we need to repair, this may get more complex as other properties
-    // are added.
-
-    if (CoreDescriptor.CORE_NODE_NAME.equals(prop) == false) {
-      throw new SolrException(ErrorCode.SERVER_ERROR,
-          String.format(Locale.ROOT, "The only supported property for repair is currently [%s]",
-              CoreDescriptor.CORE_NODE_NAME));
-    }
-
-    // Try to read the coreNodeName from the cluster state.
-
-    String coreName = cd.getName();
-    DocCollection coll = getZkController().getZkStateReader().getClusterState().getCollection(cd.getCollectionName());
-    for (Replica rep : coll.getReplicas()) {
-      if (coreName.equals(rep.getCoreName())) {
-        log.warn("Core properties file for node {} found with no coreNodeName, attempting to repair with value {}. See SOLR-11503. {}"
-            , "This message should only appear if upgrading from collections created Solr 6.6.1 through 7.1."
-            , rep.getCoreName(), rep.getName());
-        cd.getCloudDescriptor().setCoreNodeName(rep.getName());
-        coresLocator.persist(this, cd);
-        return true;
-      }
-    }
-    log.error("Could not repair coreNodeName in core.properties file for core {}", coreName);
-    return false;
-  }
-
   /**
    * @param solrCore the core against which we check if there has been a tragic exception
    * @return whether this Solr core has tragic exception
@@ -2009,6 +2079,10 @@ public class CoreContainer {
     }
 
     return tragicException != null;
+  }
+
+  public CustomContainerPlugins getCustomContainerPlugins(){
+    return customContainerPlugins;
   }
 
   static {

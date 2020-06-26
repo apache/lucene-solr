@@ -87,7 +87,7 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
   private XMLInputFactory inputFactory;
 
   @Override
-  public void init(NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     super.init(args);
 
     inputFactory = XMLInputFactory.newInstance();
@@ -109,6 +109,7 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
   }
 
   @Override
+  @SuppressWarnings({"rawtypes"})
   protected NamedList doAnalysis(SolrQueryRequest req) throws Exception {
     DocumentAnalysisRequest analysisRequest = resolveAnalysisRequest(req);
     return handleAnalysisRequest(analysisRequest, req.getSchema());
@@ -194,6 +195,7 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
 
     for (SolrInputDocument document : request.getDocuments()) {
 
+      @SuppressWarnings({"rawtypes"})
       NamedList<NamedList> theTokens = new SimpleOrderedMap<>();
       result.add(document.getFieldValue(uniqueKeyField.getName()).toString(), theTokens);
       for (String name : document.getFieldNames()) {

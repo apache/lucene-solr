@@ -26,6 +26,7 @@ import java.util.Set;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.Scorable;
 import org.apache.lucene.util.mutable.MutableValue;
 
 /**
@@ -34,7 +35,7 @@ import org.apache.lucene.util.mutable.MutableValue;
 public class ValueSourceGroupSelector extends GroupSelector<MutableValue> {
 
   private final ValueSource valueSource;
-  private final Map<?, ?> context;
+  private final Map<Object, Object> context;
 
   private Set<MutableValue> secondPassGroups;
 
@@ -43,7 +44,7 @@ public class ValueSourceGroupSelector extends GroupSelector<MutableValue> {
    * @param valueSource the ValueSource to group by
    * @param context     a context map for the ValueSource
    */
-  public ValueSourceGroupSelector(ValueSource valueSource, Map<?, ?> context) {
+  public ValueSourceGroupSelector(ValueSource valueSource, Map<Object, Object> context) {
     this.valueSource = valueSource;
     this.context = context;
   }
@@ -57,6 +58,9 @@ public class ValueSourceGroupSelector extends GroupSelector<MutableValue> {
   }
 
   @Override
+  public void setScorer(Scorable scorer) throws IOException { }
+
+  @Override
   public State advanceTo(int doc) throws IOException {
     this.filler.fillValue(doc);
     if (secondPassGroups != null) {
@@ -67,7 +71,7 @@ public class ValueSourceGroupSelector extends GroupSelector<MutableValue> {
   }
 
   @Override
-  public MutableValue currentValue() {
+  public MutableValue currentValue() throws IOException {
     return filler.getValue();
   }
 

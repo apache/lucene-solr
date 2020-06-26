@@ -283,8 +283,8 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
   @Test
   public void testMergeBoost() throws Exception {
 
-    Set<Integer> boosted = new HashSet();
-    Set<Integer> results = new HashSet();
+    Set<Integer> boosted = new HashSet<>();
+    Set<Integer> results = new HashSet<>();
 
     for(int i=0; i<200; i++) {
       boosted.add(random().nextInt(1000));
@@ -314,7 +314,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
 
     CollapsingQParserPlugin.MergeBoost mergeBoost = new CollapsingQParserPlugin.MergeBoost(boostedArray);
 
-    List<Integer> boostedResults = new ArrayList();
+    List<Integer> boostedResults = new ArrayList<>();
 
     for(int i=0; i<resultsArray.length; i++) {
       int result = resultsArray[i];
@@ -323,7 +323,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
       }
     }
 
-    List<Integer> controlResults = new ArrayList();
+    List<Integer> controlResults = new ArrayList<>();
 
     for(int i=0; i<resultsArray.length; i++) {
       int result = resultsArray[i];
@@ -1038,5 +1038,34 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
 
     assertQEx("Should Fail For collapsing on Date fields", "Collapsing field should be of either String, Int or Float type",
         req("q", "*:*", "fq", "{!collapse field=group_dt}"), SolrException.ErrorCode.BAD_REQUEST);
+  }
+  
+  @Test
+  public void testMinExactCountDisabledByCollapse() throws Exception {
+    int numDocs = 10;
+    String collapseFieldInt = "field_ti_dv";
+    String collapseFieldFloat = "field_tf_dv";
+    String collapseFieldString = "field_s_dv";
+    for (int i = 0 ; i < numDocs ; i ++) {
+      assertU(adoc(
+          "id", String.valueOf(i),
+          "field_s", String.valueOf(i % 2),
+          collapseFieldInt, String.valueOf(i),
+          collapseFieldFloat, String.valueOf(i),
+          collapseFieldString, String.valueOf(i)));
+        assertU(commit());
+    }
+    
+    for (String collapseField : new String[] {collapseFieldInt, collapseFieldFloat, collapseFieldString}) {
+      assertQ(req(
+          "q", "{!cache=false}field_s:1",
+          "rows", "1",
+          "minExactCount", "1",
+          // this collapse will end up matching all docs
+          "fq", "{!collapse field=" + collapseField + " nullPolicy=expand}"// nullPolicy needed due to a bug when val=0
+          ),"//*[@numFoundExact='true']"
+          ,"//*[@numFound='" + (numDocs/2) + "']"
+          );
+    }
   }
 }

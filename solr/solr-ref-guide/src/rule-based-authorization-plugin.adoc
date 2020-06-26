@@ -1,4 +1,4 @@
-= Rule-Based Authorization Plugin
+= Rule-Based Authorization Plugins
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -16,7 +16,9 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Solr's authentication plugins control whether users can access Solr in a binary fashion.  A user is either authenticated, or they aren't.  For more fine-grained access control, Solr's Rule-Based Authorization Plugin (hereafter, "RBAP") can be used.
+Solr's authentication plugins control whether users can access Solr in a binary fashion.
+A user is either authenticated, or they aren't.
+For more fine-grained access control, Solr's Rule-Based Authorization Plugins (hereafter, "RBAP") can be used.
 
 [CAUTION]
 ====
@@ -35,7 +37,10 @@ The users that RBAP sees come from whatever authentication plugin has been confi
 
 === Roles
 
-Roles help bridge the gap between users and permissions. Users are assigned one or more roles, and permissions are then given to each of these roles in `security.json`
+Roles help bridge the gap between users and permissions. The roles can be used with any of the authentication plugins or with a custom authentication plugin if you have created one. You will only need to ensure that logged-in users are mapped to the roles defined by the plugin. There are two implementations of the plugin, which only differs in how the user's roles are obtained:
+
+* `RuleBasedAuthorizationPlugin`: The role-to-user mappings must be defined explicitly in `security.json` for every possible authenticated user.
+* `ExternalRoleRuleBasedAuthorizationPlugin`: The role-to-user mappings are managed externally. This plugin expects the AuthenticationPlugin to provide a Principal that has the roles information as well, implementing the `VerifiedUserRoles` interface.
 
 === Permissions
 
@@ -43,7 +48,7 @@ Permissions control which roles (and consequently, which users) have access to p
 
 Administrators can use permissions from a list of predefined options or define their own custom permissions, are are free to mix and match both.
 
-== Configuring the Rule-Based Authorization Plugin
+== Configuring the Rule-Based Authorization Plugins
 
 Like all of Solr's security plugins, configuration for RBAP lives in a file or ZooKeeper node with the name `security.json`.  See <<authentication-and-authorization-plugins.adoc#enable-plugins-with-security-json,here>> for more information on how to setup `security.json` in your cluster.
 
@@ -54,15 +59,6 @@ Solr offers an <<Authorization API>> for making changes to RBAP configuration.  
 RBAP configuration consists of a small number of required configuration properties.  Each of these lives under the `authorization` top level property in `security.json`
 
 class:: The authorization plugin to use.  For RBAP, this value will always be `solr.RuleBasedAuthorizationPlugin`
-user-role:: A mapping of individual users to the roles they belong to.  The value of this property is a JSON map, where each property name is a user, and each property value is either the name of a single role or a JSON array of multiple roles that the specified user belongs to.  For example:
-+
-[source,json]
-----
-"user-role": {
-  "user1": "role1",
-  "user2": ["role1", "role2"]
-}
-----
 permissions:: A JSON array of permission rules used to restrict access to sections of Solr's API.  For example:
 +
 [source,json]
@@ -75,9 +71,21 @@ permissions:: A JSON array of permission rules used to restrict access to sectio
 +
 The syntax for individual permissions is more involved and is treated in greater detail <<Permissions,below>>.
 
-=== Complete Example
+User's roles may either come from the request itself, then you will use the `ExternalRoleRuleBasedAuthorizationPlugin` variant of RBAC. If you need to hardcode user-role mappings, then you need to use the `RuleBasedAuthorizationPlugin` and define the user-role mappings in `security.json` like this:
 
-The example below shows how the configuration properties above can be used to achieve a typical (if simple) RBAP use-case.
+user-role:: A mapping of individual users to the roles they belong to.  The value of this property is a JSON map, where each property name is a user, and each property value is either the name of a single role or a JSON array of multiple roles that the specified user belongs to.  For example:
++
+[source,json]
+----
+"user-role": {
+  "user1": "role1",
+  "user2": ["role1", "role2"]
+}
+----
+
+=== Example for RuleBasedAuthorizationPlugin and BasicAuth
+
+This example `security.json` shows how the <<basic-authentication-plugin.adoc#basic-authentication-plugin,Basic authentication plugin>> can work with the `RuleBasedAuthorizationPlugin` plugin:
 
 [source,json]
 ----
@@ -111,6 +119,35 @@ The example below shows how the configuration properties above can be used to ac
 <4> Three permissions restrict access to Solr.  The first permission (a "custom" permission) indicates that only the `dev` role can read from a special collection with the name `dev-private`.  The last two permissions ("predefined" permissions) indicate that only the `admin` role is permitted to use Solr's security APIs.  See below for more information on permission syntax.
 
 Altogether, this example carves out two restricted areas.  Only `admin-user` can access Solr's Authentication and Authorization APIs, and only `dev-user` can access their `dev-private` collection.  All other APIs are left open, and can be accessed by both users.
+
+=== Example for External Role RuleBasedAuthorizationPlugin with JWT auth
+
+This example `security.json` shows how the <<jwt-authentication-plugin.adoc#jwt-authentication-plugin,JWT authentication plugin>>, which pulls user and user roles from JWT claims, can work with the `ExternalRoleRuleBasedAuthorizationPlugin` plugin:
+
+[source,json]
+----
+{
+"authentication":{
+   "class": "solr.JWTAuthPlugin", <1>
+   "jwksUrl": "https://my.key.server/jwk.json", <2>
+   "rolesClaim": "roles" <3>
+},
+"authorization":{
+   "class":"solr.ExternalRoleRuleBasedAuthorizationPlugin", <4>
+   "permissions":[{"name":"security-edit",
+      "role":"admin"}] <5>
+}}
+----
+
+Let's walk through this example:
+
+<1> JWT Authentication plugin is enabled.
+<2> Public keys will be pulled over HTTPS.
+<3> We expect each JWT token to contain a "roles" claim, which will be passed on to Authorization.
+<4> External Role Rule-based authorization plugin is enabled.
+<5> The 'admin' role has been defined, and it has permission to edit security settings.
+
+Only requests from users having a JWT token with role "admin" will be granted the `security-edit` permission.
 
 == Permissions
 

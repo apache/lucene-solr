@@ -52,7 +52,6 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.TestInjection;
@@ -89,11 +88,6 @@ public class TestPullReplica extends SolrCloudTestCase {
    configureCluster(2) // 2 + random().nextInt(3)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
-    Boolean useLegacyCloud = rarely();
-    log.info("Using legacyCloud?: {}", useLegacyCloud);
-    CollectionAdminRequest.ClusterProp clusterPropRequest = CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, String.valueOf(useLegacyCloud));
-    CollectionAdminResponse response = clusterPropRequest.process(cluster.getSolrClient());
-    assertEquals(0, response.getStatus());
   }
 
   @AfterClass
@@ -267,7 +261,7 @@ public class TestPullReplica extends SolrCloudTestCase {
               "stats", "true");
           QueryResponse statsResponse = pullReplicaClient.query(req);
           assertEquals("Replicas shouldn't process the add document request: " + statsResponse,
-              0L, ((Map<String, Object>)((NamedList<Object>)statsResponse.getResponse()).findRecursive("plugins", "UPDATE", "updateHandler", "stats")).get("UPDATE.updateHandler.adds"));
+              0L, ((Map<String, Object>)(statsResponse.getResponse()).findRecursive("plugins", "UPDATE", "updateHandler", "stats")).get("UPDATE.updateHandler.adds"));
         }
       }
       if (reloaded) {
@@ -334,13 +328,17 @@ public class TestPullReplica extends SolrCloudTestCase {
         return false;
       }
       statesSeen.add(r.getState());
-      log.info("CollectionStateWatcher saw state: {}", r.getState());
+      if (log.isInfoEnabled()) {
+        log.info("CollectionStateWatcher saw state: {}", r.getState());
+      }
       return r.getState() == Replica.State.ACTIVE;
     });
     CollectionAdminRequest.addReplicaToShard(collectionName, "shard1", Replica.Type.PULL).process(cluster.getSolrClient());
     waitForState("Replica not added", collectionName, activeReplicaCount(1, 0, 1));
     zkClient().printLayoutToStream(System.out);
-    log.info("Saw states: " + Arrays.toString(statesSeen.toArray()));
+    if (log.isInfoEnabled()) {
+      log.info("Saw states: {}", Arrays.toString(statesSeen.toArray()));
+    }
     assertEquals("Expecting DOWN->RECOVERING->ACTIVE but saw: " + Arrays.toString(statesSeen.toArray()), 3, statesSeen.size());
     assertEquals("Expecting DOWN->RECOVERING->ACTIVE but saw: " + Arrays.toString(statesSeen.toArray()), Replica.State.DOWN, statesSeen.get(0));
     assertEquals("Expecting DOWN->RECOVERING->ACTIVE but saw: " + Arrays.toString(statesSeen.toArray()), Replica.State.RECOVERING, statesSeen.get(0));
@@ -393,6 +391,7 @@ public class TestPullReplica extends SolrCloudTestCase {
   /*
    * validate that replication still happens on a new leader
    */
+  @SuppressWarnings({"try"})
   private void doTestNoLeader(boolean removeReplica) throws Exception {
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1, 0, 1)
       .setMaxShardsPerNode(100)

@@ -196,6 +196,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
         "'enabled' : true," +
         "'actions' : [{'name':'test','class':'" + ThrottlingTesterAction.class.getName() + "'}]" +
         "}}";
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
@@ -352,6 +353,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
         "'enabled' : true," +
         "'actions' : [{'name':'test','class':'" + TestTriggerAction.class.getName() + "'}]" +
         "}}";
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
@@ -369,6 +371,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     assertTrue(triggerFired.get());
     NodeAddedTrigger.NodeAddedEvent nodeAddedEvent = (NodeAddedTrigger.NodeAddedEvent) events.iterator().next();
     assertNotNull(nodeAddedEvent);
+    @SuppressWarnings({"unchecked"})
     List<String> nodeNames = (List<String>)nodeAddedEvent.getProperty(TriggerEvent.NODE_NAMES);
     assertTrue(nodeNames.contains(newNode.getNodeName()));
   }
@@ -466,6 +469,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
         break;
       }
     }
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
@@ -575,6 +579,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
         "{'name':'test1','class':'" + TestDummyAction.class.getName() + "'}," +
         "]" +
         "}}";
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");

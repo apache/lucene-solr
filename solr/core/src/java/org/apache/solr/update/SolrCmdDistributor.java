@@ -428,6 +428,7 @@ public class SolrCmdDistributor implements Closeable {
           NamedList<Object> nl = brp.processResponse(inputStream, null);
           Object hdr = nl.get("responseHeader");
           if (hdr != null && hdr instanceof NamedList) {
+            @SuppressWarnings({"unchecked"})
             NamedList<Object> hdrList = (NamedList<Object>) hdr;
             Object rfObj = hdrList.get(UpdateRequest.REPFACT);
             if (rfObj != null && rfObj instanceof Integer) {

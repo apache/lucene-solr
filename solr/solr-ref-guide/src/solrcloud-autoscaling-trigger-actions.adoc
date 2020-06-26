@@ -29,12 +29,19 @@ commands which can re-balance the cluster in response to trigger events.
 The following parameters are configurable:
 
 `collections`::
-A comma-separated list of collection names. If this list is not empty then
-the computed operations will only calculate collection operations that affect
-listed collections and ignore any other collection operations for collections
-not listed here. Note that non-collection operations are not affected by this.
+A comma-separated list of collection names, or a selector on collection properties that can be used to filter collections for which the plan is computed.
++
+If a non-empty list or selector is specified then the computed operations will only calculate collection operations that affect
+matched collections and ignore any other collection operations for collections
+not listed here. This does not affect non-collection operations.
++
+A collection selector is of the form `collections: {key1: value1, key2: value2, ...}` where the key can be any collection property such as `name`, `policy`, `numShards`, etc.
+The value must match exactly and all specified properties must match for a collection to match.
++
+A collection selector is useful in a cluster where collections are added and removed frequently and where selecting only collections that
+use a specific autoscaling policy is useful.
 
-Example configuration:
+Example configurations:
 
 [source,json]
 ----
@@ -48,11 +55,11 @@ Example configuration:
    {
     "name" : "compute_plan",
     "class" : "solr.ComputePlanAction",
-    "collections" : "test1,test2",
+    "collections" : "test1,test2"
    },
    {
     "name" : "execute_plan",
-    "class" : "solr.ExecutePlanAction",
+    "class" : "solr.ExecutePlanAction"
    }
   ]
  }
@@ -62,6 +69,56 @@ Example configuration:
 In this example only collections `test1` and `test2` will be potentially
 replicated / moved to an added node, other collections will be ignored even
 if they cause policy violations.
+
+[source,json]
+----
+{
+ "set-trigger" : {
+  "name" : "node_added_trigger",
+  "event" : "nodeAdded",
+  "waitFor" : "1s",
+  "enabled" : true,
+  "actions" : [
+   {
+    "name" : "compute_plan",
+    "class" : "solr.ComputePlanAction",
+    "collections" : {"policy": "my_policy"}
+   },
+   {
+    "name" : "execute_plan",
+    "class" : "solr.ExecutePlanAction"
+   }
+  ]
+ }
+}
+----
+
+In this example only collections which use the `my_policy` as their autoscaling policy will be potentially replicated / moved to an added node, other collections will be ignored even if they cause policy violations.
+
+[source,json]
+----
+{
+ "set-trigger" : {
+  "name" : "node_added_trigger",
+  "event" : "nodeAdded",
+  "waitFor" : "1s",
+  "enabled" : true,
+  "actions" : [
+   {
+    "name" : "compute_plan",
+    "class" : "solr.ComputePlanAction",
+    "collections" : {"policy": "my_policy", "numShards" :  "4"}
+   },
+   {
+    "name" : "execute_plan",
+    "class" : "solr.ExecutePlanAction"
+   }
+  ]
+ }
+}
+----
+
+In this example only collections which use the `my_policy` as their autoscaling policy and that have `numShards` equal to `4` will be potentially replicated / moved to an added node, other collections will be ignored even if they cause policy violations.
 
 == Execute Plan Action
 

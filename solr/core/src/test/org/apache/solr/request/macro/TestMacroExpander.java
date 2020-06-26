@@ -121,6 +121,7 @@ public class TestMacroExpander extends SolrTestCase {
     request.put("expr", new String[] {"${one_ref}"}); // expr is for streaming expressions, no replacement by default
     request.put("one_ref",new String[] {"one"});
     request.put("three_ref",new String[] {"three"});
+    @SuppressWarnings({"rawtypes"})
     Map expanded = MacroExpander.expand(request);
     assertEquals("zero", ((String[])expanded.get("fq"))[0]);
     assertEquals("one", ((String[])expanded.get("fq"))[1]);
@@ -142,6 +143,7 @@ public class TestMacroExpander extends SolrTestCase {
     String oldVal = System.getProperty("StreamingExpressionMacros","false");
     System.setProperty("StreamingExpressionMacros", "true");
     try {
+      @SuppressWarnings({"rawtypes"})
       Map expanded = MacroExpander.expand(request);
       assertEquals("zero", ((String[])expanded.get("fq"))[0]);
       assertEquals("one", ((String[])expanded.get("fq"))[1]);

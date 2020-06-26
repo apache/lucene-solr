@@ -21,7 +21,7 @@ solrAdminApp.controller('IndexController', function($scope, System, Cores, Const
     System.get(function(data) {
       $scope.system = data;
 
-      if (username in data.security) {
+      if ("username" in data.security) {
         // Needed for Kerberos, since this is the only place from where
         // Kerberos username can be obtained.
         sessionStorage.setItem("auth.username", data.security.username);

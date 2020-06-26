@@ -130,6 +130,7 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
         "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}" +
         "    ]" +
         "}";
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     solrClient.request(req);
 
@@ -276,7 +277,7 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
     JettySolrRunner jetty = cluster.startJettySolrRunner();
     cluster.waitForAllNodes(30);
     String nodeAddedName = jetty.getNodeName();
-    log.info("### Added node " + nodeAddedName);
+    log.info("### Added node {}", nodeAddedName);
     boolean await = actionFiredLatch.await(60, TimeUnit.SECONDS);
     assertTrue("action did not execute", await);
 
@@ -366,7 +367,7 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
       }
     }
     assertNotNull("no suitable node found", nodeToKill);
-    log.info("### Stopping node " + nodeToKill);
+    log.info("### Stopping node {}", nodeToKill);
     for (int i = 0; i < cluster.getJettySolrRunners().size(); i++) {
       if (cluster.getJettySolrRunner(i).getNodeName().equals(nodeToKill)) {
         JettySolrRunner j = cluster.stopJettySolrRunner(i);
@@ -374,7 +375,7 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
         break;
       }
     }
-    log.info("### Stopped node " + nodeToKill);
+    log.info("### Stopped node {}", nodeToKill);
     await = actionFiredLatch.await(60, TimeUnit.SECONDS);
     assertTrue("action did not execute", await);
 
@@ -405,17 +406,19 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
     QueryResponse rsp = client.query(query);
     SolrDocumentList docs = rsp.getResults();
     if (docs.size() != expected) {
-      log.info("History query: " + query);
-      log.info("Wrong response: " + rsp);
+      log.info("History query: {}", query);
+      log.info("Wrong response: {}", rsp);
       ModifiableSolrParams fullQuery = params(CommonParams.QT, CommonParams.AUTOSCALING_HISTORY_PATH);
-      log.info("Full response: " + client.query(fullQuery));
+      if (log.isInfoEnabled()) {
+        log.info("Full response: {}", client.query(fullQuery));
+      }
     }
     assertEquals("Wrong number of documents", expected, docs.size());
     return docs;
   }
 
   private static void waitForRecovery(String collection) throws Exception {
-    log.info("Waiting for recovery of " + collection);
+    log.info("Waiting for recovery of {}", collection);
     boolean recovered = false;
     boolean allActive = true;
     boolean hasLeaders = true;
@@ -423,7 +426,7 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
     for (int i = 0; i < 300; i++) {
       ClusterState state = solrClient.getZkStateReader().getClusterState();
       collState = getCollectionState(collection);
-      log.debug("###### " + collState);
+      log.debug("###### {}", collState);
       Collection<Replica> replicas = collState.getReplicas();
       allActive = true;
       hasLeaders = true;
@@ -431,11 +434,11 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
         for (Replica r : replicas) {
           if (state.getLiveNodes().contains(r.getNodeName())) {
             if (!r.isActive(state.getLiveNodes())) {
-              log.info("Not active: " + r);
+              log.info("Not active: {}", r);
               allActive = false;
             }
           } else {
-            log.info("Replica no longer on a live node, ignoring: " + r);
+            log.info("Replica no longer on a live node, ignoring: {}", r);
           }
         }
       } else {
@@ -450,7 +453,7 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
         recovered = true;
         break;
       } else {
-        log.info("--- waiting, allActive=" + allActive + ", hasLeaders=" + hasLeaders);
+        log.info("--- waiting, allActive={}, hasLeaders={}", allActive, hasLeaders);
         Thread.sleep(1000);
       }
     }

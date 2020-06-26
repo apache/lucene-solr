@@ -93,6 +93,7 @@ public class TestSolrCoreProperties extends SolrJettyTestBase {
     QueryResponse res = getSolrClient().query(params);
     assertEquals(0, res.getResults().getNumFound());
 
+    @SuppressWarnings({"rawtypes"})
     NamedList echoedParams = (NamedList) res.getHeader().get("params");
     assertEquals("f1", echoedParams.get("p1"));
     assertEquals("f2", echoedParams.get("p2"));

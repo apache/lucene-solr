@@ -65,7 +65,6 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
-import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.exec.DefaultExecuteResultHandler;
@@ -107,7 +106,6 @@ import org.apache.solr.client.solrj.cloud.autoscaling.Variable;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -253,25 +251,24 @@ public class SolrCLI implements CLIO {
   public static final String DEFAULT_SOLR_URL = "http://localhost:8983/solr";
   public static final String ZK_HOST = "localhost:9983";
 
-  @SuppressWarnings("static-access")
   public static Option[] cloudOptions =  new Option[] {
-    OptionBuilder
-        .withArgName("HOST")
-        .hasArg()
-        .isRequired(false)
-        .withDescription("Address of the Zookeeper ensemble; defaults to: "+ZK_HOST)
-        .create("zkHost"),
-    OptionBuilder
-        .withArgName("COLLECTION")
-        .hasArg()
-        .isRequired(false)
-        .withDescription("Name of collection; no default")
-        .withLongOpt("collection")
-        .create("c"),
-    OptionBuilder
-        .isRequired(false)
-        .withDescription("Enable more verbose command output.")
-        .create("verbose")
+      Option.builder("zkHost")
+          .argName("HOST")
+          .hasArg()
+          .required(false)
+          .desc("Address of the Zookeeper ensemble; defaults to: "+ZK_HOST)
+          .build(),
+      Option.builder("c")
+          .argName("COLLECTION")
+          .hasArg()
+          .required(false)
+          .desc("Name of collection; no default")
+          .longOpt("collection")
+          .build(),
+      Option.builder("verbose")
+          .required(false)
+          .desc("Enable more verbose command output.")
+          .build()
   };
 
   private static void exit(int exitStatus) {
@@ -330,7 +327,7 @@ public class SolrCLI implements CLIO {
     CommandLine cli =
         processCommandLineArgs(joinCommonAndToolOptions(toolOptions), toolArgs);
 
-    List argList = cli.getArgList();
+    List<String> argList = cli.getArgList();
     argList.addAll(dashDList);
 
     // for SSL support, try to accommodate relative paths set for SSL store props
@@ -549,7 +546,7 @@ public class SolrCLI implements CLIO {
       Enumeration<URL> resources = classLoader.getResources(path);
       Set<String> classes = new TreeSet<String>();
       while (resources.hasMoreElements()) {
-        URL resource = (URL) resources.nextElement();
+        URL resource = resources.nextElement();
         classes.addAll(findClasses(resource.getFile(), packageName));
       }
 
@@ -594,9 +591,9 @@ public class SolrCLI implements CLIO {
     Throwable rootCause = SolrException.getRootCause(exc);
     boolean wasCommError =
         (rootCause instanceof ConnectException ||
-         rootCause instanceof ConnectTimeoutException ||
-         rootCause instanceof NoHttpResponseException ||
-         rootCause instanceof SocketException);
+            rootCause instanceof ConnectTimeoutException ||
+            rootCause instanceof NoHttpResponseException ||
+            rootCause instanceof SocketException);
     return wasCommError;
   }
 
@@ -698,6 +695,7 @@ public class SolrCLI implements CLIO {
     return json;
   }
 
+  @SuppressWarnings("unchecked")
   private static class SolrResponseHandler implements ResponseHandler<Map<String,Object>> {
     public Map<String,Object> handleResponse(HttpResponse response) throws ClientProtocolException, IOException {
       HttpEntity entity = response.getEntity();
@@ -711,7 +709,6 @@ public class SolrCLI implements CLIO {
           throw new ClientProtocolException("Expected JSON response from server but received: "+respBody+
               "\nTypically, this indicates a problem with the Solr server; check the Solr server logs for more information.");
         }
-
         if (resp != null && resp instanceof Map) {
           return (Map<String,Object>)resp;
         } else {
@@ -812,7 +809,7 @@ public class SolrCLI implements CLIO {
       } else {
         // no ok if it's not null and of a different type
         throw new IllegalStateException("Expected a " + clazz.getName() + " at path "+
-           jsonPath+" but found "+obj+" instead! "+json);
+            jsonPath+" but found "+obj+" instead! "+json);
       }
     } // it's ok if it is null
     return val;
@@ -832,7 +829,7 @@ public class SolrCLI implements CLIO {
 
     if (!jsonPath.startsWith("/"))
       throw new IllegalArgumentException("Invalid JSON path: "+
-        jsonPath+"! Must start with a /");
+          jsonPath+"! Must start with a /");
 
     Map<String,Object> parent = json;
     Object result = null;
@@ -878,75 +875,75 @@ public class SolrCLI implements CLIO {
     @Override
     public Option[] getOptions() {
       return new Option[] {
-          OptionBuilder
-              .withArgName("HOST")
+          Option.builder("zkHost")
+              .argName("HOST")
               .hasArg()
-              .isRequired(false)
-              .withDescription("Address of the Zookeeper ensemble; defaults to: "+ZK_HOST)
-              .create("zkHost"),
-          OptionBuilder
-              .withArgName("CONFIG")
+              .required(false)
+              .desc("Address of the Zookeeper ensemble; defaults to: "+ZK_HOST)
+              .build(),
+          Option.builder("a")
+              .argName("CONFIG")
               .hasArg()
-              .isRequired(false)
-              .withDescription("Autoscaling config file, defaults to the one deployed in the cluster.")
-              .withLongOpt("config")
-              .create("a"),
-          OptionBuilder
-              .withDescription("Show calculated suggestions")
-              .withLongOpt("suggestions")
-              .create("s"),
-          OptionBuilder
-              .withDescription("Show ClusterState (collections layout)")
-              .withLongOpt("clusterState")
-              .create("c"),
-          OptionBuilder
-              .withDescription("Show calculated diagnostics")
-              .withLongOpt("diagnostics")
-              .create("d"),
-          OptionBuilder
-              .withDescription("Show sorted nodes with diagnostics")
-              .withLongOpt("sortedNodes")
-              .create("n"),
-          OptionBuilder
-              .withDescription("Redact node and collection names (original names will be consistently randomized)")
-              .withLongOpt("redact")
-              .create("r"),
-          OptionBuilder
-              .withDescription("Show summarized collection & node statistics.")
-              .create("stats"),
-          OptionBuilder
-              .withDescription("Store autoscaling snapshot of the current cluster.")
-              .withArgName("DIR")
+              .required(false)
+              .desc("Autoscaling config file, defaults to the one deployed in the cluster.")
+              .longOpt("config")
+              .build(),
+          Option.builder("s")
+              .desc("Show calculated suggestions")
+              .longOpt("suggestions")
+              .build(),
+          Option.builder("c")
+              .desc("Show ClusterState (collections layout)")
+              .longOpt("clusterState")
+              .build(),
+          Option.builder("d")
+              .desc("Show calculated diagnostics")
+              .longOpt("diagnostics")
+              .build(),
+          Option.builder("n")
+              .desc("Show sorted nodes with diagnostics")
+              .longOpt("sortedNodes")
+              .build(),
+          Option.builder("r")
+              .desc("Redact node and collection names (original names will be consistently randomized)")
+              .longOpt("redact")
+              .build(),
+          Option.builder("stats")
+              .desc("Show summarized collection & node statistics.")
+              .build(),
+          Option.builder("save")
+              .desc("Store autoscaling snapshot of the current cluster.")
+              .argName("DIR")
               .hasArg()
-              .create("save"),
-          OptionBuilder
-              .withDescription("Load autoscaling snapshot of the cluster instead of using the real one.")
-              .withArgName("DIR")
+              .build(),
+          Option.builder("load")
+              .desc("Load autoscaling snapshot of the cluster instead of using the real one.")
+              .argName("DIR")
               .hasArg()
-              .create("load"),
-          OptionBuilder
-              .withDescription("Simulate execution of all suggestions.")
-              .create("simulate"),
-          OptionBuilder
-              .withDescription("Max number of simulation iterations.")
-              .withArgName("NUMBER")
+              .build(),
+          Option.builder("simulate")
+              .desc("Simulate execution of all suggestions.")
+              .build(),
+          Option.builder("i")
+              .desc("Max number of simulation iterations.")
+              .argName("NUMBER")
               .hasArg()
-              .withLongOpt("iterations")
-              .create("i"),
-          OptionBuilder
-              .withDescription("Save autoscaling snapshots at each step of simulated execution.")
-              .withArgName("DIR")
-              .withLongOpt("saveSimulated")
+              .longOpt("iterations")
+              .build(),
+          Option.builder("ss")
+              .desc("Save autoscaling snapshots at each step of simulated execution.")
+              .argName("DIR")
+              .longOpt("saveSimulated")
               .hasArg()
-              .create("ss"),
-          OptionBuilder
-              .withDescription("Execute a scenario from a file (and ignore all other options).")
-              .withArgName("FILE")
+              .build(),
+          Option.builder("scenario")
+              .desc("Execute a scenario from a file (and ignore all other options).")
+              .argName("FILE")
               .hasArg()
-              .create("scenario"),
-          OptionBuilder
-              .withDescription("Turn on all options to get all available information.")
-              .create("all")
+              .build(),
+          Option.builder("all")
+              .desc("Turn on all options to get all available information.")
+              .build()
 
       };
     }
@@ -1085,7 +1082,6 @@ public class SolrCLI implements CLIO {
       Map<String, Object> results = new LinkedHashMap<>();
       if (withClusterState) {
         Map<String, Object> map = new LinkedHashMap<>();
-        map.put("znodeVersion", clusterState.getZNodeVersion());
         map.put("liveNodes", new TreeSet<>(clusterState.getLiveNodes()));
         map.put("collections", clusterState.getCollectionsMap());
         results.put("CLUSTERSTATE", map);
@@ -1162,7 +1158,7 @@ public class SolrCLI implements CLIO {
           perStep.put("opDetails", perStepOps);
         }
         for (Suggester.SuggestionInfo suggestion : suggestions) {
-          SolrRequest operation = suggestion.getOperation();
+          SolrRequest<?> operation = suggestion.getOperation();
           if (operation == null) {
             unresolvedCount++;
             if (suggestion.getViolation() == null) {
@@ -1244,21 +1240,20 @@ public class SolrCLI implements CLIO {
       return "status";
     }
 
-    @SuppressWarnings("static-access")
     public Option[] getOptions() {
       return new Option[] {
-        OptionBuilder
-            .withArgName("URL")
-            .hasArg()
-            .isRequired(false)
-            .withDescription("Address of the Solr Web application, defaults to: "+DEFAULT_SOLR_URL)
-            .create("solr"),
-          OptionBuilder
-            .withArgName("SECS")
-            .hasArg()
-            .isRequired(false)
-            .withDescription("Wait up to the specified number of seconds to see Solr running.")
-            .create("maxWaitSecs")
+          Option.builder("solr")
+              .argName("URL")
+              .hasArg()
+              .required(false)
+              .desc("Address of the Solr Web application, defaults to: "+DEFAULT_SOLR_URL)
+              .build(),
+          Option.builder("maxWaitSecs")
+              .argName("SECS")
+              .hasArg()
+              .required(false)
+              .desc("Wait up to the specified number of seconds to see Solr running.")
+              .build()
       };
     }
 
@@ -1299,7 +1294,7 @@ public class SolrCLI implements CLIO {
         try {
           return getStatus(solrUrl);
         } catch (SSLPeerUnverifiedException exc) {
-            throw exc;
+          throw exc;
         } catch (Exception exc) {
           if (exceptionIsAuthRelated(exc)) {
             throw exc;
@@ -1394,15 +1389,14 @@ public class SolrCLI implements CLIO {
       return "api";
     }
 
-    @SuppressWarnings("static-access")
     public Option[] getOptions() {
       return new Option[] {
-        OptionBuilder
-            .withArgName("URL")
-            .hasArg()
-            .isRequired(false)
-            .withDescription("Send a GET request to a Solr API endpoint")
-            .create("get")
+          Option.builder("get")
+              .argName("URL")
+              .hasArg()
+              .required(false)
+              .desc("Send a GET request to a Solr API endpoint")
+              .build()
       };
     }
 
@@ -1451,7 +1445,7 @@ public class SolrCLI implements CLIO {
     String memory;
 
     ReplicaHealth(String shard, String name, String url, String status,
-        long numDocs, boolean isLeader, String uptime, String memory) {
+                  long numDocs, boolean isLeader, String uptime, String memory) {
       this.shard = shard;
       this.name = name;
       this.url = url;
@@ -1703,64 +1697,64 @@ public class SolrCLI implements CLIO {
   } // end HealthcheckTool
 
   private static final Option[] CREATE_COLLECTION_OPTIONS = new Option[] {
-        OptionBuilder
-            .withArgName("HOST")
-            .hasArg()
-            .isRequired(false)
-            .withDescription("Address of the Zookeeper ensemble; defaults to: " + ZK_HOST)
-            .create("zkHost"),
-        OptionBuilder
-            .withArgName("HOST")
-            .hasArg()
-            .isRequired(false)
-            .withDescription("Base Solr URL, which can be used to determine the zkHost if that's not known")
-            .create("solrUrl"),
-        OptionBuilder
-            .withArgName("NAME")
-            .hasArg()
-            .isRequired(true)
-            .withDescription("Name of collection to create.")
-            .create(NAME),
-        OptionBuilder
-            .withArgName("#")
-            .hasArg()
-            .isRequired(false)
-            .withDescription("Number of shards; default is 1")
-            .create("shards"),
-        OptionBuilder
-            .withArgName("#")
-            .hasArg()
-            .isRequired(false)
-            .withDescription("Number of copies of each document across the collection (replicas per shard); default is 1")
-            .create("replicationFactor"),
-        OptionBuilder
-            .withArgName("#")
-            .hasArg()
-            .isRequired(false)
-            .withDescription("Maximum number of shards per Solr node; default is determined based on the number of shards, replication factor, and live nodes.")
-            .create("maxShardsPerNode"),
-        OptionBuilder
-            .withArgName("NAME")
-            .hasArg()
-            .isRequired(false)
-            .withDescription("Configuration directory to copy when creating the new collection; default is "+DEFAULT_CONFIG_SET)
-            .create("confdir"),
-        OptionBuilder
-            .withArgName("NAME")
-            .hasArg()
-            .isRequired(false)
-            .withDescription("Configuration name; default is the collection name")
-            .create("confname"),
-        OptionBuilder
-            .withArgName("DIR")
-            .hasArg()
-            .isRequired(true)
-            .withDescription("Path to configsets directory on the local system.")
-            .create("configsetsDir"),
-        OptionBuilder
-            .isRequired(false)
-            .withDescription("Enable more verbose command output.")
-            .create("verbose")
+      Option.builder("zkHost")
+          .argName("HOST")
+          .hasArg()
+          .required(false)
+          .desc("Address of the Zookeeper ensemble; defaults to: " + ZK_HOST)
+          .build(),
+      Option.builder("solrUrl")
+          .argName("HOST")
+          .hasArg()
+          .required(false)
+          .desc("Base Solr URL, which can be used to determine the zkHost if that's not known")
+          .build(),
+      Option.builder(NAME)
+          .argName("NAME")
+          .hasArg()
+          .required(true)
+          .desc("Name of collection to create.")
+          .build(),
+      Option.builder("shards")
+          .argName("#")
+          .hasArg()
+          .required(false)
+          .desc("Number of shards; default is 1")
+          .build(),
+      Option.builder("replicationFactor")
+          .argName("#")
+          .hasArg()
+          .required(false)
+          .desc("Number of copies of each document across the collection (replicas per shard); default is 1")
+          .build(),
+      Option.builder("maxShardsPerNode")
+          .argName("#")
+          .hasArg()
+          .required(false)
+          .desc("Maximum number of shards per Solr node; default is determined based on the number of shards, replication factor, and live nodes.")
+          .build(),
+      Option.builder("confdir")
+          .argName("NAME")
+          .hasArg()
+          .required(false)
+          .desc("Configuration directory to copy when creating the new collection; default is "+DEFAULT_CONFIG_SET)
+          .build(),
+      Option.builder("confname")
+          .argName("NAME")
+          .hasArg()
+          .required(false)
+          .desc("Configuration name; default is the collection name")
+          .build(),
+      Option.builder("configsetsDir")
+          .argName("DIR")
+          .hasArg()
+          .required(true)
+          .desc("Path to configsets directory on the local system.")
+          .build(),
+      Option.builder("verbose")
+          .required(false)
+          .desc("Enable more verbose command output.")
+          .build()
 
   };
 
@@ -1814,6 +1808,7 @@ public class SolrCLI implements CLIO {
       // convert raw JSON into user-friendly output
       StatusTool statusTool = new StatusTool();
       Map<String,Object> status = statusTool.reportStatus(solrUrl, systemInfo, httpClient);
+      @SuppressWarnings("unchecked")
       Map<String,Object> cloud = (Map<String, Object>)status.get("cloud");
       if (cloud != null) {
         String zookeeper = (String) cloud.get("ZooKeeper");
@@ -1833,6 +1828,7 @@ public class SolrCLI implements CLIO {
     boolean exists = false;
     try {
       Map<String,Object> existsCheckResult = getJson(url);
+      @SuppressWarnings("unchecked")
       List<String> collections = (List<String>) existsCheckResult.get("collections");
       exists = collections != null && collections.contains(collection);
     } catch (Exception exc) {
@@ -1852,8 +1848,11 @@ public class SolrCLI implements CLIO {
           Thread.sleep(clamPeriodForStatusPollMs);
         }
         Map<String,Object> existsCheckResult = getJson(coreStatusUrl);
+        @SuppressWarnings("unchecked")
         Map<String,Object> status = (Map<String, Object>)existsCheckResult.get("status");
+        @SuppressWarnings("unchecked")
         Map<String,Object> coreStatus = (Map<String, Object>)status.get(coreName);
+        @SuppressWarnings("unchecked")
         Map<String,Object> failureStatus = (Map<String, Object>)existsCheckResult.get("initFailures");
         String errorMsg = (String) failureStatus.get(coreName);
         final boolean hasName = coreStatus != null && coreStatus.containsKey(NAME);
@@ -1884,7 +1883,6 @@ public class SolrCLI implements CLIO {
       return "create_collection";
     }
 
-    @SuppressWarnings("static-access")
     public Option[] getOptions() {
       return CREATE_COLLECTION_OPTIONS;
     }
@@ -2013,37 +2011,36 @@ public class SolrCLI implements CLIO {
       return "create_core";
     }
 
-    @SuppressWarnings("static-access")
     public Option[] getOptions() {
       return new Option[] {
-          OptionBuilder
-              .withArgName("URL")
+          Option.builder("solrUrl")
+              .argName("URL")
               .hasArg()
-              .isRequired(false)
-              .withDescription("Base Solr URL, default is " + DEFAULT_SOLR_URL)
-              .create("solrUrl"),
-          OptionBuilder
-              .withArgName("NAME")
+              .required(false)
+              .desc("Base Solr URL, default is " + DEFAULT_SOLR_URL)
+              .build(),
+          Option.builder(NAME)
+              .argName("NAME")
               .hasArg()
-              .isRequired(true)
-              .withDescription("Name of the core to create.")
-              .create(NAME),
-          OptionBuilder
-              .withArgName("CONFIG")
+              .required(true)
+              .desc("Name of the core to create.")
+              .build(),
+          Option.builder("confdir")
+              .argName("CONFIG")
               .hasArg()
-              .isRequired(false)
-              .withDescription("Configuration directory to copy when creating the new core; default is "+DEFAULT_CONFIG_SET)
-              .create("confdir"),
-          OptionBuilder
-              .withArgName("DIR")
+              .required(false)
+              .desc("Configuration directory to copy when creating the new core; default is "+DEFAULT_CONFIG_SET)
+              .build(),
+          Option.builder("configsetsDir")
+              .argName("DIR")
               .hasArg()
-              .isRequired(true)
-              .withDescription("Path to configsets directory on the local system.")
-              .create("configsetsDir"),
-              OptionBuilder
-              .isRequired(false)
-              .withDescription("Enable more verbose command output.")
-              .create("verbose")
+              .required(true)
+              .desc("Path to configsets directory on the local system.")
+              .build(),
+          Option.builder("verbose")
+              .required(false)
+              .desc("Enable more verbose command output.")
+              .build()
       };
     }
 
@@ -2153,7 +2150,6 @@ public class SolrCLI implements CLIO {
       return "create";
     }
 
-    @SuppressWarnings("static-access")
     public Option[] getOptions() {
       return CREATE_COLLECTION_OPTIONS;
     }
@@ -2193,37 +2189,36 @@ public class SolrCLI implements CLIO {
       super(stdout);
     }
 
-    @SuppressWarnings("static-access")
     public Option[] getOptions() {
       return new Option[]{
-          OptionBuilder
-              .withArgName("confname") // Comes out in help message
+          Option.builder("confname")
+              .argName("confname") // Comes out in help message
               .hasArg() // Has one sub-argument
-              .isRequired(true) // confname argument must be present
-              .withDescription("Configset name on Zookeeper")
-              .create("confname"), // passed as -confname value
-          OptionBuilder
-              .withArgName("confdir")
+              .required(true) // confname argument must be present
+              .desc("Configset name on Zookeeper")
+              .build(), // passed as -confname value
+          Option.builder("confdir")
+              .argName("confdir")
               .hasArg()
-              .isRequired(true)
-              .withDescription("Local directory with configs")
-              .create("confdir"),
-          OptionBuilder
-              .withArgName("configsetsDir")
+              .required(true)
+              .desc("Local directory with configs")
+              .build(),
+          Option.builder("configsetsDir")
+              .argName("configsetsDir")
               .hasArg()
-              .isRequired(false)
-              .withDescription("Parent directory of example configsets")
-              .create("configsetsDir"),
-          OptionBuilder
-              .withArgName("HOST")
+              .required(false)
+              .desc("Parent directory of example configsets")
+              .build(),
+          Option.builder("zkHost")
+              .argName("HOST")
               .hasArg()
-              .isRequired(true)
-              .withDescription("Address of the Zookeeper ensemble; defaults to: " + ZK_HOST)
-              .create("zkHost"),
-          OptionBuilder
-              .isRequired(false)
-              .withDescription("Enable more verbose command output.")
-              .create("verbose")
+              .required(true)
+              .desc("Address of the Zookeeper ensemble; defaults to: " + ZK_HOST)
+              .build(),
+          Option.builder("verbose")
+              .required(false)
+              .desc("Enable more verbose command output.")
+              .build()
       };
     }
 
@@ -2266,31 +2261,30 @@ public class SolrCLI implements CLIO {
       super(stdout);
     }
 
-    @SuppressWarnings("static-access")
     public Option[] getOptions() {
       return new Option[]{
-          OptionBuilder
-              .withArgName("confname")
+          Option.builder("confname")
+              .argName("confname")
               .hasArg()
-              .isRequired(true)
-              .withDescription("Configset name on Zookeeper")
-              .create("confname"),
-          OptionBuilder
-              .withArgName("confdir")
+              .required(true)
+              .desc("Configset name on Zookeeper")
+              .build(),
+          Option.builder("confdir")
+              .argName("confdir")
               .hasArg()
-              .isRequired(true)
-              .withDescription("Local directory with configs")
-              .create("confdir"),
-          OptionBuilder
-              .withArgName("HOST")
+              .required(true)
+              .desc("Local directory with configs")
+              .build(),
+          Option.builder("zkHost")
+              .argName("HOST")
               .hasArg()
-              .isRequired(true)
-              .withDescription("Address of the Zookeeper ensemble; defaults to: " + ZK_HOST)
-              .create("zkHost"),
-          OptionBuilder
-              .isRequired(false)
-              .withDescription("Enable more verbose command output.")
-              .create("verbose")
+              .required(true)
+              .desc("Address of the Zookeeper ensemble; defaults to: " + ZK_HOST)
+              .build(),
+          Option.builder("verbose")
+              .required(false)
+              .desc("Enable more verbose command output.")
+              .build()
       };
     }
 
@@ -2336,37 +2330,36 @@ public class SolrCLI implements CLIO {
 
     public ZkRmTool() {
       this(CLIO.getOutStream());
-      }
+    }
 
     public ZkRmTool(PrintStream stdout) {
       super(stdout);
-      }
+    }
 
-    @SuppressWarnings("static-access")
     public Option[] getOptions() {
       return new Option[]{
-          OptionBuilder
-              .withArgName("path")
+          Option.builder("path")
+              .argName("path")
               .hasArg()
-              .isRequired(true)
-              .withDescription("Path to remove")
-              .create("path"),
-          OptionBuilder
-              .withArgName("recurse")
+              .required(true)
+              .desc("Path to remove")
+              .build(),
+          Option.builder("recurse")
+              .argName("recurse")
               .hasArg()
-              .isRequired(false)
-              .withDescription("Recurse (true|false, default is false)")
-              .create("recurse"),
-          OptionBuilder
-              .withArgName("HOST")
+              .required(false)
+              .desc("Recurse (true|false, default is false)")
+              .build(),
+          Option.builder("zkHost")
+              .argName("HOST")
               .hasArg()
-              .isRequired(true)
-              .withDescription("Address of the Zookeeper ensemble; defaults to: " + ZK_HOST)
-              .create("zkHost"),
-          OptionBuilder
-              .isRequired(false)
-              .withDescription("Enable more verbose command output.")
-              .create("verbose")
+              .required(true)
+              .desc("Address of the Zookeeper ensemble; defaults to: " + ZK_HOST)
+              .build(),
+          Option.builder("verbose")
+              .required(false)
+              .desc("Enable more verbose command output.")
+              .build()
       };
     }
 
@@ -2419,31 +2412,30 @@ public class SolrCLI implements CLIO {
       super(stdout);
     }
 
-    @SuppressWarnings("static-access")
     public Option[] getOptions() {
       return new Option[]{
-          OptionBuilder
-              .withArgName("path")
+          Option.builder("path")
+              .argName("path")
               .hasArg()
-              .isRequired(true)
-              .withDescription("Path to list")
-              .create("path"),
-          OptionBuilder
-              .withArgName("recurse")
+              .required(true)
+              .desc("Path to list")
+              .build(),
+          Option.builder("recurse")
+              .argName("recurse")
               .hasArg()
-              .isRequired(false)
-              .withDescription("Recurse (true|false, default is false)")
-              .create("recurse"),
-          OptionBuilder
-              .withArgName("HOST")
+              .required(false)
+              .desc("Recurse (true|false, default is false)")
+              .build(),
+          Option.builder("zkHost")
+              .argName("HOST")
               .hasArg()
-              .isRequired(true)
-              .withDescription("Address of the Zookeeper ensemble; defaults to: " + ZK_HOST)
-              .create("zkHost"),
-          OptionBuilder
-              .isRequired(false)
-              .withDescription("Enable more verbose command output.")
-              .create("verbose")
+              .required(true)
+              .desc("Address of the Zookeeper ensemble; defaults to: " + ZK_HOST)
+              .build(),
+          Option.builder("verbose")
+              .required(false)
+              .desc("Enable more verbose command output.")
+              .build()
       };
     }
 
@@ -2487,25 +2479,24 @@ public class SolrCLI implements CLIO {
       super(stdout);
     }
 
-    @SuppressWarnings("static-access")
     public Option[] getOptions() {
       return new Option[]{
-          OptionBuilder
-              .withArgName("path")
+          Option.builder("path")
+              .argName("path")
               .hasArg()
-              .isRequired(true)
-              .withDescription("Path to create")
-              .create("path"),
-          OptionBuilder
-              .withArgName("HOST")
+              .required(true)
+              .desc("Path to create")
+              .build(),
+          Option.builder("zkHost")
+              .argName("HOST")
               .hasArg()
-              .isRequired(true)
-              .withDescription("Address of the Zookeeper ensemble; defaults to: " + ZK_HOST)
-              .create("zkHost"),
-          OptionBuilder
-              .isRequired(false)
-              .withDescription("Enable more verbose command output.")
-              .create("verbose")
+              .required(true)
+              .desc("Address of the Zookeeper ensemble; defaults to: " + ZK_HOST)
+              .build(),
+          Option.builder("verbose")
+              .required(false)
+              .desc("Enable more verbose command output.")
+              .build()
       };
     }
 
@@ -2549,37 +2540,36 @@ public class SolrCLI implements CLIO {
       super(stdout);
     }
 
-    @SuppressWarnings("static-access")
     public Option[] getOptions() {
       return new Option[]{
-          OptionBuilder
-              .withArgName("src")
+          Option.builder("src")
+              .argName("src")
               .hasArg()
-              .isRequired(true)
-              .withDescription("Source file or directory, may be local or a Znode")
-              .create("src"),
-          OptionBuilder
-              .withArgName("dst")
+              .required(true)
+              .desc("Source file or directory, may be local or a Znode")
+              .build(),
+          Option.builder("dst")
+              .argName("dst")
               .hasArg()
-              .isRequired(true)
-              .withDescription("Destination of copy, may be local or a Znode.")
-              .create("dst"),
-          OptionBuilder
-              .withArgName("recurse")
+              .required(true)
+              .desc("Destination of copy, may be local or a Znode.")
+              .build(),
+          Option.builder("recurse")
+              .argName("recurse")
               .hasArg()
-              .isRequired(false)
-              .withDescription("Recurse (true|false, default is false)")
-              .create("recurse"),
-          OptionBuilder
-              .withArgName("HOST")
+              .required(false)
+              .desc("Recurse (true|false, default is false)")
+              .build(),
+          Option.builder("zkHost")
+              .argName("HOST")
               .hasArg()
-              .isRequired(true)
-              .withDescription("Address of the Zookeeper ensemble; defaults to: " + ZK_HOST)
-              .create("zkHost"),
-          OptionBuilder
-              .isRequired(false)
-              .withDescription("Enable more verbose command output.")
-              .create("verbose")
+              .required(true)
+              .desc("Address of the Zookeeper ensemble; defaults to: " + ZK_HOST)
+              .build(),
+          Option.builder("verbose")
+              .required(false)
+              .desc("Enable more verbose command output.")
+              .build()
       };
     }
 
@@ -2639,31 +2629,30 @@ public class SolrCLI implements CLIO {
       super(stdout);
     }
 
-    @SuppressWarnings("static-access")
     public Option[] getOptions() {
       return new Option[]{
-          OptionBuilder
-              .withArgName("src")
+          Option.builder("src")
+              .argName("src")
               .hasArg()
-              .isRequired(true)
-              .withDescription("Source Znode to movej from.")
-              .create("src"),
-          OptionBuilder
-              .withArgName("dst")
+              .required(true)
+              .desc("Source Znode to movej from.")
+              .build(),
+          Option.builder("dst")
+              .argName("dst")
               .hasArg()
-              .isRequired(true)
-              .withDescription("Destination Znode to move to.")
-              .create("dst"),
-          OptionBuilder
-              .withArgName("HOST")
+              .required(true)
+              .desc("Destination Znode to move to.")
+              .build(),
+          Option.builder("zkHost")
+              .argName("HOST")
               .hasArg()
-              .isRequired(true)
-              .withDescription("Address of the Zookeeper ensemble; defaults to: " + ZK_HOST)
-              .create("zkHost"),
-          OptionBuilder
-              .isRequired(false)
-              .withDescription("Enable more verbose command output.")
-              .create("verbose")
+              .required(true)
+              .desc("Address of the Zookeeper ensemble; defaults to: " + ZK_HOST)
+              .build(),
+          Option.builder("verbose")
+              .required(false)
+              .desc("Enable more verbose command output.")
+              .build()
       };
     }
 
@@ -2719,41 +2708,40 @@ public class SolrCLI implements CLIO {
       return "delete";
     }
 
-    @SuppressWarnings("static-access")
     public Option[] getOptions() {
       return new Option[]{
-          OptionBuilder
-              .withArgName("URL")
+          Option.builder("solrUrl")
+              .argName("URL")
               .hasArg()
-              .isRequired(false)
-              .withDescription("Base Solr URL, default is " + DEFAULT_SOLR_URL)
-              .create("solrUrl"),
-          OptionBuilder
-              .withArgName("NAME")
+              .required(false)
+              .desc("Base Solr URL, default is " + DEFAULT_SOLR_URL)
+              .build(),
+          Option.builder(NAME)
+              .argName("NAME")
               .hasArg()
-              .isRequired(true)
-              .withDescription("Name of the core / collection to delete.")
-              .create(NAME),
-          OptionBuilder
-              .withArgName("true|false")
+              .required(true)
+              .desc("Name of the core / collection to delete.")
+              .build(),
+          Option.builder("deleteConfig")
+              .argName("true|false")
               .hasArg()
-              .isRequired(false)
-              .withDescription("Flag to indicate if the underlying configuration directory for a collection should also be deleted; default is true")
-              .create("deleteConfig"),
-          OptionBuilder
-              .isRequired(false)
-              .withDescription("Skip safety checks when deleting the configuration directory used by a collection")
-              .create("forceDeleteConfig"),
-          OptionBuilder
-              .withArgName("HOST")
+              .required(false)
+              .desc("Flag to indicate if the underlying configuration directory for a collection should also be deleted; default is true")
+              .build(),
+          Option.builder("forceDeleteConfig")
+              .required(false)
+              .desc("Skip safety checks when deleting the configuration directory used by a collection")
+              .build(),
+          Option.builder("zkHost")
+              .argName("HOST")
               .hasArg()
-              .isRequired(false)
-              .withDescription("Address of the Zookeeper ensemble; defaults to: "+ZK_HOST)
-              .create("zkHost"),
-          OptionBuilder
-              .isRequired(false)
-              .withDescription("Enable more verbose command output.")
-              .create("verbose")
+              .required(false)
+              .desc("Address of the Zookeeper ensemble; defaults to: "+ZK_HOST)
+              .build(),
+          Option.builder("verbose")
+              .required(false)
+              .desc("Enable more verbose command output.")
+              .build()
       };
     }
 
@@ -2851,7 +2839,7 @@ public class SolrCLI implements CLIO {
           zkStateReader.getZkClient().clean(configZnode);
         } catch (Exception exc) {
           echo("\nWARNING: Failed to delete configuration directory "+configZnode+" in ZooKeeper due to: "+
-            exc.getMessage()+"\nYou'll need to manually delete this znode using the zkcli script.");
+              exc.getMessage()+"\nYou'll need to manually delete this znode using the zkcli script.");
         }
       }
 
@@ -2903,55 +2891,54 @@ public class SolrCLI implements CLIO {
       return "config";
     }
 
-    @SuppressWarnings("static-access")
     @Override
     public Option[] getOptions() {
       Option[] configOptions = new Option[] {
-          OptionBuilder
-              .withArgName("ACTION")
+          Option.builder("action")
+              .argName("ACTION")
               .hasArg()
-              .isRequired(false)
-              .withDescription("Config API action, one of: set-property, unset-property; default is set-property")
-              .create("action"),
-          OptionBuilder
-              .withArgName("PROP")
+              .required(false)
+              .desc("Config API action, one of: set-property, unset-property; default is set-property")
+              .build(),
+          Option.builder("property")
+              .argName("PROP")
               .hasArg()
-              .isRequired(true)
-              .withDescription("Name of the Config API property to apply the action to, such as: updateHandler.autoSoftCommit.maxTime")
-              .create("property"),
-          OptionBuilder
-              .withArgName("VALUE")
+              .required(true)
+              .desc("Name of the Config API property to apply the action to, such as: updateHandler.autoSoftCommit.maxTime")
+              .build(),
+          Option.builder("value")
+              .argName("VALUE")
               .hasArg()
-              .isRequired(false)
-              .withDescription("Set the property to this value; accepts JSON objects and strings")
-              .create("value"),
-          OptionBuilder
-              .withArgName("HOST")
+              .required(false)
+              .desc("Set the property to this value; accepts JSON objects and strings")
+              .build(),
+          Option.builder("solrUrl")
+              .argName("HOST")
               .hasArg()
-              .isRequired(false)
-              .withDescription("Base Solr URL, which can be used to determine the zkHost if that's not known")
-              .create("solrUrl"),
-          OptionBuilder
-              .withArgName("HOST")
+              .required(false)
+              .desc("Base Solr URL, which can be used to determine the zkHost if that's not known")
+              .build(),
+          Option.builder("z")
+              .argName("HOST")
               .hasArg()
-              .isRequired(false)
-              .withDescription("Address of the Zookeeper ensemble")
-              .withLongOpt("zkHost")
-              .create('z'),
-          OptionBuilder
-              .withArgName("PORT")
+              .required(false)
+              .desc("Address of the Zookeeper ensemble")
+              .longOpt("zkHost")
+              .build(),
+          Option.builder("p")
+              .argName("PORT")
               .hasArg()
-              .isRequired(false)
-              .withDescription("The port of the Solr node to use when applying configuration change")
-              .withLongOpt("port")
-              .create('p'),
-          OptionBuilder
-              .withArgName("SCHEME")
+              .required(false)
+              .desc("The port of the Solr node to use when applying configuration change")
+              .longOpt("port")
+              .build(),
+          Option.builder("s")
+              .argName("SCHEME")
               .hasArg()
-              .isRequired(false)
-              .withDescription("The scheme for accessing Solr.  Accepted values: http or https.  Default: http")
-              .withLongOpt("scheme")
-              .create('s')
+              .required(false)
+              .desc("The scheme for accessing Solr.  Accepted values: http or https.  Default: http")
+              .longOpt("scheme")
+              .build()
       };
       return joinOptions(configOptions, cloudOptions);
     }
@@ -2993,7 +2980,7 @@ public class SolrCLI implements CLIO {
       echo("\nPOSTing request to Config API: " + solrUrl + updatePath);
       echo(jsonBody);
 
-      try (SolrClient solrClient = new Builder(solrUrl).build()) {
+      try (SolrClient solrClient = new HttpSolrClient.Builder(solrUrl).build()) {
         NamedList<Object> result = postJsonToSolr(solrClient, updatePath, jsonBody);
         Integer statusCode = (Integer)((NamedList)result.get("responseHeader")).get("status");
         if (statusCode == 0) {
@@ -3044,89 +3031,88 @@ public class SolrCLI implements CLIO {
       return "run_example";
     }
 
-    @SuppressWarnings("static-access")
     public Option[] getOptions() {
       return new Option[] {
-          OptionBuilder
-            .isRequired(false)
-            .withDescription("Don't prompt for input; accept all defaults when running examples that accept user input")
-            .create("noprompt"),
-          OptionBuilder
-            .withArgName("NAME")
-            .hasArg()
-            .isRequired(true)
-            .withDescription("Name of the example to launch, one of: cloud, techproducts, dih, schemaless")
-            .withLongOpt("example")
-            .create('e'),
-          OptionBuilder
-            .withArgName("PATH")
-            .hasArg()
-            .isRequired(false)
-            .withDescription("Path to the bin/solr script")
-            .create("script"),
-          OptionBuilder
-            .withArgName("DIR")
-            .hasArg()
-            .isRequired(true)
-            .withDescription("Path to the Solr server directory.")
-            .withLongOpt("serverDir")
-            .create('d'),
-          OptionBuilder
-            .withArgName("FORCE")
-            .withDescription("Force option in case Solr is run as root")
-            .create("force"),
-          OptionBuilder
-            .withArgName("DIR")
-            .hasArg()
-            .isRequired(false)
-            .withDescription("Path to the Solr example directory; if not provided, ${serverDir}/../example is expected to exist.")
-            .create("exampleDir"),
-          OptionBuilder
-            .withArgName("SCHEME")
-            .hasArg()
-            .isRequired(false)
-            .withDescription("Solr URL scheme: http or https, defaults to http if not specified")
-            .create("urlScheme"),
-          OptionBuilder
-            .withArgName("PORT")
-            .hasArg()
-            .isRequired(false)
-            .withDescription("Specify the port to start the Solr HTTP listener on; default is 8983")
-            .withLongOpt("port")
-            .create('p'),
-          OptionBuilder
-            .withArgName("HOSTNAME")
-            .hasArg()
-            .isRequired(false)
-            .withDescription("Specify the hostname for this Solr instance")
-            .withLongOpt("host")
-            .create('h'),
-          OptionBuilder
-            .withArgName("ZKHOST")
-            .hasArg()
-            .isRequired(false)
-            .withDescription("ZooKeeper connection string; only used when running in SolrCloud mode using -c")
-            .withLongOpt("zkhost")
-            .create('z'),
-          OptionBuilder
-            .isRequired(false)
-            .withDescription("Start Solr in SolrCloud mode; if -z not supplied, an embedded ZooKeeper instance is started on Solr port+1000, such as 9983 if Solr is bound to 8983")
-            .withLongOpt("cloud")
-            .create('c'),
-          OptionBuilder
-            .withArgName("MEM")
-            .hasArg()
-            .isRequired(false)
-            .withDescription("Sets the min (-Xms) and max (-Xmx) heap size for the JVM, such as: -m 4g results in: -Xms4g -Xmx4g; by default, this script sets the heap size to 512m")
-            .withLongOpt("memory")
-            .create('m'),
-          OptionBuilder
-            .withArgName("OPTS")
-            .hasArg()
-            .isRequired(false)
-            .withDescription("Additional options to be passed to the JVM when starting example Solr server(s)")
-            .withLongOpt("addlopts")
-            .create('a')
+          Option.builder("noprompt")
+              .required(false)
+              .desc("Don't prompt for input; accept all defaults when running examples that accept user input")
+              .build(),
+          Option.builder("e")
+              .argName("NAME")
+              .hasArg()
+              .required(true)
+              .desc("Name of the example to launch, one of: cloud, techproducts, dih, schemaless")
+              .longOpt("example")
+              .build(),
+          Option.builder("script")
+              .argName("PATH")
+              .hasArg()
+              .required(false)
+              .desc("Path to the bin/solr script")
+              .build(),
+          Option.builder("d")
+              .argName("DIR")
+              .hasArg()
+              .required(true)
+              .desc("Path to the Solr server directory.")
+              .longOpt("serverDir")
+              .build(),
+          Option.builder("force")
+              .argName("FORCE")
+              .desc("Force option in case Solr is run as root")
+              .build(),
+          Option.builder("exampleDir")
+              .argName("DIR")
+              .hasArg()
+              .required(false)
+              .desc("Path to the Solr example directory; if not provided, ${serverDir}/../example is expected to exist.")
+              .build(),
+          Option.builder("urlScheme")
+              .argName("SCHEME")
+              .hasArg()
+              .required(false)
+              .desc("Solr URL scheme: http or https, defaults to http if not specified")
+              .build(),
+          Option.builder("p")
+              .argName("PORT")
+              .hasArg()
+              .required(false)
+              .desc("Specify the port to start the Solr HTTP listener on; default is 8983")
+              .longOpt("port")
+              .build(),
+          Option.builder("h")
+              .argName("HOSTNAME")
+              .hasArg()
+              .required(false)
+              .desc("Specify the hostname for this Solr instance")
+              .longOpt("host")
+              .build(),
+          Option.builder("z")
+              .argName("ZKHOST")
+              .hasArg()
+              .required(false)
+              .desc("ZooKeeper connection string; only used when running in SolrCloud mode using -c")
+              .longOpt("zkhost")
+              .build(),
+          Option.builder("c")
+              .required(false)
+              .desc("Start Solr in SolrCloud mode; if -z not supplied, an embedded ZooKeeper instance is started on Solr port+1000, such as 9983 if Solr is bound to 8983")
+              .longOpt("cloud")
+              .build(),
+          Option.builder("m")
+              .argName("MEM")
+              .hasArg()
+              .required(false)
+              .desc("Sets the min (-Xms) and max (-Xmx) heap size for the JVM, such as: -m 4g results in: -Xms4g -Xmx4g; by default, this script sets the heap size to 512m")
+              .longOpt("memory")
+              .build(),
+          Option.builder("a")
+              .argName("OPTS")
+              .hasArg()
+              .required(false)
+              .desc("Additional options to be passed to the JVM when starting example Solr server(s)")
+              .longOpt("addlopts")
+              .build()
       };
     }
 
@@ -3342,6 +3328,7 @@ public class SolrCLI implements CLIO {
           startSolr(new File(node1Dir,"solr"), true, cli, cloudPorts[0], zkHost, 30);
 
       if (zkHost == null) {
+        @SuppressWarnings("unchecked")
         Map<String,Object> cloudStatus = (Map<String,Object>)nodeStatus.get("cloud");
         if (cloudStatus != null) {
           String zookeeper = (String)cloudStatus.get("ZooKeeper");
@@ -3809,76 +3796,75 @@ public class SolrCLI implements CLIO {
       return "assert";
     }
 
-    @SuppressWarnings("static-access")
     public Option[] getOptions() {
       return new Option[] {
-          OptionBuilder
-              .withDescription("Asserts that we are NOT the root user")
-              .withLongOpt("not-root")
-              .create("R"),
-          OptionBuilder
-              .withDescription("Asserts that we are the root user")
-              .withLongOpt("root")
-              .create("r"),
-          OptionBuilder
-              .withDescription("Asserts that Solr is NOT running on a certain URL. Default timeout is 1000ms")
-              .withLongOpt("not-started")
+          Option.builder("R")
+              .desc("Asserts that we are NOT the root user")
+              .longOpt("not-root")
+              .build(),
+          Option.builder("r")
+              .desc("Asserts that we are the root user")
+              .longOpt("root")
+              .build(),
+          Option.builder("S")
+              .desc("Asserts that Solr is NOT running on a certain URL. Default timeout is 1000ms")
+              .longOpt("not-started")
               .hasArg(true)
-              .withArgName("url")
-              .create("S"),
-          OptionBuilder
-              .withDescription("Asserts that Solr is running on a certain URL. Default timeout is 1000ms")
-              .withLongOpt("started")
+              .argName("url")
+              .build(),
+          Option.builder("s")
+              .desc("Asserts that Solr is running on a certain URL. Default timeout is 1000ms")
+              .longOpt("started")
               .hasArg(true)
-              .withArgName("url")
-              .create("s"),
-          OptionBuilder
-              .withDescription("Asserts that we run as same user that owns <directory>")
-              .withLongOpt("same-user")
+              .argName("url")
+              .build(),
+          Option.builder("u")
+              .desc("Asserts that we run as same user that owns <directory>")
+              .longOpt("same-user")
               .hasArg(true)
-              .withArgName("directory")
-              .create("u"),
-          OptionBuilder
-              .withDescription("Asserts that directory <directory> exists")
-              .withLongOpt("exists")
+              .argName("directory")
+              .build(),
+          Option.builder("x")
+              .desc("Asserts that directory <directory> exists")
+              .longOpt("exists")
               .hasArg(true)
-              .withArgName("directory")
-              .create("x"),
-          OptionBuilder
-              .withDescription("Asserts that directory <directory> does NOT exist")
-              .withLongOpt("not-exists")
+              .argName("directory")
+              .build(),
+          Option.builder("X")
+              .desc("Asserts that directory <directory> does NOT exist")
+              .longOpt("not-exists")
               .hasArg(true)
-              .withArgName("directory")
-              .create("X"),
-          OptionBuilder
-              .withDescription("Asserts that Solr is running in cloud mode.  Also fails if Solr not running.  URL should be for root Solr path.")
-              .withLongOpt("cloud")
+              .argName("directory")
+              .build(),
+          Option.builder("c")
+              .desc("Asserts that Solr is running in cloud mode.  Also fails if Solr not running.  URL should be for root Solr path.")
+              .longOpt("cloud")
               .hasArg(true)
-              .withArgName("url")
-              .create("c"),
-          OptionBuilder
-              .withDescription("Asserts that Solr is not running in cloud mode.  Also fails if Solr not running.  URL should be for root Solr path.")
-              .withLongOpt("not-cloud")
+              .argName("url")
+              .build(),
+          Option.builder("C")
+              .desc("Asserts that Solr is not running in cloud mode.  Also fails if Solr not running.  URL should be for root Solr path.")
+              .longOpt("not-cloud")
               .hasArg(true)
-              .withArgName("url")
-              .create("C"),
-          OptionBuilder
-              .withDescription("Exception message to be used in place of the default error message")
-              .withLongOpt("message")
+              .argName("url")
+              .build(),
+          Option.builder("m")
+              .desc("Exception message to be used in place of the default error message")
+              .longOpt("message")
               .hasArg(true)
-              .withArgName("message")
-              .create("m"),
-          OptionBuilder
-              .withDescription("Timeout in ms for commands supporting a timeout")
-              .withLongOpt("timeout")
+              .argName("message")
+              .build(),
+          Option.builder("t")
+              .desc("Timeout in ms for commands supporting a timeout")
+              .longOpt("timeout")
               .hasArg(true)
-              .withType(Long.class)
-              .withArgName("ms")
-              .create("t"),
-          OptionBuilder
-              .withDescription("Return an exit code instead of printing error message on assert fail.")
-              .withLongOpt("exitcode")
-              .create("e")
+              .type(Long.class)
+              .argName("ms")
+              .build(),
+          Option.builder("e")
+              .desc("Return an exit code instead of printing error message on assert fail.")
+              .longOpt("exitcode")
+              .build()
       };
     }
 
@@ -4132,65 +4118,64 @@ public class SolrCLI implements CLIO {
 
     List<String> authenticationVariables = Arrays.asList("SOLR_AUTHENTICATION_CLIENT_BUILDER", "SOLR_AUTH_TYPE", "SOLR_AUTHENTICATION_OPTS");
 
-    @SuppressWarnings("static-access")
     public Option[] getOptions() {
       return new Option[]{
-          OptionBuilder
-          .withArgName("type")
-          .hasArg()
-          .withDescription("The authentication mechanism to enable (basicAuth or kerberos). Defaults to 'basicAuth'.")
-          .create("type"),
-          OptionBuilder
-          .withArgName("credentials")
-          .hasArg()
-          .withDescription("Credentials in the format username:password. Example: -credentials solr:SolrRocks")
-          .create("credentials"),
-          OptionBuilder
-          .withArgName("prompt")
-          .hasArg()
-          .withDescription("Prompts the user to provide the credentials. Use either -credentials or -prompt, not both")
-          .create("prompt"),
-          OptionBuilder
-          .withArgName("config")
-          .hasArgs()
-          .withDescription("Configuration parameters (Solr startup parameters). Required for Kerberos authentication")
-          .create("config"),
-          OptionBuilder
-          .withArgName("blockUnknown")
-          .withDescription("Blocks all access for unknown users (requires authentication for all endpoints)")
-          .hasArg()
-          .create("blockUnknown"),
-          OptionBuilder
-          .withArgName("solrIncludeFile")
-          .hasArg()
-          .withDescription("The Solr include file which contains overridable environment variables for configuring Solr configurations")
-          .create("solrIncludeFile"),
-          OptionBuilder
-          .withArgName("updateIncludeFileOnly")
-          .withDescription("Only update the solr.in.sh or solr.in.cmd file, and skip actual enabling/disabling"
-              + " authentication (i.e. don't update security.json)")
-          .hasArg()
-          .create("updateIncludeFileOnly"),
-          OptionBuilder
-          .withArgName("authConfDir")
-          .hasArg()
-          .isRequired()
-          .withDescription("This is where any authentication related configuration files, if any, would be placed.")
-          .create("authConfDir"),
-          OptionBuilder
-          .withArgName("solrUrl")
-          .hasArg()
-          .withDescription("Solr URL")
-          .create("solrUrl"),
-          OptionBuilder
-          .withArgName("zkHost")
-          .hasArg()
-          .withDescription("ZooKeeper host")
-          .create("zkHost"),
-          OptionBuilder
-          .isRequired(false)
-          .withDescription("Enable more verbose command output.")
-          .create("verbose")
+          Option.builder("type")
+              .argName("type")
+              .hasArg()
+              .desc("The authentication mechanism to enable (basicAuth or kerberos). Defaults to 'basicAuth'.")
+              .build(),
+          Option.builder("credentials")
+              .argName("credentials")
+              .hasArg()
+              .desc("Credentials in the format username:password. Example: -credentials solr:SolrRocks")
+              .build(),
+          Option.builder("prompt")
+              .argName("prompt")
+              .hasArg()
+              .desc("Prompts the user to provide the credentials. Use either -credentials or -prompt, not both")
+              .build(),
+          Option.builder("config")
+              .argName("config")
+              .hasArgs()
+              .desc("Configuration parameters (Solr startup parameters). Required for Kerberos authentication")
+              .build(),
+          Option.builder("blockUnknown")
+              .argName("blockUnknown")
+              .desc("Blocks all access for unknown users (requires authentication for all endpoints)")
+              .hasArg()
+              .build(),
+          Option.builder("solrIncludeFile")
+              .argName("solrIncludeFile")
+              .hasArg()
+              .desc("The Solr include file which contains overridable environment variables for configuring Solr configurations")
+              .build(),
+          Option.builder("updateIncludeFileOnly")
+              .argName("updateIncludeFileOnly")
+              .desc("Only update the solr.in.sh or solr.in.cmd file, and skip actual enabling/disabling"
+                  + " authentication (i.e. don't update security.json)")
+              .hasArg()
+              .build(),
+          Option.builder("authConfDir")
+              .argName("authConfDir")
+              .hasArg()
+              .required()
+              .desc("This is where any authentication related configuration files, if any, would be placed.")
+              .build(),
+          Option.builder("solrUrl")
+              .argName("solrUrl")
+              .hasArg()
+              .desc("Solr URL")
+              .build(),
+          Option.builder("zkHost")
+              .argName("zkHost")
+              .hasArg()
+              .desc("ZooKeeper host")
+              .build(),
+          Option.builder("verbose")
+              .required(false)
+              .desc("Enable more verbose command output.")
+              .build()
       };
     }
 
@@ -4233,10 +4218,10 @@ public class SolrCLI implements CLIO {
       String cmd = cli.getArgs()[0];
       boolean updateIncludeFileOnly = Boolean.parseBoolean(cli.getOptionValue("updateIncludeFileOnly", "false"));
       String securityJson = "{" +
-                "\n  \"authentication\":{" +
-                "\n   \"class\":\"solr.KerberosPlugin\"" +
-                "\n  }" +
-                "\n}";
+          "\n  \"authentication\":{" +
+          "\n   \"class\":\"solr.KerberosPlugin\"" +
+          "\n  }" +
+          "\n}";
 
 
       switch (cmd) {
@@ -4249,7 +4234,7 @@ public class SolrCLI implements CLIO {
               zkHost = getZkHost(cli);
             } catch (Exception ex) {
               CLIO.out("Unable to access ZooKeeper. Please add the following security.json to ZooKeeper (in case of SolrCloud):\n"
-                    + securityJson + "\n");
+                  + securityJson + "\n");
               zkInaccessible = true;
             }
             if (zkHost == null) {
@@ -4611,40 +4596,39 @@ public class SolrCLI implements CLIO {
       return "utils";
     }
 
-    @SuppressWarnings("static-access")
     public Option[] getOptions() {
       return new Option[]{
-          OptionBuilder
-              .withArgName("path")
+          Option.builder("s")
+              .argName("path")
               .hasArg()
-              .withDescription("Path to server dir. Required if logs path is relative")
-              .create("s"),
-          OptionBuilder
-              .withArgName("path")
+              .desc("Path to server dir. Required if logs path is relative")
+              .build(),
+          Option.builder("l")
+              .argName("path")
               .hasArg()
-              .withDescription("Path to logs dir. If relative, also provide server dir with -s")
-              .create("l"),
-          OptionBuilder
-              .withDescription("Be quiet, don't print to stdout, only return exit codes")
-              .create("q"),
-          OptionBuilder
-              .withArgName("daysToKeep")
+              .desc("Path to logs dir. If relative, also provide server dir with -s")
+              .build(),
+          Option.builder("q")
+              .desc("Be quiet, don't print to stdout, only return exit codes")
+              .build(),
+          Option.builder("remove_old_solr_logs")
+              .argName("daysToKeep")
               .hasArg()
-              .withType(Integer.class)
-              .withDescription("Path to logs directory")
-              .create("remove_old_solr_logs"),
-          OptionBuilder
-              .withArgName("generations")
+              .type(Integer.class)
+              .desc("Path to logs directory")
+              .build(),
+          Option.builder("rotate_solr_logs")
+              .argName("generations")
               .hasArg()
-              .withType(Integer.class)
-              .withDescription("Rotate solr.log to solr.log.1 etc")
-              .create("rotate_solr_logs"),
-          OptionBuilder
-              .withDescription("Archive old garbage collection logs into archive/")
-              .create("archive_gc_logs"),
-          OptionBuilder
-              .withDescription("Archive old console logs into archive/")
-              .create("archive_console_logs")
+              .type(Integer.class)
+              .desc("Rotate solr.log to solr.log.1 etc")
+              .build(),
+          Option.builder("archive_gc_logs")
+              .desc("Archive old garbage collection logs into archive/")
+              .build(),
+          Option.builder("archive_console_logs")
+              .desc("Archive old console logs into archive/")
+              .build()
       };
     }
 
@@ -4756,7 +4740,7 @@ public class SolrCLI implements CLIO {
         try (Stream<Path> files = Files.find(logsPath, 1,
             (f, a) -> a.isRegularFile() && String.valueOf(f.getFileName()).startsWith("solr.log."))
             .sorted((b,a) -> Integer.valueOf(a.getFileName().toString().substring(9))
-                  .compareTo(Integer.valueOf(b.getFileName().toString().substring(9))))) {
+                .compareTo(Integer.valueOf(b.getFileName().toString().substring(9))))) {
           files.forEach(p -> {
             try {
               int number = Integer.parseInt(p.getFileName().toString().substring(9));

@@ -48,6 +48,7 @@ public class TestMaxScoreQueryParser extends SolrTestCaseJ4 {
     assertEquals(new BoostQuery(new TermQuery(new Term("text", "foo")), 3f), q);
 
     q = parse("price:[0 TO 10]");
+    @SuppressWarnings({"rawtypes"})
     Class expected = LegacyNumericRangeQuery.class;
     if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) {
       expected = PointRangeQuery.class;

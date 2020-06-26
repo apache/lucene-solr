@@ -39,6 +39,7 @@ public class MockingHttp2SolrClient extends Http2SolrClient {
 
   private volatile Exp exp = null;
   private boolean oneExpPerReq;
+  @SuppressWarnings({"rawtypes"})
   private Set<SolrRequest> reqGotException;
 
   public MockingHttp2SolrClient(String baseSolrUrl, Builder builder) {
@@ -87,7 +88,8 @@ public class MockingHttp2SolrClient extends Http2SolrClient {
   }
 
   @Override
-  public NamedList<Object> request(SolrRequest request, String collection)
+  public NamedList<Object> request(@SuppressWarnings({"rawtypes"})SolrRequest request,
+                                   String collection)
       throws SolrServerException, IOException {
     if (request instanceof UpdateRequest) {
       UpdateRequest ur = (UpdateRequest) request;
@@ -121,7 +123,8 @@ public class MockingHttp2SolrClient extends Http2SolrClient {
   }
 
   @Override
-  public Cancellable asyncRequest(SolrRequest request, String collection, AsyncListener<NamedList<Object>> asyncListener) {
+  public Cancellable asyncRequest(@SuppressWarnings({"rawtypes"}) SolrRequest request,
+                                  String collection, AsyncListener<NamedList<Object>> asyncListener) {
     if (request instanceof UpdateRequest) {
       UpdateRequest ur = (UpdateRequest) request;
       // won't throw exception if request is DBQ

@@ -125,7 +125,6 @@ import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
 import static org.apache.solr.common.cloud.DocCollection.RULE;
 import static org.apache.solr.common.cloud.DocCollection.SNITCH;
-import static org.apache.solr.common.cloud.DocCollection.STATE_FORMAT;
 import static org.apache.solr.common.cloud.ZkStateReader.AUTO_ADD_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
@@ -204,7 +203,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   }
 
   @Override
-  final public void init(NamedList args) {
+  final public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
 
   }
 
@@ -261,6 +260,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     rsp.setHttpCaching(false);
   }
 
+  @SuppressWarnings({"unchecked"})
   void invokeAction(SolrQueryRequest req, SolrQueryResponse rsp, CoreContainer cores, CollectionAction action, CollectionOperation operation) throws Exception {
     if (!coreContainer.isZooKeeperAware()) {
       throw new SolrException(BAD_REQUEST,
@@ -463,7 +463,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           CREATE_NODE_SET,
           CREATE_NODE_SET_SHUFFLE,
           SHARDS_PROP,
-          STATE_FORMAT,
           AUTO_ADD_REPLICAS,
           RULE,
           SNITCH,
@@ -474,8 +473,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           WAIT_FOR_FINAL_STATE,
           WITH_COLLECTION,
           ALIAS);
-
-      props.putIfAbsent(STATE_FORMAT, "2");
 
       if (props.get(REPLICATION_FACTOR) != null && props.get(NRT_REPLICAS) != null) {
         //TODO: Remove this in 8.0 . Keep this for SolrJ client back-compat. See SOLR-11676 for more details
@@ -514,6 +511,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       return copyPropertiesWithPrefix(req.getParams(), props, "router.");
 
     }),
+    @SuppressWarnings({"unchecked"})
     COLSTATUS_OP(COLSTATUS, (req, rsp, h) -> {
       Map<String, Object> props = copy(req.getParams(), null,
           COLLECTION_PROP,
@@ -529,7 +527,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       if (props.containsKey(CoreAdminParams.NAME) && !props.containsKey(COLLECTION_PROP)) {
         props.put(COLLECTION_PROP, props.get(CoreAdminParams.NAME));
       }
-      new ColStatus(h.coreContainer.getUpdateShardHandler().getDefaultHttpClient(),
+      new ColStatus(h.coreContainer.getSolrClientCache(),
           h.coreContainer.getZkController().getZkStateReader().getClusterState(), new ZkNodeProps(props))
           .getColStatus(rsp.getValues());
       return null;
@@ -567,7 +565,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           CREATE_NODE_SET_SHUFFLE,
           AUTO_ADD_REPLICAS,
           "shards",
-          STATE_FORMAT,
           CommonParams.ROWS,
           CommonParams.Q,
           CommonParams.FL,
@@ -603,6 +600,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       return null;
     }),
 
+    @SuppressWarnings({"unchecked"})
     CREATEALIAS_OP(CREATEALIAS, (req, rsp, h) -> {
       String alias = req.getParams().get(NAME);
       SolrIdentifierValidator.validateAliasName(alias);
@@ -617,7 +615,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         // we'll throw this later if we are in fact creating a routed alias.
         ex = e;
       }
-      @SuppressWarnings("unchecked")
       ModifiableSolrParams finalParams = new ModifiableSolrParams();
       for (Map.Entry<String, Object> entry : possiblyModifiedParams.entrySet()) {
         if (entry.getValue().getClass().isArray() ) {
@@ -705,6 +702,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     /**
      * List the aliases and associated properties.
      */
+    @SuppressWarnings({"unchecked"})
     LISTALIASES_OP(LISTALIASES, (req, rsp, h) -> {
       ZkStateReader zkStateReader = h.coreContainer.getZkController().getZkStateReader();
       // if someone calls listAliases, lets ensure we return an up to date response
@@ -852,6 +850,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       cp.setCollectionProperty(collection, name, val);
       return null;
     }),
+    @SuppressWarnings({"unchecked"})
     REQUESTSTATUS_OP(REQUESTSTATUS, (req, rsp, h) -> {
       req.getParams().required().check(REQUESTID);
 
@@ -952,6 +951,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
      * Handle list collection request.
      * Do list collection request to zk host
      */
+    @SuppressWarnings({"unchecked"})
     LIST_OP(LIST, (req, rsp, h) -> {
       NamedList<Object> results = new NamedList<>();
       Map<String, DocCollection> collections = h.coreContainer.getZkController().getZkStateReader().getClusterState().getCollectionsMap();
@@ -1062,8 +1062,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       }
       return m;
     }),
-    MIGRATESTATEFORMAT_OP(MIGRATESTATEFORMAT, (req, rsp, h) -> copy(req.getParams().required(), null, COLLECTION_PROP)),
-
     BACKUP_OP(BACKUP, (req, rsp, h) -> {
       req.getParams().required().check(NAME, COLLECTION_PROP);
 
@@ -1172,7 +1170,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       }
       // from CREATE_OP:
       copy(req.getParams(), params, COLL_CONF, REPLICATION_FACTOR, NRT_REPLICAS, TLOG_REPLICAS,
-          PULL_REPLICAS, MAX_SHARDS_PER_NODE, STATE_FORMAT, AUTO_ADD_REPLICAS, CREATE_NODE_SET, CREATE_NODE_SET_SHUFFLE);
+          PULL_REPLICAS, MAX_SHARDS_PER_NODE, AUTO_ADD_REPLICAS, CREATE_NODE_SET, CREATE_NODE_SET_SHUFFLE);
       copyPropertiesWithPrefix(req.getParams(), params, COLL_PROP_PREFIX);
       return params;
     }),
@@ -1448,9 +1446,11 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   }
 
   public static void verifyRuleParams(CoreContainer cc, Map<String, Object> m) {
+    @SuppressWarnings({"rawtypes"})
     List l = (List) m.get(RULE);
     if (l != null) {
       for (Object o : l) {
+        @SuppressWarnings({"rawtypes"})
         Map map = (Map) o;
         try {
           new Rule(map);
@@ -1476,6 +1476,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       val.add(v.toString());
     }
     if (val.size() > 0) {
+      @SuppressWarnings({"rawtypes"})
       ArrayList<Map> l = new ArrayList<>();
       for (String rule : val) l.add(Rule.parseRule(rule));
       props.put(key, l);

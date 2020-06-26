@@ -52,6 +52,7 @@ public class ConfigSetProperties {
    * @param name   the name of the config set properties file
    * @return the properties in a NamedList
    */
+  @SuppressWarnings({"rawtypes"})
   public static NamedList readFromResourceLoader(SolrResourceLoader loader, String name) {
     InputStreamReader reader;
     try {
@@ -72,6 +73,7 @@ public class ConfigSetProperties {
     }
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public static NamedList readFromInputStream(InputStreamReader reader) {
     try {
       Object object = fromJSON(reader);

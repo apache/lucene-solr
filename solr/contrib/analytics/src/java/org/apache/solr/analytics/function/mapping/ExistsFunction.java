@@ -42,82 +42,85 @@ public class ExistsFunction {
     }
     return new ValueStreamExistsFunction(param);
   });
+
+  /**
+   * Exists function that supports {@link AnalyticsValueStream}s.
+   */
+  static class ValueStreamExistsFunction extends AbstractBooleanValue {
+    private final AnalyticsValueStream param;
+    public static final String name = ExistsFunction.name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public ValueStreamExistsFunction(AnalyticsValueStream param) throws SolrException {
+      this.param = param;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
+    }
+
+    private boolean exists;
+    @Override
+    public boolean getBoolean() {
+      exists = false;
+      param.streamObjects(val -> exists = true);
+      return exists;
+    }
+    @Override
+    public boolean exists() {
+      return true;
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+
+  /**
+   * Exists function that supports {@link AnalyticsValue}s.
+   */
+  static class ValueExistsFunction extends AbstractBooleanValue {
+    private final AnalyticsValue param;
+    public static final String name = ExistsFunction.name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public ValueExistsFunction(AnalyticsValue param) throws SolrException {
+      this.param = param;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
+    }
+
+    @Override
+    public boolean getBoolean() {
+      param.getObject();
+      return param.exists();
+    }
+    @Override
+    public boolean exists() {
+      return true;
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
 }
-/**
- * Exists function that supports {@link AnalyticsValueStream}s.
- */
-class ValueStreamExistsFunction extends AbstractBooleanValue {
-  private final AnalyticsValueStream param;
-  public static final String name = ExistsFunction.name;
-  private final String exprStr;
-  private final ExpressionType funcType;
 
-  public ValueStreamExistsFunction(AnalyticsValueStream param) throws SolrException {
-    this.param = param;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
-  }
-
-  private boolean exists;
-  @Override
-  public boolean getBoolean() {
-    exists = false;
-    param.streamObjects(val -> exists = true);
-    return exists;
-  }
-  @Override
-  public boolean exists() {
-    return true;
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-/**
- * Exists function that supports {@link AnalyticsValue}s.
- */
-class ValueExistsFunction extends AbstractBooleanValue {
-  private final AnalyticsValue param;
-  public static final String name = ExistsFunction.name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public ValueExistsFunction(AnalyticsValue param) throws SolrException {
-    this.param = param;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
-  }
-
-  @Override
-  public boolean getBoolean() {
-    param.getObject();
-    return param.exists();
-  }
-  @Override
-  public boolean exists() {
-    return true;
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}

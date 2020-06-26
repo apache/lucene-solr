@@ -98,10 +98,11 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
   @SuppressWarnings("unchecked")
   @Override
-  public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
+  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     split(state, message,(NamedList<Object>) results);
   }
 
+  @SuppressWarnings({"rawtypes"})
   public boolean split(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results) throws Exception {
     final String asyncId = message.getStr(ASYNC);
 
@@ -625,7 +626,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
    * In case of async requests, the ShardRequestTracker's processResponses() does not
    * abort on failure (as it should). Handling this here temporarily for now.
    */
-  private void handleFailureOnAsyncRequest(NamedList results, String msgOnError) {
+  private void handleFailureOnAsyncRequest(@SuppressWarnings({"rawtypes"})NamedList results, String msgOnError) {
     Object splitResultFailure = results.get("failure");
     if (splitResultFailure != null) {
       throw new SolrException(ErrorCode.SERVER_ERROR, msgOnError);

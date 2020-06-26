@@ -21,7 +21,6 @@ import java.lang.Thread.State;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -169,6 +168,7 @@ public class DaemonStream extends TupleStream implements Expressible {
     init(tupleStream, id, runInterval, queueSize, false);
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void init(TupleStream tupleStream, String id, long runInterval, int queueSize, boolean terminate) {
     this.tupleStream = tupleStream;
     this.id = id;
@@ -246,19 +246,19 @@ public class DaemonStream extends TupleStream implements Expressible {
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> children = new ArrayList();
+    List<TupleStream> children = new ArrayList<>();
     children.add(tupleStream);
     return children;
   }
 
   public synchronized Tuple getInfo() {
-    Tuple tuple = new Tuple(new HashMap());
+    Tuple tuple = new Tuple();
     tuple.put(ID, id);
     tuple.put("startTime", startTime);
     tuple.put("stopTime", stopTime);
     tuple.put("iterations", iterations.get());
     tuple.put("state", streamRunner.getState().toString());
-    if(exception != null) {
+    if (exception != null) {
       tuple.put("exception", exception.getMessage());
     }
 
@@ -338,7 +338,7 @@ public class DaemonStream extends TupleStream implements Expressible {
               Tuple tuple = tupleStream.read();
               if (tuple.EOF) {
                 errors = 0; // Reset errors on successful run.
-                if (tuple.fields.containsKey("sleepMillis")) {
+                if (tuple.getFields().containsKey("sleepMillis")) {
                   this.sleepMillis = tuple.getLong("sleepMillis");
 
                   if(terminate && sleepMillis > 0) {
@@ -400,11 +400,8 @@ public class DaemonStream extends TupleStream implements Expressible {
       }
 
       if(!eatTuples) {
-        Map m = new HashMap();
-        m.put("EOF", true);
-        Tuple tuple = new Tuple(m);
         try {
-          queue.put(tuple);
+          queue.put(Tuple.EOF());
         } catch (InterruptedException e) {
           log.error("Error in DaemonStream:{}", id, e);
         }

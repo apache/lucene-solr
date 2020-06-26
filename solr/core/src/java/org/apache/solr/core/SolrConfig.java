@@ -97,7 +97,7 @@ import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME_IN_OVERLAY
 
 /**
  * Provides a static reference to a Config object modeling the main
- * configuration data for a a Solr instance -- typically found in
+ * configuration data for a Solr instance -- typically found in
  * "solrconfig.xml".
  */
 public class SolrConfig extends XmlConfigFile implements MapSerializable {
@@ -224,6 +224,11 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     queryResultWindowSize = Math.max(1, getInt("query/queryResultWindowSize", 1));
     queryResultMaxDocsCached = getInt("query/queryResultMaxDocsCached", Integer.MAX_VALUE);
     enableLazyFieldLoading = getBool("query/enableLazyFieldLoading", false);
+
+    useCircuitBreakers = getBool("query/useCircuitBreakers", false);
+    memoryCircuitBreakerThreshold = getInt("query/memoryCircuitBreakerThreshold", 100);
+
+    validateMemoryBreakerThreshold();
     
     useRangeVersionsForPeerSync = getBool("peerSync/useRangeVersions", true);
 
@@ -315,10 +320,10 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     }
 
     if (version == Version.LATEST && !versionWarningAlreadyLogged.getAndSet(true)) {
-      log.warn("You should not use LATEST as luceneMatchVersion property: {}{}{}"
-          , "if you use this setting, and then Solr upgrades to a newer release of Lucene, "
-          , "sizable changes may happen. If precise back compatibility is important "
-          , "then you should instead explicitly specify an actual Lucene version.");
+      log.warn("You should not use LATEST as luceneMatchVersion property: "
+          + "if you use this setting, and then Solr upgrades to a newer release of Lucene, "
+          + "sizable changes may happen. If precise back compatibility is important "
+          + "then you should instead explicitly specify an actual Lucene version.");
     }
 
     return version;
@@ -368,11 +373,13 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
   public static class SolrPluginInfo {
 
+    @SuppressWarnings({"rawtypes"})
     public final Class clazz;
     public final String tag;
     public final Set<PluginOpts> options;
 
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private SolrPluginInfo(Class clz, String tag, PluginOpts... opts) {
       this.clazz = clz;
       this.tag = tag;
@@ -389,6 +396,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     }
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public static ConfigOverlay getConfigOverlay(SolrResourceLoader loader) {
     InputStream in = null;
     InputStreamReader isr = null;
@@ -519,6 +527,10 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
   public final int queryResultWindowSize;
   public final int queryResultMaxDocsCached;
   public final boolean enableLazyFieldLoading;
+
+  // Circuit Breaker Configuration
+  public final boolean useCircuitBreakers;
+  public final int memoryCircuitBreakerThreshold;
   
   public final boolean useRangeVersionsForPeerSync;
   
@@ -672,6 +684,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
 
     @Override
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public Map<String, Object> toMap(Map<String, Object> map) {
       LinkedHashMap result = new LinkedHashMap();
       result.put("indexWriter", makeMap("closeWaitsForMerges", indexWriterCloseWaitsForMerges));
@@ -706,6 +719,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
    *             SearchComponent, QueryConverter, SolrEventListener, DirectoryFactory,
    *             IndexDeletionPolicy, IndexReaderFactory, {@link TransformerFactory}
    */
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public List<PluginInfo> getPluginInfos(String type) {
     List<PluginInfo> result = pluginStore.get(type);
     SolrPluginInfo info = classVsSolrPluginInfo.get(type);
@@ -755,7 +769,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
       try {
         urls.addAll(SolrResourceLoader.getURLs(libPath));
       } catch (IOException e) {
-        log.warn("Couldn't add files from {} to classpath: {}", libPath, e.getMessage());
+        log.warn("Couldn't add files from {} to classpath: {}", libPath, e);
       }
     }
 
@@ -781,14 +795,14 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
           else
             urls.addAll(SolrResourceLoader.getFilteredURLs(dir, regex));
         } catch (IOException e) {
-          log.warn("Couldn't add files from {} filtered by {} to classpath: {}", dir, regex, e.getMessage());
+          log.warn("Couldn't add files from {} filtered by {} to classpath: {}", dir, regex, e);
         }
       } else if (null != path) {
         final Path dir = instancePath.resolve(path);
         try {
           urls.add(dir.toUri().toURL());
         } catch (MalformedURLException e) {
-          log.warn("Couldn't add file {} to classpath: {}", dir, e.getMessage());
+          log.warn("Couldn't add file {} to classpath: {}", dir, e);
         }
       } else {
         throw new RuntimeException("lib: missing mandatory attributes: 'dir' or 'path'");
@@ -797,6 +811,14 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
     loader.addToClassLoader(urls);
     loader.reloadLuceneSPI();
+  }
+
+  private void validateMemoryBreakerThreshold() {
+    if (useCircuitBreakers) {
+      if (memoryCircuitBreakerThreshold > 100 || memoryCircuitBreakerThreshold < 0) {
+        throw new IllegalArgumentException("memoryCircuitBreakerThreshold is not a valid percentage");
+      }
+    }
   }
 
   public int getMultipartUploadLimitKB() {
@@ -856,6 +878,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
   }
 
   @Override
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public Map<String, Object> toMap(Map<String, Object> result) {
     if (getZnodeVersion() > -1) result.put(ZNODEVER, getZnodeVersion());
     result.put(IndexSchema.LUCENE_MATCH_VERSION_PARAM, luceneMatchVersion);
@@ -867,6 +890,8 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     m.put("queryResultMaxDocsCached", queryResultMaxDocsCached);
     m.put("enableLazyFieldLoading", enableLazyFieldLoading);
     m.put("maxBooleanClauses", booleanQueryMaxClauseCount);
+    m.put("useCircuitBreakers", useCircuitBreakers);
+    m.put("memoryCircuitBreakerThreshold", memoryCircuitBreakerThreshold);
     for (SolrPluginInfo plugin : plugins) {
       List<PluginInfo> infos = getPluginInfos(plugin.clazz.getName());
       if (infos == null || infos.isEmpty()) continue;
@@ -914,6 +939,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     return result;
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private void addCacheConfig(Map queryMap, CacheConfig... cache) {
     if (cache == null) return;
     for (CacheConfig config : cache) if (config != null) queryMap.put(config.getNodeName(), config);

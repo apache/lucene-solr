@@ -42,6 +42,8 @@
     <enableLazyFieldLoading>true</enableLazyFieldLoading>
     <queryResultWindowSize>20</queryResultWindowSize>
     <queryResultMaxDocsCached>20</queryResultMaxDocsCached>
+    <useCircuitBreakers>false</useCircuitBreakers>
+    <memoryCircuitBreakerThreshold>100</memoryCircuitBreakerThreshold>
 
     <useColdSearcher>true</useColdSearcher>
 

@@ -217,6 +217,7 @@ public class PeerSync implements SolrMetricProducer {
           ShardResponse srsp = shardHandler.takeCompletedOrError();
           if (srsp == null) break;
           if (srsp.getException() == null)  {
+            @SuppressWarnings({"unchecked"})
             List<Long> otherVersions = (List<Long>)srsp.getSolrResponse().getResponse().get("versions");
             if (otherVersions != null && !otherVersions.isEmpty())  {
               syncErrors.inc();
@@ -433,6 +434,7 @@ public class PeerSync implements SolrMetricProducer {
 
   private boolean handleVersions(ShardResponse srsp) {
     // we retrieved the last N updates from the replica
+    @SuppressWarnings({"unchecked"})
     List<Long> otherVersions = (List<Long>)srsp.getSolrResponse().getResponse().get("versions");
     // TODO: how to handle short lists?
 
@@ -517,6 +519,7 @@ public class PeerSync implements SolrMetricProducer {
 
   private boolean handleUpdates(ShardResponse srsp) {
     // we retrieved the last N updates from the replica
+    @SuppressWarnings({"unchecked"})
     List<Object> updates = (List<Object>)srsp.getSolrResponse().getResponse().get("updates");
 
     SyncShardRequest sreq = (SyncShardRequest) srsp.getShardRequest();
@@ -581,7 +584,9 @@ public class PeerSync implements SolrMetricProducer {
       if (!(o1 instanceof List)) return 1;
       if (!(o2 instanceof List)) return -1;
 
+      @SuppressWarnings({"rawtypes"})
       List lst1 = (List) o1;
+      @SuppressWarnings({"rawtypes"})
       List lst2 = (List) o2;
 
       long l1 = Math.abs((Long) lst1.get(1));
@@ -617,6 +622,7 @@ public class PeerSync implements SolrMetricProducer {
         for (Object obj : updates) {
           // should currently be a List<Oper,Ver,Doc/Id>
           o = obj;
+          @SuppressWarnings({"unchecked"})
           List<Object> entry = (List<Object>)o;
 
           if (debug) {

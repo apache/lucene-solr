@@ -45,7 +45,7 @@ public class ConvexHullEvaluator extends RecursiveObjectEvaluator implements Man
 
   public static ConvexHull2D getConvexHull(Matrix matrix) throws IOException {
     double[][] data = matrix.getData();
-    List<Vector2D> points = new ArrayList(data.length);
+    List<Vector2D> points = new ArrayList<>(data.length);
     if(data[0].length == 2) {
       for(double[] row : data) {
         points.add(new Vector2D(row[0], row[1]));

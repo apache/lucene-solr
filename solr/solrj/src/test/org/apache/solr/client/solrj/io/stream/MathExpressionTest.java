@@ -26,12 +26,15 @@ import java.util.Set;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -77,7 +80,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
   }
 
-    @Test
+  @Test
   public void testAnalyzeEvaluator() throws Exception {
 
     UpdateRequest updateRequest = new UpdateRequest();
@@ -134,6 +137,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
       solrStream.setStreamContext(context);
       tuples = getTuples(solrStream);
       assertEquals(tuples.size(), 1);
+      @SuppressWarnings({"rawtypes"})
       List terms = (List)tuples.get(0).get("return-value");
       assertTrue(terms.get(0).equals("hello"));
       assertTrue(terms.get(1).equals("world"));
@@ -198,6 +202,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
       solrStream.setStreamContext(context);
       tuples = getTuples(solrStream);
       assertTrue(tuples.size() == 1);
+      @SuppressWarnings({"rawtypes"})
       List l = (List)tuples.get(0).get("test1_t");
       assertTrue(l.get(0).equals("l"));
       assertTrue(l.get(1).equals("b"));
@@ -285,6 +290,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertEquals(tuples.size(),  1);
+    @SuppressWarnings({"unchecked"})
     List<String> l1 = (List<String>)tuples.get(0).get("field2");
     assertEquals(l1.get(0), "aaa");
     assertEquals(l1.get(1), "bbb");
@@ -304,13 +310,16 @@ public class MathExpressionTest extends SolrCloudTestCase {
 
     StreamContext context = new StreamContext();
     solrStream.setStreamContext(context);
+    @SuppressWarnings({"unchecked"})
     List<Tuple> tuples = getTuples(solrStream);
     assertEquals(tuples.size(),  1);
+    @SuppressWarnings({"unchecked"})
     List<String> l1 = (List<String>)tuples.get(0).get("field3");
     assertEquals(l1.get(0), "A");
     assertEquals(l1.get(1), "B");
     assertEquals(l1.get(2), "C");
 
+    @SuppressWarnings({"unchecked"})
     List<String> l2 = (List<String>)tuples.get(0).get("field4");
     assertEquals(l2.get(0), "x");
     assertEquals(l2.get(1), "y");
@@ -332,6 +341,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertEquals(tuples.size(),  1);
+    @SuppressWarnings({"unchecked"})
     List<String> l1 = (List<String>)tuples.get(0).get("field2");
     assertEquals(l1.get(0), "a");
     assertEquals(l1.get(1), "b");
@@ -436,6 +446,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     Map<String, List<Number>> mem = (Map)tuples.get(0).get("return-value");
     List<Number> array = mem.get("a");
     assertEquals(array.get(0).intValue(), 100);
@@ -474,6 +485,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<List<Number>>locVectors = (List<List<Number>>)tuples.get(0).get("b");
     int v=1;
     for(List<Number> row : locVectors) {
@@ -553,6 +565,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<List<Number>> points = (List<List<Number>>)tuples.get(0).get("e");
     assertTrue(points.size() == 6);
     List<Number> point1 = points.get(0);
@@ -595,11 +608,13 @@ public class MathExpressionTest extends SolrCloudTestCase {
     double boundarySize = tuples.get(0).getDouble("g");
     assertEquals(boundarySize, 122.73784789223708, 0.0);
 
+    @SuppressWarnings({"unchecked"})
     List<Number> baryCenter = (List<Number>)tuples.get(0).get("h");
     assertEquals(baryCenter.size(), 2);
     assertEquals(baryCenter.get(0).doubleValue(), 101.3021125450865, 0.0);
     assertEquals(baryCenter.get(1).doubleValue(), 100.07343616615786, 0.0);
 
+    @SuppressWarnings({"unchecked"})
     List<List<Number>> borderPoints = (List<List<Number>>)tuples.get(0).get("i");
     assertEquals(borderPoints.get(0).get(0).doubleValue(), 100.31316833934775, 0);
     assertEquals(borderPoints.get(0).get(1).doubleValue(), 115.6639686234851, 0);
@@ -629,6 +644,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
 
+    @SuppressWarnings({"unchecked"})
     List<Number> center = (List<Number>)tuples.get(0).get("e");
     assertEquals(center.get(0).doubleValue(), 97.40659699625388, 0.0);
     assertEquals(center.get(1).doubleValue(), 101.57826559647323, 0.0);
@@ -636,6 +652,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     double radius =tuples.get(0).getDouble("f");
     assertEquals(radius, 22.814029299535, 0.0);
 
+    @SuppressWarnings({"unchecked"})
     List<List<Number>> supportPoints = (List<List<Number>>)tuples.get(0).get("g");
     List<Number> support1 = supportPoints.get(0);
     assertEquals(support1.get(0).doubleValue(), 95.71563821370013, 0.0);
@@ -830,6 +847,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     Number f = (Number)tuples.get(0).get("f");
     assertEquals(f.doubleValue(), 2.0, 0.0);
 
+    @SuppressWarnings({"unchecked"})
     List<List<Number>> h = (List<List<Number>>)tuples.get(0).get("h");
     assertEquals(h.size(), 3);
     assertEquals(h.get(0).size(), 3);
@@ -855,6 +873,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     Number k = (Number)tuples.get(0).get("k");
     assertEquals(k.doubleValue(), 4.0, 0.0);
 
+    @SuppressWarnings({"unchecked"})
     List<List<Number>> m = (List<List<Number>>)tuples.get(0).get("m");
     assertEquals(m.size(), 3);
     assertEquals(m.get(0).size(), 3);
@@ -880,6 +899,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     Number p = (Number)tuples.get(0).get("p");
     assertEquals(p.doubleValue(), 0.544877, 0.0001);
 
+    @SuppressWarnings({"unchecked"})
     List<List<Number>> r = (List<List<Number>>)tuples.get(0).get("r");
     assertEquals(r.size(), 3);
     assertEquals(r.get(0).size(), 3);
@@ -906,6 +926,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     Number u = (Number)tuples.get(0).get("u");
     assertEquals(u.doubleValue(), 10.0, 0);
 
+    @SuppressWarnings({"unchecked"})
     List<List<Number>> x = (List<List<Number>>)tuples.get(0).get("x");
     assertEquals(x.size(), 3);
     assertEquals(x.get(0).size(), 3);
@@ -967,6 +988,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<Number> reverse = (List<Number>)tuples.get(0).get("reverse");
     assertTrue(reverse.size() == 4);
     assertTrue(reverse.get(0).doubleValue() == 400D);
@@ -1017,6 +1039,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<Number> copy1 = (List<Number>)tuples.get(0).get("copy1");
     assertTrue(copy1.size() == 4);
     assertTrue(copy1.get(0).doubleValue() == 100D);
@@ -1024,6 +1047,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertTrue(copy1.get(2).doubleValue() == 300D);
     assertTrue(copy1.get(3).doubleValue() == 400D);
 
+    @SuppressWarnings({"unchecked"})
     List<Number> copy2 = (List<Number>)tuples.get(0).get("copy2");
     assertTrue(copy2.size() == 4);
     assertTrue(copy2.get(0).doubleValue() == 100D);
@@ -1031,6 +1055,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertTrue(copy2.get(2).doubleValue() == 300D);
     assertTrue(copy2.get(3).doubleValue() == 400D);
 
+    @SuppressWarnings({"unchecked"})
     List<Number> copy3 = (List<Number>)tuples.get(0).get("copy3");
     assertTrue(copy3.size() == 2);
     assertTrue(copy3.get(0).doubleValue() == 100D);
@@ -1079,11 +1104,13 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<Number> copy1 = (List<Number>)tuples.get(0).get("copy");
     assertTrue(copy1.size() == 2);
     assertTrue(copy1.get(0).doubleValue() == 500D);
     assertTrue(copy1.get(1).doubleValue() == 300D);
 
+    @SuppressWarnings({"unchecked"})
     List<Number> copy2 = (List<Number>)tuples.get(0).get("copy2");
     assertTrue(copy2.size() == 2);
     assertTrue(copy2.get(0).doubleValue() == 300D);
@@ -1156,6 +1183,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
     tuple = tuples.get(0);
+    @SuppressWarnings({"unchecked"})
     List<Number> percentiles = (List<Number>)tuple.get("return-value");
     assertEquals(percentiles.get(0).doubleValue(), 2.4, 0.001);
     assertEquals(percentiles.get(1).doubleValue(), 6.0, 0.001);
@@ -1176,6 +1204,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
     Tuple tuple = tuples.get(0);
+    @SuppressWarnings({"unchecked"})
     List<Number> asort = (List<Number>)tuple.get("return-value");
     assertEquals(asort.size(), 10);
     assertEquals(asort.get(0).intValue(), 2);
@@ -1222,6 +1251,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
     Tuple tuple = tuples.get(0);
+    @SuppressWarnings({"unchecked"})
     List<Number> asort = (List<Number>)tuple.get("return-value");
     assertEquals(asort.size(), 6);
     assertEquals(asort.get(0).doubleValue(), 0, 0.0);
@@ -1274,6 +1304,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<Number> reverse = (List<Number>)tuples.get(0).get("reverse");
     assertTrue(reverse.size() == 4);
     assertTrue(reverse.get(0).doubleValue() == 400D);
@@ -1281,6 +1312,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertTrue(reverse.get(2).doubleValue() == 500D);
     assertTrue(reverse.get(3).doubleValue() == 100D);
 
+    @SuppressWarnings({"unchecked"})
     List<Number> ranked = (List<Number>)tuples.get(0).get("ranked");
     assertTrue(ranked.size() == 4);
     assertTrue(ranked.get(0).doubleValue() == 1D);
@@ -1290,6 +1322,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testArray() throws Exception {
     String cexpr = "array(1, 2, 3, 300, 2, 500)";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
@@ -1342,6 +1375,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<List<Number>> out = (List<List<Number>>)tuples.get(0).get("c");
     assertEquals(out.size(), 2);
     List<Number> row1 = out.get(0);
@@ -1372,6 +1406,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<Number> out = (List<Number>)tuples.get(0).get("return-value");
     assertEquals(out.size(), 6);
     assertEquals(out.get(0).intValue(), 1);
@@ -1394,6 +1429,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<Number> out = (List<Number>)tuples.get(0).get("return-value");
     assertEquals(out.size(), 6);
     assertEquals(out.get(0).intValue(), 0);
@@ -1417,6 +1453,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<Number> out = (List<Number>)tuples.get(0).get("return-value");
     assertEquals(out.size(), 6);
     assertEquals(out.get(0).doubleValue(), 6.5, 0);
@@ -1440,6 +1477,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<Number> out = (List<Number>)tuples.get(0).get("return-value");
     assertEquals(out.size(), 4);
     assertEquals(out.get(0).intValue(), 3);
@@ -1460,6 +1498,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<Number> out = (List<Number>)tuples.get(0).get("return-value");
     assertEquals(out.size(), 4);
     assertEquals(out.get(0).intValue(), 1);
@@ -1481,6 +1520,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<Number> out = (List<Number>)tuples.get(0).get("return-value");
     assertEquals(out.size(), 6);
     assertEquals(out.get(0).intValue(), 0);
@@ -1514,6 +1554,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<List<Number>> out = (List<List<Number>>)tuples.get(0).get("a");
 
     List<Number> array1 = out.get(0);
@@ -1528,6 +1569,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(array2.get(1).doubleValue(), 5.0, 0.0);
     assertEquals(array2.get(2).doubleValue(), 4.0, 0.0);
 
+    @SuppressWarnings({"unchecked"})
     List<Number> row = (List<Number>)tuples.get(0).get("b");
 
     assertEquals(row.size(), 3);
@@ -1535,17 +1577,20 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(array2.get(1).doubleValue(), 5.0, 0.0);
     assertEquals(array2.get(2).doubleValue(), 4.0, 0.0);
 
+    @SuppressWarnings({"unchecked"})
     List<Number> col = (List<Number>)tuples.get(0).get("c");
     assertEquals(col.size(), 2);
     assertEquals(col.get(0).doubleValue(), 3.0, 0.0);
     assertEquals(col.get(1).doubleValue(), 4.0, 0.0);
 
+    @SuppressWarnings({"unchecked"})
     List<String> colLabels = (List<String>)tuples.get(0).get("d");
     assertEquals(colLabels.size(), 3);
     assertEquals(colLabels.get(0), "col1");
     assertEquals(colLabels.get(1), "col2");
     assertEquals(colLabels.get(2), "col3");
 
+    @SuppressWarnings({"unchecked"})
     List<List<String>> features  = (List<List<String>>)tuples.get(0).get("e");
     assertEquals(features.size(), 2);
     assertEquals(features.get(0).size(), 1);
@@ -1561,6 +1606,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
 
 
   @Test
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void testZplot() throws Exception {
 
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
@@ -1860,6 +1906,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
 
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testMatrixMath() throws Exception {
     String cexpr = "let(echo=true, a=matrix(array(1.5, 2.5, 3.5), array(4.5,5.5,6.5)), " +
                                   "b=grandSum(a), " +
@@ -1983,6 +2030,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<List<Number>> out = (List<List<Number>>)tuples.get(0).get("b");
     assertEquals(out.size(), 3);
     List<Number> array1 = out.get(0);
@@ -2013,6 +2061,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<List<Number>> out = (List<List<Number>>)tuples.get(0).get("a");
     assertEquals(out.size(), 2);
     List<Number> array1 = out.get(0);
@@ -2027,6 +2076,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(array2.get(1).doubleValue(), 0.5698028822981898, 0.0);
     assertEquals(array2.get(2).doubleValue(), 0.6837634587578276, 0.0);
 
+    @SuppressWarnings({"unchecked"})
     List<Number> array3 = (List<Number>)tuples.get(0).get("b");
     assertEquals(array3.size(), 3);
     assertEquals(array3.get(0).doubleValue(), 0.4558423058385518, 0.0);
@@ -2049,6 +2099,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<List<Number>> out = (List<List<Number>>)tuples.get(0).get("a");
     assertEquals(out.size(), 2);
     List<Number> array1 = out.get(0);
@@ -2063,12 +2114,14 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(array2.get(1).doubleValue(), 0.3333333333333333, 0.0001);
     assertEquals(array2.get(2).doubleValue(), 0.4, 0.0001);
 
+    @SuppressWarnings({"unchecked"})
     List<Number> array3 = (List<Number>)tuples.get(0).get("b");
     assertEquals(array3.size(), 3);
     assertEquals(array3.get(0).doubleValue(), 0.16666666666666666, 0.0001);
     assertEquals(array3.get(1).doubleValue(), 0.3333333333333333, 0.0001);
     assertEquals(array3.get(2).doubleValue(), 0.5, 0.0001);
 
+    @SuppressWarnings({"unchecked"})
     List<Number> array4 = (List<Number>)tuples.get(0).get("c");
     assertEquals(array4.size(), 3);
     assertEquals(array4.get(0).doubleValue(), 16.666666666666666, 0.0001);
@@ -2088,6 +2141,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<List<Number>> out = (List<List<Number>>)tuples.get(0).get("a");
     assertEquals(out.size(), 2);
     List<Number> array1 = out.get(0);
@@ -2102,12 +2156,14 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(array2.get(1).doubleValue(), 0, 0.0);
     assertEquals(array2.get(2).doubleValue(), 1, 0.0);
 
+    @SuppressWarnings({"unchecked"})
     List<Number> array3 = (List<Number>)tuples.get(0).get("b");
     assertEquals(array3.size(), 3);
     assertEquals(array3.get(0).doubleValue(), -1, 0.0);
     assertEquals(array3.get(1).doubleValue(), 0, 0.0);
     assertEquals(array3.get(2).doubleValue(), 1, 0.0);
 
+    @SuppressWarnings({"unchecked"})
     List<Number> array4 = (List<Number>)tuples.get(0).get("c");
     assertEquals(array4.size(), 3);
     assertEquals(array4.get(0).doubleValue(), -1, 0.0);
@@ -2153,6 +2209,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<Number> out = (List<Number>)tuples.get(0).get("return-value");
     assertTrue(out.size() == 9);
     assertTrue(out.get(0).intValue() == 1);
@@ -2223,10 +2280,14 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<Number> out = (List<Number>) tuples.get(0).get("sample");
 
+    @SuppressWarnings({"rawtypes"})
     Map ks = (Map) tuples.get(0).get("ks");
+    @SuppressWarnings({"rawtypes"})
     Map ks2 = (Map) tuples.get(0).get("ks2");
+    @SuppressWarnings({"rawtypes"})
     Map ks3 = (Map) tuples.get(0).get("ks3");
 
     assertTrue(out.size() == 250);
@@ -2433,6 +2494,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     List<Tuple> tuples = getTuples(solrStream);
     assertEquals(tuples.size(), 1);
     Tuple tuple = tuples.get(0);
+    @SuppressWarnings({"unchecked"})
     List<Number> logs = (List<Number>)tuple.get("b");
     assertEquals(logs.size(), 3);
     assertEquals(logs.get(0).doubleValue(), 1, 0.0);
@@ -2457,6 +2519,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     List<Tuple> tuples = getTuples(solrStream);
     assertEquals(tuples.size(), 1);
     Tuple tuple = tuples.get(0);
+    @SuppressWarnings({"unchecked"})
     List<Number> logs = (List<Number>)tuple.get("b");
     assertEquals(logs.size(), 3);
     assertEquals(logs.get(0).doubleValue(), .1, 0.0);
@@ -2469,6 +2532,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
 
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testPow() throws Exception {
     String cexpr = "let(echo=true, a=array(10, 20, 30), b=pow(a, 2), c=pow(2, a), d=pow(10, 3), e=pow(a, array(1, 2, 3)))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
@@ -2505,6 +2569,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testTermVectors() throws Exception {
     // Test termVectors with only documents and default termVector settings
     String cexpr = "let(echo=true," +
@@ -2826,6 +2891,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertEquals(tuples.size(), 1);
+    @SuppressWarnings({"unchecked"})
     List<List<Number>> matrix = (List<List<Number>>)tuples.get(0).get("b");
     List<Number> row1 = matrix.get(0);
     assertEquals(row1.get(0).doubleValue(), 2.0,0);
@@ -2840,10 +2906,12 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(row3.get(1).doubleValue(), 0,0);
     assertEquals(row3.get(2).doubleValue(), 8.0,0);
 
+    @SuppressWarnings({"unchecked"})
     List<String> rowLabels = (List<String>)tuples.get(0).get("c");
     assertEquals(rowLabels.get(0), "x1");
     assertEquals(rowLabels.get(1), "x2");
     assertEquals(rowLabels.get(2), "x3");
+    @SuppressWarnings({"unchecked"})
     List<String> columnLabels = (List<String>)tuples.get(0).get("d");
     assertEquals(columnLabels.get(0), "f1");
     assertEquals(columnLabels.get(1), "f2");
@@ -2870,6 +2938,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<Number> out = (List<Number>)tuples.get(0).get("c");
     assertEquals(out.size(), 6);
     assertEquals(out.get(0).doubleValue(), 1.0, 0.0);
@@ -2879,6 +2948,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(out.get(4).doubleValue(), 5.0, 0.0);
     assertEquals(out.get(5).doubleValue(), 6.0, 0.0);
 
+    @SuppressWarnings({"unchecked"})
     List<List<Number>> mout = (List<List<Number>>)tuples.get(0).get("h");
     assertEquals(mout.size(), 2);
     List<Number> row1 = mout.get(0);
@@ -2901,6 +2971,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testMatrixMult() throws Exception {
     String cexpr = "let(echo=true," +
         "               a=array(1,2,3)," +
@@ -3003,10 +3074,15 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<List<Number>> cluster1 = (List<List<Number>>)tuples.get(0).get("g");
+    @SuppressWarnings({"unchecked"})
     List<List<Number>> cluster2 = (List<List<Number>>)tuples.get(0).get("h");
+    @SuppressWarnings({"unchecked"})
     List<List<Number>> centroids = (List<List<Number>>)tuples.get(0).get("i");
+    @SuppressWarnings({"unchecked"})
     List<String> labels1 = (List<String>)tuples.get(0).get("j");
+    @SuppressWarnings({"unchecked"})
     List<String> labels2 = (List<String>)tuples.get(0).get("k");
 
     assertEquals(cluster1.size(), 2);
@@ -3166,10 +3242,15 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<List<Number>> cluster1 = (List<List<Number>>)tuples.get(0).get("g");
+    @SuppressWarnings({"unchecked"})
     List<List<Number>> cluster2 = (List<List<Number>>)tuples.get(0).get("h");
+    @SuppressWarnings({"unchecked"})
     List<List<Number>> centroids = (List<List<Number>>)tuples.get(0).get("i");
+    @SuppressWarnings({"unchecked"})
     List<String> labels1 = (List<String>)tuples.get(0).get("j");
+    @SuppressWarnings({"unchecked"})
     List<String> labels2 = (List<String>)tuples.get(0).get("k");
 
     assertEquals(cluster1.size(), 2);
@@ -3246,12 +3327,18 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<List<Number>> cluster1 = (List<List<Number>>)tuples.get(0).get("g");
+    @SuppressWarnings({"unchecked"})
     List<List<Number>> cluster2 = (List<List<Number>>)tuples.get(0).get("h");
+    @SuppressWarnings({"unchecked"})
     List<List<Number>> centroids = (List<List<Number>>)tuples.get(0).get("i");
+    @SuppressWarnings({"unchecked"})
     List<List<Number>> membership = (List<List<Number>>)tuples.get(0).get("l");
 
+    @SuppressWarnings({"unchecked"})
     List<String> labels1 = (List<String>)tuples.get(0).get("j");
+    @SuppressWarnings({"unchecked"})
     List<String> labels2 = (List<String>)tuples.get(0).get("k");
 
     assertEquals(cluster1.size(), 2);
@@ -3337,6 +3424,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<Number> out = (List<Number>)tuples.get(0).get("return-value");
     assertTrue(out.size() == 6);
     assertTrue(out.get(0).intValue() == 2);
@@ -3368,14 +3456,15 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<Number> wave = (List<Number>)tuples.get(0).get("a");
     assertEquals(wave.size(), 128);
-    Map desc = (Map)tuples.get(0).get("b");
     Number min = (Number)tuples.get(0).get("c");
     Number max = (Number)tuples.get(0).get("d");
     assertEquals(min.doubleValue(), -9.9, .1);
     assertEquals(max.doubleValue(), 9.9, .1);
 
+    @SuppressWarnings({"unchecked"})
     List<Number> wave1 = (List<Number>)tuples.get(0).get("e");
     assertEquals(wave1.size(), 128);
 
@@ -3387,6 +3476,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(freq.doubleValue(), .3, .1);
     assertEquals(pha.doubleValue(), 2.9, .1);
 
+    @SuppressWarnings({"unchecked"})
     List<Number> der = (List<Number>)tuples.get(0).get("i");
     assertEquals(der.size(), 128);
     assertEquals(der.get(0).doubleValue(), -0.7177479876419472, 0);
@@ -3413,6 +3503,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<Number> out = (List<Number>)tuples.get(0).get("c");
     assertEquals(out.size(), 6);
     assertEquals(out.get(0).doubleValue(), 3.0, 0.0);
@@ -3422,6 +3513,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(out.get(4).doubleValue(), 15.0, 0.0);
     assertEquals(out.get(5).doubleValue(), 18.0, 0.0);
 
+    @SuppressWarnings({"unchecked"})
     List<List<Number>> mout = (List<List<Number>>)tuples.get(0).get("h");
     assertEquals(mout.size(), 2);
     List<Number> row1 = mout.get(0);
@@ -3467,6 +3559,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(mean.doubleValue(), 3.3800151591412964, 0.0);
     Number mean1 = (Number)tuples.get(0).get("d");
     assertEquals(mean1.doubleValue(), 4.3800151591412964, 0.0);
+    @SuppressWarnings({"unchecked"})
     List<Number> vals = (List<Number>)tuples.get(0).get("f");
     assertEquals(vals.size(), 3);
     assertEquals(vals.get(0).doubleValue(), 8.11, 0);
@@ -3487,6 +3580,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<Number> out = (List<Number>)tuples.get(0).get("return-value");
     assertTrue(out.size() == 6);
     assertTrue(out.get(0).intValue() == 2);
@@ -3549,6 +3643,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     List<Tuple> tuples = getTuples(solrStream);
     assertEquals(tuples.size(), 1);
 
+    @SuppressWarnings({"unchecked"})
     List<List<Number>> fft = (List<List<Number>>)tuples.get(0).get("a");
     assertEquals(fft.size(), 2);
     List<Number> reals = fft.get(0);
@@ -3574,6 +3669,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
       assertEquals(imaginary.get(i).doubleValue(), 0.0, 0.0);
     }
 
+    @SuppressWarnings({"unchecked"})
     List<Number> ifft = (List<Number>)tuples.get(0).get("b");
     assertEquals(ifft.get(0).doubleValue(), 1, 0.0);
     assertEquals(ifft.get(1).doubleValue(), 4, 0.0);
@@ -3644,6 +3740,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"rawtypes"})
     Map map = (Map)tuples.get(0).get("d");
     Number mean = (Number)map.get("mean");
     Number var = (Number)map.get("var");
@@ -3678,17 +3775,23 @@ public class MathExpressionTest extends SolrCloudTestCase {
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     List<Map> listg = (List<Map>)tuples.get(0).get("g");
+    @SuppressWarnings({"rawtypes"})
     Map mapg = listg.get(0);
     double pctg = (double) mapg.get("pct");
     assertEquals(pctg, .2, .02);
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     List<Map> listh = (List<Map>)tuples.get(0).get("h");
+    @SuppressWarnings({"rawtypes"})
     Map maph = listh.get(0);
     double pcth = (double)maph.get("pct");
     assertEquals(pcth, .5, .02);
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     List<Map> listi = (List<Map>)tuples.get(0).get("i");
+    @SuppressWarnings({"rawtypes"})
     Map mapi = listi.get(0);
     double pcti = (double)mapi.get("pct");
     assertEquals(pcti, .8, .02);
@@ -3734,6 +3837,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"rawtypes"})
     Map map = (Map)tuples.get(0).get("d");
     Number N = (Number)map.get("N");
     assertEquals(N.intValue(), 10000);
@@ -3755,6 +3859,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<Number> counts = (List<Number>)tuples.get(0).get("c");
 
     assertTrue(counts.size() == 10);
@@ -3796,6 +3901,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
 
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testBetaDistribution() throws Exception {
     String cexpr = "let(a=sample(betaDistribution(1, 5), 50000), b=hist(a, 11), c=col(b, N))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
@@ -3859,6 +3965,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"rawtypes"})
     Map map = (Map)tuples.get(0).get("d");
     Number N = (Number)map.get("N");
     assertEquals(N.intValue(), 10000);
@@ -3881,6 +3988,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<Number> freqs = (List<Number>)tuples.get(0).get("y");
     assertEquals(freqs.get(0).doubleValue(), .40, .03);
     assertEquals(freqs.get(1).doubleValue(), .30, .03);
@@ -3922,13 +4030,31 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertTrue(stddev.doubleValue() == 0);
   }
 
+  // NOTE: cache evaluators work only locally, on
+  // the same node where the replica that executes
+  // the stream is located
   @Test
-  public void testCache() throws Exception {
+  @SuppressWarnings({"unchecked"})
+public void testCache() throws Exception {
     String cexpr = "putCache(\"space1\", \"key1\", dotProduct(array(2,4,6,8,10,12),array(1,2,3,4,5,6)))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
-    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    // find a node with a replica
+    ClusterState clusterState = cluster.getSolrClient().getClusterStateProvider().getClusterState();
+    String collection = useAlias ? COLLECTIONORALIAS + "_collection" : COLLECTIONORALIAS;
+    DocCollection coll = clusterState.getCollection(collection);
+    String node = coll.getReplicas().iterator().next().getNodeName();
+    String url = null;
+    for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
+      if (jetty.getNodeName().equals(node)) {
+        url = jetty.getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+        break;
+      }
+    }
+    if (url == null) {
+      fail("unable to find a node with replica");
+    }
     TupleStream solrStream = new SolrStream(url, paramsLoc);
     StreamContext context = new StreamContext();
     solrStream.setStreamContext(context);
@@ -4017,6 +4143,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<Number> out = (List<Number>)tuples.get(0).get("return-value");
     assertTrue(out.size() == 21);
     assertEquals((double) out.get(0), 22.22, 0.009);
@@ -4042,6 +4169,44 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals((double)out.get(20), 22.92, 0.009);
   }
 
+
+  @Test
+  public void testTimeDifferencingMatrix() throws Exception {
+    String cexpr = "let(echo=\"c, d\",\n" +
+        "               a=matrix(array(1,2,3,4,5),array(7.5,9,11,15.5,50.2)),\n" +
+        "               b=setColumnLabels(a, array(\"a\",\"b\",\"c\",\"d\",\"e\")),\n" +
+        "               c=diff(b, 2),\n" +
+        "               d=getColumnLabels(c))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
+    List<List<Number>> matrix = (List<List<Number>>)tuples.get(0).get("c");
+    @SuppressWarnings({"unchecked"})
+    List<String> columnsLabels = (List<String>)tuples.get(0).get("d");
+    assertEquals(columnsLabels.size(), 3);
+    assertEquals(columnsLabels.get(0), "c");
+    assertEquals(columnsLabels.get(1), "d");
+    assertEquals(columnsLabels.get(2), "e");
+    assertEquals(matrix.size(), 2);
+    List<Number> row1 = matrix.get(0);
+    List<Number> row2 = matrix.get(1);
+    assertEquals(row1.size(), 3);
+    assertEquals(row1.get(0).doubleValue(), 2.0, 0);
+    assertEquals(row1.get(1).doubleValue(), 2.0, 0);
+    assertEquals(row1.get(2).doubleValue(), 2.0, 0);
+    assertEquals(row2.size(), 3 );
+    assertEquals(row2.get(0).doubleValue(), 3.5, 0);
+    assertEquals(row2.get(1).doubleValue(), 6.5, 0);
+    assertEquals(row2.get(2).doubleValue(), 39.2, 0);
+  }
+
   @Test
   public void testTimeDifferencingDefaultLag() throws Exception {
     String cexpr = "diff(array(1709.0, 1621.0, 1973.0, 1812.0, 1975.0, 1862.0, 1940.0, 2013.0, 1596.0, 1725.0, 1676.0, 1814.0, 1615.0, 1557.0, 1891.0, 1956.0, 1885.0, 1623.0, 1903.0, 1997.0))";
@@ -4054,6 +4219,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<Number> out = (List<Number>)tuples.get(0).get("return-value");
     assertTrue(out.size() == 19);
     assertEquals(out.get(0).doubleValue(),-88.0, 0.01);
@@ -4089,6 +4255,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<Number> out = (List<Number>)tuples.get(0).get("return-value");
     assertTrue(out.size() == 8);
     assertEquals(out.get(0).doubleValue(), -94.0, 0.01);
@@ -4113,6 +4280,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<Number> out = (List<Number>)tuples.get(0).get("return-value");
     assertTrue(out.size() == 7);
     assertEquals(out.get(0).doubleValue(), 30.0, 0.01);
@@ -4125,6 +4293,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testPolyfit() throws Exception {
     String cexpr = "let(echo=true," +
                    "    a=array(0,1,2,3,4,5,6,7)," +
@@ -4181,18 +4350,21 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"rawtypes"})
     Map testResult = (Map)tuples.get(0).get("ttest");
     Number tstat = (Number)testResult.get("t-statistic");
     Number pval = (Number)testResult.get("p-value");
     assertEquals(tstat.doubleValue(), 2.3666107120397575, .0001);
     assertEquals(pval.doubleValue(), 0.029680704317867967, .0001);
 
+    @SuppressWarnings({"rawtypes"})
     Map testResult2 = (Map)tuples.get(0).get("onesamplettest");
     Number tstat2 = (Number)testResult2.get("t-statistic");
     Number pval2 = (Number)testResult2.get("p-value");
     assertEquals(tstat2.doubleValue(), 0, .0001);
     assertEquals(pval2.doubleValue(), 1, .0001);
 
+    @SuppressWarnings({"rawtypes"})
     Map testResult3 = (Map)tuples.get(0).get("pairedttest");
     Number tstat3 = (Number)testResult3.get("t-statistic");
     Number pval3 = (Number)testResult3.get("p-value");
@@ -4216,6 +4388,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"rawtypes"})
     Map testResult = (Map)tuples.get(0).get("chisquare");
     Number tstat = (Number)testResult.get("chisquare-statistic");
     Number pval = (Number)testResult.get("p-value");
@@ -4239,6 +4412,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"rawtypes"})
     Map testResult = (Map)tuples.get(0).get("gtest");
     Number gstat = (Number)testResult.get("G-statistic");
     Number pval = (Number)testResult.get("p-value");
@@ -4271,6 +4445,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<List<Number>> cov = (List<List<Number>>)tuples.get(0).get("h");
     assertEquals(cov.size(), 2);
     List<Number> row1 = cov.get(0);
@@ -4288,6 +4463,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(c, 56.66666666666667, 7);
     assertEquals(d, 723.8095238095239, 50);
 
+    @SuppressWarnings({"unchecked"})
     List<Number> sample = (List<Number>)tuples.get(0).get("i");
     assertEquals(sample.size(), 2);
     Number sample1 = sample.get(0);
@@ -4300,6 +4476,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testKnn() throws Exception {
     String cexpr = "let(echo=true," +
         "               a=setRowLabels(matrix(array(1,1,1,0,0,0),"+
@@ -4343,6 +4520,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(row2.get(4).doubleValue(), 1.0, 0.0);
     assertEquals(row2.get(5).doubleValue(), 1.0, 0.0);
 
+    @SuppressWarnings({"rawtypes"})
     Map atts = (Map)tuples.get(0).get("e");
     List<Number> dists = (List<Number>)atts.get("distances");
     assertEquals(dists.size(), 2);
@@ -4385,6 +4563,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(integral.doubleValue(), 20, 0.0);
     integral = (Number)tuples.get(0).get("e");
     assertEquals(integral.doubleValue(), 29, 0.0);
+    @SuppressWarnings({"unchecked"})
     List<Number> integrals = (List<Number>)tuples.get(0).get("f");
     assertEquals(integrals.size(), 50);
     assertEquals(integrals.get(49).intValue(), 49);
@@ -4406,6 +4585,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<Number> out = (List<Number>)tuples.get(0).get("fit");
     assertTrue(out.size() == 8);
     assertEquals(out.get(0).doubleValue(), 0.0, 0.0);
@@ -4417,6 +4597,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(out.get(6).doubleValue(), 6.0, 0.0);
     assertEquals(out.get(7).doubleValue(), 7.0, 0.0);
 
+    @SuppressWarnings({"unchecked"})
     List<Number> out1 = (List<Number>)tuples.get(0).get("der");
     assertTrue(out1.size() == 8);
     assertEquals(out1.get(0).doubleValue(), 1.0, 0.0);
@@ -4447,6 +4628,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<Number> out = (List<Number>)tuples.get(0).get("fit");
     assertTrue(out.size() == 8);
     assertEquals(out.get(0).doubleValue(), 1.0, 0.0001);
@@ -4458,6 +4640,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(out.get(6).doubleValue(), 1.0, 0.0001);
     assertEquals(out.get(7).doubleValue(), 9.0, 0.0001);
 
+    @SuppressWarnings({"unchecked"})
     List<Number> out1 = (List<Number>)tuples.get(0).get("der");
 
     assertTrue(out1.size() == 8);
@@ -4503,6 +4686,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(p2.doubleValue(), 536.8916383774491, 0.0);
     Number p3 = (Number)tuples.get(0).get("p3");
     assertEquals(p3.doubleValue(), 659.921875, 0.0);
+    @SuppressWarnings({"unchecked"})
     List<Number> p4 = (List<Number>)tuples.get(0).get("p4");
     assertEquals(p4.get(0).doubleValue(), 449.7837701612903, 0.0);
     assertEquals(p4.get(1).doubleValue(), 536.8916383774491, 0.0);
@@ -4526,6 +4710,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<Number> out = (List<Number>)tuples.get(0).get("fit");
     assertTrue(out.size() == 8);
     assertEquals(out.get(0).doubleValue(), 1.0, 0.0001);
@@ -4537,6 +4722,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(out.get(6).doubleValue(), 1.0, 0.0001);
     assertEquals(out.get(7).doubleValue(), 9.0, 0.0001);
 
+    @SuppressWarnings({"unchecked"})
     List<Number> out1 = (List<Number>)tuples.get(0).get("der");
     assertTrue(out1.size() == 8);
     assertEquals(out1.get(0).doubleValue(), 93.5, 0.0001);
@@ -4568,8 +4754,10 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked", "rawtypes"})
     List<Map> out = (List<Map>)tuples.get(0).get("e");
     assertEquals(out.size(), 2);
+    @SuppressWarnings({"rawtypes"})
     Map high = out.get(0);
     assertEquals(((String)high.get("id")), "1");
 
@@ -4577,20 +4765,24 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(((Number)high.get("highOutlierValue_d")).doubleValue(), 110.0, 0.0);
 
 
+    @SuppressWarnings({"rawtypes"})
     Map low = out.get(1);
     assertEquals(((String)low.get("id")), "2");
     assertEquals(((Number)low.get("cumulativeProbablity_d")).doubleValue(), 0.022750131948179167, 0.0 );
     assertEquals(((Number)low.get("lowOutlierValue_d")).doubleValue(), 90, 0.0);
 
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     List<Map> out1 = (List<Map>)tuples.get(0).get("f");
     assertEquals(out1.size(), 2);
+    @SuppressWarnings({"rawtypes"})
     Map high1 = out1.get(0);
     assert(high1.get("id") == null);
     assertEquals(((Number)high1.get("cumulativeProbablity_d")).doubleValue(), 0.9772498680518208, 0.0 );
     assertEquals(((Number)high1.get("highOutlierValue_d")).doubleValue(), 110.0, 0.0);
 
 
+    @SuppressWarnings({"rawtypes"})
     Map low1 = out1.get(1);
     assert(low1.get("id") == null);
     assertEquals(((Number)low1.get("cumulativeProbablity_d")).doubleValue(), 0.022750131948179167, 0.0 );
@@ -4616,6 +4808,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<Number> out = (List<Number>)tuples.get(0).get("fit");
     assertTrue(out.size() == 8);
     assertEquals(out.get(0).doubleValue(), 1.0, 0.0001);
@@ -4627,6 +4820,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(out.get(6).doubleValue(), 1.0, 0.0001);
     assertEquals(out.get(7).doubleValue(), 9.0, 0.0001);
 
+    @SuppressWarnings({"unchecked"})
     List<Number> out1 = (List<Number>)tuples.get(0).get("der");
     assertTrue(out1.size() == 8);
     assertEquals(out1.get(0).doubleValue(), 69.0, 0.0001);
@@ -4652,6 +4846,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<Number> out = (List<Number>)tuples.get(0).get("s");
     assertTrue(out.size() == 100);
     for(Number n : out) {
@@ -4694,12 +4889,14 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"rawtypes"})
     Map regression = (Map)tuples.get(0).get("f");
 
     Number rsquared = (Number)regression.get("RSquared");
 
     assertEquals(rsquared.doubleValue(), 0.9667887860584002, .000001);
 
+    @SuppressWarnings({"unchecked"})
     List<Number> regressionParameters = (List<Number>)regression.get("regressionParameters");
 
     assertEquals(regressionParameters.get(0).doubleValue(), 7.676028542255028, .0001);
@@ -4707,6 +4904,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(regressionParameters.get(2).doubleValue(), 7.621051256504592, .0001);
     assertEquals(regressionParameters.get(3).doubleValue(), 0.8284680662898674, .0001);
 
+    @SuppressWarnings({"unchecked"})
     List<Number> predictions = (List<Number>)tuples.get(0).get("g");
 
     assertEquals(predictions.get(0).doubleValue(), 81.56082305847914, .0001);
@@ -4722,6 +4920,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testKnnRegress() throws Exception {
     String cexpr = "let(echo=true, a=array(8.5, 12.89999962, 5.199999809, 10.69999981, 3.099999905, 3.5, 9.199999809, 9, 15.10000038, 10.19999981), " +
                                   "b=array(5.099999905, 5.800000191, 2.099999905, 8.399998665, 2.900000095, 1.200000048, 3.700000048, 7.599999905, 7.699999809, 4.5)," +
@@ -4920,6 +5119,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     List<Tuple> tuples = getTuples(solrStream);
     assertEquals(tuples.size(),  1);
 
+    @SuppressWarnings({"unchecked"})
     List<Double> doubles = (List<Double>)tuples.get(0).get("doubles");
     assertEquals(doubles.get(0), 1.1, 0);
     assertEquals(doubles.get(1), 1.3, 0);
@@ -4942,6 +5142,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<Number> predictions = (List<Number>)tuples.get(0).get("g");
     assertEquals(predictions.size(), 25);
     assertEquals(predictions.get(0).doubleValue(), 1.5217511259930976, 0);
@@ -4986,6 +5187,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertTrue(tuples.size() == 1);
     String plot = tuples.get(0).getString("plot");
     assertTrue(plot.equals("scatter"));
+    @SuppressWarnings({"unchecked"})
     List<List<Number>> data = (List<List<Number>>)tuples.get(0).get("data");
     assertTrue(data.size() == 3);
     List<Number> pair1 = data.get(0);
@@ -5011,6 +5213,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<Number> out = (List<Number>)tuples.get(0).get("return-value");
     assertTrue(out.size()==4);
     assertEquals((double) out.get(0), 2.5, .0);
@@ -5031,13 +5234,14 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<Number> out = (List<Number>)tuples.get(0).get("return-value");
     assertTrue(out.size()==4);
     System.out.println("MAD:"+out);
-    assertEquals((double) out.get(0).doubleValue(), 1, .0);
-    assertEquals((double) out.get(1).doubleValue(), 1, .0);
-    assertEquals((double) out.get(2).doubleValue(), 1, .0);
-    assertEquals((double) out.get(3).doubleValue(), 1.59375, .0);
+    assertEquals(out.get(0).doubleValue(), 1, .0);
+    assertEquals(out.get(1).doubleValue(), 1, .0);
+    assertEquals(out.get(2).doubleValue(), 1, .0);
+    assertEquals(out.get(3).doubleValue(), 1.59375, .0);
   }
 
   @Test
@@ -5070,6 +5274,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<Number> out = (List<Number>)tuples.get(0).get("return-value");
     assertTrue(out.size() == 3);
     assertEquals(out.get(0).doubleValue(), 6.0, .0);
@@ -5105,6 +5310,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<Number> out = (List<Number>)tuples.get(0).get("c");
     assertTrue(out.size()==10);
     assertEquals(out.get(0).doubleValue(), 30.0, .0);
@@ -5136,6 +5342,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<Number> out = (List<Number>)tuples.get(0).get("c");
     assertTrue(out.size()==10);
     assertEquals(out.get(0).doubleValue(), 40.0, .0);
@@ -5170,9 +5377,13 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"rawtypes"})
     Map a = (Map)tuples.get(0).get("a");
+    @SuppressWarnings({"rawtypes"})
     Map b = (Map)tuples.get(0).get("b");
+    @SuppressWarnings({"rawtypes"})
     Map c = (Map)tuples.get(0).get("c");
+    @SuppressWarnings({"rawtypes"})
     Map d = (Map)tuples.get(0).get("d");
 
     Number sa = (Number)a.get("skewness");
@@ -5214,6 +5425,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertEquals(tuples.size(), 1);
+    @SuppressWarnings({"unchecked"})
     List<Number> b = (List<Number>)tuples.get(0).get("b");
     assertEquals(10, b.size());
     Number c = (Number)tuples.get(0).get("c");
@@ -5241,8 +5453,11 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"rawtypes"})
     Map a = (Map)tuples.get(0).get("a");
+    @SuppressWarnings({"rawtypes"})
     Map b = (Map)tuples.get(0).get("b");
+    @SuppressWarnings({"rawtypes"})
     Map c = (Map)tuples.get(0).get("c");
 
     Number sa = (Number)a.get("skewness");
@@ -5275,7 +5490,9 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"rawtypes"})
     Map a = (Map)tuples.get(0).get("a");
+    @SuppressWarnings({"rawtypes"})
     Map b = (Map)tuples.get(0).get("b");
 
     Number sa = (Number)a.get("skewness");
@@ -5302,6 +5519,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<List<Number>> cm = (List<List<Number>>)tuples.get(0).get("f");
     assertEquals(cm.size(), 3);
     List<Number> row1 = cm.get(0);
@@ -5324,6 +5542,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testCorrMatrix() throws Exception {
     String cexpr = "let(echo=true," +
                        "a=array(1,2,3), " +
@@ -5453,6 +5672,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
 
+    @SuppressWarnings({"unchecked"})
     List<Number> nums = (List<Number>)tuples.get(0).get("a");
     assertTrue(nums.size() == 3);
     assertEquals(nums.get(0).doubleValue(), 1.4445, 0.0);
@@ -5476,6 +5696,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
 
+    @SuppressWarnings({"unchecked"})
     List<List<Number>> rows = (List<List<Number>>)tuples.get(0).get("b");
     assertTrue(rows.size() == 2);
     List<Number> row1 = rows.get(0);
@@ -5490,6 +5711,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testMinMaxScale() throws Exception {
     String cexpr = "let(echo=true, a=minMaxScale(matrix(array(1,2,3,4,5), array(10,20,30,40,50))), " +
                                   "b=minMaxScale(matrix(array(1,2,3,4,5), array(10,20,30,40,50)), 0, 100)," +
@@ -5642,6 +5864,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<Number> reverse = (List<Number>)tuples.get(0).get("reverse");
     assertTrue(reverse.size() == 4);
     assertTrue(reverse.get(0).doubleValue() == 400D);
@@ -5649,6 +5872,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertTrue(reverse.get(2).doubleValue() == 500D);
     assertTrue(reverse.get(3).doubleValue() == 100D);
 
+    @SuppressWarnings({"unchecked"})
     List<Number> ranked = (List<Number>)tuples.get(0).get("scaled");
     assertTrue(ranked.size() == 4);
     assertTrue(ranked.get(0).doubleValue() == 200D);
@@ -5699,6 +5923,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked"})
     List<Number> convolution = (List<Number>)(tuples.get(0)).get("conv");
     assertTrue(convolution.size() == 7);
     assertTrue(convolution.get(0).equals(20000D));
@@ -5748,6 +5973,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
     Tuple tuple = tuples.get(0);
+    @SuppressWarnings({"rawtypes"})
     Map regression = (Map)tuple.get("regress");
     double slope = (double)regression.get("slope");
     double intercept= (double) regression.get("intercept");
@@ -5757,6 +5983,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertTrue(rSquare == 1.0D);
     double prediction = tuple.getDouble("p");
     assertTrue(prediction == 600.0D);
+    @SuppressWarnings({"unchecked"})
     List<Number> predictions = (List<Number>)tuple.get("pl");
     assertList(predictions, 200D, 400D, 600D, 200D, 400D, 800D, 1200D);
   }
@@ -5942,6 +6169,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
     Tuple tuple = tuples.get(0);
+    @SuppressWarnings({"rawtypes"})
     Map regression = (Map)tuple.get("regress");
     double slope = (double)regression.get("slope");
     double intercept= (double) regression.get("intercept");
@@ -5977,7 +6205,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
     double d = (double)tuples.get(0).get("kilometers");
-    assertTrue(d == (double)(10*1.61));
+    assertTrue(d == (10*1.61));
 
 
     expr = "select(search("+COLLECTIONORALIAS+", q=\"*:*\", sort=\"miles_i asc\", fl=\"miles_i\"), convert(miles, kilometers, miles_i) as kilometers)";
@@ -5991,9 +6219,9 @@ public class MathExpressionTest extends SolrCloudTestCase {
     tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 2);
     d = (double)tuples.get(0).get("kilometers");
-    assertTrue(d == (double)(50*1.61));
+    assertTrue(d == (50*1.61));
     d = (double)tuples.get(1).get("kilometers");
-    assertTrue(d == (double)(70*1.61));
+    assertTrue(d == (70*1.61));
 
     expr = "parallel("+COLLECTIONORALIAS+", workers=2, sort=\"miles_i asc\", select(search("+COLLECTIONORALIAS+", q=\"*:*\", partitionKeys=miles_i, sort=\"miles_i asc\", fl=\"miles_i\", qt=\"/export\"), convert(miles, kilometers, miles_i) as kilometers))";
     paramsLoc = new ModifiableSolrParams();
@@ -6005,9 +6233,9 @@ public class MathExpressionTest extends SolrCloudTestCase {
     tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 2);
     d = (double)tuples.get(0).get("kilometers");
-    assertTrue(d == (double)(50*1.61));
+    assertTrue(d == (50*1.61));
     d = (double)tuples.get(1).get("kilometers");
-    assertTrue(d == (double)(70*1.61));
+    assertTrue(d == (70*1.61));
 
     expr = "select(stats("+COLLECTIONORALIAS+", q=\"*:*\", sum(miles_i)), convert(miles, kilometers, sum(miles_i)) as kilometers)";
     paramsLoc = new ModifiableSolrParams();
@@ -6019,7 +6247,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
     d = (double)tuples.get(0).get("kilometers");
-    assertTrue(d == (double)(120*1.61));
+    assertTrue(d == (120*1.61));
   }
 
   protected List<Tuple> getTuples(TupleStream tupleStream) throws IOException {
@@ -6057,7 +6285,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     return true;
   }
 
-  private boolean assertList(List list, Object... vals) throws Exception {
+  private boolean assertList(@SuppressWarnings({"rawtypes"})List list, Object... vals) throws Exception {
 
     if(list.size() != vals.length) {
       throw new Exception("Lists are not the same size:"+list.size() +" : "+vals.length);

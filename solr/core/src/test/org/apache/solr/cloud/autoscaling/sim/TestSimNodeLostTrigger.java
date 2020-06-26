@@ -117,6 +117,7 @@ public class TestSimNodeLostTrigger extends SimSolrCloudTestCase {
 
       TriggerEvent nodeLostEvent = eventRef.get();
       assertNotNull(nodeLostEvent);
+      @SuppressWarnings({"unchecked"})
       List<String> nodeNames = (List<String>)nodeLostEvent.getProperty(TriggerEvent.NODE_NAMES);
       assertTrue(nodeNames + " doesn't contain " + lostNodeName1, nodeNames.contains(lostNodeName1));
       assertTrue(nodeNames + " doesn't contain " + lostNodeName2, nodeNames.contains(lostNodeName2));
@@ -176,6 +177,7 @@ public class TestSimNodeLostTrigger extends SimSolrCloudTestCase {
 
   public void testActionLifecycle() throws Exception {
     Map<String, Object> props = createTriggerProps(0);
+    @SuppressWarnings({"unchecked"})
     List<Map<String, String>> actions = (List<Map<String, String>>) props.get("actions");
     Map<String, String> action = new HashMap<>(2);
     action.put("name", "testActionInit");
@@ -322,6 +324,7 @@ public class TestSimNodeLostTrigger extends SimSolrCloudTestCase {
 
       TriggerEvent nodeLostEvent = eventRef.get();
       assertNotNull(nodeLostEvent);
+      @SuppressWarnings({"unchecked"})
       List<String> nodeNames = (List<String>)nodeLostEvent.getProperty(TriggerEvent.NODE_NAMES);
       assertTrue(nodeNames.contains(newNode));
     }

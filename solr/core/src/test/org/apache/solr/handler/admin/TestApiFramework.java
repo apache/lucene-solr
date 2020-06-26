@@ -17,36 +17,15 @@
 
 package org.apache.solr.handler.admin;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.api.Api;
-import org.apache.solr.api.ApiBag;
-import org.apache.solr.api.Command;
-import org.apache.solr.api.EndPoint;
-import org.apache.solr.api.V2HttpCall;
+import org.apache.solr.api.*;
 import org.apache.solr.api.V2HttpCall.CompositeApi;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.CommandOperation;
-import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.common.util.ContentStreamBase;
-import org.apache.solr.common.util.JsonSchemaValidator;
-import org.apache.solr.common.util.PathTrie;
-import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.util.Utils;
-import org.apache.solr.common.util.ValidatingJsonMap;
+import org.apache.solr.common.util.*;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.handler.PingRequestHandler;
@@ -59,13 +38,16 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.PermissionNameProvider;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.*;
+
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.solr.api.ApiBag.EMPTY_SPEC;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
-import static org.apache.solr.common.params.CommonParams.COLLECTIONS_HANDLER_PATH;
-import static org.apache.solr.common.params.CommonParams.CONFIGSETS_HANDLER_PATH;
-import static org.apache.solr.common.params.CommonParams.CORES_HANDLER_PATH;
+import static org.apache.solr.common.params.CommonParams.*;
 import static org.apache.solr.common.util.ValidatingJsonMap.NOT_NULL;
 
 public class TestApiFramework extends SolrTestCaseJ4 {
@@ -353,14 +335,18 @@ public class TestApiFramework extends SolrTestCaseJ4 {
   }
 
 
-  public static void assertConditions(Map root, Map conditions) {
+  public static void assertConditions(@SuppressWarnings({"rawtypes"})Map root,
+                                      @SuppressWarnings({"rawtypes"})Map conditions) {
     for (Object o : conditions.entrySet()) {
+      @SuppressWarnings({"rawtypes"})
       Map.Entry e = (Map.Entry) o;
       String path = (String) e.getKey();
       List<String> parts = StrUtils.splitSmart(path, path.charAt(0) == '/' ? '/' : ' ', true);
       Object val = Utils.getObjectByPath(root, false, parts);
       if (e.getValue() instanceof ValidatingJsonMap.PredicateWithErrMsg) {
+        @SuppressWarnings({"rawtypes"})
         ValidatingJsonMap.PredicateWithErrMsg value = (ValidatingJsonMap.PredicateWithErrMsg) e.getValue();
+        @SuppressWarnings({"unchecked"})
         String err = value.test(val);
         if (err != null) {
           assertEquals(err + " for " + e.getKey() + " in :" + Utils.toJSONString(root), e.getValue(), val);

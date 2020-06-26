@@ -91,4 +91,9 @@ public class VersionedData implements MapWriter {
         Objects.equals(owner, that.owner) &&
         mode == that.mode;
   }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(version, owner);
+  }
 }

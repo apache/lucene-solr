@@ -219,7 +219,7 @@ public class JsonLoader extends ContentStreamLoader {
 
       JsonRecordReader jsonRecordReader = JsonRecordReader.getInst(split, Arrays.asList(fields));
       jsonRecordReader.streamRecords(parser, new JsonRecordReader.Handler() {
-        ArrayList docs = null;
+        ArrayList<Map<String, Object>> docs = null;
 
         @Override
         public void handle(Map<String, Object> record, String path) {
@@ -227,7 +227,7 @@ public class JsonLoader extends ContentStreamLoader {
 
           if (echo) {
             if (docs == null) {
-              docs = new ArrayList();
+              docs = new ArrayList<>();
               rsp.add("docs", docs);
             }
             changeChildDoc(copy);
@@ -247,6 +247,7 @@ public class JsonLoader extends ContentStreamLoader {
       });
     }
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private SolrInputDocument buildDoc(Map<String, Object> m) {
       SolrInputDocument result = new SolrInputDocument();
       for (Map.Entry<String, Object> e : m.entrySet()) {
@@ -272,6 +273,7 @@ public class JsonLoader extends ContentStreamLoader {
       return result;
     }
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private Map<String, Object> getDocMap(Map<String, Object> record, JSONParser parser, String srcField, boolean mapUniqueKeyOnly) {
       Map result = record;
       if (srcField != null && parser instanceof RecordingJSONParser) {
@@ -418,6 +420,7 @@ public class JsonLoader extends ContentStreamLoader {
 
     void parseCommitOptions(CommitUpdateCommand cmd) throws IOException {
       assertNextEvent(JSONParser.OBJECT_START);
+      @SuppressWarnings({"unchecked"})
       final Map<String, Object> map = (Map) ObjectBuilder.getVal(parser);
 
       // SolrParams currently expects string values...
@@ -583,9 +586,11 @@ public class JsonLoader extends ContentStreamLoader {
       }
     }
 
+    @SuppressWarnings({"unchecked"})
     private List<Object> parseArrayFieldValue(int ev, String fieldName) throws IOException {
       assert ev == JSONParser.ARRAY_START;
 
+      @SuppressWarnings({"rawtypes"})
       ArrayList lst = new ArrayList(2);
       for (; ; ) {
         ev = parser.nextEvent();
@@ -622,6 +627,7 @@ public class JsonLoader extends ContentStreamLoader {
 
     private boolean mapEntryIsChildDoc(Object val) {
       if(val instanceof List) {
+        @SuppressWarnings({"rawtypes"})
         List listVal = (List) val;
         if (listVal.size() == 0) return false;
         return  listVal.get(0) instanceof Map;
@@ -630,6 +636,7 @@ public class JsonLoader extends ContentStreamLoader {
     }
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private static Object changeChildDoc(Object o) {
     if (o instanceof List) {
       return ((List) o)

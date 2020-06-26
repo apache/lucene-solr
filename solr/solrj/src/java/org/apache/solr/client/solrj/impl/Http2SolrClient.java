@@ -20,11 +20,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
@@ -70,6 +70,7 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.Utils;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.ProtocolHandlers;
@@ -116,7 +117,7 @@ public class Http2SolrClient extends SolrClient {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String AGENT = "Solr[" + Http2SolrClient.class.getName() + "] 2.0";
-  private static final String UTF_8 = StandardCharsets.UTF_8.name();
+  private static final Charset FALLBACK_CHARSET = StandardCharsets.UTF_8;
   private static final String DEFAULT_PATH = "/select";
   private static final List<String> errPath = Arrays.asList("metadata", "error-class");
 
@@ -251,7 +252,7 @@ public class Http2SolrClient extends SolrClient {
     assert ObjectReleaseTracker.release(this);
   }
 
-  public boolean isV2ApiRequest(final SolrRequest request) {
+  public boolean isV2ApiRequest(@SuppressWarnings({"rawtypes"})final SolrRequest request) {
     return request instanceof V2Request || request.getPath().contains("/____v2");
   }
 
@@ -275,7 +276,7 @@ public class Http2SolrClient extends SolrClient {
       this.isXml = isXml;
     }
 
-    boolean belongToThisStream(SolrRequest solrRequest, String collection) {
+    boolean belongToThisStream(@SuppressWarnings({"rawtypes"})SolrRequest solrRequest, String collection) {
       ModifiableSolrParams solrParams = new ModifiableSolrParams(solrRequest.getParams());
       if (!origParams.toNamedList().equals(solrParams.toNamedList()) || !StringUtils.equals(origCollection, collection)) {
         return false;
@@ -294,7 +295,7 @@ public class Http2SolrClient extends SolrClient {
     @Override
     public void close() throws IOException {
       if (isXml) {
-        write("</stream>".getBytes(StandardCharsets.UTF_8));
+        write("</stream>".getBytes(FALLBACK_CHARSET));
       }
       this.outProvider.getOutputStream().close();
     }
@@ -338,12 +339,12 @@ public class Http2SolrClient extends SolrClient {
     OutStream outStream = new OutStream(collection, origParams, provider, responseListener,
         isXml);
     if (isXml) {
-      outStream.write("<stream>".getBytes(StandardCharsets.UTF_8));
+      outStream.write("<stream>".getBytes(FALLBACK_CHARSET));
     }
     return outStream;
   }
 
-  public void send(OutStream outStream, SolrRequest req, String collection) throws IOException {
+  public void send(OutStream outStream, @SuppressWarnings({"rawtypes"})SolrRequest req, String collection) throws IOException {
     assert outStream.belongToThisStream(req, collection);
     this.requestWriter.write(req, outStream.outProvider.getOutputStream());
     if (outStream.isXml) {
@@ -360,7 +361,7 @@ public class Http2SolrClient extends SolrClient {
           byte[] content = String.format(Locale.ROOT,
               fmt, params.getBool(UpdateParams.WAIT_SEARCHER, false)
                   + "")
-              .getBytes(StandardCharsets.UTF_8);
+              .getBytes(FALLBACK_CHARSET);
           outStream.write(content);
         }
       }
@@ -371,7 +372,7 @@ public class Http2SolrClient extends SolrClient {
   private static final Exception CANCELLED_EXCEPTION = new Exception();
   private static final Cancellable FAILED_MAKING_REQUEST_CANCELLABLE = () -> {};
 
-  public Cancellable asyncRequest(SolrRequest solrRequest, String collection, AsyncListener<NamedList<Object>> asyncListener) {
+  public Cancellable asyncRequest(@SuppressWarnings({"rawtypes"}) SolrRequest solrRequest, String collection, AsyncListener<NamedList<Object>> asyncListener) {
     Request req;
     try {
       req = makeRequest(solrRequest, collection);
@@ -392,7 +393,7 @@ public class Http2SolrClient extends SolrClient {
               InputStream is = listener.getInputStream();
               assert ObjectReleaseTracker.track(is);
               try {
-                NamedList<Object> body = processErrorsAndResponse(response, parser, is, getEncoding(response), isV2ApiRequest(solrRequest));
+                NamedList<Object> body = processErrorsAndResponse(solrRequest, parser, response, is);
                 asyncListener.onSuccess(body);
               } catch (RemoteSolrException e) {
                 if (SolrException.getRootCause(e) != CANCELLED_EXCEPTION) {
@@ -416,7 +417,7 @@ public class Http2SolrClient extends SolrClient {
   }
 
   @Override
-  public NamedList<Object> request(SolrRequest solrRequest, String collection) throws SolrServerException, IOException {
+  public NamedList<Object> request(@SuppressWarnings({"rawtypes"}) SolrRequest solrRequest, String collection) throws SolrServerException, IOException {
     Request req = makeRequest(solrRequest, collection);
     final ResponseParser parser = solrRequest.getResponseParser() == null
         ? this.parser: solrRequest.getResponseParser();
@@ -427,7 +428,8 @@ public class Http2SolrClient extends SolrClient {
       Response response = listener.get(idleTimeout, TimeUnit.MILLISECONDS);
       InputStream is = listener.getInputStream();
       assert ObjectReleaseTracker.track(is);
-      return processErrorsAndResponse(response, parser, is, getEncoding(response), isV2ApiRequest(solrRequest));
+
+      return processErrorsAndResponse(solrRequest, parser, response, is);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new RuntimeException(e);
@@ -449,43 +451,38 @@ public class Http2SolrClient extends SolrClient {
     }
   }
 
-  private String getEncoding(Response response) {
-    String contentType = response.getHeaders().get(HttpHeader.CONTENT_TYPE);
+  private NamedList<Object> processErrorsAndResponse(SolrRequest solrRequest, ResponseParser parser, Response response, InputStream is) throws SolrServerException {
+    ContentType contentType = getContentType(response);
+    String mimeType = null;
+    String encoding = null;
     if (contentType != null) {
-      String charset = "charset=";
-      int index = contentType.toLowerCase(Locale.ENGLISH).indexOf(charset);
-      if (index > 0) {
-        String encoding = contentType.substring(index + charset.length());
-        // Sometimes charsets arrive with an ending semicolon.
-        int semicolon = encoding.indexOf(';');
-        if (semicolon > 0)
-          encoding = encoding.substring(0, semicolon).trim();
-        // Sometimes charsets are quoted.
-        int lastIndex = encoding.length() - 1;
-        if (encoding.charAt(0) == '"' && encoding.charAt(lastIndex) == '"')
-          encoding = encoding.substring(1, lastIndex).trim();
-        return encoding;
-      }
+      mimeType = contentType.getMimeType();
+      encoding = contentType.getCharset() != null? contentType.getCharset().name() : null;
     }
-    return null;
+    return processErrorsAndResponse(response, parser, is, mimeType, encoding, isV2ApiRequest(solrRequest));
   }
 
-  private void setBasicAuthHeader(SolrRequest solrRequest, Request req) {
+  private ContentType getContentType(Response response) {
+    String contentType = response.getHeaders().get(HttpHeader.CONTENT_TYPE);
+    return StringUtils.isEmpty(contentType)? null : ContentType.parse(contentType);
+  }
+
+  private void setBasicAuthHeader(@SuppressWarnings({"rawtypes"})SolrRequest solrRequest, Request req) {
     if (solrRequest.getBasicAuthUser() != null && solrRequest.getBasicAuthPassword() != null) {
       String userPass = solrRequest.getBasicAuthUser() + ":" + solrRequest.getBasicAuthPassword();
-      String encoded = Base64.byteArrayToBase64(userPass.getBytes(StandardCharsets.UTF_8));
+      String encoded = Base64.byteArrayToBase64(userPass.getBytes(FALLBACK_CHARSET));
       req.header("Authorization", "Basic " + encoded);
     }
   }
 
-  private Request makeRequest(SolrRequest solrRequest, String collection)
+  private Request makeRequest(@SuppressWarnings({"rawtypes"})SolrRequest solrRequest, String collection)
       throws SolrServerException, IOException {
     Request req = createRequest(solrRequest, collection);
     decorateRequest(req, solrRequest);
     return req;
   }
 
-  private void decorateRequest(Request req, SolrRequest solrRequest) {
+  private void decorateRequest(Request req, @SuppressWarnings({"rawtypes"})SolrRequest solrRequest) {
     req.header(HttpHeader.ACCEPT_ENCODING, null);
     req.timeout(idleTimeout, TimeUnit.MILLISECONDS);
     if (solrRequest.getUserPrincipal() != null) {
@@ -500,6 +497,7 @@ public class Http2SolrClient extends SolrClient {
       req.onComplete(listener);
     }
 
+    @SuppressWarnings({"unchecked"})
     Map<String, String> headers = solrRequest.getHeaders();
     if (headers != null) {
       for (Map.Entry<String, String> entry : headers.entrySet()) {
@@ -514,7 +512,8 @@ public class Http2SolrClient extends SolrClient {
     return new URL(oldURL.getProtocol(), oldURL.getHost(), oldURL.getPort(), newPath).toString();
   }
 
-  private Request createRequest(SolrRequest solrRequest, String collection) throws IOException, SolrServerException {
+  @SuppressWarnings({"unchecked"})
+  private Request createRequest(@SuppressWarnings({"rawtypes"})SolrRequest solrRequest, String collection) throws IOException, SolrServerException {
     if (solrRequest.getBasePath() == null && serverBaseUrl == null)
       throw new IllegalArgumentException("Destination node is not provided!");
 
@@ -655,7 +654,7 @@ public class Http2SolrClient extends SolrClient {
           }
         }
       }
-      req.content(new FormContentProvider(fields, StandardCharsets.UTF_8));
+      req.content(new FormContentProvider(fields, FALLBACK_CHARSET));
     }
 
     return req;
@@ -665,9 +664,11 @@ public class Http2SolrClient extends SolrClient {
     return processor == null || processor instanceof InputStreamResponseParser;
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private NamedList<Object> processErrorsAndResponse(Response response,
                                                      final ResponseParser processor,
                                                      InputStream is,
+                                                     String mimeType,
                                                      String encoding,
                                                      final boolean isV2Api)
       throws SolrServerException {
@@ -675,10 +676,6 @@ public class Http2SolrClient extends SolrClient {
     try {
       // handle some http level checks before trying to parse the response
       int httpStatus = response.getStatus();
-
-      String contentType;
-      contentType = response.getHeaders().get("content-type");
-      if (contentType == null) contentType = "";
 
       switch (httpStatus) {
         case HttpStatus.SC_OK:
@@ -693,7 +690,7 @@ public class Http2SolrClient extends SolrClient {
           }
           break;
         default:
-          if (processor == null || "".equals(contentType)) {
+          if (processor == null || mimeType == null) {
             throw new RemoteSolrException(serverBaseUrl, httpStatus, "non ok status: " + httpStatus
                 + ", message:" + response.getReason(),
                 null);
@@ -712,14 +709,14 @@ public class Http2SolrClient extends SolrClient {
       String procCt = processor.getContentType();
       if (procCt != null) {
         String procMimeType = ContentType.parse(procCt).getMimeType().trim().toLowerCase(Locale.ROOT);
-        String mimeType = ContentType.parse(contentType).getMimeType().trim().toLowerCase(Locale.ROOT);
         if (!procMimeType.equals(mimeType)) {
           // unexpected mime type
           String msg = "Expected mime type " + procMimeType + " but got " + mimeType + ".";
+          String exceptionEncoding = encoding != null? encoding : FALLBACK_CHARSET.name();
           try {
-            msg = msg + " " + IOUtils.toString(is, encoding);
+            msg = msg + " " + IOUtils.toString(is, exceptionEncoding);
           } catch (IOException e) {
-            throw new RemoteSolrException(serverBaseUrl, httpStatus, "Could not parse response with encoding " + encoding, e);
+            throw new RemoteSolrException(serverBaseUrl, httpStatus, "Could not parse response with encoding " + exceptionEncoding, e);
           }
           throw new RemoteSolrException(serverBaseUrl, httpStatus, msg, null);
         }
@@ -740,13 +737,24 @@ public class Http2SolrClient extends SolrClient {
         NamedList<String> metadata = null;
         String reason = null;
         try {
-          NamedList err = (NamedList) rsp.get("error");
-          if (err != null) {
-            reason = (String) err.get("msg");
-            if (reason == null) {
-              reason = (String) err.get("trace");
+          if (error != null) {
+            reason = (String) Utils.getObjectByPath(error, false, Collections.singletonList("msg"));
+            if(reason == null) {
+              reason = (String) Utils.getObjectByPath(error, false, Collections.singletonList("trace"));
             }
-            metadata = (NamedList<String>) err.get("metadata");
+            Object metadataObj = Utils.getObjectByPath(error, false, Collections.singletonList("metadata"));
+            if  (metadataObj instanceof NamedList) {
+              metadata = (NamedList<String>) metadataObj;
+            } else if (metadataObj instanceof List) {
+              // NamedList parsed as List convert to NamedList again
+              List<Object> list = (List<Object>) metadataObj;
+              metadata = new NamedList<>(list.size()/2);
+              for (int i = 0; i < list.size(); i+=2) {
+                metadata.add((String)list.get(i), (String) list.get(i+1));
+              }
+            } else if (metadataObj instanceof Map) {
+              metadata = new NamedList((Map) metadataObj);
+            }
           }
         } catch (Exception ex) {}
         if (reason == null) {
@@ -755,10 +763,7 @@ public class Http2SolrClient extends SolrClient {
               .append("\n\n")
               .append("request: ")
               .append(response.getRequest().getMethod());
-          try {
-            reason = java.net.URLDecoder.decode(msg.toString(), UTF_8);
-          } catch (UnsupportedEncodingException e) {
-          }
+          reason = java.net.URLDecoder.decode(msg.toString(), FALLBACK_CHARSET);
         }
         RemoteSolrException rss = new RemoteSolrException(serverBaseUrl, httpStatus, reason, null);
         if (metadata != null) rss.setMetadata(metadata);

@@ -21,6 +21,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -29,7 +30,6 @@ import java.util.Set;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
@@ -46,17 +46,35 @@ public class SnapshotClusterStateProvider implements ClusterStateProvider {
   public SnapshotClusterStateProvider(ClusterStateProvider other) throws Exception {
     liveNodes = Set.copyOf(other.getLiveNodes());
     ClusterState otherState = other.getClusterState();
-    clusterState = new ClusterState(otherState.getZNodeVersion(), liveNodes, otherState.getCollectionsMap());
+    clusterState = new ClusterState(liveNodes, otherState.getCollectionsMap());
     clusterProperties = new HashMap<>(other.getClusterProperties());
   }
 
+  @SuppressWarnings({"unchecked"})
   public SnapshotClusterStateProvider(Map<String, Object> snapshot) {
     Objects.requireNonNull(snapshot);
     liveNodes = Set.copyOf((Collection<String>)snapshot.getOrDefault("liveNodes", Collections.emptySet()));
     clusterProperties = (Map<String, Object>)snapshot.getOrDefault("clusterProperties", Collections.emptyMap());
     Map<String, Object> stateMap = new HashMap<>((Map<String, Object>)snapshot.getOrDefault("clusterState", Collections.emptyMap()));
-    Number version = (Number)stateMap.remove("version");
-    clusterState = ClusterState.load(version != null ? version.intValue() : null, stateMap, liveNodes, ZkStateReader.CLUSTER_STATE);
+    Map<String, DocCollection> collectionStates = new HashMap<>();
+    // back-compat with format = 1
+    Integer stateVersion = Integer.valueOf(String.valueOf(stateMap.getOrDefault("version", 0)));
+    stateMap.remove("version");
+    stateMap.forEach((name, state) -> {
+      Map<String, Object> mutableState = (Map<String, Object>)state;
+      Map<String, Object> collMap = (Map<String, Object>) mutableState.get(name);
+      if (collMap == null) {
+        // snapshot in format 1
+        collMap = mutableState;
+        mutableState = Collections.singletonMap(name, state);
+      }
+      int version = Integer.parseInt(String.valueOf(collMap.getOrDefault("zNodeVersion", stateVersion)));
+      collMap.remove("zNodeVersion");
+      byte[] data = Utils.toJSON(mutableState);
+      ClusterState collState = ClusterState.createFromJson(version, data, Collections.emptySet());
+      collectionStates.put(name, collState.getCollection(name));
+    });
+    clusterState = new ClusterState(liveNodes, collectionStates);
   }
 
   public Map<String, Object> getSnapshot() {
@@ -67,14 +85,18 @@ public class SnapshotClusterStateProvider implements ClusterStateProvider {
     }
     Map<String, Object> stateMap = new HashMap<>();
     snapshot.put("clusterState", stateMap);
-    stateMap.put("version", clusterState.getZNodeVersion());
     clusterState.forEachCollection(coll -> {
       CharArr out = new CharArr();
       JSONWriter writer = new JSONWriter(out, 2);
       coll.write(writer);
       String json = out.toString();
       try {
-        stateMap.put(coll.getName(), Utils.fromJSON(json.getBytes("UTF-8")));
+        @SuppressWarnings({"unchecked"})
+        Map<String, Object> collMap = new LinkedHashMap<>((Map<String, Object>)Utils.fromJSON(json.getBytes("UTF-8")));
+        collMap.put("zNodeVersion", coll.getZNodeVersion());
+        // format compatible with the real /state.json, which uses a mini-ClusterState
+        // consisting of a single collection
+        stateMap.put(coll.getName(), Collections.singletonMap(coll.getName(), collMap));
       } catch (UnsupportedEncodingException e) {
         throw new RuntimeException("should not happen!", e);
       }

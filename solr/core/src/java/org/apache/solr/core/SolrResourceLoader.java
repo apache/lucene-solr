@@ -16,12 +16,8 @@
  */
 package org.apache.solr.core;
 
-import java.io.Closeable;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import com.google.common.annotations.VisibleForTesting;
+import java.io.*;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.net.MalformedURLException;
@@ -34,24 +30,13 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.lucene.analysis.WordlistLoader;
-import org.apache.lucene.analysis.util.CharFilterFactory;
-import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
-import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.analysis.util.*;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
@@ -150,10 +135,10 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
    */
   public SolrResourceLoader(Path instanceDir, ClassLoader parent) {
     if (instanceDir == null) {
-      this.instanceDir = SolrPaths.locateSolrHome().toAbsolutePath().normalize();
+      this.instanceDir = SolrPaths.locateSolrHome();
       log.debug("new SolrResourceLoader for deduced Solr Home: '{}'", this.instanceDir);
     } else {
-      this.instanceDir = instanceDir.toAbsolutePath().normalize();
+      this.instanceDir = instanceDir;
       log.debug("new SolrResourceLoader for directory: '{}'", this.instanceDir);
     }
 
@@ -353,11 +338,11 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   public String resourceLocation(String resource) {
     Path inConfigDir = getInstancePath().resolve("conf").resolve(resource);
     if (Files.exists(inConfigDir) && Files.isReadable(inConfigDir))
-      return inConfigDir.toAbsolutePath().normalize().toString();
+      return inConfigDir.normalize().toString();
 
     Path inInstanceDir = getInstancePath().resolve(resource);
     if (Files.exists(inInstanceDir) && Files.isReadable(inInstanceDir))
-      return inInstanceDir.toAbsolutePath().normalize().toString();
+      return inInstanceDir.normalize().toString();
 
     try (InputStream is = classLoader.getResourceAsStream(resource.replace(File.separatorChar, '/'))) {
       if (is != null)
@@ -520,13 +505,14 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
     }
   }
 
-  static final String empty[] = new String[0];
+  static final String[] empty = new String[0];
 
   @Override
   public <T> T newInstance(String name, Class<T> expectedType) {
     return newInstance(name, expectedType, empty);
   }
 
+  @SuppressWarnings({"rawtypes"})
   private static final Class[] NO_CLASSES = new Class[0];
   private static final Object[] NO_OBJECTS = new Object[0];
 
@@ -534,11 +520,12 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
     return newInstance(cname, expectedType, subpackages, NO_CLASSES, NO_OBJECTS);
   }
 
+  @SuppressWarnings({"rawtypes"})
   public <T> T newInstance(String cName, Class<T> expectedType, String[] subPackages, Class[] params, Object[] args) {
     Class<? extends T> clazz = findClass(cName, expectedType, subPackages);
     if (clazz == null) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Can not find class: " + cName + " in " + classLoader);
+              "Can not find class: " + cName + " in " + classLoader);
     }
 
     T obj = null;
@@ -566,25 +553,50 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
 
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Error instantiating class: '" + clazz.getName() + "'", e);
+              "Error instantiating class: '" + clazz.getName() + "'", e);
     }
 
-    if (!live) {
-      if (obj instanceof SolrCoreAware) {
-        assertAwareCompatibility(SolrCoreAware.class, obj);
-        waitingForCore.add((SolrCoreAware) obj);
-      }
-      if (obj instanceof ResourceLoaderAware) {
-        assertAwareCompatibility(ResourceLoaderAware.class, obj);
-        waitingForResources.add((ResourceLoaderAware) obj);
-      }
+    addToCoreAware(obj);
+    addToResourceLoaderAware(obj);
+    addToInfoBeans(obj);
+    return obj;
+  }
+
+  public <T> void addToInfoBeans(T obj) {
+    if(!live) {
       if (obj instanceof SolrInfoBean) {
         //TODO: Assert here?
         infoMBeans.add((SolrInfoBean) obj);
       }
     }
+  }
 
-    return obj;
+  public <T> boolean addToResourceLoaderAware(T obj) {
+    if (!live) {
+      if (obj instanceof ResourceLoaderAware) {
+        assertAwareCompatibility(ResourceLoaderAware.class, obj);
+        waitingForResources.add((ResourceLoaderAware) obj);
+      }
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  /** the inform() callback should be invoked on the listener.
+   * If this is 'live', the callback is not called so currently this returns 'false'
+   *
+   */
+  public <T> boolean addToCoreAware(T obj) {
+    if (!live) {
+      if (obj instanceof SolrCoreAware) {
+        assertAwareCompatibility(SolrCoreAware.class, obj);
+        waitingForCore.add((SolrCoreAware) obj);
+      }
+      return true;
+    } else {
+      return false;
+    }
   }
 
 
@@ -661,14 +673,8 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   }
 
   /**
-   * Determines the solrhome from the environment.
-   * Tries JNDI (java:comp/env/solr/home) then system property (solr.solr.home);
-   * if both fail, defaults to solr/
-   * @return the instance directory name
-   */
-
-  /**
-   * @return the instance path for this resource loader
+   * The instance path for this resource loader, as passed in from the constructor.
+   * It's absolute when this is for Solr Home or a Solr Core instance dir.
    */
   public Path getInstancePath() {
     return instanceDir;
@@ -677,12 +683,13 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   /**
    * Keep a list of classes that are allowed to implement each 'Aware' interface
    */
+  @SuppressWarnings({"rawtypes"})
   private static final Map<Class, Class[]> awareCompatibility;
 
   static {
     awareCompatibility = new HashMap<>();
     awareCompatibility.put(
-        SolrCoreAware.class, new Class[]{
+        SolrCoreAware.class, new Class<?>[]{
             // DO NOT ADD THINGS TO THIS LIST -- ESPECIALLY THINGS THAT CAN BE CREATED DYNAMICALLY
             // VIA RUNTIME APIS -- UNTILL CAREFULLY CONSIDERING THE ISSUES MENTIONED IN SOLR-8311
             CodecFactory.class,
@@ -698,7 +705,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
     );
 
     awareCompatibility.put(
-        ResourceLoaderAware.class, new Class[]{
+        ResourceLoaderAware.class, new Class<?>[]{
             // DO NOT ADD THINGS TO THIS LIST -- ESPECIALLY THINGS THAT CAN BE CREATED DYNAMICALLY
             // VIA RUNTIME APIS -- UNTILL CAREFULLY CONSIDERING THE ISSUES MENTIONED IN SOLR-8311
             CharFilterFactory.class,
@@ -713,7 +720,8 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   /**
    * Utility function to throw an exception if the class is invalid
    */
-  static void assertAwareCompatibility(Class aware, Object obj) {
+  @SuppressWarnings({"rawtypes"})
+  public static void assertAwareCompatibility(Class aware, Object obj) {
     Class[] valid = awareCompatibility.get(aware);
     if (valid == null) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,

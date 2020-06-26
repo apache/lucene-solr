@@ -190,7 +190,8 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     }
   }
 
-  private void initReplicaListTransformers(NamedList routingConfig) {
+  @SuppressWarnings({"unchecked"})
+  private void initReplicaListTransformers(@SuppressWarnings({"rawtypes"})NamedList routingConfig) {
     String defaultRouting = null;
     ReplicaListTransformerFactory stableRltFactory = null;
     ReplicaListTransformerFactory defaultRltFactory;
@@ -231,6 +232,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   @Override
   public void init(PluginInfo info) {
     StringBuilder sb = new StringBuilder();
+    @SuppressWarnings({"rawtypes"})
     NamedList args = info.initArgs;
     this.scheme = getParameter(args, INIT_URL_SCHEME, null,sb);
     if(StringUtils.endsWith(this.scheme, "://")) {
@@ -309,9 +311,10 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     clientBuilderPlugin.setup(defaultClient);
   }
 
-  protected <T> T getParameter(NamedList initArgs, String configKey, T defaultValue, StringBuilder sb) {
+  protected <T> T getParameter(@SuppressWarnings({"rawtypes"})NamedList initArgs, String configKey, T defaultValue, StringBuilder sb) {
     T toReturn = defaultValue;
     if (initArgs != null) {
+      @SuppressWarnings({"unchecked"})
       T temp = (T) initArgs.get(configKey);
       toReturn = (temp != null) ? temp : defaultValue;
     }
@@ -375,6 +378,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   protected ReplicaListTransformer getReplicaListTransformer(final SolrQueryRequest req) {
     final SolrParams params = req.getParams();
     final SolrCore core = req.getCore(); // explicit check for null core (temporary?, for tests)
+    @SuppressWarnings("resource")
     ZkController zkController = core == null ? null : core.getCoreContainer().getZkController();
     if (zkController != null) {
       return requestReplicaListTransformerGenerator.getReplicaListTransformer(

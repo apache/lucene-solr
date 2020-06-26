@@ -260,7 +260,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
       maxVersionBefore = ulog.getCurrentMaxVersion();
     }
     assertNotNull("max version bucket seed not set for core " + coreName, maxVersionBefore);
-    log.info("Looked up max version bucket seed "+maxVersionBefore+" for core "+coreName);
+    log.info("Looked up max version bucket seed {} for core {}", maxVersionBefore, coreName);
 
     // now up the stakes and do more docs
     int numDocs = TEST_NIGHTLY ? 1000 : 105;
@@ -296,15 +296,15 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     try (SolrCore core = coreContainer.getCore(coreName)) {
       assertNotNull("Core '" + coreName + "' not found for replica: " + notLeader.getName(), core);
       Long currentMaxVersion = core.getUpdateHandler().getUpdateLog().getCurrentMaxVersion();
-      log.info("After recovery, looked up NEW max version bucket seed " + currentMaxVersion +
-          " for core " + coreName + ", was: " + maxVersionBefore);
+      log.info("After recovery, looked up NEW max version bucket seed {} for core {}, was: {}"
+          , currentMaxVersion, coreName, maxVersionBefore);
       assertTrue("max version bucket seed not updated after recovery!", currentMaxVersion > maxVersionBefore);
     }
 
     // verify all docs received
     assertDocsExistInAllReplicas(notLeaders, testCollectionName, 1, numDocs + 3);
 
-    log.info("testRf2 succeeded ... deleting the "+testCollectionName+" collection");
+    log.info("testRf2 succeeded ... deleting the {} collection", testCollectionName);
 
     // try to clean up
     attemptCollectionDelete(cloudClient, testCollectionName);
@@ -374,13 +374,14 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     
     assertDocsExistInAllReplicas(notLeaders, testCollectionName, 1, 4);
 
-    log.info("testRf3 succeeded ... deleting the "+testCollectionName+" collection");
+    log.info("testRf3 succeeded ... deleting the {} collection", testCollectionName);
 
     // try to clean up
     attemptCollectionDelete(cloudClient, testCollectionName);
   }
 
   // test inspired by SOLR-6511
+  @SuppressWarnings({"try"})
   protected void testLeaderZkSessionLoss() throws Exception {
 
     String testCollectionName = "c8n_1x2_leader_session_loss";
@@ -433,7 +434,9 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
 
     // TODO: This test logic seems to be timing dependent and fails on Jenkins
     // need to come up with a better approach
-    log.info("Sending doc 2 to old leader "+leader.getName());
+    if (log.isInfoEnabled()) {
+      log.info("Sending doc 2 to old leader {}", leader.getName());
+    }
     try ( HttpSolrClient leaderSolr = getHttpSolrClient(leader, testCollectionName)) {
     
       leaderSolr.add(doc);
@@ -458,7 +461,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     waitToSeeReplicasActive(testCollectionName, "shard1", replicasToCheck, 30);
     assertDocsExistInAllReplicas(participatingReplicas, testCollectionName, 1, 2);
 
-    log.info("testLeaderZkSessionLoss succeeded ... deleting the "+testCollectionName+" collection");
+    log.info("testLeaderZkSessionLoss succeeded ... deleting the {} collection", testCollectionName);
 
     // try to clean up
     attemptCollectionDelete(cloudClient, testCollectionName);
@@ -565,12 +568,14 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   }
 
   protected void assertDocNotExists(HttpSolrClient solr, String coll, String docId) throws Exception {
+    @SuppressWarnings({"rawtypes"})
     NamedList rsp = realTimeGetDocId(solr, docId);
     String match = JSONTestUtil.matchObj("/id", rsp.get("doc"), Integer.valueOf(docId));
     assertTrue("Doc with id=" + docId + " is found in " + solr.getBaseURL()
         + " due to: " + match + "; rsp="+rsp, match != null);
   }
 
+  @SuppressWarnings({"rawtypes"})
   private NamedList realTimeGetDocId(HttpSolrClient solr, String docId) throws SolrServerException, IOException {
     QueryRequest qr = new QueryRequest(params("qt", "/get", "id", docId, "distrib", "false"));
     return solr.request(qr);
@@ -609,7 +614,9 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
 
         final Replica.State state = replica.getState();
         if (state != Replica.State.ACTIVE) {
-          log.info("Replica " + replica.getName() + " is currently " + state);
+          if (log.isInfoEnabled()) {
+            log.info("Replica {} is currently {}", replica.getName(), state);
+          }
           allReplicasUp = false;
         }
       }
@@ -626,7 +633,9 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
       fail("Didn't see replicas "+ replicasToCheck +
           " come up within " + maxWaitMs + " ms! ClusterState: " + printClusterStateInfo(testCollectionName));
 
-    log.info("Took {} ms to see replicas [{}] become active.", timer.getTime(), replicasToCheck);
+    if (log.isInfoEnabled()) {
+      log.info("Took {} ms to see replicas [{}] become active.", timer.getTime(), replicasToCheck);
+    }
   }
 
 }

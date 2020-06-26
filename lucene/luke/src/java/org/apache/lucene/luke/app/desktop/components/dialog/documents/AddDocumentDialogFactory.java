@@ -357,15 +357,15 @@ public final class AddDocumentDialogFactory implements DialogOpener.DialogFactor
           doc.add(toIndexableField(nf));
         }
       } catch (NumberFormatException ex) {
-        log.error(ex.getMessage(), e);
+        log.error("Error converting field value", e);
         throw new LukeException("Invalid value: " + ex.getMessage(), ex);
       } catch (Exception ex) {
-        log.error(ex.getMessage(), e);
+        log.error("Error converting field value", e);
         throw new LukeException(ex.getMessage(), ex);
       }
 
       addDocument(doc);
-      log.info("Added document: {}", doc.toString());
+      log.info("Added document: {}", doc);
     }
 
     @SuppressWarnings("unchecked")

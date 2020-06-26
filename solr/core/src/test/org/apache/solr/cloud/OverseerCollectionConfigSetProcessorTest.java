@@ -267,6 +267,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
 
     when(workQueueMock.getTailId()).thenAnswer(invocation -> {
       Object result = null;
+      @SuppressWarnings({"rawtypes"})
       Iterator iter = queue.iterator();
       while(iter.hasNext()) {
         result = iter.next();
@@ -325,8 +326,6 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
       
       when(zkStateReaderMock.getBaseUrlForNodeName(address)).thenAnswer(invocation -> address.replaceAll("_", "/"));
     }
-
-    when(zkStateReaderMock.getClusterProperty("legacyCloud", "false")).thenReturn("false");
 
     when(solrZkClientMock.getZkClientTimeout()).thenReturn(30000);
     
@@ -743,7 +742,9 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
         overseerMock, completedMapMock, failureMapMock);
 
 
-    log.info("clusterstate " + clusterStateMock.hashCode());
+    if (log.isInfoEnabled()) {
+      log.info("clusterstate {}", clusterStateMock.hashCode());
+    }
 
     startComponentUnderTest();
     

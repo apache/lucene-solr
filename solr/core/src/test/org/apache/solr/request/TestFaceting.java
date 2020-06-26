@@ -27,7 +27,9 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.uninverting.DocTermOrds;
 import org.junit.After;
 import org.junit.BeforeClass;
@@ -930,6 +932,29 @@ public class TestFaceting extends SolrTestCaseJ4 {
         "//lst[@name='facet_fields']/lst[@name='title_ws']/int[1][@name='Book1']",
         "//lst[@name='facet_fields']/lst[@name='title_ws']/int[2][@name='Book2']",
         "//lst[@name='facet_fields']/lst[@name='title_ws']/int[3][@name='Book3']");
+  }
+  
+  @Test
+  public void testFacetCountsWithMinExactCount() throws Exception {
+    final int NUM_DOCS = 20;
+    for (int i = 0; i < NUM_DOCS ; i++) {
+      assertU(adoc("id", String.valueOf(i), "title_ws", "Book1"));
+      assertU(commit());
+    }
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("q", "title_ws:Book1");
+    params.set(FacetParams.FACET, "true");
+    params.set(FacetParams.FACET_FIELD, "title_ws");
+    assertQ(req(params),
+        "//lst[@name='facet_fields']/lst[@name='title_ws']/int[1][@name='Book1'][.='20']"
+        ,"//*[@numFoundExact='true']"
+        ,"//*[@numFound='" + NUM_DOCS + "']");
+    
+    // It doesn't matter if we request minExactCount, when requesting facets, the numFound value is precise
+    assertQ(req(params, CommonParams.MIN_EXACT_COUNT, "2", CommonParams.ROWS, "2"),
+        "//lst[@name='facet_fields']/lst[@name='title_ws']/int[1][@name='Book1'][.='20']"
+        ,"//*[@numFoundExact='true']"
+        ,"//*[@numFound='" + NUM_DOCS + "']");
   }
 }
 
