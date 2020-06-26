@@ -16,12 +16,12 @@
  limitations under the License.
 -->
 <schema name="rank_fields" version="1.6">
-	<fieldType name="string" class="solr.StrField" />
-	<fieldType name="rank" class="solr.RankField" />
-	<fields>
-		<field name="id" type="string" />
-		<field name="str_field" type="string" />
-		<field name="rank_1" type="rank" />
-		<field name="rank_mv" type="rank" multiValued="true"/>
-	</fields>
+    <fieldType name="string" class="solr.StrField" />
+    <fieldType name="rank" class="solr.RankField" />
+    <fields>
+        <field name="id" type="string" />
+        <field name="str_field" type="string" />
+        <field name="rank_1" type="rank" />
+        <field name="rank_mv" type="rank" multiValued="true"/>
+    </fields>
 </schema>
