@@ -451,7 +451,8 @@ public class Http2SolrClient extends SolrClient {
     }
   }
 
-  private NamedList<Object> processErrorsAndResponse(SolrRequest solrRequest, ResponseParser parser, Response response, InputStream is) throws SolrServerException {
+  private NamedList<Object> processErrorsAndResponse(@SuppressWarnings({"rawtypes"})SolrRequest solrRequest,
+                                                     ResponseParser parser, Response response, InputStream is) throws SolrServerException {
     ContentType contentType = getContentType(response);
     String mimeType = null;
     String encoding = null;
