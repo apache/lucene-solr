@@ -166,6 +166,8 @@ Improvements
   SOLR_HOME, SOLR_DATA_HOME or coreRootDir. Added new solr.xml config 'allowPaths', controlled by system property
   'solr.allowPaths' that allows you to add other allowed paths when needed.
 
+* SOLR-14354: HttpShardHandler send requests in async (Cao Manh Dat).
+
 Optimizations
 ---------------------
 * SOLR-8306: Do not collect expand documents when expand.rows=0 (Marshall Sanders, Amelia Henderson)
