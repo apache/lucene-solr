@@ -300,7 +300,7 @@ public final class CheckIndexDialogFactory implements DialogOpener.DialogFactory
             }
             status = st;
           } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            log.error("Error checking index", e);
             statusLbl.setText(MessageUtils.getLocalizedMessage("message.error.unknown"));
           }
         }

@@ -83,7 +83,7 @@ public final class IndexUtils {
           DirectoryReader dr = DirectoryReader.open(dir);
           readers.add(dr);
         } catch (IOException e) {
-          log.warn(e.getMessage(), e);
+          log.warn("Error opening directory", e);
         }
         return FileVisitResult.CONTINUE;
       }
@@ -142,7 +142,7 @@ public final class IndexUtils {
           dir = (Directory) constr.newInstance(path, null);
         }
       } catch (Exception e) {
-        log.warn(e.getMessage(), e);
+        log.warn("Invalid directory implementation class: {}", dirImpl, e);
         throw new IllegalArgumentException("Invalid directory implementation class: " + dirImpl);
       }
     }
@@ -161,7 +161,7 @@ public final class IndexUtils {
         log.info("Directory successfully closed.");
       }
     } catch (IOException e) {
-      log.error(e.getMessage(), e);
+      log.error("Error closing directory", e);
     }
   }
 
@@ -182,7 +182,7 @@ public final class IndexUtils {
         }
       }
     } catch (IOException e) {
-      log.error(e.getMessage(), e);
+      log.error("Error closing index reader", e);
     }
   }
 
