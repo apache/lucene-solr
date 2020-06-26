@@ -333,6 +333,8 @@ Build
 
 * LUCENE-9380: Fix auxiliary class warnings in Lucene (Erick Erickson)
 
+* LUCENE-9389: Enhance gradle logging calls validation: eliminate getMessage() (Andras Salamon via Erick Erickson)
+
 ======================= Lucene 8.5.2 =======================
 
 Optimizations

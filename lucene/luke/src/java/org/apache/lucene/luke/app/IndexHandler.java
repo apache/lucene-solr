@@ -68,7 +68,7 @@ public final class IndexHandler extends AbstractHandler<IndexObserver> {
     try {
       reader = IndexUtils.openIndex(indexPath, dirImpl);
     } catch (Exception e) {
-      log.error(e.getMessage(), e);
+      log.error("Error opening index", e);
       throw new LukeException(MessageUtils.getLocalizedMessage("openindex.message.index_path_invalid", indexPath), e);
     }
 
