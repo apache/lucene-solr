@@ -3391,7 +3391,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
             assert removed: "merge should be pending but isn't: " + merge.segString();
             abortOneMerge(merge);
             mergeFinish(merge);
-
           });
         }
       }
