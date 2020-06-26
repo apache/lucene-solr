@@ -478,13 +478,6 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
     return this;
   }
 
-  /** We only allow sorting on these types */
-  private static final EnumSet<SortField.Type> ALLOWED_INDEX_SORT_TYPES = EnumSet.of(SortField.Type.STRING,
-                                                                                     SortField.Type.LONG,
-                                                                                     SortField.Type.INT,
-                                                                                     SortField.Type.DOUBLE,
-                                                                                     SortField.Type.FLOAT);
-
   /**
    * Set the {@link Sort} order to use for all (flushed and merged) segments.
    */
