@@ -151,7 +151,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
         Overseer overseer,
         DistributedMap completedMap,
         DistributedMap failureMap) {
-      super(zkStateReader, myId, shardHandlerFactory, adminPath, new Stats(), overseer, new OverseerNodePrioritizer(zkStateReader, overseer.getStateUpdateQueue(), adminPath, shardHandlerFactory, null), workQueue, runningMap, completedMap, failureMap);
+      super(zkStateReader, myId, shardHandlerFactory, adminPath, new Stats(), overseer, new OverseerNodePrioritizer(zkStateReader, overseer.getStateUpdateQueue(), adminPath, shardHandlerFactory), workQueue, runningMap, completedMap, failureMap);
     }
     
     @Override
@@ -253,8 +253,6 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   
   protected Set<String> commonMocks(int liveNodesCount) throws Exception {
     when(shardHandlerFactoryMock.getShardHandler()).thenReturn(shardHandlerMock);
-    when(shardHandlerFactoryMock.getShardHandler(any(Http2SolrClient.class))).thenReturn(shardHandlerMock);
-    when(shardHandlerFactoryMock.getShardHandler(any(HttpClient.class))).thenReturn(shardHandlerMock);
     when(workQueueMock.peekTopN(anyInt(), any(), anyLong())).thenAnswer(invocation -> {
       Object result;
       int count = 0;

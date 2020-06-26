@@ -57,7 +57,7 @@ import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.client.solrj.util.Constants;
-import org.apache.solr.client.solrj.util.OnComplete;
+import org.apache.solr.client.solrj.util.AsyncListener;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.params.CommonParams;
@@ -371,12 +371,12 @@ public class Http2SolrClient extends SolrClient {
   private static final Exception CANCELLED_EXCEPTION = new Exception();
   private static final Cancellable FAILED_MAKING_REQUEST_CANCELLABLE = () -> {};
 
-  public Cancellable asyncRequest(SolrRequest solrRequest, String collection, OnComplete<NamedList<Object>> onComplete) {
+  public Cancellable asyncRequest(SolrRequest solrRequest, String collection, AsyncListener<NamedList<Object>> asyncListener) {
     Request req;
     try {
       req = makeRequest(solrRequest, collection);
     } catch (SolrServerException | IOException e) {
-      onComplete.onFailure(e);
+      asyncListener.onFailure(e);
       return FAILED_MAKING_REQUEST_CANCELLABLE;
     }
     final ResponseParser parser = solrRequest.getResponseParser() == null
@@ -393,13 +393,13 @@ public class Http2SolrClient extends SolrClient {
               assert ObjectReleaseTracker.track(is);
               try {
                 NamedList<Object> body = processErrorsAndResponse(response, parser, is, getEncoding(response), isV2ApiRequest(solrRequest));
-                onComplete.onSuccess(body);
+                asyncListener.onSuccess(body);
               } catch (RemoteSolrException e) {
                 if (SolrException.getRootCause(e) != CANCELLED_EXCEPTION) {
-                  onComplete.onFailure(e);
+                  asyncListener.onFailure(e);
                 }
               } catch (SolrServerException e) {
-                onComplete.onFailure(e);
+                asyncListener.onFailure(e);
               }
             });
           }
@@ -408,7 +408,7 @@ public class Http2SolrClient extends SolrClient {
           public void onFailure(Response response, Throwable failure) {
             super.onFailure(response, failure);
             if (failure != CANCELLED_EXCEPTION) {
-              onComplete.onFailure(new SolrServerException(failure.getMessage(), failure));
+              asyncListener.onFailure(new SolrServerException(failure.getMessage(), failure));
             }
           }
         });

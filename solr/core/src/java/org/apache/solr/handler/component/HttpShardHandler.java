@@ -30,14 +30,13 @@ import io.opentracing.Tracer;
 import io.opentracing.propagation.Format;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.LBHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.routing.ReplicaListTransformer;
 import org.apache.solr.client.solrj.util.Cancellable;
-import org.apache.solr.client.solrj.util.OnComplete;
+import org.apache.solr.client.solrj.util.AsyncListener;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
@@ -73,8 +72,7 @@ public class HttpShardHandler extends ShardHandler {
   private Http2SolrClient httpClient;
   private LBHttp2SolrClient lbClient;
 
-  public HttpShardHandler(HttpShardHandlerFactory httpShardHandlerFactory, Http2SolrClient httpClient) {
-    this.httpClient = httpClient;
+  public HttpShardHandler(HttpShardHandlerFactory httpShardHandlerFactory) {
     this.httpShardHandlerFactory = httpShardHandlerFactory;
     this.lbClient = httpShardHandlerFactory.loadbalancer;
     this.pending = new AtomicInteger(0);
@@ -163,8 +161,8 @@ public class HttpShardHandler extends ShardHandler {
     }
 
     // all variables that set inside this listener must be at least volatile
-    responseCancellableMap.put(srsp, this.lbClient.asyncReq(lbReq, new OnComplete<>() {
-      long startTime = System.nanoTime();
+    responseCancellableMap.put(srsp, this.lbClient.asyncReq(lbReq, new AsyncListener<>() {
+      volatile long startTime = System.nanoTime();
 
       @Override
       public void onStart() {
@@ -192,11 +190,6 @@ public class HttpShardHandler extends ShardHandler {
         responses.add(srsp);
       }
     }));
-  }
-
-  protected NamedList<Object> request(String url, SolrRequest req) throws IOException, SolrServerException {
-    req.setBasePath(url);
-    return httpClient.request(req);
   }
 
   /**

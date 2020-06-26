@@ -230,7 +230,7 @@ public class DeleteReplicaCmd implements Cmd {
               " with onlyIfDown='true', but state is '" + replica.getStr(ZkStateReader.STATE_PROP) + "'");
     }
 
-    ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseer.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient());
+    ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler();
     String core = replica.getStr(ZkStateReader.CORE_NAME_PROP);
     String asyncId = message.getStr(ASYNC);
 

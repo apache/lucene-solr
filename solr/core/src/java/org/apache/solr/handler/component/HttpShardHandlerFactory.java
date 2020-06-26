@@ -149,27 +149,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
    */
   @Override
   public ShardHandler getShardHandler() {
-    return getShardHandler(defaultClient);
-  }
-
-  /**
-   * Get {@link ShardHandler} that uses custom http client.
-   */
-  public ShardHandler getShardHandler(final Http2SolrClient httpClient){
-    return new HttpShardHandler(this, httpClient);
-  }
-
-  @Deprecated
-  public ShardHandler getShardHandler(final HttpClient httpClient) {
-    // a little hack for backward-compatibility when we are moving from apache http client to jetty client
-    return new HttpShardHandler(this, null) {
-      @Override
-      protected NamedList<Object> request(String url, SolrRequest req) throws IOException, SolrServerException {
-        try (SolrClient client = new HttpSolrClient.Builder(url).withHttpClient(httpClient).build()) {
-          return client.request(req);
-        }
-      }
-    };
+    return new HttpShardHandler(this);
   }
 
   /**

@@ -207,7 +207,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       List<Map<String, Object>> replicas = new ArrayList<>((repFactor - 1) * 2);
 
       @SuppressWarnings("deprecation")
-      ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseer.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient());
+      ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler();
 
 
       if (message.getBool(CommonAdminParams.SPLIT_BY_PREFIX, false)) {

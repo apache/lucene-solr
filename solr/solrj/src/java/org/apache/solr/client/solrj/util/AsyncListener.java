@@ -20,7 +20,7 @@ package org.apache.solr.client.solrj.util;
 /**
  * Listener for async requests
  */
-public interface OnComplete<T> {
+public interface AsyncListener<T> {
   /**
    * Callback method invoked before processing the request
    */

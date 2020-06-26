@@ -29,7 +29,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.util.Cancellable;
-import org.apache.solr.client.solrj.util.OnComplete;
+import org.apache.solr.client.solrj.util.AsyncListener;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 
@@ -121,19 +121,19 @@ public class MockingHttp2SolrClient extends Http2SolrClient {
   }
 
   @Override
-  public Cancellable asyncRequest(SolrRequest request, String collection, OnComplete<NamedList<Object>> onComplete) {
+  public Cancellable asyncRequest(SolrRequest request, String collection, AsyncListener<NamedList<Object>> asyncListener) {
     if (request instanceof UpdateRequest) {
       UpdateRequest ur = (UpdateRequest) request;
       // won't throw exception if request is DBQ
       if (ur.getDeleteQuery() != null && !ur.getDeleteQuery().isEmpty()) {
-        return super.asyncRequest(request, collection, onComplete);
+        return super.asyncRequest(request, collection, asyncListener);
       }
     }
 
     if (exp != null) {
       if (oneExpPerReq) {
         if (reqGotException.contains(request)) {
-          return super.asyncRequest(request, collection, onComplete);
+          return super.asyncRequest(request, collection, asyncListener);
         }
         else
           reqGotException.add(request);
@@ -145,9 +145,9 @@ public class MockingHttp2SolrClient extends Http2SolrClient {
           e = new SolrServerException(e);
         }
       }
-      onComplete.onFailure(e);
+      asyncListener.onFailure(e);
     }
 
-    return super.asyncRequest(request, collection, onComplete);
+    return super.asyncRequest(request, collection, asyncListener);
   }
 }
