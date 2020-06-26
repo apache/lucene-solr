@@ -63,8 +63,53 @@ public class RankFieldTest extends SolrTestCaseJ4 {
         "id", "1",
         RANK_1, "1.2.3"
         ));
-
+    
     unIgnoreException("Expecting float");
+    
+    ignoreException("must be finite");
+    assertFailedU(adoc(
+        "id", "1",
+        RANK_1, Float.toString(Float.POSITIVE_INFINITY)
+        ));
+
+    assertFailedU(adoc(
+        "id", "1",
+        RANK_1, Float.toString(Float.NEGATIVE_INFINITY)
+        ));
+    
+    assertFailedU(adoc(
+        "id", "1",
+        RANK_1, Float.toString(Float.NaN)
+        ));
+    
+    unIgnoreException("must be finite");
+    
+    ignoreException("must be a positive");
+    assertFailedU(adoc(
+        "id", "1",
+        RANK_1, Float.toString(-0.0f)
+        ));
+
+    assertFailedU(adoc(
+        "id", "1",
+        RANK_1, Float.toString(-1f)
+        ));
+
+    assertFailedU(adoc(
+        "id", "1",
+        RANK_1, Float.toString(0.0f)
+        ));
+    unIgnoreException("must be a positive");
+  }
+  
+  public void testAddRandom() {
+    for (int i = 0 ; i < random().nextInt(TEST_NIGHTLY ? 10000 : 100); i++) {
+      assertU(adoc(
+          "id", String.valueOf(i),
+          RANK_1, Float.toString(random().nextFloat())
+          ));
+    }
+    assertU(commit());
   }
   
   public void testSkipEmpty() {
@@ -166,6 +211,24 @@ public class RankFieldTest extends SolrTestCaseJ4 {
         "//result/doc[2]/str[@name='id'][.='1']");
     
     assertQ(req("q", "str_field:foo _query_:{!rank f='" + RANK_2 + "' function='log' scalingFactor='1'}"),
+        "//*[@numFound='2']",
+        "//result/doc[1]/str[@name='id'][.='1']",
+        "//result/doc[2]/str[@name='id'][.='2']");
+    
+    assertQ(req("q", "foo",
+        "defType", "dismax",
+        "qf", "str_field^10",
+        "bq", "{!rank f='" + RANK_1 + "' function='log' scalingFactor='1'}"
+        ),
+        "//*[@numFound='2']",
+        "//result/doc[1]/str[@name='id'][.='2']",
+        "//result/doc[2]/str[@name='id'][.='1']");
+    
+    assertQ(req("q", "foo",
+        "defType", "dismax",
+        "qf", "str_field^10",
+        "bq", "{!rank f='" + RANK_2 + "' function='log' scalingFactor='1'}"
+        ),
         "//*[@numFound='2']",
         "//result/doc[1]/str[@name='id'][.='1']",
         "//result/doc[2]/str[@name='id'][.='2']");
