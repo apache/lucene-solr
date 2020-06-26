@@ -22,6 +22,6 @@
         <field name="id" type="string" />
         <field name="str_field" type="string" />
         <field name="rank_1" type="rank" />
-        <field name="rank_mv" type="rank" multiValued="true"/>
+        <field name="rank_2" type="rank" />
     </fields>
 </schema>

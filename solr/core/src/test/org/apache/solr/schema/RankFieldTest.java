@@ -28,7 +28,7 @@ import org.junit.Ignore;
 public class RankFieldTest extends SolrTestCaseJ4 {
   
   private static final String RANK_1 = "rank_1";
-  private static final String RANK_MV = "rank_mv";
+  private static final String RANK_2 = "rank_2";
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -41,6 +41,11 @@ public class RankFieldTest extends SolrTestCaseJ4 {
     assertU(commit());
     super.setUp();
   }
+  
+  public void testInternalFieldName() {
+    assertEquals("RankField.INTERNAL_RANK_FIELD_NAME changed in an incompatible way",
+        "_internal_rank_field", RankField.INTERNAL_RANK_FIELD_NAME);
+  }
 
   public void testBasic() {
     assertNotNull(h.getCore().getLatestSchema().getFieldOrNull(RANK_1));
@@ -48,24 +53,18 @@ public class RankFieldTest extends SolrTestCaseJ4 {
   }
   
   public void testBadFormat() {
-    ignoreException("Expecting format to be");
+    ignoreException("Expecting float");
     assertFailedU(adoc(
         "id", "1",
-        RANK_1, "pagerank"
+        RANK_1, "foo"
         ));
+
     assertFailedU(adoc(
         "id", "1",
-        RANK_1, "123"
+        RANK_1, "1.2.3"
         ));
-    assertFailedU(adoc(
-        "id", "1",
-        RANK_1, "a:1:2"
-        ));
-    assertFailedU(adoc(
-        "id", "1",
-        RANK_1, "a:b"
-        ));
-    unIgnoreException("Expecting format to be");
+
+    unIgnoreException("Expecting float");
   }
   
   public void testSkipEmpty() {
@@ -78,7 +77,7 @@ public class RankFieldTest extends SolrTestCaseJ4 {
   public void testBasicAdd() throws IOException {
     assertU(adoc(
         "id", "testBasicAdd",
-        RANK_1, "pagerank:1"
+        RANK_1, "1"
         ));
     assertU(commit());
     //assert that the document made it in
@@ -86,18 +85,18 @@ public class RankFieldTest extends SolrTestCaseJ4 {
     h.getCore().withSearcher((searcher) -> {
       LeafReader reader = searcher.getIndexReader().getContext().leaves().get(0).reader();
       // assert that the field made it in
-      assertNotNull(reader.getFieldInfos().fieldInfo(RANK_1));
+      assertNotNull(reader.getFieldInfos().fieldInfo(RankField.INTERNAL_RANK_FIELD_NAME));
       // assert that the feature made it in
-      assertTrue(reader.terms(RANK_1).iterator().seekExact(new BytesRef("pagerank".getBytes(StandardCharsets.UTF_8))));
+      assertTrue(reader.terms(RankField.INTERNAL_RANK_FIELD_NAME).iterator().seekExact(new BytesRef(RANK_1.getBytes(StandardCharsets.UTF_8))));
       return null;
     });
   }
   
-  public void testMultiValueAdd() throws IOException {
+  public void testMultipleRankFields() throws IOException {
     assertU(adoc(
         "id", "testMultiValueAdd",
-        RANK_MV, "pagerank:1",
-        RANK_MV, "foo:2"
+        RANK_1, "1",
+        RANK_2, "2"
         ));
     assertU(commit());
     //assert that the document made it in
@@ -105,10 +104,10 @@ public class RankFieldTest extends SolrTestCaseJ4 {
     h.getCore().withSearcher((searcher) -> {
       LeafReader reader = searcher.getIndexReader().getContext().leaves().get(0).reader();
       // assert that the field made it in
-      assertNotNull(reader.getFieldInfos().fieldInfo(RANK_MV));
+      assertNotNull(reader.getFieldInfos().fieldInfo(RankField.INTERNAL_RANK_FIELD_NAME));
       // assert that the features made it in
-      assertTrue(reader.terms(RANK_MV).iterator().seekExact(new BytesRef("pagerank".getBytes(StandardCharsets.UTF_8))));
-      assertTrue(reader.terms(RANK_MV).iterator().seekExact(new BytesRef("foo".getBytes(StandardCharsets.UTF_8))));
+      assertTrue(reader.terms(RankField.INTERNAL_RANK_FIELD_NAME).iterator().seekExact(new BytesRef(RANK_2.getBytes(StandardCharsets.UTF_8))));
+      assertTrue(reader.terms(RankField.INTERNAL_RANK_FIELD_NAME).iterator().seekExact(new BytesRef(RANK_1.getBytes(StandardCharsets.UTF_8))));
       return null;
     });
   }
@@ -116,7 +115,7 @@ public class RankFieldTest extends SolrTestCaseJ4 {
   public void testSortFails() throws IOException {
     assertU(adoc(
         "id", "testSortFails",
-        RANK_1, "pagerank:1"
+        RANK_1, "1"
         ));
     assertU(commit());
     assertQEx("Can't sort on rank field", req(
@@ -128,7 +127,7 @@ public class RankFieldTest extends SolrTestCaseJ4 {
   public void testFacetFails() throws IOException {
     assertU(adoc(
         "id", "testFacetFails",
-        RANK_1, "pagerank:1"
+        RANK_1, "1"
         ));
     assertU(commit());
     assertQEx("Can't facet on rank field", req(
@@ -137,7 +136,7 @@ public class RankFieldTest extends SolrTestCaseJ4 {
         "facet.field", RANK_1), 400);
   }
   
-  
+  @Ignore //nocommit
   public void testTermQuery() throws IOException {
     assertU(adoc(
         "id", "testTermQuery",
@@ -151,22 +150,22 @@ public class RankFieldTest extends SolrTestCaseJ4 {
     assertU(adoc(
         "id", "1",
         "str_field", "foo",
-        RANK_1, "pagerank:1",
-        RANK_MV, "pagerank:2"
+        RANK_1, "1",
+        RANK_2, "2"
         ));
     assertU(adoc(
         "id", "2",
         "str_field", "foo",
-        RANK_1, "pagerank:2",
-        RANK_MV, "pagerank:1"
+        RANK_1, "2",
+        RANK_2, "1"
         ));
     assertU(commit());
-    assertQ(req("q", "str_field:foo _query_:{!rank f='" + RANK_1 + "' function='log' scalingFactor='1'}pagerank"),
+    assertQ(req("q", "str_field:foo _query_:{!rank f='" + RANK_1 + "' function='log' scalingFactor='1'}"),
         "//*[@numFound='2']",
         "//result/doc[1]/str[@name='id'][.='2']",
         "//result/doc[2]/str[@name='id'][.='1']");
     
-    assertQ(req("q", "str_field:foo _query_:{!rank f='" + RANK_MV + "' function='log' scalingFactor='1'}pagerank"),
+    assertQ(req("q", "str_field:foo _query_:{!rank f='" + RANK_2 + "' function='log' scalingFactor='1'}"),
         "//*[@numFound='2']",
         "//result/doc[1]/str[@name='id'][.='1']",
         "//result/doc[2]/str[@name='id'][.='2']");

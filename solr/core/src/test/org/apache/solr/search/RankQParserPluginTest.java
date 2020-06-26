@@ -31,6 +31,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.RankField;
 import org.apache.solr.search.RankQParserPlugin.RankQParser;
 import org.hamcrest.CoreMatchers;
 import org.junit.BeforeClass;
@@ -62,32 +63,26 @@ public class RankQParserPluginTest extends SolrTestCaseJ4 {
   
   public void testSyntaxErrors() throws IOException, SyntaxError {
     assertSyntaxError("No Field", "Field can't be empty", () ->
-      getRankQParser("pagerank", new ModifiableSolrParams(), null, req()).parse());
+      getRankQParser(new ModifiableSolrParams(), null, req()).parse());
     assertSyntaxError("Field empty", "Field can't be empty", () ->
-      getRankQParser("pagerank",
+      getRankQParser(
           params(FIELD, ""), null, req()).parse());
     assertSyntaxError("Field doesn't exist", "Field \"foo\" not found", () ->
-      getRankQParser("pagerank",
+      getRankQParser(
           params(FIELD, "foo"), null, req()).parse());
-    assertSyntaxError("Feature can't be empty", "Feature can't be empty", () ->
-      getRankQParser("",
-          params(FIELD, "rank_1"), null, req()).parse());
-    assertSyntaxError("Feature can't be empty", "Feature can't be empty", () ->
-      getRankQParser("",
-          params(FIELD, "rank_1"), null, req()).parse());
     assertSyntaxError("ID is not a feature field", "Field \"id\" is not a RankField", () ->
-    getRankQParser("pagerank",
+    getRankQParser(
         params(FIELD, "id"), null, req()).parse());
   }
   
   public void testBadLogParameters() throws IOException, SyntaxError {
     assertSyntaxError("Expecting bad weight", "weight must be in", () ->
-      getRankQParser("pagerank",
+      getRankQParser(
           params(FIELD, "rank_1",
                  FUNCTION, "log",
                  WEIGHT, "0"), null, req()).parse());
     assertSyntaxError("Expecting bad scaling factor", "scalingFactor must be", () ->
-      getRankQParser("pagerank",
+      getRankQParser(
           params(FIELD, "rank_1",
                  FUNCTION, "log",
                  SCALING_FACTOR, "0"), null, req()).parse());
@@ -95,12 +90,12 @@ public class RankQParserPluginTest extends SolrTestCaseJ4 {
   
   public void testBadSaturationParameters() throws IOException, SyntaxError {
     assertSyntaxError("Expecting a pivot value", "A pivot value", () ->
-      getRankQParser("pagerank", 
+      getRankQParser(
           params(FIELD, "rank_1", 
                  FUNCTION, "satu",
                  WEIGHT, "2"), null, req()).parse());
     assertSyntaxError("Expecting bad weight", "weight must be in", () ->
-      getRankQParser("pagerank",
+      getRankQParser(
           params(FIELD, "rank_1",
                  FUNCTION, "satu",
                  PIVOT, "1", 
@@ -108,71 +103,64 @@ public class RankQParserPluginTest extends SolrTestCaseJ4 {
   }
   
   public void testBadSigmoidParameters() throws IOException, SyntaxError {
-    assertSyntaxError("Expecting bad weight", "A pivot value", () ->
-      getRankQParser("pagerank", 
+    assertSyntaxError("Expecting missing pivot", "A pivot value", () ->
+      getRankQParser(
           params(FIELD, "rank_1", 
                  FUNCTION, "sigm",
                  EXPONENT, "1"), null, req()).parse());
-    assertSyntaxError("Expecting bad weight", "An exponent value", () ->
-    getRankQParser("pagerank", 
+    assertSyntaxError("Expecting missing exponent", "An exponent value", () ->
+    getRankQParser(
         params(FIELD, "rank_1", 
                FUNCTION, "sigm",
                PIVOT, "1"), null, req()).parse());
     assertSyntaxError("Expecting bad weight", "weight must be in", () ->
-      getRankQParser("pagerank",
+      getRankQParser(
           params(FIELD, "rank_1",
                  FUNCTION, "sigm",
                  PIVOT, "1",
                  EXPONENT, "1",
                  WEIGHT, "-1"), null, req()).parse());
     assertSyntaxError("Expecting bad pivot", "pivot must be", () ->
-    getRankQParser("pagerank",
+    getRankQParser(
         params(FIELD, "rank_1",
                FUNCTION, "sigm",
                PIVOT, "0",
                EXPONENT, "1"), null, req()).parse());
     assertSyntaxError("Expecting bad exponent", "exp must be", () ->
-    getRankQParser("pagerank",
+    getRankQParser(
         params(FIELD, "rank_1",
                FUNCTION, "sigm",
                PIVOT, "1", 
                EXPONENT, "0"), null, req()).parse());
-    assertSyntaxError("Expecting bad weight", "weight must be", () ->
-      getRankQParser("pagerank",
-          params(FIELD, "rank_1",
-                 FUNCTION, "sigm",
-                 PIVOT, "1", 
-                 EXPONENT, "1",
-                 WEIGHT, "-1"), null, req()).parse());
   }
   
   public void testUnknownFunction() throws IOException, SyntaxError {
     assertSyntaxError("Expecting bad function", "Unknown function in rank query: \"foo\"", () ->
-      getRankQParser("pagerank",
+      getRankQParser(
           params(FIELD, "rank_1",
                  FUNCTION, "foo"), null, req()).parse());
   }
   
   public void testParseLog() throws IOException, SyntaxError {
-    assertValidRankQuery(expectedFeatureQueryToString("rank_1", "pagerank", expectedLogToString(1), 1), 
+    assertValidRankQuery(expectedFeatureQueryToString("rank_1", expectedLogToString(1), 1), 
         params(FIELD, "rank_1",
                FUNCTION, "log",
                SCALING_FACTOR, "1", 
                WEIGHT, "1"));
     
-    assertValidRankQuery(expectedFeatureQueryToString("rank_1", "pagerank", expectedLogToString(2.5f), 1), 
+    assertValidRankQuery(expectedFeatureQueryToString("rank_1", expectedLogToString(2.5f), 1), 
         params(FIELD, "rank_1",
                FUNCTION, "log",
                SCALING_FACTOR, "2.5", 
                WEIGHT, "1"));
     
-    assertValidRankQuery(expectedFeatureQueryToString("rank_1", "pagerank", expectedLogToString(1), 2.5f), 
+    assertValidRankQuery(expectedFeatureQueryToString("rank_1", expectedLogToString(1), 2.5f), 
         params(FIELD, "rank_1",
                FUNCTION, "log",
                SCALING_FACTOR, "1", 
                WEIGHT, "2.5"));
     
-    assertValidRankQuery(expectedFeatureQueryToString("rank_1", "pagerank", expectedLogToString(1), 2.5f), 
+    assertValidRankQuery(expectedFeatureQueryToString("rank_1", expectedLogToString(1), 2.5f), 
         params(FIELD, "rank_1",
                FUNCTION, "Log", //use different case
                SCALING_FACTOR, "1", 
@@ -180,14 +168,14 @@ public class RankQParserPluginTest extends SolrTestCaseJ4 {
   }
   
   public void testParseSigm() throws IOException, SyntaxError {
-    assertValidRankQuery(expectedFeatureQueryToString("rank_1", "pagerank", expectedSigmoidToString(1.5f, 2f), 1), 
+    assertValidRankQuery(expectedFeatureQueryToString("rank_1", expectedSigmoidToString(1.5f, 2f), 1), 
         params(FIELD, "rank_1",
                FUNCTION, "sigm",
                PIVOT, "1.5", 
                EXPONENT, "2",
                WEIGHT, "1"));
     
-    assertValidRankQuery(expectedFeatureQueryToString("rank_1", "pagerank", expectedSigmoidToString(1.5f, 2f), 2),
+    assertValidRankQuery(expectedFeatureQueryToString("rank_1", expectedSigmoidToString(1.5f, 2f), 2),
         params(FIELD, "rank_1",
                FUNCTION, "sigm",
                PIVOT, "1.5", 
@@ -197,47 +185,47 @@ public class RankQParserPluginTest extends SolrTestCaseJ4 {
 
   public void testParseSatu() throws IOException, SyntaxError {
     
-    assertValidRankQuery(expectedFeatureQueryToString("rank_1", "pagerank", expectedSaturationToString(1.5f), 1), 
+    assertValidRankQuery(expectedFeatureQueryToString("rank_1", expectedSaturationToString(1.5f), 1), 
         params(FIELD, "rank_1",
                FUNCTION, "satu",
                PIVOT, "1.5", 
                WEIGHT, "1"));
     
-    assertValidRankQuery(expectedFeatureQueryToString("rank_1", "pagerank", expectedSaturationToString(1.5f), 2), 
+    assertValidRankQuery(expectedFeatureQueryToString("rank_1", expectedSaturationToString(1.5f), 2), 
         params(FIELD, "rank_1",
                FUNCTION, "satu",
                PIVOT, "1.5", 
                WEIGHT, "2"));
     
-    assertValidRankQuery(expectedFeatureQueryToString("rank_1", "pagerank", expectedSaturationToString(null), 1), 
+    assertValidRankQuery(expectedFeatureQueryToString("rank_1", expectedSaturationToString(null), 1), 
         params(FIELD, "rank_1",
                FUNCTION, "satu"));
     
-    assertValidRankQuery(expectedFeatureQueryToString("rank_1", "pagerank", expectedSaturationToString(null), 1), 
+    assertValidRankQuery(expectedFeatureQueryToString("rank_1", expectedSaturationToString(null), 1), 
         params(FIELD, "rank_1",
                FUNCTION, "satu",
                WEIGHT, "1"));
     
-    assertValidRankQuery(expectedFeatureQueryToString("rank_1", "pagerank", expectedSaturationToString(1.5f), 1), 
+    assertValidRankQuery(expectedFeatureQueryToString("rank_1", expectedSaturationToString(1.5f), 1), 
         params(FIELD, "rank_1",
                FUNCTION, "satu",
                PIVOT, "1.5"));
   }
   
   public void testParseDefault() throws IOException, SyntaxError {
-    assertValidRankQuery(expectedFeatureQueryToString("rank_1", "pagerank", expectedSaturationToString(null), 1), 
+    assertValidRankQuery(expectedFeatureQueryToString("rank_1", expectedSaturationToString(null), 1), 
         params(FIELD, "rank_1"));
   }
   
   private void assertValidRankQuery(String expctedToString, SolrParams localParams) throws IOException, SyntaxError {
-    QParser parser = getRankQParser("pagerank", localParams, null, req());
+    QParser parser = getRankQParser(localParams, null, req());
     Query q = parser.parse();
     assertNotNull(q);
     assertThat(q.toString(), CoreMatchers.equalTo(expctedToString));
   }
   
-  private String expectedFeatureQueryToString(String fieldName, String featureName, String function, float boost) {
-    String featureQueryStr = "FeatureQuery(field=" + fieldName + ", feature=" + featureName + ", function=" + function + ")";
+  private String expectedFeatureQueryToString(String fieldName, String function, float boost) {
+    String featureQueryStr = "FeatureQuery(field=" + RankField.INTERNAL_RANK_FIELD_NAME + ", feature=" + fieldName + ", function=" + function + ")";
     if (boost == 1f) {
       return featureQueryStr;
     }
@@ -261,9 +249,9 @@ public class RankQParserPluginTest extends SolrTestCaseJ4 {
     assertThat(se.getMessage(), CoreMatchers.containsString(expectedExceptionMsg));
   }
   
-  private RankQParser getRankQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) throws IOException {
+  private RankQParser getRankQParser(SolrParams localParams, SolrParams params, SolrQueryRequest req) throws IOException {
     try (RankQParserPlugin rankQPPlugin = new RankQParserPlugin()) {
-      return (RankQParser) rankQPPlugin.createParser(qstr, localParams, params, req);
+      return (RankQParser) rankQPPlugin.createParser("", localParams, params, req);
     }
   }
 

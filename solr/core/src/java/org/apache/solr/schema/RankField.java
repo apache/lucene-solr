@@ -22,14 +22,18 @@ import java.util.Map;
 import org.apache.lucene.document.FeatureField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexableFieldType;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.TermQuery;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.uninverting.UninvertingReader.Type;
 
 public class RankField extends FieldType {
+  
+  public static final String INTERNAL_RANK_FIELD_NAME = "_internal_rank_field";
 
   @Override
   public Type getUninversionType(SchemaField sf) {
@@ -43,6 +47,19 @@ public class RankField extends FieldType {
   @Override
   protected void init(IndexSchema schema, Map<String,String> args) {
     super.init(schema, args);
+    if (schema.getFieldOrNull(INTERNAL_RANK_FIELD_NAME) != null) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "A field named \"" + INTERNAL_RANK_FIELD_NAME + "\" can't be defined in the schema");
+    }
+    for (int prop:new int[] {STORED, DOC_VALUES, OMIT_TF_POSITIONS, SORT_MISSING_FIRST, SORT_MISSING_LAST}) {
+      if ((trueProperties & prop) != 0) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Property \"" + getPropertyName(prop) + "\" can't be set to true in RankFields");
+      }
+    }
+    for (int prop:new int[] {UNINVERTIBLE, INDEXED, MULTIVALUED}) {
+      if ((falseProperties & prop) != 0) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Property \"" + getPropertyName(prop) + "\" can't be set to false in RankFields");
+      }
+    }
     properties &= ~(UNINVERTIBLE | STORED | DOC_VALUES);
     
   }
@@ -52,22 +69,18 @@ public class RankField extends FieldType {
     if (val == null || val.isEmpty()) {
       return null;
     }
-    String[] parts = val.split(":");
-    if (parts.length != 2) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error while creating field '" + name + "' from value '" + val + "'. Expecting format to be 'feature:value'");
-    }
     float featureValue;
     try {
-      featureValue = Float.parseFloat(parts[1]);
+      featureValue = Float.parseFloat(val);
     } catch (NumberFormatException nfe) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error while creating field '" + name + "' from value '" + val + "'. Expecting format to be 'feature:value'", nfe);
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error while creating field '" + name + "' from value '" + val + "'. Expecting float.", nfe);
     }
-    return new FeatureField(name, parts[0], featureValue);
+    return new FeatureField(INTERNAL_RANK_FIELD_NAME, name, featureValue);
   }
 
   @Override
   public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
-    return super.getFieldQuery(parser, field, externalVal);
+    return new TermQuery(new Term(INTERNAL_RANK_FIELD_NAME, field.getName()));//nocommit: This would be weird
   }
 
   @Override

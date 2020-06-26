@@ -41,12 +41,12 @@ public class RankQParserPlugin extends QParserPlugin {
   private enum FeatureFieldFunction {
     SATU {
       @Override
-      public Query createQuery(String fieldName, String featureName, SolrParams params) throws SyntaxError {
+      public Query createQuery(String fieldName, SolrParams params) throws SyntaxError {
         Float weight = params.getFloat(WEIGHT);
         Float pivot = params.getFloat(PIVOT);
         if (pivot == null && (weight == null || Float.compare(weight.floatValue(), 1f) == 0)) {
           // No IAE expected in this case
-          return FeatureField.newSaturationQuery(fieldName, featureName);
+          return FeatureField.newSaturationQuery(RankField.INTERNAL_RANK_FIELD_NAME, fieldName);
         }
         if (pivot == null) {
           throw new SyntaxError("A pivot value needs to be provided if the weight is not 1 on \"satu\" function");
@@ -55,7 +55,7 @@ public class RankQParserPlugin extends QParserPlugin {
           weight = Float.valueOf(1);
         }
         try {
-          return FeatureField.newSaturationQuery(fieldName, featureName, weight, pivot);
+          return FeatureField.newSaturationQuery(RankField.INTERNAL_RANK_FIELD_NAME, fieldName, weight, pivot);
         } catch (IllegalArgumentException iae) {
           throw new SyntaxError(iae.getMessage());
         }
@@ -63,11 +63,11 @@ public class RankQParserPlugin extends QParserPlugin {
     },
     LOG {
       @Override
-      public Query createQuery(String fieldName, String featureName, SolrParams params) throws SyntaxError {
+      public Query createQuery(String fieldName, SolrParams params) throws SyntaxError {
         float weight = params.getFloat(WEIGHT, 1f);
         float scalingFactor = params.getFloat(SCALING_FACTOR, 1f);
         try {
-          return FeatureField.newLogQuery(fieldName, featureName, weight, scalingFactor);
+          return FeatureField.newLogQuery(RankField.INTERNAL_RANK_FIELD_NAME, fieldName, weight, scalingFactor);
         } catch (IllegalArgumentException iae) {
           throw new SyntaxError(iae.getMessage());
         }
@@ -75,7 +75,7 @@ public class RankQParserPlugin extends QParserPlugin {
     },
     SIGM {
       @Override
-      public Query createQuery(String fieldName, String featureName, SolrParams params) throws SyntaxError {
+      public Query createQuery(String fieldName, SolrParams params) throws SyntaxError {
         float weight = params.getFloat(WEIGHT, 1f);
         Float pivot = params.getFloat(PIVOT);
         if (pivot == null) {
@@ -86,20 +86,19 @@ public class RankQParserPlugin extends QParserPlugin {
           throw new SyntaxError("An exponent value needs to be provided when using \"sigm\" function");
         }
         try {
-          return FeatureField.newSigmoidQuery(fieldName, featureName, weight, pivot, exponent);
+          return FeatureField.newSigmoidQuery(RankField.INTERNAL_RANK_FIELD_NAME, fieldName, weight, pivot, exponent);
         } catch (IllegalArgumentException iae) {
           throw new SyntaxError(iae.getMessage());
         }
       }
     };
     
-    public abstract Query createQuery(String fieldName, String featureName, SolrParams params) throws SyntaxError;
+    public abstract Query createQuery(String fieldName, SolrParams params) throws SyntaxError;
     
   }
 
   @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
-    Objects.requireNonNull(qstr, "Query String can't be null for rank queries");
     Objects.requireNonNull(localParams, "LocalParams String can't be null");
     Objects.requireNonNull(req, "SolrQueryRequest can't be null");
     return new RankQParser(qstr, localParams, params, req);
@@ -107,13 +106,11 @@ public class RankQParserPlugin extends QParserPlugin {
   
   public static class RankQParser extends QParser {
     
-    private final String feature;
     private final String field;
 
     public RankQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
       super(qstr, localParams, params, req);
       this.field = localParams.get(FIELD);
-      this.feature = qstr;
     }
 
     @Override
@@ -128,11 +125,8 @@ public class RankQParserPlugin extends QParserPlugin {
       if (!(schemaField.getType() instanceof RankField)) {
         throw new SyntaxError("Field \"" + this.field + "\" is not a RankField");
       }
-      if (feature == null || feature.isEmpty()) {
-        throw new SyntaxError("Feature can't be empty in rank queries");
-      }
       return getFeatureFieldFunction(localParams.get(FUNCTION))
-          .createQuery(field, feature, localParams);
+          .createQuery(field, localParams);
     }
 
     private FeatureFieldFunction getFeatureFieldFunction(String function) throws SyntaxError {
