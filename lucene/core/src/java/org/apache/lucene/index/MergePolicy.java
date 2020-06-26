@@ -419,9 +419,9 @@ public abstract class MergePolicy {
 
 
     /**
-     * Called before the merge is committed
+     * Called just before the merge is applied to IndexWriter's SegmentInfos
      */
-    void onMergeCommit() {
+    void onMergeComplete() {
     }
 
     /**
@@ -621,13 +621,15 @@ public abstract class MergePolicy {
       SegmentInfos segmentInfos, MergeContext mergeContext) throws IOException;
 
   /**
-   * Identifies merges that we want to execute (synchronously) on commit. By default, do not synchronously merge on commit.
+   * Identifies merges that we want to execute (synchronously) on commit. By default, this will do no merging on commit.
+   * If you implement this method in your {@code MergePolicy} you must also set a non-zero timeout using
+   * {@link IndexWriterConfig#setMaxCommitMergeWaitMillis}.
    *
    * Any merges returned here will make {@link IndexWriter#commit()} or {@link IndexWriter#prepareCommit()} block until
-   * the merges complete or until {@link IndexWriterConfig#getMaxCommitMergeWaitMillis()} have elapsed. This may be
+   * the merges complete or until {@link IndexWriterConfig#getMaxCommitMergeWaitMillis()} has elapsed. This may be
    * used to merge small segments that have just been flushed as part of the commit, reducing the number of segments in
-   * the commit. If a merge does not complete in the allotted time, it will continue to execute, but will not be reflected
-   * in the commit.
+   * the commit. If a merge does not complete in the allotted time, it will continue to execute, and eventually finish and
+   * apply to future commits, but will not be reflected in the current commit.
    *
    * If a {@link OneMerge} in the returned {@link MergeSpecification} includes a segment already included in a registered
    * merge, then {@link IndexWriter#commit()} or {@link IndexWriter#prepareCommit()} will throw a {@link IllegalStateException}.

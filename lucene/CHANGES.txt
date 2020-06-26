@@ -418,7 +418,7 @@ Improvements
 
 * LUCENE-8962: Add IndexWriter merge-on-commit feature to selectively merge small segments on commit,
   subject to a configurable timeout, to improve search performance by reducing the number of small
-  segments for searching (Michael Froh, Mike Mccandless, Simon Willnauer)
+  segments for searching (Michael Froh, Mike Sokolov, Mike Mccandless, Simon Willnauer)
 
 * LUCENE-9171: QueryBuilder can now use BoostAttributes on input token streams to selectively
   boost particular terms or synonyms in parsed queries. (Alessandro Benedetti, Alan Woodward)

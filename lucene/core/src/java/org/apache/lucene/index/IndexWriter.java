@@ -3275,6 +3275,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
           includeInCommit.set(false);
         }
       }
+      // do this after handling any onCommitMerges since the files will have changed if any merges
+      // did complete
       filesToCommit = toCommit.files(false);
       try {
         if (anyChanges) {
@@ -3304,14 +3306,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   }
 
   /**
-   * This is a sneaky optimization to allow a commit to wait for merges on smallish segments to
-   * reduce the amount of tiny segments in the commit point. What we do here is wrap a OneMerge to
-   * update the committingSegmentInfos once the merge has finished. We replace the source segments
-   * in the SIS that we are going to commit with the freshly merged segment but ignore all updates
-   * that are made to the merged segment after it was written. The updates that are made belong to
-   * the commit point and should therefore not be included. See the clone call in onMergeCommit
-   * below.  We also ensure that we pull the merge readers while holding the IW lock otherwise
-   * during the merge process we see updates being applied that don't belong to the segment.
+   * This optimization allows a commit to wait for merges on smallish segments to
+   * reduce the eventual number of tiny segments in the commit point.  We wrap a {@code OneMerge} to
+   * update the {@code committingSegmentInfos} once the merge has finished.  We replace the source segments
+   * in the SIS that we are going to commit with the freshly merged segment, but ignore all deletions and updates
+   * that are made to documents in the merged segment while it was merging.  The updates that are made do not belong to
+   * the point-in-time commit point and should therefore not be included. See the clone call in {@code onMergeComplete}
+   * below.  We also ensure that we pull the merge readers while holding {@code IndexWriter}'s lock.  Otherwise
+   * we could see concurrent deletions/updates applied that do not belong to the segment.
    */
   private MergePolicy.MergeSpecification prepareOnCommitMerge(SegmentInfos committingSegmentInfos, AtomicBoolean includeInCommit) throws IOException {
     assert Thread.holdsLock(this);
@@ -3319,12 +3321,22 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
         new MergePolicy.OneMerge(toWrap.segments) {
           SegmentCommitInfo origInfo;
           AtomicBoolean onlyOnce = new AtomicBoolean(false);
+
           @Override
           public void mergeFinished(boolean committed, boolean segmentDropped) throws IOException {
             assert Thread.holdsLock(IndexWriter.this);
+
+            // includedInCommit will be set (above, by our caller) to false if the allowed max wall clock
+            // time (IWC.getMaxCommitMergeWaitMillis()) has elapsed, which means we did not make the timeout
+            // and will not commit our merge to the to-be-commited SegmentInfos
+            
             if (segmentDropped == false
                 && committed
                 && includeInCommit.get()) {
+
+              // make sure onMergeComplete really was called:
+              assert origInfo != null;
+
               deleter.incRef(origInfo.files());
               Set<String> mergedSegmentNames = new HashSet<>();
               for (SegmentCommitInfo sci : segments) {
@@ -3349,8 +3361,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
           }
 
           @Override
-          void onMergeCommit() {
-            // clone the target info to make sure we have the original info without the updated del and update gens.
+          void onMergeComplete() {
+            // clone the target info to make sure we have the original info without the updated del and update gens
             origInfo = info.clone();
           }
 
@@ -3358,7 +3370,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
           void initMergeReaders(IOUtils.IOFunction<SegmentCommitInfo, MergePolicy.MergeReader> readerFactory) throws IOException {
             if (onlyOnce.compareAndSet(false, true)) {
               // we do this only once below to pull readers as point in time readers with respect to the commit point
-              // we try to update.
+              // we try to update
               super.initMergeReaders(readerFactory);
             }
           }
@@ -3965,7 +3977,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
   @SuppressWarnings("try")
   private synchronized boolean commitMerge(MergePolicy.OneMerge merge, MergeState mergeState) throws IOException {
-    merge.onMergeCommit();
+    merge.onMergeComplete();
     testPoint("startCommitMerge");
 
     if (tragedy.get() != null) {
