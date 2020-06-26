@@ -66,12 +66,14 @@ public class TestPhraseWildcardQuery extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     directory = newDirectory();
-    RandomIndexWriter iw = new RandomIndexWriter(random(), directory);
+    RandomIndexWriter iw = new RandomIndexWriter(random(), directory,
+        newIndexWriterConfig().setMaxCommitMergeWaitMillis(0)); // want to keep segments separated
     iw.setDoRandomForceMerge(false); // Keep the segments separated.
     addSegments(iw);
     reader = iw.getReader();
     iw.close();
     searcher = newSearcher(reader);
+    assertEquals("test test relies on 2 segments", 2, searcher.getIndexReader().leaves().size());
   }
 
   @Override
