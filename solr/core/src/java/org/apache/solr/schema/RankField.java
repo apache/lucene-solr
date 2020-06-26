@@ -98,6 +98,7 @@ public class RankField extends FieldType {
 
   @Override
   public SortField getSortField(SchemaField field, boolean top) {
+    // We could use FeatureField.newFeatureSort()
     throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
         "can not sort on a rank field: " + field.getName());
   }

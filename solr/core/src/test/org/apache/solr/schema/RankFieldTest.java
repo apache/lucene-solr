@@ -201,6 +201,20 @@ public class RankFieldTest extends SolrTestCaseJ4 {
     assertQEx("Range queries not supported", req("q", RANK_1 + ":[1 TO 10]"), 400);
   }
   
+  
+  public void testResponseQuery() throws IOException {
+    assertU(adoc(
+        "id", "testResponseQuery",
+        RANK_1, "1"
+        ));
+    assertU(commit());
+    // Ignore requests to retrieve rank
+    assertQ(req("q", RANK_1 + ":*",
+        "fl", "id," + RANK_1),
+        "//*[@numFound='1']",
+        "count(//result/doc[1]/str)=1");
+  }
+  
   public void testRankQParserQuery() throws IOException {
     assertU(adoc(
         "id", "1",
