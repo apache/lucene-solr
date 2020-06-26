@@ -3304,13 +3304,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   }
 
   /**
-   * This is a sneaky optimization to allow a commit to wait for merges on smallish segments to reduce the amount of
-   * tiny segments in the commit point. What we do here is, we wrap a OneMerge to update the committingSegmentInfos
-   * one the merge has finished. We replace the source segments in the SIS that we are going to commit with the freshly
-   * merged segment but ignore all updates that are made to the merged segment after it was written. The updates that
-   * are made done belong into the commit point and should therefore not be included. See the clone call in onMergeCommit below.
-   * We also ensure that we pull the merge readers while we hold the IW lock otherwise we'd see updates being applied that
-   * don't belong into the segmetn either if it happens during the merge process.
+   * This is a sneaky optimization to allow a commit to wait for merges on smallish segments to
+   * reduce the amount of tiny segments in the commit point. What we do here is wrap a OneMerge to
+   * update the committingSegmentInfos once the merge has finished. We replace the source segments
+   * in the SIS that we are going to commit with the freshly merged segment but ignore all updates
+   * that are made to the merged segment after it was written. The updates that are made belong to
+   * the commit point and should therefore not be included. See the clone call in onMergeCommit
+   * below.  We also ensure that we pull the merge readers while holding the IW lock otherwise
+   * during the merge process we see updates being applied that don't belong to the segment.
    */
   private MergePolicy.MergeSpecification prepareOnCommitMerge(SegmentInfos committingSegmentInfos, AtomicBoolean includeInCommit) throws IOException {
     assert Thread.holdsLock(this);
