@@ -1,4 +1,4 @@
-= Rule-Based Authorization Plugin
+= Rule-Based Authorization Plugins
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -16,7 +16,9 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Solr's authentication plugins control whether users can access Solr in a binary fashion.  A user is either authenticated, or they aren't.  For more fine-grained access control, Solr's Rule-Based Authorization Plugins (hereafter, "RBAP") can be used.
+Solr's authentication plugins control whether users can access Solr in a binary fashion.
+A user is either authenticated, or they aren't.
+For more fine-grained access control, Solr's Rule-Based Authorization Plugins (hereafter, "RBAP") can be used.
 
 [CAUTION]
 ====
@@ -118,7 +120,7 @@ This example `security.json` shows how the <<basic-authentication-plugin.adoc#ba
 
 Altogether, this example carves out two restricted areas.  Only `admin-user` can access Solr's Authentication and Authorization APIs, and only `dev-user` can access their `dev-private` collection.  All other APIs are left open, and can be accessed by both users.
 
-=== Example for ExternalRoleRuleBasedAuthorizationPlugin with JWT auth
+=== Example for External Role RuleBasedAuthorizationPlugin with JWT auth
 
 This example `security.json` shows how the <<jwt-authentication-plugin.adoc#jwt-authentication-plugin,JWT authentication plugin>>, which pulls user and user roles from JWT claims, can work with the `ExternalRoleRuleBasedAuthorizationPlugin` plugin:
 
@@ -139,9 +141,9 @@ This example `security.json` shows how the <<jwt-authentication-plugin.adoc#jwt-
 
 Let's walk through this example:
 
-<1> JWT Authentication plugin is enabled
-<2> Public keys is pulled over https
-<3> We expect each JWT token to contain a "roles" claim, which will be passed on to Authorization
+<1> JWT Authentication plugin is enabled.
+<2> Public keys will be pulled over HTTPS.
+<3> We expect each JWT token to contain a "roles" claim, which will be passed on to Authorization.
 <4> External Role Rule-based authorization plugin is enabled.
 <5> The 'admin' role has been defined, and it has permission to edit security settings.
 

@@ -113,7 +113,7 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
 
     IndexInput input1 = directory.openInput("testing.test", new IOContext());
 
-    IndexInput input2 = (IndexInput) input1.clone();
+    IndexInput input2 = input1.clone();
     assertEquals(12345, input2.readInt());
     input2.close();
 

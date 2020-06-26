@@ -46,7 +46,6 @@ import static org.apache.solr.common.util.Utils.toJSONString;
 /**
  * Models a Collection in zookeeper (but that Java name is obviously taken, hence "DocCollection")
  */
-@SuppressWarnings({"overrides"})
 public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
 
   public static final String DOC_ROUTER = "router";
@@ -383,10 +382,10 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     return super.equals(that) && Objects.equals(this.name, other.name) && this.znodeVersion == other.znodeVersion;
   }
 
-//  @Override
-//  public int hashCode() {
-//    throw new UnsupportedOperationException("TODO unimplemented DocCollection.hashCode");
-//  }
+  @Override
+  public int hashCode() {
+    return Objects.hash(name, znodeVersion);
+  }
 
   /**
    * @return the number of replicas of type {@link org.apache.solr.common.cloud.Replica.Type#NRT} this collection was created with

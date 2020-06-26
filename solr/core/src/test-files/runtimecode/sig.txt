@@ -69,6 +69,14 @@ openssl dgst -sha1 -sign ../cryptokeys/priv_key512.pem expressible.jar.bin | ope
 
 ZOT11arAiPmPZYOHzqodiNnxO9pRyRozWZEBX8XGjU1/HJptFnZK+DI7eXnUtbNaMcbXE2Ze8hh4M/eGyhY8BQ==
 
+openssl dgst -sha1 -sign priv_key512.pem containerplugin.v.1.jar.bin | openssl enc -base64 | sed 's/+/%2B/g' | tr -d \\n | sed
+
+pmrmWCDafdNpYle2rueAGnU2J6NYlcAey9mkZYbqh+5RdYo2Ln+llLF9voyRj+DDivK9GV1XdtKvD9rgCxlD7Q==
+
+openssl dgst -sha1 -sign ../cryptokeys/priv_key512.pem containerplugin.v.2.jar.bin | openssl enc -base64 | sed 's/+/%2B/g' | tr -d \\n | sed
+
+StR3DmqaUSL7qjDOeVEiCqE+ouiZAkW99fsL48F9oWG047o7NGgwwZ36iGgzDC3S2tPaFjRAd9Zg4UK7OZLQzg==
+
 ====================sha512====================
 
 openssl dgst -sha512 runtimelibs.jar.bin

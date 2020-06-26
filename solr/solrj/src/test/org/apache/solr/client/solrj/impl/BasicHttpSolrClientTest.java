@@ -558,6 +558,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
       HttpSolrClient solrClient = getHttpSolrClient(jetty.getBaseUrl().toString() + "/collection1",
           client, null);
       QueryRequest req = new QueryRequest();
+      @SuppressWarnings({"rawtypes"})
       NamedList response = solrClient.request(req);
       InputStream stream = (InputStream) response.get("stream");
       assertNotNull(stream);
@@ -674,7 +675,8 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
     }
   }
 
-  private void verifyServletState(HttpSolrClient client, SolrRequest request) {
+  private void verifyServletState(HttpSolrClient client,
+                                  @SuppressWarnings({"rawtypes"})SolrRequest request) {
     // check query String
     Iterator<String> paramNames = request.getParams().getParameterNamesIterator();
     while (paramNames.hasNext()) {
@@ -742,6 +744,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
   }
 
   @Test
+  @SuppressWarnings({"try"})
   public void testInvariantParams() throws IOException {
     try(HttpSolrClient createdClient = new HttpSolrClient.Builder()
         .withBaseSolrUrl(jetty.getBaseUrl().toString())
@@ -756,6 +759,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
         .build()) {
       assertEquals(2, createdClient.getInvariantParams().getParams("fq").length);
     }
+
 
     try(HttpSolrClient createdClient = new HttpSolrClient.Builder()
         .withBaseSolrUrl(jetty.getBaseUrl().toString())

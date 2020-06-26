@@ -289,6 +289,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   public void testQueryCollapse() throws Exception {
     SolrQueryRequest req = req("myField","foo_s1",
                                "g_sort","foo_s1 asc, foo_i desc");
@@ -313,7 +314,9 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
           "{!collapse field=$myField max=a nullPolicy=expand}");
 
       //Add boosted documents to the request context.
+      @SuppressWarnings({"rawtypes"})
       Map context = req.getContext();
+      @SuppressWarnings({"rawtypes"})
       Set boosted = new HashSet();
       boosted.add("doc1");
       boosted.add("doc2");
@@ -1288,12 +1291,6 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
                 , "{!bool should='{!lucene}foo_s:a'}"
             )
     );
-  }
-
-  public void testXCJFQuery() throws Exception {
-    assertQueryEquals("xcjf",
-        "{!xcjf collection=abc from=x_id to=x_id}*:*",
-        "{!xcjf collection=abc from=x_id to=x_id v='*:*'}");
   }
 
   public void testHashRangeQuery() throws Exception {

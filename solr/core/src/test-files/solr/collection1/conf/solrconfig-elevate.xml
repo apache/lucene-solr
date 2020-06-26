@@ -76,6 +76,10 @@
 
     <queryResultWindowSize>10</queryResultWindowSize>
 
+    <useCircuitBreakers>false</useCircuitBreakers>
+
+    <memoryCircuitBreakerThreshold>100</memoryCircuitBreakerThreshold>
+
     <!-- boolToFilterOptimizer converts boolean clauses with zero boost
          into cached filters if the number of docs selected by the clause exceeds
          the threshold (represented as a fraction of the total index)

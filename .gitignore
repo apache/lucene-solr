@@ -15,6 +15,7 @@ lucene/**/*.iml
 parent.iml
 *.ipr
 *.iws
+/*.iml
 /.project
 /.classpath
 /.settings

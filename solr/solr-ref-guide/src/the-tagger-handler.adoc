@@ -276,7 +276,7 @@ The response should be this (the QTime may vary):
 * Follow the recommended configuration field settings above.
 Additionally, for the best tagger performance, set `postingsFormat=FST50`.
 However, non-default postings formats have no backwards-compatibility guarantees, and so if you upgrade Solr then you may find a nasty exception on startup as it fails to read the older index.
-If the input text to be tagged is small (e.g. you are tagging queries or tweets) then the postings format choice isn't as important.
+If the input text to be tagged is small (e.g., you are tagging queries or tweets) then the postings format choice isn't as important.
 * "optimize" after loading your dictionary down to 1 Lucene segment, or at least to as few as possible.
 * For bulk tagging lots of documents, there are some strategies, not mutually exclusive:
 ** Batch them.

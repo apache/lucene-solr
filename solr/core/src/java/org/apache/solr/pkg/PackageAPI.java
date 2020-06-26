@@ -60,7 +60,6 @@ import static org.apache.solr.security.PermissionNameProvider.Name.PACKAGE_READ_
  *
  */
 public class PackageAPI {
-  public static final String PACKAGES = "packages";
   public final boolean enablePackages = Boolean.parseBoolean(System.getProperty("enable.packages", "false"));
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -211,7 +210,7 @@ public class PackageAPI {
 
     @Override
     public int hashCode() {
-      throw new UnsupportedOperationException("TODO unimplemented");
+      return Objects.hash(version);
     }
 
     @Override
@@ -231,7 +230,7 @@ public class PackageAPI {
   public class Edit {
 
     @Command(name = "refresh")
-    public void refresh(SolrQueryRequest req, SolrQueryResponse rsp, PayloadObj<String> payload) {
+    public void refresh(PayloadObj<String> payload) {
       String p = payload.get();
       if (p == null) {
         payload.addError("Package null");
@@ -249,14 +248,11 @@ public class PackageAPI {
             coreContainer.getZkController().zkStateReader.getBaseUrlForNodeName(s).replace("/solr", "/api") + "/cluster/package?wt=javabin&omitHeader=true&refreshPackage=" + p,
             Utils.JAVABINCONSUMER);
       }
-
-
     }
-
 
     @Command(name = "add")
     @SuppressWarnings({"unchecked"})
-    public void add(SolrQueryRequest req, SolrQueryResponse rsp, PayloadObj<Package.AddVersion> payload) {
+    public void add(PayloadObj<Package.AddVersion> payload) {
       if (!checkEnabled(payload)) return;
       Package.AddVersion add = payload.get();
       if (add.files.isEmpty()) {
@@ -307,7 +303,7 @@ public class PackageAPI {
     }
 
     @Command(name = "delete")
-    public void del(SolrQueryRequest req, SolrQueryResponse rsp, PayloadObj<Package.DelVersion> payload) {
+    public void del(PayloadObj<Package.DelVersion> payload) {
       if (!checkEnabled(payload)) return;
       Package.DelVersion delVersion = payload.get();
       try {
@@ -362,14 +358,13 @@ public class PackageAPI {
     return true;
   }
 
-  @EndPoint(
-      method = SolrRequest.METHOD.GET,
-      path = {"/cluster/package/",
-          "/cluster/package/{name}"},
-      permission = PACKAGE_READ_PERM
-  )
   public class Read {
-    @Command()
+    @EndPoint(
+        method = SolrRequest.METHOD.GET,
+        path = {"/cluster/package/",
+            "/cluster/package/{name}"},
+        permission = PACKAGE_READ_PERM
+    )
     public void get(SolrQueryRequest req, SolrQueryResponse rsp) {
       String refresh = req.getParams().get("refreshPackage");
       if (refresh != null) {

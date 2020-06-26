@@ -119,10 +119,10 @@ public class Test2BFST extends LuceneTestCase {
           if (verify == 0) {
             System.out.println("\nTEST: save/load FST and re-verify");
             IndexOutput out = dir.createOutput("fst", IOContext.DEFAULT);
-            fst.save(out);
+            fst.save(out, out);
             out.close();
             IndexInput in = dir.openInput("fst", IOContext.DEFAULT);
-            fst = new FST<>(in, outputs);
+            fst = new FST<>(in, in, outputs);
             in.close();
           } else {
             dir.deleteFile("fst");
@@ -198,10 +198,10 @@ public class Test2BFST extends LuceneTestCase {
           if (verify == 0) {
             System.out.println("\nTEST: save/load FST and re-verify");
             IndexOutput out = dir.createOutput("fst", IOContext.DEFAULT);
-            fst.save(out);
+            fst.save(out, out);
             out.close();
             IndexInput in = dir.openInput("fst", IOContext.DEFAULT);
-            fst = new FST<>(in, outputs);
+            fst = new FST<>(in, in, outputs);
             in.close();
           } else {
             dir.deleteFile("fst");
@@ -286,10 +286,10 @@ public class Test2BFST extends LuceneTestCase {
           if (verify == 0) {
             System.out.println("\nTEST: save/load FST and re-verify");
             IndexOutput out = dir.createOutput("fst", IOContext.DEFAULT);
-            fst.save(out);
+            fst.save(out, out);
             out.close();
             IndexInput in = dir.openInput("fst", IOContext.DEFAULT);
-            fst = new FST<>(in, outputs);
+            fst = new FST<>(in, in, outputs);
             in.close();
           } else {
             dir.deleteFile("fst");

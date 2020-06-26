@@ -105,6 +105,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     return parentDocument;
   }
 
+  @SuppressWarnings({"unchecked"})
   private List<Object> generateAllDataTypes() {
     List<Object> types = new ArrayList<>();
 
@@ -172,6 +173,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     types.add(1);
     types.add((long) 2);
 
+    @SuppressWarnings({"rawtypes"})
     SimpleOrderedMap simpleOrderedMap = new SimpleOrderedMap();
     simpleOrderedMap.add("bar", "barbar");
     types.add(simpleOrderedMap);
@@ -192,6 +194,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
       }
     };)
     {
+      @SuppressWarnings({"unchecked"})
       List<Object> unmarshaledObj = (List<Object>) javabin.unmarshal(is);
       List<Object> matchObj = generateAllDataTypes();
       compareObjects(unmarshaledObj, matchObj);
@@ -201,7 +204,8 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
 
   }
 
-  private void compareObjects(List unmarshaledObj, List matchObj) {
+  private void compareObjects(@SuppressWarnings({"rawtypes"})List unmarshaledObj,
+                              @SuppressWarnings({"rawtypes"})List matchObj) {
     assertEquals(unmarshaledObj.size(), matchObj.size());
     for (int i = 0; i < unmarshaledObj.size(); i++) {
 
@@ -394,6 +398,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     assertNull(grandChildDocuments.get(0).getChildDocuments());
   }
   @Test
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void testStringCaching() throws Exception {
     Map<String, Object> m = Utils.makeMap("key1", "val1", "key2", "val2");
     byte[] b1 = getBytes(m);//copy 1
@@ -558,6 +563,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
   }
 
 
+  @SuppressWarnings({"unchecked"})
   public static void doDecodePerf(String[] args) throws Exception {
     int arg=0;
     int nThreads = Integer.parseInt(args[arg++]);
@@ -597,6 +603,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
 
     int ret = 0;
     final RTimer timer = new RTimer();
+    @SuppressWarnings({"rawtypes"})
     ConcurrentLRUCache underlyingCache = cacheSz > 0 ? new ConcurrentLRUCache<>(cacheSz,cacheSz-cacheSz/10,cacheSz,cacheSz/10,false,true,null) : null;  // the cache in the first version of the patch was 10000,9000,10000,1000,false,true,null
     final JavaBinCodec.StringCache stringCache = underlyingCache==null ? null : new JavaBinCodec.StringCache(underlyingCache);
     if (nThreads <= 0) {

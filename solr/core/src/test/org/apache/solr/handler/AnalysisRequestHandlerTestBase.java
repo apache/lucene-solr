@@ -28,7 +28,7 @@ import org.apache.commons.lang3.ArrayUtils;
  */
 public abstract class AnalysisRequestHandlerTestBase extends SolrTestCaseJ4 {
 
-  protected void assertToken(NamedList token, TokenInfo info) {
+  protected void assertToken(@SuppressWarnings({"rawtypes"})NamedList token, TokenInfo info) {
     assertEquals(info.getText(), token.get("text"));
     if (info.getRawText() != null) {
       assertEquals(info.getRawText(), token.get("raw_text"));

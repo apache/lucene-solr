@@ -284,7 +284,7 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
       //tag::solrj-ipod-query-boosted-dsl-2[]
       final Map<String, Object> queryTopLevel = new HashMap<>();
       final Map<String, Object> boostProperties = new HashMap<>();
-      final Map<String, Object> luceneTopLevel = new HashMap();
+      final Map<String, Object> luceneTopLevel = new HashMap<>();
       final Map<String, Object> luceneProperties = new HashMap<>();
       queryTopLevel.put("boost", boostProperties);
       boostProperties.put("b", "log(popularity)");

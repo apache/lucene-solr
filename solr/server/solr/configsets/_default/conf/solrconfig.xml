@@ -513,6 +513,16 @@
       -->
     <queryResultMaxDocsCached>200</queryResultMaxDocsCached>
 
+    <!-- Enable Circuit Breakers
+      -->
+    <useCircuitBreakers>false</useCircuitBreakers>
+
+    <!-- Memory Circuit Breaker Threshold In Percentage
+
+    Post this percentage usage of the heap, incoming queries will be rejected
+      -->
+    <memoryCircuitBreakerThreshold>100</memoryCircuitBreakerThreshold>
+
     <!-- Query Related Event Listeners
 
          Various IndexSearcher related events can trigger Listeners to

@@ -78,6 +78,7 @@ import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.OperatingSystemMetricSet;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.security.AuditEvent;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
@@ -181,7 +182,6 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       String solrHome = (String) config.getServletContext().getAttribute(SOLRHOME_ATTRIBUTE);
       final Path solrHomePath = solrHome == null ? SolrPaths.locateSolrHome() : Paths.get(solrHome);
       coresInit = createCoreContainer(solrHomePath, extraProperties);
-      SolrPaths.ensureUserFilesDataDir(solrHomePath);
       this.httpClient = coresInit.getUpdateShardHandler().getDefaultHttpClient();
       setupJvmMetrics(coresInit);
       if (log.isDebugEnabled()) {
@@ -439,6 +439,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
 
       GlobalTracer.get().clearContext();
       consumeInputFully(request, response);
+      SolrRequestInfo.reset();
       SolrRequestParsers.cleanupMultipartFiles(request);
     }
   }

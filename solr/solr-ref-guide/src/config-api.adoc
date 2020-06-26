@@ -202,6 +202,10 @@ _Query Sizing and Warming_
 * `query.queryResultWindowSize`
 * `query.queryResultMaxDocCached`
 
+_Query JVM Metrics Control_
+* `query.useCircuitBreakers`
+* `query.memoryCircuitBreakerThreshold`
+
 *RequestDispatcher Settings*
 
 See <<requestdispatcher-in-solrconfig.adoc#requestdispatcher-in-solrconfig,RequestDispatcher in SolrConfig>> for defaults and acceptable values for these settings.

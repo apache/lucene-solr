@@ -206,8 +206,10 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
                 CoreAdminParams.CoreAdminAction.STATUS.toString(),
                 CoreAdminParams.CORE, "testInstanceDirAsPropertyParam"),
             resp);
+    @SuppressWarnings({"rawtypes"})
     NamedList status = (NamedList) resp.getValues().get("status");
     assertNotNull(status);
+    @SuppressWarnings({"rawtypes"})
     NamedList coreProps = (NamedList) status.get("testInstanceDirAsPropertyParam");
     assertNotNull(status);
     String instanceDir = (String) coreProps.get("instanceDir");

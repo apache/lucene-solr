@@ -163,6 +163,7 @@ public class HttpSolrCall {
   protected final boolean retry;
   protected SolrCore core = null;
   protected SolrQueryRequest solrReq = null;
+  private boolean mustClearSolrRequestInfo = false;
   protected SolrRequestHandler handler = null;
   protected final SolrParams queryParams;
   protected String path;
@@ -413,6 +414,7 @@ public class HttpSolrCall {
         if (path.equals("/schema") || path.startsWith("/schema/")) {
           solrReq = parser.parse(core, path, req);
           SolrRequestInfo.setRequestInfo(new SolrRequestInfo(solrReq, new SolrQueryResponse()));
+          mustClearSolrRequestInfo = true;
           if (path.equals(req.getServletPath())) {
             // avoid endless loop - pass through to Restlet via webapp
             action = PASSTHROUGH;
@@ -564,6 +566,7 @@ public class HttpSolrCall {
           return RETURN;
         case REMOTEQUERY:
           SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, new SolrQueryResponse(), action));
+          mustClearSolrRequestInfo = true;
           remoteQuery(coreUrl + path, resp);
           return RETURN;
         case PROCESS:
@@ -580,6 +583,7 @@ public class HttpSolrCall {
                * Content-Type)
                */
             SolrRequestInfo.setRequestInfo(new SolrRequestInfo(solrReq, solrRsp, action));
+            mustClearSolrRequestInfo = true;
             execute(solrRsp);
             if (shouldAudit()) {
               EventType eventType = solrRsp.getException() == null ? EventType.COMPLETED : EventType.ERROR;
@@ -606,7 +610,7 @@ public class HttpSolrCall {
         cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.ERROR, ex, req));
       }
       sendError(ex);
-      // walk the the entire cause chain to search for an Error
+      // walk the entire cause chain to search for an Error
       Throwable t = ex;
       while (t != null) {
         if (t instanceof Error) {
@@ -652,7 +656,9 @@ public class HttpSolrCall {
       try {
         if (core != null) core.close();
       } finally {
-        SolrRequestInfo.clearRequestInfo();
+        if (mustClearSolrRequestInfo) {
+          SolrRequestInfo.clearRequestInfo();
+        }
       }
       AuthenticationPlugin authcPlugin = cores.getAuthenticationPlugin();
       if (authcPlugin != null) authcPlugin.closeRequest();
