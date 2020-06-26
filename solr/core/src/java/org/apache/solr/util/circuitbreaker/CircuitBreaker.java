@@ -22,6 +22,11 @@ import org.apache.solr.core.SolrCore;
 /**
  * Default class to define circuit breakers for Solr.
  *
+ * There are two (typical) ways to use circuit breakers:
+ *
+ * 1. Have them checked at admission control by default (use CircuitBreakerManager for the same)
+ * 2. Use the circuit breaker in a specific code path(s)
+ *
  * TODO: This class should be grown as the scope of circuit breakers grow.
  */
 public abstract class CircuitBreaker {
