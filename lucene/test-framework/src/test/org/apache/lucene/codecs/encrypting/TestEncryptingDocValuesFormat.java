@@ -17,23 +17,19 @@
 
 package org.apache.lucene.codecs.encrypting;
 
-import java.util.Arrays;
-import java.util.Random;
-
-import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.index.BaseCompressingDocValuesFormatTestCase;
+import org.apache.lucene.util.TestUtil;
 
 /**
- * Methods for encrypting formats.
+ * Tests {@link EncryptingDocValuesFormat}.
  */
-class EncryptingFormatUtil {
+public class TestEncryptingDocValuesFormat extends BaseCompressingDocValuesFormatTestCase {
 
-  static byte[] getEncryptionKey(SegmentInfo segmentInfo, String fileName) {
-    // AES key length must be either 16, 24 or 32 bytes.
-    byte[] key = new byte[32];
-    // The key must be the same each time the same SegmentInfo ID is passed.
-    // In real production this would be replaced by a call to a secure key vault in which keys are identified by the
-    // segment ID.
-    new Random(Arrays.hashCode(segmentInfo.getId())).nextBytes(key);
-    return key;
+  private final Codec CODEC = TestUtil.alwaysDocValuesFormat(new EncryptingDocValuesFormat());
+
+  @Override
+  protected Codec getCodec() {
+    return CODEC;
   }
 }

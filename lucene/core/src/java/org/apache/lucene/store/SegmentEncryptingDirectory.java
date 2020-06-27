@@ -21,11 +21,22 @@ import java.io.IOException;
 
 import org.apache.lucene.index.SegmentInfo;
 
+/**
+ * {@link EncryptingDirectory} specific to a given {@link SegmentInfo}. It determines the encryption keys based on the
+ * {@link SegmentInfo} and file name.
+ *
+ * @lucene.experimental
+ */
 public class SegmentEncryptingDirectory extends EncryptingDirectory {
 
   private final SegmentKeySupplier segmentKeySupplier;
-  private final SegmentInfo segmentInfo;
+  protected final SegmentInfo segmentInfo;
 
+  /**
+   * @param directory          The delegate {@link Directory} to get files from.
+   * @param segmentKeySupplier The encryption key supplier.
+   * @param segmentInfo        The specific {@link SegmentInfo} this directory will use to get encryption keys for.
+   */
   public SegmentEncryptingDirectory(Directory directory, SegmentKeySupplier segmentKeySupplier, SegmentInfo segmentInfo) {
     super(directory);
     this.segmentKeySupplier = segmentKeySupplier;
@@ -47,11 +58,15 @@ public class SegmentEncryptingDirectory extends EncryptingDirectory {
     return new EncryptingIndexInput(indexInput, key);
   }
 
+  /**
+   * Provides encryption keys depending on {@link SegmentInfo} and file name.
+   */
   public interface SegmentKeySupplier {
     /**
      * Gets the encryption key for the provided file name of a specific segment.
-     * @return The key, this array content is not modified; or null if none, in this case the data is not encrypted.
-     * It must be either 128, 192 or 256 bits long.
+     *
+     * @return The key, its content is not modified; or null if none, in this case the data is not encrypted.
+     * It must be either 16, 24 or 32 bytes long.
      */
     byte[] getKey(SegmentInfo segmentInfo, String fileName);
   }

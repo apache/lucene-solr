@@ -27,6 +27,10 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.SegmentEncryptingDirectory;
 import org.apache.lucene.util.TestUtil;
 
+/**
+ * Test {@link PostingsFormat} to demonstrate how encryption keys can be provided to an
+ * {@link org.apache.lucene.store.EncryptingDirectory} to encrypt/decrypt {@link PostingsFormat} files.
+ */
 public class EncryptingPostingsFormat extends PostingsFormat {
 
   private final PostingsFormat delegate = TestUtil.getDefaultPostingsFormat();
@@ -34,7 +38,7 @@ public class EncryptingPostingsFormat extends PostingsFormat {
   public EncryptingPostingsFormat() {
     super("Encrypting");
   }
-  
+
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
     Directory encryptingDirectory = new SegmentEncryptingDirectory(state.directory, EncryptingFormatUtil::getEncryptionKey, state.segmentInfo);
@@ -48,5 +52,4 @@ public class EncryptingPostingsFormat extends PostingsFormat {
     SegmentReadState decryptingState = new SegmentReadState(encryptingDirectory, state.segmentInfo, state.fieldInfos, state.context, state.segmentSuffix);
     return delegate.fieldsProducer(decryptingState);
   }
-
 }

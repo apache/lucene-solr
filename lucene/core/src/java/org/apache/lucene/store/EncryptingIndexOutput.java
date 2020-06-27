@@ -17,42 +17,52 @@
 
 package org.apache.lucene.store;
 
-import javax.crypto.Cipher;
-import javax.crypto.ShortBufferException;
-import javax.crypto.spec.IvParameterSpec;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
 import java.util.zip.CRC32;
 import java.util.zip.Checksum;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.util.StringHelper;
+import org.apache.lucene.util.crypto.AesCtrEncrypter;
+import org.apache.lucene.util.crypto.AesCtrEncrypterFactory;
+import org.apache.lucene.util.crypto.EncryptionUtil;
 
-import static org.apache.lucene.store.EncryptingUtil.*;
+import static org.apache.lucene.util.crypto.EncryptionUtil.*;
 
+/**
+ * {@link IndexOutput} that encrypts data and writes to a delegate {@link IndexOutput} on the fly.
+ * <p>It encrypts with the AES algorithm in CTR (counter) mode with no padding. It is appropriate for random access.
+ * Use a {@link EncryptingIndexInput} to decrypt this file.</p>
+ * <p>It first writes the file {@link CodecUtil#writeIndexHeader(DataOutput, String, int, byte[], String) header} so that
+ * it can be manipulated without decryption (e.g. compound files merging). Then it generates a cryptographically strong
+ * random CTR Initialization Vector (IV). This random IV is not encrypted. Finally it can encrypt the rest of the file
+ * which probably contains a header and footer itself.</p>
+ *
+ * @lucene.experimental
+ * @see EncryptingIndexInput
+ * @see AesCtrEncrypter
+ */
 public class EncryptingIndexOutput extends IndexOutput {
 
   /**
-   * Must be a multiple of {@link EncryptingUtil#AES_BLOCK_SIZE}.
+   * Must be a multiple of {@link EncryptionUtil#AES_BLOCK_SIZE}.
    */
   private static final int BUFFER_CAPACITY = 64 * AES_BLOCK_SIZE; // 1024
-  static {
-    assert BUFFER_CAPACITY % AES_BLOCK_SIZE == 0;
-  }
 
   private static final String HEADER_CODEC = "Crypto";
   private static final int HEADER_VERSION = 0;
   private static final byte[] HEADER_FAKE_ID = new byte[StringHelper.ID_LENGTH];
-  static final int HEADER_LENGTH = 32; // Must be a multiple of AES_BLOCK_SIZE.
-  static {
-    assert HEADER_LENGTH % AES_BLOCK_SIZE == 0;
-  }
+  /**
+   * Length of the header written by {@link CodecUtil#writeIndexHeader(DataOutput, String, int, byte[], String)}
+   * for encrypted files. It depends on the length of {@link #HEADER_CODEC}, and it must be a multiple of
+   * {@link EncryptionUtil#AES_BLOCK_SIZE}.
+   */
+  static final int HEADER_LENGTH = 32;
 
   private final IndexOutput indexOutput;
   private final boolean footerMatters;
-  private final Cipher cipher;
+  private final AesCtrEncrypter encrypter;
   private final ByteBuffer inBuffer;
   private final ByteBuffer outBuffer;
   private final byte[] outArray;
@@ -61,14 +71,34 @@ public class EncryptingIndexOutput extends IndexOutput {
   private long filePointer;
   private boolean closed;
 
+  /**
+   * @param indexOutput The delegate {@link IndexOutput} to write encrypted data to.
+   * @param key         The encryption key. It is cloned internally, its content is not modified, and no reference to it is kept.
+   */
   public EncryptingIndexOutput(IndexOutput indexOutput, byte[] key) throws IOException {
     this(indexOutput, key, null);
   }
 
   /**
-   * @param segmentId may be null, in this case it is replaced by a fake id.
+   * @param indexOutput The delegate {@link IndexOutput} to write encrypted data to.
+   * @param key         The encryption key. It is cloned internally, its content is not modified, and no reference to it is kept.
+   * @param segmentId   The {@link org.apache.lucene.index.SegmentInfo#getId() segment ID} required to write the file header.
+   *                    It may be null, in this case it is replaced by a fake ID, but some features such as compound files
+   *                    are not supported anymore.
    */
   public EncryptingIndexOutput(IndexOutput indexOutput, byte[] key, byte[] segmentId) throws IOException {
+    this(indexOutput, key, segmentId, AesCtrEncrypterFactory.getInstance());
+  }
+
+  /**
+   * @param indexOutput The delegate {@link IndexOutput} to write encrypted data to.
+   * @param key         The encryption key. It is cloned internally, its content is not modified, and no reference to it is kept.
+   * @param segmentId   The {@link org.apache.lucene.index.SegmentInfo#getId() segment ID} required to write the file header.
+   *                    It may be null, in this case it is replaced by a fake ID, but some features such as compound files
+   *                    are not supported anymore.
+   * @param factory     The factory to use to create one instance of {@link AesCtrEncrypter}. This instance may be cloned.
+   */
+  public EncryptingIndexOutput(IndexOutput indexOutput, byte[] key, byte[] segmentId, AesCtrEncrypterFactory factory) throws IOException {
     super("Encrypting " + indexOutput.toString(), indexOutput.getName());
     this.indexOutput = indexOutput;
 
@@ -78,15 +108,9 @@ public class EncryptingIndexOutput extends IndexOutput {
     // Only write the real footer when it matters because it computes a checksum.
     footerMatters = segmentId != null;
 
-    cipher = createAesCtrCipher();
-    assert cipher.getBlockSize() == AES_BLOCK_SIZE : "Invalid AES block size: " + cipher.getBlockSize();
-
     byte[] iv = generateRandomIv();
-    try {
-      cipher.init(Cipher.ENCRYPT_MODE, createAesKey(key), new IvParameterSpec(iv));
-    } catch (InvalidKeyException | InvalidAlgorithmParameterException e) {
-      throw new IOException(e);
-    }
+    encrypter = factory.create(key, iv);
+    encrypter.init(0);
     // IV is written at the beginning of the index output. It's public.
     // Even if the delegate indexOutput is positioned after the initial IV, this index output file pointer is 0 initially.
     indexOutput.writeBytes(iv, 0, iv.length);
@@ -103,14 +127,14 @@ public class EncryptingIndexOutput extends IndexOutput {
   }
 
   /**
-   * Generates an AES/CTR random IV of length {@link EncryptingUtil#IV_LENGTH}.
+   * Generates a cryptographically strong CTR random IV of length {@link EncryptionUtil#IV_LENGTH}.
    */
   protected byte[] generateRandomIv() {
     return generateRandomAesCtrIv();
   }
 
   /**
-   * Gets the buffer capacity. It must be a multiple of {@link EncryptingUtil#AES_BLOCK_SIZE}.
+   * Gets the buffer capacity. It must be a multiple of {@link EncryptionUtil#AES_BLOCK_SIZE}.
    */
   protected int getBufferCapacity() {
     return BUFFER_CAPACITY;
@@ -144,16 +168,14 @@ public class EncryptingIndexOutput extends IndexOutput {
 
   @Override
   public long getFilePointer() {
-    // With AES, the plain data and encrypted data have the same file pointers.
-    // The algorithm is AES/CTR/NoPadding. This means the encrypted data length is the same as the plain data length.
-    // We return here the file pointer excluding the header and initial IV length at the beginning of the file.
-    // It does not include the footer because it is written when this index output is closed.
+    // With AES/CTR/NoPadding, the encrypted and decrypted data have the same length.
+    // We return here the file pointer excluding the top header and initial IV length at the beginning of the file.
     return filePointer;
   }
 
   @Override
   public long getChecksum() {
-    // The checksum is computed on the clear data (excluding the initial IV).
+    // The checksum is computed on the clear data, excluding the top header and initial IV.
     return clearChecksum.getValue();
   }
 
@@ -188,16 +210,7 @@ public class EncryptingIndexOutput extends IndexOutput {
     assert inBuffer.position() != 0;
     inBuffer.flip();
     outBuffer.clear();
-    int inputSize = inBuffer.remaining();
-    int numEncryptedBytes;
-    try {
-      numEncryptedBytes = cipher.update(inBuffer, outBuffer);
-    } catch (ShortBufferException e) {
-      throw new IOException(e);
-    }
-    if (numEncryptedBytes < inputSize) {
-      throw new UnsupportedOperationException("The Cipher implementation does not maintain an encryption context; this is not supported");
-    }
+    encrypter.process(inBuffer, outBuffer);
     inBuffer.clear();
     outBuffer.flip();
     indexOutput.writeBytes(outArray, 0, outBuffer.limit());

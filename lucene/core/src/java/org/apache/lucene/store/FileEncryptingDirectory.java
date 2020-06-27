@@ -19,10 +19,19 @@ package org.apache.lucene.store;
 
 import java.io.IOException;
 
+/**
+ * {@link EncryptingDirectory} that determines the encryption keys only based on the file name.
+ *
+ * @lucene.experimental
+ */
 public class FileEncryptingDirectory extends EncryptingDirectory {
 
   private final KeySupplier keySupplier;
 
+  /**
+   * @param directory   The delegate {@link Directory} to get files from.
+   * @param keySupplier The encryption key supplier.
+   */
   public FileEncryptingDirectory(Directory directory, KeySupplier keySupplier) {
     super(directory);
     this.keySupplier = keySupplier;
@@ -43,11 +52,15 @@ public class FileEncryptingDirectory extends EncryptingDirectory {
     return new EncryptingIndexInput(indexInput, key);
   }
 
+  /**
+   * Provides encryption keys depending on file name.
+   */
   public interface KeySupplier {
     /**
      * Gets the encryption key for the provided file name.
-     * @return The key, this array content is not modified; or null if none, in this case the data is not encrypted.
-     * It must be either 128, 192 or 256 bits long.
+     *
+     * @return The key, its content is not modified; or null if none, in this case the data is not encrypted.
+     * It must be either 16, 24 or 32 bytes long.
      */
     byte[] getKey(String fileName);
   }

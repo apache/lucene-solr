@@ -15,18 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.codecs.encrypting;
-
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.index.BaseCompressingDocValuesFormatTestCase;
-import org.apache.lucene.util.TestUtil;
-
-public class TestEncryptingDocValuesFormat extends BaseCompressingDocValuesFormatTestCase {
-
-  private final Codec CODEC = TestUtil.alwaysDocValuesFormat(new EncryptingDocValuesFormat());
-
-  @Override
-  protected Codec getCodec() {
-    return CODEC;
-  }
-}
+/**
+ * Encryption utilities.
+ */
+package org.apache.lucene.util.crypto;

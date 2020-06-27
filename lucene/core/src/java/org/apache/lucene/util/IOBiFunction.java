@@ -15,25 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.codecs.encrypting;
+package org.apache.lucene.util;
 
-import java.util.Arrays;
-import java.util.Random;
-
-import org.apache.lucene.index.SegmentInfo;
+import java.io.IOException;
 
 /**
- * Methods for encrypting formats.
+ * Variant of {@link java.util.function.BiFunction} that allows to throw an IOException.
+ *
+ * @param <T> the type of the first argument to the function
+ * @param <U> the type of the second argument to the function
+ * @param <R> the type of the result of the function
+ * @see java.util.function.BiFunction
  */
-class EncryptingFormatUtil {
+@FunctionalInterface
+public interface IOBiFunction<T, U, R> {
 
-  static byte[] getEncryptionKey(SegmentInfo segmentInfo, String fileName) {
-    // AES key length must be either 16, 24 or 32 bytes.
-    byte[] key = new byte[32];
-    // The key must be the same each time the same SegmentInfo ID is passed.
-    // In real production this would be replaced by a call to a secure key vault in which keys are identified by the
-    // segment ID.
-    new Random(Arrays.hashCode(segmentInfo.getId())).nextBytes(key);
-    return key;
-  }
+  /**
+   * Applies this function to the given arguments.
+   *
+   * @param t the first function argument
+   * @param u the second function argument
+   * @return the function result
+   */
+  R apply(T t, U u) throws IOException;
 }

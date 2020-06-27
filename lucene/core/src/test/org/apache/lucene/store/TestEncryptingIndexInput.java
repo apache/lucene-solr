@@ -27,6 +27,9 @@ import com.carrotsearch.randomizedtesting.Xoroshiro128PlusRandom;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.crypto.AesCtrEncrypterFactory;
+import org.apache.lucene.util.crypto.CipherAesCtrEncrypter;
+import org.apache.lucene.util.crypto.LightAesCtrEncrypter;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -39,6 +42,7 @@ public class TestEncryptingIndexInput extends RandomizedTest {
 
   @Before
   public void initializeEncryption() {
+    // AES key length can either 16, 24 or 32 bytes.
     key = randomBytesOfLength(randomIntBetween(2, 4) * 8);
   }
 
@@ -94,7 +98,7 @@ public class TestEncryptingIndexInput extends RandomizedTest {
 
   @Test
   public void testRandomReadsOnSlices() throws Exception {
-    for (int reps = randomIntBetween(1, 20); --reps > 0;) {
+    for (int reps = randomIntBetween(1, 20); --reps > 0; ) {
       ByteBuffersDataOutput dataOutput = new ByteBuffersDataOutput();
       EncryptingIndexOutput indexOutput = createEncryptingIndexOutput(dataOutput);
 
@@ -140,7 +144,7 @@ public class TestEncryptingIndexInput extends RandomizedTest {
 
   @Test
   public void testSeek() throws Exception {
-    for (int reps = randomIntBetween(1, 200); --reps > 0;) {
+    for (int reps = randomIntBetween(1, 200); --reps > 0; ) {
       ByteBuffersDataOutput dataOutput = new ByteBuffersDataOutput();
       ByteBuffersDataOutput clearDataOutput = new ByteBuffersDataOutput();
       EncryptingIndexOutput indexOutput = createEncryptingIndexOutput(dataOutput);
@@ -191,7 +195,7 @@ public class TestEncryptingIndexInput extends RandomizedTest {
 
   @Test
   public void testClone() throws Exception {
-    for (int reps = randomIntBetween(1, 200); --reps > 0;) {
+    for (int reps = randomIntBetween(1, 200); --reps > 0; ) {
       ByteBuffersDataOutput dataOutput = new ByteBuffersDataOutput();
       ByteBuffersDataOutput clearDataOutput = new ByteBuffersDataOutput();
       EncryptingIndexOutput indexOutput = createEncryptingIndexOutput(dataOutput);
@@ -230,10 +234,16 @@ public class TestEncryptingIndexInput extends RandomizedTest {
   }
 
   private EncryptingIndexOutput createEncryptingIndexOutput(ByteBuffersDataOutput dataOutput) throws IOException {
-    return new EncryptingIndexOutput(new ByteBuffersIndexOutput(dataOutput, "Test", "Test"), key);
+    return new EncryptingIndexOutput(new ByteBuffersIndexOutput(dataOutput, "Test", "Test"),
+        key, null, randomEncrypterFactory());
   }
 
   private EncryptingIndexInput createEncryptingIndexInput(ByteBuffersDataOutput dataOutput) throws IOException {
-    return new EncryptingIndexInput(new ByteBuffersIndexInput(dataOutput.toDataInput(), "Test"), key);
+    return new EncryptingIndexInput(new ByteBuffersIndexInput(dataOutput.toDataInput(), "Test"),
+        key, randomEncrypterFactory());
+  }
+
+  private AesCtrEncrypterFactory randomEncrypterFactory() {
+    return randomBoolean() ? LightAesCtrEncrypter.FACTORY : CipherAesCtrEncrypter.FACTORY;
   }
 }

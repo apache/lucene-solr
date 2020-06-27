@@ -22,6 +22,13 @@ import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.util.TestUtil;
 
+/**
+ * Test {@link org.apache.lucene.codecs.Codec} to demonstrate how encryption keys can be provided to an
+ * {@link org.apache.lucene.store.EncryptingDirectory} to encrypt/decrypt {@link PostingsFormat} or
+ * {@link DocValuesFormat} files.
+ * <p>If the keys do not depend on the segment info, see also {@link SimpleEncryptingDirectory} example.</p>
+ * <p>Run tests with -Dtests.codec=Encrypting</p>
+ */
 public class EncryptingCodec extends FilterCodec {
 
   private final PostingsFormat postingsFormat = new EncryptingPostingsFormat();

@@ -27,12 +27,16 @@ import java.util.Random;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.crypto.AesCtrEncrypterFactory;
+import org.apache.lucene.util.crypto.CipherAesCtrEncrypter;
+import org.apache.lucene.util.crypto.EncryptionUtil;
+import org.apache.lucene.util.crypto.LightAesCtrEncrypter;
 import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.lucene.store.EncryptingIndexInput.HEADER_IV_LENGTH;
 import static org.junit.Assert.*;
-import static org.apache.lucene.store.EncryptingUtil.IV_LENGTH;
+import static org.apache.lucene.util.crypto.EncryptionUtil.IV_LENGTH;
 
 public class TestEncryptingIndexOutput extends BaseDataOutputTestCase<EncryptingIndexOutput> {
 
@@ -41,7 +45,8 @@ public class TestEncryptingIndexOutput extends BaseDataOutputTestCase<Encrypting
 
   @Before
   public void initializeEncryption() {
-    key = randomBytesOfLength(32);
+    // AES key length can either 16, 24 or 32 bytes.
+    key = randomBytesOfLength(randomIntBetween(2, 4) * 8);
     shouldSimulateWrongKey = false;
   }
 
@@ -54,7 +59,7 @@ public class TestEncryptingIndexOutput extends BaseDataOutputTestCase<Encrypting
     EncryptingIndexOutput indexOutput = new EncryptingIndexOutput(delegateIndexOutput, key) {
       @Override
       protected int getBufferCapacity() {
-        return EncryptingUtil.AES_BLOCK_SIZE;
+        return EncryptionUtil.AES_BLOCK_SIZE;
       }
     };
     indexOutput.writeByte((byte) 3);
@@ -67,27 +72,15 @@ public class TestEncryptingIndexOutput extends BaseDataOutputTestCase<Encrypting
   }
 
   @Test
-  @Override
-  public void testRandomizedWrites() throws IOException {
-    // First check encryption and decryption.
-    super.testRandomizedWrites();
-
-    // Then modify the secret key and check it fails.
+  public void testWrongKey() {
     shouldSimulateWrongKey = true;
-    LuceneTestCase.expectThrows(AssertionError.class, super::testRandomizedWrites);
+    LuceneTestCase.expectThrows(AssertionError.class, this::testRandomizedWrites);
   }
 
   @Override
   protected EncryptingIndexOutput newInstance() {
     try {
-      return new MyBufferedEncryptingIndexOutput(new ByteBuffersDataOutput(), key) {
-        @Override
-        protected byte[] generateRandomIv() {
-          byte[] iv = new byte[IV_LENGTH];
-          getRandom().nextBytes(iv);
-          return iv;
-        }
-      };
+      return new MyBufferedEncryptingIndexOutput(new ByteBuffersDataOutput(), key, randomEncrypterFactory());
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }
@@ -106,7 +99,7 @@ public class TestEncryptingIndexOutput extends BaseDataOutputTestCase<Encrypting
     if (shouldSimulateWrongKey) {
       key[0]++;
     }
-    try (EncryptingIndexInput encryptingIndexInput = new EncryptingIndexInput(indexInput, key)) {
+    try (EncryptingIndexInput encryptingIndexInput = new EncryptingIndexInput(indexInput, key, randomEncrypterFactory())) {
       byte[] b = new byte[(int) encryptingIndexInput.length()];
       encryptingIndexInput.readBytes(b, 0, b.length);
       return b;
@@ -115,17 +108,26 @@ public class TestEncryptingIndexOutput extends BaseDataOutputTestCase<Encrypting
     }
   }
 
+  private AesCtrEncrypterFactory randomEncrypterFactory() {
+    return randomBoolean() ? LightAesCtrEncrypter.FACTORY : CipherAesCtrEncrypter.FACTORY;
+  }
+
   /**
    * Replaces the {@link java.security.SecureRandom} by a repeatable {@link Random} for tests.
    * This is used to generate a repeatable random IV.
    */
-  private static class MyBufferedEncryptingIndexOutput extends EncryptingIndexOutput {
+  private class MyBufferedEncryptingIndexOutput extends EncryptingIndexOutput {
 
     private final ByteBuffersDataOutput dataOutput;
 
-    MyBufferedEncryptingIndexOutput(ByteBuffersDataOutput dataOutput, byte[] key) throws IOException {
-      super(new ByteBuffersIndexOutput(dataOutput, "Test", "Test"), key);
+    MyBufferedEncryptingIndexOutput(ByteBuffersDataOutput dataOutput, byte[] key, AesCtrEncrypterFactory encrypterFactory) throws IOException {
+      super(new ByteBuffersIndexOutput(dataOutput, "Test", "Test"), key, null, encrypterFactory);
       this.dataOutput = dataOutput;
+    }
+
+    @Override
+    protected byte[] generateRandomIv() {
+      return randomBytesOfLength(IV_LENGTH);
     }
   }
 }

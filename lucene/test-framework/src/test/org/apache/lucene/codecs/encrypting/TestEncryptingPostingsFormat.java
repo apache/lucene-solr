@@ -21,6 +21,9 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.BasePostingsFormatTestCase;
 import org.apache.lucene.util.TestUtil;
 
+/**
+ * Tests {@link EncryptingPostingsFormat}.
+ */
 public class TestEncryptingPostingsFormat extends BasePostingsFormatTestCase {
 
   private static final Codec CODEC = TestUtil.alwaysPostingsFormat(new EncryptingPostingsFormat());

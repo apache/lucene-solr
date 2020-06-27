@@ -15,16 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.store;
+package org.apache.lucene.util.crypto;
 
-import javax.crypto.Cipher;
-import javax.crypto.NoSuchPaddingException;
-import javax.crypto.spec.SecretKeySpec;
-import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 
-public class EncryptingUtil {
+/**
+ * Methods for encryption.
+ *
+ * @lucene.experimental
+ */
+public class EncryptionUtil {
 
   /**
    * AES block has a fixed length of 16 bytes (128 bits).
@@ -36,18 +36,23 @@ public class EncryptingUtil {
    */
   public static final int IV_LENGTH = AES_BLOCK_SIZE;
 
-  public static final String AES_CTR_TRANSFORMATION = "AES/CTR/NoPadding";
-
   /**
-   * Creates a secret key for AES using the bytes provided.
-   * @param key The key bytes (cloned in the key). {@code key.length} must be either 16, 24 or 32.
+   * Checks a key for AES. Its length must be either 16, 24 or 32 bytes.
    */
-  public static SecretKeySpec createAesKey(byte[] key) throws IOException {
+  public static void checkAesKey(byte[] key) {
     if (key.length != 16 && key.length != 24 && key.length != 32) {
       // AES requires either 128, 192 or 256 bits keys.
-      throw new IOException("Invalid AES secret key length; it must be either 128, 192 or 256 bits long");
+      throw new IllegalArgumentException("Invalid AES key length; it must be either 128, 192 or 256 bits long");
     }
-    return new SecretKeySpec(key, "AES");
+  }
+
+  /**
+   * Checks the CTR counter. It must be positive or nul.
+   */
+  public static void checkCtrCounter(long counter) {
+    if (counter < 0) {
+      throw new IllegalArgumentException("Illegal counter=" + counter);
+    }
   }
 
   /**
@@ -56,7 +61,6 @@ public class EncryptingUtil {
   public static byte[] generateRandomAesCtrIv() {
     // IV length must be the AES block size.
     // IV must be random for the CTR mode. It starts with counter 0, so it's simply IV.
-    // The CTR counter will be added during calls to Cipher.update(). See com.sun.crypto.provider.CounterMode.
     byte[] iv = new byte[IV_LENGTH];
     getSecureRandom().nextBytes(iv);
 
@@ -76,7 +80,7 @@ public class EncryptingUtil {
 
   /**
    * Builds an AES/CTR IV based on the provided counter and an initial IV.
-   * The built IV is compatible with com.sun.crypto.provider.CounterMode.increment().
+   * The built IV is compatible with {@code com.sun.crypto.provider.CounterMode.increment()}.
    */
   public static void buildAesCtrIv(byte[] initialIv, long counter, byte[] iv) {
     assert initialIv.length == IV_LENGTH && iv.length == IV_LENGTH;
@@ -95,15 +99,10 @@ public class EncryptingUtil {
     }
   }
 
-  public static Cipher createAesCtrCipher() {
-    try {
-      return Cipher.getInstance(AES_CTR_TRANSFORMATION);
-    } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  private static SecureRandom getSecureRandom() {
+  /**
+   * Gets the {@link SecureRandom} singleton.
+   */
+  public static SecureRandom getSecureRandom() {
     return SecureRandomHolder.SECURE_RANDOM;
   }
 

@@ -17,44 +17,47 @@
 
 package org.apache.lucene.store;
 
-import javax.crypto.Cipher;
-import javax.crypto.ShortBufferException;
-import javax.crypto.spec.IvParameterSpec;
 import java.io.EOFException;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.Key;
 
 import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.util.crypto.AesCtrEncrypter;
+import org.apache.lucene.util.crypto.AesCtrEncrypterFactory;
+import org.apache.lucene.util.crypto.EncryptionUtil;
 
 import static org.apache.lucene.store.EncryptingIndexOutput.HEADER_LENGTH;
-import static org.apache.lucene.store.EncryptingUtil.*;
+import static org.apache.lucene.util.crypto.EncryptionUtil.*;
 
+/**
+ * {@link IndexInput} that reads from a delegate {@link IndexInput} and decrypts data on the fly.
+ * <p>It decrypts with the AES algorithm in CTR (counter) mode with no padding. It is appropriate for random access.
+ * It can decrypt data previously encrypted with an {@link EncryptingIndexOutput}.</p>
+ * <p>It first reads the file {@link CodecUtil#readIndexHeader(IndexInput) header}. Then it reads the CTR Initialization
+ * Vector (IV). This random IV is not encrypted. Finally it can decrypt the rest of the file, which probably contains a
+ * header and footer itself, with random access. The final footer at the end of the file is ignored.</p>
+ *
+ * @see EncryptingIndexOutput
+ * @see AesCtrEncrypter
+ *
+ * @lucene.experimental
+ */
 public class EncryptingIndexInput extends IndexInput {
 
   /**
-   * Must be a multiple of {@link EncryptingUtil#AES_BLOCK_SIZE}.
+   * Must be a multiple of {@link EncryptionUtil#AES_BLOCK_SIZE}.
    */
   private static final int BUFFER_SIZE = 64 * AES_BLOCK_SIZE; // 1024 B
 
   private static final long AES_BLOCK_SIZE_MOD_MASK = AES_BLOCK_SIZE - 1;
   static final int HEADER_IV_LENGTH = HEADER_LENGTH + IV_LENGTH;
 
-  private static final byte[] EMPTY_BYTES = new byte[0];
-
-  // Some fields are not final for the clone() method.
+  // Most fields are not final for the clone() method.
   private boolean isClone;
   private final long sliceOffset;
   private final long sliceEnd;
   private IndexInput indexInput;
-  private final Key key;
-  private Cipher cipher;
-  private final byte[] initialIv;
-  private byte[] iv;
-  private ReusableIvParameterSpec ivParameterSpec;
+  private AesCtrEncrypter encrypter;
   private ByteBuffer inBuffer;
   private ByteBuffer outBuffer;
   private byte[] inArray;
@@ -62,33 +65,34 @@ public class EncryptingIndexInput extends IndexInput {
   private int padding;
   private boolean closed;
 
+  /**
+   * @param indexInput The delegate {@link IndexInput} to read encrypted data from.
+   * @param key        The encryption key. It is cloned internally, its content is not modified, and no reference to it is kept.
+   */
   public EncryptingIndexInput(IndexInput indexInput, byte[] key) throws IOException {
-    this("Decrypting " + indexInput.toString(),
-        HEADER_IV_LENGTH, indexInput.length() - HEADER_IV_LENGTH - CodecUtil.footerLength(), false,
-        indexInput, createAesKey(key), readInitialIv(indexInput));
+    this(indexInput, key, AesCtrEncrypterFactory.getInstance());
+  }
+
+  /**
+   * @param indexInput The delegate {@link IndexInput} to read encrypted data from.
+   * @param key        The encryption key. It is cloned internally, its content is not modified, and no reference to it is kept.
+   * @param factory    The factory to use to create one instance of {@link AesCtrEncrypter}. This instance may be cloned.
+   */
+  public EncryptingIndexInput(IndexInput indexInput, byte[] key, AesCtrEncrypterFactory factory) throws IOException {
+    this("Decrypting " + indexInput.toString(), HEADER_IV_LENGTH, getEncryptedDataLength(indexInput),
+        false, indexInput, createEncrypter(indexInput, key, factory));
   }
 
   private EncryptingIndexInput(String resourceDescription, long sliceOffset, long sliceLength, boolean isClone,
-                               IndexInput indexInput, Key key, byte[] initialIv) throws IOException {
+                               IndexInput indexInput, AesCtrEncrypter encrypter) {
     super(resourceDescription);
     assert sliceOffset >= 0 && sliceLength >= 0;
     this.sliceOffset = sliceOffset;
     this.sliceEnd = sliceOffset + sliceLength;
     this.isClone = isClone;
     this.indexInput = indexInput;
-    this.key = key;
-    this.initialIv = initialIv;
-
-    cipher = createAesCtrCipher();
-    assert cipher.getBlockSize() == AES_BLOCK_SIZE : "Invalid AES block size: " + cipher.getBlockSize();
-    iv = initialIv.clone();
-    ivParameterSpec = new ReusableIvParameterSpec(iv);
-    try {
-      cipher.init(Cipher.DECRYPT_MODE, this.key, ivParameterSpec);
-    } catch (InvalidKeyException | InvalidAlgorithmParameterException e) {
-      throw new IOException(e);
-    }
-
+    this.encrypter = encrypter;
+    encrypter.init(0);
     inBuffer = ByteBuffer.allocate(getBufferSize());
     outBuffer = ByteBuffer.allocate(getBufferSize() + AES_BLOCK_SIZE);
     outBuffer.limit(0);
@@ -99,17 +103,25 @@ public class EncryptingIndexInput extends IndexInput {
   }
 
   /**
-   * Reads the initial IV at the beginning of the index input.
+   * Gets the length of the encrypted data in the delegate {@link IndexInput}.
+   * It ignores the index header and the IV at the beginning of the file, as well as the index footer at the end.
    */
-  private static byte[] readInitialIv(IndexInput indexInput) throws IOException {
-    indexInput.seek(HEADER_LENGTH);
-    byte[] initialIv = new byte[IV_LENGTH];
-    indexInput.readBytes(initialIv, 0, initialIv.length, false);
-    return initialIv;
+  private static long getEncryptedDataLength(IndexInput indexInput) {
+    return indexInput.length() - HEADER_IV_LENGTH - CodecUtil.footerLength();
   }
 
   /**
-   * Gets the buffer size. It must be a multiple of {@link EncryptingUtil#AES_BLOCK_SIZE}.
+   * Creates the {@link AesCtrEncrypter} based on the secret key and the IV at the beginning of the index input (just after the header).
+   */
+  private static AesCtrEncrypter createEncrypter(IndexInput indexInput, byte[] key, AesCtrEncrypterFactory factory) throws IOException {
+    indexInput.seek(HEADER_LENGTH);
+    byte[] iv = new byte[IV_LENGTH];
+    indexInput.readBytes(iv, 0, iv.length, false);
+    return factory.create(key, iv);
+  }
+
+  /**
+   * Gets the buffer size. It must be a multiple of {@link EncryptionUtil#AES_BLOCK_SIZE}.
    */
   protected int getBufferSize() {
     return BUFFER_SIZE;
@@ -131,7 +143,7 @@ public class EncryptingIndexInput extends IndexInput {
   }
 
   /**
-   * Gets the current internal position in the delegate {@link IndexInput}. It includes the initial IV length.
+   * Gets the current internal position in the delegate {@link IndexInput}. It includes the header and IV length.
    */
   private long getPosition() {
     return indexInput.getFilePointer() - outBuffer.remaining();
@@ -149,6 +161,7 @@ public class EncryptingIndexInput extends IndexInput {
     long delegatePosition = indexInput.getFilePointer();
     long currentPosition = delegatePosition - outBuffer.remaining();
     if (targetPosition >= currentPosition && targetPosition <= delegatePosition) {
+      // The target position is within the buffered output. Just move the output buffer position.
       outBuffer.position(outBuffer.position() + (int) (targetPosition - currentPosition));
       assert targetPosition == delegatePosition - outBuffer.remaining();
     } else {
@@ -157,26 +170,23 @@ public class EncryptingIndexInput extends IndexInput {
     }
   }
 
-  private void setPosition(long position) throws IOException {
+  private void setPosition(long position) {
     inBuffer.clear();
     outBuffer.clear();
     outBuffer.limit(0);
-    resetCipher(position);
+    // Compute the counter by ignoring the header and IV.
+    long counter = (position - HEADER_IV_LENGTH) / AES_BLOCK_SIZE;
+    encrypter.init(counter);
     padding = (int) (position & AES_BLOCK_SIZE_MOD_MASK);
     inBuffer.position(padding);
   }
 
-  private void resetCipher(long position) throws IOException {
-    // Compute the counter by ignoring the header and initial IV.
-    long counter = (position - HEADER_IV_LENGTH) / AES_BLOCK_SIZE;
-    buildAesCtrIv(initialIv, counter, iv);
-    try {
-      cipher.init(Cipher.DECRYPT_MODE, key, ivParameterSpec);
-    } catch (InvalidKeyException | InvalidAlgorithmParameterException e) {
-      throw new IOException(e);
-    }
-  }
-
+  /**
+   * Returns the number of encrypted/decrypted bytes in the file.
+   * <p>It is the logical length of the file, not the physical length. It excludes the top header and IV added artificially
+   * to manage the encryption. It includes only and all the encrypted bytes (probably a header, content, and a footer).</p>
+   * <p>With AES/CTR/NoPadding encryption, the length of the encrypted data is identical to the length of the decrypted data.</p>
+   */
   @Override
   public long length() {
     return sliceEnd - sliceOffset;
@@ -185,9 +195,11 @@ public class EncryptingIndexInput extends IndexInput {
   @Override
   public IndexInput slice(String sliceDescription, long offset, long length) throws IOException {
     if (offset < 0 || length < 0 || offset + length > length()) {
-      throw new IllegalArgumentException("Slice \"" + sliceDescription + "\" out of bounds (offset=" + offset + ", sliceLength=" + length + ", fileLength=" + length() + ") of " + this);
+      throw new IllegalArgumentException("Slice \"" + sliceDescription + "\" out of bounds (offset=" + offset
+          + ", sliceLength=" + length + ", fileLength=" + length() + ") of " + this);
     }
-    EncryptingIndexInput slice = new EncryptingIndexInput(getFullSliceDescription(sliceDescription), sliceOffset + offset, length, true, indexInput.clone(), key, initialIv);
+    EncryptingIndexInput slice = new EncryptingIndexInput(getFullSliceDescription(sliceDescription),
+        sliceOffset + offset, length, true, indexInput.clone(), encrypter.clone());
     slice.seek(0);
     return slice;
   }
@@ -201,10 +213,12 @@ public class EncryptingIndexInput extends IndexInput {
   @Override
   public void readBytes(byte[] b, int offset, int length) throws IOException {
     if (offset < 0 || length < 0 || offset + length > b.length) {
-      throw new IllegalArgumentException("Invalid read buffer parameters (offset=" + offset + ", length=" + length + ", arrayLength=" + b.length + ")");
+      throw new IllegalArgumentException("Invalid read buffer parameters (offset=" + offset + ", length=" + length
+          + ", arrayLength=" + b.length + ")");
     }
     if (getPosition() + length > sliceEnd) {
-      throw new EOFException("Read beyond EOF (position=" + (getPosition() - sliceOffset) + ", arrayLength=" + length + ", fileLength=" + length() + ") in " + this);
+      throw new EOFException("Read beyond EOF (position=" + (getPosition() - sliceOffset) + ", arrayLength=" + length
+          + ", fileLength=" + length() + ") in " + this);
     }
     while (length > 0) {
       // Transfer decrypted bytes from outBuffer.
@@ -236,20 +250,11 @@ public class EncryptingIndexInput extends IndexInput {
     }
   }
 
-  private void decryptBuffer() throws IOException {
+  private void decryptBuffer() {
     assert inBuffer.position() > padding : "position=" + inBuffer.position() + ", padding=" + padding;
     inBuffer.flip();
     outBuffer.clear();
-    int inputSize = inBuffer.remaining();
-    int numDecryptedBytes;
-    try {
-      numDecryptedBytes = cipher.update(inBuffer, outBuffer);
-    } catch (ShortBufferException e) {
-      throw new IOException(e);
-    }
-    if (numDecryptedBytes < inputSize) {
-      throw new UnsupportedOperationException("The Cipher implementation does not maintain an encryption context; this is not supported");
-    }
+    encrypter.process(inBuffer, outBuffer);
     inBuffer.clear();
     outBuffer.flip();
     if (padding > 0) {
@@ -264,36 +269,13 @@ public class EncryptingIndexInput extends IndexInput {
     clone.isClone = true;
     clone.indexInput = indexInput.clone();
     assert clone.indexInput.getFilePointer() == indexInput.getFilePointer();
-    // key, cipherPool and initialIv are the same references.
-    clone.cipher = createAesCtrCipher();
-    clone.iv = initialIv.clone();
-    clone.ivParameterSpec = new ReusableIvParameterSpec(clone.iv);
+    clone.encrypter = encrypter.clone();
     clone.inBuffer = ByteBuffer.allocate(getBufferSize());
     clone.outBuffer = ByteBuffer.allocate(getBufferSize() + AES_BLOCK_SIZE);
     clone.inArray = clone.inBuffer.array();
     clone.oneByteBuf = new byte[1];
-    try {
-      clone.setPosition(getPosition());
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
+    // The clone must be initialized.
+    clone.setPosition(getPosition());
     return clone;
-  }
-
-  /**
-   * Avoids cloning the IV in the constructor each time we need an {@link IvParameterSpec}.
-   */
-  private static class ReusableIvParameterSpec extends IvParameterSpec {
-
-    final byte[] iv;
-
-    ReusableIvParameterSpec(byte[] iv) {
-      super(EMPTY_BYTES);
-      this.iv = iv;
-    }
-
-    public byte[] getIV() {
-      return iv.clone();
-    }
   }
 }

@@ -28,6 +28,10 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.SegmentEncryptingDirectory;
 import org.apache.lucene.util.TestUtil;
 
+/**
+ * Test {@link DocValuesFormat} to demonstrate how encryption keys can be provided to an
+ * {@link org.apache.lucene.store.EncryptingDirectory} to encrypt/decrypt {@link DocValuesFormat} files.
+ */
 public class EncryptingDocValuesFormat extends DocValuesFormat {
 
   private final DocValuesFormat delegate = TestUtil.getDefaultDocValuesFormat();
