@@ -38,26 +38,7 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class TestIndexWriterMergePolicy extends LuceneTestCase {
 
-  private static final MergePolicy MERGE_ON_COMMIT_POLICY = new LogDocMergePolicy() {
-    @Override
-    public MergeSpecification findFullFlushMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext) {
-      // Optimize down to a single segment on commit
-      if (mergeTrigger == MergeTrigger.COMMIT && segmentInfos.size() > 1) {
-        List<SegmentCommitInfo> nonMergingSegments = new ArrayList<>();
-        for (SegmentCommitInfo sci : segmentInfos) {
-          if (mergeContext.getMergingSegments().contains(sci) == false) {
-            nonMergingSegments.add(sci);
-          }
-        }
-        if (nonMergingSegments.size() > 1) {
-          MergeSpecification mergeSpecification = new MergeSpecification();
-          mergeSpecification.add(new OneMerge(nonMergingSegments));
-          return mergeSpecification;
-        }
-      }
-      return null;
-    }
-  };
+  private static final MergePolicy MERGE_ON_COMMIT_POLICY = new MergeOnXMergePolicy(MergeTrigger.COMMIT);
 
   // Test the normal case
   public void testNormalCase() throws IOException {
@@ -530,6 +511,67 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
           }
         }
       }
+    }
+  }
+
+  // Test basic semantics of merge on getReader
+  public void testMergeOnGetReader() throws IOException {
+    Directory dir = newDirectory();
+
+    IndexWriter firstWriter = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
+        .setMergePolicy(NoMergePolicy.INSTANCE));
+    for (int i = 0; i < 5; i++) {
+      TestIndexWriter.addDoc(firstWriter);
+      firstWriter.flush();
+    }
+    DirectoryReader firstReader = DirectoryReader.open(firstWriter);
+    assertEquals(5, firstReader.leaves().size());
+    firstReader.close();
+    firstWriter.close(); // When this writer closes, it does not merge on commit.
+
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()))
+        .setMergePolicy(new MergeOnXMergePolicy(MergeTrigger.GET_READER)).setMaxCommitMergeWaitMillis(Integer.MAX_VALUE);
+
+    IndexWriter writerWithMergePolicy = new IndexWriter(dir, iwc);
+
+    try (DirectoryReader unmergedReader =  DirectoryReader.open(dir)) { // No changes. GetReader doesn't trigger a merge.
+      assertEquals(5, unmergedReader.leaves().size());
+    }
+
+    TestIndexWriter.addDoc(writerWithMergePolicy);
+    try (DirectoryReader mergedReader =  writerWithMergePolicy.getReader()) {
+      // Doc added, do merge on getReader.
+      assertEquals(1, mergedReader.leaves().size());
+    }
+
+    writerWithMergePolicy.close();
+    dir.close();
+  }
+
+  private static class MergeOnXMergePolicy extends LogDocMergePolicy {
+    private final MergeTrigger trigger;
+
+    private MergeOnXMergePolicy(MergeTrigger trigger) {
+      this.trigger = trigger;
+    }
+
+    @Override
+    public MergeSpecification findFullFlushMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext) {
+      // Optimize down to a single segment on commit
+      if (mergeTrigger == trigger && segmentInfos.size() > 1) {
+        List<SegmentCommitInfo> nonMergingSegments = new ArrayList<>();
+        for (SegmentCommitInfo sci : segmentInfos) {
+          if (mergeContext.getMergingSegments().contains(sci) == false) {
+            nonMergingSegments.add(sci);
+          }
+        }
+        if (nonMergingSegments.size() > 1) {
+          MergeSpecification mergeSpecification = new MergeSpecification();
+          mergeSpecification.add(new OneMerge(nonMergingSegments));
+          return mergeSpecification;
+        }
+      }
+      return null;
     }
   }
 }

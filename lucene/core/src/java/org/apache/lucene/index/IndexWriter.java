@@ -573,6 +573,16 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
           if (applyAllDeletes) {
             applyAllDeletesAndUpdates();
           }
+          final long maxCommitMergeWaitMillis = config.getMaxCommitMergeWaitMillis();
+          if (maxCommitMergeWaitMillis > 0) {
+            MergePolicy.MergeSpecification onCommitMerges = updatePendingMerges(config.getMergePolicy(),
+                MergeTrigger.GET_READER, UNBOUNDED_MAX_MERGE_SEGMENTS);
+            if (onCommitMerges != null) {
+              mergeScheduler.merge(mergeSource, MergeTrigger.GET_READER);
+              onCommitMerges.await(maxCommitMergeWaitMillis, TimeUnit.MILLISECONDS);
+            }
+          }
+
 
           synchronized(this) {
 
@@ -2168,6 +2178,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       }
     } else {
       switch (trigger) {
+        case GET_READER:
         case COMMIT:
           spec = mergePolicy.findFullFlushMerges(trigger, segmentInfos, this);
           break;
