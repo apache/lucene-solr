@@ -29,10 +29,43 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.RankQParserPlugin;
 import org.apache.solr.uninverting.UninvertingReader.Type;
 
+/**
+ * <p>
+ * {@code RankField}s can be used to store scoring factors to improve document ranking. They should be used
+ * in combination with {@link RankQParserPlugin}. To use:
+ * </p>
+ * <p>
+ * Define the {@code RankField} {@code fieldType} in your schema:
+ * </p>
+ * <pre class="prettyprint">
+ * &lt;fieldType name="rank" class="solr.RankField" /&gt;
+ * </pre>
+ * <p>
+ * Add fields to the schema, i.e.:
+ * </p>
+ * <pre class="prettyprint">
+ * &lt;field name="rank_1" type="rank" /&gt;
+ * </pre>
+ * 
+ * Query using the {@link RankQParserPlugin}, for example
+ * <pre class="prettyprint">
+ * http://localhost:8983/solr/techproducts?q=memory _query_:{!rank f='rank_1', function='log' scalingFactor='1.2'}
+ * </pre>
+ * 
+ * @see RankQParserPlugin
+ * @lucene.experimental
+ * @since 8.6
+ */
 public class RankField extends FieldType {
   
+  /*
+   * While the user can create multiple RankFields, internally we use a single Lucene field,
+   * and we map the Solr field name to the "feature" in Lucene's FeatureField. This is mainly
+   * to simplify the user experience.
+   */
   public static final String INTERNAL_RANK_FIELD_NAME = "_internal_rank_field";
 
   @Override
@@ -75,6 +108,7 @@ public class RankField extends FieldType {
     } catch (NumberFormatException nfe) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error while creating field '" + name + "' from value '" + val + "'. Expecting float.", nfe);
     }
+    // Internally, we always use the same field
     return new FeatureField(INTERNAL_RANK_FIELD_NAME, name, featureValue);
   }
   

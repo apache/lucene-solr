@@ -25,7 +25,17 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.RankField;
 import org.apache.solr.schema.SchemaField;
-
+/**
+ * {@code RankQParserPlugin} can be used to introduce document-depending scoring factors to ranking.
+ * While this {@code QParser} delivers a (subset of) functionality already available via {@link FunctionQParser},
+ * the benefit is that {@code RankQParserPlugin} can be used in combination with the {@code minExactCount} to
+ * use BlockMax-WAND algorithm (skip non-competitive documents) to provide faster responses. 
+ * 
+ *  @see RankField
+ * 
+ * @lucene.experimental
+ * @since 8.6
+ */
 public class RankQParserPlugin extends QParserPlugin {
   
   public static final String NAME = "rank";
