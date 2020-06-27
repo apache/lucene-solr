@@ -27,6 +27,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
@@ -67,9 +68,9 @@ public class TestPhraseWildcardQuery extends LuceneTestCase {
     super.setUp();
     directory = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), directory,
-                                                 newIndexWriterConfig().setMergePolicy(newLogMergePolicy())); // do not accidentally merge
-                                                                                                              // the two segments we create
-                                                                                                              // here
+                                                 newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE)); // do not accidentally merge
+                                                                                                                 // the two segments we create
+                                                                                                                 // here
     iw.setDoRandomForceMerge(false); // Keep the segments separated.
     addSegments(iw);
     reader = iw.getReader();
