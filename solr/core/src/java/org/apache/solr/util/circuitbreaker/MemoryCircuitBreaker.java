@@ -22,15 +22,6 @@ import java.lang.management.MemoryMXBean;
 
 import org.apache.solr.core.SolrCore;
 
-/**
- * Tracks the current JVM heap usage and triggers if it exceeds the defined percentage of the maximum
- * heap size allocated to the JVM. This circuit breaker is a part of the default CircuitBreakerManager
- * so is checked for every request -- hence it is realtime. Once the memory usage goes below the threshold,
- * it will start allowing queries again.
- *
- * The memory threshold is defined as a percentage of the maximum memory allocated -- see memoryCircuitBreakerThreshold
- * in solrconfig.xml
- */
 public class MemoryCircuitBreaker extends CircuitBreaker {
   private static final MemoryMXBean MEMORY_MX_BEAN = ManagementFactory.getMemoryMXBean();
 

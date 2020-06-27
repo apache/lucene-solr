@@ -303,27 +303,27 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
 
     final RTimerTree timer = rb.isDebug() ? req.getRequestTimer() : null;
 
-    if (req.getCore().getSolrConfig().useCircuitBreakers) {
-      Map<CircuitBreakerType, CircuitBreaker> trippedCircuitBreakers;
-      if (timer != null) {
-        RTimerTree subt = timer.sub("circuitbreaker");
-        rb.setTimer(subt);
+    Map<CircuitBreakerType, CircuitBreaker> trippedCircuitBreakers;
 
-        CircuitBreakerManager circuitBreakerManager = req.getCore().getCircuitBreakerManager();
-        trippedCircuitBreakers = circuitBreakerManager.checkAllCircuitBreakers();
+    if (timer != null) {
+      RTimerTree subt = timer.sub("circuitbreaker");
+      rb.setTimer(subt.sub("circuitbreaker"));
 
-        rb.getTimer().stop();
-      } else {
-        CircuitBreakerManager circuitBreakerManager = req.getCore().getCircuitBreakerManager();
-        trippedCircuitBreakers = circuitBreakerManager.checkAllCircuitBreakers();
-      }
+      CircuitBreakerManager circuitBreakerManager = req.getCore().getCircuitBreakerManager();
+      trippedCircuitBreakers = circuitBreakerManager.checkAllCircuitBreakers();
 
-      if (trippedCircuitBreakers != null) {
-        String errorMessage = CircuitBreakerManager.constructFinalErrorMessageString(trippedCircuitBreakers);
-        rsp.add(STATUS, FAILURE);
-        rsp.setException(new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Circuit Breakers tripped " + errorMessage));
-        return;
-      }
+      rb.getTimer().stop();
+      subt.stop();
+    } else {
+      CircuitBreakerManager circuitBreakerManager = req.getCore().getCircuitBreakerManager();
+      trippedCircuitBreakers = circuitBreakerManager.checkAllCircuitBreakers();
+    }
+
+    if (trippedCircuitBreakers != null) {
+      String errorMessage = CircuitBreakerManager.constructFinalErrorMessageString(trippedCircuitBreakers);
+      rsp.add(STATUS, FAILURE);
+      rsp.setException(new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Circuit Breakers tripped " + errorMessage));
+      return;
     }
 
     final ShardHandler shardHandler1 = getAndPrepShardHandler(req, rb); // creates a ShardHandler object only if it's needed

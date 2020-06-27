@@ -12,7 +12,7 @@ New Features
 ---------------------
 * SOLR-14440: Introduce new Certificate Authentication Plugin to load Principal from certificate subject. (Mike Drob)
 
-* SOLR-14588: Implement Circuit Breakers Infrastructure and add max JVM usage based circuit breaker (Atri Sharma)
+* SOLR-14588: Implement Circuit Breakers Infrastructure and add JVM Circuit Breaker (Atri Sharma)
 
 Improvements
 ----------------------
