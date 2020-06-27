@@ -130,9 +130,12 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       //test with a class  @EndPoint methods. This also uses a template in the path name
       plugin.klass = C4.class.getName();
       plugin.name = "collections";
+      plugin.pathPrefix = "collections";
       expectError(req, cluster.getSolrClient(), errPath, "path must not have a prefix: collections");
 
       plugin.name = "my-random-name";
+      plugin.pathPrefix = "my-random-prefix";
+
       req.process(cluster.getSolrClient());
 
       //let's test the plugin
@@ -144,7 +147,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
           ImmutableMap.of("/method.name", "m1"));
 
   TestDistribPackageStore.assertResponseValues(10,
-          () -> new V2Request.Builder("/my-random-name/their/plugin")
+          () -> new V2Request.Builder("/my-random-prefix/their/plugin")
               .forceV2(true)
               .withMethod(GET)
               .build().process(cluster.getSolrClient()),
@@ -320,7 +323,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     }
 
     @EndPoint(method = GET,
-        path = "$plugin-name/their/plugin",
+        path = "$path-prefix/their/plugin",
         permission = PermissionNameProvider.Name.READ_PERM)
     public void m2(SolrQueryRequest req, SolrQueryResponse rsp) {
       rsp.add("method.name", "m2");
