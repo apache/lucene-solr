@@ -18,18 +18,27 @@
 package org.apache.solr.pkg;
 
 import java.io.Closeable;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Supplier;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.util.SimplePostTool;
+import org.apache.zookeeper.server.ByteBufferInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -303,9 +312,12 @@ public class PackageLoader implements Closeable {
     }
   }
   static class PackageResourceLoader extends SolrResourceLoader {
+    List<Path> paths;
+
 
     PackageResourceLoader(String name, List<Path> classpath, Path instanceDir, ClassLoader parent) {
       super(name, classpath, instanceDir, parent);
+      this.paths = classpath;
     }
 
     @Override
@@ -328,6 +340,48 @@ public class PackageLoader implements Closeable {
     @Override
     public  <T> void addToInfoBeans(T obj) {
       //do not do anything. It should be handled externally
+    }
+
+    @Override
+    public InputStream openResource(String resource) throws IOException {
+      for (Path path : paths) {
+        try(FileInputStream in = new FileInputStream(path.toFile())) {
+          ZipInputStream zis = new ZipInputStream(in);
+          try {
+            ZipEntry entry;
+            while ((entry = zis.getNextEntry()) != null) {
+              if (resource == null || resource.equals(entry.getName())) {
+                SimplePostTool.BAOS out = new SimplePostTool.BAOS();
+                byte[] buffer = new byte[2048];
+                int size;
+                while ((size = zis.read(buffer, 0, buffer.length)) != -1) {
+                  out.write(buffer, 0, size);
+                }
+                out.close();
+                return new ByteBufferStream(out.getByteBuffer());
+              }
+            }
+          } finally {
+            zis.closeEntry();
+          }
+        }
+      }
+
+      return null;
+    }
+  }
+
+  private static class ByteBufferStream extends ByteBufferInputStream implements Supplier<ByteBuffer> {
+    private final ByteBuffer buf ;
+
+    public ByteBufferStream(ByteBuffer buf) {
+      super(buf);
+      this.buf = buf;
+    }
+
+    @Override
+    public ByteBuffer get() {
+      return buf;
     }
   }
 

@@ -30,8 +30,10 @@ import java.util.Map;
 import java.util.Objects;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.cloud.ClusterPropertiesListener;
 import org.apache.solr.common.util.Pair;
@@ -264,11 +266,23 @@ public class CustomContainerPlugins implements ClusterPropertiesListener {
       if (this.holders != null) return;
       Constructor constructor = klas.getConstructors()[0];
       if (constructor.getParameterTypes().length == 0) {
-        instance = constructor.newInstance();
+        instance = pkgVersion.getLoader().newInstance(klas.getName(), Object.class);
       } else if (constructor.getParameterTypes().length == 1 && constructor.getParameterTypes()[0] == CoreContainer.class) {
-        instance = constructor.newInstance(coreContainer);
+        instance = pkgVersion.getLoader().newInstance(
+            klas.getName(),
+            Object.class,
+            new String[0],
+            new Class[]{CoreContainer.class},
+            new Object[]{coreContainer});
       } else {
         throw new RuntimeException("Must have a no-arg constructor or CoreContainer constructor ");
+      }
+      if (instance instanceof ResourceLoaderAware) {
+        try {
+          ((ResourceLoaderAware) instance).inform(pkgVersion.getLoader());
+        } catch (IOException e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        }
       }
       this.holders = new ArrayList<>();
       for (Api api : AnnotatedApi.getApis(instance)) {
