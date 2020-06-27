@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.component;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URL;
