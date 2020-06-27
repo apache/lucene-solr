@@ -164,6 +164,9 @@ grant {
 
   // used by solr to create sandboxes (e.g. script execution)
   permission java.security.SecurityPermission "createAccessControlContext";
+
+  // Needed for annotations for V2 APIs.
+  permission java.lang.RuntimePermission "accessClassInPackage.jdk.internal.reflect";
 };
 
 // additional permissions based on system properties set by /bin/solr
