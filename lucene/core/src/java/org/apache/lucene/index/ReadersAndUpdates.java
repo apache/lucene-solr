@@ -695,18 +695,8 @@ final class ReadersAndUpdates {
     return isMerging;
   }
 
-  final static class MergeReader {
-    final SegmentReader reader;
-    final Bits hardLiveDocs;
-
-    MergeReader(SegmentReader reader, Bits hardLiveDocs) {
-      this.reader = reader;
-      this.hardLiveDocs = hardLiveDocs;
-    }
-  }
-
   /** Returns a reader for merge, with the latest doc values updates and deletions. */
-  synchronized MergeReader getReaderForMerge(IOContext context) throws IOException {
+  synchronized MergePolicy.MergeReader getReaderForMerge(IOContext context) throws IOException {
 
     // We must carry over any still-pending DV updates because they were not
     // successfully written, e.g. because there was a hole in the delGens,
@@ -728,7 +718,7 @@ final class ReadersAndUpdates {
       reader = createNewReaderWithLatestLiveDocs(reader);
     }
     assert pendingDeletes.verifyDocCounts(reader);
-    return new MergeReader(reader, pendingDeletes.getHardLiveDocs());
+    return new MergePolicy.MergeReader(reader, pendingDeletes.getHardLiveDocs());
   }
   
   /**
