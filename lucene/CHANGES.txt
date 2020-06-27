@@ -44,6 +44,10 @@ New Features
 * LUCENE-7889: Grouping by range based on values from DoubleValuesSource and LongValuesSource
   (Alan Woodward)
 
+* LUCENE-8962: Add IndexWriter merge-on-commit feature to selectively merge small segments on commit,
+  subject to a configurable timeout, to improve search performance by reducing the number of small
+  segments for searching (Michael Froh, Mike Sokolov, Mike Mccandless, Simon Willnauer)
+
 Improvements
 ---------------------
 * LUCENE-9276: Use same code-path for updateDocuments and updateDocument in IndexWriter and
@@ -269,8 +273,6 @@ Improvements
   the tokenizer emits original (compound) tokens when the mode is not NORMAL. (Kazuaki Hiraga via Tomoko Uchida)
 
 * LUCENE-9253: KoreanTokenizer now supports custom dictionaries(system, unknown). (Namgyu Kim)
-
-* LUCENE-8962: Add ability to selectively merge on commit (Michael Froh)
 
 * LUCENE-9171: QueryBuilder can now use BoostAttributes on input token streams to selectively
   boost particular terms or synonyms in parsed queries. (Alessandro Benedetti, Alan Woodward)

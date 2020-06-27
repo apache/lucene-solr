@@ -1006,6 +1006,7 @@ public abstract class LuceneTestCase extends Assert {
     if (rarely(r)) {
       c.setCheckPendingFlushUpdate(false);
     }
+    c.setMaxCommitMergeWaitMillis(rarely() ?  atLeast(r, 1000) : atLeast(r, 200));
     return c;
   }
 
