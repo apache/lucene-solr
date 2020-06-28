@@ -20,6 +20,7 @@ package org.apache.solr.api;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -87,16 +88,18 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
   public static List<Api> getApis(Object obj) {
     return getApis(obj.getClass(), obj);
   }
-  public static List<Api> getApis(Class<? extends Object> klas , Object obj) {
-    if (!Modifier.isPublic(klas.getModifiers())) {
-      throw new RuntimeException(klas.getName() + " is not public");
+  public static List<Api> getApis(Class<? extends Object> theClass , Object obj)  {
+    Class<?> klas = null;
+    try {
+      klas = MethodHandles.publicLookup().accessClass(theClass);
+    } catch (IllegalAccessException e) {
+      throw new RuntimeException(klas.getName() + " is not public", e);
     }
-
     if (klas.getAnnotation(EndPoint.class) != null) {
       EndPoint endPoint = klas.getAnnotation(EndPoint.class);
       List<Method> methods = new ArrayList<>();
       Map<String, Cmd> commands = new HashMap<>();
-      for (Method m : klas.getDeclaredMethods()) {
+      for (Method m : klas.getMethods()) {
         Command command = m.getAnnotation(Command.class);
         if (command != null) {
           methods.add(m);
@@ -113,7 +116,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
       return Collections.singletonList(new AnnotatedApi(specProvider, endPoint, commands, null));
     } else {
       List<Api> apis = new ArrayList<>();
-      for (Method m : klas.getDeclaredMethods()) {
+      for (Method m : klas.getMethods()) {
         EndPoint endPoint = m.getAnnotation(EndPoint.class);
         if (endPoint == null) continue;
         if (!Modifier.isPublic(m.getModifiers())) {
@@ -212,7 +215,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
 
   static class Cmd {
     final String command;
-    final Method method;
+    final MethodHandle method;
     final Object obj;
     ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper();
     int paramsCount;
@@ -225,7 +228,11 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
       if (Modifier.isPublic(method.getModifiers())) {
         this.command = command;
         this.obj = obj;
-        this.method = method;
+        try {
+          this.method = MethodHandles.publicLookup().unreflect(method);
+        } catch (IllegalAccessException e) {
+          throw new RuntimeException("Unable to unlookup method");
+        }
         Class<?>[] parameterTypes = method.getParameterTypes();
         paramsCount = parameterTypes.length;
         if (parameterTypes.length == 1) {
@@ -306,7 +313,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
       } catch (InvocationTargetException ite) {
         log.error("Error executing command ", ite);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, ite.getCause());
-      } catch (Exception e) {
+      } catch (Throwable e) {
         log.error("Error executing command : ", e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
