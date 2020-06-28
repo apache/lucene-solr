@@ -18,11 +18,16 @@
 package org.apache.solr.handler;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.function.Supplier;
 
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
+import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.analysis.util.ResourceLoaderAware;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.solr.api.Command;
@@ -39,6 +44,7 @@ import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.NavigableObject;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.filestore.PackageStoreAPI;
 import org.apache.solr.filestore.TestDistribPackageStore;
 import org.apache.solr.filestore.TestDistribPackageStore.Fetcher;
@@ -125,9 +131,12 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       //test with a class  @EndPoint methods. This also uses a template in the path name
       plugin.klass = C4.class.getName();
       plugin.name = "collections";
+      plugin.pathPrefix = "collections";
       expectError(req, cluster.getSolrClient(), errPath, "path must not have a prefix: collections");
 
       plugin.name = "my-random-name";
+      plugin.pathPrefix = "my-random-prefix";
+
       req.process(cluster.getSolrClient());
 
       //let's test the plugin
@@ -139,7 +148,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
           ImmutableMap.of("/method.name", "m1"));
 
   TestDistribPackageStore.assertResponseValues(10,
-          () -> new V2Request.Builder("/my-random-name/their/plugin")
+          () -> new V2Request.Builder("/my-random-prefix/their/plugin")
               .forceV2(true)
               .withMethod(GET)
               .build().process(cluster.getSolrClient()),
@@ -189,7 +198,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       plugin.name = "myplugin";
       plugin.klass = "mypkg:org.apache.solr.handler.MyPlugin";
       plugin.version = add.version;
-      V2Request req1 = new V2Request.Builder("/cluster/plugin")
+      final V2Request req1 = new V2Request.Builder("/cluster/plugin")
           .forceV2(true)
           .withMethod(POST)
           .withPayload(singletonMap("add", plugin))
@@ -240,9 +249,44 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       TestDistribPackageStore.assertResponseValues(10,
           invokePlugin,
           ImmutableMap.of("/myplugin.version", "2.0"));
+
+      plugin.name = "plugin2";
+      plugin.klass = "mypkg:"+ C5.class.getName();
+      plugin.version = "2.0";
+      req1.process(cluster.getSolrClient());
+      assertNotNull(C5.classData);
+      assertEquals( 1452, C5.classData.limit());
     } finally {
       cluster.shutdown();
     }
+  }
+
+  public static class C5 implements ResourceLoaderAware {
+    static ByteBuffer classData;
+    private  SolrResourceLoader resourceLoader;
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public void inform(ResourceLoader loader) throws IOException {
+      this.resourceLoader = (SolrResourceLoader) loader;
+      try {
+        InputStream is = resourceLoader.openResource("org/apache/solr/handler/MyPlugin.class");
+        if (is instanceof Supplier) {
+          classData = ((Supplier<ByteBuffer>) is).get();
+        }
+      } catch (IOException e) {
+        //do not do anything
+      }
+    }
+
+    @EndPoint(method = GET,
+        path = "/$plugin-name/m2",
+        permission = PermissionNameProvider.Name.COLL_READ_PERM)
+    public void m2() {
+
+
+    }
+
   }
 
   public static class C1 {
@@ -280,7 +324,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     }
 
     @EndPoint(method = GET,
-        path = "$plugin-name/their/plugin",
+        path = "$path-prefix/their/plugin",
         permission = PermissionNameProvider.Name.READ_PERM)
     public void m2(SolrQueryRequest req, SolrQueryResponse rsp) {
       rsp.add("method.name", "m2");
