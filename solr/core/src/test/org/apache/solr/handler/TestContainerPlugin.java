@@ -20,7 +20,6 @@ package org.apache.solr.handler;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.function.Supplier;
@@ -54,6 +53,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
@@ -179,7 +179,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       Package.AddVersion add = new Package.AddVersion();
       add.version = "1.0";
       add.pkg = "mypkg";
-      add.files = List.of(FILE1);
+      add.files = singletonList(FILE1);
       V2Request addPkgVersionReq = new V2Request.Builder("/cluster/package")
           .forceV2(true)
           .withMethod(POST)
@@ -223,7 +223,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
       //now let's upload the jar file for version 2.0 of the plugin
       add.version = "2.0";
-      add.files = List.of(FILE2);
+      add.files = singletonList(FILE2);
       addPkgVersionReq.process(cluster.getSolrClient());
 
       //here the plugin version is updated
@@ -244,7 +244,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
               "/plugin/myplugin/class", plugin.klass,
               "/plugin/myplugin/version", "2.0"
           ));
-      // invoke the plugin and test the output
+      // invoke the plugin and test thye output
       TestDistribPackageStore.assertResponseValues(10,
           invokePlugin,
           ImmutableMap.of("/myplugin.version", "2.0"));
