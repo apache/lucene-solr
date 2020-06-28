@@ -212,7 +212,7 @@ Parameters might also be multivalue references. The former example above is equi
 q={!bool must=$ref}&ref=foo&ref=bar
 ----
 
-Referred queries might be excuded via tags.
+Referred queries might be excuded via tags. Overall the idea is similar to <<faceting.adoc#tagging-and-excluding-filters, excluding fq in facets>>.
 
 [source,text]
 ----
