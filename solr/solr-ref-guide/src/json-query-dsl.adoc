@@ -303,6 +303,37 @@ include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-ipod-query-bool-c
 ====
 --
 
+Example of referencing <<json-query-dsl.adoc#additional-queries>>, <<json-query-dsl.adoc#tagging-in-json-query-dsl,tagging>> and <<other-parsers.adoc#boolean-query-parser,exclusions>>:
+
+[.dynamic-tabs]
+--
+[example.tab-pane#curl-ipod-query-bool-excluded]
+====
+[.tab-label]*curl*
+[source,bash]
+----
+curl -X POST http://localhost:8983/solr/techproducts/query -d '
+{
+    "queries": {
+       "query_filters":[                                            // 1.
+           {"#size_tag":{"field":{"f":"size","query":"XL"}}},
+           {"#color_tag":{"field":{"f":"color","query":"Red"}}}     // 2.
+       ]
+    },
+    "query": {
+        "bool": {
+            "must": {"param":"query_filters"},                      // refer both of 1.
+            "excludeTags": "color_tag"                              // excluding 2.
+        }
+    }
+}'
+
+----
+====
+--
+
+Thus, the query above will return only docs matching `size:XL`.
+
 == Filter Queries
 The syntaxes discussed above can also be used to specify query filters (under the `filter` key) in addition to the main query itself.
 
