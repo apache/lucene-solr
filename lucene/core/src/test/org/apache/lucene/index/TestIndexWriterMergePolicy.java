@@ -377,6 +377,8 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
       try (IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig()
           .setMergePolicy(MERGE_ON_COMMIT_POLICY).setMaxCommitMergeWaitMillis(30 * 1000)
           .setSoftDeletesField("soft_delete")
+          .setMaxBufferedDocs(Integer.MAX_VALUE)
+          .setRAMBufferSizeMB(100)
           .setMergeScheduler(new ConcurrentMergeScheduler())) {
         @Override
         protected void merge(MergePolicy.OneMerge merge) throws IOException {
