@@ -109,7 +109,7 @@ public class TestSoftDeletesRetentionMergePolicy extends LuceneTestCase {
 
   public void testKeepFullyDeletedSegments() throws IOException {
     Directory dir = newDirectory();
-    IndexWriterConfig indexWriterConfig = newIndexWriterConfig();
+    IndexWriterConfig indexWriterConfig = newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE);
     IndexWriter writer = new IndexWriter(dir, indexWriterConfig);
 
     Document doc = new Document();
