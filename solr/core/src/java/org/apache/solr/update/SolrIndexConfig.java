@@ -69,12 +69,18 @@ public class SolrIndexConfig implements MapSerializable {
   public final double ramBufferSizeMB;
   public final int ramPerThreadHardLimitMB;
   /**
+   * <p>
    * When using a custom merge policy that allows triggering synchronous merges on commit
    * (see {@link MergePolicy#findFullFlushMerges(org.apache.lucene.index.MergeTrigger, org.apache.lucene.index.SegmentInfos, org.apache.lucene.index.MergePolicy.MergeContext)}),
-   * a timeout (in seconds) can be set for those merges to finish. Use {@code <maxCommitMergeWaitSeconds>10</maxCommitMergeWaitSeconds>} in the {@code <indexConfig>} section.
-   * See {@link IndexWriterConfig#setMaxCommitMergeWaitSeconds(long)}.
+   * a timeout (in milliseconds) can be set for those merges to finish. Use {@code <maxCommitMergeWait>1000</maxCommitMergeWait>} in the {@code <indexConfig>} section.
+   * See {@link IndexWriterConfig#setMaxCommitMergeWaitMillis(long)}.
+   * </p>
+   * <p>
+   * Note that as of Solr 8.6, no {@code MergePolicy} shipped with Lucene/Solr make use of
+   * {@code MergePolicy.findFullFlushMerges}, which means this setting has no effect unless a custom {@code MergePolicy} is used.
+   * </p> 
    */
-  public final int maxCommitMergeWaitSeconds;
+  public final int maxCommitMergeWaitMillis;
 
   public final int writeLockTimeout;
   public final String lockType;
@@ -94,7 +100,7 @@ public class SolrIndexConfig implements MapSerializable {
     maxBufferedDocs = -1;
     ramBufferSizeMB = 100;
     ramPerThreadHardLimitMB = -1;
-    maxCommitMergeWaitSeconds = -1;
+    maxCommitMergeWaitMillis = -1;
     writeLockTimeout = -1;
     lockType = DirectoryFactory.LOCK_TYPE_NATIVE;
     mergePolicyFactoryInfo = null;
@@ -139,7 +145,7 @@ public class SolrIndexConfig implements MapSerializable {
     useCompoundFile = solrConfig.getBool(prefix+"/useCompoundFile", def.useCompoundFile);
     maxBufferedDocs = solrConfig.getInt(prefix+"/maxBufferedDocs", def.maxBufferedDocs);
     ramBufferSizeMB = solrConfig.getDouble(prefix+"/ramBufferSizeMB", def.ramBufferSizeMB);
-    maxCommitMergeWaitSeconds = solrConfig.getInt(prefix+"/maxCommitMergeWaitSeconds", def.maxCommitMergeWaitSeconds);
+    maxCommitMergeWaitMillis = solrConfig.getInt(prefix+"/maxCommitMergeWait", def.maxCommitMergeWaitMillis);
 
     // how do we validate the value??
     ramPerThreadHardLimitMB = solrConfig.getInt(prefix+"/ramPerThreadHardLimitMB", def.ramPerThreadHardLimitMB);
@@ -194,7 +200,7 @@ public class SolrIndexConfig implements MapSerializable {
         "maxBufferedDocs", maxBufferedDocs,
         "ramBufferSizeMB", ramBufferSizeMB,
         "ramPerThreadHardLimitMB", ramPerThreadHardLimitMB,
-        "maxCommitMergeWaitSeconds", maxCommitMergeWaitSeconds,
+        "maxCommitMergeWait", maxCommitMergeWaitMillis,
         "writeLockTimeout", writeLockTimeout,
         "lockType", lockType,
         "infoStreamEnabled", infoStream != InfoStream.NO_OUTPUT);
@@ -241,8 +247,8 @@ public class SolrIndexConfig implements MapSerializable {
       iwc.setRAMPerThreadHardLimitMB(ramPerThreadHardLimitMB);
     }
     
-    if (maxCommitMergeWaitSeconds > 0) {
-      iwc.setMaxCommitMergeWaitSeconds(maxCommitMergeWaitSeconds);
+    if (maxCommitMergeWaitMillis > 0) {
+      iwc.setMaxCommitMergeWaitMillis(maxCommitMergeWaitMillis);
     }
 
     iwc.setSimilarity(schema.getSimilarity());
