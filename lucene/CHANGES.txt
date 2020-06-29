@@ -192,6 +192,10 @@ New Features
 * LUCENE-7889: Grouping by range based on values from DoubleValuesSource and LongValuesSource
   (Alan Woodward)
 
+* LUCENE-8962: Add IndexWriter merge-on-commit feature to selectively merge small segments on commit,
+  subject to a configurable timeout, to improve search performance by reducing the number of small
+  segments for searching (Michael Froh, Mike Sokolov, Mike Mccandless, Simon Willnauer)
+
 Improvements
 ---------------------
 * LUCENE-9276: Use same code-path for updateDocuments and updateDocument in IndexWriter and
@@ -332,6 +336,8 @@ Build
   (Andras Salamon via Erick Erickson)
 
 * LUCENE-9380: Fix auxiliary class warnings in Lucene (Erick Erickson)
+
+* LUCENE-9389: Enhance gradle logging calls validation: eliminate getMessage() (Andras Salamon via Erick Erickson)
 
 ======================= Lucene 8.5.2 =======================
 

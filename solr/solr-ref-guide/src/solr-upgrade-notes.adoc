@@ -38,6 +38,53 @@ Detailed steps for upgrading a Solr cluster are in the section <<upgrading-a-sol
 
 If you are upgrading from 7.x, see the section <<Upgrading from 7.x Releases>> below.
 
+=== Solr 8.6
+
+See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote86[8.6 Release Notes]
+for an overview of the main new features of Solr 8.6.
+
+When upgrading to 8.6.x users should be aware of the following major changes from 8.5.
+
+*Support for Block-Max WAND*
+
+Lucene added support for Block-Max WAND in 8.0, and 8.6 makes this available for Solr also.
+
+It is enabled when using a new query parameter `minExactCount`.
+This parameter tells Solr to accurately count the number of hits accurately until at least this value.
+Once this value is reached, Solr can skip over documents that don't have a score high enough to be in the top set of documents, which has the potential for greatly speeding up searches.
+
+It's important to note that when using this parameter, the hit count of searches may not be accurate.
+It is guaranteed that the hit count is accurate up to the value of `minExactCount`, but any returned hit count higher than that may be an approximation.
+
+A new boolean attribute `numFoundExact` is included in all responses to indicate if the hit count in the response is expected to be exact or not.
+
+More information about this new feature is available in the section <<common-query-parameters.adoc#minexactcount-parameter,minExactCount Parameter>>.
+
+*Autoscaling*
+
+* Solr now includes a default autoscaling policy.
+This policy can be overridden with your custom rules or by specifying an empty policy to replace the default.
++
+For details of the default policy, see the section <<solrcloud-autoscaling-overview.adoc#cluster-policy,Cluster Policy>>.
+
+* The <<solrcloud-autoscaling-trigger-actions.adoc#compute-plan-action,ComputePlan action>> now supports a collection selector to identify collections based on collection properties to determine which collections should be operated on.
+
+*Security*
+
+* A new authorization plugin `ExternalRoleRuleBasedAuthorizationPlugin` is now available.
+This plugin allows an authentication plugin (such as JWT) to supply a user's roles instead of maintaining a user-to-role mapping inside Solr.
+
+* When authentication is enabled, the Admin UI Dashboard (main screen) now includes a panel that shows the authentication and authorization plugins in use, the logged in username, and the roles assigned to this user.
+A new link will also appear in the left-hand navigation to allow a user to log out.
+
+*Streaming Expressions*
+
+* The `/export` handler now supports streaming expressions to allow limiting the output of the export to only matching documents.
++
+For more information about how to use this, see the section <<exporting-result-sets.adoc#specifying-the-local-streaming-expression,Specifying the Local Streaming Expression>>.
+
+* The `stats`, `facet`, and `timeseries` expressions now support percentiles and standard deviation aggregations.
+
 === Solr 8.5
 
 See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote85[8.5 Release Notes]
@@ -45,7 +92,7 @@ for an overview of the main new features of Solr 8.5.
 
 When upgrading to 8.5.x users should be aware of the following major changes from 8.4.
 
-__Note: an index incompatibility warning was retroactively added below to 8.4 for users choosing a non-default postings format (e.g. "FST50").__
+__Note: an index incompatibility warning was retroactively added below to 8.4 for users choosing a non-default postings format (e.g., "FST50").__
 
 *Considerations for a SolrCloud Upgrade*
 

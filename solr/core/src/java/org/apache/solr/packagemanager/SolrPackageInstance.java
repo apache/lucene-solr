@@ -19,6 +19,7 @@ package org.apache.solr.packagemanager;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
@@ -61,7 +62,7 @@ public class SolrPackageInstance implements ReflectMapWriter {
 
   @Override
   public int hashCode() {
-    throw new UnsupportedOperationException("TODO unimplemented");
+    return Objects.hash(name, version);
   }
 
   @Override

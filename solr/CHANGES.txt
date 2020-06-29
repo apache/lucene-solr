@@ -111,6 +111,9 @@ New Features
 
 * SOLR-14404: CoreContainer level custom requesthandlers (noble)
 
+* SOLR-13749: Join queries can now work cross-collection, even when sharded or when spanning nodes.
+  (Dan Fox, Kevin Watters, via Gus Heck, David Smiley)
+
 Improvements
 ---------------------
 * SOLR-14316: Remove unchecked type conversion warning in JavaBinCodec's readMapEntry's equals() method
@@ -160,6 +163,9 @@ Improvements
 * SOLR-14561: CoreAdminAPI's parameters instanceDir and dataDir are now validated, and must be relative to either
   SOLR_HOME, SOLR_DATA_HOME or coreRootDir. Added new solr.xml config 'allowPaths', controlled by system property
   'solr.allowPaths' that allows you to add other allowed paths when needed.
+
+* SOLR-13286: Metrics will no longer write a (sometimes large) log message every minute. This can be re-enabled
+  via log4j2.xml if desired, or other HttpSolrCall log messages may be quieted on a per handler basis. (Gus Heck)
 
 Optimizations
 ---------------------
@@ -385,6 +391,9 @@ Other Changes
   the fail-on-warnings.
 
 * SOLR-14589: Remove IntelliJ //noinspection comments (Erick Erickson)
+
+* SOLR-14541: Ensure classes that implement equals implement hashCode or suppress warnings
+  (gezapeti, Ilan Ginsburg, Erick Erickson)
 
 ==================  8.5.2 ==================
 
