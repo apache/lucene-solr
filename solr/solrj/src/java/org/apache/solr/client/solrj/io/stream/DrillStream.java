@@ -35,9 +35,9 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.common.params.ModifiableSolrParams;
 
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
-import static org.apache.solr.common.params.CommonParams.SORT;
-import static org.apache.solr.common.params.CommonParams.Q;
 import static org.apache.solr.common.params.CommonParams.FL;
+import static org.apache.solr.common.params.CommonParams.Q;
+import static org.apache.solr.common.params.CommonParams.SORT;
 
 
 public class DrillStream extends CloudSolrStream implements Expressible {
@@ -228,7 +228,7 @@ public class DrillStream extends CloudSolrStream implements Expressible {
   }
 
   public List<TupleStream> children() {
-    List l = new ArrayList();
+    List<TupleStream> l = new ArrayList<>();
     l.add(tupleStream);
     return l;
   }
