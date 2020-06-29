@@ -1137,6 +1137,75 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
 
   @Test
+  public void testDrillStream() throws Exception {
+
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1")
+        .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2")
+        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
+        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
+        .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
+        .add(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6")
+        .add(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7")
+        .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8")
+        .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
+        .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    List<Tuple> tuples;
+
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    String expr = "rollup(select(drill("
+        + "                            collection1, "
+        + "                            q=\"*:*\", "
+        + "                            fl=\"a_s, a_f\", "
+        + "                            sort=\"a_s desc\", "
+        + "                            rollup(input(), over=\"a_s\", count(*), sum(a_f)))," +
+        "                        a_s, count(*) as cnt, sum(a_f) as saf)," +
+        "                  over=\"a_s\"," +
+        "                  sum(cnt), sum(saf)"
+        + ")";
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+
+    Tuple tuple = tuples.get(0);
+    String bucket = tuple.getString("a_s");
+
+    Double count = tuple.getDouble("sum(cnt)");
+    Double saf = tuple.getDouble("sum(saf)");
+
+    assertTrue(bucket.equals("hello4"));
+    assertEquals(count.doubleValue(), 2, 0);
+    assertEquals(saf.doubleValue(), 11, 0);
+
+    tuple = tuples.get(1);
+    bucket = tuple.getString("a_s");
+    count = tuple.getDouble("sum(cnt)");
+    saf = tuple.getDouble("sum(saf)");
+
+    assertTrue(bucket.equals("hello3"));
+    assertEquals(count.doubleValue(), 4, 0);
+    assertEquals(saf.doubleValue(), 26, 0);
+
+    tuple = tuples.get(2);
+    bucket = tuple.getString("a_s");
+    count = tuple.getDouble("sum(cnt)");
+    saf = tuple.getDouble("sum(saf)");
+
+    assertTrue(bucket.equals("hello0"));
+    assertTrue(count.doubleValue() == 4);
+    assertEquals(saf.doubleValue(), 18, 0);
+
+  }
+
+    @Test
   public void testFacetStream() throws Exception {
 
     new UpdateRequest()
@@ -1275,9 +1344,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     perf = tuple.getDouble("per(a_f,50)");
 
 
-    System.out.println("STD and Per:"+stdi+":"+stdf+":"+peri+":"+perf);
-//STD and Per:4.509249752822894:2.6457513110645907:11.0:7.0
-    //assert(false);
+
 
     assertTrue(bucket.equals("hello3"));
     assertTrue(sumi.doubleValue() == 38.0D);
