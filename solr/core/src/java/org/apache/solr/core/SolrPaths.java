@@ -117,6 +117,7 @@ public final class SolrPaths {
    * @throws SolrException if path is outside allowed paths
    */
   public static void assertPathAllowed(Path pathToAssert, Set<Path> allowPaths) throws SolrException {
+    if (pathToAssert == null) return;
     if (OS.isFamilyWindows() && pathToAssert.toString().startsWith("\\\\")) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           "Path " + pathToAssert + " disallowed. UNC paths not supported. Please use drive letter instead.");
