@@ -552,7 +552,7 @@
    <!-- Maximum number of documents to cache for any entry in the
         queryResultCache.
      -->
-   <queryResultMaxDocsCached>200</queryResultMaxDocsCached>
+   <queryResultMaxDocsCached>200</queryResultMaxDocsCached>s
 
    <!-- Query Related Event Listeners
 
@@ -599,6 +599,48 @@
     <useColdSearcher>false</useColdSearcher>
 
   </query>
+
+  <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     Circuit Breaker Section - This section consists of configurations for
+     circuit breakers
+     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+  <circuitBreaker>
+    <!-- Enable Circuit Breakers
+
+     Circuit breakers are designed to allow stability and predictable query
+     execution. They prevent operations that can take down the node and cause
+     noisy neighbour issues.
+
+     This flag is the uber control switch which controls the activation/deactivation of all circuit
+     breakers. At the moment, the only circuit breaker (max JVM circuit breaker) does not have its
+     own specific configuration. However, if a circuit breaker wishes to be independently configurable,
+     they are free to add their specific configuration but need to ensure that this flag is always
+     respected - this should have veto over all independent configuration flags.
+    -->
+    <!--
+   <useCircuitBreakers>true</useCircuitBreakers>
+    -->
+
+    <!-- Memory Circuit Breaker Threshold In Percentage
+
+     Specific configuration for max JVM heap usage circuit breaker. This configuration defines the
+     threshold percentage of maximum heap allocated beyond which queries will be rejected until the
+     current JVM usage goes below the threshold.
+
+     Consider a scenario where the max heap allocated is 4 GB and memoryCircuitBreakerThreshold is
+     defined as 75. Threshold JVM usage will be 4 * 0.75 = 3 GB. Its generally a good idea to keep this value between 75 - 80% of maximum heap
+     allocated.
+
+     If, at any point, the current JVM heap usage goes above 3 GB, queries will be rejected until the heap usage goes below 3 GB again.
+     If you see queries getting rejected with 503 error code, check for "Circuit Breakers tripped"
+     in logs and the corresponding error message should tell you what transpired (if the failure
+     was caused by tripped circuit breakers).
+    -->
+    <!--
+   <memoryCircuitBreakerThresholdPct>100</memoryCircuitBreakerThresholdPct>
+    -->
+
+  </circuitBreaker>
 
 
   <!-- Request Dispatcher
