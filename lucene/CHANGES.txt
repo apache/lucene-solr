@@ -146,6 +146,9 @@ Bug Fixes
 
 * LUCENE-9400: Tessellator might build illegal polygons when several holes share the shame vertex. (Ignacio Vera)
 
+* LUCENE-9417: Tessellator might build illegal polygons when several holes share are connected to the same
+  vertex. (Ignacio Vera)
+
 Other
 ---------------------
 
