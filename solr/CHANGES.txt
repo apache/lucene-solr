@@ -12,8 +12,6 @@ New Features
 ---------------------
 * SOLR-14440: Introduce new Certificate Authentication Plugin to load Principal from certificate subject. (Mike Drob)
 
-* SOLR-14588: Implement Circuit Breakers Infrastructure and add max JVM usage based circuit breaker (Atri Sharma)
-
 Improvements
 ----------------------
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
@@ -165,6 +163,9 @@ Improvements
 * SOLR-14561: CoreAdminAPI's parameters instanceDir and dataDir are now validated, and must be relative to either
   SOLR_HOME, SOLR_DATA_HOME or coreRootDir. Added new solr.xml config 'allowPaths', controlled by system property
   'solr.allowPaths' that allows you to add other allowed paths when needed.
+
+* SOLR-13286: Metrics will no longer write a (sometimes large) log message every minute. This can be re-enabled
+  via log4j2.xml if desired, or other HttpSolrCall log messages may be quieted on a per handler basis. (Gus Heck)
 
 Optimizations
 ---------------------

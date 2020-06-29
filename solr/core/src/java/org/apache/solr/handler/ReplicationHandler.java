@@ -324,10 +324,13 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
   }
 
+  @SuppressWarnings("deprecation")
   private void deleteSnapshot(ModifiableSolrParams params, SolrQueryResponse rsp) {
-    String name = params.required().get(NAME);
+    params.required().get(NAME);
 
-    SnapShooter snapShooter = new SnapShooter(core, params.get(CoreAdminParams.BACKUP_LOCATION), params.get(NAME));
+    String location = params.get(CoreAdminParams.BACKUP_LOCATION);
+    core.getCoreContainer().assertPathAllowed(location == null ? null : Path.of(location));
+    SnapShooter snapShooter = new SnapShooter(core, location, params.get(NAME));
     snapShooter.validateDeleteSnapshot();
     snapShooter.deleteSnapAsync(this);
     rsp.add(STATUS, OK_STATUS);
@@ -448,7 +451,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
     String name = params.get(NAME);
     String location = params.get(CoreAdminParams.BACKUP_LOCATION);
-
     String repoName = params.get(CoreAdminParams.BACKUP_REPOSITORY);
     CoreContainer cc = core.getCoreContainer();
     BackupRepository repo = null;
@@ -460,11 +462,13 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       }
     } else {
       repo = new LocalFileSystemRepository();
+      //If location is not provided then assume that the restore index is present inside the data directory.
+      if (location == null) {
+        location = core.getDataDir();
+      }
     }
-
-    //If location is not provided then assume that the restore index is present inside the data directory.
-    if (location == null) {
-      location = core.getDataDir();
+    if ("file".equals(repo.createURI("x").getScheme())) {
+      core.getCoreContainer().assertPathAllowed(Paths.get(location));
     }
 
     URI locationUri = repo.createURI(location);
@@ -573,8 +577,11 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           location = core.getCoreDescriptor().getInstanceDir().resolve(location).normalize().toString();
         }
       }
+      if ("file".equals(repo.createURI("x").getScheme())) {
+        core.getCoreContainer().assertPathAllowed(Paths.get(location));
+      }
 
-      // small race here before the commit point is saved
+        // small race here before the commit point is saved
       URI locationUri = repo.createURI(location);
       String commitName = params.get(CoreAdminParams.COMMIT_NAME);
       SnapShooter snapShooter = new SnapShooter(repo, core, locationUri, params.get(NAME), commitName);

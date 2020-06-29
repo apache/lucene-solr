@@ -224,7 +224,9 @@ public class CatStream extends TupleStream implements Expressible {
     } else if (Files.isDirectory(entry)) {
       try (Stream<Path> directoryContents = Files.list(entry)) {
         directoryContents.sorted().forEach(iPath -> {
-          final String itemDisplayPath = seed.displayPath + "/" + iPath.getFileName();
+          // debatable: should the separator be OS/file-system specific, or perhaps always "/" ?
+          final String displayPathSeparator = iPath.getFileSystem().getSeparator();
+          final String itemDisplayPath = seed.displayPath + displayPathSeparator + iPath.getFileName();
           findReadableFiles(new CrawlFile(itemDisplayPath, iPath), foundFiles);
         });
       } catch (IOException e) {
