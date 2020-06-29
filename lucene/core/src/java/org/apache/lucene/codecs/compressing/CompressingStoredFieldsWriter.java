@@ -227,7 +227,6 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
     // TODO: do we need to slice it since we already have the slices in the buffer? Perhaps
     // we should use max-block-bits restriction on the buffer itself, then we won't have to check it here.
     byte [] content = bufferedDocs.toArrayCopy();
-    bufferedDocs.reset();
 
     if (sliced) {
       // big chunk, slice it
@@ -251,7 +250,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
 
     ++numStoredFieldsInDoc;
 
-    int bits = 0;
+    int bits;
     final BytesRef bytes;
     final String string;
 
@@ -460,9 +459,9 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
     if (numBufferedDocs > 0) {
       flush();
       numDirtyChunks++; // incomplete: we had to force this flush
-    } else {
-      assert bufferedDocs.size() == 0;
     }
+    assert bufferedDocs.size() == 0;
+
     if (docBase != numDocs) {
       throw new RuntimeException("Wrote " + docBase + " docs, finish called with numDocs=" + numDocs);
     }
@@ -470,7 +469,6 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
     fieldsStream.writeVLong(numChunks);
     fieldsStream.writeVLong(numDirtyChunks);
     CodecUtil.writeFooter(fieldsStream);
-    assert bufferedDocs.size() == 0;
   }
 
   // bulk merge is scary: its caused corruption bugs in the past.
