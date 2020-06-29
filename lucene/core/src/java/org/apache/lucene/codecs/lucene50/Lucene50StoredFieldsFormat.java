@@ -107,7 +107,11 @@ public final class Lucene50StoredFieldsFormat extends StoredFieldsFormat {
     /** Trade compression ratio for retrieval speed. */
     BEST_SPEED,
     /** Trade retrieval speed for compression ratio. */
-    BEST_COMPRESSION
+    BEST_COMPRESSION,
+    /** remove compression */
+    NO_COMPRESSION,
+    /** trade retrieval spped and ratio both */
+    ZSTD_COMPRESSION
   }
   
   /** Attribute key for compression mode. */
@@ -151,6 +155,10 @@ public final class Lucene50StoredFieldsFormat extends StoredFieldsFormat {
         return new CompressingStoredFieldsFormat("Lucene50StoredFieldsFastData", CompressionMode.FAST, 1 << 14, 128, 10);
       case BEST_COMPRESSION: 
         return new CompressingStoredFieldsFormat("Lucene50StoredFieldsHighData", CompressionMode.HIGH_COMPRESSION, 61440, 512, 10);
+      case NO_COMPRESSION:
+        return new CompressingStoredFieldsFormat("Lucene50StoredFieldsNOData", CompressionMode.NO_COMPRESSION, 61440, 512, 10);
+      case ZSTD_COMPRESSION:
+        return new CompressingStoredFieldsFormat("Lucene50StoredFieldszstdData", CompressionMode.ZSTD_COMPRESSION, 61440, 512, 10);
       default: throw new AssertionError();
     }
   }

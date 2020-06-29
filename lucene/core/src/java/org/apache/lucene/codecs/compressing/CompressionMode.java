@@ -28,8 +28,8 @@ import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.compress.LZ4;
-import org.apache.lucene.util.compress.ZstdCompressCtx;
-import org.apache.lucene.util.compress.ZstdDecompressCtx;
+import com.github.luben.zstd.Zstd;
+import com.github.luben.zstd.ZstdDecompressCtx;
 
 /**
  * A compression mode. Tells how much effort should be spent on compression and
@@ -38,15 +38,7 @@ import org.apache.lucene.util.compress.ZstdDecompressCtx;
  */
 public abstract class CompressionMode {
 
-  public static byte[] bytes;
-  public static void setBytes(byte[] bytes)
-  {
-     bytes = bytes;
-  }
-  public static byte[] getBytes()
-  {
-     return bytes;
-  }
+
 
   /**
    * A compression mode that trades compression ratio for speed. Although the
@@ -135,7 +127,7 @@ public abstract class CompressionMode {
 
     @Override
     public Decompressor newDecompressor() {
-      return noDECOMPRESSOR;
+      return new noDecompressor();
     }
 
     @Override
@@ -204,17 +196,29 @@ public abstract class CompressionMode {
 
   };
 
-  private static final Decompressor noDECOMPRESSOR = new Decompressor() {
+  private static final class noDecompressor extends Decompressor {
 
+    byte[] compressed;
+
+    noDecompressor() {
+      compressed = new byte[100000];
+    }
     @Override
     public void decompress(DataInput in, int originalLength, int offset, int length, BytesRef bytes) throws IOException {
       assert offset + length <= originalLength;
-      // add 7 padding bytes, this is not necessary but can help decompression run faster
-      if (bytes.bytes.length < originalLength + 7) {
-        bytes.bytes = new byte[ArrayUtil.oversize(originalLength + 7, 1)];
+      if (length == 0) {
+        bytes.length = 0;
+        return;
       }
-      bytes.bytes = getBytes();
+      final int noCompressedLength = in.readVInt();
+      // pad with extra "dummy byte": see javadocs for using Inflater(true)
+      // we do it for compliance, but it's unnecessary for years in zlib.
+      final int paddedLength = noCompressedLength + 1;
+      compressed = ArrayUtil.grow(compressed, paddedLength);
+      in.readBytes(compressed, 0, noCompressedLength);
+      compressed[noCompressedLength] = 0; // explicitly set dummy byte to 0
 
+      bytes.bytes = compressed;
       bytes.offset = offset;
       bytes.length = length;
     }
@@ -225,6 +229,7 @@ public abstract class CompressionMode {
     }
 
   };
+
   private static final class LZ4FastCompressor extends Compressor {
 
     private final LZ4.FastCompressionHashTable ht;
@@ -251,7 +256,8 @@ public abstract class CompressionMode {
     @Override
     public void compress(byte[] bytes, int off, int len, DataOutput out)
             throws IOException {
-       setBytes(bytes);
+      out.writeVInt(bytes.length);
+      out.writeBytes(bytes,bytes.length);
     }
 
     @Override
@@ -360,27 +366,20 @@ public abstract class CompressionMode {
 
       final ZstdDecompressCtx decompressor = new ZstdDecompressCtx();
       try {
-        // extra "dummy byte"
-        decompressor.setInput(compressed, 0, paddedLength);
 
         bytes.offset = bytes.length = 0;
         bytes.bytes = ArrayUtil.grow(bytes.bytes, originalLength);
         try {
-          bytes.length = (decompressor.decompress(bytes.bytes,originalLength)).length;
+          bytes.length = decompressor.decompress(bytes.bytes,compressed);
           decompressor.finish();
         } catch (Exception e) {
           throw new IOException(e);
         }
-        if (!decompressor.end()) {
-          throw new CorruptIndexException("Invalid decoder state: needsInput=" + decompressor.needsInput()
-                  + ", needsDict=" + decompressor.getNeedsDictionary(), in);
+      }
+        finally {
+          decompressor.end();
         }
-      } finally {
-        decompressor.end();
-      }
-      if (bytes.length != originalLength) {
-        throw new CorruptIndexException("Lengths mismatch: " + bytes.length + " != " + originalLength, in);
-      }
+
       bytes.offset = offset;
       bytes.length = length;
     }
@@ -443,49 +442,39 @@ public abstract class CompressionMode {
   }
   private static class zstdCompressor extends Compressor {
 
-    final ZstdCompressCtx compressor;
+    Zstd compressor = new Zstd();
     byte[] compressed;
     boolean closed;
+    int level;
 
     zstdCompressor(int level) {
-      compressor = new ZstdCompressCtx();
-      compressor.setLevel(level);
-      compressed = new byte[64];
+      compressed = new byte[0];
+      this.level = level;
     }
 
     @Override
     public void compress(byte[] bytes, int off, int len, DataOutput out) throws IOException {
-      compressor.reset();
-      compressor.setInput(bytes, off, len);
-      compressor.finish();
 
-      if (compressor.needsInput()) {
+
+      if (len==0) {
         // no output
         assert len == 0 : len;
         out.writeVInt(0);
         return;
       }
 
-      int totalCount = 0;
-      for (;;) {
-        final int count = (compressor.compress(compressed)).length;
-        totalCount += count;
-        assert totalCount <= compressed.length;
-        if (compressor.end()) {
-          break;
-        } else {
-          compressed = ArrayUtil.grow(compressed);
-        }
-      }
+      compressed = ArrayUtil.grow(compressed,len);
 
-      out.writeVInt(totalCount);
-      out.writeBytes(compressed, totalCount);
+      final int count = (int)compressor.compress(compressed,bytes,level);
+
+
+      out.writeVInt(count);
+      out.writeBytes(compressed, count);
     }
 
     @Override
     public void close() throws IOException {
       if (closed == false) {
-        compressor.finish();
         closed = true;
       }
     }
