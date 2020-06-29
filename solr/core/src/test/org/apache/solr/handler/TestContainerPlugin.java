@@ -22,14 +22,11 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.Callable;
-import java.util.function.Supplier;
-
-import static java.util.Collections.singletonList;
-import static java.util.Collections.singletonMap;
-import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
 
 import com.google.common.collect.ImmutableMap;
+import org.apache.commons.io.IOUtils;
+import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.client.solrj.SolrClient;
@@ -56,6 +53,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static java.util.Collections.singletonList;
+import static java.util.Collections.singletonMap;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.filestore.TestDistribPackageStore.readFile;
@@ -271,9 +270,9 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       this.resourceLoader = (SolrResourceLoader) loader;
       try {
         InputStream is = resourceLoader.openResource("org/apache/solr/handler/MyPlugin.class");
-        if (is instanceof Supplier) {
-          classData = ((Supplier<ByteBuffer>) is).get();
-        }
+        byte[] buf = new byte[1024*5];
+        int sz = IOUtils.read(is, buf);
+        classData = ByteBuffer.wrap(buf, 0,sz);
       } catch (IOException e) {
         //do not do anything
       }
