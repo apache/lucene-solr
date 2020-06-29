@@ -44,7 +44,7 @@ public class RankFieldTest extends SolrTestCaseJ4 {
   
   public void testInternalFieldName() {
     assertEquals("RankField.INTERNAL_RANK_FIELD_NAME changed in an incompatible way",
-        "_internal_rank_field", RankField.INTERNAL_RANK_FIELD_NAME);
+        "_rank_", RankField.INTERNAL_RANK_FIELD_NAME);
   }
 
   public void testBasic() {

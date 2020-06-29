@@ -66,7 +66,7 @@ public class RankField extends FieldType {
    * and we map the Solr field name to the "feature" in Lucene's FeatureField. This is mainly
    * to simplify the user experience.
    */
-  public static final String INTERNAL_RANK_FIELD_NAME = "_internal_rank_field";
+  public static final String INTERNAL_RANK_FIELD_NAME = "_rank_";
 
   @Override
   public Type getUninversionType(SchemaField sf) {
