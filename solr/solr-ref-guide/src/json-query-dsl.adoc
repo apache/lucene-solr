@@ -305,11 +305,6 @@ include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-ipod-query-bool-c
 
 Example of referencing <<json-query-dsl.adoc#additional-queries>>, <<json-query-dsl.adoc#tagging-in-json-query-dsl,tagging>> and <<other-parsers.adoc#boolean-query-parser,exclusions>>:
 
-[.dynamic-tabs]
---
-[example.tab-pane#curl-ipod-query-bool-excluded]
-====
-[.tab-label]*curl*
 [source,bash]
 ----
 curl -X POST http://localhost:8983/solr/techproducts/query -d '
@@ -329,8 +324,6 @@ curl -X POST http://localhost:8983/solr/techproducts/query -d '
 }'
 
 ----
-====
---
 
 Thus, the query above will return only docs matching `size:XL`.
 
