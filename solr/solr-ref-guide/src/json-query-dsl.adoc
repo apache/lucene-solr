@@ -303,7 +303,7 @@ include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-ipod-query-bool-c
 ====
 --
 
-Example of referencing <<json-query-dsl.adoc#additional-queries>>, <<json-query-dsl.adoc#tagging-in-json-query-dsl,tagging>> and <<other-parsers.adoc#boolean-query-parser,exclusions>>:
+Example of referencing <<Additional Queries,additional queries>>, <<Tagging in JSON Query DSL,tagging>> and <<other-parsers.adoc#boolean-query-parser,exclusions>>:
 
 [source,bash]
 ----
