@@ -18,10 +18,8 @@
 package org.apache.solr.handler.admin;
 
 import java.lang.invoke.MethodHandles;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.nio.file.Paths;
+import java.util.*;
 
 import com.google.common.collect.Lists;
 import org.apache.lucene.index.DirectoryReader;
@@ -79,6 +77,8 @@ class MergeIndexesOp implements CoreAdminHandler.CoreAdminOp {
           sourceCores.add(srcCore);
         }
       } else {
+        // Validate each 'indexDir' input as valid
+        Arrays.stream(dirNames).forEach(indexDir -> core.getCoreContainer().assertPathAllowed(Paths.get(indexDir)));
         DirectoryFactory dirFactory = core.getDirectoryFactory();
         for (int i = 0; i < dirNames.length; i++) {
           boolean markAsDone = false;

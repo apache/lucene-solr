@@ -65,6 +65,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
   @BeforeClass
   public static void setupClass() throws Exception {
     useFactory("solr.StandardDirectoryFactory");
+    System.setProperty("solr.allowPaths", "*");
     configureCluster(NUM_NODES)// nodes
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
@@ -76,6 +77,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
   public static void teardownClass() throws Exception {
     System.clearProperty("test.build.data");
     System.clearProperty("test.cache.data");
+    System.clearProperty("solr.allowPaths");
   }
 
   @Test

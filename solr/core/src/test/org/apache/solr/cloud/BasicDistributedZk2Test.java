@@ -403,8 +403,9 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
       params.set("qt", ReplicationHandler.PATH);
       params.set("command", "backup");
       params.set("name", backupName);
-      Path location = createTempDir();
-      location = FilterPath.unwrap(location).toRealPath();
+      final Path location = FilterPath.unwrap(createTempDir()).toRealPath();
+      // Allow non-standard location outside SOLR_HOME
+      jettys.forEach(j -> j.getCoreContainer().getAllowPaths().add(location));
       params.set("location", location.toString());
 
       QueryRequest request = new QueryRequest(params);

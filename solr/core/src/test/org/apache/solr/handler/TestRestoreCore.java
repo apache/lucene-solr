@@ -125,6 +125,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
     //Use the default backup location or an externally provided location.
     if (random().nextBoolean()) {
       location = createTempDir().toFile().getAbsolutePath();
+      masterJetty.getCoreContainer().getAllowPaths().add(Paths.get(location)); // Allow core to be created outside SOLR_HOME
       params += "&location=" + URLEncoder.encode(location, "UTF-8");
     }
 
@@ -181,11 +182,21 @@ public class TestRestoreCore extends SolrJettyTestBase {
 
   }
 
+  public void testBackupFailsMissingAllowPaths() throws Exception {
+    final String params = "&location=" + URLEncoder.encode(createTempDir().toFile().getAbsolutePath(), "UTF-8");
+    Throwable t = expectThrows(IOException.class, () -> {
+      TestReplicationHandlerBackup.runBackupCommand(masterJetty, ReplicationHandler.CMD_BACKUP, params);
+    });
+    // The backup command will fail since the tmp dir is outside allowPaths
+    assertTrue(t.getMessage().contains("Server returned HTTP response code: 400"));
+  }
+
   @Test
   public void testFailedRestore() throws Exception {
     int nDocs = BackupRestoreUtils.indexDocs(masterClient, "collection1", docsSeed);
 
     String location = createTempDir().toFile().getAbsolutePath();
+    masterJetty.getCoreContainer().getAllowPaths().add(Paths.get(location));
     String snapshotName = TestUtil.randomSimpleString(random(), 1, 5);
     String params = "&name=" + snapshotName + "&location=" + URLEncoder.encode(location, "UTF-8");
     String baseUrl = masterJetty.getBaseUrl().toString();

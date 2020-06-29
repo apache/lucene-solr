@@ -17,8 +17,8 @@
 
 package org.apache.solr.handler;
 
-
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -176,6 +176,7 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
     backupParams.put("name", "backup_test");
     backupParams.put("collection", COLL_NAME);
     backupParams.put("location", tempDir);
+    cluster.getJettySolrRunners().forEach(j -> j.getCoreContainer().getAllowPaths().add(Paths.get(tempDir)));
     client.request(new V2Request.Builder("/c")
         .withMethod(SolrRequest.METHOD.POST)
         .withPayload(Utils.toJSONString(backupPayload))
