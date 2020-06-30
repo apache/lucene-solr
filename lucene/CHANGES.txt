@@ -149,6 +149,8 @@ Bug Fixes
 * LUCENE-9417: Tessellator might build illegal polygons when several holes share are connected to the same
   vertex. (Ignacio Vera)
 
+* LUCENE-9418: Fix ordered intervals over interleaved terms (Alan Woodward)
+
 Other
 ---------------------
 
