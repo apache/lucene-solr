@@ -250,6 +250,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
 
     }
 
+    @SuppressWarnings("rawtypes")
     private void readPayloadType(Type t) {
       if (t instanceof ParameterizedType) {
         ParameterizedType typ = (ParameterizedType) t;
