@@ -117,6 +117,8 @@ New Features
 * SOLR-14481: Add drill Streaming Expression for efficient and accurate high cardinality aggregation.
   (Joel Bernstein)
 
+* SOLR-14599: Package manager support for cluster level plugins (see SOLR-14404) (Ishan Chattopadhyaya)
+
 Improvements
 ---------------------
 * SOLR-14316: Remove unchecked type conversion warning in JavaBinCodec's readMapEntry's equals() method
