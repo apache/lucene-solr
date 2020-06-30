@@ -119,6 +119,10 @@ New Features
 
 * SOLR-14599: Package manager support for cluster level plugins (see SOLR-14404) (Ishan Chattopadhyaya)
 
+* SOLR-14590: Add support for RankFields. RankFields allow the use of per-document scoring factors in a
+  way that lets Solr skip over non-competitive documents when ranking. See SOLR-13289.
+  (Tomás Fernández Löbbe, Varun Thacker)
+
 Improvements
 ---------------------
 * SOLR-14316: Remove unchecked type conversion warning in JavaBinCodec's readMapEntry's equals() method
