@@ -106,7 +106,7 @@ limitations under the License.
 
     <div id="main" class="clearfix">
 
-      <div class="header-message" id="init-failures" ng-show="showInitFailures">
+      <div class="header-message" id="init-failures" ng-show="showInitFailures" ng-cloak>
 
           <h2>SolrCore Initialization Failures</h2>
           <ul>
@@ -131,7 +131,7 @@ limitations under the License.
     <p>Continuing to load data...</p>
   </div>
       </div>
-      <div id="http-exception" class="header-message" ng-repeat="(url, exception) in exceptions">
+      <div id="http-exception" class="header-message" ng-repeat="(url, exception) in exceptions" ng-cloak>
         <div class="exception">{{exception.msg}}</div>
       </div>
 
@@ -148,16 +148,16 @@ limitations under the License.
             <li id="environment" ng-class="environment" ng-show="showEnvironment" ng-style="environment_color !== undefined ? {'background-color': environment_color} : ''">{{ environment_label }}</li>
 
             <li id="login" class="global" ng-class="{active:page=='login'}" ng-show="http401 || currentUser"><p><a href="#/login">{{http401 ? "Login" : "Logout " + currentUser}}</a></p></li>
-            
+
             <li id="index" class="global" ng-class="{active:page=='index'}"><p><a href="#/">Dashboard</a></p></li>
-  
+
             <div ng-show="!http401">
               <li id="logging" class="global" ng-class="{active:page=='logging'}"><p><a href="#/~logging">Logging</a></p>
                 <ul ng-show="showingLogging">
                   <li class="level" ng-class="{active:page=='logging-levels'}"><a href="#/~logging/level">Level</a></li>
                 </ul>
               </li>
-  
+
               <li id="cloud" class="global optional" ng-show="isCloudEnabled" ng-class="{active:showingCloud}"><p><a href="#/~cloud">Cloud</a></p>
                 <ul ng-show="showingCloud">
                   <li class="nodes" ng-class="{active:page=='cloud-nodes'}"><a href="#/~cloud?view=nodes">Nodes</a></li>
@@ -166,12 +166,12 @@ limitations under the License.
                   <li class="graph" ng-class="{active:page=='cloud-graph'}"><a href="#/~cloud?view=graph">Graph</a></li>
                 </ul>
               </li>
-  
+
               <li ng-show="isCloudEnabled" id="collections" class="global" ng-class="{active:page=='collections'}"><p><a href="#/~collections">Collections</a></p></li>
               <li ng-hide="isCloudEnabled" id="cores" class="global" ng-class="{active:page=='cores'}"><p><a href="#/~cores">Core Admin</a></p></li>
-  
+
               <li id="java-properties" class="global" ng-class="{active:page=='java-props'}"><p><a href="#/~java-properties">Java Properties</a></li>
-  
+
               <li id="threads" class="global" ng-class="{active:page=='threads'}"><p><a href="#/~threads">Thread Dump</a></p></li>
               <li ng-show="isCloudEnabled" id="cluster-suggestions" class="global" ng-class="{active:page=='cluster-suggestions'}"><p><a href="#/~cluster-suggestions">Suggestions</a></p></li>
             </div>
