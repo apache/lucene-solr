@@ -35,6 +35,9 @@ public class PluginMeta implements ReflectMapWriter {
   @JsonProperty
   public String version;
 
+  @JsonProperty("path-prefix")
+  public String pathPrefix;
+
 
   public PluginMeta copy() {
     PluginMeta result = new PluginMeta();

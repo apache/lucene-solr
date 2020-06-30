@@ -12,8 +12,6 @@ New Features
 ---------------------
 * SOLR-14440: Introduce new Certificate Authentication Plugin to load Principal from certificate subject. (Mike Drob)
 
-* SOLR-14588: Implement Circuit Breakers Infrastructure and add JVM Circuit Breaker (Atri Sharma)
-
 Improvements
 ----------------------
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
@@ -24,6 +22,8 @@ Improvements
   (hossman, Munendra S N, yonik)
 
 * SOLR-14387: SolrClient.getById() will escape comma separater within ids (Markus Schuch via Mike Drob)
+
+* SOLR-14354: HttpShardHandler send requests in async (Cao Manh Dat).  
 
 Other Changes
 ----------------------
@@ -116,6 +116,9 @@ New Features
 * SOLR-13749: Join queries can now work cross-collection, even when sharded or when spanning nodes.
   (Dan Fox, Kevin Watters, via Gus Heck, David Smiley)
 
+* SOLR-14481: Add drill Streaming Expression for efficient and accurate high cardinality aggregation.
+  (Joel Bernstein)
+
 Improvements
 ---------------------
 * SOLR-14316: Remove unchecked type conversion warning in JavaBinCodec's readMapEntry's equals() method
@@ -166,7 +169,8 @@ Improvements
   SOLR_HOME, SOLR_DATA_HOME or coreRootDir. Added new solr.xml config 'allowPaths', controlled by system property
   'solr.allowPaths' that allows you to add other allowed paths when needed.
 
-* SOLR-14354: HttpShardHandler send requests in async (Cao Manh Dat).
+* SOLR-13286: Metrics will no longer write a (sometimes large) log message every minute. This can be re-enabled
+  via log4j2.xml if desired, or other HttpSolrCall log messages may be quieted on a per handler basis. (Gus Heck)
 
 Optimizations
 ---------------------

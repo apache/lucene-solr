@@ -109,6 +109,9 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
   
   /** Default value for whether calls to {@link IndexWriter#close()} include a commit. */
   public final static boolean DEFAULT_COMMIT_ON_CLOSE = true;
+
+  /** Default value for time to wait for merges on commit (when using a {@link MergePolicy} that implements {@link MergePolicy#findFullFlushMerges}). */
+  public static final long DEFAULT_MAX_COMMIT_MERGE_WAIT_MILLIS = 0;
   
   // indicates whether this config instance is already attached to a writer.
   // not final so that it can be cloned properly.
@@ -456,6 +459,21 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
    */
   public IndexWriterConfig setCommitOnClose(boolean commitOnClose) {
     this.commitOnClose = commitOnClose;
+    return this;
+  }
+
+  /**
+   * Expert: sets the amount of time to wait for merges (during {@link IndexWriter#commit}) returned by
+   * MergePolicy.findFullFlushMerges(...).
+   * If this time is reached, we proceed with the commit based on segments merged up to that point.
+   * The merges are not cancelled, and will still run to completion independent of the commit,
+   * like natural segment merges. The default is <code>{@value IndexWriterConfig#DEFAULT_MAX_COMMIT_MERGE_WAIT_MILLIS}</code>.
+   *
+   * Note: This settings has no effect unless {@link MergePolicy#findFullFlushMerges(MergeTrigger, SegmentInfos, MergePolicy.MergeContext)}
+   * has an implementation that actually returns merges which by default doesn't return any merges.
+   */
+  public IndexWriterConfig setMaxCommitMergeWaitMillis(long maxCommitMergeWaitMillis) {
+    this.maxCommitMergeWaitMillis = maxCommitMergeWaitMillis;
     return this;
   }
 

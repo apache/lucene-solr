@@ -192,6 +192,10 @@ New Features
 * LUCENE-7889: Grouping by range based on values from DoubleValuesSource and LongValuesSource
   (Alan Woodward)
 
+* LUCENE-8962: Add IndexWriter merge-on-commit feature to selectively merge small segments on commit,
+  subject to a configurable timeout, to improve search performance by reducing the number of small
+  segments for searching (Michael Froh, Mike Sokolov, Mike Mccandless, Simon Willnauer)
+
 Improvements
 ---------------------
 * LUCENE-9276: Use same code-path for updateDocuments and updateDocument in IndexWriter and
@@ -289,6 +293,9 @@ Bug Fixes
   (Michael Froh, Simon Willnauer, Mike Mccandless, Mike Sokolov)
 
 * LUCENE-9400: Tessellator might build illegal polygons when several holes share the shame vertex. (Ignacio Vera)
+
+* LUCENE-9417: Tessellator might build illegal polygons when several holes share are connected to the same
+  vertex. (Ignacio Vera)
 
 Other
 ---------------------
