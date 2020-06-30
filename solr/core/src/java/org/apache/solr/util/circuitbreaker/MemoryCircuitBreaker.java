@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
  *
  * <p>
  * The memory threshold is defined as a percentage of the maximum memory allocated -- see memoryCircuitBreakerThresholdPct
- * in solrconfig.xml
+ * in solrconfig.xml.
  * </p>
  */
 
@@ -86,7 +86,7 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
   @Override
   public String getDebugInfo() {
     if (seenMemory.get() == 0.0 || allowedMemory.get() == 0.0) {
-      log.warn("MemoryCircuitBreaker's monitored values not set correctly");
+      log.warn("MemoryCircuitBreaker's monitored values (seenMemory, allowedMemory) not set");
     }
 
     return "seenMemory=" + seenMemory.get() + " allowedMemory=" + allowedMemory.get();
@@ -98,7 +98,7 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
 
   /**
    * Calculate the live memory usage for the system. This method has package visibility
-   * to allow using for testing
+   * to allow using for testing.
    * @return Memory usage in bytes
    */
   protected long calculateLiveMemoryUsage() {

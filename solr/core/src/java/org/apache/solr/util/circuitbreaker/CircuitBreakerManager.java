@@ -74,10 +74,12 @@ public class CircuitBreakerManager {
   }
 
   /**
-   * Returns true if *any* circuit breaker has triggered, false if none have triggered
+   * Returns true if *any* circuit breaker has triggered, false if none have triggered.
    *
+   * <p>
    * NOTE: This method short circuits the checking of circuit breakers -- the method will
-   * return as soon as it finds a circuit breaker that is enabled and has triggered
+   * return as soon as it finds a circuit breaker that is enabled and has triggered.
+   * </p>
    */
   public boolean checkAnyTripped() {
     for (Map.Entry<CircuitBreaker.CircuitBreakerType, CircuitBreaker> entry : circuitBreakerMap.entrySet()) {
@@ -93,7 +95,8 @@ public class CircuitBreakerManager {
   }
 
   /**
-   * Construct the final error message to be printed when circuit breakers trip
+   * Construct the final error message to be printed when circuit breakers trip.
+   *
    * @param circuitBreakerMap Input list for circuit breakers
    * @return Constructed error message
    */
