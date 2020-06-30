@@ -1169,9 +1169,13 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   }
 
   private CircuitBreakerManager initCircuitBreakerManager() {
-    CircuitBreakerManager circuitBreakerManager = CircuitBreakerManager.buildDefaultCircuitBreakerManager(solrConfig);
+    if (solrConfig.useCircuitBreakers) {
+      CircuitBreakerManager circuitBreakerManager = CircuitBreakerManager.build(solrConfig);
 
-    return circuitBreakerManager;
+      return circuitBreakerManager;
+    }
+
+    return null;
   }
 
   @Override

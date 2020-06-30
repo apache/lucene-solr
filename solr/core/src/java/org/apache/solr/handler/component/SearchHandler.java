@@ -310,16 +310,16 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
         rb.setTimer(subt);
 
         CircuitBreakerManager circuitBreakerManager = req.getCore().getCircuitBreakerManager();
-        trippedCircuitBreakers = circuitBreakerManager.checkedTrippedCircuitBreakers();
+        trippedCircuitBreakers = circuitBreakerManager.checkedTripped();
 
         rb.getTimer().stop();
       } else {
         CircuitBreakerManager circuitBreakerManager = req.getCore().getCircuitBreakerManager();
-        trippedCircuitBreakers = circuitBreakerManager.checkedTrippedCircuitBreakers();
+        trippedCircuitBreakers = circuitBreakerManager.checkedTripped();
       }
 
       if (trippedCircuitBreakers != null) {
-        String errorMessage = CircuitBreakerManager.constructFinalErrorMessageString(trippedCircuitBreakers);
+        String errorMessage = CircuitBreakerManager.toErrorMessage(trippedCircuitBreakers);
         rsp.add(STATUS, FAILURE);
         rsp.setException(new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Circuit Breakers tripped " + errorMessage));
         return;

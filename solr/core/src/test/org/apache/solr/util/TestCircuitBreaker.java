@@ -77,7 +77,7 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
 
     CircuitBreaker circuitBreaker = new MockCircuitBreaker(h.getCore().getSolrConfig());
 
-    h.getCore().getCircuitBreakerManager().registerCircuitBreaker(CircuitBreaker.CircuitBreakerType.MEMORY, circuitBreaker);
+    h.getCore().getCircuitBreakerManager().register(CircuitBreaker.CircuitBreakerType.MEMORY, circuitBreaker);
 
     expectThrows(SolrException.class, () -> {
       h.query(req("name:\"john smith\""));
@@ -85,7 +85,7 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
 
     circuitBreaker = new MemoryCircuitBreaker(h.getCore().getSolrConfig());
 
-    h.getCore().getCircuitBreakerManager().registerCircuitBreaker(CircuitBreaker.CircuitBreakerType.MEMORY, circuitBreaker);
+    h.getCore().getCircuitBreakerManager().register(CircuitBreaker.CircuitBreakerType.MEMORY, circuitBreaker);
   }
 
   public void testCBFakeMemoryPressure() throws IOException {
@@ -96,7 +96,7 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
 
     CircuitBreaker circuitBreaker = new FakeMemoryPressureCircuitBreaker(h.getCore().getSolrConfig());
 
-    h.getCore().getCircuitBreakerManager().registerCircuitBreaker(CircuitBreaker.CircuitBreakerType.MEMORY, circuitBreaker);
+    h.getCore().getCircuitBreakerManager().register(CircuitBreaker.CircuitBreakerType.MEMORY, circuitBreaker);
 
     expectThrows(SolrException.class, () -> {
       h.query(req("name:\"john smith\""));
@@ -104,7 +104,7 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
 
     circuitBreaker = new MemoryCircuitBreaker(h.getCore().getSolrConfig());
 
-    h.getCore().getCircuitBreakerManager().registerCircuitBreaker(CircuitBreaker.CircuitBreakerType.MEMORY, circuitBreaker);
+    h.getCore().getCircuitBreakerManager().register(CircuitBreaker.CircuitBreakerType.MEMORY, circuitBreaker);
   }
 
   public void testBuildingMemoryPressure() {
@@ -120,7 +120,7 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
     try {
       CircuitBreaker circuitBreaker = new BuildingUpMemoryPressureCircuitBreaker(h.getCore().getSolrConfig());
 
-      h.getCore().getCircuitBreakerManager().registerCircuitBreaker(CircuitBreaker.CircuitBreakerType.MEMORY, circuitBreaker);
+      h.getCore().getCircuitBreakerManager().register(CircuitBreaker.CircuitBreakerType.MEMORY, circuitBreaker);
 
       for (int i = 0; i < 5; i++) {
         executor.submit(() -> {
@@ -145,7 +145,7 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
 
       circuitBreaker = new MemoryCircuitBreaker(h.getCore().getSolrConfig());
 
-      h.getCore().getCircuitBreakerManager().registerCircuitBreaker(CircuitBreaker.CircuitBreakerType.MEMORY, circuitBreaker);
+      h.getCore().getCircuitBreakerManager().register(CircuitBreaker.CircuitBreakerType.MEMORY, circuitBreaker);
     } finally {
       if (!executor.isShutdown()) {
         executor.shutdown();

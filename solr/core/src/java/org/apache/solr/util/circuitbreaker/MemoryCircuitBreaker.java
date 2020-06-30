@@ -46,8 +46,8 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
   private final long heapMemoryThreshold;
 
   // Assumption -- the value of these parameters will be set correctly before invoking getDebugInfo()
-  private ThreadLocal<Long> seenMemory = new ThreadLocal<>();
-  private ThreadLocal<Long> allowedMemory = new ThreadLocal<>();
+  private final ThreadLocal<Long> seenMemory = new ThreadLocal<>();
+  private final ThreadLocal<Long> allowedMemory = new ThreadLocal<>();
 
   public MemoryCircuitBreaker(SolrConfig solrConfig) {
     super(solrConfig);

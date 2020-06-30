@@ -44,12 +44,12 @@ public abstract class CircuitBreaker {
   }
 
   /**
-   * Check if this request will trigger circuit breaker.
+   * Check if circuit breaker is tripped
    */
   public abstract boolean isTripped();
 
   /**
-   * Print debug useful info
+   * Get debug useful info
    */
   public abstract String getDebugInfo();
 
