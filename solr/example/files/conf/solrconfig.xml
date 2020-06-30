@@ -569,9 +569,9 @@
 
     Specific configuration for max JVM heap usage circuit breaker. This configuration defines the
     threshold percentage of maximum heap allocated beyond which queries will be rejected until the
-    current JVM usage goes below the threshold.
+    current JVM usage goes below the threshold. The valid value range for this parameter is 50 - 95.
 
-    Consider a scenario where the max heap allocated is 4 GB and memoryCircuitBreakerThreshold is
+    Consider a scenario where the max heap allocated is 4 GB and memoryCircuitBreakerThresholdPct is
     defined as 75. Threshold JVM usage will be 4 * 0.75 = 3 GB. Its generally a good idea to keep this value between 75 - 80% of maximum heap
     allocated.
 

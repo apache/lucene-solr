@@ -207,7 +207,7 @@ _Query Circuit Breakers_
 See <<circuit-breakers.adoc#circuit-breakers,Circuit Breakers in Solr>> for more details
 
 * `query.useCircuitBreakers`
-* `query.memoryCircuitBreakerThreshold`
+* `query.memoryCircuitBreakerThresholdPct`
 
 *RequestDispatcher Settings*
 

@@ -17,10 +17,13 @@
 
 package org.apache.solr.util.circuitbreaker;
 
+import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
 
 import org.apache.solr.core.SolrConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>
@@ -31,17 +34,18 @@ import org.apache.solr.core.SolrConfig;
  * </p>
  *
  * <p>
- * The memory threshold is defined as a percentage of the maximum memory allocated -- see memoryCircuitBreakerThreshold
+ * The memory threshold is defined as a percentage of the maximum memory allocated -- see memoryCircuitBreakerThresholdPct
  * in solrconfig.xml
  * </p>
  */
 
 public class MemoryCircuitBreaker extends CircuitBreaker {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final MemoryMXBean MEMORY_MX_BEAN = ManagementFactory.getMemoryMXBean();
 
   private final long heapMemoryThreshold;
 
-  // Assumption -- the value of these parameters will be set correctly before invoking printDebugInfo()
+  // Assumption -- the value of these parameters will be set correctly before invoking getDebugInfo()
   private ThreadLocal<Long> seenMemory = new ThreadLocal<>();
   private ThreadLocal<Long> allowedMemory = new ThreadLocal<>();
 
@@ -81,6 +85,10 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
 
   @Override
   public String getDebugInfo() {
+    if (seenMemory.get() == 0.0 || allowedMemory.get() == 0.0) {
+      log.warn("MemoryCircuitBreaker's monitored values not set correctly");
+    }
+
     return "seenMemory=" + seenMemory.get() + " allowedMemory=" + allowedMemory.get();
   }
 

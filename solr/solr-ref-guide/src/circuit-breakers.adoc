@@ -42,14 +42,17 @@ This circuit breaker tracks JVM heap memory usage and rejects incoming search re
 exceeds a configured percentage of maximum heap allocated to the JVM (-XMx). The main configuration for this circuit breaker is
 controlling the threshold percentage at which the breaker will trip.
 
+It does not logically make sense to have a threshold below 50% and above 95% of the max heap allocated to the JVM. Hence, the range
+of valid values for this parameter is [50, 95], both inclusive.
+
 [source,xml]
 ----
-<memoryCircuitBreakerThreshold>75</memoryCircuitBreakerThreshold>
+<memoryCircuitBreakerThresholdPct>75</memoryCircuitBreakerThresholdPct>
 ----
 
 Consider the following example:
 
-JVM has been allocated a maximum heap of 5GB (-XMx) and memoryCircuitBreakerThreshold is set to 75. In this scenario, the heap usage
+JVM has been allocated a maximum heap of 5GB (-XMx) and memoryCircuitBreakerThresholdPct is set to 75. In this scenario, the heap usage
 at which the circuit breaker will trip is 3.75GB.
 
 Note that this circuit breaker is checked for each incoming search request and considers the current heap usage of the node i.e every search

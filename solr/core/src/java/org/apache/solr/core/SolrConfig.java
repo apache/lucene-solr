@@ -815,8 +815,8 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
   private void validateMemoryBreakerThreshold() {
     if (useCircuitBreakers) {
-      if (memoryCircuitBreakerThresholdPct > 100 || memoryCircuitBreakerThresholdPct <= 0) {
-        throw new IllegalArgumentException("memoryCircuitBreakerThreshold is not a valid percentage");
+      if (memoryCircuitBreakerThresholdPct > 95 || memoryCircuitBreakerThresholdPct < 50) {
+        throw new IllegalArgumentException("Valid value range of memoryCircuitBreakerThresholdPct is 50 -  95");
       }
     }
   }

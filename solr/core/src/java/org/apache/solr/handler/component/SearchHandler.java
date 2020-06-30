@@ -54,7 +54,6 @@ import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.circuitbreaker.CircuitBreaker;
 import org.apache.solr.util.circuitbreaker.CircuitBreakerManager;
-import org.apache.solr.util.circuitbreaker.CircuitBreakerType;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
@@ -304,7 +303,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
     final RTimerTree timer = rb.isDebug() ? req.getRequestTimer() : null;
 
     if (req.getCore().getSolrConfig().useCircuitBreakers) {
-      Map<CircuitBreakerType, CircuitBreaker> trippedCircuitBreakers;
+      Map<CircuitBreaker.CircuitBreakerType, CircuitBreaker> trippedCircuitBreakers;
 
       if (timer != null) {
         RTimerTree subt = timer.sub("circuitbreaker");

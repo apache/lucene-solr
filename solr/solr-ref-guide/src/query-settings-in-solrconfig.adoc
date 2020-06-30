@@ -181,7 +181,7 @@ Global control flag for enabling circuit breakers
 <useCircuitBreakers>true</useCircuitBreakers>
 ----
 
-=== memoryCircuitBreakerThreshold
+=== memoryCircuitBreakerThresholdPct
 
 Memory threshold in percentage for JVM heap usage defined in percentage of maximum heap allocated
 to the JVM (-XMx). Ideally, this value should be in the range of 75-80% of maximum heap allocated
@@ -189,7 +189,7 @@ to the JVM.
 
 [source,xml]
 ----
-<memoryCircuitBreakerThreshold>75</memoryCircuitBreakerThreshold>
+<memoryCircuitBreakerThresholdPct>75</memoryCircuitBreakerThresholdPct>
 ----
 
 === useColdSearcher
