@@ -39,10 +39,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
-import org.apache.solr.common.util.CommandOperation;
-import org.apache.solr.common.util.JsonSchemaCreator;
-import org.apache.solr.common.util.Utils;
-import org.apache.solr.common.util.ValidatingJsonMap;
+import org.apache.solr.common.util.*;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
@@ -93,7 +90,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
     try {
       klas = MethodHandles.publicLookup().accessClass(theClass);
     } catch (IllegalAccessException e) {
-      throw new RuntimeException(klas.getName() + " is not public", e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Method may be non-public/inaccessible", e);
     }
     if (klas.getAnnotation(EndPoint.class) != null) {
       EndPoint endPoint = klas.getAnnotation(EndPoint.class);
@@ -220,7 +217,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
     ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper();
     int paramsCount;
     @SuppressWarnings({"rawtypes"})
-    Class c;
+    Class parameterClass;
     boolean isWrappedInPayloadObj = false;
 
 
@@ -231,7 +228,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
         try {
           this.method = MethodHandles.publicLookup().unreflect(method);
         } catch (IllegalAccessException e) {
-          throw new RuntimeException("Unable to unlookup method");
+          throw new RuntimeException("Unable to access method, may be not public or accessible ",e);
         }
         Class<?>[] parameterTypes = method.getParameterTypes();
         paramsCount = parameterTypes.length;
@@ -260,19 +257,19 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
           isWrappedInPayloadObj = true;
           if(typ.getActualTypeArguments().length == 0){
             //this is a raw type
-            c = Map.class;
+            parameterClass = Map.class;
             return;
           }
           Type t1 = typ.getActualTypeArguments()[0];
           if (t1 instanceof ParameterizedType) {
             ParameterizedType parameterizedType = (ParameterizedType) t1;
-            c = (Class) parameterizedType.getRawType();
+            parameterClass = (Class) parameterizedType.getRawType();
           } else {
-            c = (Class) typ.getActualTypeArguments()[0];
+            parameterClass = (Class) typ.getActualTypeArguments()[0];
           }
         }
       } else {
-        c = (Class) t;
+        parameterClass = (Class) t;
       }
     }
 
@@ -280,21 +277,35 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
     @SuppressWarnings({"unchecked"})
     void invoke(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation cmd) {
       try {
-        if(paramsCount ==1) {
-          Object o = cmd.getCommandData();
-          if (o instanceof Map && c != null && c != Map.class) {
-            o = mapper.readValue(Utils.toJSONString(o), c);
+        Object o = null;
+        String commandName = null;
+        if(paramsCount == 1) {
+          if(cmd == null) {
+            if(parameterClass != null) {
+              try {
+                ContentStream stream = req.getContentStreams().iterator().next();
+                o = mapper.readValue(stream.getStream(), parameterClass);
+              } catch (IOException e) {
+                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "invalid payload", e);
+              }
+            }
+          } else {
+            commandName = cmd.name;
+            o = cmd.getCommandData();
+            if (o instanceof Map && parameterClass != null && parameterClass != Map.class) {
+              o = mapper.readValue(Utils.toJSONString(o), parameterClass);
+            }
           }
-          PayloadObj<Object> payloadObj = new PayloadObj<>(cmd.name, cmd.getCommandData(), o, req, rsp);
+          PayloadObj<Object> payloadObj = new PayloadObj<>(commandName, o, o, req, rsp);
           cmd = payloadObj;
           method.invoke(obj, payloadObj);
           checkForErrorInPayload(cmd);
         } else if (paramsCount == 2) {
           method.invoke(obj, req, rsp);
         } else {
-          Object o = cmd.getCommandData();
-          if (o instanceof Map && c != null) {
-            o = mapper.readValue(Utils.toJSONString(o), c);
+          o = cmd.getCommandData();
+          if (o instanceof Map && parameterClass != null) {
+            o = mapper.readValue(Utils.toJSONString(o), parameterClass);
           }
           if (isWrappedInPayloadObj) {
             PayloadObj<Object> payloadObj = new PayloadObj<>(cmd.name, cmd.getCommandData(), o, req, rsp);
@@ -305,13 +316,11 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
           }
           checkForErrorInPayload(cmd);
         }
-
-
-      } catch (SolrException se) {
+      } catch (RuntimeException se) {
         log.error("Error executing command  ", se);
         throw se;
       } catch (InvocationTargetException ite) {
-        log.error("Error executing command ", ite);
+        log.error("Error executing method ", ite);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, ite.getCause());
       } catch (Throwable e) {
         log.error("Error executing command : ", e);
