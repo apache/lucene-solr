@@ -26,6 +26,8 @@ import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.packagemanager.SolrPackage.Manifest;
 import org.apache.solr.packagemanager.SolrPackage.Plugin;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 /**
  * Describes one instance of a package as it exists in Solr when installed.
  */
@@ -44,6 +46,19 @@ public class SolrPackageInstance implements ReflectMapWriter {
 
   final public Map<String, String> parameterDefaults;
 
+  @JsonIgnore
+  private Object customData;
+  
+  @JsonIgnore
+  public Object getCustomData() {
+    return customData;
+  }
+  
+  @JsonIgnore
+  public void setCustomData(Object customData) {
+    this.customData = customData;
+  }
+  
   public SolrPackageInstance(String id, String description, String version, Manifest manifest,
       List<Plugin> plugins, Map<String, String> params) {
     this.name = id;

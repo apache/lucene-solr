@@ -65,7 +65,10 @@ public class PackageUtils {
   public static String LATEST = "latest";
   
   public static String PACKAGE_PATH = "/api/cluster/package";
+  public static String CLUSTER_PLUGINS_PATH = "/api/cluster/plugin";
   public static String REPOSITORIES_ZK_PATH = "/repositories.json";
+  public static String CLUSTERPROPS_PATH = "/api/cluster/zk/data/clusterprops.json";
+  
  
   public static Configuration jsonPathConfiguration() {
     MappingProvider provider = new JacksonMappingProvider();

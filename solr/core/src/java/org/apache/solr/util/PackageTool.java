@@ -149,7 +149,8 @@ public class PackageTool extends SolrCLI.ToolBase {
                 String version = parsedVersion.second();
                 boolean noprompt = cli.hasOption('y');
                 boolean isUpdate = cli.hasOption("update") || cli.hasOption('u');
-                packageManager.deploy(packageName, version, PackageUtils.validateCollections(cli.getOptionValue("collections").split(",")), cli.getOptionValues("param"), isUpdate, noprompt);
+                String collections[] = cli.hasOption("collections")? PackageUtils.validateCollections(cli.getOptionValue("collections").split(",")): new String[] {};
+                packageManager.deploy(packageName, version, collections, cli.hasOption("cluster"), cli.getOptionValues("param"), isUpdate, noprompt);
                 break;
               }
               case "undeploy":
@@ -159,7 +160,8 @@ public class PackageTool extends SolrCLI.ToolBase {
                   throw new SolrException(ErrorCode.BAD_REQUEST, "Only package name expected, without a version. Actual: " + cli.getArgList().get(1));
                 }
                 String packageName = parsedVersion.first();
-                packageManager.undeploy(packageName, cli.getOptionValue("collections").split(","));
+                String collections[] = cli.hasOption("collections")? PackageUtils.validateCollections(cli.getOptionValue("collections").split(",")): new String[] {};
+                packageManager.undeploy(packageName, collections, cli.hasOption("cluster"));
                 break;
               }
               case "help":
@@ -239,6 +241,11 @@ public class PackageTool extends SolrCLI.ToolBase {
         .hasArg()
         .required(false)
         .desc("List of collections. Run './solr package help' for more details.")
+        .build(),
+
+        Option.builder("cluster")
+        .required(false)
+        .desc("Needed to install cluster level plugins in a package. Run './solr package help' for more details.")
         .build(),
 
         Option.builder("p")
