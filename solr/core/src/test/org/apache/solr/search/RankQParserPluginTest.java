@@ -54,11 +54,10 @@ public class RankQParserPluginTest extends SolrTestCaseJ4 {
   }
   
   public void testCreateParser() throws IOException {
-    try (RankQParserPlugin rankQPPlugin = new RankQParserPlugin()) {
-      QParser parser = rankQPPlugin.createParser("", new ModifiableSolrParams(), null, req()); 
-      assertNotNull(parser);
-      assertTrue(parser instanceof RankQParser);
-    }
+    RankQParserPlugin rankQPPlugin = new RankQParserPlugin();
+    QParser parser = rankQPPlugin.createParser("", new ModifiableSolrParams(), null, req()); 
+    assertNotNull(parser);
+    assertTrue(parser instanceof RankQParser);
   }
   
   public void testSyntaxErrors() throws IOException, SyntaxError {
@@ -250,9 +249,8 @@ public class RankQParserPluginTest extends SolrTestCaseJ4 {
   }
   
   private RankQParser getRankQParser(SolrParams localParams, SolrParams params, SolrQueryRequest req) throws IOException {
-    try (RankQParserPlugin rankQPPlugin = new RankQParserPlugin()) {
-      return (RankQParser) rankQPPlugin.createParser("", localParams, params, req);
-    }
+    RankQParserPlugin rankQPPlugin = new RankQParserPlugin();
+    return (RankQParser) rankQPPlugin.createParser("", localParams, params, req);
   }
 
 }
