@@ -20,8 +20,8 @@ package org.apache.solr.api;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
@@ -38,10 +38,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
-import org.apache.solr.common.util.CommandOperation;
-import org.apache.solr.common.util.JsonSchemaCreator;
-import org.apache.solr.common.util.Utils;
-import org.apache.solr.common.util.ValidatingJsonMap;
+import org.apache.solr.common.util.*;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
@@ -87,16 +84,15 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
   public static List<Api> getApis(Object obj) {
     return getApis(obj.getClass(), obj);
   }
-  public static List<Api> getApis(Class<? extends Object> klas , Object obj) {
+  public static List<Api> getApis(final Class<? extends Object> klas , Object obj) {
     if (!Modifier.isPublic(klas.getModifiers())) {
       throw new RuntimeException(klas.getName() + " is not public");
     }
-
     if (klas.getAnnotation(EndPoint.class) != null) {
       EndPoint endPoint = klas.getAnnotation(EndPoint.class);
       List<Method> methods = new ArrayList<>();
       Map<String, Cmd> commands = new HashMap<>();
-      for (Method m : klas.getDeclaredMethods()) {
+      for (Method m : klas.getMethods()) {
         Command command = m.getAnnotation(Command.class);
         if (command != null) {
           methods.add(m);
@@ -113,12 +109,9 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
       return Collections.singletonList(new AnnotatedApi(specProvider, endPoint, commands, null));
     } else {
       List<Api> apis = new ArrayList<>();
-      for (Method m : klas.getDeclaredMethods()) {
+      for (Method m : klas.getMethods()) {
         EndPoint endPoint = m.getAnnotation(EndPoint.class);
         if (endPoint == null) continue;
-        if (!Modifier.isPublic(m.getModifiers())) {
-          throw new RuntimeException("Non public method " + m.toGenericString());
-        }
         Cmd cmd = new Cmd("", obj, m);
         SpecProvider specProvider = readSpec(endPoint, Collections.singletonList(m));
         apis.add(new AnnotatedApi(specProvider, endPoint, Collections.singletonMap("", cmd), null));
@@ -212,40 +205,40 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
 
   static class Cmd {
     final String command;
-    final Method method;
+    final MethodHandle method;
     final Object obj;
     ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper();
     int paramsCount;
     @SuppressWarnings({"rawtypes"})
-    Class c;
+    Class parameterClass;
     boolean isWrappedInPayloadObj = false;
 
 
     Cmd(String command, Object obj, Method method) {
-      if (Modifier.isPublic(method.getModifiers())) {
-        this.command = command;
-        this.obj = obj;
-        this.method = method;
-        Class<?>[] parameterTypes = method.getParameterTypes();
-        paramsCount = parameterTypes.length;
-        if (parameterTypes.length == 1) {
-          readPayloadType(method.getGenericParameterTypes()[0]);
-        } else if (parameterTypes.length == 3) {
-          if (parameterTypes[0] != SolrQueryRequest.class || parameterTypes[1] != SolrQueryResponse.class) {
-            throw new RuntimeException("Invalid params for method " + method);
-          }
-          Type t = method.getGenericParameterTypes()[2];
-          readPayloadType(t);
-        }
-        if (parameterTypes.length > 3) {
-          throw new RuntimeException("Invalid params count for method " + method);
-        }
-      } else {
-        throw new RuntimeException(method.toString() + " is not a public static method");
+      this.command = command;
+      this.obj = obj;
+      try {
+        this.method = MethodHandles.publicLookup().unreflect(method);
+      } catch (IllegalAccessException e) {
+        throw new RuntimeException("Unable to access method, may be not public or accessible ", e);
       }
-
+      Class<?>[] parameterTypes = method.getParameterTypes();
+      paramsCount = parameterTypes.length;
+      if (parameterTypes.length == 1) {
+        readPayloadType(method.getGenericParameterTypes()[0]);
+      } else if (parameterTypes.length == 3) {
+        if (parameterTypes[0] != SolrQueryRequest.class || parameterTypes[1] != SolrQueryResponse.class) {
+          throw new RuntimeException("Invalid params for method " + method);
+        }
+        Type t = method.getGenericParameterTypes()[2];
+        readPayloadType(t);
+      }
+      if (parameterTypes.length > 3) {
+        throw new RuntimeException("Invalid params count for method " + method);
+      }
     }
 
+    @SuppressWarnings("rawtypes")
     private void readPayloadType(Type t) {
       if (t instanceof ParameterizedType) {
         ParameterizedType typ = (ParameterizedType) t;
@@ -253,19 +246,19 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
           isWrappedInPayloadObj = true;
           if(typ.getActualTypeArguments().length == 0){
             //this is a raw type
-            c = Map.class;
+            parameterClass = Map.class;
             return;
           }
           Type t1 = typ.getActualTypeArguments()[0];
           if (t1 instanceof ParameterizedType) {
             ParameterizedType parameterizedType = (ParameterizedType) t1;
-            c = (Class) parameterizedType.getRawType();
+            parameterClass = (Class) parameterizedType.getRawType();
           } else {
-            c = (Class) typ.getActualTypeArguments()[0];
+            parameterClass = (Class) typ.getActualTypeArguments()[0];
           }
         }
       } else {
-        c = (Class) t;
+        parameterClass = (Class) t;
       }
     }
 
@@ -273,21 +266,35 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
     @SuppressWarnings({"unchecked"})
     void invoke(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation cmd) {
       try {
-        if(paramsCount ==1) {
-          Object o = cmd.getCommandData();
-          if (o instanceof Map && c != null && c != Map.class) {
-            o = mapper.readValue(Utils.toJSONString(o), c);
+        Object o = null;
+        String commandName = null;
+        if(paramsCount == 1) {
+          if(cmd == null) {
+            if(parameterClass != null) {
+              try {
+                ContentStream stream = req.getContentStreams().iterator().next();
+                o = mapper.readValue(stream.getStream(), parameterClass);
+              } catch (IOException e) {
+                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "invalid payload", e);
+              }
+            }
+          } else {
+            commandName = cmd.name;
+            o = cmd.getCommandData();
+            if (o instanceof Map && parameterClass != null && parameterClass != Map.class) {
+              o = mapper.readValue(Utils.toJSONString(o), parameterClass);
+            }
           }
-          PayloadObj<Object> payloadObj = new PayloadObj<>(cmd.name, cmd.getCommandData(), o, req, rsp);
+          PayloadObj<Object> payloadObj = new PayloadObj<>(commandName, o, o, req, rsp);
           cmd = payloadObj;
           method.invoke(obj, payloadObj);
           checkForErrorInPayload(cmd);
         } else if (paramsCount == 2) {
           method.invoke(obj, req, rsp);
         } else {
-          Object o = cmd.getCommandData();
-          if (o instanceof Map && c != null) {
-            o = mapper.readValue(Utils.toJSONString(o), c);
+          o = cmd.getCommandData();
+          if (o instanceof Map && parameterClass != null) {
+            o = mapper.readValue(Utils.toJSONString(o), parameterClass);
           }
           if (isWrappedInPayloadObj) {
             PayloadObj<Object> payloadObj = new PayloadObj<>(cmd.name, cmd.getCommandData(), o, req, rsp);
@@ -298,15 +305,10 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
           }
           checkForErrorInPayload(cmd);
         }
-
-
-      } catch (SolrException se) {
+      } catch (RuntimeException se) {
         log.error("Error executing command  ", se);
         throw se;
-      } catch (InvocationTargetException ite) {
-        log.error("Error executing command ", ite);
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, ite.getCause());
-      } catch (Exception e) {
+      } catch (Throwable e) {
         log.error("Error executing command : ", e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
