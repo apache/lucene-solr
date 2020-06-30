@@ -73,7 +73,7 @@ public class TestIntervals extends LuceneTestCase {
   private static String field2_docs[] = {
       "In Xanadu did Kubla Khan a stately pleasure dome decree",
       "Where Alph the sacred river ran through caverns measureless to man",
-      "Down to a sunless sea",
+      "a b a c b a b c",
       "So thrice five miles of fertile ground",
       "Pease hot porridge porridge",
       "w1 w2 w3 w4 w1 w6 w3 w8 w4 w7 w1 w6"
@@ -525,6 +525,14 @@ public class TestIntervals extends LuceneTestCase {
     assertEquals(4, source.minExtent());
   }
 
+  public void testInterleavedOrdered() throws IOException {
+    IntervalsSource source = Intervals.ordered(Intervals.term("a"), Intervals.term("b"), Intervals.term("c"));
+    checkIntervals(source, "field2", 1, new int[][]{
+            {}, {}, { 0, 3, 5, 7 }, {}, {}, {}
+    });
+    assertGaps(source, 2, "field2", new int[]{ 1, 0 });
+  }
+
   public void testUnorderedDistinct() throws IOException {
     checkIntervals(Intervals.unorderedNoOverlaps(Intervals.term("pease"), Intervals.term("pease")),
         "field1", 3, new int[][]{
@@ -670,6 +678,11 @@ public class TestIntervals extends LuceneTestCase {
     assertMatch(mi, 0, 3, 0, 11);
 
     assertEquals(3, source.minExtent());
+    assertEquals(source, source);
+    assertEquals(source, Intervals.maxgaps(1,
+            Intervals.unordered(Intervals.term("w1"), Intervals.term("w3"), Intervals.term("w4"))));
+    assertNotEquals(source, Intervals.maxgaps(2,
+            Intervals.unordered(Intervals.term("w1"), Intervals.term("w3"), Intervals.term("w4"))));
 
   }
 
