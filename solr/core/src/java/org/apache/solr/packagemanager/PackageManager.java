@@ -40,6 +40,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.packagemanager.SolrPackage.Command;
 import org.apache.solr.packagemanager.SolrPackage.Manifest;
@@ -189,12 +190,26 @@ public class PackageManager implements Closeable {
 
     
     // Install plugins of type "collection"
-    boolean collectionSuccess = deployCollectionPackage(packageInstance, pegToLatest, isUpdate, noprompt, collections,
+    Pair<List<String>, List<String>> deployResult = deployCollectionPackage(packageInstance, pegToLatest, isUpdate, noprompt, collections,
         shouldDeployClusterPlugins, overrides);
-    return cluasterSuccess && collectionSuccess;
+    List<String> deployedCollections = deployResult.first();
+    List<String> previouslyDeployedOnCollections = deployResult.second();
+    
+    // Verify
+    boolean verifySuccess = true;
+    // Verify that package was successfully deployed
+    verifySuccess = verify(packageInstance, deployedCollections, shouldDeployClusterPlugins, overrides);
+    if (verifySuccess) {
+      PackageUtils.printGreen("Deployed on " + deployedCollections + " and verified package: " + packageInstance.name + ", version: " + packageInstance.version);
+    }
+
+    return cluasterSuccess && previouslyDeployedOnCollections.isEmpty() && verifySuccess;
   }
 
-  private boolean deployCollectionPackage(SolrPackageInstance packageInstance, boolean pegToLatest, boolean isUpdate,
+  /**
+   * @return list of collections on which packages deployed on
+   */
+  private Pair<List<String>, List<String>> deployCollectionPackage(SolrPackageInstance packageInstance, boolean pegToLatest, boolean isUpdate,
       boolean noprompt, List<String> collections, boolean shouldDeployClusterPlugins, String[] overrides) {
     List<String> previouslyDeployed =  new ArrayList<>(); // collections where package is already deployed in
     for (String collection: collections) {
@@ -290,21 +305,12 @@ public class PackageManager implements Closeable {
       }
     }
 
-    List<String> deployedCollections = collections.stream().filter(c -> !previouslyDeployed.contains(c)).collect(Collectors.toList());
-
-    boolean success = true;
-    if (deployedCollections.isEmpty() == false) {
-      // Verify that package was successfully deployed
-      success = verify(packageInstance, deployedCollections, shouldDeployClusterPlugins, overrides);
-      if (success) {
-        PackageUtils.printGreen("Deployed on " + deployedCollections + " and verified package: " + packageInstance.name + ", version: " + packageInstance.version);
-      }
-    }
     if (previouslyDeployed.isEmpty() == false) {
       PackageUtils.printRed("Already Deployed on " + previouslyDeployed + ", package: " + packageInstance.name + ", version: " + packageInstance.version);
     }
-    success &= previouslyDeployed.isEmpty();
-    return success;
+
+    List<String> deployedCollections = collections.stream().filter(c -> !previouslyDeployed.contains(c)).collect(Collectors.toList());
+    return new Pair(deployedCollections, previouslyDeployed);
   }
 
   private boolean deployClusterPackage(SolrPackageInstance packageInstance, boolean isUpdate, boolean noprompt,
@@ -430,6 +436,8 @@ public class PackageManager implements Closeable {
   /**
    * Given a package and list of collections, verify if the package is installed
    * in those collections. It uses the verify command of every plugin in the package (if defined).
+   * 
+   * @param overrides are needed only when shouldDeployClusterPlugins is true, since collection level plugins will get their overrides from ZK (collection params API)
    */
   public boolean verify(SolrPackageInstance pkg, List<String> collections, boolean shouldDeployClusterPlugins, String overrides[]) {
     boolean success = true;
