@@ -35,6 +35,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.collections.map.MultiValueMap;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.beans.PluginMeta;
 import org.apache.solr.common.NavigableObject;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -148,10 +149,16 @@ public class PackageManager implements Closeable {
         solrBaseUrl + PackageUtils.CLUSTERPROPS_PATH, Utils.JSONCONSUMER);
     Map<String, Object> clusterPlugins = (Map<String, Object>) result.getOrDefault("plugin", Collections.emptyMap());
     for (String key: clusterPlugins.keySet()) {
-      Map<String, String> pluginMeta = (Map<String, String>) clusterPlugins.get(key);
-      if (pluginMeta.containsKey("class") && pluginMeta.get("class").contains(":")) {
-        String packageName = pluginMeta.get("class").substring(0, pluginMeta.get("class").indexOf(':'));
-        packageVersions.put(packageName, pluginMeta.get("version"));
+      // Map<String, String> pluginMeta = (Map<String, String>) clusterPlugins.get(key);
+      PluginMeta pluginMeta;
+      try {
+        pluginMeta = PackageUtils.getMapper().readValue(Utils.toJSON(clusterPlugins.get(key)), PluginMeta.class);
+      } catch (IOException e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Exception while fetching plugins from /clusterprops.json in ZK.", e);
+      }
+      if (pluginMeta.klass.contains(":")) {
+        String packageName = pluginMeta.klass.substring(0, pluginMeta.klass.indexOf(':'));
+        packageVersions.put(packageName, pluginMeta.version);
         packagePlugins.put(packageName, pluginMeta);
       }
     }
@@ -183,7 +190,7 @@ public class PackageManager implements Closeable {
       List<String> collections, boolean shouldDeployClusterPlugins, String[] overrides) {
 
     // Install plugins of type "cluster"
-    boolean cluasterSuccess = deployClusterPackage(packageInstance, isUpdate, noprompt, shouldDeployClusterPlugins,
+    boolean clusterSuccess = deployClusterPackage(packageInstance, isUpdate, noprompt, shouldDeployClusterPlugins,
         overrides);
 
     
@@ -201,7 +208,7 @@ public class PackageManager implements Closeable {
       PackageUtils.printGreen("Deployed on " + deployedCollections + " and verified package: " + packageInstance.name + ", version: " + packageInstance.version);
     }
 
-    return cluasterSuccess && previouslyDeployedOnCollections.isEmpty() && verifySuccess;
+    return clusterSuccess && previouslyDeployedOnCollections.isEmpty() && verifySuccess;
   }
 
   /**
@@ -328,11 +335,11 @@ public class PackageManager implements Closeable {
           cluasterPluginFailed = true;
           continue;
         }
-        for (Map<String, String> pluginMeta: (List<Map<String, String>>)deployedPackage.getCustomData()) {
+        for (PluginMeta pluginMeta: (List<PluginMeta>)deployedPackage.getCustomData()) {
           PackageUtils.printGreen("Updating this plugin: " + pluginMeta);
           try {
-            String postBody = "{\"update\":{\"name\": \""+pluginMeta.get("name")+"\","
-                + " \"class\": \""+pluginMeta.get("class")+"\", \"version\": \""+packageInstance.version+"\", \"path-prefix\": \""+pluginMeta.get("path-prefix")+"\"}}";
+            pluginMeta.version = packageInstance.version; // just update the version, let the other metadata same
+            String postBody = "{\"update\": " + Utils.toJSONString(pluginMeta) + "}";
             PackageUtils.printGreen("Posting " + postBody + " to " + PackageUtils.CLUSTER_PLUGINS_PATH);
             SolrCLI.postJsonToSolr(solrClient, PackageUtils.CLUSTER_PLUGINS_PATH, postBody);
           } catch (Exception e) {
@@ -562,7 +569,7 @@ public class PackageManager implements Closeable {
     ensureCollectionsExist(Arrays.asList(collections));
     
     // Undeploy cluster level plugins
-    {
+    if (shouldUndeployClusterPlugins) {
       SolrPackageInstance deployedPackage = getPackagesDeployedAsClusterLevelPlugins().get(packageName);
       if (deployedPackage == null) {
         PackageUtils.printRed("Cluster level plugins from package "+packageName+" not deployed.");
