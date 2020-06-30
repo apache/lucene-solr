@@ -100,6 +100,14 @@ public class IndexSearcher {
    * don't spend most time on computing hit counts
    */
   private static final int TOTAL_HITS_THRESHOLD = 1000;
+  private long segments = 0;
+  private long collectorTime = 0;
+  public long getCollectorTime(){
+    return collectorTime;
+  }
+  public long getSegments(){
+    return segments;
+  }
 
   final IndexReader reader; // package private for testing!
   
@@ -348,6 +356,7 @@ public class IndexSearcher {
     // general case: create a collector and count matches
     final CollectorManager<TotalHitCountCollector, Integer> collectorManager = new CollectorManager<TotalHitCountCollector, Integer>() {
 
+
       @Override
       public TotalHitCountCollector newCollector() throws IOException {
         return new TotalHitCountCollector();
@@ -415,18 +424,19 @@ public class IndexSearcher {
         }
         return TopDocs.merge(0, cappedNumHits, topDocs, true);
       }
-
     };
-
     return search(query, manager);
   }
+
 
   /** Finds the top <code>n</code>
    * hits for <code>query</code>.
    *
-   * @throws BooleanQuery.TooManyClauses If a query would exceed 
+   * @throws BooleanQuery.TooManyClauses If a query would exceed
    *         {@link BooleanQuery#getMaxClauseCount()} clauses.
    */
+
+
   public TopDocs search(Query query, int n)
     throws IOException {
     return searchAfter(null, query, n);
@@ -439,9 +449,9 @@ public class IndexSearcher {
    * @throws BooleanQuery.TooManyClauses If a query would exceed 
    *         {@link BooleanQuery#getMaxClauseCount()} clauses.
    */
-  public void search(Query query, Collector results)
-    throws IOException {
+  public void search(Query query, Collector results)  throws IOException {
     query = rewrite(query);
+    segments = leafContexts.size();
     search(leafContexts, createWeight(query, results.scoreMode(), 1), results);
   }
 
@@ -649,7 +659,9 @@ public class IndexSearcher {
     for (LeafReaderContext ctx : leaves) { // search each subreader
       final LeafCollector leafCollector;
       try {
+        long start = System.currentTimeMillis();
         leafCollector = collector.getLeafCollector(ctx);
+        collectorTime += System.currentTimeMillis()-start;
       } catch (CollectionTerminatedException e) {
         // there is no doc of interest in this reader context
         // continue with the following leaf
