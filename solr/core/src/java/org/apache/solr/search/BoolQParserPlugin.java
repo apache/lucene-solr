@@ -18,7 +18,6 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.query.FilterQuery;
