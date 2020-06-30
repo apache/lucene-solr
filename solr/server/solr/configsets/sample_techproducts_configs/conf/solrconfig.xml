@@ -552,7 +552,7 @@
    <!-- Maximum number of documents to cache for any entry in the
         queryResultCache.
      -->
-   <queryResultMaxDocsCached>200</queryResultMaxDocsCached>s
+   <queryResultMaxDocsCached>200</queryResultMaxDocsCached>
 
    <!-- Query Related Event Listeners
 

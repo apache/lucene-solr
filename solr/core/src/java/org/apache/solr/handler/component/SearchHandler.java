@@ -310,12 +310,12 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
         rb.setTimer(subt);
 
         CircuitBreakerManager circuitBreakerManager = req.getCore().getCircuitBreakerManager();
-        trippedCircuitBreakers = circuitBreakerManager.checkedTripped();
+        trippedCircuitBreakers = circuitBreakerManager.checkTripped();
 
         rb.getTimer().stop();
       } else {
         CircuitBreakerManager circuitBreakerManager = req.getCore().getCircuitBreakerManager();
-        trippedCircuitBreakers = circuitBreakerManager.checkedTripped();
+        trippedCircuitBreakers = circuitBreakerManager.checkTripped();
       }
 
       if (trippedCircuitBreakers != null) {

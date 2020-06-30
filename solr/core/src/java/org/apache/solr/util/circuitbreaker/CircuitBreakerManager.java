@@ -51,10 +51,10 @@ public class CircuitBreakerManager {
   }
 
   /**
-   * Check if any circuit breaker has triggered.
+   * Check and return circuit breakers that have triggered
    * @return CircuitBreakers which have triggered, null otherwise.
    */
-  public Map<CircuitBreaker.CircuitBreakerType, CircuitBreaker> checkedTripped() {
+  public Map<CircuitBreaker.CircuitBreakerType, CircuitBreaker> checkTripped() {
     Map<CircuitBreaker.CircuitBreakerType, CircuitBreaker> triggeredCircuitBreakers = null;
 
     for (Map.Entry<CircuitBreaker.CircuitBreakerType, CircuitBreaker> entry : circuitBreakerMap.entrySet()) {
@@ -66,7 +66,7 @@ public class CircuitBreakerManager {
           triggeredCircuitBreakers = new HashMap<>();
         }
 
-        triggeredCircuitBreakers.putIfAbsent(entry.getKey(), circuitBreaker);
+        triggeredCircuitBreakers.put(entry.getKey(), circuitBreaker);
       }
     }
 
