@@ -31,6 +31,9 @@ New Features
 * SOLR-13749: Join queries can now work cross-collection, even when sharded or when spanning nodes.
   (Dan Fox, Kevin Watters, via Gus Heck, David Smiley)
 
+* SOLR-14481: Add drill Streaming Expression for efficient and accurate high cardinality aggregation.
+  (Joel Bernstein)
+
 Improvements
 ---------------------
 * SOLR-14316: Remove unchecked type conversion warning in JavaBinCodec's readMapEntry's equals() method
