@@ -19,9 +19,13 @@ package org.apache.solr.schema;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
+import javax.xml.xpath.XPathConstants;
+
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.util.TestHarness;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 
@@ -256,6 +260,26 @@ public class RankFieldTest extends SolrTestCaseJ4 {
         "//*[@numFound='2']",
         "//result/doc[1]/str[@name='id'][.='1']",
         "//result/doc[2]/str[@name='id'][.='2']");
+  }
+  
+  public void testScoreChanges() throws Exception {
+    assertU(adoc(
+        "id", "1",
+        "str_field", "foo",
+        RANK_1, "1"
+        ));
+    assertU(commit());
+    ModifiableSolrParams params = params("q", "foo",
+        "defType", "dismax",
+        "qf", "str_field^10",
+        "fl", "id,score",
+        "wt", "xml");
+    
+    double scoreBefore = (Double) TestHarness.evaluateXPath(h.query(req(params)), "//result/doc[1]/float[@name='score']", XPathConstants.NUMBER);
+    params.add("bq", "{!rank f='" + RANK_1 + "' function='log' scalingFactor='1'}");
+    double scoreAfter = (Double) TestHarness.evaluateXPath(h.query(req(params)), "//result/doc[1]/float[@name='score']", XPathConstants.NUMBER);
+    assertNotEquals("Expecting score to change", scoreBefore, scoreAfter, 0f);
+
   }
 
 }

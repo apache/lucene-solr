@@ -47,12 +47,12 @@ import org.apache.solr.uninverting.UninvertingReader.Type;
  * Add fields to the schema, i.e.:
  * </p>
  * <pre class="prettyprint">
- * &lt;field name="rank_1" type="rank" /&gt;
+ * &lt;field name="pagerank" type="rank" /&gt;
  * </pre>
  * 
  * Query using the {@link RankQParserPlugin}, for example
  * <pre class="prettyprint">
- * http://localhost:8983/solr/techproducts?q=memory _query_:{!rank f='rank_1', function='log' scalingFactor='1.2'}
+ * http://localhost:8983/solr/techproducts?q=memory _query_:{!rank f='pagerank', function='log' scalingFactor='1.2'}
  * </pre>
  * 
  * @see RankQParserPlugin
