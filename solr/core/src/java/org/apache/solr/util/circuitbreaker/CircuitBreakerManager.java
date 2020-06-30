@@ -52,7 +52,7 @@ public class CircuitBreakerManager {
 
   /**
    * Check if any circuit breaker has triggered.
-   * @return CircuitBreakers which have triggered, null otherwise
+   * @return CircuitBreakers which have triggered, null otherwise.
    */
   public Map<CircuitBreaker.CircuitBreakerType, CircuitBreaker> checkedTripped() {
     Map<CircuitBreaker.CircuitBreakerType, CircuitBreaker> triggeredCircuitBreakers = null;
@@ -97,8 +97,8 @@ public class CircuitBreakerManager {
   /**
    * Construct the final error message to be printed when circuit breakers trip.
    *
-   * @param circuitBreakerMap Input list for circuit breakers
-   * @return Constructed error message
+   * @param circuitBreakerMap Input list for circuit breakers.
+   * @return Constructed error message.
    */
   public static String toErrorMessage(Map<CircuitBreaker.CircuitBreakerType, CircuitBreaker> circuitBreakerMap) {
     assert circuitBreakerMap != null;
@@ -116,7 +116,7 @@ public class CircuitBreakerManager {
    * Register default circuit breakers and return a constructed CircuitBreakerManager
    * instance which serves the given circuit breakers.
    *
-   * Any default circuit breakers should be registered here
+   * Any default circuit breakers should be registered here.
    */
   public static CircuitBreakerManager build(SolrConfig solrConfig) {
     CircuitBreakerManager circuitBreakerManager = new CircuitBreakerManager();

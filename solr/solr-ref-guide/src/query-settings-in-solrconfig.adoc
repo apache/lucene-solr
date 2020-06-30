@@ -174,7 +174,7 @@ This parameter sets the maximum number of documents to cache for any entry in th
 
 === useCircuitBreakers
 
-Global control flag for enabling circuit breakers
+Global control flag for enabling circuit breakers.
 
 [source,xml]
 ----
@@ -184,7 +184,7 @@ Global control flag for enabling circuit breakers
 === memoryCircuitBreakerThresholdPct
 
 Memory threshold in percentage for JVM heap usage defined in percentage of maximum heap allocated
-to the JVM (-XMx). Ideally, this value should be in the range of 75-80% of maximum heap allocated
+to the JVM (-Xmx). Ideally, this value should be in the range of 75-80% of maximum heap allocated
 to the JVM.
 
 [source,xml]

@@ -99,7 +99,7 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
   /**
    * Calculate the live memory usage for the system. This method has package visibility
    * to allow using for testing.
-   * @return Memory usage in bytes
+   * @return Memory usage in bytes.
    */
   protected long calculateLiveMemoryUsage() {
     // NOTE: MemoryUsageGaugeSet provides memory usage statistics but we do not use them
