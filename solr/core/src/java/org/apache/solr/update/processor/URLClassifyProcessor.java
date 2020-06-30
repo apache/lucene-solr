@@ -89,11 +89,11 @@ import org.slf4j.LoggerFactory;
  * <pre class="prettyprint">
  * {
  *  "id":"http://wwww.mydomain.com/subpath/document.html",
- *  "url_length":["46"],
- *  "url_levels":["2"],
- *  "url_toplevel":["0"],
- *  "url_landingpage":["0"],
- *  "hostname":["wwww.mydomain.com"],
+ *  "url_length":46,
+ *  "url_levels":2,
+ *  "url_toplevel":0,
+ *  "url_landingpage":0,
+ *  "hostname":"wwww.mydomain.com",
  *  "_version_":1603193062117343232}]
  * }
  * </pre>
