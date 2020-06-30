@@ -267,7 +267,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     assertEquals("wrong config for enableLazyFieldLoading", true, solrConfig.enableLazyFieldLoading);
     assertEquals("wrong config for queryResultWindowSize", 10, solrConfig.queryResultWindowSize);
     assertEquals("wrong config for useCircuitBreakers", false, solrConfig.useCircuitBreakers);
-    assertEquals("wrong config for memoryCircuitBreakerThreshold", 80, solrConfig.memoryCircuitBreakerThreshold);
+    assertEquals("wrong config for memoryCircuitBreakerThreshold", 80, solrConfig.memoryCircuitBreakerThresholdPct);
   }
 
   /**
