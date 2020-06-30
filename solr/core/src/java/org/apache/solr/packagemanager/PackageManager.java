@@ -155,7 +155,6 @@ public class PackageManager implements Closeable {
         packagePlugins.put(packageName, pluginMeta);
       }
     }
-    if (packageVersions == null) return Collections.emptyMap();
     Map<String, SolrPackageInstance> ret = new HashMap<>();
     for (String packageName: packageVersions.keySet()) {
       if (Strings.isNullOrEmpty(packageName) == false && // There can be an empty key, storing the version here
@@ -180,7 +179,6 @@ public class PackageManager implements Closeable {
     }
   }
   
-  @SuppressWarnings({"unchecked"})
   private boolean deployPackage(SolrPackageInstance packageInstance, boolean pegToLatest, boolean isUpdate, boolean noprompt,
       List<String> collections, boolean shouldDeployClusterPlugins, String[] overrides) {
 
@@ -232,7 +230,8 @@ public class PackageManager implements Closeable {
 
       // Get package params
       try {
-        boolean packageParamsExist = ((Map)PackageUtils.getJson(solrClient.getHttpClient(), solrBaseUrl + PackageUtils.getCollectionParamsPath(collection) + "/packages", Map.class)
+        @SuppressWarnings("unchecked")
+        boolean packageParamsExist = ((Map<Object, Object>)PackageUtils.getJson(solrClient.getHttpClient(), solrBaseUrl + PackageUtils.getCollectionParamsPath(collection) + "/packages", Map.class)
             .getOrDefault("response", Collections.emptyMap())).containsKey("params");
         SolrCLI.postJsonToSolr(solrClient, PackageUtils.getCollectionParamsPath(collection),
             getMapper().writeValueAsString(Collections.singletonMap(packageParamsExist? "update": "set",
@@ -274,11 +273,13 @@ public class PackageManager implements Closeable {
                 boolean shouldExecute = true;
                 if (!noprompt) { // show a prompt asking user to execute the setup command for the plugin
                   PackageUtils.print(PackageUtils.YELLOW, "Execute this command (y/n): ");
-                  String userInput = new Scanner(System.in, "UTF-8").next();
-                  if (!"yes".equalsIgnoreCase(userInput) && !"y".equalsIgnoreCase(userInput)) {
-                    shouldExecute = false;
-                    PackageUtils.printRed("Skipping setup command for deploying (deployment verification may fail)."
-                        + " Please run this step manually or refer to package documentation.");
+                  try (Scanner scanner = new Scanner(System.in, "UTF-8")) {
+                    String userInput = scanner.next();
+                    if (!"yes".equalsIgnoreCase(userInput) && !"y".equalsIgnoreCase(userInput)) {
+                      shouldExecute = false;
+                      PackageUtils.printRed("Skipping setup command for deploying (deployment verification may fail)."
+                          + " Please run this step manually or refer to package documentation.");
+                    }
                   }
                 }
                 if (shouldExecute) {
@@ -310,9 +311,10 @@ public class PackageManager implements Closeable {
     }
 
     List<String> deployedCollections = collections.stream().filter(c -> !previouslyDeployed.contains(c)).collect(Collectors.toList());
-    return new Pair(deployedCollections, previouslyDeployed);
+    return new Pair<List<String>, List<String>>(deployedCollections, previouslyDeployed);
   }
 
+  @SuppressWarnings("unchecked")
   private boolean deployClusterPackage(SolrPackageInstance packageInstance, boolean isUpdate, boolean noprompt,
       boolean shouldDeployClusterPlugins, String[] overrides) {
     boolean cluasterPluginFailed = false;
@@ -374,11 +376,13 @@ public class PackageManager implements Closeable {
               boolean shouldExecute = true;
               if (!noprompt) { // show a prompt asking user to execute the setup command for the plugin
                 PackageUtils.print(PackageUtils.YELLOW, "Execute this command (y/n): ");
-                String userInput = new Scanner(System.in, "UTF-8").next();
-                if (!"yes".equalsIgnoreCase(userInput) && !"y".equalsIgnoreCase(userInput)) {
-                  shouldExecute = false;
-                  PackageUtils.printRed("Skipping setup command for deploying (deployment verification may fail)."
-                      + " Please run this step manually or refer to package documentation.");
+                try (Scanner scanner = new Scanner(System.in, "UTF-8")) {
+                  String userInput = scanner.next();
+                  if (!"yes".equalsIgnoreCase(userInput) && !"y".equalsIgnoreCase(userInput)) {
+                    shouldExecute = false;
+                    PackageUtils.printRed("Skipping setup command for deploying (deployment verification may fail)."
+                        + " Please run this step manually or refer to package documentation.");
+                  }
                 }
               }
               if (shouldExecute) {
