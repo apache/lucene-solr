@@ -116,9 +116,6 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
       for (Method m : klas.getMethods()) {
         EndPoint endPoint = m.getAnnotation(EndPoint.class);
         if (endPoint == null) continue;
-        if (!Modifier.isPublic(m.getModifiers())) {
-          throw new RuntimeException("Non public method " + m.toGenericString());
-        }
         Cmd cmd = new Cmd("", obj, m);
         SpecProvider specProvider = readSpec(endPoint, Collections.singletonList(m));
         apis.add(new AnnotatedApi(specProvider, endPoint, Collections.singletonMap("", cmd), null));
@@ -222,32 +219,27 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
 
 
     Cmd(String command, Object obj, Method method) {
-      if (Modifier.isPublic(method.getModifiers())) {
-        this.command = command;
-        this.obj = obj;
-        try {
-          this.method = MethodHandles.publicLookup().unreflect(method);
-        } catch (IllegalAccessException e) {
-          throw new RuntimeException("Unable to access method, may be not public or accessible ",e);
-        }
-        Class<?>[] parameterTypes = method.getParameterTypes();
-        paramsCount = parameterTypes.length;
-        if (parameterTypes.length == 1) {
-          readPayloadType(method.getGenericParameterTypes()[0]);
-        } else if (parameterTypes.length == 3) {
-          if (parameterTypes[0] != SolrQueryRequest.class || parameterTypes[1] != SolrQueryResponse.class) {
-            throw new RuntimeException("Invalid params for method " + method);
-          }
-          Type t = method.getGenericParameterTypes()[2];
-          readPayloadType(t);
-        }
-        if (parameterTypes.length > 3) {
-          throw new RuntimeException("Invalid params count for method " + method);
-        }
-      } else {
-        throw new RuntimeException(method.toString() + " is not a public static method");
+      this.command = command;
+      this.obj = obj;
+      try {
+        this.method = MethodHandles.publicLookup().unreflect(method);
+      } catch (IllegalAccessException e) {
+        throw new RuntimeException("Unable to access method, may be not public or accessible ", e);
       }
-
+      Class<?>[] parameterTypes = method.getParameterTypes();
+      paramsCount = parameterTypes.length;
+      if (parameterTypes.length == 1) {
+        readPayloadType(method.getGenericParameterTypes()[0]);
+      } else if (parameterTypes.length == 3) {
+        if (parameterTypes[0] != SolrQueryRequest.class || parameterTypes[1] != SolrQueryResponse.class) {
+          throw new RuntimeException("Invalid params for method " + method);
+        }
+        Type t = method.getGenericParameterTypes()[2];
+        readPayloadType(t);
+      }
+      if (parameterTypes.length > 3) {
+        throw new RuntimeException("Invalid params count for method " + method);
+      }
     }
 
     @SuppressWarnings("rawtypes")
@@ -320,9 +312,6 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
       } catch (RuntimeException se) {
         log.error("Error executing command  ", se);
         throw se;
-      } catch (InvocationTargetException ite) {
-        log.error("Error executing method ", ite);
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, ite.getCause());
       } catch (Throwable e) {
         log.error("Error executing command : ", e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
