@@ -510,14 +510,18 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
   }
 
   private void tagRequestWithRequestId(ResponseBuilder rb) {
-    String rid = getRequestId(rb.req);
-    if (StringUtils.isBlank(rb.req.getParams().get(CommonParams.REQUEST_ID))) {
-      ModifiableSolrParams params = new ModifiableSolrParams(rb.req.getParams());
-      params.add(CommonParams.REQUEST_ID, rid);//add rid to the request so that shards see it
-      rb.req.setParams(params);
-    }
-    if (rb.isDistrib) {
-      rb.rsp.addToLog(CommonParams.REQUEST_ID, rid); //to see it in the logs of the landing core
+    final String disableFlag = rb.req.getParams().get(CommonParams.DISABLE_REQUEST_ID);
+    final boolean tagWithRequestId = (disableFlag == null) || "false".equalsIgnoreCase(disableFlag);
+    if (tagWithRequestId) {
+      String rid = getRequestId(rb.req);
+      if (StringUtils.isBlank(rb.req.getParams().get(CommonParams.REQUEST_ID))) {
+        ModifiableSolrParams params = new ModifiableSolrParams(rb.req.getParams());
+        params.add(CommonParams.REQUEST_ID, rid);//add rid to the request so that shards see it
+        rb.req.setParams(params);
+      }
+      if (rb.isDistrib) {
+        rb.rsp.addToLog(CommonParams.REQUEST_ID, rid); //to see it in the logs of the landing core
+      }
     }
   }
 
@@ -526,10 +530,9 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
     return StringUtils.isNotBlank(rid) ? rid : generateRid(req);
   }
 
-  @SuppressForbidden(reason = "Need currentTimeMillis, only used for naming")
   private static String generateRid(SolrQueryRequest req) {
     String hostName = req.getCore().getCoreContainer().getHostName();
-    return hostName + "-" + req.getCore().getName() + "-" + System.currentTimeMillis() + "-" + ridCounter.getAndIncrement();
+    return hostName + "-" + ridCounter.getAndIncrement();
   }
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
