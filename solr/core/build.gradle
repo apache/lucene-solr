@@ -139,7 +139,8 @@ dependencies {
   testImplementation ('com.sun.jersey:jersey-servlet') { transitive = false }
 
   // required for instantiating a Zookeeper server in tests or embedded
-  runtimeOnly ('org.xerial.snappy:snappy-java') { transitive = false }
+  runtimeOnly ('org.xerial.snappy:snappy-java')
+  
   testImplementation 'com.google.protobuf:protobuf-java'
   testImplementation 'commons-logging:commons-logging'
   testImplementation('org.mockito:mockito-core', {
