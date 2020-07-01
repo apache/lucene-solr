@@ -28,6 +28,13 @@ Other Changes
 ---------------------
 (No changes)
 
+==================  8.7.0 ==================
+
+Other Changes
+---------------------
+
+* SOLR-14592: Upgrade Zookeeper to 3.6.1. NOTE: this required upgrading netty to 4.1.50 (Erick Erickson)
+
 ==================  8.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

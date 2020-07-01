@@ -256,6 +256,8 @@ public class ZkTestServer {
             break;
           case DataWatchRemoved:
             break;
+          case PersistentWatchRemoved:
+            break;
         }
       }
     }
@@ -337,7 +339,8 @@ public class ZkTestServer {
 
         zooKeeperServer = new ZooKeeperServer(ftxn, config.getTickTime(),
             config.getMinSessionTimeout(), config.getMaxSessionTimeout(),
-            new TestZKDatabase(ftxn, limiter));
+            config.getClientPortListenBacklog(),
+            new TestZKDatabase(ftxn, limiter), "");
         cnxnFactory = new TestServerCnxnFactory(limiter);
         cnxnFactory.configure(config.getClientPortAddress(),
             config.getMaxClientCnxns());
