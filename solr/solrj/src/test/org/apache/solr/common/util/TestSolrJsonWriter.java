@@ -78,6 +78,7 @@ public class TestSolrJsonWriter  extends SolrTestCaseJ4 {
 
   }
 
+  @SuppressForbidden(reason="used for perf testing numbers only")
   private long write2String(Object o, int iters) throws IOException {
     long start = System.currentTimeMillis() ;
     for
@@ -91,6 +92,7 @@ public class TestSolrJsonWriter  extends SolrTestCaseJ4 {
     return System.currentTimeMillis()-start;
 
   }
+  @SuppressForbidden(reason="used for perf testing numbers only")
   private long write2Javabin(Object o, int iters) throws IOException {
     long start = System.currentTimeMillis() ;
     for (int i = 0;i<iters;i++) {
