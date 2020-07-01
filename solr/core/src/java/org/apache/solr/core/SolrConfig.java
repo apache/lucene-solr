@@ -226,7 +226,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     enableLazyFieldLoading = getBool("query/enableLazyFieldLoading", false);
 
     useCircuitBreakers = getBool("circuitBreaker/useCircuitBreakers", false);
-    memoryCircuitBreakerThresholdPct = getInt("circuitBreaker/memoryCircuitBreakerThresholdPct", 100);
+    memoryCircuitBreakerThresholdPct = getInt("circuitBreaker/memoryCircuitBreakerThresholdPct", 95);
 
     validateMemoryBreakerThreshold();
     

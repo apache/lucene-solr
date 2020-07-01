@@ -17,7 +17,9 @@
 
 package org.apache.solr.util.circuitbreaker;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.core.SolrConfig;
@@ -37,36 +39,36 @@ import org.apache.solr.core.SolrConfig;
  * solution. There will be a follow up with a SIP for a schema API design.
  */
 public class CircuitBreakerManager {
-  private final Map<CircuitBreaker.CircuitBreakerType, CircuitBreaker> circuitBreakerMap = new HashMap<>();
+  // Class private to potentially allow "family" of circuit breakers to be enabled or disabled
+  private final boolean enableCircuitBreakerManager;
 
-  // Allows replacing of existing circuit breaker
-  public void register(CircuitBreaker.CircuitBreakerType circuitBreakerType, CircuitBreaker circuitBreaker) {
-    circuitBreakerMap.put(circuitBreakerType, circuitBreaker);
+  private final List<CircuitBreaker> circuitBreakerList = new ArrayList<>();
+
+  public CircuitBreakerManager(final boolean enableCircuitBreakerManager) {
+    this.enableCircuitBreakerManager = enableCircuitBreakerManager;
   }
 
-  public CircuitBreaker getCircuitBreaker(CircuitBreaker.CircuitBreakerType circuitBreakerType) {
-    assert circuitBreakerType != null;
-
-    return circuitBreakerMap.get(circuitBreakerType);
+  public void register(CircuitBreaker circuitBreaker) {
+    circuitBreakerList.add(circuitBreaker);
   }
 
   /**
    * Check and return circuit breakers that have triggered
    * @return CircuitBreakers which have triggered, null otherwise.
    */
-  public Map<CircuitBreaker.CircuitBreakerType, CircuitBreaker> checkTripped() {
-    Map<CircuitBreaker.CircuitBreakerType, CircuitBreaker> triggeredCircuitBreakers = null;
+  public List<CircuitBreaker> checkTripped() {
+    List<CircuitBreaker> triggeredCircuitBreakers = null;
 
-    for (Map.Entry<CircuitBreaker.CircuitBreakerType, CircuitBreaker> entry : circuitBreakerMap.entrySet()) {
-      CircuitBreaker circuitBreaker = entry.getValue();
+    if (enableCircuitBreakerManager) {
+      for (CircuitBreaker circuitBreaker : circuitBreakerList) {
+        if (circuitBreaker.isEnabled() &&
+            circuitBreaker.isTripped()) {
+          if (triggeredCircuitBreakers == null) {
+            triggeredCircuitBreakers = new ArrayList<>();
+          }
 
-      if (circuitBreaker.isEnabled() &&
-          circuitBreaker.isTripped()) {
-        if (triggeredCircuitBreakers == null) {
-          triggeredCircuitBreakers = new HashMap<>();
+          triggeredCircuitBreakers.add(circuitBreaker);
         }
-
-        triggeredCircuitBreakers.put(entry.getKey(), circuitBreaker);
       }
     }
 
@@ -82,12 +84,12 @@ public class CircuitBreakerManager {
    * </p>
    */
   public boolean checkAnyTripped() {
-    for (Map.Entry<CircuitBreaker.CircuitBreakerType, CircuitBreaker> entry : circuitBreakerMap.entrySet()) {
-      CircuitBreaker circuitBreaker = entry.getValue();
-
-      if (circuitBreaker.isEnabled() &&
-          circuitBreaker.isTripped()) {
-        return true;
+    if (enableCircuitBreakerManager) {
+      for (CircuitBreaker circuitBreaker : circuitBreakerList) {
+        if (circuitBreaker.isEnabled() &&
+            circuitBreaker.isTripped()) {
+          return true;
+        }
       }
     }
 
@@ -97,16 +99,17 @@ public class CircuitBreakerManager {
   /**
    * Construct the final error message to be printed when circuit breakers trip.
    *
-   * @param circuitBreakerMap Input list for circuit breakers.
+   * @param circuitBreakerList Input list for circuit breakers.
    * @return Constructed error message.
    */
-  public static String toErrorMessage(Map<CircuitBreaker.CircuitBreakerType, CircuitBreaker> circuitBreakerMap) {
-    assert circuitBreakerMap != null;
-
+  public static String toErrorMessage(List<CircuitBreaker> circuitBreakerList) {
     StringBuilder sb = new StringBuilder();
 
-    for (CircuitBreaker.CircuitBreakerType circuitBreakerType : circuitBreakerMap.keySet()) {
-      sb.append(circuitBreakerType.toString() + " " + circuitBreakerMap.get(circuitBreakerType).getDebugInfo() + "\n");
+    for (CircuitBreaker circuitBreaker : circuitBreakerList) {
+      sb.append(circuitBreaker.getClass().getName());
+      sb.append(" ");
+      sb.append(circuitBreaker.getDebugInfo());
+      sb.append("\n");
     }
 
     return sb.toString();
@@ -119,11 +122,11 @@ public class CircuitBreakerManager {
    * Any default circuit breakers should be registered here.
    */
   public static CircuitBreakerManager build(SolrConfig solrConfig) {
-    CircuitBreakerManager circuitBreakerManager = new CircuitBreakerManager();
+    CircuitBreakerManager circuitBreakerManager = new CircuitBreakerManager(solrConfig.useCircuitBreakers);
 
     // Install the default circuit breakers
     CircuitBreaker memoryCircuitBreaker = new MemoryCircuitBreaker(solrConfig);
-    circuitBreakerManager.register(CircuitBreaker.CircuitBreakerType.MEMORY, memoryCircuitBreaker);
+    circuitBreakerManager.register(memoryCircuitBreaker);
 
     return circuitBreakerManager;
   }

@@ -53,12 +53,4 @@ public abstract class CircuitBreaker {
    * Get debug useful info.
    */
   public abstract String getDebugInfo();
-
-  /**
-   * Types of circuit breakers.
-   */
-  public enum CircuitBreakerType {
-    MEMORY,
-    CPU
-  }
 }

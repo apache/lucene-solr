@@ -17,7 +17,6 @@
 
 package org.apache.solr.util;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -33,6 +32,7 @@ import org.apache.solr.core.SolrConfig;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.util.circuitbreaker.CircuitBreaker;
 import org.apache.solr.util.circuitbreaker.MemoryCircuitBreaker;
+import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
@@ -69,7 +69,14 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
     super.tearDown();
   }
 
-  public void testCBAlwaysTrips() throws IOException {
+  @After
+  public void after() {
+    CircuitBreaker circuitBreaker = new MemoryCircuitBreaker(h.getCore().getSolrConfig());
+
+    h.getCore().getCircuitBreakerManager().register(circuitBreaker);
+  }
+
+  public void testCBAlwaysTrips() {
     HashMap<String, String> args = new HashMap<String, String>();
 
     args.put(QueryParsing.DEFTYPE, CircuitBreaker.NAME);
@@ -77,18 +84,14 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
 
     CircuitBreaker circuitBreaker = new MockCircuitBreaker(h.getCore().getSolrConfig());
 
-    h.getCore().getCircuitBreakerManager().register(CircuitBreaker.CircuitBreakerType.MEMORY, circuitBreaker);
+    h.getCore().getCircuitBreakerManager().register(circuitBreaker);
 
     expectThrows(SolrException.class, () -> {
       h.query(req("name:\"john smith\""));
     });
-
-    circuitBreaker = new MemoryCircuitBreaker(h.getCore().getSolrConfig());
-
-    h.getCore().getCircuitBreakerManager().register(CircuitBreaker.CircuitBreakerType.MEMORY, circuitBreaker);
   }
 
-  public void testCBFakeMemoryPressure() throws IOException {
+  public void testCBFakeMemoryPressure() {
     HashMap<String, String> args = new HashMap<String, String>();
 
     args.put(QueryParsing.DEFTYPE, CircuitBreaker.NAME);
@@ -96,15 +99,11 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
 
     CircuitBreaker circuitBreaker = new FakeMemoryPressureCircuitBreaker(h.getCore().getSolrConfig());
 
-    h.getCore().getCircuitBreakerManager().register(CircuitBreaker.CircuitBreakerType.MEMORY, circuitBreaker);
+    h.getCore().getCircuitBreakerManager().register(circuitBreaker);
 
     expectThrows(SolrException.class, () -> {
       h.query(req("name:\"john smith\""));
     });
-
-    circuitBreaker = new MemoryCircuitBreaker(h.getCore().getSolrConfig());
-
-    h.getCore().getCircuitBreakerManager().register(CircuitBreaker.CircuitBreakerType.MEMORY, circuitBreaker);
   }
 
   public void testBuildingMemoryPressure() {
@@ -120,7 +119,7 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
     try {
       CircuitBreaker circuitBreaker = new BuildingUpMemoryPressureCircuitBreaker(h.getCore().getSolrConfig());
 
-      h.getCore().getCircuitBreakerManager().register(CircuitBreaker.CircuitBreakerType.MEMORY, circuitBreaker);
+      h.getCore().getCircuitBreakerManager().register(circuitBreaker);
 
       for (int i = 0; i < 5; i++) {
         executor.submit(() -> {
@@ -142,10 +141,6 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
       }
 
       assertEquals("Number of failed queries is not correct", 1, failureCount.get());
-
-      circuitBreaker = new MemoryCircuitBreaker(h.getCore().getSolrConfig());
-
-      h.getCore().getCircuitBreakerManager().register(CircuitBreaker.CircuitBreakerType.MEMORY, circuitBreaker);
     } finally {
       if (!executor.isShutdown()) {
         executor.shutdown();
