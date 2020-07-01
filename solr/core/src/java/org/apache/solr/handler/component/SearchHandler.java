@@ -510,9 +510,8 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
   }
 
   private void tagRequestWithRequestId(ResponseBuilder rb) {
-    final String disableFlag = rb.req.getParams().get(CommonParams.DISABLE_REQUEST_ID);
-    final boolean tagWithRequestId = (disableFlag == null) || "false".equalsIgnoreCase(disableFlag);
-    if (tagWithRequestId) {
+    final boolean ridTaggingDisabled = rb.req.getParams().getBool(CommonParams.DISABLE_REQUEST_ID, false);
+    if (! ridTaggingDisabled) {
       String rid = getRequestId(rb.req);
       if (StringUtils.isBlank(rb.req.getParams().get(CommonParams.REQUEST_ID))) {
         ModifiableSolrParams params = new ModifiableSolrParams(rb.req.getParams());
