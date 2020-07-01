@@ -80,6 +80,7 @@ public class Lucene84Codec extends Codec {
   /** 
    * Instantiates a new codec.
    */
+  /** here we can set which compression we want to apply */
   public Lucene84Codec() {
     this(Mode.BEST_SPEED);
   }
