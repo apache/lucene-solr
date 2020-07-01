@@ -302,7 +302,6 @@ POST /api/c
       "numShards": 3,
       "tlogReplicas":1,
       "pullReplicas":1,
-      "maxShardsPerNode":2,
       "properties" : {
         "foobar":"bazbam"
       }

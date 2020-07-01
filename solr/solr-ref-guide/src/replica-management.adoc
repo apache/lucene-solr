@@ -26,8 +26,6 @@ Add one or more replicas to a shard in a collection. The node name can be specif
 
 The API uses the Autoscaling framework to find nodes that can satisfy the disk requirements for the new replica(s) but only when an Autoscaling preferences or policy is configured. Refer to <<solrcloud-autoscaling-policy-preferences.adoc#solrcloud-autoscaling-policy-preferences,Autoscaling Policy and Preferences>> section for more details.
 
-WARNING: If the destination node is specified, this command will ignore the maxShardsPerNode property.
-
 `/admin/collections?action=ADDREPLICA&collection=_collection_&shard=_shard_&node=_nodeName_`
 
 === ADDREPLICA Parameters
@@ -163,8 +161,6 @@ http://localhost:8983/solr/admin/collections?action=addreplica&collection=gettin
 This command moves a replica from one node to another node by executing ADDREPLICA on the destination and then DELETEREPLICA on the source. If this command is interrupted or times out before the ADDREPLICA operation produces a replica in an active state, the DELETEREPLICA will not occur. Timeouts do not cancel the ADDREPLICA, and will result in extra shards. In case of shared filesystems the `dataDir` will be reused.
 
 If this command is used on a collection where more than one replica from the same shard exists on the same node, and the `shard` and `sourceNode` parameters match more than one replica, the replica selected is not deterministic (currently it's random).
-
-WARNING: MOVERREPLICA does not check the maxShardsPerNode setting, and may produce a collection that is in violation of the maxShardsPerNode.
 
 === MOVEREPLICA Parameters
 
