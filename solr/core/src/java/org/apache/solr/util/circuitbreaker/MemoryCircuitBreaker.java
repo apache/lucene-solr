@@ -85,7 +85,7 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
 
   @Override
   public String getDebugInfo() {
-    if (seenMemory.get() == 0f || allowedMemory.get() == 0f) {
+    if (seenMemory.get() == 0L || allowedMemory.get() == 0L) {
       log.warn("MemoryCircuitBreaker's monitored values (seenMemory, allowedMemory) not set");
     }
 
