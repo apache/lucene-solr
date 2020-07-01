@@ -542,13 +542,13 @@ public abstract class MergePolicy {
       return false;
     }
     if (getNoCFSRatio() >= 1.0) {
-      return true;
+      return false;
     }
     long totalSize = 0;
     for (SegmentCommitInfo info : infos) {
       totalSize += size(info, mergeContext);
     }
-    return mergedInfoSize <= getNoCFSRatio() * totalSize;
+    return false;
   }
   
   /** Return the byte size of the provided {@link
