@@ -72,7 +72,6 @@ public class ClusterStateMockUtil {
    * Result:
    *        {
    *         "collection2":{
-   *           "maxShardsPerNode":"1",
    *           "replicationFactor":"1",
    *           "shards":{"slice1":{
    *               "state":"active",
@@ -81,7 +80,6 @@ public class ClusterStateMockUtil {
    *                   "node_name":"baseUrl1_",
    *                   "base_url":"http://baseUrl1"}}}}},
    *         "collection1":{
-   *           "maxShardsPerNode":"1",
    *           "replicationFactor":"1",
    *           "shards":{
    *             "slice1":{

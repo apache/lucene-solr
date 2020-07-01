@@ -1075,7 +1075,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
     // in common with collection creation:
     protected String configName;
-    protected Integer maxShardsPerNode;
     protected Integer replicationFactor;
     protected Integer nrtReplicas;
     protected Integer tlogReplicas;
@@ -1127,9 +1126,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     // Collection creation params in common:
     public Restore setConfigName(String config) { this.configName = config; return this; }
     public String getConfigName()  { return configName; }
-
-    public Integer getMaxShardsPerNode() { return maxShardsPerNode; }
-    public Restore setMaxShardsPerNode(int maxShardsPerNode) { this.maxShardsPerNode = maxShardsPerNode; return this; }
 
     public Integer getReplicationFactor() { return replicationFactor; }
     public Restore setReplicationFactor(Integer replicationFactor) { this.replicationFactor = replicationFactor; return this; }
