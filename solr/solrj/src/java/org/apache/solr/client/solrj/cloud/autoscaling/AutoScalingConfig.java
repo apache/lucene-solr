@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.Objects;
 
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.params.AutoScalingParams;
@@ -42,7 +43,6 @@ import static java.util.stream.Collectors.toList;
  * Bean representation of <code>autoscaling.json</code>, which parses data
  * lazily.
  */
-@SuppressWarnings({"overrides"})
 public class AutoScalingConfig implements MapWriter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -59,7 +59,6 @@ public class AutoScalingConfig implements MapWriter {
   /**
    * Bean representation of trigger listener config.
    */
-  @SuppressWarnings({"overrides"})
   public static class TriggerListenerConfig implements MapWriter {
     public final String name;
     public final String trigger;
@@ -140,11 +139,11 @@ public class AutoScalingConfig implements MapWriter {
       return properties.equals(that.properties);
     }
 
-//    @Override
-//    public int hashCode() {
-//      throw new UnsupportedOperationException("TODO unimplemented");
-//    }
-//
+    @Override
+    public int hashCode() {
+      return Objects.hash(name, trigger, listenerClass);
+    }
+
     @Override
     public String toString() {
       return Utils.toJSONString(this);
@@ -154,7 +153,6 @@ public class AutoScalingConfig implements MapWriter {
   /**
    * Bean representation of trigger config.
    */
-  @SuppressWarnings({"overrides"})
   public static class TriggerConfig implements MapWriter {
     /** Trigger name. */
     public final String name;
@@ -234,10 +232,11 @@ public class AutoScalingConfig implements MapWriter {
       if (event != that.event) return false;
       return properties.equals(that.properties);
     }
-//    @Override
-//    public int hashCode() {
-//      throw new UnsupportedOperationException("TODO unimplemented");
-//    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(name);
+    }
 
     @Override
     public void writeMap(EntryWriter ew) throws IOException {
@@ -262,11 +261,10 @@ public class AutoScalingConfig implements MapWriter {
   /**
    * Bean representation of trigger action configuration.
    */
-  @SuppressWarnings({"overrides"})
   public static class ActionConfig implements MapWriter {
     /** Action name. */
     public final String name;
-    /** Class name of action implementtion. */
+    /** Class name of action implementation. */
     public final String actionClass;
     /** Additional action properties. */
     public final Map<String, Object> properties;
@@ -305,10 +303,10 @@ public class AutoScalingConfig implements MapWriter {
       return properties.equals(that.properties);
     }
 
-//    @Override
-//    public int hashCode() {
-//      throw new UnsupportedOperationException("TODO unimplemented");
-//    }
+    @Override
+    public int hashCode() {
+      return Objects.hash(properties);
+    }
 
     @Override
     public String toString() {
@@ -587,11 +585,11 @@ public class AutoScalingConfig implements MapWriter {
     if (!getTriggerListenerConfigs().equals(that.getTriggerListenerConfigs())) return false;
     return getProperties().equals(that.getProperties());
   }
-//  @Override
-//  public int hashCode() {
-//    throw new UnsupportedOperationException("TODO unimplemented");
-//  }
 
+  @Override
+  public int hashCode() {
+    return Objects.hash(getPolicy());
+  }
 
   private static List<Object> getList(String key, Map<String, Object> properties) {
     return getList(key, properties, null);

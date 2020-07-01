@@ -83,10 +83,6 @@
 
     <queryResultMaxDocsCached>200</queryResultMaxDocsCached>
 
-    <useCircuitBreakers>false</useCircuitBreakers>
-
-    <memoryCircuitBreakerThreshold>100</memoryCircuitBreakerThreshold>
-
     <listener event="newSearcher" class="solr.QuerySenderListener">
       <arr name="queries">
       </arr>

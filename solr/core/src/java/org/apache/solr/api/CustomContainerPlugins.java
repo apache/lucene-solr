@@ -23,15 +23,16 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.cloud.ClusterPropertiesListener;
 import org.apache.solr.common.util.Pair;
@@ -49,6 +50,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.lucene.util.IOUtils.closeWhileHandlingException;
+import static org.apache.solr.common.util.Utils.makeMap;
 
 public class CustomContainerPlugins implements ClusterPropertiesListener {
   private final ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper();
@@ -122,7 +124,7 @@ public class CustomContainerPlugins implements ClusterPropertiesListener {
         }
         if (e.getValue() == Diff.ADDED) {
           for (ApiHolder holder : apiInfo.holders) {
-            containerApiBag.register(holder, Collections.singletonMap("plugin-name", e.getKey()));
+            containerApiBag.register(holder, getTemplateVars(apiInfo.info));
           }
           currentPlugins.put(e.getKey(), apiInfo);
         } else {
@@ -134,7 +136,7 @@ public class CustomContainerPlugins implements ClusterPropertiesListener {
             if (oldApi instanceof ApiHolder) {
               replaced.add((ApiHolder) oldApi);
             }
-            containerApiBag.register(holder, Collections.singletonMap("plugin-name", e.getKey()));
+            containerApiBag.register(holder, getTemplateVars(apiInfo.info));
           }
           if (old != null) {
             for (ApiHolder holder : old.holders) {
@@ -149,6 +151,12 @@ public class CustomContainerPlugins implements ClusterPropertiesListener {
       }
 
     }
+  }
+
+  @SuppressWarnings({"rawtypes", "unchecked"})
+  private static  Map<String, String> getTemplateVars(PluginMeta pluginMeta) {
+    Map result = makeMap("plugin-name", pluginMeta.name, "path-prefix", pluginMeta.pathPrefix);
+    return result;
   }
 
   private static class ApiHolder extends Api {
@@ -236,7 +244,7 @@ public class CustomContainerPlugins implements ClusterPropertiesListener {
             errs.add("The @EndPint must have exactly one method and path attributes");
           }
           List<String> pathSegments = StrUtils.splitSmart(endPoint.path()[0], '/', true);
-          PathTrie.replaceTemplates(pathSegments, Collections.singletonMap("plugin-name", info.name));
+          PathTrie.replaceTemplates(pathSegments, getTemplateVars(info));
           if (V2HttpCall.knownPrefixes.contains(pathSegments.get(0))) {
             errs.add("path must not have a prefix: "+pathSegments.get(0));
           }
@@ -269,6 +277,13 @@ public class CustomContainerPlugins implements ClusterPropertiesListener {
         instance = constructor.newInstance(coreContainer);
       } else {
         throw new RuntimeException("Must have a no-arg constructor or CoreContainer constructor ");
+      }
+      if (instance instanceof ResourceLoaderAware) {
+        try {
+          ((ResourceLoaderAware) instance).inform(pkgVersion.getLoader());
+        } catch (IOException e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        }
       }
       this.holders = new ArrayList<>();
       for (Api api : AnnotatedApi.getApis(instance)) {

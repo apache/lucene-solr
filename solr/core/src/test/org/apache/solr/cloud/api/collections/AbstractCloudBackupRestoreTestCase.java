@@ -47,6 +47,7 @@ import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -72,6 +73,12 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
   @BeforeClass
   public static void createCluster() throws Exception {
     docsSeed = random().nextLong();
+    System.setProperty("solr.allowPaths", "*");
+  }
+
+  @AfterClass
+  public static void afterClass() throws Exception {
+    System.clearProperty("solr.allowPaths");
   }
 
   /**

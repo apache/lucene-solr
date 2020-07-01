@@ -19,12 +19,12 @@ package org.apache.solr.client.solrj.cloud.autoscaling;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.Utils;
 
-@SuppressWarnings({"overrides"})
 class ReplicaCount  implements MapWriter {
   long nrt, tlog, pull;
 
@@ -107,10 +107,10 @@ class ReplicaCount  implements MapWriter {
     return false;
   }
 
-//  @Override
-//  public int hashCode() {
-//    throw new UnsupportedOperationException("TODO unimplemented");
-//  }
+  @Override
+  public int hashCode() {
+    return Objects.hash(nrt, tlog, pull);
+  }
 
   @Override
   public String toString() {

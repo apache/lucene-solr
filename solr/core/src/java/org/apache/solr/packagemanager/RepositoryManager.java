@@ -306,10 +306,10 @@ public class RepositoryManager {
     String latestVersion = getLastPackageRelease(packageName).version;
 
     Map<String, String> collectionsDeployedIn = packageManager.getDeployedCollections(packageName);
-    List<String> peggedToLatest = collectionsDeployedIn.keySet().stream().
+    List<String> collectionsPeggedToLatest = collectionsDeployedIn.keySet().stream().
         filter(collection -> collectionsDeployedIn.get(collection).equals(PackagePluginHolder.LATEST)).collect(Collectors.toList());
-    if (!peggedToLatest.isEmpty()) {
-      PackageUtils.printGreen("Collections that will be affected (since they are configured to use $LATEST): "+peggedToLatest);
+    if (!collectionsPeggedToLatest.isEmpty()) {
+      PackageUtils.printGreen("Collections that will be affected (since they are configured to use $LATEST): "+collectionsPeggedToLatest);
     }
 
     if (version == null || version.equals(PackageUtils.LATEST)) {
@@ -318,11 +318,11 @@ public class RepositoryManager {
       installPackage(packageName, version);
     }
 
-    if (peggedToLatest.isEmpty() == false) {
+    if (collectionsPeggedToLatest.isEmpty() == false) {
       SolrPackageInstance updatedPackage = packageManager.getPackageInstance(packageName, PackageUtils.LATEST);
-      boolean res = packageManager.verify(updatedPackage, peggedToLatest);
+      boolean res = packageManager.verify(updatedPackage, collectionsPeggedToLatest, false, new String[] {}); // Cluster level plugins don't work with peggedToLatest functionality
       PackageUtils.printGreen("Verifying version " + updatedPackage.version + 
-          " on " + peggedToLatest + ", result: " + res);
+          " on " + collectionsPeggedToLatest + ", result: " + res);
       if (!res) throw new SolrException(ErrorCode.BAD_REQUEST, "Failed verification after deployment");
     }
   }

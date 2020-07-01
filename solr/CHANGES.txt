@@ -12,8 +12,6 @@ New Features
 ---------------------
 * SOLR-14440: Introduce new Certificate Authentication Plugin to load Principal from certificate subject. (Mike Drob)
 
-* SOLR-14588: Implement Circuit Breakers Infrastructure and add JVM Circuit Breaker (Atri Sharma)
-
 Improvements
 ----------------------
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
@@ -116,6 +114,15 @@ New Features
 * SOLR-13749: Join queries can now work cross-collection, even when sharded or when spanning nodes.
   (Dan Fox, Kevin Watters, via Gus Heck, David Smiley)
 
+* SOLR-14481: Add drill Streaming Expression for efficient and accurate high cardinality aggregation.
+  (Joel Bernstein)
+
+* SOLR-14599: Package manager support for cluster level plugins (see SOLR-14404) (Ishan Chattopadhyaya)
+
+* SOLR-14590: Add support for RankFields. RankFields allow the use of per-document scoring factors in a
+  way that lets Solr skip over non-competitive documents when ranking. See SOLR-13289.
+  (Tomás Fernández Löbbe, Varun Thacker)
+
 Improvements
 ---------------------
 * SOLR-14316: Remove unchecked type conversion warning in JavaBinCodec's readMapEntry's equals() method
@@ -165,6 +172,11 @@ Improvements
 * SOLR-14561: CoreAdminAPI's parameters instanceDir and dataDir are now validated, and must be relative to either
   SOLR_HOME, SOLR_DATA_HOME or coreRootDir. Added new solr.xml config 'allowPaths', controlled by system property
   'solr.allowPaths' that allows you to add other allowed paths when needed.
+
+* SOLR-13286: Metrics will no longer write a (sometimes large) log message every minute. This can be re-enabled
+  via log4j2.xml if desired, or other HttpSolrCall log messages may be quieted on a per handler basis. (Gus Heck)
+
+* SOLR-14539: Introducing {!bool excludeTags=...} for Query DSL. (Mikhail Khludnev)
 
 Optimizations
 ---------------------
@@ -390,6 +402,9 @@ Other Changes
   the fail-on-warnings.
 
 * SOLR-14589: Remove IntelliJ //noinspection comments (Erick Erickson)
+
+* SOLR-14541: Ensure classes that implement equals implement hashCode or suppress warnings
+  (gezapeti, Ilan Ginsburg, Erick Erickson)
 
 ==================  8.5.2 ==================
 
