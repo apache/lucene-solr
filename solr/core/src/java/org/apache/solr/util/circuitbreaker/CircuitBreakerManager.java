@@ -18,9 +18,7 @@
 package org.apache.solr.util.circuitbreaker;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.solr.core.SolrConfig;
 
