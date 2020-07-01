@@ -22,7 +22,6 @@ import java.util.Objects;
 import java.util.Set;
 
 import org.apache.solr.common.util.Utils;
-
 public class Replica extends ZkNodeProps {
   
   /**
@@ -152,6 +151,11 @@ public class Replica extends ZkNodeProps {
     Replica replica = (Replica) o;
 
     return name.equals(replica.name);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(name);
   }
 
   /** Also known as coreNodeName. */

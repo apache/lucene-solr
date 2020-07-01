@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.Objects;
 
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.params.AutoScalingParams;
@@ -139,6 +140,11 @@ public class AutoScalingConfig implements MapWriter {
     }
 
     @Override
+    public int hashCode() {
+      return Objects.hash(name, trigger, listenerClass);
+    }
+
+    @Override
     public String toString() {
       return Utils.toJSONString(this);
     }
@@ -183,6 +189,7 @@ public class AutoScalingConfig implements MapWriter {
       }
       enabled = Boolean.parseBoolean(String.valueOf(this.properties.getOrDefault("enabled", "true")));
 
+      @SuppressWarnings({"unchecked"})
       List<Map<String, Object>> newActions = (List<Map<String, Object>>)this.properties.get("actions");
       if (newActions != null) {
         this.actions = newActions.stream().map(ActionConfig::new).collect(collectingAndThen(toList(), Collections::unmodifiableList));
@@ -227,6 +234,11 @@ public class AutoScalingConfig implements MapWriter {
     }
 
     @Override
+    public int hashCode() {
+      return Objects.hash(name);
+    }
+
+    @Override
     public void writeMap(EntryWriter ew) throws IOException {
 //      if (!properties.containsKey(AutoScalingParams.NAME)) {
 //        ew.put(AutoScalingParams.NAME, name);
@@ -252,7 +264,7 @@ public class AutoScalingConfig implements MapWriter {
   public static class ActionConfig implements MapWriter {
     /** Action name. */
     public final String name;
-    /** Class name of action implementtion. */
+    /** Class name of action implementation. */
     public final String actionClass;
     /** Additional action properties. */
     public final Map<String, Object> properties;
@@ -292,6 +304,11 @@ public class AutoScalingConfig implements MapWriter {
     }
 
     @Override
+    public int hashCode() {
+      return Objects.hash(properties);
+    }
+
+    @Override
     public String toString() {
       return Utils.toJSONString(this);
     }
@@ -301,6 +318,7 @@ public class AutoScalingConfig implements MapWriter {
    * Construct from bytes that represent a UTF-8 JSON string.
    * @param utf8 config data
    */
+  @SuppressWarnings({"unchecked"})
   public AutoScalingConfig(byte[] utf8) {
     this(utf8 != null && utf8.length > 0 ? (Map<String, Object>)Utils.fromJSON(utf8) : Collections.emptyMap());
   }
@@ -362,6 +380,7 @@ public class AutoScalingConfig implements MapWriter {
   /**
    * Get trigger configurations.
    */
+  @SuppressWarnings({"unchecked"})
   public Map<String, TriggerConfig> getTriggerConfigs() {
     if (triggers == null) {
       if (jsonMap != null) {
@@ -405,6 +424,7 @@ public class AutoScalingConfig implements MapWriter {
   /**
    * Get listener configurations.
    */
+  @SuppressWarnings({"unchecked"})
   public Map<String, TriggerListenerConfig> getTriggerListenerConfigs() {
     if (listeners == null) {
       if (jsonMap != null) {
@@ -428,6 +448,7 @@ public class AutoScalingConfig implements MapWriter {
   public Map<String, Object> getProperties()  {
     if (properties == null) {
       if (jsonMap != null)  {
+        @SuppressWarnings({"unchecked"})
         Map<String, Object> map = (Map<String, Object>) jsonMap.get("properties");
         if (map == null) {
           this.properties = Collections.emptyMap();
@@ -565,10 +586,16 @@ public class AutoScalingConfig implements MapWriter {
     return getProperties().equals(that.getProperties());
   }
 
+  @Override
+  public int hashCode() {
+    return Objects.hash(getPolicy());
+  }
+
   private static List<Object> getList(String key, Map<String, Object> properties) {
     return getList(key, properties, null);
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private static List<Object> getList(String key, Map<String, Object> properties, List<Object> defaultList) {
     if (defaultList == null) {
       defaultList = Collections.emptyList();

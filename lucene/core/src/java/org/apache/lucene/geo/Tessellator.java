@@ -360,7 +360,16 @@ final public class Tessellator {
         if (hx >= p.getX() && p.getX() >= mx && hx != p.getX()
             && pointInEar(p.getX(), p.getY(), hy < my ? hx : qx, hy, mx, my, hy < my ? qx : hx, hy)) {
           tan = Math.abs(hy - p.getY()) / (hx - p.getX()); // tangential
-          if ((tan < tanMin || (tan == tanMin && p.getX() > connection.getX())) && isLocallyInside(p, holeNode)) {
+          if (isVertexEquals(p, connection) && isLocallyInside(p, holeNode)) {
+            // make sure we are not crossing the polygon. This might happen when several holes have a bridge to the same polygon vertex
+            // and this vertex has different vertex.
+            boolean crosses = GeoUtils.lineCrossesLine(p.getX(), p.getY(), holeNode.getX(), holeNode.getY(),
+                connection.next.getX(), connection.next.getY(), connection.previous.getX(), connection.previous.getY());
+            if (crosses == false) {
+              connection = p;
+              tanMin = tan;
+            }
+          } else if ((tan < tanMin || (tan == tanMin && p.getX() > connection.getX())) && isLocallyInside(p, holeNode)) {
             connection = p;
             tanMin = tan;
           }
@@ -376,7 +385,12 @@ final public class Tessellator {
     Node next = polygon;
     do {
       if (isVertexEquals(next, vertex)) {
-        return next;
+        // make sure we are not crossing the polygon. This might happen when several holes share the same polygon vertex.
+        boolean crosses = GeoUtils.lineCrossesLine(next.previous.getX(), next.previous.getY(), vertex.next.getX(), vertex.next.getY(),
+                                                   next.next.getX(), next.next.getY(), vertex.previous.getX(), vertex.previous.getY());
+        if (crosses == false) {
+          return next;
+        }
       }
       next = next.next;
     } while(next != polygon);

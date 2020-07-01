@@ -126,6 +126,7 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testAboveSearchRate() throws Exception {
     CloudSolrClient solrClient = cluster.getSolrClient();
     String COLL1 = "aboveRate_collection";
@@ -278,6 +279,7 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testBelowSearchRate() throws Exception {
     CloudSolrClient solrClient = cluster.getSolrClient();
     String COLL1 = "belowRate_collection";
@@ -630,6 +632,7 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
 
     CapturedEvent ev = events.get(0);
     assertEquals(ev.toString(), "compute", ev.actionName);
+    @SuppressWarnings({"unchecked"})
     List<TriggerEvent.Op> ops = (List<TriggerEvent.Op>)ev.event.getProperty(TriggerEvent.REQUESTED_OPS);
     assertNotNull("there should be some requestedOps: " + ev.toString(), ops);
     // 4 DELETEREPLICA, 4 DELETENODE (minReplicas==1 & leader should be protected)
@@ -664,6 +667,7 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
     // check status
     ev = events.get(1);
     assertEquals(ev.toString(), "execute", ev.actionName);
+    @SuppressWarnings({"unchecked"})
     List<NamedList<Object>> responses = (List<NamedList<Object>>)ev.context.get("properties.responses");
     assertNotNull(ev.toString(), responses);
     assertEquals(responses.toString(), 8, responses.size());

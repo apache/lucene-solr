@@ -119,6 +119,7 @@ public class TestUtilizeNode extends SolrCloudTestCase {
       log.info("Setting new policy to blacklist jettyX ({}) port={}",
           jettyX.getNodeName(), jettyX.getLocalPort());
     }
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     NamedList<Object> response = cloudClient.request(req);
     assertEquals(req + " => " + response,

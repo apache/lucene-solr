@@ -76,7 +76,7 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
 
     new V2Request.Builder("/cluster/autoscaling")
         .withMethod(SolrRequest.METHOD.POST)
-        .withPayload("{'set-trigger':{'name':'.auto_add_replicas','event':'nodeLost','waitFor':'5s','enabled':'true','actions':[{'name':'auto_add_replicas_plan','class':'solr.AutoAddReplicasPlanAction'},{'name':'auto_add_replicas_plan','class':'solr.ExecutePlanAction'}]}}")
+        .withPayload("{'set-trigger':{'name':'.auto_add_replicas','event':'nodeLost','waitFor':'5s','enabled':'true','actions':[{'name':'auto_add_replicas_plan','class':'solr.AutoAddReplicasPlanAction'},{'name':'execute_plan','class':'solr.ExecutePlanAction'}]}}")
         .build()
         .process(cluster.getSolrClient());
   }
@@ -382,19 +382,23 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
   }
   
   private void disableAutoAddReplicasInCluster() throws SolrServerException, IOException {
+    @SuppressWarnings({"rawtypes"})
     Map m = makeMap(
         "action", CollectionParams.CollectionAction.CLUSTERPROP.toLower(),
         "name", ZkStateReader.AUTO_ADD_REPLICAS,
         "val", "false");
+    @SuppressWarnings({"unchecked"})
     QueryRequest request = new QueryRequest(new MapSolrParams(m));
     request.setPath("/admin/collections");
     cluster.getSolrClient().request(request);
   }
 
   private void enableAutoAddReplicasInCluster() throws SolrServerException, IOException {
+    @SuppressWarnings({"rawtypes"})
     Map m = makeMap(
         "action", CollectionParams.CollectionAction.CLUSTERPROP.toLower(),
         "name", ZkStateReader.AUTO_ADD_REPLICAS);
+    @SuppressWarnings({"unchecked"})
     QueryRequest request = new QueryRequest(new MapSolrParams(m));
     request.setPath("/admin/collections");
     cluster.getSolrClient().request(request);

@@ -741,7 +741,9 @@ public class TestExportWriter extends SolrTestCaseJ4 {
         );
     req = req("q", "*:*", "qt", "/export", "fl", "id,sortabledv_udvas", "sort", "sortabledv_udvas asc", "expr", "unique(input(),over=\"sortabledv_udvas\")");
     String rsp = h.query(req);
+    @SuppressWarnings({"unchecked"})
     Map<String, Object> rspMap = mapper.readValue(rsp, HashMap.class);
+    @SuppressWarnings({"unchecked"})
     List<Map<String, Object>> docs = (List<Map<String, Object>>) Utils.getObjectByPath(rspMap, false, "/response/docs");
     assertNotNull("missing document results: " + rspMap, docs);
     assertEquals("wrong number of unique docs", 100, docs.size());
@@ -779,12 +781,16 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     String fieldsStr = String.join(",", fieldStrs); // fl :  field1, field2
 
     String resp = h.query(req("q", "*:*", "qt", "/export", "fl", "id," + fieldsStr, "sort", sortStr));
+    @SuppressWarnings({"rawtypes"})
     HashMap respMap = mapper.readValue(resp, HashMap.class);
+    @SuppressWarnings({"rawtypes"})
     List docs = (ArrayList) ((HashMap) respMap.get("response")).get("docs");
 
     SolrQueryRequest selectReq = req("q", "*:*", "qt", "/select", "fl", "id," + fieldsStr, "sort", sortStr, "rows", Integer.toString(numDocs), "wt", "json");
     String response = h.query(selectReq);
+    @SuppressWarnings({"rawtypes"})
     Map rsp = (Map)Utils.fromJSONString(response);
+    @SuppressWarnings({"rawtypes"})
     List doclist = (List)(((Map)rsp.get("response")).get("docs"));
 
     assert docs.size() == numDocs;

@@ -52,12 +52,12 @@ public class TestBBoxStrategy extends RandomSpatialOpStrategyTestCase {
     if (ctx.isGeo() && (deltaLeft != 0 || deltaRight != 0)) {
       //if geo & doesn't world-wrap, we shift randomly to potentially cross dateline
       int shift = nextIntInclusive(360);
-      return ctx.makeRectangle(
+      return ctx.getShapeFactory().rect(
           DistanceUtils.normLonDEG(world.getMinX() + deltaLeft + shift),
           DistanceUtils.normLonDEG(world.getMaxX() - deltaRight + shift),
           world.getMinY() + deltaBottom, world.getMaxY() - deltaTop);
     } else {
-      return ctx.makeRectangle(
+      return ctx.getShapeFactory().rect(
           world.getMinX() + deltaLeft, world.getMaxX() - deltaRight,
           world.getMinY() + deltaBottom, world.getMaxY() - deltaTop);
     }
@@ -110,45 +110,45 @@ public class TestBBoxStrategy extends RandomSpatialOpStrategyTestCase {
   public void testIntersectsBugDatelineEdge() throws IOException {
     setupGeo();
     testOperation(
-        ctx.makeRectangle(160, 180, -10, 10),
+        ctx.getShapeFactory().rect(160, 180, -10, 10),
         SpatialOperation.Intersects,
-        ctx.makeRectangle(-180, -160, -10, 10), true);
+        ctx.getShapeFactory().rect(-180, -160, -10, 10), true);
   }
 
   @Test
   public void testIntersectsWorldDatelineEdge() throws IOException {
     setupGeo();
     testOperation(
-        ctx.makeRectangle(-180, 180, -10, 10),
+        ctx.getShapeFactory().rect(-180, 180, -10, 10),
         SpatialOperation.Intersects,
-        ctx.makeRectangle(180, 180, -10, 10), true);
+        ctx.getShapeFactory().rect(180, 180, -10, 10), true);
   }
 
   @Test
   public void testWithinBugDatelineEdge() throws IOException {
     setupGeo();
     testOperation(
-        ctx.makeRectangle(180, 180, -10, 10),
+        ctx.getShapeFactory().rect(180, 180, -10, 10),
         SpatialOperation.IsWithin,
-        ctx.makeRectangle(-180, -100, -10, 10), true);
+        ctx.getShapeFactory().rect(-180, -100, -10, 10), true);
   }
 
   @Test
   public void testContainsBugDatelineEdge() throws IOException {
     setupGeo();
     testOperation(
-        ctx.makeRectangle(-180, -150, -10, 10),
+        ctx.getShapeFactory().rect(-180, -150, -10, 10),
         SpatialOperation.Contains,
-        ctx.makeRectangle(180, 180, -10, 10), true);
+        ctx.getShapeFactory().rect(180, 180, -10, 10), true);
   }
 
   @Test
   public void testWorldContainsXDL() throws IOException {
     setupGeo();
     testOperation(
-        ctx.makeRectangle(-180, 180, -10, 10),
+        ctx.getShapeFactory().rect(-180, 180, -10, 10),
         SpatialOperation.Contains,
-        ctx.makeRectangle(170, -170, -10, 10), true);
+        ctx.getShapeFactory().rect(170, -170, -10, 10), true);
   }
 
   /** See https://github.com/spatial4j/spatial4j/issues/85 */
@@ -161,8 +161,8 @@ public class TestBBoxStrategy extends RandomSpatialOpStrategyTestCase {
 
     //both on dateline but expressed using opposite signs
     setupGeo();
-    final Rectangle indexedShape = ctx.makeRectangle(180, 180, -10, 10);
-    final Rectangle queryShape = ctx.makeRectangle(-180, -180, -20, 20);
+    final Rectangle indexedShape = ctx.getShapeFactory().rect(180, 180, -10, 10);
+    final Rectangle queryShape = ctx.getShapeFactory().rect(-180, -180, -20, 20);
     final SpatialOperation operation = SpatialOperation.IsWithin;
     final boolean match = true;//yes it is within
 
@@ -277,7 +277,7 @@ public class TestBBoxStrategy extends RandomSpatialOpStrategyTestCase {
   }
 
   private Rectangle shiftedRect(double minX, double maxX, double minY, double maxY, int xShift) {
-    return ctx.makeRectangle(
+    return ctx.getShapeFactory().rect(
         DistanceUtils.normLonDEG(minX + xShift),
         DistanceUtils.normLonDEG(maxX + xShift),
         minY, maxY);
@@ -286,7 +286,7 @@ public class TestBBoxStrategy extends RandomSpatialOpStrategyTestCase {
   public void testAreaValueSource() throws IOException {
     BBoxStrategy bboxStrategy = setupNeedsDocValuesOnly();
 
-    adoc("100", ctx.makeRectangle(0, 20, 40, 80));
+    adoc("100", ctx.getShapeFactory().rect(0, 20, 40, 80));
     adoc("999", (Shape) null);
     commit();
     checkValueSource(new ShapeAreaValueSource(bboxStrategy.makeShapeValueSource(), ctx, false, 1.0),

@@ -263,6 +263,7 @@ public class DistributedQueryComponentOptimizationTest extends SolrCloudTestCase
 
     if (distribSinglePass) {
       Map<String, Object> debugMap = response.getDebugMap();
+      @SuppressWarnings({"unchecked"})
       SimpleOrderedMap<Object> track = (SimpleOrderedMap<Object>) debugMap.get("track");
       assertNotNull(track);
       assertNotNull(track.get("EXECUTE_QUERY"));

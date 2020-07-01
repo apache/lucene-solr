@@ -100,6 +100,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
 
   @Test
   // commented 4-Sep-2018  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
+  @SuppressWarnings({"unchecked"})
   public void testShortestPathStream() throws Exception {
 
     new UpdateRequest()
@@ -131,6 +132,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
         .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
         .withFunctionName("shortestPath", ShortestPathStream.class);
 
+    @SuppressWarnings({"rawtypes"})
     Map params = new HashMap();
     params.put("fq", "predicate_s:knows");
 
@@ -144,7 +146,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
         "maxDepth=\"6\")");
 
     stream.setStreamContext(context);
-    paths = new HashSet();
+    paths = new HashSet<>();
     tuples = getTuples(stream);
 
     assertTrue(tuples.size() == 2);
@@ -170,7 +172,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
         "maxDepth=\"6\")");
 
     stream.setStreamContext(context);
-    paths = new HashSet();
+    paths = new HashSet<>();
     tuples = getTuples(stream);
 
     assertTrue(tuples.size() == 2);
@@ -195,7 +197,6 @@ public class GraphExpressionTest extends SolrCloudTestCase {
         "maxDepth=\"6\")");
 
     stream.setStreamContext(context);
-    paths = new HashSet();
     tuples = getTuples(stream);
 
     assertTrue(tuples.size() == 0);
@@ -231,7 +232,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
 
 
     stream.setStreamContext(context);
-    paths = new HashSet();
+    paths = new HashSet<>();
     tuples = getTuples(stream);
     assertTrue(tuples.size() == 1);
 
@@ -931,7 +932,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
 
   protected List<Tuple> getTuples(TupleStream tupleStream) throws IOException {
     tupleStream.open();
-    List<Tuple> tuples = new ArrayList();
+    List<Tuple> tuples = new ArrayList<>();
     for(Tuple t = tupleStream.read(); !t.EOF; t = tupleStream.read()) {
       tuples.add(t);
     }

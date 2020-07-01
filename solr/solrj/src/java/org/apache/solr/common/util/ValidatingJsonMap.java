@@ -30,6 +30,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Objects;
 
 import org.apache.solr.common.NavigableObject;
 import org.apache.solr.common.SolrException;
@@ -345,6 +346,11 @@ public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
   @Override
   public boolean equals(Object that) {
     return that instanceof Map && this.delegate.equals(that);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(delegate);
   }
 
   @SuppressWarnings({"unchecked"})

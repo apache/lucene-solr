@@ -45,6 +45,7 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
  * @since solr 1.3
  */
 public abstract class QueryConverter implements NamedListInitializedPlugin {
+  @SuppressWarnings({"rawtypes"})
   private NamedList args;
 
   protected Analyzer analyzer;
@@ -75,7 +76,7 @@ public abstract class QueryConverter implements NamedListInitializedPlugin {
    */
   public static final int TERM_IN_BOOLEAN_QUERY_FLAG = 131072;
   @Override
-  public void init(NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     this.args = args;
   }
 

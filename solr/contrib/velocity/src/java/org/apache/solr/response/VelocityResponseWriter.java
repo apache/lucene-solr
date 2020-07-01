@@ -95,7 +95,7 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
   private Map<String,String> customTools = new HashMap<String,String>();
 
   @Override
-  public void init(NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     log.warn("VelocityResponseWriter is deprecated. This may be removed in future Solr releases. Please SOLR-14065.");
     fileResourceLoaderBaseDir = null;
     String templateBaseDir = (String) args.get(TEMPLATE_BASE_DIR);
@@ -115,9 +115,11 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
 
     initPropertiesFileName = (String) args.get(PROPERTIES_FILE);
 
+    @SuppressWarnings({"rawtypes"})
     NamedList tools = (NamedList)args.get("tools");
     if (tools != null) {
       for(Object t : tools) {
+        @SuppressWarnings({"rawtypes"})
         Map.Entry tool = (Map.Entry)t;
         customTools.put(tool.getKey().toString(), tool.getValue().toString());
       }
@@ -228,11 +230,13 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   private VelocityContext createContext(SolrQueryRequest request, SolrQueryResponse response) {
     VelocityContext context = new VelocityContext();
 
     // Register useful Velocity "tools"
     String locale = request.getParams().get(LOCALE);
+    @SuppressWarnings({"rawtypes"})
     Map toolConfig = new HashMap();
     toolConfig.put("locale", locale);
 

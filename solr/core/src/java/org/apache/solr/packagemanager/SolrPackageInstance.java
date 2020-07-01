@@ -19,11 +19,14 @@ package org.apache.solr.packagemanager;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.packagemanager.SolrPackage.Manifest;
 import org.apache.solr.packagemanager.SolrPackage.Plugin;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * Describes one instance of a package as it exists in Solr when installed.
@@ -43,6 +46,19 @@ public class SolrPackageInstance implements ReflectMapWriter {
 
   final public Map<String, String> parameterDefaults;
 
+  @JsonIgnore
+  private Object customData;
+  
+  @JsonIgnore
+  public Object getCustomData() {
+    return customData;
+  }
+  
+  @JsonIgnore
+  public void setCustomData(Object customData) {
+    this.customData = customData;
+  }
+  
   public SolrPackageInstance(String id, String description, String version, Manifest manifest,
       List<Plugin> plugins, Map<String, String> params) {
     this.name = id;
@@ -57,6 +73,11 @@ public class SolrPackageInstance implements ReflectMapWriter {
   public boolean equals(Object obj) {
     if (obj == null) return false;
     return name.equals(((SolrPackageInstance)obj).name) && version.equals(((SolrPackageInstance)obj).version);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(name, version);
   }
 
   @Override

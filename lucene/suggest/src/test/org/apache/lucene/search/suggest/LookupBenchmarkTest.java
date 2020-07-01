@@ -53,7 +53,7 @@ import org.junit.Ignore;
  */
 @Ignore("COMMENT ME TO RUN BENCHMARKS!")
 public class LookupBenchmarkTest extends LuceneTestCase {
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked","deprecation"})
   private final List<Class<? extends Lookup>> benchmarkClasses = Arrays.asList(
       FuzzySuggester.class,
       AnalyzingSuggester.class,

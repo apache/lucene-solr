@@ -55,7 +55,7 @@ public class MultiValuedIntFieldSource extends IntFieldSource {
   }
   
   @Override
-  protected NumericDocValues getNumericDocValues(Map context, LeafReaderContext readerContext) throws IOException {
+  protected NumericDocValues getNumericDocValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
     SortedNumericDocValues sortedDv = DocValues.getSortedNumeric(readerContext.reader(), field);
     return SortedNumericSelector.wrap(sortedDv, selector, SortField.Type.INT);
   }

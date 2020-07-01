@@ -623,7 +623,7 @@ print "</body>\n</html>\n";
 #
 # Returns one scalar:
 #
-#   - text with the the trailing attribution, if any, marked up with the color green
+#   - text with the trailing attribution, if any, marked up with the color green
 #
 sub markup_trailing_attribution {
   my $item = shift;

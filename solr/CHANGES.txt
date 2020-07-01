@@ -25,6 +25,8 @@ Improvements
 
 Other Changes
 ----------------------
+* LUCENE-9391: Upgrade HPPC to 0.8.2. (Haoyu Zhai)
+
 * SOLR-10288: Remove non-minified JavaScript from the webapp. (Erik Hatcher, marcussorealheis)
 
 * SOLR-13655:Upgrade Collections.unModifiableSet to Set.of and Set.copyOf (Atri Sharma via Tomás Fernández Löbbe)
@@ -74,8 +76,16 @@ Other Changes
 * SOLR-14486: Autoscaling simulation framework no longer creates /clusterstate.json (format 1),
   instead it creates individual per-collection /state.json files (format 2). (ab)
 
- * SOLR-12823: Remove /clusterstate.json support: support for collections created with stateFormat=1,
-   as well as support for Collection API MIGRATESTATEFORMAT action and support for the legacyCloud flag (Ilan Ginzburg).
+* SOLR-12823: Remove /clusterstate.json support, including support for collections created with stateFormat=1,
+  as well as support for Collection API MIGRATESTATEFORMAT action and support for the legacyCloud flag (Ilan Ginzburg).
+
+* LUCENE-9411: Fail complation on warnings, 9x gradle-only (Erick Erickson, Dawid Weiss)
+  Deserves mention here as well as Lucene CHANGES.txt since it affects both.
+
+Bug Fixes
+---------------------
+* SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
+  of Collection API tasks competing for a lock (Ilan Ginzburg).
 
 ==================  8.6.0 ==================
 
@@ -98,6 +108,20 @@ New Features
   timeseries Streaming Expressions (Joel Bernstein)
 
 * SOLR-14470: Add streaming expressions to /export handler. (ab, Joel Bernstein)
+
+* SOLR-14404: CoreContainer level custom requesthandlers (noble)
+
+* SOLR-13749: Join queries can now work cross-collection, even when sharded or when spanning nodes.
+  (Dan Fox, Kevin Watters, via Gus Heck, David Smiley)
+
+* SOLR-14481: Add drill Streaming Expression for efficient and accurate high cardinality aggregation.
+  (Joel Bernstein)
+
+* SOLR-14599: Package manager support for cluster level plugins (see SOLR-14404) (Ishan Chattopadhyaya)
+
+* SOLR-14590: Add support for RankFields. RankFields allow the use of per-document scoring factors in a
+  way that lets Solr skip over non-competitive documents when ranking. See SOLR-13289.
+  (Tomás Fernández Löbbe, Varun Thacker)
 
 Improvements
 ---------------------
@@ -141,8 +165,22 @@ Improvements
 * SOLR-14442: bin/solr and bin\solr.cmd invoke jstack <SOLR_PID> before forceful termination, if jstack is available.
   Also, bin\solr.cmd executes forceful termination even port is unbinded  already (Christine Poerschke via Mikhail Khludnev).
 
-* SOLR-14566: Request ID's ('rid') are now added by default to distributed search requests, and can be used to correlate logs
-  from the receiving coordinator node with those from downstream shard requests. (Jason Gerlowski)
+* SOLR-14384: SolrRequestInfo now stacks internally when a new request is set/clear'ed.
+  Also fixes SolrIndexSearcher.warm which should have re-instated previous SRI.
+  (Nazerke Seidan, David Smiley)
+
+* SOLR-14561: CoreAdminAPI's parameters instanceDir and dataDir are now validated, and must be relative to either
+  SOLR_HOME, SOLR_DATA_HOME or coreRootDir. Added new solr.xml config 'allowPaths', controlled by system property
+  'solr.allowPaths' that allows you to add other allowed paths when needed.
+
+* SOLR-13286: Metrics will no longer write a (sometimes large) log message every minute. This can be re-enabled
+  via log4j2.xml if desired, or other HttpSolrCall log messages may be quieted on a per handler basis. (Gus Heck)
+
+* SOLR-14539: Introducing {!bool excludeTags=...} for Query DSL. (Mikhail Khludnev)
+
+* SOLR-14566: Request ID's ('rid') are now added by default to distributed search requests, and can be used to correlate 
+  logs from the receiving coordinator node with those from downstream shard requests.  This can be disabled if disabled
+  by providing a disableRequestId parameter with any value other than 'false'  (Jason Gerlowski)
 
 Optimizations
 ---------------------
@@ -167,6 +205,8 @@ Optimizations
   (David Smiley)
 
 * SOLR-14552: Add BlockMax-WAND support to ReRank queries (Tomás Fernández Löbbe)
+
+* SOLR-14554: Add BlockMax-WAND support for queries where the score is requested (Tomás Fernández Löbbe)
 
 Bug Fixes
 ---------------------
@@ -239,6 +279,16 @@ Bug Fixes
 * SOLR-14550: Fix duplicates issue in Atomic updates with add-distinct (Thomas Corthals, Munendra S N)
 
 * SOLR-14345: Return proper error message when non-BinaryResponseParser is used in solrJ (Munendra S N)
+
+* SOLR-14516: NPE in JsonTextWriter (noble)
+
+* SOLR-14577: Return 400 BAD REQUEST when field is missing on a Terms query parser request
+  (Tomás Fernández Löbbe)
+
+* SOLR-14409: Existing violations allow bypassing policy rules when adding new replicas (noble, ab)
+
+* SOLR-14584: Correct SOLR_SSL_KEY_STORE and SOLR_SSL_TRUST_STORE example comments in solr.in.sh and solr.in.cmd files
+  (Aren Cambre via Christine Poerschke)
 
 Other Changes
 ---------------------
@@ -331,6 +381,34 @@ Other Changes
 * SOLR-14547: Fix or suppress warnings in solr/client/solrj/io/stream (Erick Erickson)
 
 * SOLR-14455: Fix or suppress warnings in solr/test-framework (Erick Erickson)
+
+* SOLR-14559: Fix or suppress warnings in solr/core/src/java/org/apache/solr/util,
+  response, cloud, security, schema, api (Erick Erickson)
+
+* SOLR-14563: Fix or suppress warnings in solr/contrib (Erick Erickson)
+
+* SOLR-14565: Fix or suppress warnings in solrj/impl and solrj/io/graph (Erick Erickson)
+
+* SOLR-14564: Fix or suppress remaining warnings in solr/core (Erick Erickson)
+
+* SOLR-14567: Fix or suppress remaining warnings in solrj (Erick Erickson)
+
+* SOLR-14556: Fix or suppress warnings in solrj/cloud/autoscaling (Erick Erickson)
+
+* SOLR-14573: Fix or suppress warnings in solrj/src/test (Erick Erickson)
+
+* SOLR-14574: Fix or suppress warnings in solr/core/src/test (parts 1 and 2) (Erick Erickson)
+
+* SOLR-13268: Clean up any test failures resulting from defaulting to async logging (Erick Erickson)
+
+* LUCENE-9411: Fail complation on warnings, 9x gradle-only (Erick Erickson, Dawid Weiss)
+  Only mentioned in 8.6 because I backported some more warning suppressions but not
+  the fail-on-warnings.
+
+* SOLR-14589: Remove IntelliJ //noinspection comments (Erick Erickson)
+
+* SOLR-14541: Ensure classes that implement equals implement hashCode or suppress warnings
+  (gezapeti, Ilan Ginsburg, Erick Erickson)
 
 ==================  8.5.2 ==================
 

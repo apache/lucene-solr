@@ -78,6 +78,7 @@ public class OverseerTaskQueueTest extends DistributedQueueTest {
     List<OverseerTaskQueue.QueueEvent> queueEvents = tq.peekTopN(2, s -> false, 1000);
     OverseerTaskQueue.QueueEvent requestId2Event = null;
     for (OverseerTaskQueue.QueueEvent queueEvent : queueEvents) {
+      @SuppressWarnings({"unchecked"})
       Map<String, Object> eventProps = (Map<String, Object>) Utils.fromJSON(queueEvent.getBytes());
       if (requestId2.equals(eventProps.get(CommonAdminParams.ASYNC))) {
         requestId2Event = queueEvent;

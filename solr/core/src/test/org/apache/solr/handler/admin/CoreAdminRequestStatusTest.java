@@ -42,6 +42,7 @@ public class CoreAdminRequestStatusTest extends SolrTestCaseJ4{
     final File workDir = createTempDir().toFile();
 
     final CoreContainer cores = h.getCoreContainer();
+    cores.getAllowPaths().add(workDir.toPath()); // Allow core to be created in workDir
 
     final CoreAdminHandler admin = new CoreAdminHandler(cores);
 

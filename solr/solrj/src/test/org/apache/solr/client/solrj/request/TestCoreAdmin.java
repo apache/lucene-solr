@@ -90,8 +90,8 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
 
     SolrClient client = getSolrAdmin();
     File testDir = createTempDir(LuceneTestCase.getTestClass().getSimpleName()).toFile();
-
     File newCoreInstanceDir = new File(testDir, "newcore");
+    cores.getAllowPaths().add(testDir.toPath()); // Allow the test dir
 
     CoreAdminRequest.Create req = new CoreAdminRequest.Create();
     req.setCoreName("corewithconfigset");
@@ -115,6 +115,8 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
       File dataDir = createTempDir("data").toFile();
 
       File newCoreInstanceDir = createTempDir("instance").toFile();
+      cores.getAllowPaths().add(dataDir.toPath()); // Allow the test dir
+      cores.getAllowPaths().add(newCoreInstanceDir.toPath()); // Allow the test dir
 
       File instanceDir = new File(cores.getSolrHome());
       FileUtils.copyDirectory(instanceDir, new File(newCoreInstanceDir,

@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.cloud.autoscaling;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.Replica;
@@ -104,6 +105,11 @@ class ReplicaCount  implements MapWriter {
 
     }
     return false;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(nrt, tlog, pull);
   }
 
   @Override
