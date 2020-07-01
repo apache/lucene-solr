@@ -322,8 +322,8 @@ public class Assign {
 
   // Only called from addReplica (and by extension createShard) (so far).
   //
-  // Gets a list of candidate nodes to put the required replica(s) on. Throws errors if not enough replicas
-  // could be created on live nodes given maxShardsPerNode, Replication factor (if from createShard) etc.
+  // Gets a list of candidate nodes to put the required replica(s) on. Throws errors if the AssignStrategy
+  // can't allocate valid positions.
   @SuppressWarnings({"unchecked"})
   public static List<ReplicaPosition> getNodesForNewReplicas(ClusterState clusterState, String collectionName,
                                                           String shard, int nrtReplicas, int tlogReplicas, int pullReplicas,

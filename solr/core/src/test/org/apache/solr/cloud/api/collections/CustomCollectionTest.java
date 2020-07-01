@@ -148,7 +148,6 @@ public class CustomCollectionTest extends SolrCloudTestCase {
     String collectionName = "routeFieldColl";
     int numShards = 4;
     int replicationFactor = 2;
-    int maxShardsPerNode = ((numShards * replicationFactor) / NODE_COUNT) + 1;
     String shard_fld = "shard_s";
 
     CollectionAdminRequest.createCollection(collectionName, "conf", numShards, replicationFactor)

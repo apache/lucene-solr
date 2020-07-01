@@ -27,7 +27,6 @@ public class MultiSolrCloudTestCaseTest extends MultiSolrCloudTestCase {
 
   private static int numShards;
   private static int numReplicas;
-  private static int maxShardsPerNode;
   private static int nodesPerCluster;
 
   @BeforeClass

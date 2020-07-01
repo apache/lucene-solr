@@ -189,10 +189,6 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     {
       CollectionAdminRequest.Restore restore = CollectionAdminRequest.restoreCollection(restoreCollectionName, backupName)
           .setLocation(backupLocation).setRepositoryName(getBackupRepoName());
-      if (backupCollection.getReplicas().size() > cluster.getJettySolrRunners().size()) {
-        // may need to increase maxShardsPerNode (e.g. if it was shard split, then now we need more)
-        //restore.setMaxShardsPerNode((int)Math.ceil(backupCollection.getReplicas().size()/cluster.getJettySolrRunners().size()));
-      }
 
       restore.setConfigName("confFaulty");
       assertEquals(RequestStatusState.FAILED, restore.processAndWait(solrClient, 30));
@@ -331,20 +327,9 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     }
     int computeRestoreMaxShardsPerNode = (int) Math.ceil((restoreReplFactor * numShards/(double) cluster.getJettySolrRunners().size()));
 
-    if (restoreReplFactor > backupReplFactor) { //else the backup maxShardsPerNode should be enough
-      if (log.isInfoEnabled()) {
-        log.info("numShards={} restoreReplFactor={} maxShardsPerNode={} totalNodes={}",
-            numShards, restoreReplFactor, computeRestoreMaxShardsPerNode, cluster.getJettySolrRunners().size());
-      }
-
-    }
-
     if (rarely()) { // Try with createNodeSet configuration
       //Always 1 as cluster.getJettySolrRunners().size()=NUM_SHARDS=2
       restore.setCreateNodeSet(cluster.getJettySolrRunners().get(0).getNodeName());
-//      // we need to double maxShardsPerNode value since we reduced number of available nodes by half.
-//      computeRestoreMaxShardsPerNode = origShardToDocCount.size() * restoreReplFactor;
-//      restore.setMaxShardsPerNode(computeRestoreMaxShardsPerNode);
     }
 
     final int restoreMaxShardsPerNode = computeRestoreMaxShardsPerNode;

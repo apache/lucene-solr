@@ -782,7 +782,6 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.DONT_SEND;
     Integer replicationFactor = 2;
     Integer numberOfSlices = 4;
-    Integer maxShardsPerNode = 2;
     testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
         true);
   }

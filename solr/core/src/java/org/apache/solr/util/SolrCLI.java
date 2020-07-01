@@ -1727,12 +1727,6 @@ public class SolrCLI implements CLIO {
           .required(false)
           .desc("Number of copies of each document across the collection (replicas per shard); default is 1")
           .build(),
-      Option.builder("maxShardsPerNode")
-          .argName("#")
-          .hasArg()
-          .required(false)
-          .desc("Maximum number of shards per Solr node; default is determined based on the number of shards, replication factor, and live nodes.")
-          .build(),
       Option.builder("confdir")
           .argName("NAME")
           .hasArg()
@@ -1923,11 +1917,6 @@ public class SolrCLI implements CLIO {
       // build a URL to create the collection
       int numShards = optionAsInt(cli, "shards", 1);
       int replicationFactor = optionAsInt(cli, "replicationFactor", 1);
-      int maxShardsPerNode = -1;
-
-      if (cli.hasOption("maxShardsPerNode")) {
-        maxShardsPerNode = Integer.parseInt(cli.getOptionValue("maxShardsPerNode"));
-      }
 
       String confname = cli.getOptionValue("confname");
       String confdir = cli.getOptionValue("confdir");
@@ -1963,12 +1952,11 @@ public class SolrCLI implements CLIO {
       // doesn't seem to exist ... try to create
       String createCollectionUrl =
           String.format(Locale.ROOT,
-              "%s/admin/collections?action=CREATE&name=%s&numShards=%d&replicationFactor=%d&maxShardsPerNode=%d",
+              "%s/admin/collections?action=CREATE&name=%s&numShards=%d&replicationFactor=%d",
               baseUrl,
               collectionName,
               numShards,
-              replicationFactor,
-              maxShardsPerNode);
+              replicationFactor);
       if (confname != null && !"".equals(confname.trim())) {
         createCollectionUrl = createCollectionUrl + String.format(Locale.ROOT, "&collection.configName=%s", confname);
       }

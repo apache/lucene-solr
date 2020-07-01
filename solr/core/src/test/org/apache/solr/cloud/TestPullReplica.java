@@ -134,12 +134,11 @@ public class TestPullReplica extends SolrCloudTestCase {
           break;
         case 1:
           // Sometimes use v1 API
-          String url = String.format(Locale.ROOT, "%s/admin/collections?action=CREATE&name=%s&collection.configName=%s&numShards=%s&pullReplicas=%s&maxShardsPerNode=%s",
+          String url = String.format(Locale.ROOT, "%s/admin/collections?action=CREATE&name=%s&collection.configName=%s&numShards=%s&pullReplicas=%s",
               cluster.getRandomJetty(random()).getBaseUrl(),
               collectionName, "conf",
               2,    // numShards
-              3,    // pullReplicas
-              100); // maxShardsPerNode
+              3);   // pullReplicas
           url = url + pickRandom("", "&nrtReplicas=1", "&replicationFactor=1"); // These options should all mean the same
           HttpGet createCollectionGet = new HttpGet(url);
           cluster.getSolrClient().getHttpClient().execute(createCollectionGet);
@@ -147,11 +146,10 @@ public class TestPullReplica extends SolrCloudTestCase {
         case 2:
           // Sometimes use V2 API
           url = cluster.getRandomJetty(random()).getBaseUrl().toString() + "/____v2/c";
-          String requestBody = String.format(Locale.ROOT, "{create:{name:%s, config:%s, numShards:%s, pullReplicas:%s, maxShardsPerNode:%s %s}}",
+          String requestBody = String.format(Locale.ROOT, "{create:{name:%s, config:%s, numShards:%s, pullReplicas:%s, %s}}",
               collectionName, "conf",
               2,    // numShards
               3,    // pullReplicas
-              100, // maxShardsPerNode
               pickRandom("", ", nrtReplicas:1", ", replicationFactor:1")); // These options should all mean the same
           HttpPost createCollectionPost = new HttpPost(url);
           createCollectionPost.setHeader("Content-type", "application/json");
