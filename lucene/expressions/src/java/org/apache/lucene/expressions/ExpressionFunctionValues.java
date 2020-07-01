@@ -54,7 +54,7 @@ class ExpressionFunctionValues extends DoubleValues {
   
   @Override
   public double doubleValue() {
-    if (!computed) {
+    if (computed == false) {
       currentValue = expression.evaluate(functionValues);
       computed = true;
     }

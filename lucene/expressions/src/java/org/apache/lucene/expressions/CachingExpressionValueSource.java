@@ -25,6 +25,10 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
 
+/**
+ * This expression value source shares one value cache when generating {@link ExpressionFunctionValues}
+ * such that only one value along the whole generation tree is corresponding to one name
+ */
 final class CachingExpressionValueSource extends ExpressionValueSource {
 
   CachingExpressionValueSource(Bindings bindings, Expression expression) {
@@ -44,7 +48,7 @@ final class CachingExpressionValueSource extends ExpressionValueSource {
     return getValuesWithCache(readerContext, scores, new HashMap<>());
   }
 
-  public DoubleValues getValuesWithCache(LeafReaderContext readerContext, DoubleValues scores,
+  private DoubleValues getValuesWithCache(LeafReaderContext readerContext, DoubleValues scores,
                                                   Map<String, DoubleValues> valuesCache) throws IOException {
     DoubleValues[] externalValues = new DoubleValues[expression.variables.length];
 
@@ -53,7 +57,7 @@ final class CachingExpressionValueSource extends ExpressionValueSource {
       DoubleValues values = valuesCache.get(externalName);
       if (values == null) {
         if (variables[i] instanceof CachingExpressionValueSource) {
-          values = ((CachingExpressionValueSource)variables[i]).getValuesWithCache(readerContext, scores, valuesCache);
+          values = ((CachingExpressionValueSource) variables[i]).getValuesWithCache(readerContext, scores, valuesCache);
         } else {
           values = variables[i].getValues(readerContext, scores);
         }

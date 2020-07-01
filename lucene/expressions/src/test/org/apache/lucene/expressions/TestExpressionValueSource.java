@@ -134,6 +134,7 @@ public class TestExpressionValueSource extends LuceneTestCase {
     bindings.add("f0", DoubleValuesSource.constant(0));
     bindings.add("f1", DoubleValuesSource.constant(1));
     for (int i = 2; i < n + 1; i++) {
+      // Without using CachingExpressionValueSource this test will fail after 1 min around because of out of heap space when n=40
       bindings.add("f" + Integer.toString(i), new CachingExpressionValueSource(
           (ExpressionValueSource) JavascriptCompiler.compile("f" + Integer.toString(i - 1)+" + f" + Integer.toString(i - 2)).getDoubleValuesSource(bindings)));
     }
