@@ -576,8 +576,7 @@ public class MailEntityProcessor extends EntityProcessorBase {
             folders.add(ufldr);
         }
       } catch (MessagingException me) {
-        log.warn("Messaging exception retrieving user namespaces: {}"
-            , me.getMessage());
+        log.warn("Messaging exception retrieving user namespaces: ", me);
       }
     }
     
@@ -590,8 +589,7 @@ public class MailEntityProcessor extends EntityProcessorBase {
             folders.add(sfldr);
         }
       } catch (MessagingException me) {
-        log.warn("Messaging exception retrieving shared namespaces: {}"
-            , me.getMessage());
+        log.warn("Messaging exception retrieving shared namespaces: ", me);
       }
     }
     

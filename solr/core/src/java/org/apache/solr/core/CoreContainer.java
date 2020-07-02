@@ -869,7 +869,7 @@ public class CoreContainer {
               } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
               } catch (ExecutionException e) {
-                log.error("Error waiting for SolrCore to be loaded on startup", e.getCause());
+                log.error("Error waiting for SolrCore to be loaded on startup", e);
               }
             }
           } finally {
