@@ -88,6 +88,9 @@ For more information about how to use this, see the section <<exporting-result-s
 *Deprecations* 
 
 * Cross Data Center Replication (CDCR), in its current form, is deprecated and is scheduled to be removed in 9.0. Please refer to SOLR-14022.
+*Deprecations*
+
+* Data Import Handler is deprecated and is scheduled to be removed in 9.0. A community supported version of this may be available as an external package to be used with the package management system. For more details, please refer to SOLR-14066.
 
 === Solr 8.5
 
