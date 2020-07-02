@@ -69,7 +69,8 @@ class ExpressionValueSource extends DoubleValuesSource {
       if (values == null) {
         values = variables[i].getValues(readerContext, scores);
         if (values == null) {
-          throw new RuntimeException("Internal error. External (" + externalName + ") does not exist.");
+          throw new RuntimeException("Unrecognized variable (" + externalName + ") referenced in expression (" +
+              expression.sourceText + ").");
         }
         valuesCache.put(externalName, values);
       }
