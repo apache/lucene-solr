@@ -76,11 +76,14 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
       return false;
     }
 
-    allowedMemory.set(getCurrentMemoryThreshold());
+    long localAllowedMemory = getCurrentMemoryThreshold();
+    long localSeenMemory = calculateLiveMemoryUsage();
 
-    seenMemory.set(calculateLiveMemoryUsage());
+    allowedMemory.set(localAllowedMemory);
 
-    return (seenMemory.get() >= allowedMemory.get());
+    seenMemory.set(localSeenMemory);
+
+    return (localSeenMemory >= localAllowedMemory);
   }
 
   @Override

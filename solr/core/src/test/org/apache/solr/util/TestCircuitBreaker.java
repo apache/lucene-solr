@@ -71,9 +71,7 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
 
   @After
   public void after() {
-    CircuitBreaker circuitBreaker = new MemoryCircuitBreaker(h.getCore().getSolrConfig());
-
-    h.getCore().getCircuitBreakerManager().register(circuitBreaker);
+    h.getCore().getCircuitBreakerManager().deregisterAll();
   }
 
   public void testCBAlwaysTrips() {

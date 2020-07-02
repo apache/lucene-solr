@@ -50,6 +50,9 @@ public class CircuitBreakerManager {
     circuitBreakerList.add(circuitBreaker);
   }
 
+  public void deregisterAll() {
+    circuitBreakerList.clear();
+  }
   /**
    * Check and return circuit breakers that have triggered
    * @return CircuitBreakers which have triggered, null otherwise.
