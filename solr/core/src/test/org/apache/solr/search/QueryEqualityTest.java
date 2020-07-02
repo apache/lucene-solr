@@ -356,6 +356,18 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
       req.close();
     }
   }
+  
+  public void testRankQuery() throws Exception {
+    SolrQueryRequest req = req("df", "foo_s");
+    try {
+      assertQueryEquals("rank", req,
+                        "{!rank f='rank_1'}",
+                        "{!rank f='rank_1' function='satu'}",
+                        "{!rank f='rank_1' function='satu' weight=1}");
+    } finally {
+      req.close();
+    }
+  }
 
   public void testQueryNested() throws Exception {
     SolrQueryRequest req = req("df", "foo_s");
@@ -1291,12 +1303,6 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
                 , "{!bool should='{!lucene}foo_s:a'}"
             )
     );
-  }
-
-  public void testXCJFQuery() throws Exception {
-    assertQueryEquals("xcjf",
-        "{!xcjf collection=abc from=x_id to=x_id}*:*",
-        "{!xcjf collection=abc from=x_id to=x_id v='*:*'}");
   }
 
   public void testHashRangeQuery() throws Exception {

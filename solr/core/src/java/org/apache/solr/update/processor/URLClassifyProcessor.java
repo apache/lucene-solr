@@ -183,7 +183,7 @@ public class URLClassifyProcessor extends UpdateRequestProcessor {
           }
           log.debug("{}", document);
         } catch (MalformedURLException | URISyntaxException e) {
-          log.warn("cannot get the normalized url for '{}' due to {}", url, e.getMessage());
+          log.warn("cannot get the normalized url for '{}' due to ", url, e);
         }
       }
     }

@@ -186,7 +186,7 @@ public class HyphenationTree extends TernaryTree implements PatternConsumer {
    * patterns for languages such as English range from 4000 to 10000. Thus,
    * doing thousands of string comparisons for each word to hyphenate would be
    * really slow without the tree. The tradeoff is memory, but using a ternary
-   * tree instead of a trie, almost halves the the memory used by Lout or TeX.
+   * tree instead of a trie, almost halves the memory used by Lout or TeX.
    * It's also faster than using a hash table
    * </p>
    * 

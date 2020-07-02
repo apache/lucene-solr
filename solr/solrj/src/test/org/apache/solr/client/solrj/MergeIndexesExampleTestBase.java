@@ -77,7 +77,8 @@ public abstract class MergeIndexesExampleTestBase extends SolrTestCaseJ4 {
     if (log.isInfoEnabled()) {
       log.info("CORES={} : {}", cores, cores.getLoadedCoreNames());
     }
-
+    cores.getAllowPaths().add(dataDir1.toPath());
+    cores.getAllowPaths().add(dataDir2.toPath());
   }
 
   @Override

@@ -76,7 +76,6 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
     
     final Class<?> clazz1 = ResourceLoaderAware.class;
     // Check ResourceLoaderAware valid objects
-    //noinspection unchecked
     assertAwareCompatibility(clazz1, new NGramFilterFactory(map("minGramSize", "1", "maxGramSize", "2")));
     assertAwareCompatibility(clazz1, new KeywordTokenizerFactory(new HashMap<>()));
     
@@ -99,7 +98,6 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
     assertAwareCompatibility(clazz2, new JSONResponseWriter());
     
     // Make sure it throws an error for invalid objects
-    //noinspection unchecked
     invalid = new Object[] {
         new NGramFilterFactory(map("minGramSize", "1", "maxGramSize", "2")),
         "hello",   12.3f ,

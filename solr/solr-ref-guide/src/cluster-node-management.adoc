@@ -215,7 +215,7 @@ Support for the "collectionDefaults" key will be removed in Solr 9.
 
 === Default Shard Preferences
 
-Using the `defaultShardPreferences` parameter, you can implement rack or availability zone awareness. First, make sure to "label" your nodes using a <<configuring-solrconfig-xml.adoc#jvm-system-properties,system property>> (e.g. `-Drack=rack1`). Then, set the value of `defaultShardPreferences` to `node.sysprop:sysprop.YOUR_PROPERTY_NAME` like this:
+Using the `defaultShardPreferences` parameter, you can implement rack or availability zone awareness. First, make sure to "label" your nodes using a <<configuring-solrconfig-xml.adoc#jvm-system-properties,system property>> (e.g., `-Drack=rack1`). Then, set the value of `defaultShardPreferences` to `node.sysprop:sysprop.YOUR_PROPERTY_NAME` like this:
 
 [source,bash]
 ----
@@ -228,7 +228,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '
 }' http://localhost:8983/api/cluster
 ----
 
-At this point, if you run a query on a node having e.g. `rack=rack1`, Solr will try to hit only replicas from `rack1`.
+At this point, if you run a query on a node having e.g., `rack=rack1`, Solr will try to hit only replicas from `rack1`.
 
 [[balanceshardunique]]
 == BALANCESHARDUNIQUE: Balance a Property Across Nodes

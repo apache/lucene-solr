@@ -874,7 +874,7 @@ function stop_solr() {
     kill -9 $SOLR_PID
     echo "Killed process $SOLR_PID"
     rm -f "$SOLR_PID_DIR/solr-$SOLR_PORT.pid"
-    sleep 1
+    sleep 10
   fi
 
   CHECK_PID=`ps auxww | awk '{print $2}' | grep -w $SOLR_PID | sort -r | tr -d ' '`
