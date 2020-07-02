@@ -34,7 +34,7 @@ import java.nio.charset.Charset;
  * through Zookeeper. The state of the buffer is stored in the zk node defined by {@link #getZnodePath()}.
  * @deprecated since 8.6
  */
-@Deprecated(since = "8.6")
+@Deprecated
 class CdcrBufferStateManager extends CdcrStateManager {
 
   private CdcrParams.BufferState state = DEFAULT_STATE;

@@ -45,7 +45,7 @@ import org.slf4j.LoggerFactory;
  * </ul>
  * @deprecated since 8.6
  */
-@Deprecated(since = "8.6")
+@Deprecated
 public class CdcrTransactionLog extends TransactionLog {
 
   private boolean isReplaying;

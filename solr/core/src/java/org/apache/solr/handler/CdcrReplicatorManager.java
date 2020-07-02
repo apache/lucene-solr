@@ -56,7 +56,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.handler.admin.CoreAdminHandler.RESPONSE_STATUS;
 
-@Deprecated(since = "8.6")
+@Deprecated
 class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
 
   private static final int MAX_BOOTSTRAP_ATTEMPTS = 5;
