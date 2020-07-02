@@ -214,7 +214,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
           }
           if (hasCauseIOException || e instanceof IOException) {
             if (log.isInfoEnabled()) {
-              log.info("Error on getting remote info, trying again: {}", e.getMessage());
+              log.info("Error on getting remote info, trying again: ", e);
             }
             Thread.sleep(500);
             continue;

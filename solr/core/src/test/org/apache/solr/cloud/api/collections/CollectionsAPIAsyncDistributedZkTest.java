@@ -262,7 +262,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
               numSuccess.incrementAndGet();
             } catch (SolrServerException e) {
               if (log.isInfoEnabled()) {
-                log.info(e.getMessage());
+                log.info("Exception during collection reloading, we were waiting for one: ", e);
               }
               assertEquals("Task with the same requestid already exists.", e.getMessage());
               numFailure.incrementAndGet();

@@ -69,7 +69,7 @@ public final class SolrPaths {
     } catch (NamingException e) {
       log.debug("No /solr/home in JNDI");
     } catch (RuntimeException ex) {
-      log.warn("Odd RuntimeException while testing for JNDI: {}", ex.getMessage());
+      log.warn("Odd RuntimeException while testing for JNDI: ", ex);
     }
 
     // Now try system property

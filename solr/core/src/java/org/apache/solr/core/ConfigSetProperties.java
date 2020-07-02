@@ -59,7 +59,7 @@ public class ConfigSetProperties {
       reader = new InputStreamReader(loader.openResource(name), StandardCharsets.UTF_8);
     } catch (SolrResourceNotFoundException ex) {
       if (log.isDebugEnabled()) {
-        log.debug("Did not find ConfigSet properties, assuming default properties: {}", ex.getMessage());
+        log.debug("Did not find ConfigSet properties, assuming default properties: ", ex);
       }
       return null;
     } catch (Exception ex) {

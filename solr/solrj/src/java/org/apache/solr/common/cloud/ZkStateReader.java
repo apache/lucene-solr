@@ -559,7 +559,7 @@ public class ZkStateReader implements SolrCloseable {
                 }
               }
             } catch (KeeperException.ConnectionLossException | KeeperException.SessionExpiredException e) {
-              log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK: [{}]", e.getMessage());
+              log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK: ", e);
             } catch (KeeperException e) {
               log.error("A ZK error has occurred", e);
               throw new ZooKeeperException(ErrorCode.SERVER_ERROR, "", e);
@@ -699,7 +699,7 @@ public class ZkStateReader implements SolrCloseable {
       try {
         children = zkClient.getChildren(COLLECTIONS_ZKNODE, watcher, true);
       } catch (KeeperException.NoNodeException e) {
-        log.warn("Error fetching collection names: [{}]", e.getMessage());
+        log.warn("Error fetching collection names: ", e);
         // fall through
       }
       if (children == null || children.isEmpty()) {
@@ -1348,7 +1348,7 @@ public class ZkStateReader implements SolrCloseable {
         }
 
       } catch (KeeperException.SessionExpiredException | KeeperException.ConnectionLossException e) {
-        log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK: [{}]", e.getMessage());
+        log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK: ", e);
       } catch (KeeperException e) {
         log.error("Unwatched collection: [{}]", coll, e);
         throw new ZooKeeperException(ErrorCode.SERVER_ERROR, "A ZK error has occurred", e);
@@ -1472,7 +1472,7 @@ public class ZkStateReader implements SolrCloseable {
           }
         }
       } catch (KeeperException.SessionExpiredException | KeeperException.ConnectionLossException e) {
-        log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK: [{}]", e.getMessage());
+        log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK: ", e);
       } catch (KeeperException e) {
         log.error("Lost collection property watcher for {} due to ZK error", coll, e);
         throw new ZooKeeperException(ErrorCode.SERVER_ERROR, "A ZK error has occurred", e);
@@ -1512,7 +1512,7 @@ public class ZkStateReader implements SolrCloseable {
       try {
         refreshCollectionList(this);
       } catch (KeeperException.SessionExpiredException | KeeperException.ConnectionLossException e) {
-        log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK: [{}]", e.getMessage());
+        log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK: ", e);
       } catch (KeeperException e) {
         log.error("A ZK error has occurred", e);
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "A ZK error has occurred", e);
@@ -1545,7 +1545,7 @@ public class ZkStateReader implements SolrCloseable {
       try {
         refreshLiveNodes(this);
       } catch (KeeperException.SessionExpiredException | KeeperException.ConnectionLossException e) {
-        log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK: [{}]", e.getMessage());
+        log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK: ", e);
       } catch (KeeperException e) {
         log.error("A ZK error has occurred", e);
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "A ZK error has occurred", e);
@@ -2207,7 +2207,7 @@ public class ZkStateReader implements SolrCloseable {
         // /aliases.json will not always exist
       } catch (KeeperException.ConnectionLossException | KeeperException.SessionExpiredException e) {
         // note: aliases.json is required to be present
-        log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK: [{}]", e.getMessage());
+        log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK: ", e);
       } catch (KeeperException e) {
         log.error("A ZK error has occurred", e);
         throw new ZooKeeperException(ErrorCode.SERVER_ERROR, "A ZK error has occurred", e);
