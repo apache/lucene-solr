@@ -14,3 +14,12 @@ running Solr you set the following system properties:
   -Duser.language=xx -Duser.country=YY -Duser.timezone=ZZZ
 
 where xx, YY, and ZZZ are consistent with any database server's configuration.
+
+Deprecation notice
+------------------
+This contrib module is deprecated as of v8.6, scheduled for removal in Solr 9.0.
+The reason is that DIH is no longer being maintained in a manner we feel is necessary in order to keep it
+healthy and secure. Also it was not designed to work with SolrCloud and does not meet current performance requirements.
+
+The project hopes that the community will take over maintenance of DIH as a 3rd party package (See SOLR-14066 for more details). Please reach out to us at the dev@ mailing list if you want to help.
+
