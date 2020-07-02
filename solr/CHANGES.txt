@@ -21,8 +21,13 @@ Upgrade Notes
 
 New Features
 ---------------------
-
 * SOLR-14151 Make schema components load from packages (noble)
+
+* SOLR-14588: Introduce Circuit Breaker Infrastructure and a JVM heap usage memory tracking circuit breaker implementation (Atri Sharma)
+
+Improvements
+----------------------
+* LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
 
 * SOLR-14681: Introduce ability to delete .jar stored in the Package Store. (MarcusSorealheis , Mike Drob)
 
