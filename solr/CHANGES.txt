@@ -436,6 +436,8 @@ Other Changes
 * SOLR-14541: Ensure classes that implement equals implement hashCode or suppress warnings
   (gezapeti, Ilan Ginsburg, Erick Erickson)
 
+* SOLR-14022: Deprecate CDCR (Joel Bernstein, Ishan Chattopadhyaya)
+
 ==================  8.5.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
