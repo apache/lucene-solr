@@ -23,6 +23,7 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.TermState;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 
@@ -33,7 +34,7 @@ import org.apache.lucene.util.automaton.CompiledAutomaton;
  *
  * @lucene.internal
  */
-final class TermVectorFilteredLeafReader extends FilterLeafReader {
+final class TermVectorFilteredLeafReader extends FilterLeafReader implements Cloneable {
   // NOTE: super ("in") is baseLeafReader
 
   private final Terms filterTerms;
@@ -51,7 +52,7 @@ final class TermVectorFilteredLeafReader extends FilterLeafReader {
     this.filterTerms = filterTerms;
     this.fieldFilter = fieldFilter;
   }
-
+  /**/
   @Override
   public Terms terms(String field) throws IOException {
     if (!field.equals(fieldFilter)) {
@@ -92,6 +93,7 @@ final class TermVectorFilteredLeafReader extends FilterLeafReader {
 
     //TODO: track the last term state from the term state method and do some potential optimizations
     private final TermsEnum baseTermsEnum;
+    private final TermState termState;
 
     TermVectorFilteredTermsEnum(TermsEnum baseTermsEnum, TermsEnum filteredTermsEnum) {
       super(filteredTermsEnum); // note this is reversed from constructors above
