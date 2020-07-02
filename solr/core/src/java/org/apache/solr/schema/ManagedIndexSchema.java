@@ -372,6 +372,11 @@ public final class ManagedIndexSchema extends IndexSchema {
       return null;
     }
 
+    @Override
+    public String getRequestType() {
+      return SolrRequest.SolrRequestType.ADMIN.toString();
+    }
+
   }
 
 

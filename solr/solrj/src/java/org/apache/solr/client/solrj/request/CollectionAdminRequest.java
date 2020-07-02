@@ -146,6 +146,11 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     return jsonStr();
   }
 
+  @Override
+  public String getRequestType() {
+    return SolrRequestType.ADMIN.toString();
+  }
+
   /**
    * Base class for asynchronous collection admin requests
    */

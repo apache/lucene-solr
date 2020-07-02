@@ -129,5 +129,10 @@ public class LukeRequest extends SolrRequest<LukeResponse> {
     return params;
   }
 
+  @Override
+  public String getRequestType() {
+    return SolrRequestType.ADMIN.toString();
+  }
+
 }
 

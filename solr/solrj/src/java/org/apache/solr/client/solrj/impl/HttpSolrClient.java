@@ -358,7 +358,11 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     if (parser == null) {
       parser = this.parser;
     }
-    
+
+    Header[] contextHeaders = new Header[2];
+    contextHeaders[0] = new BasicHeader(CommonParams.SOLR_REQUEST_CONTEXT_PARAM, getContext().toString());
+    contextHeaders[1] = new BasicHeader(CommonParams.SOLR_REQUEST_TYPE_PARAM, request.getRequestType());
+
     // The parser 'wt=' and 'version=' params are used instead of the original
     // params
     ModifiableSolrParams wparams = new ModifiableSolrParams(params);
@@ -387,7 +391,11 @@ public class HttpSolrClient extends BaseHttpSolrClient {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "GET can't send streams!");
       }
 
-      return new HttpGet(basePath + path + wparams.toQueryString());
+      //return new HttpGet(basePath + path + wparams.toQueryString());
+
+      HttpGet result = new HttpGet(basePath + path + wparams.toQueryString());
+      result.setHeaders(contextHeaders);
+      return result;
     }
 
     if (SolrRequest.METHOD.DELETE == request.getMethod()) {
@@ -428,6 +436,9 @@ public class HttpSolrClient extends BaseHttpSolrClient {
             contentWriter.write(outstream);
           }
         });
+
+        postOrPut.addHeader(contextHeaders[0]);
+        postOrPut.addHeader(contextHeaders[1]);
         return postOrPut;
 
       } else if (streams == null || isMultipart) {

@@ -945,6 +945,11 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
     protected SolrResponse createResponse(SolrClient client) {
       return null;
     }
+
+    @Override
+    public String getRequestType() {
+      return SolrRequest.SolrRequestType.ADMIN.toString();
+    }
   }
 
   @Override
