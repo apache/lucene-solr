@@ -16,6 +16,8 @@
 Solr DataImportHandler example configuration
 --------------------------------------------
 
+NOTE: The DataImportHandler is deprecated as of v8.6. See SOLR-14066 for more details.
+
 To run this multi-core example, use the "-e" option of the bin/solr script:
 
 > bin/solr -e dih
