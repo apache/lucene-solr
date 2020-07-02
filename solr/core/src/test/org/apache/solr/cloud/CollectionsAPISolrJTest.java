@@ -722,7 +722,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
       try {
         restartTime = getCoreStatus(leader).getCoreStartTime().getTime();
       } catch (Exception e) {
-        log.warn("Exception getting core start time: {}", e.getMessage());
+        log.warn("Exception getting core start time: ", e);
         return false;
       }
       return restartTime > coreStartTime.get();
@@ -787,7 +787,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
       try {
         restartTime = getCoreStatus(leader).getCoreStartTime().getTime();
       } catch (Exception e) {
-        log.warn("Exception getting core start time: {}", e.getMessage());
+        log.warn("Exception getting core start time: ", e);
         return false;
       }
       return restartTime > coreStartTime.get();

@@ -211,7 +211,7 @@ public class HdfsUpdateLog extends UpdateLog {
     try {
       versionInfo = new VersionInfo(this, numVersionBuckets);
     } catch (SolrException e) {
-      log.error("Unable to use updateLog: {}", e.getMessage(), e);
+      log.error("Unable to use updateLog: ", e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Unable to use updateLog: " + e.getMessage(), e);
     }

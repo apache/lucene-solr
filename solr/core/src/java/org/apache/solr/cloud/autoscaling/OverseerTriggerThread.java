@@ -178,7 +178,7 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
     try {
       refreshAutoScalingConf(new AutoScalingWatcher());
     } catch (ConnectException e) {
-      log.warn("ZooKeeper watch triggered for autoscaling conf, but Solr cannot talk to ZK: [{}]", e.getMessage());
+      log.warn("ZooKeeper watch triggered for autoscaling conf, but Solr cannot talk to ZK: ", e);
     } catch (InterruptedException e) {
       // Restore the interrupted status
       Thread.currentThread().interrupt();
@@ -297,7 +297,7 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
       try {
         refreshAutoScalingConf(this);
       } catch (ConnectException e) {
-        log.warn("ZooKeeper watch triggered for autoscaling conf, but we cannot talk to ZK: [{}]", e.getMessage());
+        log.warn("ZooKeeper watch triggered for autoscaling conf, but we cannot talk to ZK: ", e);
       } catch (InterruptedException e) {
         // Restore the interrupted status
         Thread.currentThread().interrupt();
