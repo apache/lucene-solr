@@ -82,7 +82,44 @@ public class TrackingShardHandlerFactory extends HttpShardHandlerFactory {
 
   @Override
   public ShardHandler getShardHandler() {
-    return super.getShardHandler();
+    final ShardHandlerFactory factory = this;
+    final ShardHandler wrapped = super.getShardHandler();
+    return new HttpShardHandler(this) {
+      @Override
+      public void prepDistributed(ResponseBuilder rb) {
+        wrapped.prepDistributed(rb);
+      }
+
+      @Override
+      public void submit(ShardRequest sreq, String shard, ModifiableSolrParams params) {
+        synchronized (TrackingShardHandlerFactory.this) {
+          if (isTracking()) {
+            queue.offer(new ShardRequestAndParams(sreq, shard, params));
+          }
+        }
+        wrapped.submit(sreq, shard, params);
+      }
+
+      @Override
+      public ShardResponse takeCompletedIncludingErrors() {
+        return wrapped.takeCompletedIncludingErrors();
+      }
+
+      @Override
+      public ShardResponse takeCompletedOrError() {
+        return wrapped.takeCompletedOrError();
+      }
+
+      @Override
+      public void cancelAll() {
+        wrapped.cancelAll();
+      }
+
+      @Override
+      public ShardHandlerFactory getShardHandlerFactory() {
+        return factory;
+      }
+    };
   }
 
   @Override
