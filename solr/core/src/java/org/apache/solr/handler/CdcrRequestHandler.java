@@ -107,7 +107,9 @@ import static org.apache.solr.handler.admin.CoreAdminHandler.RUNNING;
  * Known limitations: The source and target clusters must have the same topology. Replication between clusters
  * with a different number of shards will likely results in an inconsistent index.
  * </p>
+ * @deprecated since 8.6
  */
+@Deprecated(since = "8.6")
 public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAware {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -132,6 +134,8 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
   @Override
   public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     super.init(args);
+
+    log.warn("CDCR (in its current form) is deprecated as of 8.6 and shall be removed in 9.0. See SOLR-14022 for details.");
 
     if (args != null) {
       // Configuration of the Update Log Synchronizer

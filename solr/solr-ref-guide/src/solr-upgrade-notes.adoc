@@ -81,6 +81,10 @@ For more information about how to use this, see the section <<exporting-result-s
 
 * The `stats`, `facet`, and `timeseries` expressions now support percentiles and standard deviation aggregations.
 
+*Deprecations* 
+
+* Cross Data Center Replication (CDCR), in its current form, is deprecated and is scheduled to be removed in 9.0. Please refer to SOLR-14022.
+
 === Solr 8.5
 
 See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote85[8.5 Release Notes]
