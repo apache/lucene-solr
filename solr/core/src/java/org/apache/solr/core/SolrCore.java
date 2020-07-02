@@ -1183,7 +1183,6 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     parentContext.gauge(this, () -> isClosed() ? 0 : getIndexSize(), true, "sizeInBytes", Category.INDEX.toString());
     parentContext.gauge(this, () -> isClosed() ? "(closed)" : NumberUtils.readableSize(getIndexSize()), true, "size", Category.INDEX.toString());
     if (coreContainer != null) {
-      parentContext.gauge(this, () -> coreContainer.getNamesForCore(this), true, "aliases", Category.CORE.toString());
       final CloudDescriptor cd = getCoreDescriptor().getCloudDescriptor();
       if (cd != null) {
         parentContext.gauge(this, () -> {

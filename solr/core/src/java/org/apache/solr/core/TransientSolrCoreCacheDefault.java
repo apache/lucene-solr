@@ -169,17 +169,6 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
     return transientDescriptors.remove(name);
   }
 
-  @Override
-  public List<String> getNamesForCore(SolrCore core) {
-    List<String> ret = new ArrayList<>();
-    for (Map.Entry<String, SolrCore> entry : transientCores.entrySet()) {
-      if (core == entry.getValue()) {
-        ret.add(entry.getKey());
-      }
-    }
-    return ret;
-  }
-
   // For custom implementations to communicate arbitrary information as necessary.
   @Override
   public int getStatus(String coreName) { return 0; } //no_op for default handler.
