@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
  * </p>
  * @deprecated since 8.6
  */
-@Deprecated(since = "8.6")
+@Deprecated
 public class CdcrUpdateProcessor extends DistributedZkUpdateProcessor {
 
   public static final String CDCR_UPDATE = "cdcr.update";

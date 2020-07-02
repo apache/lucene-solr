@@ -109,7 +109,7 @@ import static org.apache.solr.handler.admin.CoreAdminHandler.RUNNING;
  * </p>
  * @deprecated since 8.6
  */
-@Deprecated(since = "8.6")
+@Deprecated
 public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAware {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

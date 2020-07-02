@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
  * </p>
  * @deprecated since 8.6
  */
-@Deprecated(since = "8.6")
+@Deprecated
 class CdcrLeaderStateManager extends CdcrStateManager {
 
   private boolean amILeader = false;

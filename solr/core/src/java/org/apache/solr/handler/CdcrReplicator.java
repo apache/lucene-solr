@@ -41,7 +41,7 @@ import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
  * will be tried again later.
  * @deprecated since 8.6
  */
-@Deprecated(since = "8.6")
+@Deprecated
 public class CdcrReplicator implements Runnable {
 
   private final CdcrReplicatorState state;
