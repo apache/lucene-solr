@@ -32,6 +32,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.cloud.ClusterPropertiesListener;
@@ -52,7 +53,7 @@ import org.slf4j.LoggerFactory;
 import static org.apache.lucene.util.IOUtils.closeWhileHandlingException;
 import static org.apache.solr.common.util.Utils.makeMap;
 
-public class CustomContainerPlugins implements ClusterPropertiesListener {
+public class CustomContainerPlugins implements ClusterPropertiesListener, MapWriter {
   private final ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper();
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -69,6 +70,11 @@ public class CustomContainerPlugins implements ClusterPropertiesListener {
   public CustomContainerPlugins(CoreContainer coreContainer, ApiBag apiBag) {
     this.coreContainer = coreContainer;
     this.containerApiBag = apiBag;
+  }
+
+  @Override
+  public void writeMap(EntryWriter ew) throws IOException {
+    currentPlugins.forEach(ew.getBiConsumer());
   }
 
   public synchronized void refresh() {
@@ -101,7 +107,8 @@ public class CustomContainerPlugins implements ClusterPropertiesListener {
         ApiInfo apiInfo = currentPlugins.remove(e.getKey());
         if (apiInfo == null) continue;
         for (ApiHolder holder : apiInfo.holders) {
-          Api old = containerApiBag.unregister(holder.api.getEndPoint().method()[0], holder.api.getEndPoint().path()[0]);
+          Api old = containerApiBag.unregister(holder.api.getEndPoint().method()[0],
+              getActualPath(apiInfo, holder.api.getEndPoint().path()[0]));
           if (old instanceof Closeable) {
             closeWhileHandlingException((Closeable) old);
           }
@@ -141,7 +148,7 @@ public class CustomContainerPlugins implements ClusterPropertiesListener {
           if (old != null) {
             for (ApiHolder holder : old.holders) {
               if (replaced.contains(holder)) continue;// this path is present in the new one as well. so it already got replaced
-              containerApiBag.unregister(holder.getMethod(), holder.getPath());
+              containerApiBag.unregister(holder.getMethod(),getActualPath(old, holder.getPath()));
             }
             if (old instanceof Closeable) {
               closeWhileHandlingException((Closeable) old);
@@ -151,6 +158,12 @@ public class CustomContainerPlugins implements ClusterPropertiesListener {
       }
 
     }
+  }
+
+  private static String getActualPath(ApiInfo apiInfo, String path) {
+    path = path.replaceAll("\\$path-prefix", apiInfo.info.pathPrefix);
+    path = path.replaceAll("\\$plugin-name", apiInfo.info.name);
+    return path;
   }
 
   @SuppressWarnings({"rawtypes", "unchecked"})
