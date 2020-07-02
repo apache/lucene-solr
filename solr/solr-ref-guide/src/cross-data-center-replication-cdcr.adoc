@@ -17,6 +17,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
+WARNING: This feature (in its current form) is deprecated as of 8.6 and shall be removed in 9.0. See SOLR-14022 for details.
+
 Cross Data Center Replication (CDCR) allows you to create multiple SolrCloud data centers and keep them in sync.
 
 == What is CDCR?
