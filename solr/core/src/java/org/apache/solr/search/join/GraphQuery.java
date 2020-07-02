@@ -248,7 +248,7 @@ public class GraphQuery extends Query {
       BooleanQuery.Builder leafNodeQuery = new BooleanQuery.Builder();
       Query edgeQuery = collectSchemaField.hasDocValues() ? new DocValuesFieldExistsQuery(field) : new WildcardQuery(new Term(field, "*"));
       leafNodeQuery.add(edgeQuery, Occur.MUST_NOT);
-      DocSet leafNodes = fromSearcher.getDocSet(leafNodeQuery.build());
+      DocSet leafNodes = fromSearcher.getDocSet(leafNodeQuery.build()); // caches
       return leafNodes;
     }
     

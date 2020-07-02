@@ -625,8 +625,7 @@ public class TermsComponent extends SearchComponent {
 
       if (fieldType.isPointField()) {
         for (String term : splitTerms) {
-          Query q = fieldType.getFieldQuery(null, sf, term);
-          int count = indexSearcher.getDocSet(q).size();
+          int count = indexSearcher.count(fieldType.getFieldQuery(null, sf, term));
           termsMap.add(term, count);
         }
       } else {

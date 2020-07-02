@@ -243,6 +243,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
           if (maxResultsFilterQueryString != null) {
             // Get the default Lucene query parser
             QParser parser = QParser.getParser(maxResultsFilterQueryString, rb.req);
+            // typically this should be cached for good perf
             DocSet s = searcher.getDocSet(parser.getQuery());
             maxResultsByFilters = s.size();
           } else {

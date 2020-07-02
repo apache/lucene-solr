@@ -242,7 +242,7 @@ public class BitDocSet extends DocSet {
     // TODO: if cardinality isn't cached, do a quick measure of sparseness
     // and return null from bits() if too sparse.
 
-    return new Filter() {
+    return new DocSetTopFilter() {
       final FixedBitSet bs = bits;
 
       @Override

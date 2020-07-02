@@ -27,11 +27,9 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
-import org.apache.lucene.search.DocIdSet;
-import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
@@ -59,9 +57,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.search.BitDocSet;
-import org.apache.solr.search.DocSet;
-import org.apache.solr.search.DocSetUtil;
-import org.apache.solr.search.Filter;
 import org.apache.solr.search.SolrIndexSearcher;
 
 public class CrossCollectionJoinQuery extends Query {
@@ -104,7 +99,7 @@ public class CrossCollectionJoinQuery extends Query {
 
   private interface JoinKeyCollector {
     void collect(Object value) throws IOException;
-    DocSet getDocSet() throws IOException;
+    Query computeQuery() throws IOException;
   }
 
   private class TermsJoinKeyCollector implements JoinKeyCollector {
@@ -138,11 +133,11 @@ public class CrossCollectionJoinQuery extends Query {
     }
 
     @Override
-    public DocSet getDocSet() throws IOException {
+    public Query computeQuery() throws IOException {
       if (searcher.getIndexReader().hasDeletions()) {
         bitSet.and(searcher.getLiveDocSet().getBits());
       }
-      return new BitDocSet(bitSet);
+      return new BitDocSet(bitSet).getTopFilter();
     }
   }
 
@@ -165,24 +160,18 @@ public class CrossCollectionJoinQuery extends Query {
     }
 
     @Override
-    public DocSet getDocSet() throws IOException {
-      Query query = getResultQuery(searcher.getSchema().getField(toField), false);
-      if (query == null) {
-        return DocSet.empty();
-      }
-      return DocSetUtil.createDocSet(searcher, query, null);
+    public Query computeQuery() {
+      return getResultQuery(searcher.getSchema().getField(toField), false);
     }
   }
 
   private class CrossCollectionJoinQueryWeight extends ConstantScoreWeight {
 
-    private SolrIndexSearcher searcher;
-    private ScoreMode scoreMode;
-    private Filter filter;
+    private final SolrIndexSearcher searcher;
+    private Weight toWeight;
 
-    public CrossCollectionJoinQueryWeight(SolrIndexSearcher searcher, ScoreMode scoreMode, float score) {
+    public CrossCollectionJoinQueryWeight(SolrIndexSearcher searcher, float score) {
       super(CrossCollectionJoinQuery.this, score);
-      this.scoreMode = scoreMode;
       this.searcher = searcher;
     }
 
@@ -261,7 +250,7 @@ public class CrossCollectionJoinQuery extends Query {
       return new SolrStream(solrUrl + "/" + collection, params);
     }
 
-    private DocSet getDocSet() throws IOException {
+    private Query computeToQuery() throws IOException {
       SolrClientCache solrClientCache = searcher.getCore().getCoreContainer().getSolrClientCache();
       TupleStream solrStream;
       if (zkHost != null || solrUrl == null) {
@@ -277,7 +266,7 @@ public class CrossCollectionJoinQuery extends Query {
       } else {
         Terms terms = searcher.getSlowAtomicReader().terms(toField);
         if (terms == null) {
-          return DocSet.empty();
+          return new MatchNoDocsQuery();
         }
         collector = new TermsJoinKeyCollector(fieldType, terms, searcher);
       }
@@ -302,24 +291,16 @@ public class CrossCollectionJoinQuery extends Query {
         solrStream.close();
       }
 
-      return collector.getDocSet();
+      return collector.computeQuery();
     }
 
     @Override
     public Scorer scorer(LeafReaderContext context) throws IOException {
-      if (filter == null) {
-        filter = getDocSet().getTopFilter();
+      if (toWeight == null) {
+        float boost = super.score(); // boost==score
+        toWeight = searcher.createWeight(computeToQuery(), ScoreMode.COMPLETE_NO_SCORES, boost);
       }
-
-      DocIdSet readerSet = filter.getDocIdSet(context, null);
-      if (readerSet == null) {
-        return null;
-      }
-      DocIdSetIterator readerSetIterator = readerSet.iterator();
-      if (readerSetIterator == null) {
-        return null;
-      }
-      return new ConstantScoreScorer(this, score(), scoreMode, readerSetIterator);
+      return toWeight.scorer(context);
     }
 
     @Override
@@ -330,7 +311,7 @@ public class CrossCollectionJoinQuery extends Query {
 
   @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-    return new CrossCollectionJoinQueryWeight((SolrIndexSearcher) searcher, scoreMode, boost);
+    return new CrossCollectionJoinQueryWeight((SolrIndexSearcher) searcher, boost);
   }
 
   @Override

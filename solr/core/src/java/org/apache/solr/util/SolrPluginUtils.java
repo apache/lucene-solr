@@ -189,6 +189,7 @@ public class SolrPluginUtils {
    * SolrIndexSearch.numDocs(Query,Query) freaks out if the filtering
    * query is null, so we use this workarround.
    */
+  @Deprecated // low-value method; poor implementation
   public static int numDocs(SolrIndexSearcher s, Query q, Query f)
     throws IOException {
 

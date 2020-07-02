@@ -31,11 +31,10 @@ import org.apache.lucene.index.MultiPostingsEnum;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
-import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
@@ -99,11 +98,9 @@ class JoinQuery extends Query {
     RefCounted<SolrIndexSearcher> fromRef;
     SolrIndexSearcher toSearcher;
     ResponseBuilder rb;
-    ScoreMode scoreMode;
 
     public JoinQueryWeight(SolrIndexSearcher searcher, ScoreMode scoreMode, float boost) {
       super(JoinQuery.this, boost);
-      this.scoreMode = scoreMode;
       this.fromSearcher = searcher;
       SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
       if (info != null) {
@@ -160,52 +157,52 @@ class JoinQuery extends Query {
       this.toSearcher = searcher;
     }
 
-    DocSet resultSet;
-    Filter filter;
-
+    Weight toWeight; // created lazily
 
     @Override
     public Scorer scorer(LeafReaderContext context) throws IOException {
-      if (filter == null) {
-        boolean debug = rb != null && rb.isDebug();
-        RTimer timer = (debug ? new RTimer() : null);
-        resultSet = getDocSet();
-        if (timer != null) timer.stop();
-
-        if (debug) {
-          SimpleOrderedMap<Object> dbg = new SimpleOrderedMap<>();
-          dbg.add("time", (long) timer.getTime());
-          dbg.add("fromSetSize", fromSetSize);  // the input
-          dbg.add("toSetSize", resultSet.size());    // the output
-
-          dbg.add("fromTermCount", fromTermCount);
-          dbg.add("fromTermTotalDf", fromTermTotalDf);
-          dbg.add("fromTermDirectCount", fromTermDirectCount);
-          dbg.add("fromTermHits", fromTermHits);
-          dbg.add("fromTermHitsTotalDf", fromTermHitsTotalDf);
-          dbg.add("toTermHits", toTermHits);
-          dbg.add("toTermHitsTotalDf", toTermHitsTotalDf);
-          dbg.add("toTermDirectCount", toTermDirectCount);
-          dbg.add("smallSetsDeferred", smallSetsDeferred);
-          dbg.add("toSetDocsAdded", resultListDocs);
-
-          // TODO: perhaps synchronize  addDebug in the future...
-          rb.addDebug(dbg, "join", JoinQuery.this.toString());
-        }
-
-        filter = resultSet.getTopFilter();
+      if (toWeight == null) {
+        toWeight = createToWeight(); // does a lot of work!
       }
 
-      // Although this set only includes live docs, other filters can be pushed down to queries.
-      DocIdSet readerSet = filter.getDocIdSet(context, null);
-      if (readerSet == null) {
-        return null;
+      return toWeight.scorer(context);
+    }
+
+    private Weight createToWeight() throws IOException {
+      boolean debug = rb != null && rb.isDebug();
+      RTimer timer = (debug ? new RTimer() : null);
+      Query toQuery = getToQuery(); // does a lot of work!
+      if (timer != null) timer.stop();
+
+      if (debug) {
+        // Materialize toQuery into a DocSet so that we can see its size.
+        //  It may already be based on a DocSet, and if so this step is cheap (DocSetProducer).
+        //  Since we do this work now, replace toQuery with the DocSet's query.
+        DocSet resultSet = toSearcher.getDocSetNC(toQuery, null);
+        toQuery = resultSet.getTopFilter();
+
+        SimpleOrderedMap<Object> dbg = new SimpleOrderedMap<>();
+        dbg.add("time", (long) timer.getTime());
+        dbg.add("fromSetSize", fromSetSize);  // the input
+        dbg.add("toSetSize", resultSet.size());    // the output
+
+        dbg.add("fromTermCount", fromTermCount);
+        dbg.add("fromTermTotalDf", fromTermTotalDf);
+        dbg.add("fromTermDirectCount", fromTermDirectCount);
+        dbg.add("fromTermHits", fromTermHits);
+        dbg.add("fromTermHitsTotalDf", fromTermHitsTotalDf);
+        dbg.add("toTermHits", toTermHits);
+        dbg.add("toTermHitsTotalDf", toTermHitsTotalDf);
+        dbg.add("toTermDirectCount", toTermDirectCount);
+        dbg.add("smallSetsDeferred", smallSetsDeferred);
+        dbg.add("toSetDocsAdded", resultListDocs);
+
+        // TODO: perhaps synchronize  addDebug in the future...
+        rb.addDebug(dbg, "join", JoinQuery.this.toString());
       }
-      DocIdSetIterator readerSetIterator = readerSet.iterator();
-      if (readerSetIterator == null) {
-        return null;
-      }
-      return new ConstantScoreScorer(this, score(), scoreMode, readerSetIterator);
+
+      float boost = super.score(); // the boost is the score
+      return toSearcher.createWeight(toQuery, ScoreMode.COMPLETE_NO_SCORES, boost);
     }
 
     @Override
@@ -227,32 +224,22 @@ class JoinQuery extends Query {
     int smallSetsDeferred;    // number of small sets collected to be used later to intersect w/ bitset or create another small set
 
 
-    public DocSet getDocSet() throws IOException {
+    public Query getToQuery() throws IOException {
       SchemaField fromSchemaField = fromSearcher.getSchema().getField(fromField);
       SchemaField toSchemaField = toSearcher.getSchema().getField(toField);
 
-      boolean usePoints = false;
       if (toSchemaField.getType().isPointField()) {
         if (!fromSchemaField.hasDocValues()) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "join from field " + fromSchemaField + " should have docValues to join with points field " + toSchemaField);
         }
-        usePoints = true;
+        GraphPointsCollector collector = new GraphPointsCollector(fromSchemaField, null, null);
+        fromSearcher.search(q, collector);
+        Query resultQ = collector.getResultQuery(toSchemaField, false);
+        return resultQ == null ? new MatchNoDocsQuery() : resultQ;
+      } else { // not points
+        return getDocSetEnumerate().getTopFilter();
       }
-
-      if (!usePoints) {
-        return getDocSetEnumerate();
-      }
-
-      // point fields
-      GraphPointsCollector collector = new GraphPointsCollector(fromSchemaField, null, null);
-      fromSearcher.search(q, collector);
-      Query resultQ = collector.getResultQuery(toSchemaField, false);
-      // don't cache the resulting docSet... the query may be very large.  Better to cache the results of the join query itself
-      DocSet result = resultQ==null ? DocSet.empty() : toSearcher.getDocSetNC(resultQ, null);
-      return result;
     }
-
-
 
     public DocSet getDocSetEnumerate() throws IOException {
       FixedBitSet resultBits = null;
@@ -264,7 +251,7 @@ class JoinQuery extends Query {
       // use a smaller size than normal since we will need to sort and dedup the results
       int maxSortedIntSize = Math.max(10, toSearcher.maxDoc() >> 10);
 
-      DocSet fromSet = fromSearcher.getDocSet(q);
+      DocSet fromSet = fromSearcher.getDocSet(q); // note: might use filter cache
       fromSetSize = fromSet.size();
 
       List<DocSet> resultList = new ArrayList<>(10);
