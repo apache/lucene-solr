@@ -799,22 +799,22 @@ public class MiniSolrCloudCluster {
   }
 
   public void waitForJettyToStop(JettySolrRunner runner) throws TimeoutException {
-    if (log.isInfoEnabled()) {
-      log.info("waitForJettyToStop: {}", runner.getLocalPort());
+    log.info("waitForJettyToStop: {}", runner.getLocalPort());
+    String nodeName = runner.getNodeName();
+    if (nodeName == null) {
+      log.info("Cannot wait for Jetty with null nodeName. CoreContainer may not have initialized yet.");
+      return;
     }
-    TimeOut timeout = new TimeOut(15, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    while(!timeout.hasTimedOut()) {
-      if (runner.isStopped()) {
-        break;
-      }
-      try {
-        Thread.sleep(100);
-      } catch (InterruptedException e) {
-        // ignore
-      }
-    }
-    if (timeout.hasTimedOut()) {
-      throw new TimeoutException("Waiting for Jetty to stop timed out");
+
+    log.info("waitForNode: {}", runner.getNodeName());
+
+    ZkStateReader reader = getSolrClient().getZkStateReader();
+
+    try {
+      reader.waitForLiveNodes(10, TimeUnit.SECONDS, (o, n) -> !n.contains(nodeName));
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new SolrException(ErrorCode.SERVER_ERROR, "interrupted");
     }
   }
   

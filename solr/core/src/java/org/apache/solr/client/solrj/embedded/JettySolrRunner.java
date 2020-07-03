@@ -124,6 +124,7 @@ public class JettySolrRunner {
   private String host;
 
   private volatile boolean started = false;
+  private volatile String nodeName;
 
   public static class DebugFilter implements Filter {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -443,10 +444,7 @@ public class JettySolrRunner {
   }
 
   public String getNodeName() {
-    if (getCoreContainer() == null) {
-      return null;
-    }
-    return getCoreContainer().getZkController().getNodeName();
+    return nodeName;
   }
 
   public boolean isRunning() {
@@ -532,6 +530,10 @@ public class JettySolrRunner {
 
     } finally {
       started  = true;
+      if (getCoreContainer() != null && getCoreContainer().isZooKeeperAware()) {
+        this.nodeName = getCoreContainer().getZkController().getNodeName();
+      }
+
       if (prevContext != null)  {
         MDC.setContextMap(prevContext);
       } else {
