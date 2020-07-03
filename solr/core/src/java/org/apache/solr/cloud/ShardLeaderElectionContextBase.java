@@ -175,6 +175,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
           ZkStateReader.COLLECTION_PROP, collection,
           ZkStateReader.BASE_URL_PROP, leaderProps.get(ZkStateReader.BASE_URL_PROP),
           ZkStateReader.CORE_NAME_PROP, leaderProps.get(ZkStateReader.CORE_NAME_PROP),
+          ZkStateReader.CORE_NODE_NAME_PROP, leaderProps.get(ZkStateReader.CORE_NODE_NAME_PROP),
           ZkStateReader.STATE_PROP, Replica.State.ACTIVE.toString());
       assert zkController != null;
       assert zkController.getOverseer() != null;

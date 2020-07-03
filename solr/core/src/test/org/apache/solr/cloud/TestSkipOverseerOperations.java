@@ -121,7 +121,7 @@ public class TestSkipOverseerOperations extends SolrCloudTestCase {
     waitForState("Expected 2x1 for collection: " + collection, collection,
         clusterShape(2, 2));
     CollectionAdminResponse resp2 = CollectionAdminRequest.getOverseerStatus().process(cluster.getSolrClient());
-    assertEquals(getNumLeaderOpeations(resp), getNumLeaderOpeations(resp2));
+    assertEquals(getNumLeaderOpeations(resp) + 2, getNumLeaderOpeations(resp2));
     CollectionAdminRequest.deleteCollection(collection).process(cluster.getSolrClient());
   }
 
@@ -187,8 +187,8 @@ public class TestSkipOverseerOperations extends SolrCloudTestCase {
     waitForState("Expected 2x2 for collection: " + collection, collection,
         clusterShape(2, 4));
     CollectionAdminResponse resp2 = CollectionAdminRequest.getOverseerStatus().process(cluster.getSolrClient());
-    // 2 for recovering state, 4 for active state
-    assertEquals(getNumStateOpeations(resp) + 6, getNumStateOpeations(resp2));
+    // 2 for recovering state, 4 for active state, 2 leaders
+    assertEquals(getNumStateOpeations(resp) + 8, getNumStateOpeations(resp2));
     CollectionAdminRequest.deleteCollection(collection).process(cluster.getSolrClient());
   }
 
