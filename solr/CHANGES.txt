@@ -12,6 +12,8 @@ New Features
 ---------------------
 * SOLR-14440: Introduce new Certificate Authentication Plugin to load Principal from certificate subject. (Mike Drob)
 
+* SOLR-14588: Introduce Circuit Breaker Infrastructure and a JVM heap usage memory tracking circuit breaker implementation (Atri Sharma)
+
 Improvements
 ----------------------
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
@@ -86,6 +88,37 @@ Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
   of Collection API tasks competing for a lock (Ilan Ginzburg).
+
+==================  8.7.0 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+New Features
+---------------------
+(No changes)
+
+Improvements
+---------------------
+
+* SOLR-14523: Enhance gradle logging calls validation: eliminate getMessage() (Andras Salamon via Erick Erickson)
+
+* SOLR-14537: Improve performance of ExportWriter. (ab, Joel Bernstein)
+
+
+Optimizations
+---------------------
+(No changes)
+
+Bug Fixes
+---------------------
+(No changes)
+
+Other Changes
+---------------------
+
+* SOLR-14592: Upgrade Zookeeper to 3.6.1. NOTE: this required upgrading netty to 4.1.50 (Erick Erickson)
+
+* SOLR-14610: ReflectMapWriter to use VarHandle instead of reflection (noble)
 
 ==================  8.6.0 ==================
 
@@ -405,6 +438,11 @@ Other Changes
 
 * SOLR-14541: Ensure classes that implement equals implement hashCode or suppress warnings
   (gezapeti, Ilan Ginsburg, Erick Erickson)
+
+* SOLR-14022: Deprecate CDCR (Joel Bernstein, Ishan Chattopadhyaya)
+
+* SOLR-14066: Data Import Handler is deprecated. It is scheduled to be removed as of 9.0 and a community supported
+  package for the same may now be used instead. (Ishan Chattopadhyaya, janhoy)
 
 ==================  8.5.2 ==================
 
@@ -6978,8 +7016,8 @@ Other Changes
   (David Smiley)
 
 * SOLR-8842: security rules made more foolproof by asking the requesthandler  about the well known
-  permission name.   The APIs are also modified to ue 'index' as the unique identifier instead of name.
-  Name is an optional attribute   now and only to be used when specifying well-known permissions (noble)
+  permission name.  The APIs are also modified to ue 'index' as the unique identifier instead of name.
+  Name is an optional attribute  now and only to be used when specifying well-known permissions (noble)
 
 * SOLR-5616: Simplifies grouping code to use ResponseBuilder.needDocList() to determine if it needs to
   generate a doc list for grouped results. (Steven Bower, Keith Laban, Dennis Gove)
