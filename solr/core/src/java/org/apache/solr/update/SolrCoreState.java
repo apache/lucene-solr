@@ -18,8 +18,6 @@ package org.apache.solr.update;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.concurrent.Callable;
-import java.util.concurrent.Future;
 import java.util.concurrent.locks.Lock;
 
 import org.apache.lucene.index.IndexWriter;
@@ -185,21 +183,6 @@ public abstract class SolrCoreState {
   }
 
   public abstract Lock getRecoveryLock();
-
-  // These are needed to properly synchronize the bootstrapping when the
-  // in the target DC require a full sync.
-  public abstract boolean getCdcrBootstrapRunning();
-
-  public abstract void setCdcrBootstrapRunning(boolean cdcrRunning);
-
-  public abstract Future<Boolean> getCdcrBootstrapFuture();
-
-  public abstract void setCdcrBootstrapFuture(Future<Boolean> cdcrBootstrapFuture);
-
-  @SuppressWarnings("rawtypes")
-  public abstract Callable getCdcrBootstrapCallable();
-
-  public abstract void setCdcrBootstrapCallable(@SuppressWarnings("rawtypes") Callable cdcrBootstrapCallable);
 
   public Throwable getTragicException() throws IOException {
     RefCounted<IndexWriter> ref = getIndexWriter(null);
