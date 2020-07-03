@@ -2392,8 +2392,7 @@ public class ZkController implements Closeable {
         Stat stat = zkClient.exists(resourceLocation, null, true);
         v = stat.getVersion();
       } catch (Exception e) {
-        log.error(e.getMessage());
-
+        log.error("Exception during ZooKeeper node checking ", e);
       }
       if (log.isInfoEnabled()) {
         log.info(StrUtils.formatString("%s zkVersion= %d %s %d", errMsg, resourceLocation, znodeVersion));
@@ -2680,7 +2679,7 @@ public class ZkController implements Closeable {
       Thread.currentThread().interrupt();
       log.debug("Publish node as down was interrupted.");
     } catch (KeeperException e) {
-      log.warn("Could not publish node as down: {}", e.getMessage());
+      log.warn("Could not publish node as down: ", e);
     }
   }
 

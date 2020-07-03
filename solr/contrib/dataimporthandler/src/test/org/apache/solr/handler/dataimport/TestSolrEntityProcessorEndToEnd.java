@@ -157,7 +157,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
       addDocumentsToSolr(SOLR_DOCS);
       runFullImport(generateDIHConfig("query='*:*' rows='2' fl='id,desc' onError='skip'", false));
     } catch (Exception e) {
-      log.error(e.getMessage(), e);
+      log.error("Exception running full import", e);
       fail(e.getMessage());
     }
     
@@ -175,7 +175,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
       map.put("rows", "50");
       runFullImport(generateDIHConfig("query='*:*' fq='desc:Description1*,desc:Description*2' rows='2'", false), map);
     } catch (Exception e) {
-      log.error(e.getMessage(), e);
+      log.error("Exception running full import", e);
       fail(e.getMessage());
     }
     
@@ -190,7 +190,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
       addDocumentsToSolr(generateSolrDocuments(7));
       runFullImport(generateDIHConfig("query='*:*' fl='id' rows='2'"+(random().nextBoolean() ?" cursorMark='true' sort='id asc'":""), false));
     } catch (Exception e) {
-      log.error(e.getMessage(), e);
+      log.error("Exception running full import", e);
       fail(e.getMessage());
     }
     
@@ -221,7 +221,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
       addDocumentsToSolr(DOCS);
       runFullImport(getDihConfigTagsInnerEntity());
     } catch (Exception e) {
-      log.error(e.getMessage(), e);
+      log.error("Exception running full import", e);
       fail(e.getMessage());
     } finally {
       MockDataSource.clearCache();
@@ -244,7 +244,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
     try {
       runFullImport(generateDIHConfig("query='*:*' rows='2' fl='id,desc' onError='skip'", true /* use dead server */));
     } catch (Exception e) {
-      log.error(e.getMessage(), e);
+      log.error("Exception running full import", e);
       fail(e.getMessage());
     }
     
@@ -258,7 +258,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
       runFullImport(generateDIHConfig("query='bogus:3' rows='2' fl='id,desc' onError='"+
             (random().nextBoolean() ? "abort" : "justtogetcoverage")+"'", false));
     } catch (Exception e) {
-      log.error(e.getMessage(), e);
+      log.error("Exception running full import", e);
       fail(e.getMessage());
     }
     
@@ -268,7 +268,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
   public void testCursorMarkNoSort() throws SolrServerException, IOException {
     assertQ(req("*:*"), "//result[@numFound='0']");
     addDocumentsToSolr(generateSolrDocuments(7));
-    try {     
+    try {
       List<String> errors = Arrays.asList("sort='id'", //wrong sort spec
           "", //no sort spec
           "sort='id asc' timeout='12345'"); // sort is fine, but set timeout
@@ -278,7 +278,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
       runFullImport(generateDIHConfig(attrs,
             false));
     } catch (Exception e) {
-      log.error(e.getMessage(), e);
+      log.error("Exception running full import", e);
       fail(e.getMessage());
     }
     
