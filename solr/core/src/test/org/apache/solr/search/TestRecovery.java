@@ -89,6 +89,8 @@ public class TestRecovery extends SolrTestCaseJ4 {
   @After
   public void afterTest() {
     TestInjection.reset(); // do after every test, don't wait for AfterClass
+    UpdateLog.testing_logReplayHook = null;
+    UpdateLog.testing_logReplayFinishHook = null;
     if (savedFactory == null) {
       System.clearProperty("solr.directoryFactory");
     } else {

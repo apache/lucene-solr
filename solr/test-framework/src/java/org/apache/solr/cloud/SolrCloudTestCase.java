@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -313,7 +314,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
    * @param predicate  a predicate to match against the collection state
    */
   protected static void waitForState(String message, String collection, CollectionStatePredicate predicate, int timeout, TimeUnit timeUnit) {
-    log.info("waitForState ({}): {}", collection, message);
+    log.info("waitForState {}", collection);
     AtomicReference<DocCollection> state = new AtomicReference<>();
     AtomicReference<Set<String>> liveNodesLastSeen = new AtomicReference<>();
     try {
@@ -322,8 +323,11 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
         liveNodesLastSeen.set(n);
         return predicate.matches(n, c);
       });
-    } catch (Exception e) {
+    } catch (TimeoutException e) {
       fail(message + "\n" + e.getMessage() + "\nLive Nodes: " + Arrays.toString(liveNodesLastSeen.get().toArray()) + "\nLast available state: " + state.get());
+    } catch (Exception e) {
+      log.error("Exception waiting for state", e);
+      fail(e.getMessage() + "\nLive Nodes: " + Arrays.toString(liveNodesLastSeen.get().toArray()) + "\nLast available state: " + state.get());
     }
   }
 
@@ -331,13 +335,13 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
    * Return a {@link CollectionStatePredicate} that returns true if a collection has the expected
    * number of shards and active replicas
    */
-  public static CollectionStatePredicate clusterShape(int expectedShards, int expectedReplicas) {
+  public static CollectionStatePredicate clusterShape(int expectedShards, int expectedActiveReplicas) {
     return (liveNodes, collectionState) -> {
       if (collectionState == null)
         return false;
       if (collectionState.getSlices().size() != expectedShards)
         return false;
-      return compareActiveReplicaCountsForShards(expectedReplicas, liveNodes, collectionState);
+      return compareActiveReplicaCountsForShards(expectedActiveReplicas, liveNodes, collectionState);
     };
   }
 

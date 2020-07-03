@@ -205,8 +205,6 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
 
     // delete the collection
     CollectionAdminRequest.deleteCollection(collectionName).process(client);
-    AbstractDistribZkTestBase.waitForCollectionToDisappear
-        (collectionName, client.getZkStateReader(), true, 330);
   }
 
   @Test

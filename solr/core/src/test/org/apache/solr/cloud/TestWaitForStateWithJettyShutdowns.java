@@ -101,7 +101,7 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
           try {
             cluster.getSolrClient().waitForState(col_name, 180, TimeUnit.SECONDS,
                                                  new LatchCountingPredicateWrapper(latch,
-                                                                                   clusterShape(1, 0)));
+                                                                                   clusterShape(1, 1)));
           } catch (Exception e) {
             log.error("background thread got exception", e);
             throw new RuntimeException(e);
