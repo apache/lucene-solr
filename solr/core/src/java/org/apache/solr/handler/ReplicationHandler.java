@@ -96,7 +96,6 @@ import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.update.CdcrUpdateLog;
 import org.apache.solr.update.SolrIndexWriter;
 import org.apache.solr.update.VersionInfo;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -702,19 +701,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       }
       rsp.add(CMD_GET_FILE_LIST, result);
       
-      if (solrParams.getBool(TLOG_FILES, false)) {
-        try {
-          List<Map<String, Object>> tlogfiles = getTlogFileList(commit);
-          log.info("Adding tlog files to list: {}", tlogfiles);
-          rsp.add(TLOG_FILES, tlogfiles);
-        }
-        catch (IOException e) {
-          log.error("Unable to get tlog file names for indexCommit generation: {}", commit.getGeneration(), e);
-          reportErrorOnResponse(rsp, "unable to get tlog file names for given index generation", e);
-          return;
-        }
-      }
-      
       if (confFileNameAlias.size() < 1 || core.getCoreContainer().isZooKeeperAware())
         return;
       log.debug("Adding config files to list: {}", includeConfFiles);
@@ -731,29 +717,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         delPol.releaseCommitPoint(commit);
       }
     }
-  }
-
-  /**
-   * Retrieves the list of tlog files associated to a commit point.
-   * NOTE: The commit <b>MUST</b> be reserved before calling this method
-   */
-  List<Map<String, Object>> getTlogFileList(IndexCommit commit) throws IOException {
-    long maxVersion = this.getMaxVersion(commit);
-    CdcrUpdateLog ulog = (CdcrUpdateLog) core.getUpdateHandler().getUpdateLog();
-    String[] logList = ulog.getLogList(new File(ulog.getLogDir()));
-    List<Map<String, Object>> tlogFiles = new ArrayList<>();
-    for (String fileName : logList) {
-      // filter out tlogs that are older than the current index commit generation, so that the list of tlog files is
-      // in synch with the latest index commit point
-      long startVersion = Math.abs(Long.parseLong(fileName.substring(fileName.lastIndexOf('.') + 1)));
-      if (startVersion < maxVersion) {
-        Map<String, Object> fileMeta = new HashMap<>();
-        fileMeta.put(NAME, fileName);
-        fileMeta.put(SIZE, new File(ulog.getLogDir(), fileName).length());
-        tlogFiles.add(fileMeta);
-      }
-    }
-    return tlogFiles;
   }
 
   /**
@@ -1845,8 +1808,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   public static final String CONF_CHECKSUM = "confchecksum";
 
   public static final String CONF_FILES = "confFiles";
-
-  public static final String TLOG_FILES = "tlogFiles";
 
   public static final String REPLICATE_AFTER = "replicateAfter";
 
