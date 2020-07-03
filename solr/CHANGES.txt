@@ -120,6 +120,9 @@ Other Changes
 
 * SOLR-14610: ReflectMapWriter to use VarHandle instead of reflection (noble)
 
+* SOLR-10742: SolrCores.getNamesForCore is quite inefficient and blocks other core operations. 
+  NOTE: this experimental method has been removed (Erick Erickson)
+
 ==================  8.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

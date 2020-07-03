@@ -66,7 +66,7 @@ public class ExportWriterStream extends TupleStream implements Expressible {
     @Override
     public EntryWriter put(CharSequence k, Object v) throws IOException {
       if (v instanceof IteratorWriter) {
-        List lst = new ArrayList();
+        List<Object> lst = new ArrayList<>();
         ((IteratorWriter)v).toList(lst);
         v = lst;
       } else if (v instanceof MapWriter) {
