@@ -179,7 +179,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     Runnable runnable = () -> {
       shardRequestTracker.processResponses(results, shardHandler, true, "ADDREPLICA failed to create replica");
       for (CreateReplica replica : createReplicas) {
-        ocmh.waitForCoreNodeName(collectionName, replica.node, replica.coreName);
+        ocmh.waitForCoreNodeName(zkStateReader, collectionName, replica.node, replica.coreName);
       }
       if (onComplete != null) onComplete.run();
     };

@@ -25,6 +25,7 @@ import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
 import org.apache.solr.util.StartupLoggingUtils;
+import org.apache.solr.util.TestInjection;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -128,6 +129,7 @@ public class SolrTestCase extends LuceneTestCase {
   
   @AfterClass
   public static void shutdownLogger() throws Exception {
+    TestInjection.reset();
     StartupLoggingUtils.shutdown();
   }
 }

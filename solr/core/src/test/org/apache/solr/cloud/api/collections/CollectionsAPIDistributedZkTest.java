@@ -370,7 +370,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     JettySolrRunner jetty1 = cluster.getRandomJetty(random());
     JettySolrRunner jetty2 = cluster.getRandomJetty(random());
 
-    List<String> baseUrls = ImmutableList.of(jetty1.getBaseUrl().toString(), jetty2.getBaseUrl().toString());
+    List<String> baseUrls = ImmutableList.of(jetty1.getCoreContainer().getZkController().getNodeName(), jetty2.getCoreContainer().getZkController().getNodeName());
 
     CollectionAdminRequest.createCollection("nodeset_collection", "conf", 2, 1)
         .setCreateNodeSet(baseUrls.get(0) + "," + baseUrls.get(1))
@@ -378,15 +378,15 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
 
     DocCollection collectionState = getCollectionState("nodeset_collection");
     for (Replica replica : collectionState.getReplicas()) {
-      String replicaUrl = replica.getCoreUrl();
+      String node = replica.getNodeName();
       boolean matchingJetty = false;
-      for (String jettyUrl : baseUrls) {
-        if (replicaUrl.startsWith(jettyUrl)) {
+      for (String jettyNode : baseUrls) {
+        if (node.equals(jettyNode)) {
           matchingJetty = true;
         }
       }
       if (matchingJetty == false) {
-        fail("Expected replica to be on " + baseUrls + " but was on " + replicaUrl);
+        fail("Expected replica to be on " + baseUrls + " but was on " + node);
       }
     }
   }

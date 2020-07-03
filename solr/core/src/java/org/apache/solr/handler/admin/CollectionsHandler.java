@@ -33,8 +33,8 @@ import org.apache.solr.cloud.OverseerSolrResponseSerializer;
 import org.apache.solr.cloud.OverseerTaskQueue;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.cloud.ZkController;
-import org.apache.solr.cloud.ZkController.NotInClusterStateException;
 import org.apache.solr.cloud.ZkShardTerms;
+import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
 import org.apache.solr.cloud.api.collections.ReindexCollectionCmd;
 import org.apache.solr.cloud.api.collections.RoutedAlias;
 import org.apache.solr.cloud.overseer.SliceMutator;
@@ -46,6 +46,7 @@ import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.CollectionProperties;
+import org.apache.solr.common.cloud.CollectionStatePredicate;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
@@ -101,6 +102,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.POLICY;
@@ -290,7 +292,25 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       //TODO yuck; shouldn't create-collection at the overseer do this?  (conditionally perhaps)
       if (action.equals(CollectionAction.CREATE) && asyncId == null) {
         if (rsp.getException() == null) {
-          waitForActiveCollection(zkProps.getStr(NAME), cores, overseerResponse);
+          int pullReplicas = zkProps.getInt(ZkStateReader.PULL_REPLICAS, 0);
+          int tlogReplicas = zkProps.getInt(ZkStateReader.TLOG_REPLICAS, 0);
+          int nrtReplicas = zkProps.getInt(ZkStateReader.NRT_REPLICAS, pullReplicas + tlogReplicas == 0 ? 1 : 0);
+          int numShards = zkProps.getInt(ZkStateReader.NUM_SHARDS_PROP, 0);
+
+          String shards = zkProps.getStr("shards");
+          if (shards != null && shards.length() > 0) {
+            numShards = shards.split(",").length;
+          }
+
+          if (CREATE_NODE_SET_EMPTY.equals(zkProps.getStr(OverseerCollectionMessageHandler.CREATE_NODE_SET))
+                  || "".equals(zkProps.getStr(OverseerCollectionMessageHandler.CREATE_NODE_SET))) {
+            nrtReplicas = 0;
+            pullReplicas = 0;
+            tlogReplicas = 0;
+          }
+
+          waitForActiveCollection(zkProps.getStr(NAME), cores, numShards,
+                  numShards * (nrtReplicas + pullReplicas + tlogReplicas));
         }
       }
 
@@ -931,6 +951,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           COLLECTION_PROP,
           "node",
           SHARD_ID_PROP,
+          ZkStateReader.CORE_NODE_NAME_PROP,
           _ROUTE_,
           CoreAdminParams.NAME,
           INSTANCE_DIR,
@@ -1375,74 +1396,77 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     }
   }
 
-  public static void waitForActiveCollection(String collectionName, CoreContainer cc, SolrResponse createCollResponse)
-      throws KeeperException, InterruptedException {
-
-    if (createCollResponse.getResponse().get("exception") != null) {
-      // the main called failed, don't wait
-      if (log.isInfoEnabled()) {
-        log.info("Not waiting for active collection due to exception: {}", createCollResponse.getResponse().get("exception"));
-      }
-      return;
-    }
-
-    int replicaFailCount;
-    if (createCollResponse.getResponse().get("failure") != null) {
-      replicaFailCount = ((NamedList) createCollResponse.getResponse().get("failure")).size();
-    } else {
-      replicaFailCount = 0;
+  public static void waitForActiveCollection(String collectionName, CoreContainer cc, int numShards, int totalReplicas)
+          throws KeeperException, InterruptedException {
+    if (log.isDebugEnabled()) {
+      log.debug("waitForActiveCollection(String collectionName={}, CoreContainer cc={}) - start", collectionName, cc);
     }
 
     CloudConfig ccfg = cc.getConfig().getCloudConfig();
     Integer seconds = ccfg.getCreateCollectionWaitTimeTillActive();
     Boolean checkLeaderOnly = ccfg.isCreateCollectionCheckLeaderActive();
-    if (log.isInfoEnabled()) {
-      log.info("Wait for new collection to be active for at most {} seconds. Check all shard {}"
-          , seconds, (checkLeaderOnly ? "leaders" : "replicas"));
-    }
+    log.info("Wait for new collection to be active for at most " + seconds + " seconds. Check all shard "
+            + (checkLeaderOnly ? "leaders" : "replicas"));
 
+    waitForActiveCollection(cc, collectionName, seconds, TimeUnit.SECONDS, numShards, totalReplicas);
+
+    if (log.isDebugEnabled()) {
+      log.debug("waitForActiveCollection(String, CoreContainer, SolrResponse) - end");
+    }
+  }
+
+  public static void waitForActiveCollection(CoreContainer cc, String collection, long wait, TimeUnit unit, int shards, int totalReplicas) {
+    log.info("waitForActiveCollection: {}", collection);
+    assert collection != null;
+    CollectionStatePredicate predicate = expectedShardsAndActiveReplicas(shards, totalReplicas);
+
+    AtomicReference<DocCollection> state = new AtomicReference<>();
+    AtomicReference<Set<String>> liveNodesLastSeen = new AtomicReference<>();
     try {
-      cc.getZkController().getZkStateReader().waitForState(collectionName, seconds, TimeUnit.SECONDS, (n, c) -> {
+      cc.getZkController().getZkStateReader().waitForState(collection, wait, unit, (n, c) -> {
+        state.set(c);
+        liveNodesLastSeen.set(n);
 
-        if (c == null) {
-          // the collection was not created, don't wait
-          return true;
-        }
-
-        if (c.getSlices() != null) {
-          Collection<Slice> shards = c.getSlices();
-          int replicaNotAliveCnt = 0;
-          for (Slice shard : shards) {
-            Collection<Replica> replicas;
-            if (!checkLeaderOnly) replicas = shard.getReplicas();
-            else {
-              replicas = new ArrayList<Replica>();
-              replicas.add(shard.getLeader());
-            }
-            for (Replica replica : replicas) {
-              String state = replica.getStr(ZkStateReader.STATE_PROP);
-              if (log.isDebugEnabled()) {
-                log.debug("Checking replica status, collection={} replica={} state={}", collectionName,
-                    replica.getCoreUrl(), state);
-              }
-              if (!n.contains(replica.getNodeName())
-                  || !state.equals(Replica.State.ACTIVE.toString())) {
-                replicaNotAliveCnt++;
-                return false;
-              }
-            }
-          }
-
-          return (replicaNotAliveCnt == 0) || (replicaNotAliveCnt <= replicaFailCount);
-        }
-        return false;
+        return predicate.matches(n, c);
       });
-    } catch (TimeoutException | InterruptedException e) {
-
-      String error = "Timeout waiting for active collection " + collectionName + " with timeout=" + seconds;
-      throw new NotInClusterStateException(ErrorCode.SERVER_ERROR, error);
+    } catch (TimeoutException e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Failed while waiting for active collection\n"
+            + e.getMessage() 
+            + " \nShards:" + shards 
+            + " Replicas:" + totalReplicas 
+            + "\nLive Nodes: " + Arrays.toString(liveNodesLastSeen.get().toArray())
+            + "\nLast available state: " + state.get());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }
 
+  }
+
+  public static CollectionStatePredicate expectedShardsAndActiveReplicas(int expectedShards, int expectedReplicas) {
+    log.info("Wait for expectedShards={} expectedReplicas={}", expectedShards, expectedReplicas);
+
+    return (liveNodes, collectionState) -> {
+      if (collectionState == null)
+        return false;
+      if (collectionState.getSlices().size() != expectedShards) {
+        return false;
+      }
+
+      int activeReplicas = 0;
+      for (Slice slice : collectionState) {
+        for (Replica replica : slice) {
+          if (replica.isActive(liveNodes)) {
+            activeReplicas++;
+          }
+        }
+      }
+      if (activeReplicas == expectedReplicas) {
+        return true;
+      }
+
+      return false;
+    };
   }
 
   public static void verifyRuleParams(CoreContainer cc, Map<String, Object> m) {

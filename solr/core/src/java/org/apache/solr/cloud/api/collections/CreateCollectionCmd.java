@@ -24,11 +24,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -48,11 +48,13 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.CollectionStatePredicate;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ReplicaPosition;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -206,7 +208,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         log.debug(formatString("Creating SolrCores for new collection {0}, shardNames {1} , message : {2}",
             collectionName, shardNames, message));
       }
-      Map<String,ShardRequest> coresToCreate = new LinkedHashMap<>();
+      Set<ShardRequest> coresToCreate = new HashSet<>();
       ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseer.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient());
       for (ReplicaPosition replicaPosition : replicaPositions) {
         String nodeName = replicaPosition.node;
@@ -277,14 +279,20 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         sreq.actualShards = sreq.shards;
         sreq.params = params;
 
-        coresToCreate.put(coreName, sreq);
+        coresToCreate.add(sreq);
       }
 
       // wait for all replica entries to be created
-      Map<String, Replica> replicas = ocmh.waitToSeeReplicasInState(collectionName, coresToCreate.keySet());
-      for (Map.Entry<String, ShardRequest> e : coresToCreate.entrySet()) {
-        ShardRequest sreq = e.getValue();
-        sreq.params.set(CoreAdminParams.CORE_NODE_NAME, replicas.get(e.getKey()).getName());
+      zkStateReader.waitForState(collectionName, 20, TimeUnit.SECONDS, expectedReplicas(coresToCreate.size())); // nocommit - timeout - keep this below containing timeouts - need central timeout stuff
+
+      Set<Replica> replicas = fillReplicas(collectionName);
+      for (ShardRequest sreq : coresToCreate) {
+        for (Replica rep : replicas) {
+            if (rep.getCoreName().equals(sreq.params.get(CoreAdminParams.NAME)) && rep.getBaseUrl().equals(sreq.shards[0])) {
+              sreq.params.set(CoreAdminParams.CORE_NODE_NAME, rep.getName());
+              break;
+            }
+        }
         shardHandler.submit(sreq, sreq.shards[0], sreq.params);
       }
 
@@ -630,5 +638,40 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
           SolrException.ErrorCode.SERVER_ERROR,
           "Could not find configName for collection " + collection + " found:" + configNames);
     }
+  }
+
+  public static CollectionStatePredicate expectedReplicas(int expectedReplicas) {
+    log.info("Wait for expectedReplicas={}", expectedReplicas);
+
+    return (liveNodes, collectionState) -> {
+      if (collectionState == null)
+        return false;
+      if (collectionState.getSlices() == null) {
+        return false;
+      }
+
+      int replicaCnt = 0;
+      for (Slice slice : collectionState) {
+        for (Replica replica : slice) {
+          replicaCnt++;
+        }
+      }
+      if (replicaCnt == expectedReplicas) {
+        return true;
+      }
+
+      return false;
+    };
+  }
+
+  public Set<Replica> fillReplicas(String collection) {
+    Set<Replica> replicas = new HashSet<>();
+    DocCollection collectionState = ocmh.zkStateReader.getClusterState().getCollection(collection);
+    for (Slice slice : collectionState) {
+      for (Replica replica : slice) {
+        replicas.add(replica);
+      }
+    }
+    return replicas;
   }
 }

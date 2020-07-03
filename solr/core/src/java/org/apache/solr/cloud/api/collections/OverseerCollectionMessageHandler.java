@@ -31,6 +31,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang3.StringUtils;
@@ -84,7 +85,6 @@ import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.util.RTimer;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -175,7 +175,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       new SynchronousQueue<>(),
       new SolrNamedThreadFactory("OverseerCollectionMessageHandlerThreadFactory"));
 
-  protected static final Random RANDOM;
+  public static final Random RANDOM;
   static {
     // We try to make things reproducible in the context of our tests by initializing the random instance
     // based on the current seed
@@ -499,60 +499,60 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     }
   }
 
-  String waitForCoreNodeName(String collectionName, String msgNodeName, String msgCore) {
-    int retryCount = 320;
-    while (retryCount-- > 0) {
-      final DocCollection docCollection = zkStateReader.getClusterState().getCollectionOrNull(collectionName);
-      if (docCollection != null && docCollection.getSlicesMap() != null) {
-        Map<String,Slice> slicesMap = docCollection.getSlicesMap();
+  static String waitForCoreNodeName(ZkStateReader zkStateReader, String collectionName, String msgNodeName, String msgCore) {
+    AtomicReference<String> errorMessage = new AtomicReference<>();
+    AtomicReference<String> coreNodeName = new AtomicReference<>();
+    try {
+      zkStateReader.waitForState(collectionName, 320, TimeUnit.SECONDS, (n, c) -> {
+        if (c == null)
+          return false;
+        final Map<String,Slice> slicesMap = c.getSlicesMap();
         for (Slice slice : slicesMap.values()) {
           for (Replica replica : slice.getReplicas()) {
-            // TODO: for really large clusters, we could 'index' on this
 
             String nodeName = replica.getStr(ZkStateReader.NODE_NAME_PROP);
             String core = replica.getStr(ZkStateReader.CORE_NAME_PROP);
 
-            if (nodeName.equals(msgNodeName) && core.equals(msgCore)) {
-              return replica.getName();
+            if (msgNodeName.equals(nodeName) && core.equals(msgCore)) {
+              coreNodeName.set(replica.getName());
+              return true;
             }
           }
         }
-      }
-      try {
-        Thread.sleep(1000);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-      }
+        return false;
+      });
+    } catch (TimeoutException e) {
+      String error = errorMessage.get();
+      if (error == null)
+        error = "Timeout waiting for collection state.";
+      throw new ZkController.NotInClusterStateException(ErrorCode.SERVER_ERROR, error);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Interrupted");
     }
-    throw new SolrException(ErrorCode.SERVER_ERROR, "Could not find coreNodeName");
+
+    return coreNodeName.get();
   }
 
-  ClusterState waitForNewShard(String collectionName, String sliceName) throws KeeperException, InterruptedException {
+  void waitForNewShard(String collectionName, String sliceName) {
     log.debug("Waiting for slice {} of collection {} to be available", sliceName, collectionName);
-    RTimer timer = new RTimer();
-    int retryCount = 320;
-    while (retryCount-- > 0) {
-      ClusterState clusterState = zkStateReader.getClusterState();
-      DocCollection collection = clusterState.getCollection(collectionName);
-
-      if (collection == null) {
-        throw new SolrException(ErrorCode.SERVER_ERROR,
-            "Unable to find collection: " + collectionName + " in clusterstate");
-      }
-      Slice slice = collection.getSlice(sliceName);
-      if (slice != null) {
-        if (log.isDebugEnabled()) {
-          log.debug("Waited for {}ms for slice {} of collection {} to be available",
-              timer.getTime(), sliceName, collectionName);
+    try {
+      zkStateReader.waitForState(collectionName, 320, TimeUnit.SECONDS, (n, c) -> {
+        if (c == null)
+          return false;
+        Slice slice = c.getSlice(sliceName);
+        if (slice != null) {
+          return true;
         }
-        return clusterState;
-      }
-      Thread.sleep(1000);
+        return false;
+      });
+    } catch (TimeoutException e) {
+      String error = "Timeout waiting for new shard.";
+      throw new ZkController.NotInClusterStateException(ErrorCode.SERVER_ERROR, error);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Interrupted");
     }
-    throw new SolrException(ErrorCode.SERVER_ERROR,
-        "Could not find new slice " + sliceName + " in collection " + collectionName
-            + " even after waiting for " + timer.getTime() + "ms"
-    );
   }
 
   DocRouter.Range intersect(DocRouter.Range a, DocRouter.Range b) {
@@ -647,35 +647,47 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     commandMap.get(DELETE).call(zkStateReader.getClusterState(), new ZkNodeProps(props), results);
   }
 
-  Map<String, Replica> waitToSeeReplicasInState(String collectionName, Collection<String> coreNames) throws InterruptedException {
+  Map<String, Replica> waitToSeeReplicasInState(String collectionName, Collection<String> coreNames) {
     assert coreNames.size() > 0;
-    Map<String, Replica> result = new HashMap<>();
-    TimeOut timeout = new TimeOut(Integer.getInteger("solr.waitToSeeReplicasInStateTimeoutSeconds", 120), TimeUnit.SECONDS, timeSource); // could be a big cluster
-    while (true) {
-      DocCollection coll = zkStateReader.getClusterState().getCollection(collectionName);
-      for (String coreName : coreNames) {
-        if (result.containsKey(coreName)) continue;
-        for (Slice slice : coll.getSlices()) {
-          for (Replica replica : slice.getReplicas()) {
-            if (coreName.equals(replica.getStr(ZkStateReader.CORE_NAME_PROP))) {
-              result.put(coreName, replica);
-              break;
+
+    AtomicReference<Map<String, Replica>> result = new AtomicReference<>();
+    AtomicReference<String> errorMessage = new AtomicReference<>();
+    try {
+      zkStateReader.waitForState(collectionName, 15, TimeUnit.SECONDS, (n, c) -> { // nocommit - univeral config wait
+        if (c == null)
+          return false;
+        Map<String, Replica> r = new HashMap<>();
+        for (String coreName : coreNames) {
+          if (r.containsKey(coreName)) continue;
+          for (Slice slice : c.getSlices()) {
+            for (Replica replica : slice.getReplicas()) {
+              if (coreName.equals(replica.getStr(ZkStateReader.CORE_NAME_PROP))) {
+                r.put(coreName, replica);
+                break;
+              }
             }
           }
         }
-      }
 
-      if (result.size() == coreNames.size()) {
-        return result;
-      } else {
-        log.debug("Expecting {} cores but found {}", coreNames, result);
-      }
-      if (timeout.hasTimedOut()) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Timed out waiting to see all replicas: " + coreNames + " in cluster state. Last state: " + coll);
-      }
+        if (r.size() == coreNames.size()) {
+          result.set(r);
+          return true;
+        } else {
+          errorMessage.set("Timed out waiting to see all replicas: " + coreNames + " in cluster state. Last state: " + c);
+          return false;
+        }
 
-      Thread.sleep(100);
+      });
+    } catch (TimeoutException e) {
+      String error = errorMessage.get();
+      if (error == null)
+        error = "Timeout waiting for collection state.";
+      throw new SolrException(ErrorCode.SERVER_ERROR, error);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Interrupted");
     }
+    return result.get();
   }
 
   List<ZkNodeProps> addReplica(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results, Runnable onComplete)

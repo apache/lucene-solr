@@ -252,7 +252,7 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
     Replica tempSourceLeader = zkStateReader.getLeaderRetry(tempSourceCollectionName, tempSourceSlice.getName(), 120000);
 
     String tempCollectionReplica1 = tempSourceLeader.getCoreName();
-    String coreNodeName = ocmh.waitForCoreNodeName(tempSourceCollectionName,
+    String coreNodeName = ocmh.waitForCoreNodeName(zkStateReader, tempSourceCollectionName,
         sourceLeader.getNodeName(), tempCollectionReplica1);
     // wait for the replicas to be seen as active on temp source leader
     if (log.isInfoEnabled()) {
@@ -320,7 +320,7 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
       syncRequestTracker.processResponses(results, shardHandler, true, "MIGRATE failed to create replica of " +
         "temporary collection in target leader node.");
     }
-    coreNodeName = ocmh.waitForCoreNodeName(tempSourceCollectionName,
+    coreNodeName = ocmh.waitForCoreNodeName(zkStateReader, tempSourceCollectionName,
         targetLeader.getNodeName(), tempCollectionReplica2);
     // wait for the replicas to be seen as active on temp source leader
     if (log.isInfoEnabled()) {
