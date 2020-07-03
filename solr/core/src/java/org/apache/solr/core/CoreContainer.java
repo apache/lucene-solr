@@ -1002,14 +1002,17 @@ public class CoreContainer {
       log.info("Shutting down CoreContainer instance={}", System.identityHashCode(this));
     }
 
-    ExecutorUtil.shutdownAndAwaitTermination(coreContainerAsyncTaskExecutor);
+    // stop accepting new tasks
+    replayUpdatesExecutor.shutdown();
+    coreContainerAsyncTaskExecutor.shutdown();
+    coreContainerWorkExecutor.shutdown();
+
     ExecutorService customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("closeThreadPool"));
 
     isShutDown = true;
     try {
       if (isZooKeeperAware()) {
         cancelCoreRecoveries();
-        zkSys.zkController.preClose();
       }
 
       ExecutorUtil.shutdownAndAwaitTermination(coreContainerWorkExecutor);
@@ -1082,6 +1085,9 @@ public class CoreContainer {
           });
         }
       } catch (Exception e) {
+        if (e instanceof  InterruptedException) {
+          Thread.currentThread().interrupt();
+        }
         log.warn("Error shutting down CoreAdminHandler. Continuing to close CoreContainer.", e);
       }
       if (solrClientCache != null) {
@@ -1108,6 +1114,10 @@ public class CoreContainer {
             zkSys.close();
           } finally {
             ExecutorUtil.shutdownAndAwaitTermination(customThreadPool);
+            replayUpdatesExecutor.awaitTermination();
+            ExecutorUtil.awaitTermination(coreContainerAsyncTaskExecutor);
+            ExecutorUtil.awaitTermination(coreContainerWorkExecutor);
+
           }
         }
 
