@@ -450,6 +450,8 @@ Other Changes
 * SOLR-14021: HDFS support is deprecated. It is scheduled to be removed as of 9.0. Please see JIRA for more details.
   (Joel Bernstein, Ishan Chattopadhyaya)
 
+* SOLR-14603: Upgrade Restlet to 2.4.3 (marcussorealheis)
+
 ==================  8.5.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

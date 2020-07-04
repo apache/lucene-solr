@@ -95,16 +95,16 @@ class ExportBuffers {
     barrier = new CyclicBarrier(2, () -> swapBuffers());
     filler = () -> {
       try {
-        log.debug("--- filler start {}", Thread.currentThread());
+        // log.debug("--- filler start {}", Thread.currentThread());
         SortDoc sortDoc = exportWriter.getSortDoc(searcher, sort.getSort());
         Buffer buffer = getFillBuffer();
         SortQueue queue = new SortQueue(queueSize, sortDoc);
         long lastOutputCounter = 0;
         for (int count = 0; count < totalHits; ) {
-          log.debug("--- filler fillOutDocs in {}", fillBuffer);
+          // log.debug("--- filler fillOutDocs in {}", fillBuffer);
           exportWriter.fillOutDocs(leaves, sortDoc, queue, buffer);
           count += (buffer.outDocsIndex + 1);
-          log.debug("--- filler count={}, exchange buffer from {}", count, buffer);
+          // log.debug("--- filler count={}, exchange buffer from {}", count, buffer);
           Timer.Context timerContext = getFillerWaitTimer().time();
           try {
             exchangeBuffers();
@@ -116,10 +116,10 @@ class ExportBuffers {
             lastOutputCounter = outputCounter.longValue();
             flushOutput();
           }
-          log.debug("--- filler got empty buffer {}", buffer);
+          // log.debug("--- filler got empty buffer {}", buffer);
         }
         buffer.outDocsIndex = Buffer.NO_MORE_DOCS;
-        log.debug("--- filler final exchange buffer from {}", buffer);
+        // log.debug("--- filler final exchange buffer from {}", buffer);
         Timer.Context timerContext = getFillerWaitTimer().time();
         try {
           exchangeBuffers();
@@ -127,7 +127,7 @@ class ExportBuffers {
           timerContext.stop();
         }
         buffer = getFillBuffer();
-        log.debug("--- filler final got buffer {}", buffer);
+        // log.debug("--- filler final got buffer {}", buffer);
       } catch (Throwable e) {
         log.error("filler", e);
         error(e);
@@ -140,7 +140,7 @@ class ExportBuffers {
   }
 
   public void exchangeBuffers() throws Exception {
-    log.debug("---- wait exchangeBuffers from {}", Thread.currentThread());
+    // log.debug("---- wait exchangeBuffers from {}", Thread.currentThread());
     barrier.await(EXCHANGE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
   }
 
