@@ -95,6 +95,8 @@ Windows SMB shares on the UNC format, such as `\\myhost\myshare\mypath` are now 
 
 * Data Import Handler is deprecated and is scheduled to be removed in 9.0. A community supported version of this may be available as an external package to be used with the package management system. For more details, please refer to SOLR-14066.
 
+* HDFS support in Solr is deprecated and is scheduled to be removed in 9.0. A community supported version of this may be available as an external package to be used with the package management system. For more details, please refer to SOLR-14021.
+
 === Solr 8.5
 
 See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote85[8.5 Release Notes]
