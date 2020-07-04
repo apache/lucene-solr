@@ -30,8 +30,10 @@ import org.apache.lucene.store.OutputStreamIndexOutput;
 
 /**
  * @lucene.experimental
+ * @deprecated since 8.6
  */
-public class HdfsFileWriter extends OutputStreamIndexOutput {
+@Deprecated
+ublic class HdfsFileWriter extends OutputStreamIndexOutput {
   
   public static final String HDFS_SYNC_BLOCK = "solr.hdfs.sync.block";
   public static final int BUFFER_SIZE = 16384;
