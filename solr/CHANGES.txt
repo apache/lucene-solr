@@ -447,6 +447,9 @@ Other Changes
 * SOLR-14066: Data Import Handler is deprecated. It is scheduled to be removed as of 9.0 and a community supported
   package for the same may now be used instead. (Ishan Chattopadhyaya, janhoy)
 
+* SOLR-14021: HDFS support is deprecated. It is scheduled to be removed as of 9.0. Please see JIRA for more details.
+  (Joel Bernstein, Ishan Chattopadhyaya)
+
 ==================  8.5.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
