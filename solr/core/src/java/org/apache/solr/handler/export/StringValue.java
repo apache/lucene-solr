@@ -29,16 +29,15 @@ import org.apache.lucene.util.LongValues;
 
 class StringValue implements SortValue {
 
-  private final SortedDocValues globalDocValues;
+  protected SortedDocValues globalDocValues;
 
-  private final OrdinalMap ordinalMap;
-  private final String field;
-  private final IntComp comp;
-
+  protected OrdinalMap ordinalMap;
   protected LongValues toGlobal = LongValues.IDENTITY; // this segment to global ordinal. NN;
   protected SortedDocValues docValues;
 
+  protected String field;
   protected int currentOrd;
+  protected IntComp comp;
   protected int lastDocID;
   private boolean present;
 
@@ -51,8 +50,6 @@ class StringValue implements SortValue {
     this.docValues = globalDocValues;
     if (globalDocValues instanceof MultiDocValues.MultiSortedDocValues) {
       this.ordinalMap = ((MultiDocValues.MultiSortedDocValues) globalDocValues).mapping;
-    } else {
-      this.ordinalMap = null;
     }
     this.field = field;
     this.comp = comp;
@@ -69,8 +66,7 @@ class StringValue implements SortValue {
   }
 
   public StringValue copy() {
-    StringValue copy = new StringValue(globalDocValues, field, comp);
-    return copy;
+    return new StringValue(globalDocValues, field, comp);
   }
 
   public void setCurrentValue(int docId) throws IOException {

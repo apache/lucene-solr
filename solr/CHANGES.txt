@@ -17,8 +17,6 @@ Improvements
 
 * SOLR-14523: Enhance gradle logging calls validation: eliminate getMessage() (Andras Salamon via Erick Erickson)
 
-* SOLR-14537: Improve performance of ExportWriter. (ab, Joel Bernstein)
-
 
 Optimizations
 ---------------------

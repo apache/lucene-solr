@@ -17,8 +17,6 @@
 package org.apache.solr.client.solrj.io;
 
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
@@ -96,10 +94,6 @@ public class Tuple implements Cloneable, MapWriter {
       throw new RuntimeException("must have a matching number of key-value pairs");
     }
     for (int i = 0; i < fields.length; i += 2) {
-      // skip empty entries
-      if (fields[i] == null) {
-        continue;
-      }
       put(fields[i], fields[i + 1]);
     }
   }
@@ -335,16 +329,5 @@ public class Tuple implements Cloneable, MapWriter {
       tuple.put(StreamParams.EOF, true);
     }
     return tuple;
-  }
-
-  /**
-   * Create a new empty tuple marked as EXCEPTION and optionally EOF.
-   * @param t exception - full stack trace will be used as an exception message
-   * @param eof if true the tuple will be marked as EOF
-   */
-  public static Tuple EXCEPTION(Throwable t, boolean eof) {
-    StringWriter sw = new StringWriter();
-    t.printStackTrace(new PrintWriter(sw));
-    return EXCEPTION(sw.toString(), eof);
   }
 }

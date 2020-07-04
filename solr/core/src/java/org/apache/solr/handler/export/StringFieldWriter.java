@@ -18,8 +18,6 @@
 package org.apache.solr.handler.export;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReader;
@@ -34,7 +32,6 @@ import org.apache.solr.schema.FieldType;
 class StringFieldWriter extends FieldWriter {
   private String field;
   private FieldType fieldType;
-  private Map<Integer, SortedDocValues> lastDocValues = new HashMap<>();
   private CharsRefBuilder cref = new CharsRefBuilder();
   final ByteArrayUtf8CharSequence utf8 = new ByteArrayUtf8CharSequence(new byte[0], 0, 0) {
     @Override
@@ -64,11 +61,7 @@ class StringFieldWriter extends FieldWriter {
       }
     } else {
       // field is not part of 'sort' param, but part of 'fl' param
-      SortedDocValues vals = lastDocValues.get(sortDoc.ord);
-      if (vals == null || vals.docID() >= sortDoc.docId) {
-        vals = DocValues.getSorted(reader, this.field);
-        lastDocValues.put(sortDoc.ord, vals);
-      }
+      SortedDocValues vals = DocValues.getSorted(reader, this.field);
       if (vals.advance(sortDoc.docId) != sortDoc.docId) {
         return false;
       }
@@ -80,9 +73,9 @@ class StringFieldWriter extends FieldWriter {
       ew.put(this.field, utf8.reset(ref.bytes, ref.offset, ref.length, null));
     } else {
       String v = null;
-      if (sortValue != null) {
+      if(sortValue != null) {
         v = ((StringValue) sortValue).getLastString();
-        if (v == null) {
+        if(v == null) {
           fieldType.indexedToReadable(ref, cref);
           v = cref.toString();
           ((StringValue) sortValue).setLastString(v);
