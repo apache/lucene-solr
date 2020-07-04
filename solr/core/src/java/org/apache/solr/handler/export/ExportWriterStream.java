@@ -196,7 +196,7 @@ public class ExportWriterStream extends TupleStream implements Expressible {
         res = Tuple.EOF();
       } else {
         pos = buffer.outDocsIndex;
-        log.debug("--- ews new pos=" + pos);
+        log.debug("--- ews new pos={}", pos);
       }
     }
     if (pos < 0) {
