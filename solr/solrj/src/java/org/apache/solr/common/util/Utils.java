@@ -16,34 +16,6 @@
  */
 package org.apache.solr.common.util;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.util.EntityUtils;
-import org.apache.solr.client.solrj.cloud.DistribStateManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
-import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
-import org.apache.solr.common.IteratorWriter;
-import org.apache.solr.common.LinkedHashMapWriter;
-import org.apache.solr.common.MapWriter;
-import org.apache.solr.common.MapWriterMap;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SpecProvider;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkOperation;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.server.ByteBufferInputStream;
-import org.noggit.CharArr;
-import org.noggit.JSONParser;
-import org.noggit.JSONWriter;
-import org.noggit.ObjectBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -54,6 +26,9 @@ import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.BufferOverflowException;
@@ -76,12 +51,42 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.util.EntityUtils;
+import org.apache.solr.client.solrj.cloud.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
+import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
+import org.apache.solr.common.IteratorWriter;
+import org.apache.solr.common.LinkedHashMapWriter;
+import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.MapWriterMap;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SpecProvider;
+import org.apache.solr.common.annotation.JsonProperty;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkOperation;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.server.ByteBufferInputStream;
+import org.noggit.CharArr;
+import org.noggit.JSONParser;
+import org.noggit.JSONWriter;
+import org.noggit.ObjectBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.singletonList;
@@ -826,5 +831,67 @@ public class Utils {
     return result;
   }
 
+  public static void reflectWrite(MapWriter.EntryWriter ew, Object o) throws IOException{
+    List<FieldWriter> fieldWriters = null;
+    try {
+      fieldWriters = getReflectData(o.getClass());
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+    for (FieldWriter fieldWriter : fieldWriters) {
+      try {
+        fieldWriter.write(ew, o);
+      } catch (IllegalAccessException e) {
+        //should not happen
+      }
+    }
+  }
+
+  @SuppressWarnings("rawtypes")
+  private static List<FieldWriter> getReflectData(Class c) throws IllegalAccessException, NoSuchFieldException {
+    boolean sameClassLoader = c.getClassLoader() == Utils.class.getClassLoader();
+    //we should not cache the class references of objects loaded from packages because they will not get garbage collected
+    //TODO fix that later
+    List<FieldWriter> reflectData = sameClassLoader ? storedReflectData.get(c): null;
+    if(reflectData == null) {
+      ArrayList<FieldWriter> l = new ArrayList<>();
+      MethodHandles.Lookup lookup = MethodHandles.publicLookup();
+      for (Field field :c.getFields()) {
+        JsonProperty prop = field.getAnnotation(JsonProperty.class);
+        if (prop == null) continue;
+        int modifiers = field.getModifiers();
+        if (Modifier.isPublic(modifiers) && !Modifier.isStatic(modifiers)) {
+          String fname = prop.value().isEmpty() ? field.getName() : prop.value();
+          final VarHandle vhandle = lookup.unreflectVarHandle(field);
+          if (field.getType() == int.class) {
+            l.add((ew, inst) -> ew.put(fname, (int) vhandle.get(inst)));
+          } else if (field.getType() == long.class) {
+            l.add((ew, inst) -> ew.put(fname, (long) vhandle.get(inst)));
+          } else if (field.getType() == boolean.class) {
+            l.add((ew, inst) -> ew.put(fname, (boolean) vhandle.get(inst)));
+          } else if (field.getType() == double.class) {
+            l.add((ew, inst) -> ew.put(fname, (double) vhandle.get(inst)));
+          } else if (field.getType() == float.class) {
+            l.add((ew, inst) -> ew.put(fname, (float) vhandle.get(inst)));
+          } else {
+            l.add((ew, inst) -> ew.put(fname, vhandle.get(inst)));
+          }
+        }}
+
+      if(sameClassLoader){
+        storedReflectData.put(c, reflectData = Collections.unmodifiableList(new ArrayList<>(l)));
+      }
+    }
+    return reflectData;
+  }
+
+
+
+  @SuppressWarnings("rawtypes")
+  static Map<Class, List<FieldWriter>> storedReflectData =   new ConcurrentHashMap<>();
+
+  interface FieldWriter {
+    void write(MapWriter.EntryWriter ew, Object inst) throws IllegalAccessException, IOException;
+  }
 
 }
