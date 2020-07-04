@@ -84,6 +84,8 @@ Other Changes
 * LUCENE-9411: Fail complation on warnings, 9x gradle-only (Erick Erickson, Dawid Weiss)
   Deserves mention here as well as Lucene CHANGES.txt since it affects both.
 
+* SOLR-14603: Update the Restlet version. (marcussorealheis)
+
 Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
@@ -446,6 +448,8 @@ Other Changes
 
 * SOLR-14066: Data Import Handler is deprecated. It is scheduled to be removed as of 9.0 and a community supported
   package for the same may now be used instead. (Ishan Chattopadhyaya, janhoy)
+
+* Upgrade Restlet to 2.4.3 (Marcus Eagan via Ishan Chattopadhyaya)
 
 ==================  8.5.2 ==================
 
