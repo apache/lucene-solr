@@ -1472,4 +1472,47 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     } // end method loop
   }
 
+  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-14595")
+  public void testIndexAscRefineConsistency() throws Exception {
+    initServers();
+    final Client client = servers.getClient(random().nextInt());
+    client.queryDefaults().set("shards", servers.getShards(), "debugQuery", Boolean.toString(random().nextBoolean()));
+
+    List<SolrClient> clients = client.getClientProvider().all();
+    assertTrue(clients.size() >= 3);
+    final SolrClient c0 = clients.get(0);
+    final SolrClient c1 = clients.get(1);
+    final SolrClient c2 = clients.get(2);
+
+    client.deleteByQuery("*:*", null);
+    int id = 0;
+    
+    c0.add(sdoc("id", id++, "cat_s", "Z", "price_i", 10));
+    
+    c1.add(sdoc("id", id++, "cat_s", "Z", "price_i", -5000));
+    c1.add(sdoc("id", id++, "cat_s", "X", "price_i", 2,       "child_s", "A" ));
+    
+    c2.add(sdoc("id", id++, "cat_s", "X", "price_i", 2,       "child_s", "B" ));
+    c2.add(sdoc("id", id++, "cat_s", "X", "price_i", 2,       "child_s", "C" ));
+    
+    client.commit();
+
+    // TODO once SOLR-14595 is fixed, modify test to check full EnumSet, not just these two...
+    for (String m : Arrays.asList("smart", "enum")) {
+      client.testJQ(params("q", "*:*", "rows", "0", "json.facet", "{"
+                           + " cat : { type:terms, field:cat_s, limit:1, refine:true,"
+                           + "         overrequest:0, " // to trigger parent refinement given small data set
+                           + "         sort:'sum desc', "
+                           + "         facet: { sum : 'sum(price_i)', "
+                           + "                  child_"+m+" : { "
+                           + "                     type:terms, field:child_s, limit:1, refine:true,"
+                           + "                     sort:'index asc', method:" + m + " } "
+                           + "       }} }"
+                           )
+                    , "facets=={ count:5"
+                    + ", cat:{buckets:[ { val:X, count:3, sum:6.0, "
+                    + "                   child_"+m+":{buckets:[{val:A, count:1}]}}]}}"
+                    );
+    }
+  }
 }
