@@ -183,9 +183,6 @@ public class RelatednessAgg extends AggValueSource {
     private static final int NO_ALL_BUCKETS = -2;
     private static final int ALL_BUCKETS_UNINITIALIZED = -1;
 
-    // nocommit: still need to decide if we want to consider an alternative solution to dealing with allBuckets slotNum when sweeping...
-    // nocommit: https://issues.apache.org/jira/browse/SOLR-13132?focusedCommentId=17130827&page=com.atlassian.jira.plugin.system.issuetabpanels:comment-tabpanel#comment-17130827
-    //
     // we can't get the allBuckets info from the slotContext in collect(), b/c the whole point of
     // sweep collection is that the "collect" methods aren't called.
     // So this is the compromise: note in construction either that we're using a processor w/NO_ALL_BUCKETS
