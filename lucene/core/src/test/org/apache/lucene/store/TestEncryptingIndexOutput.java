@@ -30,7 +30,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.crypto.AesCtrEncrypterFactory;
 import org.apache.lucene.util.crypto.CipherAesCtrEncrypter;
 import org.apache.lucene.util.crypto.EncryptionUtil;
-import org.apache.lucene.util.crypto.LightAesCtrEncrypter;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -80,7 +79,7 @@ public class TestEncryptingIndexOutput extends BaseDataOutputTestCase<Encrypting
   @Override
   protected EncryptingIndexOutput newInstance() {
     try {
-      return new MyBufferedEncryptingIndexOutput(new ByteBuffersDataOutput(), key, randomEncrypterFactory());
+      return new MyBufferedEncryptingIndexOutput(new ByteBuffersDataOutput(), key, encrypterFactory());
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }
@@ -99,7 +98,7 @@ public class TestEncryptingIndexOutput extends BaseDataOutputTestCase<Encrypting
     if (shouldSimulateWrongKey) {
       key[0]++;
     }
-    try (EncryptingIndexInput encryptingIndexInput = new EncryptingIndexInput(indexInput, key, randomEncrypterFactory())) {
+    try (EncryptingIndexInput encryptingIndexInput = new EncryptingIndexInput(indexInput, key, encrypterFactory())) {
       byte[] b = new byte[(int) encryptingIndexInput.length()];
       encryptingIndexInput.readBytes(b, 0, b.length);
       return b;
@@ -108,8 +107,8 @@ public class TestEncryptingIndexOutput extends BaseDataOutputTestCase<Encrypting
     }
   }
 
-  private AesCtrEncrypterFactory randomEncrypterFactory() {
-    return randomBoolean() ? LightAesCtrEncrypter.FACTORY : CipherAesCtrEncrypter.FACTORY;
+  protected AesCtrEncrypterFactory encrypterFactory() {
+    return CipherAesCtrEncrypter.FACTORY;
   }
 
   /**

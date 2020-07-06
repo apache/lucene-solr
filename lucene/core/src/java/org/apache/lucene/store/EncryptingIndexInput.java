@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.util.crypto.AesCtrEncrypter;
 import org.apache.lucene.util.crypto.AesCtrEncrypterFactory;
+import org.apache.lucene.util.crypto.CipherAesCtrEncrypter;
 import org.apache.lucene.util.crypto.EncryptionUtil;
 
 import static org.apache.lucene.store.EncryptingIndexOutput.HEADER_LENGTH;
@@ -46,8 +47,9 @@ public class EncryptingIndexInput extends IndexInput {
 
   /**
    * Must be a multiple of {@link EncryptionUtil#AES_BLOCK_SIZE}.
+   * Benchmarks showed 6 x {@link EncryptionUtil#AES_BLOCK_SIZE} is a good buffer size.
    */
-  private static final int BUFFER_SIZE = 64 * AES_BLOCK_SIZE; // 1024 B
+  private static final int BUFFER_CAPACITY = 6 * AES_BLOCK_SIZE; // 96 B
 
   private static final long AES_BLOCK_SIZE_MOD_MASK = AES_BLOCK_SIZE - 1;
   static final int HEADER_IV_LENGTH = HEADER_LENGTH + IV_LENGTH;
@@ -70,7 +72,7 @@ public class EncryptingIndexInput extends IndexInput {
    * @param key        The encryption key. It is cloned internally, its content is not modified, and no reference to it is kept.
    */
   public EncryptingIndexInput(IndexInput indexInput, byte[] key) throws IOException {
-    this(indexInput, key, AesCtrEncrypterFactory.getInstance());
+    this(indexInput, key, CipherAesCtrEncrypter.FACTORY);
   }
 
   /**
@@ -93,8 +95,8 @@ public class EncryptingIndexInput extends IndexInput {
     this.indexInput = indexInput;
     this.encrypter = encrypter;
     encrypter.init(0);
-    inBuffer = ByteBuffer.allocate(getBufferSize());
-    outBuffer = ByteBuffer.allocate(getBufferSize() + AES_BLOCK_SIZE);
+    inBuffer = ByteBuffer.allocate(getBufferCapacity());
+    outBuffer = ByteBuffer.allocate(getBufferCapacity() + AES_BLOCK_SIZE);
     outBuffer.limit(0);
     assert inBuffer.hasArray() && outBuffer.hasArray();
     assert inBuffer.arrayOffset() == 0;
@@ -121,10 +123,10 @@ public class EncryptingIndexInput extends IndexInput {
   }
 
   /**
-   * Gets the buffer size. It must be a multiple of {@link EncryptionUtil#AES_BLOCK_SIZE}.
+   * Gets the buffer capacity. It must be a multiple of {@link EncryptionUtil#AES_BLOCK_SIZE}.
    */
-  protected int getBufferSize() {
-    return BUFFER_SIZE;
+  protected int getBufferCapacity() {
+    return BUFFER_CAPACITY;
   }
 
   @Override
@@ -270,8 +272,8 @@ public class EncryptingIndexInput extends IndexInput {
     clone.indexInput = indexInput.clone();
     assert clone.indexInput.getFilePointer() == indexInput.getFilePointer();
     clone.encrypter = encrypter.clone();
-    clone.inBuffer = ByteBuffer.allocate(getBufferSize());
-    clone.outBuffer = ByteBuffer.allocate(getBufferSize() + AES_BLOCK_SIZE);
+    clone.inBuffer = ByteBuffer.allocate(getBufferCapacity());
+    clone.outBuffer = ByteBuffer.allocate(getBufferCapacity() + AES_BLOCK_SIZE);
     clone.inArray = clone.inBuffer.array();
     clone.oneByteBuf = new byte[1];
     // The clone must be initialized.

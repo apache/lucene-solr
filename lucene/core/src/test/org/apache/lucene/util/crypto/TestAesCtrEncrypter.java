@@ -30,7 +30,7 @@ import org.junit.Test;
 public class TestAesCtrEncrypter extends LuceneTestCase {
 
   /**
-   * Verifies that {@link LightAesCtrEncrypter} and {@link CipherAesCtrEncrypter} encrypt and decrypt data exactly the
+   * Verifies that {@link AesCtrEncrypter} implementations encrypt and decrypt data exactly the
    * same way. They produce the same encrypted data and can decrypt each other.
    */
   @Test
@@ -39,8 +39,8 @@ public class TestAesCtrEncrypter extends LuceneTestCase {
       ByteBuffer clearData = generateRandomData(10000);
       byte[] key = generateRandomBytes(EncryptionUtil.AES_BLOCK_SIZE);
       byte[] iv = EncryptionUtil.generateRandomAesCtrIv();
-      AesCtrEncrypter lightEncrypter = new LightAesCtrEncrypter(key, iv);
-      AesCtrEncrypter cipherEncrypter = new CipherAesCtrEncrypter(key, iv);
+      AesCtrEncrypter lightEncrypter = encrypterFactory().create(key, iv);
+      AesCtrEncrypter cipherEncrypter = encrypterFactory().create(key, iv);
 
       ByteBuffer encryptedDataLight = crypt(clearData, lightEncrypter);
       ByteBuffer encryptedDataCipher = crypt(clearData, cipherEncrypter);
@@ -51,6 +51,10 @@ public class TestAesCtrEncrypter extends LuceneTestCase {
       decryptedData = crypt(encryptedDataLight, cipherEncrypter);
       assertEquals(clearData, decryptedData);
     }
+  }
+
+  protected AesCtrEncrypterFactory encrypterFactory() {
+    return CipherAesCtrEncrypter.FACTORY;
   }
 
   private static ByteBuffer generateRandomData(int numBytes) {

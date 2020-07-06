@@ -19,38 +19,18 @@ package org.apache.lucene.util.crypto;
 
 /**
  * {@link AesCtrEncrypter} factory.
- * <p>Set System property {@link #CRYPTO_CIPHER_PROPERTY} to true for this factory to create {@link javax.crypto.Cipher}-based
- * {@link CipherAesCtrEncrypter} (for example to load custom {@link javax.crypto.CipherSpi} implementation from the classpath).
- * Otherwise by default, it creates light and fast {@link LightAesCtrEncrypter}.</p>
  *
  * @lucene.experimental
  */
-public class AesCtrEncrypterFactory {
-
-  private static final AesCtrEncrypterFactory INSTANCE = new AesCtrEncrypterFactory();
-
-  public static final String CRYPTO_CIPHER_PROPERTY = "crypto.cipher";
-
-  private static final boolean CREATE_CRYPTO_CIPHER = Boolean.getBoolean(CRYPTO_CIPHER_PROPERTY);
-
-  public static AesCtrEncrypterFactory getInstance() {
-    return INSTANCE;
-  }
-
-  protected AesCtrEncrypterFactory() {
-  }
+public interface AesCtrEncrypterFactory {
 
   /**
    * Creates a new {@link AesCtrEncrypter} instance.
-   * <p>By default it is a {@link LightAesCtrEncrypter}, but this can be modified by setting the System property
-   * {@link #CRYPTO_CIPHER_PROPERTY} to true. See {@link AesCtrEncrypterFactory} doc.</p>
    *
    * @param key The encryption key. It is cloned internally, its content is not modified, and no reference to it is kept.
    * @param iv  The Initialization Vector (IV) for the CTR mode. It MUST be random for the effectiveness of the encryption.
    *            It can be public (for example stored clear at the beginning of the encrypted file). It is cloned internally,
    *            its content is not modified, and no reference to it is kept.
    */
-  public AesCtrEncrypter create(byte[] key, byte[] iv) {
-    return CREATE_CRYPTO_CIPHER ? new CipherAesCtrEncrypter(key, iv) : new LightAesCtrEncrypter(key, iv);
-  }
+  AesCtrEncrypter create(byte[] key, byte[] iv);
 }

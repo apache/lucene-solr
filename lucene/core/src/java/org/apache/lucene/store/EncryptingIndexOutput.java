@@ -26,6 +26,7 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.crypto.AesCtrEncrypter;
 import org.apache.lucene.util.crypto.AesCtrEncrypterFactory;
+import org.apache.lucene.util.crypto.CipherAesCtrEncrypter;
 import org.apache.lucene.util.crypto.EncryptionUtil;
 
 import static org.apache.lucene.util.crypto.EncryptionUtil.*;
@@ -87,7 +88,7 @@ public class EncryptingIndexOutput extends IndexOutput {
    *                    are not supported anymore.
    */
   public EncryptingIndexOutput(IndexOutput indexOutput, byte[] key, byte[] segmentId) throws IOException {
-    this(indexOutput, key, segmentId, AesCtrEncrypterFactory.getInstance());
+    this(indexOutput, key, segmentId, CipherAesCtrEncrypter.FACTORY);
   }
 
   /**

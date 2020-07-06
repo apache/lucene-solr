@@ -33,8 +33,9 @@ import static org.apache.lucene.util.crypto.EncryptionUtil.*;
 /**
  * Stateful {@link AesCtrEncrypter} backed by a {@link javax.crypto.Cipher} with the "AES/CTR/NoPadding" transformation.
  * <p>This encrypter loads the internal {@link javax.crypto.CipherSpi} implementation from the classpath, see
- * {@link Cipher#getInstance(String)}. But it is heavy to create, to initialize and to clone. Consider
- * {@link LightAesCtrEncrypter} for efficiency.</p>
+ * {@link Cipher#getInstance(String)}. It is heavy to create, to initialize and to clone, but the
+ * {@link #process(ByteBuffer, ByteBuffer) encryption} is extremely fast thanks to {@code HotSpotIntrinsicCandidate}
+ * annotation in com.sun.crypto.provider.CounterMode.</p>
  *
  * @lucene.experimental
  */
@@ -43,12 +44,7 @@ public class CipherAesCtrEncrypter implements AesCtrEncrypter {
   /**
    * Factory that creates {@link CipherAesCtrEncrypter} instances.
    */
-  public static final AesCtrEncrypterFactory FACTORY = new AesCtrEncrypterFactory() {
-    @Override
-    public AesCtrEncrypter create(byte[] key, byte[] iv) {
-      return new CipherAesCtrEncrypter(key, iv);
-    }
-  };
+  public static final AesCtrEncrypterFactory FACTORY = CipherAesCtrEncrypter::new;
 
   // Most fields are not final for the clone() method.
   private final Key key;
@@ -81,7 +77,7 @@ public class CipherAesCtrEncrypter implements AesCtrEncrypter {
       buildAesCtrIv(initialIv, counter, iv);
     }
     try {
-      cipher.init(Cipher.DECRYPT_MODE, key, ivParameterSpec, EncryptionUtil.getSecureRandom());
+      cipher.init(Cipher.ENCRYPT_MODE, key, ivParameterSpec, EncryptionUtil.getSecureRandom());
     } catch (InvalidKeyException | InvalidAlgorithmParameterException e) {
       throw new RuntimeException(e);
     }
@@ -102,17 +98,18 @@ public class CipherAesCtrEncrypter implements AesCtrEncrypter {
 
   @Override
   public CipherAesCtrEncrypter clone() {
+    CipherAesCtrEncrypter clone;
     try {
-      CipherAesCtrEncrypter clone = (CipherAesCtrEncrypter) super.clone();
-      // key and initialIv are the same references.
-      clone.iv = initialIv.clone();
-      clone.ivParameterSpec = new ReusableIvParameterSpec(clone.iv);
-      clone.cipher = createAesCtrCipher();
-      clone.counter = 0;
-      return clone;
+      clone = (CipherAesCtrEncrypter) super.clone();
     } catch (CloneNotSupportedException e) {
       throw new Error("This cannot happen: Failing to clone " + CipherAesCtrEncrypter.class.getSimpleName());
     }
+    // key and initialIv are the same references.
+    clone.iv = initialIv.clone();
+    clone.ivParameterSpec = new ReusableIvParameterSpec(clone.iv);
+    clone.cipher = createAesCtrCipher();
+    clone.counter = 0;
+    return clone;
   }
 
   private static Cipher createAesCtrCipher() {

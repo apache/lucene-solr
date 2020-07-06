@@ -29,7 +29,6 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.crypto.AesCtrEncrypterFactory;
 import org.apache.lucene.util.crypto.CipherAesCtrEncrypter;
-import org.apache.lucene.util.crypto.LightAesCtrEncrypter;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -235,15 +234,15 @@ public class TestEncryptingIndexInput extends RandomizedTest {
 
   private EncryptingIndexOutput createEncryptingIndexOutput(ByteBuffersDataOutput dataOutput) throws IOException {
     return new EncryptingIndexOutput(new ByteBuffersIndexOutput(dataOutput, "Test", "Test"),
-        key, null, randomEncrypterFactory());
+        key, null, encrypterFactory());
   }
 
   private EncryptingIndexInput createEncryptingIndexInput(ByteBuffersDataOutput dataOutput) throws IOException {
     return new EncryptingIndexInput(new ByteBuffersIndexInput(dataOutput.toDataInput(), "Test"),
-        key, randomEncrypterFactory());
+        key, encrypterFactory());
   }
 
-  private AesCtrEncrypterFactory randomEncrypterFactory() {
-    return randomBoolean() ? LightAesCtrEncrypter.FACTORY : CipherAesCtrEncrypter.FACTORY;
+  protected AesCtrEncrypterFactory encrypterFactory() {
+    return CipherAesCtrEncrypter.FACTORY;
   }
 }
