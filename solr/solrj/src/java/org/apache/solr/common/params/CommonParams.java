@@ -275,7 +275,7 @@ public interface CommonParams {
   /**
    * An opt-out flag to prevent the addition of {@link #REQUEST_ID} tracing on distributed queries
    *
-   * Defaults to 'true' if not specified.
+   * Defaults to 'false' if not specified.
    *
    * @see #REQUEST_ID
    */
