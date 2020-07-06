@@ -330,6 +330,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
         
         final NamedList<Object> debug = getFacetDebug(params);
         assertEquals(FacetFieldProcessorByArrayDV.class.getSimpleName(), debug.get("processor"));
+        @SuppressWarnings("unchecked")
         final NamedList<Object> sweep_debug = (NamedList<Object>) debug.get(SWEEP_COLLECTION_DEBUG_KEY);
         assertNotNull(sweep_debug);
         assertEquals("count", sweep_debug.get("base"));
@@ -342,6 +343,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
                                                           facetParams);
         final NamedList<Object> debug = getFacetDebug(params);
         assertEquals(FacetFieldProcessorByArrayDV.class.getSimpleName(), debug.get("processor"));
+        @SuppressWarnings("unchecked")
         final NamedList<Object> sweep_debug = (NamedList<Object>) debug.get(SWEEP_COLLECTION_DEBUG_KEY);
         assertNotNull(sweep_debug);
         assertEquals("count", sweep_debug.get("base"));
@@ -390,6 +392,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
         
         final NamedList<Object> debug = getFacetDebug(params);
         assertEquals(FacetFieldProcessorByArrayDV.class.getSimpleName(), debug.get("processor"));
+        @SuppressWarnings("unchecked")
         final NamedList<Object> sweep_debug = (NamedList<Object>) debug.get(SWEEP_COLLECTION_DEBUG_KEY);
         assertNotNull(sweep_debug);
         assertEquals("count", sweep_debug.get("base"));
@@ -424,6 +427,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
           
           final NamedList<Object> debug = getFacetDebug(params);
           assertEquals(FacetFieldProcessorByArrayDV.class.getSimpleName(), debug.get("processor"));
+          @SuppressWarnings("unchecked")
           final NamedList<Object> sweep_debug = (NamedList<Object>) debug.get(SWEEP_COLLECTION_DEBUG_KEY);
           assertNotNull(sweep_debug);
           assertEquals("count", sweep_debug.get("base"));
@@ -465,12 +469,14 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
         assertEquals("id", parentDebug.get("field"));
         assertNotNull(parentDebug.get("sub-facet"));
         // may be multiples from diff shards, just use first one
+        @SuppressWarnings("unchecked")
         final NamedList<Object> childDebug = ((List<NamedList<Object>>)parentDebug.get("sub-facet")).get(0);
         assertEquals(soloStrField(7), childDebug.get("field"));
 
         // these should all be true for both the parent and the child debug..
         for (NamedList<Object> debug : Arrays.asList(parentDebug, childDebug)) {
           assertEquals(FacetFieldProcessorByArrayDV.class.getSimpleName(), debug.get("processor"));
+          @SuppressWarnings("unchecked")
           final NamedList<Object> sweep_debug = (NamedList<Object>) debug.get(SWEEP_COLLECTION_DEBUG_KEY);
           assertNotNull(sweep_debug);
           assertEquals("count", sweep_debug.get("base"));

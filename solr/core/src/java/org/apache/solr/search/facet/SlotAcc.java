@@ -718,7 +718,9 @@ public abstract class SlotAcc implements Closeable {
       count.key = key;
       final SweepCountAccStruct ret = new SweepCountAccStruct(docs, false, count);
       if (null != debug) {
-        ((List<String>) debug.get("accs")).add(ret.toString());
+        @SuppressWarnings("unchecked")
+        List<String> accsDebug = (List<String>) debug.get("accs");
+        accsDebug.add(ret.toString());
       }
       others.add(ret);
       return ret.roCountAcc();
@@ -749,7 +751,9 @@ public abstract class SlotAcc implements Closeable {
         p.sortAcc = toAcc;
       }
       if (null != debug) {
-        ((List<String>) debug.get("mapped")).add(fromAcc.toString());
+        @SuppressWarnings("unchecked")
+        List<String> mappedDebug = (List<String>) debug.get("mapped");
+        mappedDebug.add(fromAcc.toString());
       }
     }
 
@@ -787,7 +791,7 @@ public abstract class SlotAcc implements Closeable {
      *
      * @returns struct that wraps the {@link FacetContext#base} unless the {@link FacetProcessor#countAcc} is a {@link SweepingCountSlotAcc}
      */
-    public static SweepCountAccStruct baseStructOf(FacetProcessor processor) {
+    public static SweepCountAccStruct baseStructOf(FacetProcessor<?> processor) {
       if (processor.countAcc instanceof SweepingCountSlotAcc) {
         return ((SweepingCountSlotAcc) processor.countAcc).base;
       }
@@ -799,7 +803,7 @@ public abstract class SlotAcc implements Closeable {
      *
      * @returns empty list unless the {@link FacetProcessor#countAcc} is a {@link SweepingCountSlotAcc}
      */
-    public static List<SweepCountAccStruct> otherStructsOf(FacetProcessor processor) {
+    public static List<SweepCountAccStruct> otherStructsOf(FacetProcessor<?> processor) {
       if (processor.countAcc instanceof SweepingCountSlotAcc) {
         return ((SweepingCountSlotAcc) processor.countAcc).others;
       }

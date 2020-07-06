@@ -267,8 +267,7 @@ public class RelatednessAgg extends AggValueSource {
       } else {
         slotVal = new BucketData(fgCount.getCount(slotNum), fgSize, bgCount.getCount(slotNum), bgSize, getRelatedness(slotNum));
       }
-      SimpleOrderedMap res = slotVal.externalize(fcontext.isShard());
-      return res;
+      return slotVal.externalize(fcontext.isShard());
     }
 
     @Override
