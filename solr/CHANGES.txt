@@ -201,6 +201,9 @@ Bug Fixes
 * SOLR-14584: Correct SOLR_SSL_KEY_STORE and SOLR_SSL_TRUST_STORE example comments in solr.in.sh and solr.in.cmd files
   (Aren Cambre via Christine Poerschke)
 
+* SOLR-14628: hl.fragsizeIsMinimum now defaults to true, thus fragments size like previous to Solr 8.5 and addresses a
+  significant performance regression. (David Smiley, Michal Hlavac)
+
 Other Changes
 ---------------------
 * SOLR-14197: SolrResourceLoader: marked many methods as deprecated, and in some cases rerouted exiting logic to avoid
