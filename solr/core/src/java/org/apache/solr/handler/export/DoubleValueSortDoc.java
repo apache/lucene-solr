@@ -44,6 +44,7 @@ class DoubleValueSortDoc extends SingleValueSortDoc {
   public void reset() {
     this.docId = -1;
     this.docBase = -1;
+    this.ord = -1;
     value1.reset();
     value2.reset();
   }
