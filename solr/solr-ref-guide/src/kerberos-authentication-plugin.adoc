@@ -342,7 +342,7 @@ SolrJClient {
 Delegation tokens are also supported with SolrJ, in the following ways:
 
 * `DelegationTokenRequest` and `DelegationTokenResponse` can be used to get, cancel, and renew delegation tokens.
-* `HttpSolrClient.Builder` includes a `withDelegationToken` function for creating an HttpSolrClient that uses a delegation token to authenticate.
+* `HttpSolrClient.Builder` includes a `withKerberosDelegationToken` function for creating an HttpSolrClient that uses a delegation token to authenticate.
 
 Sample code to get a delegation token:
 
@@ -366,7 +366,7 @@ To create a `HttpSolrClient` that uses delegation tokens:
 
 [source,java]
 ----
-HttpSolrClient client = new HttpSolrClient.Builder("http://localhost:8983/solr").withDelegationToken(token).build();
+HttpSolrClient client = new HttpSolrClient.Builder("http://localhost:8983/solr").withKerberosDelegationToken(token).build();
 ----
 
 To create a `CloudSolrClient` that uses delegation tokens:
