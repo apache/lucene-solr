@@ -307,6 +307,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
     final ShardHandler shardHandler1 = getAndPrepShardHandler(req, rb); // creates a ShardHandler object only if it's needed
 
     tagRequestWithRequestId(rb);
+
     if (timer == null) {
       // non-debugging prepare phase
       for( SearchComponent c : components ) {
@@ -511,7 +512,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
   private void tagRequestWithRequestId(ResponseBuilder rb) {
     final boolean ridTaggingDisabled = rb.req.getParams().getBool(CommonParams.DISABLE_REQUEST_ID, false);
     if (! ridTaggingDisabled) {
-      String rid = getRequestId(rb.req);
+      String rid = getOrGenerateRequestId(rb.req);
       if (StringUtils.isBlank(rb.req.getParams().get(CommonParams.REQUEST_ID))) {
         ModifiableSolrParams params = new ModifiableSolrParams(rb.req.getParams());
         params.add(CommonParams.REQUEST_ID, rid);//add rid to the request so that shards see it
@@ -523,7 +524,18 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
     }
   }
 
-  public static String getRequestId(SolrQueryRequest req) {
+  /**
+   * Returns a String to use as an identifier for this request.
+   *
+   * If the provided {@link SolrQueryRequest} contains a non-blank {@link CommonParams#REQUEST_ID} param value this is
+   * used.  This is especially useful for users who deploy Solr as one component in a larger ecosystem, and want to use
+   * an external ID utilized by other components as well.  If no {@link CommonParams#REQUEST_ID} value is present, one
+   * is generated from scratch for the request.
+   * <p>
+   * Callers are responsible for storing the returned value in the {@link SolrQueryRequest} object if they want to
+   * ensure that ID generation is not redone on subsequent calls.
+   */
+  public static String getOrGenerateRequestId(SolrQueryRequest req) {
     String rid = req.getParams().get(CommonParams.REQUEST_ID);
     return StringUtils.isNotBlank(rid) ? rid : generateRid(req);
   }
