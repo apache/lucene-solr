@@ -869,7 +869,7 @@ public class CoreContainer {
               } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
               } catch (ExecutionException e) {
-                log.error("Error waiting for SolrCore to be loaded on startup", e.getCause());
+                log.error("Error waiting for SolrCore to be loaded on startup", e);
               }
             }
           } finally {
@@ -1527,22 +1527,12 @@ public class CoreContainer {
   }
 
   /**
-   * This method is currently experimental.
-   *
-   * @return a Collection of the names that a specific core object is mapped to, there are more than one.
-   */
-  public Collection<String> getNamesForCore(SolrCore core) {
-    return solrCores.getNamesForCore(core);
-  }
-
-  /**
    * get a list of all the cores that are currently known, whether currently loaded or not
    *
    * @return a list of all the available core names in either permanent or transient cores
    */
   public Collection<String> getAllCoreNames() {
     return solrCores.getAllCoreNames();
-
   }
 
   /**

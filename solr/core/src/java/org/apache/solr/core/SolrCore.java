@@ -94,6 +94,7 @@ import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
@@ -157,13 +158,13 @@ import org.apache.solr.update.processor.RunUpdateProcessorFactory;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain.ProcessorInfo;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.IOFunction;
 import org.apache.solr.util.NumberUtils;
 import org.apache.solr.util.PropertiesInputStream;
 import org.apache.solr.util.PropertiesOutputStream;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
+import org.apache.solr.util.circuitbreaker.CircuitBreakerManager;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
@@ -218,6 +219,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private IndexReaderFactory indexReaderFactory;
   private final Codec codec;
   private final MemClassLoader memClassLoader;
+
+  private final CircuitBreakerManager circuitBreakerManager;
 
   private final List<Runnable> confListeners = new CopyOnWriteArrayList<>();
 
@@ -938,6 +941,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       this.configSetProperties = configSet.getProperties();
       // Initialize the metrics manager
       this.coreMetricManager = initCoreMetricManager(solrConfig);
+      this.circuitBreakerManager = initCircuitBreakerManager();
       solrMetricsContext = coreMetricManager.getSolrMetricsContext();
       this.coreMetricManager.loadReporters();
 
@@ -1164,6 +1168,12 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     return coreMetricManager;
   }
 
+  private CircuitBreakerManager initCircuitBreakerManager() {
+    CircuitBreakerManager circuitBreakerManager = CircuitBreakerManager.build(solrConfig);
+
+    return circuitBreakerManager;
+  }
+
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     newSearcherCounter = parentContext.counter("new", Category.SEARCHER.toString());
@@ -1180,7 +1190,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     parentContext.gauge(() -> isClosed() ? 0 : getIndexSize(), true, "sizeInBytes", Category.INDEX.toString());
     parentContext.gauge(() -> isClosed() ? "(closed)" : NumberUtils.readableSize(getIndexSize()), true, "size", Category.INDEX.toString());
     if (coreContainer != null) {
-      parentContext.gauge(() -> coreContainer.getNamesForCore(this), true, "aliases", Category.CORE.toString());
       final CloudDescriptor cd = getCoreDescriptor().getCloudDescriptor();
       if (cd != null) {
         parentContext.gauge(() -> {
@@ -1497,6 +1506,10 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
   public PluginBag<UpdateRequestProcessorFactory> getUpdateProcessors() {
     return updateProcessors;
+  }
+
+  public CircuitBreakerManager getCircuitBreakerManager() {
+    return circuitBreakerManager;
   }
 
   // this core current usage count

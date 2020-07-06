@@ -18,11 +18,14 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.query.FilterQuery;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.join.FiltersQParser;
+
+import java.util.IdentityHashMap;
+import java.util.Map;
 
 /**
  * Create a boolean query from sub queries.
@@ -35,33 +38,43 @@ public class BoolQParserPlugin extends QParserPlugin {
 
   @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
-    return new QParser(qstr, localParams, params, req) {
+    return new FiltersQParser(qstr, localParams, params, req) {
       @Override
       public Query parse() throws SyntaxError {
-        BooleanQuery.Builder builder = new BooleanQuery.Builder();
-        SolrParams solrParams = SolrParams.wrapDefaults(localParams, params);
-        addQueries(builder, solrParams.getParams("must"), BooleanClause.Occur.MUST);
-        addQueries(builder, solrParams.getParams("must_not"), BooleanClause.Occur.MUST_NOT);
-        addQueries(builder, solrParams.getParams("filter"), BooleanClause.Occur.FILTER);
-        addQueries(builder, solrParams.getParams("should"), BooleanClause.Occur.SHOULD);
-        return builder.build();
+        return parseImpl();
       }
 
-      private void addQueries(BooleanQuery.Builder builder, String[] subQueries, BooleanClause.Occur occur) throws SyntaxError {
+      @Override
+      protected Query unwrapQuery(Query query, BooleanClause.Occur occur) {
+        if (occur== BooleanClause.Occur.FILTER) {
+          if (!(query instanceof ExtendedQuery) || (
+                  ((ExtendedQuery) query).getCache())) {
+            return new FilterQuery(query);
+          }
+        } else {
+          if (query instanceof WrappedQuery) {
+            return ((WrappedQuery)query).getWrappedQuery();
+          }
+        }
+        return query;
+      }
+
+      @Override
+      protected Map<QParser, BooleanClause.Occur> clauses() throws SyntaxError {
+        Map<QParser, BooleanClause.Occur> clauses = new IdentityHashMap<>();
+        SolrParams solrParams = SolrParams.wrapDefaults(localParams, params);
+        addQueries(clauses, solrParams.getParams("must"), BooleanClause.Occur.MUST);
+        addQueries(clauses, solrParams.getParams("must_not"), BooleanClause.Occur.MUST_NOT);
+        addQueries(clauses, solrParams.getParams("filter"), BooleanClause.Occur.FILTER);
+        addQueries(clauses, solrParams.getParams("should"), BooleanClause.Occur.SHOULD);
+        return clauses;
+      }
+
+      private void addQueries(Map<QParser, BooleanClause.Occur> clausesDest, String[] subQueries, BooleanClause.Occur occur) throws SyntaxError {
         if (subQueries != null) {
           for (String subQuery : subQueries) {
             final QParser subParser = subQuery(subQuery, null);
-            Query extQuery;
-            if (BooleanClause.Occur.FILTER.equals(occur)) {
-              extQuery = subParser.getQuery();
-              if (!(extQuery instanceof ExtendedQuery) || (
-                  ((ExtendedQuery) extQuery).getCache())) {
-                  extQuery = new FilterQuery(extQuery);
-              }
-            } else {
-              extQuery = subParser.parse();
-            }
-            builder.add(extQuery, occur);
+            clausesDest.put(subParser, occur);
           }
         }
       }

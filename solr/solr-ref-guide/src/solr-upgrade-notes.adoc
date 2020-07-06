@@ -85,6 +85,22 @@ For more information about how to use this, see the section <<exporting-result-s
 
 * The `stats`, `facet`, and `timeseries` expressions now support percentiles and standard deviation aggregations.
 
+*Restricting file paths*
+
+Several Solr APIs allow specifying a file system location. This includes core creation, backup, restore and others. Prior to Solr 8.6 these parameters were not validated, and Solr would allow any absolute or relative path. From 8.6 we by default allow only paths that are relative to `SOLR_HOME`, `SOLR_DATA_HOME` and `coreRootDir`. If you need to create a core or store a backup outside these pre-allowed paths, you now need to tell Solr about what paths to allow.
+
+Solr can be configured with a comma separated list of paths to allow in `solr.xml` using the new `allowPaths` element, see <<format-of-solr-xml.adoc#the-solr-element,Solr.xml Parameters>>. When using the `solr.xml` file shipping with 8.6, you can configure the list of paths to allow through the system property `solr.allowPaths`. Please see `bin/solr.in.sh` or `bin\solr.in.cmd` for example usage. Using the value `*` will allow any path as in erlier versions.
+
+Windows SMB shares on the UNC format, such as `\\myhost\myshare\mypath` are now always disallowed. Please use drive letter mounts instead, i.e. `S:\mypath`.
+
+*Deprecations*
+
+* Cross Data Center Replication (CDCR), in its current form, is deprecated and is scheduled to be removed in 9.0. Please refer to SOLR-14022.
+
+* Data Import Handler is deprecated and is scheduled to be removed in 9.0. A community supported version of this may be available as an external package to be used with the package management system. For more details, please refer to SOLR-14066.
+
+* HDFS support in Solr is deprecated and is scheduled to be removed in 9.0. A community supported version of this may be available as an external package to be used with the package management system. For more details, please refer to SOLR-14021.
+
 === Solr 8.5
 
 See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote85[8.5 Release Notes]
