@@ -30,6 +30,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Objects;
 
 import org.apache.solr.common.NavigableObject;
 import org.apache.solr.common.SolrException;
@@ -40,7 +41,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableSet;
 
-@SuppressWarnings({"overrides"})
 public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
 
   private static final String INCLUDE = "#include";
@@ -348,10 +348,10 @@ public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
     return that instanceof Map && this.delegate.equals(that);
   }
 
-//  @Override
-//  public int hashCode() {
-//    throw new UnsupportedOperationException("TODO unimplemented ValidatingJsonMap.hashCode");
-//  }
+  @Override
+  public int hashCode() {
+    return Objects.hash(delegate);
+  }
 
   @SuppressWarnings({"unchecked"})
   public static final ValidatingJsonMap EMPTY = new ValidatingJsonMap(Collections.EMPTY_MAP);

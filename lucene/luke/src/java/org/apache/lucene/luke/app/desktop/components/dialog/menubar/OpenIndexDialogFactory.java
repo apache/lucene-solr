@@ -352,7 +352,7 @@ public final class OpenIndexDialogFactory implements DialogOpener.DialogFactory 
         JOptionPane.showMessageDialog(dialog, message, "Invalid index path", JOptionPane.ERROR_MESSAGE);
       } catch (Throwable cause) {
         JOptionPane.showMessageDialog(dialog, MessageUtils.getLocalizedMessage("message.error.unknown"), "Unknown Error", JOptionPane.ERROR_MESSAGE);
-        log.error(cause.getMessage(), cause);
+        log.error("Error opening index or directory", cause);
       }
     }
 

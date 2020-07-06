@@ -34,6 +34,9 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.handler.export.ExportWriter;
+import org.apache.solr.handler.export.ExportWriterStream;
+import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.slf4j.Logger;
@@ -51,6 +54,7 @@ public class ExportHandler extends SearchHandler {
   private String coreName;
   private SolrClientCache solrClientCache;
   private StreamContext initialStreamContext;
+  private String writerMetricsPath;
 
   public static class ExportHandlerStreamFactory extends SolrDefaultStreamFactory {
     static final String[] forbiddenStreams = new String[] {
@@ -67,8 +71,14 @@ public class ExportHandler extends SearchHandler {
       for (String function : forbiddenStreams) {
         this.withoutFunctionName(function);
       }
-      this.withFunctionName("input", ExportWriter.ExportWriterStream.class);
+      this.withFunctionName("input", ExportWriterStream.class);
     }
+  }
+
+  @Override
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    super.initializeMetrics(parentContext, scope);
+    this.writerMetricsPath = SolrMetricManager.mkName("writer", getCategory().toString(), scope);
   }
 
   @Override
@@ -112,6 +122,6 @@ public class ExportHandler extends SearchHandler {
     Map<String, String> map = new HashMap<>(1);
     map.put(CommonParams.WT, ReplicationHandler.FILE_STREAM);
     req.setParams(SolrParams.wrapDefaults(new MapSolrParams(map),req.getParams()));
-    rsp.add(ReplicationHandler.FILE_STREAM, new ExportWriter(req, rsp, wt, initialStreamContext));
+    rsp.add(ReplicationHandler.FILE_STREAM, new ExportWriter(req, rsp, wt, initialStreamContext, solrMetricsContext, writerMetricsPath));
   }
 }

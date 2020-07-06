@@ -39,13 +39,6 @@ import org.slf4j.LoggerFactory;
 public final class SolrPaths {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  /**
-   * Solr allows users to store arbitrary files in a special directory located directly under SOLR_HOME.
-   * <p>
-   * This directory is generally created by each node on startup.  Files located in this directory can then be
-   * manipulated using select Solr features (e.g. streaming expressions).
-   */
-  public static final String USER_FILES_DIRECTORY = "userfiles";
   private static final Set<String> loggedOnce = new ConcurrentSkipListSet<>();
 
   private SolrPaths() {} // don't create this
@@ -58,10 +51,8 @@ public final class SolrPaths {
    * <li>Look in the current working directory for a solr/ directory</li>
    * </ol>
    * <p>
-   * The return value is normalized.  Normalization essentially means it ends in a trailing slash.
    *
-   * @return A normalized solrhome
-   * @see #normalizeDir(String)
+   * @return the Solr home, absolute and normalized.
    */
   public static Path locateSolrHome() {
 
@@ -76,7 +67,7 @@ public final class SolrPaths {
     } catch (NamingException e) {
       log.debug("No /solr/home in JNDI");
     } catch (RuntimeException ex) {
-      log.warn("Odd RuntimeException while testing for JNDI: {}", ex.getMessage());
+      log.warn("Odd RuntimeException while testing for JNDI: ", ex);
     }
 
     // Now try system property
@@ -93,27 +84,7 @@ public final class SolrPaths {
       home = "solr/";
       logOnceInfo("home_default", "solr home defaulted to '" + home + "' (could not find system property or JNDI)");
     }
-    return Paths.get(home);
-  }
-
-  public static void ensureUserFilesDataDir(Path solrHome) {
-    final Path userFilesPath = getUserFilesPath(solrHome);
-    final File userFilesDirectory = new File(userFilesPath.toString());
-    if (!userFilesDirectory.exists()) {
-      try {
-        final boolean created = userFilesDirectory.mkdir();
-        if (!created) {
-          log.warn("Unable to create [{}] directory in SOLR_HOME [{}].  Features requiring this directory may fail.", USER_FILES_DIRECTORY, solrHome);
-        }
-      } catch (Exception e) {
-        log.warn("Unable to create [{}] directory in SOLR_HOME [{}].  Features requiring this directory may fail.",
-            USER_FILES_DIRECTORY, solrHome, e);
-      }
-    }
-  }
-
-  public static Path getUserFilesPath(Path solrHome) {
-    return Paths.get(solrHome.toAbsolutePath().toString(), USER_FILES_DIRECTORY).toAbsolutePath();
+    return Paths.get(home).toAbsolutePath().normalize();
   }
 
   /**
@@ -146,6 +117,7 @@ public final class SolrPaths {
    * @throws SolrException if path is outside allowed paths
    */
   public static void assertPathAllowed(Path pathToAssert, Set<Path> allowPaths) throws SolrException {
+    if (pathToAssert == null) return;
     if (OS.isFamilyWindows() && pathToAssert.toString().startsWith("\\\\")) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           "Path " + pathToAssert + " disallowed. UNC paths not supported. Please use drive letter instead.");

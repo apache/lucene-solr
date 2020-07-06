@@ -134,7 +134,7 @@ public class InactiveMarkersPlanAction extends TriggerActionBase {
         Thread.currentThread().interrupt();
         return;
       } catch (IOException | KeeperException e) {
-        log.warn("Could not cleanup marker at {}, skipping... ({}}", markerPath, e.getMessage());
+        log.warn("Could not cleanup marker at {}, skipping... ", markerPath, e);
       }
     });
   }

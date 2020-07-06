@@ -643,7 +643,7 @@ public class TestPackages extends SolrCloudTestCase {
     }
   }
 
-  static void postFileAndWait(MiniSolrCloudCluster cluster, String fname, String path, String sig) throws Exception {
+  public static void postFileAndWait(MiniSolrCloudCluster cluster, String fname, String path, String sig) throws Exception {
     ByteBuffer fileContent = getFileContent(fname);
     String sha512 = DigestUtils.sha512Hex(fileContent.array());
 

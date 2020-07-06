@@ -87,7 +87,7 @@ public class HttpShardHandler extends ShardHandler {
   }
 
   /**
-   * Subclasses could modify the Response based on the the shard
+   * Subclasses could modify the Response based on the shard
    */
   protected ShardResponse transfomResponse(final ShardRequest sreq, ShardResponse rsp, String shard) {
     return rsp;

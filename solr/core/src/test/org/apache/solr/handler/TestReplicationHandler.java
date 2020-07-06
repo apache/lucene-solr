@@ -1618,7 +1618,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   public void testEmptyBackups() throws Exception {
     final File backupDir = createTempDir().toFile();
     final BackupStatusChecker backupStatus = new BackupStatusChecker(masterClient);
-    
+
+    masterJetty.getCoreContainer().getAllowPaths().add(backupDir.toPath());
+
     { // initial request w/o any committed docs
       final String backupName = "empty_backup1";
       final GenericSolrRequest req = new GenericSolrRequest

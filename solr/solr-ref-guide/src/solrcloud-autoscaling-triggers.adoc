@@ -220,7 +220,7 @@ If you would like to change the value of `.autoAddReplicas` trigger, you need to
         "class": "solr.AutoAddReplicasPlanAction"
       },
       {
-       "name": "auto_add_replicas_plan",
+       "name": "execute_plan",
        "class": "solr.ExecutePlanAction"
       }
     ]
