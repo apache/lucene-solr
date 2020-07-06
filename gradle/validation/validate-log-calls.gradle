@@ -134,7 +134,10 @@ class ValidateLogCallsTask extends DefaultTask {
         violation = true
       }
     }
-
+    if (stripped.contains("getMessage()") || stripped.contains("getCause()")) {
+      cause = "getMessage or getCause in log line";
+      violation = true;
+    }
     if (violation) {
       reportViolation(String.format("cause: '%s' Suspicious logging call, Parameterize and possibly surround with 'if (log.is*Enabled) {..}'. Help at: 'gradlew helpValidateLogCalls' %s    %s:%d"
           , cause , System.lineSeparator, file.getAbsolutePath(), lineNumber))

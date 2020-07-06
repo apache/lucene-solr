@@ -130,27 +130,29 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
           continue;
         }
         if (e.getValue() == Diff.ADDED) {
+          // this plugin is totally new
           for (ApiHolder holder : apiInfo.holders) {
             containerApiBag.register(holder, getTemplateVars(apiInfo.info));
           }
           currentPlugins.put(e.getKey(), apiInfo);
         } else {
+          //this plugin is being updated
           ApiInfo old = currentPlugins.put(e.getKey(), apiInfo);
-          List<ApiHolder> replaced = new ArrayList<>();
           for (ApiHolder holder : apiInfo.holders) {
-            Api oldApi = containerApiBag.lookup(holder.getPath(),
-                holder.getMethod().toString(), null);
-            if (oldApi instanceof ApiHolder) {
-              replaced.add((ApiHolder) oldApi);
-            }
+            //register all new paths
             containerApiBag.register(holder, getTemplateVars(apiInfo.info));
           }
           if (old != null) {
-            for (ApiHolder holder : old.holders) {
-              if (replaced.contains(holder)) continue;// this path is present in the new one as well. so it already got replaced
-              containerApiBag.unregister(holder.getMethod(),getActualPath(old, holder.getPath()));
+            //this is an update of the plugin. But, it is possible that
+            // some paths are remved in the newer version of the plugin
+            for (ApiHolder oldHolder : old.holders) {
+              if(apiInfo.get(oldHolder.api.getEndPoint()) == null) {
+                //there was a path in the old plugin which is not present in the new one
+                containerApiBag.unregister(oldHolder.getMethod(),getActualPath(old, oldHolder.getPath()));
+              }
             }
             if (old instanceof Closeable) {
+              //close the old instance of the plugin
               closeWhileHandlingException((Closeable) old);
             }
           }
@@ -207,6 +209,17 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
     private PackageLoader.Package.Version pkgVersion;
     private Class klas;
     Object instance;
+
+    ApiHolder get(EndPoint endPoint) {
+      for (ApiHolder holder : holders) {
+        EndPoint e = holder.api.getEndPoint();
+        if(Objects.equals(endPoint.method()[0] , e.method()[0]) &&
+            Objects.equals(endPoint.path()[0], e.path()[0])) {
+          return holder;
+        }
+      }
+      return null;
+    }
 
 
     @SuppressWarnings({"unchecked","rawtypes"})
