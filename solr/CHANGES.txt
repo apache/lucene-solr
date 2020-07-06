@@ -25,8 +25,6 @@ Improvements
 
 * SOLR-14387: SolrClient.getById() will escape comma separater within ids (Markus Schuch via Mike Drob)
 
-* SOLR-14354: HttpShardHandler send requests in async (Cao Manh Dat).  
-
 Other Changes
 ----------------------
 * LUCENE-9391: Upgrade HPPC to 0.8.2. (Haoyu Zhai)
@@ -109,7 +107,8 @@ Improvements
 
 Optimizations
 ---------------------
-(No changes)
+
+* SOLR-14354: HttpShardHandler send requests in async (Cao Manh Dat).
 
 Bug Fixes
 ---------------------
