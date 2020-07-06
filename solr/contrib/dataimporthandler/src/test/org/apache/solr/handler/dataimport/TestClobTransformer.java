@@ -32,6 +32,7 @@ import java.util.*;
  * @see org.apache.solr.handler.dataimport.ClobTransformer
  * @since solr 1.4
  */
+@SuppressWarnings({"unchecked"})
 public class TestClobTransformer extends AbstractDataImportHandlerTestCase {
   @Test
   public void simple() throws Exception {
@@ -45,6 +46,7 @@ public class TestClobTransformer extends AbstractDataImportHandlerTestCase {
     Context ctx = getContext(null, new VariableResolver(), null, Context.FULL_DUMP, flds, Collections.EMPTY_MAP);
     Transformer t = new ClobTransformer();
     Map<String, Object> row = new HashMap<>();
+    @SuppressWarnings({"rawtypes"})
     Clob clob = (Clob) Proxy.newProxyInstance(this.getClass().getClassLoader(), new Class[]{Clob.class}, new InvocationHandler() {
       @Override
       public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {

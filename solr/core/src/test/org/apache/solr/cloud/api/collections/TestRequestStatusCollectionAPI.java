@@ -60,7 +60,9 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
 
     // Check for the request to be completed.
 
+    @SuppressWarnings({"rawtypes"})
     NamedList r = null;
+    @SuppressWarnings({"rawtypes"})
     NamedList status = null;
     String message = null;
 

@@ -225,6 +225,7 @@ public class SimSolrCloudTestCase extends SolrTestCaseJ4 {
     assertReplicaPropsEquals(one.getProperties(), two.getProperties());
   }
 
+  @SuppressWarnings({"unchecked"})
   public static void assertReplicaInfoEquals(ReplicaInfo one, ReplicaInfo two) {
     assertEquals(one.getName(), two.getName());
     assertEquals(one.getNode(), two.getNode());

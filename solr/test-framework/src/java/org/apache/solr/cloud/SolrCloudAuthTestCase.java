@@ -64,6 +64,7 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
   private static final List<String> AUTH_METRICS_TIMER_KEYS = Collections.singletonList("requestTimes");
   private static final String METRICS_PREFIX_PKI = "SECURITY./authentication/pki.";
   private static final String METRICS_PREFIX = "SECURITY./authentication.";
+  @SuppressWarnings({"rawtypes"})
   public static final Predicate NOT_NULL_PREDICATE = o -> o != null;
   private static final List<String> AUDIT_METRICS_KEYS = Arrays.asList("count");
   private static final List<String> AUTH_METRICS_TO_COMPARE = Arrays.asList("requests", "authenticated", "passThrough", "failWrongCredentials", "failMissingCredentials", "errors");
@@ -188,6 +189,7 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
   }
 
 
+  @SuppressWarnings({"unchecked"})
   private static void verifySecurityStatus(HttpClient cl, String url, String objPath,
                                             Object expected, int count, String authHeader) throws IOException, InterruptedException {
     boolean success = false;
@@ -198,6 +200,7 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
       if (authHeader != null) setAuthorizationHeader(get, authHeader);
       HttpResponse rsp = cl.execute(get);
       s = EntityUtils.toString(rsp.getEntity());
+      @SuppressWarnings({"rawtypes"})
       Map m = null;
       try {
         m = (Map) Utils.fromJSONString(s);
@@ -207,6 +210,7 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
       Utils.consumeFully(rsp.getEntity());
       Object actual = Utils.getObjectByPath(m, true, hierarchy);
       if (expected instanceof Predicate) {
+        @SuppressWarnings({"rawtypes"})
         Predicate predicate = (Predicate) expected;
         if (predicate.test(actual)) {
           success = true;

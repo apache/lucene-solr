@@ -91,6 +91,7 @@ public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
     String suspendTriggerCommand = "{" +
         "'suspend-trigger' : {'name' : '.scheduled_maintenance'}" +
         "}";
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, suspendTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
@@ -127,6 +128,7 @@ public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
 
   @After
   public void restoreDefaults() throws Exception {
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST,
         "{'set-trigger' : " + AutoScaling.SCHEDULED_MAINTENANCE_TRIGGER_DSL + "}");
     NamedList<Object> response = solrClient.request(req);
@@ -200,6 +202,7 @@ public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
 
   @Test
   @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 17-Mar-2018
+  @SuppressWarnings({"unchecked"})
   public void testInactiveShardCleanup() throws Exception {
     String collection1 = getClass().getSimpleName() + "_collection1";
     CollectionAdminRequest.Create create1 = CollectionAdminRequest.createCollection(collection1,
@@ -231,6 +234,7 @@ public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
         "'class' : '" + CapturingTriggerListener.class.getName() + "'" +
         "}" +
         "}";
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setListenerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
@@ -337,6 +341,7 @@ public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
         "'actions' : [" +
         "{'name' : 'test', 'class' : '" + TestTriggerAction2.class.getName() + "'}]" +
     "}}";
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");

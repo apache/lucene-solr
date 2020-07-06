@@ -32,6 +32,7 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 
 // we use this class to expose nasty stuff for tests
+@SuppressWarnings({"try"})
 public class SolrZooKeeper extends ZooKeeper {
   final Set<Thread> spawnedThreads = new CopyOnWriteArraySet<>();
   

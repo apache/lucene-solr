@@ -490,10 +490,12 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
     try {
       final QueryResponse rsp = (new QueryRequest(params)).process(getRandClient(random()));
       assertNotNull(params + " is null rsp?", rsp);
+      @SuppressWarnings({"rawtypes"})
       final NamedList topNamedList = rsp.getResponse();
       assertNotNull(params + " is null topNamedList?", topNamedList);
       
       // skip past the (implicit) top Facet query to get it's "sub-facets" (the real facets)...
+      @SuppressWarnings({"unchecked"})
       final List<NamedList<Object>> facetDebug =
         (List<NamedList<Object>>) topNamedList.findRecursive("debug", "facet-trace", "sub-facet");
       assertNotNull(topNamedList + " ... null facet debug?", facetDebug);
@@ -505,7 +507,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
     } 
 
   }
-  
+
   /** 
    * Test some small, hand crafted, but non-trivial queries that are
    * easier to trace/debug then a pure random monstrosity.
@@ -717,6 +719,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
     try {
 
       // start by recording the results of the purely "default" behavior...
+      @SuppressWarnings({"rawtypes"})
       final NamedList expected = getFacetResponse(basicParams);
 
       // now loop over all permutations of processors and sweep values and and compare them to the "default"...
@@ -728,6 +731,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
             options.add("sweep_val", sweep.toString());
           }
           
+          @SuppressWarnings({"rawtypes"})
           final NamedList actual = getFacetResponse(SolrParams.wrapAppended(options, basicParams));
           
           // we can't rely on a trivial assertEquals() comparison...
@@ -758,6 +762,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
    * We ignore {@link QueryResponse#getJsonFacetingResponse()} because it isn't as useful for
    * doing a "deep equals" comparison across requests
    */
+  @SuppressWarnings({"rawtypes"})
   private NamedList getFacetResponse(final SolrParams params) {
     try {
       final QueryResponse rsp = (new QueryRequest(params)).process(getRandClient(random()));
@@ -924,7 +929,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
       final String facetField = randomFacetField(random());
       return new TermFacet(facetField,
                            map("limit", randomLimitParam(random()),
-                               "overrequest", randomOverrequestParam(random()),
+                               "overrequest", randomOverrequestParam(random(), sort),
                                "prefix", randomPrefixParam(random(), facetField),
                                "perSeg", randomPerSegParam(random()),
                                "sort", sort,
@@ -1103,11 +1108,25 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
     
     /**
      * picks a random value for the "overrequest" param, biased in favor of interesting test cases.
+     * <p>
+     * <b>NOTE:</b> due to variations in overrequest behavior betewen <code>metod:enum<code> and other 
+     * processors (see <a href="https://issues.apache.org/jira/browse/SOLR-14595">SOLR-14595</a>) this 
+     * method takes in the "sort" param and returns a constant value of <code>0</code> if the sort is 
+     * <code>index asc</code> to ensure that the set of candidate buckets considered during merging 
+     * (and refinement) is consistent regardless of what processor is used (and/or what sort is used 
+     * on the parent facet)
+     * </p>
      *
      * @return a number to specify in the request, or null to specify nothing (trigger default behavior)
      * @see #UNIQUE_FIELD_VALS
+     * @see <a href="https://issues.apache.org/jira/browse/SOLR-14595">SOLR-14595</a>
      */
-    public static Integer randomOverrequestParam(final Random r) {
+    public static Integer randomOverrequestParam(final Random r, final String sort) {
+
+      if ("index asc".equals(sort)) {
+        return 0; // test work around for SOLR-14595
+      }
+      
       switch(r.nextInt(10)) {
         case 0:
         case 1:

@@ -108,10 +108,12 @@ public class NestedShardedAtomicUpdateTest extends AbstractFullDistribZkTestBase
       QueryResponse rsp = getRandomSolrClient().query(params("qt","/get", "id","1", "fl", "*, [child]"));
       SolrDocument val = (SolrDocument) rsp.getResponse().get("doc");
       assertEquals("1", val.getFieldValue("id"));
+      @SuppressWarnings({"unchecked"})
       List<SolrDocument> children = (List) val.getFieldValues("children");
       assertEquals(1, children.size());
       SolrDocument childDoc = children.get(0);
       assertEquals("2", childDoc.getFieldValue("id"));
+      @SuppressWarnings({"unchecked"})
       List<SolrDocument> grandChildren = (List) childDoc.getFieldValues("grandChildren");
       assertEquals(idIndex + 1, grandChildren.size());
       SolrDocument grandChild = grandChildren.get(0);
@@ -164,10 +166,12 @@ public class NestedShardedAtomicUpdateTest extends AbstractFullDistribZkTestBase
       QueryResponse rsp = getRandomSolrClient().query(params("qt","/get", "id","1", "fl", "*, [child]"));
       SolrDocument val = (SolrDocument) rsp.getResponse().get("doc");
       assertEquals("1", val.getFieldValue("id"));
+      @SuppressWarnings({"unchecked"})
       List<SolrDocument> children = (List) val.getFieldValues("children");
       assertEquals(1, children.size());
       SolrDocument childDoc = children.get(0);
       assertEquals("2", childDoc.getFieldValue("id"));
+      @SuppressWarnings({"unchecked"})
       List<SolrDocument> grandChildren = (List) childDoc.getFieldValues("grandChildren");
       assertEquals(1, grandChildren.size());
       SolrDocument grandChild = grandChildren.get(0);

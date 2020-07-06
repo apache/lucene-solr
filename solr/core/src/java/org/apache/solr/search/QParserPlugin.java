@@ -30,7 +30,6 @@ import org.apache.solr.search.join.BlockJoinParentQParserPlugin;
 import org.apache.solr.search.join.FiltersQParserPlugin;
 import org.apache.solr.search.join.GraphQParserPlugin;
 import org.apache.solr.search.join.HashRangeQParserPlugin;
-import org.apache.solr.search.join.XCJFQParserPlugin;
 import org.apache.solr.search.mlt.MLTQParserPlugin;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
@@ -87,8 +86,8 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrI
     map.put(PayloadCheckQParserPlugin.NAME, new PayloadCheckQParserPlugin());
     map.put(BoolQParserPlugin.NAME, new BoolQParserPlugin());
     map.put(MinHashQParserPlugin.NAME, new MinHashQParserPlugin());
-    map.put(XCJFQParserPlugin.NAME, new XCJFQParserPlugin());
     map.put(HashRangeQParserPlugin.NAME, new HashRangeQParserPlugin());
+    map.put(RankQParserPlugin.NAME, new RankQParserPlugin());
 
     standardPlugins = Collections.unmodifiableMap(map);
   }
@@ -97,7 +96,7 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrI
   public abstract QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req);
 
   @Override
-  public void init( NamedList args ) {
+  public void init( @SuppressWarnings({"rawtypes"})NamedList args ) {
   }
 
   @Override

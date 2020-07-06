@@ -172,6 +172,7 @@ public final class CursorMark {
    *
    * @see #getSerializedTotem
    */
+  @SuppressWarnings({"unchecked"})
   public void parseSerializedTotem(final String serialized) {
     if (CURSOR_MARK_START.equals(serialized)) {
       values = null;

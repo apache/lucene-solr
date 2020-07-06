@@ -26,7 +26,6 @@ import org.apache.lucene.util.ByteBlockPool;
  * byte[].  This is used by DocumentsWriter to hold the
  * posting list for many terms in RAM.
  */
-
 final class ByteSliceWriter extends DataOutput {
 
   private byte[] slice;

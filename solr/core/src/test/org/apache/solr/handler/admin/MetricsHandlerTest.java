@@ -75,9 +75,11 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
 
     SolrQueryResponse resp = new SolrQueryResponse();
     handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", MetricsHandler.COMPACT_PARAM, "false", CommonParams.WT, "json"), resp);
+    @SuppressWarnings({"rawtypes"})
     NamedList values = resp.getValues();
     assertNotNull(values.get("metrics"));
     values = (NamedList) values.get("metrics");
+    @SuppressWarnings({"rawtypes"})
     NamedList nl = (NamedList) values.get("solr.core.collection1");
     assertNotNull(nl);
     Object o = nl.get("SEARCHER.new.errors");
@@ -181,6 +183,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertNotNull(values.get("solr.core.collection1"));
     values = (NamedList) values.get("solr.core.collection1");
     assertEquals(1, values.size());
+    @SuppressWarnings({"rawtypes"})
     Map m = (Map) values.get("CACHE.core.fieldCache");
     assertNotNull(m);
     assertNotNull(m.get("entries_count"));
@@ -196,6 +199,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", MetricsHandler.COMPACT_PARAM, "false", CommonParams.WT, "json", "group", "node", "type", "timer", "prefix", "CONTAINER.cores"), resp);
     values = resp.getValues();
     assertNotNull(values.get("metrics"));
+    @SuppressWarnings({"rawtypes"})
     SimpleOrderedMap map = (SimpleOrderedMap) values.get("metrics");
     assertEquals(0, map.size());
     handler.close();
@@ -207,9 +211,11 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
 
     SolrQueryResponse resp = new SolrQueryResponse();
     handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json", MetricsHandler.COMPACT_PARAM, "true"), resp);
+    @SuppressWarnings({"rawtypes"})
     NamedList values = resp.getValues();
     assertNotNull(values.get("metrics"));
     values = (NamedList) values.get("metrics");
+    @SuppressWarnings({"rawtypes"})
     NamedList nl = (NamedList) values.get("solr.core.collection1");
     assertNotNull(nl);
     Object o = nl.get("SEARCHER.new.errors");
@@ -219,6 +225,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testPropertyFilter() throws Exception {
     assertQ(req("*:*"), "//result[@numFound='0']");
 
@@ -227,14 +234,17 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     SolrQueryResponse resp = new SolrQueryResponse();
     handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json",
         MetricsHandler.COMPACT_PARAM, "true", "group", "core", "prefix", "CACHE.searcher"), resp);
+    @SuppressWarnings({"rawtypes"})
     NamedList values = resp.getValues();
     assertNotNull(values.get("metrics"));
     values = (NamedList) values.get("metrics");
+    @SuppressWarnings({"rawtypes"})
     NamedList nl = (NamedList) values.get("solr.core.collection1");
     assertNotNull(nl);
     assertTrue(nl.size() > 0);
     nl.forEach((k, v) -> {
       assertTrue(v instanceof Map);
+      @SuppressWarnings({"rawtypes"})
       Map map = (Map) v;
       assertTrue(map.size() > 2);
     });
@@ -250,6 +260,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertTrue(nl.size() > 0);
     nl.forEach((k, v) -> {
       assertTrue(v instanceof Map);
+      @SuppressWarnings({"rawtypes"})
       Map map = (Map) v;
       assertEquals(2, map.size());
       assertNotNull(map.get("inserts"));
@@ -266,6 +277,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     SolrQueryResponse resp = new SolrQueryResponse();
     handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json",
         MetricsHandler.KEY_PARAM, key1), resp);
+    @SuppressWarnings({"rawtypes"})
     NamedList values = resp.getValues();
     Object val = values.findRecursive("metrics", key1);
     assertNotNull(val);
@@ -319,6 +331,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json",
         MetricsHandler.KEY_PARAM, "foo", MetricsHandler.KEY_PARAM, "foo:bar:baz:xyz"), resp);
     values = resp.getValues();
+    @SuppressWarnings({"rawtypes"})
     NamedList metrics = (NamedList) values.get("metrics");
     assertEquals(0, metrics.size());
     assertNotNull(values.findRecursive("errors", "foo"));

@@ -59,9 +59,11 @@ public class GeohashHaversineFunction extends ValueSource {
   }
 
   @Override
-  @SuppressWarnings({"rawtypes"})
-  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(@SuppressWarnings({"rawtypes"})Map context,
+                                  LeafReaderContext readerContext) throws IOException {
+    @SuppressWarnings({"unchecked"})
     final FunctionValues gh1DV = geoHash1.getValues(context, readerContext);
+    @SuppressWarnings({"unchecked"})
     final FunctionValues gh2DV = geoHash2.getValues(context, readerContext);
 
     return new DoubleDocValues(this) {
@@ -97,8 +99,8 @@ public class GeohashHaversineFunction extends ValueSource {
   }
 
   @Override
-  @SuppressWarnings({"rawtypes"})
-  public void createWeight(Map context, IndexSearcher searcher) throws IOException {
+  @SuppressWarnings({"unchecked"})
+  public void createWeight(@SuppressWarnings({"rawtypes"})Map context, IndexSearcher searcher) throws IOException {
     geoHash1.createWeight(context, searcher);
     geoHash2.createWeight(context, searcher);
   }

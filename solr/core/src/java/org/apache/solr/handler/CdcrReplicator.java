@@ -39,7 +39,9 @@ import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
  * The replication logic. Given a {@link org.apache.solr.handler.CdcrReplicatorState}, it reads all the new entries
  * in the update log and forward them to the target cluster. If an error occurs, the replication is stopped and
  * will be tried again later.
+ * @deprecated since 8.6
  */
+@Deprecated(since = "8.6")
 public class CdcrReplicator implements Runnable {
 
   private final CdcrReplicatorState state;
@@ -150,6 +152,7 @@ public class CdcrReplicator implements Runnable {
    *  or received via solr client
    */
   private boolean isTargetCluster(Object o) {
+    @SuppressWarnings({"rawtypes"})
     List entry = (List) o;
     int operationAndFlags = (Integer) entry.get(0);
     int oper = operationAndFlags & UpdateLog.OPERATION_MASK;
@@ -171,6 +174,7 @@ public class CdcrReplicator implements Runnable {
   }
 
   private boolean isDelete(Object o) {
+    @SuppressWarnings({"rawtypes"})
     List entry = (List) o;
     int operationAndFlags = (Integer) entry.get(0);
     int oper = operationAndFlags & UpdateLog.OPERATION_MASK;
@@ -195,6 +199,7 @@ public class CdcrReplicator implements Runnable {
   private UpdateRequest processUpdate(Object o, UpdateRequest req) {
 
     // should currently be a List<Oper,Ver,Doc/Id>
+    @SuppressWarnings({"rawtypes"})
     List entry = (List) o;
 
     int operationAndFlags = (Integer) entry.get(0);

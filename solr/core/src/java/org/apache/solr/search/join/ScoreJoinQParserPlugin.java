@@ -309,7 +309,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     for (Slice slice : zkController.getClusterState().getCollection(fromIndex).getActiveSlicesArr()) {
       if (fromReplica != null)
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "SolrCloud join: multiple shards not yet supported " + fromIndex);
+            "SolrCloud join: To join with a sharded collection, use method=crossCollection.");
 
       for (Replica replica : slice.getReplicas()) {
         if (replica.getNodeName().equals(nodeName)) {
@@ -327,8 +327,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
 
     if (fromReplica == null)
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "SolrCloud join: No active replicas for "+fromIndex+
-              " found in node " + nodeName);
+          "SolrCloud join: To join with a collection that might not be co-located, use method=crossCollection.");
 
     return fromReplica;
   }

@@ -18,42 +18,15 @@
 package org.apache.solr.common.util;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 
 import org.apache.solr.common.MapWriter;
-import org.apache.solr.common.annotation.JsonProperty;
 
 // An implementation of MapWriter which is annotated with Jackson annotations
 public interface ReflectMapWriter extends MapWriter {
 
   @Override
   default void writeMap(EntryWriter ew) throws IOException {
-    for (Field field : this.getClass().getDeclaredFields()) {
-      JsonProperty prop = field.getAnnotation(JsonProperty.class);
-      if (prop == null) continue;
-      int modifiers = field.getModifiers();
-      if (Modifier.isPublic(modifiers) && !Modifier.isStatic(modifiers)) {
-        String fname = prop.value().isEmpty() ? field.getName() : prop.value();
-        try {
-          if (field.getType() == int.class) {
-            ew.put(fname, field.getInt(this));
-          } else if (field.getType() == float.class) {
-            ew.put(fname, field.getFloat(this));
-          } else if (field.getType() == double.class) {
-            ew.put(fname, field.getDouble(this));
-          } else if (field.getType() == boolean.class) {
-            ew.put(fname, field.getBoolean(this));
-          } else if (field.getType() == long.class) {
-            ew.put(fname, field.getLong(this));
-          } else {
-            ew.putIfNotNull(fname, field.get(this));
-          }
-        } catch (IllegalAccessException e) {
-          //it should not happen
-        }
-      }
-    }
+    Utils.reflectWrite(ew, this);
   }
 
 }

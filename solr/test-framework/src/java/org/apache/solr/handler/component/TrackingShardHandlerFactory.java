@@ -156,7 +156,7 @@ public class TrackingShardHandlerFactory extends HttpShardHandlerFactory {
       }
 
       @Override
-      protected NamedList<Object> request(String url, SolrRequest req) throws IOException, SolrServerException {
+      protected NamedList<Object> request(String url, @SuppressWarnings({"rawtypes"})SolrRequest req) throws IOException, SolrServerException {
         try (SolrClient client = new HttpSolrClient.Builder(url).withHttpClient(httpClient).build()) {
           return client.request(req);
         }

@@ -78,6 +78,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
   private final CloudSolrClient solrClient;
   protected final Map<String, Map<String, Map<String, List<ReplicaInfo>>>> nodeVsCollectionVsShardVsReplicaInfo = new HashMap<>();
   private Map<String, Object> snitchSession = new HashMap<>();
+  @SuppressWarnings({"rawtypes"})
   private Map<String, Map> nodeVsTags = new HashMap<>();
   private Map<String, String> withCollectionsMap = new HashMap<>();
 
@@ -147,6 +148,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
 
   @Override
   public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
+    @SuppressWarnings({"unchecked"})
     Map<String, Map<String, List<ReplicaInfo>>> result = nodeVsCollectionVsShardVsReplicaInfo.computeIfAbsent(node, Utils.NEW_HASHMAP_FUN);
     if (!keys.isEmpty()) {
       Map<String, Pair<String, ReplicaInfo>> metricsKeyVsTagReplica = new HashMap<>();
@@ -197,6 +199,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
       metricsKeyVsTag.forEach((key, tag) -> {
         Object v = Utils.getObjectByPath(rsp.nl, true, Arrays.asList("metrics", key));
         if (tag instanceof Function) {
+          @SuppressWarnings({"unchecked"})
           Pair<String, Object> p = (Pair<String, Object>) ((Function) tag).apply(v);
           ctx.getTags().put(p.first(), p.second());
         } else {
@@ -334,6 +337,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
 
 
     @Override
+    @SuppressWarnings({"rawtypes"})
     public Map getZkJson(String path) throws KeeperException, InterruptedException {
       return Utils.getJson(zkClientClusterStateProvider.getZkStateReader().getZkClient(), path, true);
     }
@@ -362,7 +366,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
 
           if (hasIOExceptionCause) {
             if (log.isInfoEnabled()) {
-              log.info("Error on getting remote info, trying again: {}", e.getMessage());
+              log.info("Error on getting remote info, trying again: ", e);
             }
             Thread.sleep(500);
           } else {

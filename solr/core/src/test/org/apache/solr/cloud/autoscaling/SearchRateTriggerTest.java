@@ -89,6 +89,7 @@ public class SearchRateTriggerTest extends SolrCloudTestCase {
 
   @Test
   @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+  @SuppressWarnings({"unchecked"})
   public void testTrigger() throws Exception {
     JettySolrRunner targetNode = cluster.getJettySolrRunner(0);
     SolrZkClient zkClient = cluster.getSolrClient().getZkStateReader().getZkClient();
@@ -214,6 +215,7 @@ public class SearchRateTriggerTest extends SolrCloudTestCase {
   private static final AtomicDouble mockRate = new AtomicDouble();
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testWaitForElapsed() throws Exception {
     SolrResourceLoader loader = cluster.getJettySolrRunner(0).getCoreContainer().getResourceLoader();
     CloudSolrClient solrClient = cluster.getSolrClient();
@@ -315,6 +317,7 @@ public class SearchRateTriggerTest extends SolrCloudTestCase {
     try (SearchRateTrigger trigger = new SearchRateTrigger("search_rate_trigger2")) {
       trigger.configure(loader, cloudManager, props);
       Map<String, Object> config = trigger.getConfig();
+      @SuppressWarnings({"unchecked"})
       Set<String> collections = (Set<String>)config.get(SearchRateTrigger.COLLECTIONS_PROP);
       assertEquals(collections.toString(), 1, collections.size());
       assertEquals("test", collections.iterator().next());

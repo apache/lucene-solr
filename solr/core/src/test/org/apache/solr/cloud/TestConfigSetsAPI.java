@@ -39,6 +39,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+import javax.script.ScriptEngineManager;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.io.FileUtils;
@@ -83,6 +84,7 @@ import org.apache.solr.util.ExternalPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -212,6 +214,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     solrClient.close();
   }
 
+  @SuppressWarnings({"rawtypes"})
   private NamedList getConfigSetPropertiesFromZk(
       SolrZkClient zkClient, String path) throws Exception {
     byte [] oldPropsData = null;
@@ -234,6 +237,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
 
   private void verifyProperties(String configSetName, Map<String, String> oldProps,
        Map<String, String> newProps, SolrZkClient zkClient) throws Exception {
+    @SuppressWarnings({"rawtypes"})
     NamedList properties = getConfigSetPropertiesFromZk(zkClient,
         ZkConfigManager.CONFIGS_ZKNODE + "/" + configSetName + "/" + DEFAULT_FILENAME);
     // let's check without merging the maps, since that's what the MessageHandler does
@@ -258,6 +262,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     }
 
     // check the value in properties are correct
+    @SuppressWarnings({"unchecked"})
     Iterator<Map.Entry<String, Object>> it = properties.iterator();
     while (it.hasNext()) {
       Map.Entry<String, Object> entry = it.next();
@@ -281,6 +286,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     ByteBuffer emptyData = ByteBuffer.allocate(0);
 
     // Checking error when no configuration name is specified in request
+    @SuppressWarnings({"rawtypes"})
     Map map = postDataAndGetResponse(solrCluster.getSolrClient(),
         solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString()
         + "/admin/configs?action=UPLOAD", emptyData, null, null);
@@ -344,6 +350,9 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
   
   @Test
   public void testUploadWithScriptUpdateProcessor() throws Exception {
+    Assume.assumeNotNull((new ScriptEngineManager()).getEngineByExtension("js"));
+    Assume.assumeNotNull((new ScriptEngineManager()).getEngineByName("JavaScript"));
+    
       // Authorization off
       // unprotectConfigsHandler(); // TODO Enable this back when testUploadWithLibDirective() is re-enabled
       final String untrustedSuffix = "-untrusted";
@@ -483,6 +492,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     ZkConfigManager configManager = new ZkConfigManager(zkClient);
     assertFalse(configManager.configExists(configSetName+suffix));
 
+    @SuppressWarnings({"rawtypes"})
     Map map = postDataAndGetResponse(solrCluster.getSolrClient(),
         solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/admin/configs?action=UPLOAD&name="+configSetName+suffix,
         sampleZippedConfig, username, password);
@@ -572,6 +582,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     params.set("name", collectionName);
     params.set("numShards", numShards);
     params.set("replicationFactor", replicationFactor);
+    @SuppressWarnings({"rawtypes"})
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
@@ -580,6 +591,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     return res;
   }
   
+  @SuppressWarnings({"rawtypes"})
   public static Map postDataAndGetResponse(CloudSolrClient cloudClient,
       String uri, ByteBuffer bytarr, String username, String password) throws IOException {
     HttpPost httpPost = null;
@@ -615,7 +627,9 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     return m;
   }
 
-  private static Object getObjectByPath(Map root, boolean onlyPrimitive, java.util.List<String> hierarchy) {
+  private static Object getObjectByPath(@SuppressWarnings({"rawtypes"})Map root,
+                                        boolean onlyPrimitive, java.util.List<String> hierarchy) {
+    @SuppressWarnings({"rawtypes"})
     Map obj = root;
     for (int i = 0; i < hierarchy.size(); i++) {
       String s = hierarchy.get(i);
@@ -672,7 +686,8 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     solrClient.close();
   }
 
-  private void verifyException(SolrClient solrClient, ConfigSetAdminRequest request,
+  private void verifyException(SolrClient solrClient,
+                               @SuppressWarnings({"rawtypes"})ConfigSetAdminRequest request,
       String errorContains) throws Exception {
     Exception e = expectThrows(Exception.class, () -> solrClient.request(request));
     assertTrue("Expected exception message to contain: " + errorContains
@@ -768,6 +783,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
   }
 
   public static class CreateNoErrorChecking extends ConfigSetAdminRequest.Create {
+    @SuppressWarnings({"rawtypes"})
     public ConfigSetAdminRequest setAction(ConfigSetAction action) {
        return super.setAction(action);
     }
@@ -783,6 +799,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
   }
 
   public static class DeleteNoErrorChecking extends ConfigSetAdminRequest.Delete {
+    @SuppressWarnings({"rawtypes"})
     public ConfigSetAdminRequest setAction(ConfigSetAction action) {
        return super.setAction(action);
     }

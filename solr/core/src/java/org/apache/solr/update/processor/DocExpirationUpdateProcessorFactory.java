@@ -99,7 +99,7 @@ import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
  *  </li>
  *  <li><code>ttlParamName</code> - Name of an update request param this process should 
  *      look for in each request when processing document additions, defaulting to  
- *      <code>_ttl_</code>. If the the specified param name exists in an update request, 
+ *      <code>_ttl_</code>. If the specified param name exists in an update request, 
  *      the param value will be parsed as a {@linkplain DateMathParser Date Math Expression}
  *      relative to <code>NOW</code> and the result will be used as a default for any 
  *      document included in that request that does not already have a value in the 
@@ -195,7 +195,8 @@ public final class DocExpirationUpdateProcessorFactory
   private SolrException confErr(final String msg, SolrException root) {
     return new SolrException(SERVER_ERROR, this.getClass().getSimpleName()+": "+msg, root);
   }
-  private String removeArgStr(final NamedList args, final String arg, final String def,
+  private String removeArgStr(@SuppressWarnings({"rawtypes"})final NamedList args,
+                              final String arg, final String def,
                               final String errMsg) {
 
     if (args.indexOf(arg,0) < 0) return def;
@@ -210,7 +211,7 @@ public final class DocExpirationUpdateProcessorFactory
 
   @SuppressWarnings("unchecked")
   @Override
-  public void init(NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
 
     deleteChainName = removeArgStr(args, DEL_CHAIN_NAME_CONF, null,
                                    "must be a <str> or <null/> for default chain");
@@ -351,7 +352,7 @@ public final class DocExpirationUpdateProcessorFactory
 
   /**
    * <p>
-   * Runnable that uses the the <code>deleteChainName</code> configured for 
+   * Runnable that uses the <code>deleteChainName</code> configured for 
    * this factory to execute a delete by query (using the configured 
    * <code>expireField</code>) followed by a soft commit to re-open searchers (if needed)
    * </p>
@@ -431,12 +432,10 @@ public final class DocExpirationUpdateProcessorFactory
 
           log.info("Finished periodic deletion of expired docs");
         } catch (IOException ioe) {
-          log.error("IOException in periodic deletion of expired docs: {}",
-                    ioe.getMessage(), ioe);
+          log.error("IOException in periodic deletion of expired docs: ", ioe);
           // DO NOT RETHROW: ScheduledExecutor will suppress subsequent executions
         } catch (RuntimeException re) {
-          log.error("Runtime error in periodic deletion of expired docs: {}",
-                    re.getMessage(), re);
+          log.error("Runtime error in periodic deletion of expired docs: ", re);
           // DO NOT RETHROW: ScheduledExecutor will suppress subsequent executions
         } finally {
           SolrRequestInfo.clearRequestInfo();

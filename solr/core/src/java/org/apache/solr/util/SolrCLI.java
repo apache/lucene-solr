@@ -677,8 +677,7 @@ public class SolrCLI implements CLIO {
         }
         if (--attempts > 0 && checkCommunicationError(exc)) {
           if (!isFirstAttempt) // only show the log warning after the second attempt fails
-            log.warn("Request to {} failed due to: {}, sleeping for 5 seconds before re-trying the request ..."
-                , getUrl, exc.getMessage());
+            log.warn("Request to {} failed, sleeping for 5 seconds before re-trying the request ...", getUrl, exc);
           try {
             Thread.sleep(5000);
           } catch (InterruptedException ie) { Thread.interrupted(); }
@@ -1082,7 +1081,6 @@ public class SolrCLI implements CLIO {
       Map<String, Object> results = new LinkedHashMap<>();
       if (withClusterState) {
         Map<String, Object> map = new LinkedHashMap<>();
-        map.put("znodeVersion", clusterState.getZNodeVersion());
         map.put("liveNodes", new TreeSet<>(clusterState.getLiveNodes()));
         map.put("collections", clusterState.getCollectionsMap());
         results.put("CLUSTERSTATE", map);
@@ -2246,7 +2244,7 @@ public class SolrCLI implements CLIO {
 
         zkClient.upConfig(confPath, confName);
       } catch (Exception e) {
-        log.error("Could not complete upconfig operation for reason: {}", e.getMessage());
+        log.error("Could not complete upconfig operation for reason: ", e);
         throw (e);
       }
     }
@@ -2319,7 +2317,7 @@ public class SolrCLI implements CLIO {
 
         zkClient.downConfig(confName, configSetPath);
       } catch (Exception e) {
-        log.error("Could not complete downconfig operation for reason: {}", e.getMessage());
+        log.error("Could not complete downconfig operation for reason: ", e);
         throw (e);
       }
 
@@ -2395,7 +2393,7 @@ public class SolrCLI implements CLIO {
             " recurse: " + Boolean.toString(recurse));
         zkClient.clean(znode);
       } catch (Exception e) {
-        log.error("Could not complete rm operation for reason: {}", e.getMessage());
+        log.error("Could not complete rm operation for reason: ", e);
         throw (e);
       }
 
@@ -2463,7 +2461,7 @@ public class SolrCLI implements CLIO {
             " recurse: " + Boolean.toString(recurse), cli);
         stdout.print(zkClient.listZnode(znode, recurse));
       } catch (Exception e) {
-        log.error("Could not complete ls operation for reason: {}", e.getMessage());
+        log.error("Could not complete ls operation for reason: ", e);
         throw (e);
       }
     }
@@ -2522,7 +2520,7 @@ public class SolrCLI implements CLIO {
         echo("Creating Zookeeper path " + znode + " on ZooKeeper at " + zkHost);
         zkClient.makePath(znode, true);
       } catch (Exception e) {
-        log.error("Could not complete mkroot operation for reason: {}", e.getMessage());
+        log.error("Could not complete mkroot operation for reason: ", e);
         throw (e);
       }
     }
@@ -2613,7 +2611,7 @@ public class SolrCLI implements CLIO {
         }
         zkClient.zkTransfer(srcName, srcIsZk, dstName, dstIsZk, recurse);
       } catch (Exception e) {
-        log.error("Could not complete the zk operation for reason: {}", e.getMessage());
+        log.error("Could not complete the zk operation for reason: ", e);
         throw (e);
       }
     }
@@ -2691,7 +2689,7 @@ public class SolrCLI implements CLIO {
         echo("Moving Znode " + source + " to " + dest + " on ZooKeeper at " + zkHost);
         zkClient.moveZnode(source, dest);
       } catch (Exception e) {
-        log.error("Could not complete mv operation for reason: {}", e.getMessage());
+        log.error("Could not complete mv operation for reason: ", e);
         throw (e);
       }
 

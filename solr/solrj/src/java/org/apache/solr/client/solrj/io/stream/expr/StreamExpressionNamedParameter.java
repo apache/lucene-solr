@@ -17,6 +17,8 @@
 package org.apache.solr.client.solrj.io.stream.expr;
 
 
+import java.util.Objects;
+
 /**
  * Provides a named parameter
  */
@@ -104,5 +106,10 @@ public class StreamExpressionNamedParameter implements StreamExpressionParameter
     }
     
     return this.parameter.equals(check.parameter);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(name);
   }
 }

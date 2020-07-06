@@ -25,7 +25,6 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.junit.Before;
@@ -49,7 +48,6 @@ public class ClassificationUpdateProcessorIntegrationTest extends SolrTestCaseJ4
   private static final String BROKEN_CHAIN_FILTER_QUERY = "classification-unsupported-filterQuery";
 
   private ClassificationUpdateProcessorFactory cFactoryToTest = new ClassificationUpdateProcessorFactory();
-  private NamedList args = new NamedList<String>();
 
   @BeforeClass
   public static void beforeClass() throws Exception {

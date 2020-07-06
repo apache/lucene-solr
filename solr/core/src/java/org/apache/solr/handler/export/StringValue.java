@@ -24,27 +24,35 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LongValues;
 
 class StringValue implements SortValue {
 
-  protected SortedDocValues globalDocValues;
+  private final SortedDocValues globalDocValues;
 
-  protected OrdinalMap ordinalMap;
+  private final OrdinalMap ordinalMap;
+  private final String field;
+  private final IntComp comp;
+
   protected LongValues toGlobal = LongValues.IDENTITY; // this segment to global ordinal. NN;
   protected SortedDocValues docValues;
 
-  protected String field;
   protected int currentOrd;
-  protected IntComp comp;
   protected int lastDocID;
   private boolean present;
+
+  private BytesRef lastBytes;
+  private String lastString;
+  private int lastOrd = -1;
 
   public StringValue(SortedDocValues globalDocValues, String field, IntComp comp)  {
     this.globalDocValues = globalDocValues;
     this.docValues = globalDocValues;
     if (globalDocValues instanceof MultiDocValues.MultiSortedDocValues) {
       this.ordinalMap = ((MultiDocValues.MultiSortedDocValues) globalDocValues).mapping;
+    } else {
+      this.ordinalMap = null;
     }
     this.field = field;
     this.comp = comp;
@@ -52,8 +60,17 @@ class StringValue implements SortValue {
     this.present = false;
   }
 
+  public String getLastString() {
+    return this.lastString;
+  }
+
+  public void setLastString(String lastString) {
+    this.lastString = lastString;
+  }
+
   public StringValue copy() {
-    return new StringValue(globalDocValues, field, comp);
+    StringValue copy = new StringValue(globalDocValues, field, comp);
+    return copy;
   }
 
   public void setCurrentValue(int docId) throws IOException {
@@ -88,7 +105,12 @@ class StringValue implements SortValue {
 
   public Object getCurrentValue() throws IOException {
     assert present == true;
-    return docValues.lookupOrd(currentOrd);
+    if (currentOrd != lastOrd) {
+      lastBytes = docValues.lookupOrd(currentOrd);
+      lastOrd = currentOrd;
+      lastString = null;
+    }
+    return lastBytes;
   }
 
   public String getField() {
@@ -109,7 +131,7 @@ class StringValue implements SortValue {
   }
 
   public int compareTo(SortValue o) {
-    StringValue sv = (StringValue)o;
+    StringValue sv = (StringValue) o;
     return comp.compare(currentOrd, sv.currentOrd);
   }
 

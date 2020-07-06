@@ -192,6 +192,6 @@ http://localhost:8983/solr/techproducts/select?q=*:*&fq={!tag=stock_check}inStoc
 
 == The Stats Component and Faceting
 
-Sets of `stats.field` parameters can be referenced by `'tag'` when using Pivot Faceting to compute multiple statistics at every level (i.e.: field) in the tree of pivot constraints.
+Sets of `stats.field` parameters can be referenced by `tag` when using Pivot Faceting to compute multiple statistics at every level (i.e., field) in the tree of pivot constraints.
 
 For more information and a detailed example, please see <<faceting.adoc#combining-stats-component-with-pivots,Combining Stats Component With Pivots>>.

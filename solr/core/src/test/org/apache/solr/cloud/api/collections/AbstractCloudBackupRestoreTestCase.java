@@ -47,6 +47,7 @@ import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -72,6 +73,12 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
   @BeforeClass
   public static void createCluster() throws Exception {
     docsSeed = random().nextLong();
+    System.setProperty("solr.allowPaths", "*");
+  }
+
+  @AfterClass
+  public static void afterClass() throws Exception {
+    System.clearProperty("solr.allowPaths");
   }
 
   /**
@@ -420,8 +427,6 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     } else {
       assertEquals(restoreCollectionName, backupCollection.getMaxShardsPerNode(), restoreCollection.getMaxShardsPerNode());
     }
-
-    assertEquals("Restore collection should use stateFormat=2", 2, restoreCollection.getStateFormat());
 
     //SOLR-12605: Add more docs after restore is complete to see if they are getting added fine
     //explicitly querying the leaders. If we use CloudSolrClient there is no guarantee that we'll hit a nrtReplica

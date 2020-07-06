@@ -256,6 +256,7 @@ public class TestBugInSomething extends BaseTokenStreamTestCase {
         -24, 106, -16, 126, 115, -105, 97, 65, -33, 57, 44, -1, 123, -68, 100, 13, -41, -64, 
         -119, 0, 92, 94, -36, 53, -9, -102, -18, 90, 94, -26, 31, 71, -20
     };
+    @SuppressWarnings("deprecation")
     Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {

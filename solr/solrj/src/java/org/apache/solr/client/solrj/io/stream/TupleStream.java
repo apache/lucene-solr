@@ -123,13 +123,14 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
     return getShards(zkHost, collection, streamContext, new ModifiableSolrParams());
   }
 
+  @SuppressWarnings({"unchecked"})
   public static List<String> getShards(String zkHost,
                                        String collection,
                                        StreamContext streamContext,
                                        SolrParams requestParams)
       throws IOException {
     Map<String, List<String>> shardsMap = null;
-    List<String> shards = new ArrayList();
+    List<String> shards = new ArrayList<>();
 
     if(streamContext != null) {
       shardsMap = (Map<String, List<String>>)streamContext.get("shards");

@@ -28,11 +28,13 @@ public class NoneSuggester extends Suggester {
   }
 
   @Override
+  @SuppressWarnings({"rawtypes"})
   SolrRequest init() {
     return null;
   }
 
   @Override
+  @SuppressWarnings({"rawtypes"})
   public SolrRequest getSuggestion() {
     return null;
   }

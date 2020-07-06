@@ -69,6 +69,7 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.Utils;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.ProtocolHandlers;
@@ -243,7 +244,7 @@ public class Http2SolrClient extends SolrClient {
     assert ObjectReleaseTracker.release(this);
   }
 
-  public boolean isV2ApiRequest(final SolrRequest request) {
+  public boolean isV2ApiRequest(@SuppressWarnings({"rawtypes"})final SolrRequest request) {
     return request instanceof V2Request || request.getPath().contains("/____v2");
   }
 
@@ -267,7 +268,7 @@ public class Http2SolrClient extends SolrClient {
       this.isXml = isXml;
     }
 
-    boolean belongToThisStream(SolrRequest solrRequest, String collection) {
+    boolean belongToThisStream(@SuppressWarnings({"rawtypes"})SolrRequest solrRequest, String collection) {
       ModifiableSolrParams solrParams = new ModifiableSolrParams(solrRequest.getParams());
       if (!origParams.toNamedList().equals(solrParams.toNamedList()) || !StringUtils.equals(origCollection, collection)) {
         return false;
@@ -335,7 +336,7 @@ public class Http2SolrClient extends SolrClient {
     return outStream;
   }
 
-  public void send(OutStream outStream, SolrRequest req, String collection) throws IOException {
+  public void send(OutStream outStream, @SuppressWarnings({"rawtypes"})SolrRequest req, String collection) throws IOException {
     assert outStream.belongToThisStream(req, collection);
     this.requestWriter.write(req, outStream.outProvider.getOutputStream());
     if (outStream.isXml) {
@@ -360,7 +361,7 @@ public class Http2SolrClient extends SolrClient {
     outStream.flush();
   }
 
-  public NamedList<Object> request(SolrRequest solrRequest,
+  public NamedList<Object> request(@SuppressWarnings({"rawtypes"})SolrRequest solrRequest,
                                       String collection,
                                       OnComplete onComplete) throws IOException, SolrServerException {
     Request req = makeRequest(solrRequest, collection);
@@ -435,7 +436,7 @@ public class Http2SolrClient extends SolrClient {
     return StringUtils.isEmpty(contentType)? null : ContentType.parse(contentType);
   }
 
-  private void setBasicAuthHeader(SolrRequest solrRequest, Request req) {
+  private void setBasicAuthHeader(@SuppressWarnings({"rawtypes"})SolrRequest solrRequest, Request req) {
     if (solrRequest.getBasicAuthUser() != null && solrRequest.getBasicAuthPassword() != null) {
       String userPass = solrRequest.getBasicAuthUser() + ":" + solrRequest.getBasicAuthPassword();
       String encoded = Base64.byteArrayToBase64(userPass.getBytes(FALLBACK_CHARSET));
@@ -443,14 +444,14 @@ public class Http2SolrClient extends SolrClient {
     }
   }
 
-  private Request makeRequest(SolrRequest solrRequest, String collection)
+  private Request makeRequest(@SuppressWarnings({"rawtypes"})SolrRequest solrRequest, String collection)
       throws SolrServerException, IOException {
     Request req = createRequest(solrRequest, collection);
     decorateRequest(req, solrRequest);
     return req;
   }
 
-  private void decorateRequest(Request req, SolrRequest solrRequest) {
+  private void decorateRequest(Request req, @SuppressWarnings({"rawtypes"})SolrRequest solrRequest) {
     req.header(HttpHeader.ACCEPT_ENCODING, null);
     if (solrRequest.getUserPrincipal() != null) {
       req.attribute(REQ_PRINCIPAL_KEY, solrRequest.getUserPrincipal());
@@ -464,6 +465,7 @@ public class Http2SolrClient extends SolrClient {
       req.onComplete(listener);
     }
 
+    @SuppressWarnings({"unchecked"})
     Map<String, String> headers = solrRequest.getHeaders();
     if (headers != null) {
       for (Map.Entry<String, String> entry : headers.entrySet()) {
@@ -478,7 +480,8 @@ public class Http2SolrClient extends SolrClient {
     return new URL(oldURL.getProtocol(), oldURL.getHost(), oldURL.getPort(), newPath).toString();
   }
 
-  private Request createRequest(SolrRequest solrRequest, String collection) throws IOException, SolrServerException {
+  @SuppressWarnings({"unchecked"})
+  private Request createRequest(@SuppressWarnings({"rawtypes"})SolrRequest solrRequest, String collection) throws IOException, SolrServerException {
     if (solrRequest.getBasePath() == null && serverBaseUrl == null)
       throw new IllegalArgumentException("Destination node is not provided!");
 
@@ -629,6 +632,7 @@ public class Http2SolrClient extends SolrClient {
     return processor == null || processor instanceof InputStreamResponseParser;
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private NamedList<Object> processErrorsAndResponse(Response response,
                                                      final ResponseParser processor,
                                                      InputStream is,
@@ -701,13 +705,24 @@ public class Http2SolrClient extends SolrClient {
         NamedList<String> metadata = null;
         String reason = null;
         try {
-          NamedList err = (NamedList) rsp.get("error");
-          if (err != null) {
-            reason = (String) err.get("msg");
-            if (reason == null) {
-              reason = (String) err.get("trace");
+          if (error != null) {
+            reason = (String) Utils.getObjectByPath(error, false, Collections.singletonList("msg"));
+            if(reason == null) {
+              reason = (String) Utils.getObjectByPath(error, false, Collections.singletonList("trace"));
             }
-            metadata = (NamedList<String>) err.get("metadata");
+            Object metadataObj = Utils.getObjectByPath(error, false, Collections.singletonList("metadata"));
+            if  (metadataObj instanceof NamedList) {
+              metadata = (NamedList<String>) metadataObj;
+            } else if (metadataObj instanceof List) {
+              // NamedList parsed as List convert to NamedList again
+              List<Object> list = (List<Object>) metadataObj;
+              metadata = new NamedList<>(list.size()/2);
+              for (int i = 0; i < list.size(); i+=2) {
+                metadata.add((String)list.get(i), (String) list.get(i+1));
+              }
+            } else if (metadataObj instanceof Map) {
+              metadata = new NamedList((Map) metadataObj);
+            }
           }
         } catch (Exception ex) {}
         if (reason == null) {
@@ -736,7 +751,7 @@ public class Http2SolrClient extends SolrClient {
   }
 
   @Override
-  public NamedList<Object> request(SolrRequest request, String collection) throws SolrServerException, IOException {
+  public NamedList<Object> request(@SuppressWarnings({"rawtypes"})SolrRequest request, String collection) throws SolrServerException, IOException {
     return request(request, collection, null);
   }
 

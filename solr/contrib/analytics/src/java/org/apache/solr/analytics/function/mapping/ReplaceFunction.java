@@ -131,7 +131,7 @@ public class ReplaceFunction {
       return new StringStreamReplaceFunction((StringValueStream)baseExpr,(StringValue)compExpr,(StringValue)fillExpr);
     }
     if (baseExpr instanceof AnalyticsValue) {
-      return new ValueReplaceFunction((AnalyticsValue)baseExpr,(AnalyticsValue)compExpr,(AnalyticsValue)fillExpr);
+      return new ValueReplaceFunction((AnalyticsValue)baseExpr,compExpr,fillExpr);
     }
     return new StreamReplaceFunction(baseExpr,compExpr,fillExpr);
 

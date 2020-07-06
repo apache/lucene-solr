@@ -288,6 +288,7 @@ public abstract class SlotAcc implements Closeable {
     }
 
     @Override
+    @SuppressWarnings({"unchecked"})
     public void setNextReader(LeafReaderContext readerContext) throws IOException {
       super.setNextReader(readerContext);
       values = valueSource.getValues(fcontext.qcontext, readerContext);

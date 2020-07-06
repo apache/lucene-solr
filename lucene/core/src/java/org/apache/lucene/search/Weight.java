@@ -18,6 +18,7 @@ package org.apache.lucene.search;
 
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReader;
@@ -201,19 +202,20 @@ public abstract class Weight implements SegmentCacheable {
     @Override
     public int score(LeafCollector collector, Bits acceptDocs, int min, int max) throws IOException {
       collector.setScorer(scorer);
+      DocIdSetIterator scorerIterator = twoPhase == null ? iterator : twoPhase.approximation();
+      DocIdSetIterator collectorIterator = collector.competitiveIterator();
+      // if possible filter scorerIterator to keep only competitive docs as defined by collector
+      DocIdSetIterator filteredIterator = collectorIterator == null ? scorerIterator :
+          ConjunctionDISI.intersectIterators(Arrays.asList(scorerIterator, collectorIterator));
       if (scorer.docID() == -1 && min == 0 && max == DocIdSetIterator.NO_MORE_DOCS) {
-        scoreAll(collector, iterator, twoPhase, acceptDocs);
+        scoreAll(collector, filteredIterator, twoPhase, acceptDocs);
         return DocIdSetIterator.NO_MORE_DOCS;
       } else {
         int doc = scorer.docID();
         if (doc < min) {
-          if (twoPhase == null) {
-            doc = iterator.advance(min);
-          } else {
-            doc = twoPhase.approximation().advance(min);
-          }
+          doc = scorerIterator.advance(min);
         }
-        return scoreRange(collector, iterator, twoPhase, acceptDocs, doc, max);
+        return scoreRange(collector, filteredIterator, twoPhase, acceptDocs, doc, max);
       }
     }
 
@@ -242,7 +244,7 @@ public abstract class Weight implements SegmentCacheable {
         return currentDoc;
       }
     }
-    
+
     /** Specialized method to bulk-score all hits; we
      *  separate this from {@link #scoreRange} to help out
      *  hotspot.

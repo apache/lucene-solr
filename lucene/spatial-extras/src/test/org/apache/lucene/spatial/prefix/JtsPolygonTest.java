@@ -99,10 +99,10 @@ public class JtsPolygonTest extends StrategyTestCase {
     }
     addDocument(doc);
 
-    Point upperleft = ctx.makePoint(-122.88, 48.54);
-    Point lowerright = ctx.makePoint(-122.82, 48.62);
+    Point upperleft = ctx.getShapeFactory().pointXY(-122.88, 48.54);
+    Point lowerright = ctx.getShapeFactory().pointXY(-122.82, 48.62);
 
-    Query query = strategy.makeQuery(new SpatialArgs(SpatialOperation.Intersects, ctx.makeRectangle(upperleft, lowerright)));
+    Query query = strategy.makeQuery(new SpatialArgs(SpatialOperation.Intersects, ctx.getShapeFactory().rect(upperleft, lowerright)));
     commit();
 
     TopDocs search = indexSearcher.search(query, 10);

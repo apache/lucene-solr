@@ -117,6 +117,7 @@ public class JsonRecordReader {
    * @param r the stream reader
    * @return results a List of emitted records
    */
+  @SuppressWarnings({"unchecked"})
   public List<Map<String, Object>> getAllRecords(Reader r) throws IOException {
     final List<Map<String, Object>> results = new ArrayList<>();
     // Deep copy is required here because the stream might hold on to the map
@@ -342,6 +343,7 @@ public class JsonRecordReader {
         }
 
         @Override
+        @SuppressWarnings({"unchecked"})
         public void walk(int event) throws IOException {
           if (event == OBJECT_START) {
             walkObject();
@@ -352,6 +354,7 @@ public class JsonRecordReader {
                 // ensure that the value is of type List
                 final Object val = values.get(name);
                 if (val != null && !(val instanceof List)) {
+                  @SuppressWarnings({"rawtypes"})
                   final ArrayList listVal = new ArrayList(1);
                   listVal.add(val);
                   values.put(name, listVal);
@@ -446,6 +449,7 @@ public class JsonRecordReader {
       }
     }
 
+    @SuppressWarnings({"unchecked"})
     private void addChildDoc2ParentDoc(Map<String, Object> record, Map<String, Object> values, String key) {
       record =  Utils.getDeepCopy(record, 2);
       Object oldVal = values.get(key);
@@ -454,6 +458,7 @@ public class JsonRecordReader {
       } else if (oldVal instanceof List) {
         ((List) oldVal).add(record);
       } else {
+        @SuppressWarnings({"rawtypes"})
         ArrayList l = new ArrayList();
         l.add(oldVal);
         l.add(record);
@@ -476,6 +481,7 @@ public class JsonRecordReader {
     }
 
 
+    @SuppressWarnings({"unchecked"})
     private void putValue(Map<String, Object> values, String fieldName, Object o) {
       if (o == null) return;
       Object val = values.get(fieldName);
@@ -484,10 +490,12 @@ public class JsonRecordReader {
         return;
       }
       if (val instanceof List) {
+        @SuppressWarnings({"rawtypes"})
         List list = (List) val;
         list.add(o);
         return;
       }
+      @SuppressWarnings({"rawtypes"})
       ArrayList l = new ArrayList();
       l.add(val);
       l.add(o);
@@ -602,9 +610,11 @@ public class JsonRecordReader {
     public abstract void walk(int event) throws IOException;
   }
 
+  @SuppressWarnings({"unchecked"})
   public static List<Object> parseArrayFieldValue(int ev, JSONParser parser, MethodFrameWrapper runnable) throws IOException {
     assert ev == ARRAY_START;
 
+    @SuppressWarnings({"rawtypes"})
     ArrayList lst = new ArrayList(2);
     for (; ; ) {
       ev = parser.nextEvent();

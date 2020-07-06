@@ -16,34 +16,6 @@
  */
 package org.apache.solr.common.util;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.util.EntityUtils;
-import org.apache.solr.client.solrj.cloud.DistribStateManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
-import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
-import org.apache.solr.common.IteratorWriter;
-import org.apache.solr.common.LinkedHashMapWriter;
-import org.apache.solr.common.MapWriter;
-import org.apache.solr.common.MapWriterMap;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SpecProvider;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkOperation;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.server.ByteBufferInputStream;
-import org.noggit.CharArr;
-import org.noggit.JSONParser;
-import org.noggit.JSONWriter;
-import org.noggit.ObjectBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -53,6 +25,9 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.BufferOverflowException;
@@ -75,12 +50,42 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.util.EntityUtils;
+import org.apache.solr.client.solrj.cloud.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
+import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
+import org.apache.solr.common.IteratorWriter;
+import org.apache.solr.common.LinkedHashMapWriter;
+import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.MapWriterMap;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SpecProvider;
+import org.apache.solr.common.annotation.JsonProperty;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkOperation;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.server.ByteBufferInputStream;
+import org.noggit.CharArr;
+import org.noggit.JSONParser;
+import org.noggit.JSONWriter;
+import org.noggit.ObjectBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.singletonList;
@@ -89,30 +94,39 @@ import static java.util.Collections.unmodifiableSet;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 public class Utils {
+  @SuppressWarnings({"rawtypes"})
   public static final Function NEW_HASHMAP_FUN = o -> new HashMap<>();
+  @SuppressWarnings({"rawtypes"})
   public static final Function NEW_LINKED_HASHMAP_FUN = o -> new LinkedHashMap<>();
+  @SuppressWarnings({"rawtypes"})
   public static final Function NEW_ATOMICLONG_FUN = o -> new AtomicLong();
+  @SuppressWarnings({"rawtypes"})
   public static final Function NEW_ARRAYLIST_FUN = o -> new ArrayList<>();
+  @SuppressWarnings({"rawtypes"})
   public static final Function NEW_SYNCHRONIZED_ARRAYLIST_FUN = o -> Collections.synchronizedList(new ArrayList<>());
+  @SuppressWarnings({"rawtypes"})
   public static final Function NEW_HASHSET_FUN = o -> new HashSet<>();
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  @SuppressWarnings({"rawtypes"})
   public static Map getDeepCopy(Map map, int maxDepth) {
     return getDeepCopy(map, maxDepth, true, false);
   }
 
+  @SuppressWarnings({"rawtypes"})
   public static Map getDeepCopy(Map map, int maxDepth, boolean mutable) {
     return getDeepCopy(map, maxDepth, mutable, false);
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public static Map getDeepCopy(Map map, int maxDepth, boolean mutable, boolean sorted) {
     if (map == null) return null;
     if (maxDepth < 1) return map;
     Map copy;
     if (sorted) {
-      copy = new TreeMap();
+      copy = new TreeMap<>();
     } else {
-      copy = map instanceof LinkedHashMap ? new LinkedHashMap(map.size()) : new HashMap(map.size());
+      copy = map instanceof LinkedHashMap ? new LinkedHashMap<>(map.size()) : new HashMap<>(map.size());
     }
     for (Object o : map.entrySet()) {
       Map.Entry e = (Map.Entry) o;
@@ -121,17 +135,18 @@ public class Utils {
     return mutable ? copy : Collections.unmodifiableMap(copy);
   }
 
-  public static void forEachMapEntry(Object o, String path, BiConsumer fun) {
+  public static void forEachMapEntry(Object o, String path, @SuppressWarnings({"rawtypes"})BiConsumer fun) {
     Object val = Utils.getObjectByPath(o, false, path);
     forEachMapEntry(val, fun);
   }
 
-  public static void forEachMapEntry(Object o, List<String> path, BiConsumer fun) {
+  public static void forEachMapEntry(Object o, List<String> path, @SuppressWarnings({"rawtypes"})BiConsumer fun) {
     Object val = Utils.getObjectByPath(o, false, path);
     forEachMapEntry(val, fun);
   }
 
-  public static void forEachMapEntry(Object o, BiConsumer fun) {
+  @SuppressWarnings({"unchecked"})
+  public static void forEachMapEntry(Object o, @SuppressWarnings({"rawtypes"})BiConsumer fun) {
     if (o instanceof MapWriter) {
       MapWriter m = (MapWriter) o;
       try {
@@ -150,6 +165,7 @@ public class Utils {
     }
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private static Object makeDeepCopy(Object v, int maxDepth, boolean mutable, boolean sorted) {
     if (v instanceof MapWriter && maxDepth > 1) {
       v = ((MapWriter) v).toMap(new LinkedHashMap<>());
@@ -182,10 +198,12 @@ public class Utils {
     }
   }
 
+  @SuppressWarnings({"rawtypes"})
   public static Collection getDeepCopy(Collection c, int maxDepth, boolean mutable) {
     return getDeepCopy(c, maxDepth, mutable, false);
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public static Collection getDeepCopy(Collection c, int maxDepth, boolean mutable, boolean sorted) {
     if (c == null || maxDepth < 1) return c;
     Collection result = c instanceof Set ?
@@ -217,6 +235,7 @@ public class Utils {
     }
 
     @Override
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public void handleUnknownClass(Object o) {
       if (o instanceof MapWriter) {
         Map m = ((MapWriter) o).toMap(new LinkedHashMap<>());
@@ -313,7 +332,7 @@ public class Utils {
       return new ObjectBuilder(jsonParser) {
         @Override
         public Object newObject() {
-          return new LinkedHashMapWriter();
+          return new LinkedHashMapWriter<>();
         }
       };
     } catch (IOException e) {
@@ -326,7 +345,7 @@ public class Utils {
       return new ObjectBuilder(jsonParser) {
         @Override
         public Object newObject() {
-          return new HashMap();
+          return new HashMap<>();
         }
       };
     } catch (IOException e) {
@@ -384,11 +403,13 @@ public class Utils {
     return getObjectByPath(root, onlyPrimitive, parts);
   }
 
+  @SuppressWarnings({"unchecked"})
   public static boolean setObjectByPath(Object root, String hierarchy, Object value) {
     List<String> parts = StrUtils.splitSmart(hierarchy, '/', true);
     return setObjectByPath(root, parts, value);
   }
 
+  @SuppressWarnings({"unchecked"})
   public static boolean setObjectByPath(Object root, List<String> hierarchy, Object value) {
     if (root == null) return false;
     if (!isMapLike(root)) throw new RuntimeException("must be a Map or NamedList");
@@ -407,6 +428,7 @@ public class Utils {
         Object o = getVal(obj, s, -1);
         if (o == null) return false;
         if (idx > -1) {
+          @SuppressWarnings({"rawtypes"})
           List l = (List) o;
           o = idx < l.size() ? l.get(idx) : null;
         }
@@ -415,6 +437,7 @@ public class Utils {
       } else {
         if (idx == -2) {
           if (obj instanceof NamedList) {
+            @SuppressWarnings({"rawtypes"})
             NamedList namedList = (NamedList) obj;
             int location = namedList.indexOf(s, 0);
             if (location == -1) namedList.add(s, value);
@@ -426,6 +449,7 @@ public class Utils {
         } else {
           Object v = getVal(obj, s, -1);
           if (v instanceof List) {
+            @SuppressWarnings({"rawtypes"})
             List list = (List) v;
             if (idx == -1) {
               list.add(value);
@@ -469,6 +493,7 @@ public class Utils {
           } else if (o instanceof Map) {
             o = getVal(new MapWriterMap((Map) o), null, idx);
           } else {
+            @SuppressWarnings({"rawtypes"})
             List l = (List) o;
             o = idx < l.size() ? l.get(idx) : null;
           }
@@ -482,6 +507,7 @@ public class Utils {
           if (val instanceof IteratorWriter) {
             val = getValueAt((IteratorWriter) val, idx);
           } else {
+            @SuppressWarnings({"rawtypes"})
             List l = (List) val;
             val = idx < l.size() ? l.get(idx) : null;
           }
@@ -535,6 +561,7 @@ public class Utils {
     return o instanceof Map || o instanceof NamedList || o instanceof MapWriter;
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private static Object getVal(Object obj, String key, int idx) {
     if (obj instanceof MapWriter) {
       Object[] result = new Object[1];
@@ -595,6 +622,7 @@ public class Utils {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   public static Map<String, Object> getJson(DistribStateManager distribStateManager, String path) throws InterruptedException, IOException, KeeperException {
     VersionedData data = null;
     try {
@@ -614,6 +642,7 @@ public class Utils {
    * @param retryOnConnLoss whether to retry the operation automatically on connection loss, see {@link org.apache.solr.common.cloud.ZkCmdExecutor#retryOperation(ZkOperation)}
    * @return a Map if the node exists and contains valid JSON or an empty map if znode does not exist or has a null data
    */
+  @SuppressWarnings({"unchecked"})
   public static Map<String, Object> getJson(SolrZkClient zkClient, String path, boolean retryOnConnLoss) throws KeeperException, InterruptedException {
     try {
       byte[] bytes = zkClient.getData(path, null, null, retryOnConnLoss);
@@ -663,6 +692,7 @@ public class Utils {
    * @param input the json with new values
    * @return whether there was any change made to sink or not.
    */
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public static boolean mergeJson(Map<String, Object> sink, Map<String, Object> input) {
     boolean isModified = false;
     for (Map.Entry<String, Object> e : input.entrySet()) {
@@ -796,5 +826,67 @@ public class Utils {
     return result;
   }
 
+  public static void reflectWrite(MapWriter.EntryWriter ew, Object o) throws IOException{
+    List<FieldWriter> fieldWriters = null;
+    try {
+      fieldWriters = getReflectData(o.getClass());
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+    for (FieldWriter fieldWriter : fieldWriters) {
+      try {
+        fieldWriter.write(ew, o);
+      } catch (IllegalAccessException e) {
+        //should not happen
+      }
+    }
+  }
+
+  @SuppressWarnings("rawtypes")
+  private static List<FieldWriter> getReflectData(Class c) throws IllegalAccessException {
+    boolean sameClassLoader = c.getClassLoader() == Utils.class.getClassLoader();
+    //we should not cache the class references of objects loaded from packages because they will not get garbage collected
+    //TODO fix that later
+    List<FieldWriter> reflectData = sameClassLoader ? storedReflectData.get(c): null;
+    if(reflectData == null) {
+      ArrayList<FieldWriter> l = new ArrayList<>();
+      MethodHandles.Lookup lookup = MethodHandles.publicLookup();
+      for (Field field : lookup.accessClass(c).getFields()) {
+        JsonProperty prop = field.getAnnotation(JsonProperty.class);
+        if (prop == null) continue;
+        int modifiers = field.getModifiers();
+        if (Modifier.isPublic(modifiers) && !Modifier.isStatic(modifiers)) {
+          String fname = prop.value().isEmpty() ? field.getName() : prop.value();
+          final VarHandle vhandle = lookup.unreflectVarHandle(field);
+          if (field.getType() == int.class) {
+            l.add((ew, inst) -> ew.put(fname, (int) vhandle.get(inst)));
+          } else if (field.getType() == long.class) {
+            l.add((ew, inst) -> ew.put(fname, (long) vhandle.get(inst)));
+          } else if (field.getType() == boolean.class) {
+            l.add((ew, inst) -> ew.put(fname, (boolean) vhandle.get(inst)));
+          } else if (field.getType() == double.class) {
+            l.add((ew, inst) -> ew.put(fname, (double) vhandle.get(inst)));
+          } else if (field.getType() == float.class) {
+            l.add((ew, inst) -> ew.put(fname, (float) vhandle.get(inst)));
+          } else {
+            l.add((ew, inst) -> ew.put(fname, vhandle.get(inst)));
+          }
+        }}
+
+      if(sameClassLoader){
+        storedReflectData.put(c, reflectData = Collections.unmodifiableList(new ArrayList<>(l)));
+      }
+    }
+    return reflectData;
+  }
+
+
+
+  @SuppressWarnings("rawtypes")
+  static Map<Class, List<FieldWriter>> storedReflectData =   new ConcurrentHashMap<>();
+
+  interface FieldWriter {
+    void write(MapWriter.EntryWriter ew, Object inst) throws IllegalAccessException, IOException;
+  }
 
 }

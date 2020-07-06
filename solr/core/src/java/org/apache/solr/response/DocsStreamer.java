@@ -57,6 +57,7 @@ import org.apache.solr.search.SolrReturnFields;
  * This streams SolrDocuments from a DocList and applies transformer
  */
 public class DocsStreamer implements Iterator<SolrDocument> {
+  @SuppressWarnings({"rawtypes"})
   public static final Set<Class> KNOWN_TYPES = new HashSet<>();
 
   private final org.apache.solr.response.ResultContext rctx;

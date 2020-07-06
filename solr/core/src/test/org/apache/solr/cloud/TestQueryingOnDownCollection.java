@@ -84,6 +84,7 @@ public class TestQueryingOnDownCollection extends SolrCloudTestCase {
 
     SolrClient client = cluster.getJettySolrRunner(0).newClient();
 
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = new QueryRequest(new SolrQuery("*:*").setRows(0)).setBasicAuthCredentials(USERNAME, PASSWORD);
 
     // Without the SOLR-13793 fix, this causes requests to "down collection" to pile up (until the nodes run out 
@@ -113,6 +114,7 @@ public class TestQueryingOnDownCollection extends SolrCloudTestCase {
     assertTrue(error.getMessage().contains("No active replicas found for collection: " + COLLECTION_NAME));
   }
 
+  @SuppressWarnings({"unchecked"})
   private void downAllReplicas() throws Exception {
     byte[] collectionState = cluster.getZkClient().getData("/collections/" + COLLECTION_NAME + "/state.json",
         null, null, true);

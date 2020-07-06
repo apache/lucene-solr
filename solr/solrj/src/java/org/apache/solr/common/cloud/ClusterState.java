@@ -39,8 +39,6 @@ import org.noggit.JSONWriter;
  * @lucene.experimental
  */
 public class ClusterState implements JSONWriter.Writable {
-  
-  private final Integer znodeVersion;
 
   private final Map<String, CollectionRef> collectionStates, immutableCollectionStates;
   private Set<String> liveNodes;
@@ -48,9 +46,8 @@ public class ClusterState implements JSONWriter.Writable {
   /**
    * Use this constr when ClusterState is meant for consumption.
    */
-  public ClusterState(Integer znodeVersion, Set<String> liveNodes,
-      Map<String, DocCollection> collectionStates) {
-    this(liveNodes, getRefMap(collectionStates),znodeVersion);
+  public ClusterState(Set<String> liveNodes, Map<String, DocCollection> collectionStates) {
+    this(getRefMap(collectionStates), liveNodes);
   }
 
   private static Map<String, CollectionRef> getRefMap(Map<String, DocCollection> collectionStates) {
@@ -62,39 +59,32 @@ public class ClusterState implements JSONWriter.Writable {
     return collRefs;
   }
 
-  /**Use this if all the collection states are not readily available and some needs to be lazily loaded
+  /**
+   * Use this if all the collection states are not readily available and some needs to be lazily loaded
+   * (parameter order different from constructor above to have different erasures)
    */
-  public ClusterState(Set<String> liveNodes, Map<String, CollectionRef> collectionStates, Integer znodeVersion){
-    this.znodeVersion = znodeVersion;
+  public ClusterState(Map<String, CollectionRef> collectionStates, Set<String> liveNodes){
     this.liveNodes = new HashSet<>(liveNodes.size());
     this.liveNodes.addAll(liveNodes);
     this.collectionStates = new LinkedHashMap<>(collectionStates);
     this.immutableCollectionStates = Collections.unmodifiableMap(collectionStates);
   }
 
-
   /**
    * Returns a new cluster state object modified with the given collection.
    *
    * @param collectionName the name of the modified (or deleted) collection
    * @param collection     the collection object. A null value deletes the collection from the state
-   * @return the updated cluster state which preserves the current live nodes and zk node version
+   * @return the updated cluster state which preserves the current live nodes
    */
   public ClusterState copyWith(String collectionName, DocCollection collection) {
-    ClusterState result = new ClusterState(liveNodes, new LinkedHashMap<>(collectionStates), znodeVersion);
+    ClusterState result = new ClusterState(new LinkedHashMap<>(collectionStates), liveNodes);
     if (collection == null) {
       result.collectionStates.remove(collectionName);
     } else {
       result.collectionStates.put(collectionName, new CollectionRef(collection));
     }
     return result;
-  }
-
-  /**
-   * Returns the zNode version that was used to construct this instance.
-   */
-  public int getZNodeVersion() {
-    return znodeVersion;
   }
 
   /**
@@ -210,50 +200,48 @@ public class ClusterState implements JSONWriter.Writable {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("znodeVersion: ").append(znodeVersion);
-    sb.append("\n");
     sb.append("live nodes:").append(liveNodes);
     sb.append("\n");
     sb.append("collections:").append(collectionStates);
     return sb.toString();
   }
 
-  public static ClusterState load(Integer version, byte[] bytes, Set<String> liveNodes) {
-    return load(version, bytes, liveNodes, ZkStateReader.CLUSTER_STATE);
-  }
   /**
-   * Create ClusterState from json string that is typically stored in zookeeper.
+   * Create a ClusterState from Json.
    * 
-   * @param version zk version of the clusterstate.json file (bytes)
-   * @param bytes clusterstate.json as a byte array
+   * @param bytes a byte array of a Json representation of a mapping from collection name to the Json representation of a
+   *              {@link DocCollection} as written by {@link #write(JSONWriter)}. It can represent
+   *              one or more collections.
    * @param liveNodes list of live nodes
    * @return the ClusterState
    */
-  public static ClusterState load(Integer version, byte[] bytes, Set<String> liveNodes, String znode) {
-    // System.out.println("######## ClusterState.load:" + (bytes==null ? null : new String(bytes)));
+  public static ClusterState createFromJson(int version, byte[] bytes, Set<String> liveNodes) {
     if (bytes == null || bytes.length == 0) {
-      return new ClusterState(version, liveNodes, Collections.<String, DocCollection>emptyMap());
+      return new ClusterState(liveNodes, Collections.<String, DocCollection>emptyMap());
     }
+    @SuppressWarnings({"unchecked"})
     Map<String, Object> stateMap = (Map<String, Object>) Utils.fromJSON(bytes);
-    return load(version, stateMap, liveNodes, znode);
+    return createFromCollectionMap(version, stateMap, liveNodes);
   }
 
-  public static ClusterState load(Integer version, Map<String, Object> stateMap, Set<String> liveNodes, String znode) {
+  public static ClusterState createFromCollectionMap(int version, Map<String, Object> stateMap, Set<String> liveNodes) {
     Map<String,CollectionRef> collections = new LinkedHashMap<>(stateMap.size());
     for (Entry<String, Object> entry : stateMap.entrySet()) {
       String collectionName = entry.getKey();
-      DocCollection coll = collectionFromObjects(collectionName, (Map<String,Object>)entry.getValue(), version, znode);
+      @SuppressWarnings({"unchecked"})
+      DocCollection coll = collectionFromObjects(collectionName, (Map<String,Object>)entry.getValue(), version);
       collections.put(collectionName, new CollectionRef(coll));
     }
 
-    return new ClusterState( liveNodes, collections,version);
+    return new ClusterState(collections, liveNodes);
   }
 
   // TODO move to static DocCollection.loadFromMap
-  private static DocCollection collectionFromObjects(String name, Map<String, Object> objs, Integer version, String znode) {
+  private static DocCollection collectionFromObjects(String name, Map<String, Object> objs, int version) {
     Map<String,Object> props;
     Map<String,Slice> slices;
 
+    @SuppressWarnings({"unchecked"})
     Map<String, Object> sliceObjs = (Map<String, Object>) objs.get(DocCollection.SHARDS);
     if (sliceObjs == null) {
       // legacy format from 4.0... there was no separate "shards" level to contain the collection shards.
@@ -273,47 +261,30 @@ public class ClusterState implements JSONWriter.Writable {
       // back compat with Solr4.4
       router = DocRouter.getDocRouter((String)routerObj);
     } else {
+      @SuppressWarnings({"rawtypes"})
       Map routerProps = (Map)routerObj;
       router = DocRouter.getDocRouter((String) routerProps.get("name"));
     }
 
-    return new DocCollection(name, slices, props, router, version, znode);
+    return new DocCollection(name, slices, props, router, version);
   }
 
   @Override
   public void write(JSONWriter jsonWriter) {
     LinkedHashMap<String , DocCollection> map = new LinkedHashMap<>();
     for (Entry<String, CollectionRef> e : collectionStates.entrySet()) {
-      // using this class check to avoid fetching from ZK in case of lazily loaded collection
       if (e.getValue().getClass() == CollectionRef.class) {
-        // check if it is a lazily loaded collection outside of clusterstate.json
         DocCollection coll = e.getValue().get();
-        if (coll.getStateFormat() == 1) {
-          map.put(coll.getName(),coll);
-        }
+        map.put(coll.getName(),coll);
       }
     }
     jsonWriter.write(map);
-  }
-
-  /**
-   * The version of clusterstate.json in ZooKeeper.
-   * 
-   * @return null if ClusterState was created for publication, not consumption
-   * @deprecated true cluster state spans many ZK nodes, stop depending on the version number of the shared node!
-   * will be removed in 8.0
-   */
-  @Deprecated
-  public Integer getZkClusterStateVersion() {
-    return znodeVersion;
   }
 
   @Override
   public int hashCode() {
     final int prime = 31;
     int result = 1;
-    result = prime * result
-        + ((znodeVersion == null) ? 0 : znodeVersion.hashCode());
     result = prime * result + ((liveNodes == null) ? 0 : liveNodes.hashCode());
     return result;
   }
@@ -324,13 +295,9 @@ public class ClusterState implements JSONWriter.Writable {
     if (obj == null) return false;
     if (getClass() != obj.getClass()) return false;
     ClusterState other = (ClusterState) obj;
-    if (znodeVersion == null) {
-      if (other.znodeVersion != null) return false;
-    } else if (!znodeVersion.equals(other.znodeVersion)) return false;
     if (liveNodes == null) {
-      if (other.liveNodes != null) return false;
-    } else if (!liveNodes.equals(other.liveNodes)) return false;
-    return true;
+      return other.liveNodes == null;
+    } else return liveNodes.equals(other.liveNodes);
   }
 
 
