@@ -227,12 +227,17 @@ By default, the Unified Highlighter will usually pick the right offset source (s
 The offset source can be explicitly configured to one of: `ANALYSIS`, `POSTINGS`, `POSTINGS_WITH_TERM_VECTORS`, or `TERM_VECTORS`.
 
 `hl.fragAlignRatio`::
-Fragment alignment can influence where the match in a passage is positioned. This floating point value is used to break the `hl.fragsize` around the match. The default value of `0.5` means to align the match to the middle. A value of `0.0` would mean to align the match to the left, while `1.0` to align it to the right. _Note: there are situations where the requested alignment is not plausible. This depends on the length of the match, the used breakiterator and the text content around the match._
+This parameter influences where the first match (i.e. highlighted text) in a passage is positioned.
+The default value of `0.5` means to align the match to the middle.
+A value of `0.0` means to align the match to the left, while `1.0` to align it to the right.
+This setting is a best-effort hint, as there are a variety of factors.
+When there's lots of text to be highlighted, lowering this number can help performance a lot.
 
 `hl.fragsizeIsMinimum`::
-By default this parameter is `false`. In this case the highlighter will accept a shorter fragment than `hl.fragsize`, if that is closer to the target than what the next longer choice would be.
-+
-When treating `hl.fragsize` as a strict minimum length is acceptable, turning this on has some performance benefits to consider.
+When `true` (the default), the `hl.fragsize` parameter is treated as a (soft) minimum fragment size;
+provided there is enough text, the fragment is at least this size.
+When `false`, it's an optimal target -- the highlighter will _on average_ produce highlights of this length.
+A `false` setting is slower, particularly when there's lots of text and `hl.bs.type=SENTENCE`.
 
 `hl.tag.ellipsis`::
 By default, each snippet is returned as a separate value (as is done with the other highlighters). Set this parameter to instead return one string with this text as the delimiter. _Note: this is likely to be removed in the future._
