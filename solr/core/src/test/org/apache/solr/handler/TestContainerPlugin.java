@@ -152,10 +152,39 @@ public class TestContainerPlugin extends SolrCloudTestCase {
               .withMethod(GET)
               .build().process(cluster.getSolrClient()),
           ImmutableMap.of("/method.name", "m2"));
+      //now remove the plugin
+      new V2Request.Builder("/cluster/plugin")
+          .withMethod(POST)
+          .forceV2(true)
+          .withPayload("{remove : my-random-name}")
+          .build()
+          .process(cluster.getSolrClient());
 
+      expectFail( () -> new V2Request.Builder("/my-random-prefix/their/plugin")
+          .forceV2(true)
+          .withMethod(GET)
+          .build()
+          .process(cluster.getSolrClient()));
+      expectFail(() -> new V2Request.Builder("/my-random-prefix/their/plugin")
+          .forceV2(true)
+          .withMethod(GET)
+          .build()
+          .process(cluster.getSolrClient()));
     } finally {
       cluster.shutdown();
     }
+  }
+
+  private void expectFail(ThrowingRunnable runnable) throws Exception {
+    for(int i=0;i< 20;i++) {
+      try {
+        runnable.run();
+      } catch (Throwable throwable) {
+        return;
+      }
+      Thread.sleep(100);
+    }
+    fail("should have failed with an exception");
   }
   @Test
   public void testApiFromPackage() throws Exception {

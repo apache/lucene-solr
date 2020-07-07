@@ -241,7 +241,7 @@ public class CommandHandler {
       searcher.search(query, collector);
     } catch (TimeLimitingCollector.TimeExceededException | ExitableDirectoryReader.ExitingReaderException x) {
       partialResults = true;
-      log.warn("Query: {}; {}", query, x.getMessage());
+      log.warn("Query: {}; ", query, x);
     }
 
     if (includeHitCount) {
