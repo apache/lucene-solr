@@ -93,7 +93,7 @@
       <Call name="addRule">
         <Arg>
           <New class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule">
-            <Set name="pattern">*</Set>
+            <Set name="pattern">/solr/*</Set>
             <Set name="name">Content-Security-Policy</Set>
             <Set name="value">default-src 'none'; base-uri 'none'; connect-src 'self'; form-action 'self'; font-src 'self'; frame-ancestors 'none'; img-src 'self'; media-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; worker-src 'self';</Set>
           </New>
@@ -102,7 +102,7 @@
       <Call name="addRule">
         <Arg>
           <New class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule">
-            <Set name="pattern">*</Set>
+            <Set name="pattern">/solr/*</Set>
             <Set name="name">X-Content-Type-Options</Set>
             <Set name="value">nosniff</Set>
           </New>
@@ -111,7 +111,7 @@
       <Call name="addRule">
         <Arg>
           <New class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule">
-            <Set name="pattern">*</Set>
+            <Set name="pattern">/solr/*</Set>
             <Set name="name">X-Frame-Options</Set>
             <Set name="value">SAMEORIGIN</Set>
           </New>
@@ -120,7 +120,7 @@
       <Call name="addRule">
         <Arg>
           <New class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule">
-            <Set name="pattern">*</Set>
+            <Set name="pattern">/solr/*</Set>
             <Set name="name">X-XSS-Protection</Set>
             <Set name="value">1; mode=block</Set>
           </New>
