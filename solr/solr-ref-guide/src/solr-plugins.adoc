@@ -31,6 +31,14 @@ However if you do, start by looking at the code for existing similar plugins.
 Writing your own is an advanced subject that is out of scope of the reference guide.
 One resource is the Solr Wiki documentation on plugins at https://cwiki.apache.org/confluence/display/solr/SolrPlugins[SolrPlugins], which is rather out-of-date but has some utility.
 
+== Types of Plugins ==
+
+There are essentially two types of plugins in Solr:
+
+* Collection level plugins. These are registered on individual collections, either by hand-editing the `solrconfig.xml` or schema files for the collection's configset or by using the <<config-api.adoc#config-api,config API>> or <<schema-api.adoc#schema-api,schema API>>. Examples of these are query parsers, request handlers, update request processors, value source parsers, response writers etc.
+
+* Cluster level (or Core Container level) plugins. These are plugins that are installed at a cluster level and every Solr node has one instance each of these plugins. Examples of these are <<authentication-and-authorization-plugins.adoc#authentication-and-authorization-plugins,authentication and authorization plugins>>, <<metrics-reporting.adoc#reporters,metrics reporters>>, https://issues.apache.org/jira/browse/SOLR-14404[cluster level request handlers] etc.
+
 == Installing Plugins ==
 
 Most plugins are built-in to Solr and there is nothing to install.
@@ -48,7 +56,7 @@ Contrib modules ship with Solr so there's no effort for them but not so for othe
 * <<package-manager.adoc#package-manager,Package Management>>:
 Describes a new and experimental system to manage packages of plugins in SolrCloud.
 It includes CLI commands, cluster-wide installation, use of plugin registries that host plugins, cryptographically signed plugins for security, and more.
-Only some plugins support this.
+Only some plugins support this as of now (support for more types of plugins coming soon).
 
 * <<adding-custom-plugins-in-solrcloud-mode.adoc#adding-custom-plugins-in-solrcloud-mode,Blob and Runtimelib>>:
 Describes a deprecated system that predates the above package management system.

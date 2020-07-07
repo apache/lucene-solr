@@ -28,6 +28,8 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.util.Cancellable;
+import org.apache.solr.client.solrj.util.AsyncListener;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 
@@ -120,21 +122,21 @@ public class MockingHttp2SolrClient extends Http2SolrClient {
     return super.request(request, collection);
   }
 
-  public NamedList<Object> request(@SuppressWarnings({"rawtypes"})SolrRequest request,
-                                   String collection, OnComplete onComplete)
-      throws SolrServerException, IOException {
+  @Override
+  public Cancellable asyncRequest(@SuppressWarnings({"rawtypes"}) SolrRequest request,
+                                  String collection, AsyncListener<NamedList<Object>> asyncListener) {
     if (request instanceof UpdateRequest) {
       UpdateRequest ur = (UpdateRequest) request;
       // won't throw exception if request is DBQ
       if (ur.getDeleteQuery() != null && !ur.getDeleteQuery().isEmpty()) {
-        return super.request(request, collection, onComplete);
+        return super.asyncRequest(request, collection, asyncListener);
       }
     }
 
     if (exp != null) {
       if (oneExpPerReq) {
         if (reqGotException.contains(request)) {
-          return super.request(request, collection, onComplete);
+          return super.asyncRequest(request, collection, asyncListener);
         }
         else
           reqGotException.add(request);
@@ -143,17 +145,12 @@ public class MockingHttp2SolrClient extends Http2SolrClient {
       Exception e = exception();
       if (e instanceof IOException) {
         if (LuceneTestCase.random().nextBoolean()) {
-          throw (IOException) e;
-        } else {
-          throw new SolrServerException(e);
+          e = new SolrServerException(e);
         }
-      } else if (e instanceof SolrServerException) {
-        throw (SolrServerException) e;
-      } else {
-        throw new SolrServerException(e);
       }
+      asyncListener.onFailure(e);
     }
 
-    return super.request(request, collection, onComplete);
+    return super.asyncRequest(request, collection, asyncListener);
   }
 }

@@ -12,6 +12,8 @@ New Features
 ---------------------
 * SOLR-14440: Introduce new Certificate Authentication Plugin to load Principal from certificate subject. (Mike Drob)
 
+* SOLR-14588: Introduce Circuit Breaker Infrastructure and a JVM heap usage memory tracking circuit breaker implementation (Atri Sharma)
+
 Improvements
 ----------------------
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
@@ -87,6 +89,41 @@ Bug Fixes
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
   of Collection API tasks competing for a lock (Ilan Ginzburg).
 
+==================  8.7.0 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+New Features
+---------------------
+(No changes)
+
+Improvements
+---------------------
+
+* SOLR-14523: Enhance gradle logging calls validation: eliminate getMessage() (Andras Salamon via Erick Erickson)
+
+* SOLR-14537: Improve performance of ExportWriter. (ab, Joel Bernstein)
+
+
+Optimizations
+---------------------
+
+* SOLR-14354: HttpShardHandler send requests in async (Cao Manh Dat).
+
+Bug Fixes
+---------------------
+(No changes)
+
+Other Changes
+---------------------
+
+* SOLR-14592: Upgrade Zookeeper to 3.6.1. NOTE: this required upgrading netty to 4.1.50 (Erick Erickson)
+
+* SOLR-14610: ReflectMapWriter to use VarHandle instead of reflection (noble)
+
+* SOLR-10742: SolrCores.getNamesForCore is quite inefficient and blocks other core operations. 
+  NOTE: this experimental method has been removed (Erick Erickson)
+
 ==================  8.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -118,6 +155,10 @@ New Features
   (Joel Bernstein)
 
 * SOLR-14599: Package manager support for cluster level plugins (see SOLR-14404) (Ishan Chattopadhyaya)
+
+* SOLR-14590: Add support for RankFields. RankFields allow the use of per-document scoring factors in a
+  way that lets Solr skip over non-competitive documents when ranking. See SOLR-13289.
+  (Tomás Fernández Löbbe, Varun Thacker)
 
 Improvements
 ---------------------
@@ -172,6 +213,8 @@ Improvements
 * SOLR-13286: Metrics will no longer write a (sometimes large) log message every minute. This can be re-enabled
   via log4j2.xml if desired, or other HttpSolrCall log messages may be quieted on a per handler basis. (Gus Heck)
 
+* SOLR-14539: Introducing {!bool excludeTags=...} for Query DSL. (Mikhail Khludnev)
+
 Optimizations
 ---------------------
 * SOLR-8306: Do not collect expand documents when expand.rows=0 (Marshall Sanders, Amelia Henderson)
@@ -197,6 +240,8 @@ Optimizations
 * SOLR-14552: Add BlockMax-WAND support to ReRank queries (Tomás Fernández Löbbe)
 
 * SOLR-14554: Add BlockMax-WAND support for queries where the score is requested (Tomás Fernández Löbbe)
+
+* SOLR-14634: Limit the HTTP security headers to "/solr" end point (noble)
 
 Bug Fixes
 ---------------------
@@ -279,6 +324,9 @@ Bug Fixes
 
 * SOLR-14584: Correct SOLR_SSL_KEY_STORE and SOLR_SSL_TRUST_STORE example comments in solr.in.sh and solr.in.cmd files
   (Aren Cambre via Christine Poerschke)
+
+* SOLR-14628: hl.fragsizeIsMinimum now defaults to true, thus fragments size like previous to Solr 8.5 and addresses a
+  significant performance regression. (David Smiley, Michal Hlavac)
 
 Other Changes
 ---------------------
@@ -399,6 +447,16 @@ Other Changes
 
 * SOLR-14541: Ensure classes that implement equals implement hashCode or suppress warnings
   (gezapeti, Ilan Ginsburg, Erick Erickson)
+
+* SOLR-14022: Deprecate CDCR (Joel Bernstein, Ishan Chattopadhyaya)
+
+* SOLR-14066: Data Import Handler is deprecated. It is scheduled to be removed as of 9.0 and a community supported
+  package for the same may now be used instead. (Ishan Chattopadhyaya, janhoy)
+
+* SOLR-14021: HDFS support is deprecated. It is scheduled to be removed as of 9.0. Please see JIRA for more details.
+  (Joel Bernstein, Ishan Chattopadhyaya)
+
+* SOLR-14603: Upgrade Restlet to 2.4.3 (marcussorealheis)
 
 ==================  8.5.2 ==================
 
@@ -6972,8 +7030,8 @@ Other Changes
   (David Smiley)
 
 * SOLR-8842: security rules made more foolproof by asking the requesthandler  about the well known
-  permission name.   The APIs are also modified to ue 'index' as the unique identifier instead of name.
-  Name is an optional attribute   now and only to be used when specifying well-known permissions (noble)
+  permission name.  The APIs are also modified to ue 'index' as the unique identifier instead of name.
+  Name is an optional attribute  now and only to be used when specifying well-known permissions (noble)
 
 * SOLR-5616: Simplifies grouping code to use ResponseBuilder.needDocList() to determine if it needs to
   generate a doc list for grouped results. (Steven Bower, Keith Laban, Dennis Gove)

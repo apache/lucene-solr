@@ -380,7 +380,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
           } catch (ZkController.ResourceModifiedInZkException e) {
             //retry
             if (log.isInfoEnabled()) {
-              log.info("Race condition, the node is modified in ZK by someone else {}", e.getMessage());
+              log.info("Race condition, the node is modified in ZK by someone else", e);
             }
           }
         }
