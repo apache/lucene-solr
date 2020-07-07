@@ -37,7 +37,7 @@ There are essentially two types of plugins in Solr:
 
 * Collection level plugins. These are registered on individual collections, either by hand-editing the `solrconfig.xml` or schema files for the collection's configset or by using the <<config-api.adoc#config-api,config API>> or <<schema-api.adoc#schema-api,schema API>>. Examples of these are query parsers, request handlers, update request processors, value source parsers, response writers etc.
 
-* Cluster level (or Core Container level) plugins. These are plugins that are installed at a cluster level and usually every Solr node has one instance each of these plugins. Examples of these are <<authentication-and-authorization-plugins.adoc#authentication-and-authorization-plugins,authentication and authorization plugins>>, <<metrics-reporting.adoc#reporters,metrics reporters>>, https://issues.apache.org/jira/browse/SOLR-14404[cluster level request handlers] etc.
+* Cluster level (or Core Container level) plugins. These are plugins that are installed at a cluster level and every Solr node has one instance each of these plugins. Examples of these are <<authentication-and-authorization-plugins.adoc#authentication-and-authorization-plugins,authentication and authorization plugins>>, <<metrics-reporting.adoc#reporters,metrics reporters>>, https://issues.apache.org/jira/browse/SOLR-14404[cluster level request handlers] etc.
 
 == Installing Plugins ==
 
