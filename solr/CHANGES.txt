@@ -241,6 +241,8 @@ Optimizations
 
 * SOLR-14554: Add BlockMax-WAND support for queries where the score is requested (Tomás Fernández Löbbe)
 
+* SOLR-14634: Limit the HTTP security headers to "/solr" end point (noble)
+
 Bug Fixes
 ---------------------
 * SOLR-13264: IndexSizeTrigger aboveOp / belowOp properties not in valid properties.
