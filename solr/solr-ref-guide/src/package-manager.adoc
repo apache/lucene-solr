@@ -89,7 +89,7 @@ $ bin/solr package install <package-name>[:<version>]
 
 === Deploy a Package
 
-Once a package has been installed, the plugins contained in it can be used in a collection.
+Once a package has been installed, the plugins contained in it can be used in a collection or at the cluster level.
 
 There are two ways to do this: either use the CLI's `deploy` command or manually.
 
@@ -102,12 +102,19 @@ If the package author states support for it, the package can be deployed with th
 $ bin/solr package deploy <package-name>:[version] -collections <collection1>[,<collection2>,...]
 ----
 
+or
+
+[source,bash]
+----
+$ bin/solr package deploy <package-name>:[version] -cluster
+----
+
 The author may want you to confirm deployment of a package via a prompt.
 If you pass `-y` to the command, confirmation can be skipped.
 
 ==== Manual Deploy
 
-It is also possible to deploy a package manually by editing a configset (e.g., `solrconfig.xml`, `managed-schema`/`schema.xml`, etc.) and reloading the collection.
+It is also possible to deploy a package's collection level plugins manually by editing a configset (e.g., `solrconfig.xml`, `managed-schema`/`schema.xml`, etc.) and reloading the collection.
 
 For example, if a package named `mypackage` contains a request handler, we would add it to a configset's `solrconfig.xml` like this:
 
@@ -118,13 +125,15 @@ For example, if a package named `mypackage` contains a request handler, we would
 
 Then use either the Collections API <<collection-management.adoc#reload,RELOAD command>> or the <<collections-core-admin.adoc#collections-core-admin,Admin UI>> to reload the collection.
 
-Next set the package version that this collection is using. If the collection is named `collection1`, the package name is `mypackage`, and the installed version is `1.0.0`, the command would look like this:
+Next, set the package version that this collection is using. If the collection is named `collection1`, the package name is `mypackage`, and the installed version is `1.0.0`, the command would look like this:
 
 [source,bash]
 ----
 curl  "http://localhost:8983/api/collections/collection1/config/params" \
    -H 'Content-type:application/json' -d "{set: {PKG_VERSIONS: {mypackage: '1.0.0'}}}"
 ----
+
+For installing cluster level plugins manually, see https://issues.apache.org/jira/browse/SOLR-14404[cluster level request handlers].
 
 ==== Verify the Deployment
 After deploying, verify that the collection is using the package:
@@ -145,14 +154,35 @@ Next, install the new version of the package from the repositories.
 $ bin/solr package install <package-name>:<version>
 ----
 
-Once you have installed the new version, you can selectively update each of your collections. Assuming the old version is `1.0.0` of the package `mypackage`, and the new version is `2.0.0`, the command would be as follows:
+Once you have installed the new version, you can selectively update each of your collections or the cluster level plugins. Assuming the old version is `1.0.0` of the package `mypackage`, and the new version is `2.0.0`, the command would be as follows:
 
 [source,bash]
 ----
 $ bin/solr package deploy mypackage:2.0.0 --update -collections mycollection
 ----
+or
+[source,bash]
+----
+$ bin/solr package deploy mypackage:2.0.0 --update -cluster
+----
 
 You can run the `list-deployed` command to verify that this collection is using the newly added version.
+
+=== Undeploy a Package
+
+If a package supports undeploying the plugins it contains (check package manager's documentation for every package), then a previously deployed package can be undeployed as follows:
+
+[source,bash]
+----
+$ bin/solr package undeploy <package-name> -collections <collection1>[,<collection2>,...]
+----
+
+or
+
+[source,bash]
+----
+$ bin/solr package deploy <package-name> -cluster
+----
 
 == Security
 

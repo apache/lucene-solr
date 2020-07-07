@@ -138,30 +138,42 @@ public class PackageTool extends SolrCLI.ToolBase {
                 Pair<String, String> parsedVersion = parsePackageVersion(cli.getArgList().get(1).toString());
                 String packageName = parsedVersion.first();
                 String version = parsedVersion.second();
-                repositoryManager.install(packageName, version);
-                PackageUtils.printGreen(packageName + " installed.");
+                boolean success = repositoryManager.install(packageName, version);
+                if (success) {
+                  PackageUtils.printGreen(packageName + " installed.");
+                } else {
+                  PackageUtils.printRed(packageName + " installation failed.");
+                }
                 break;
               }
               case "deploy":
               {
-                Pair<String, String> parsedVersion = parsePackageVersion(cli.getArgList().get(1).toString());
-                String packageName = parsedVersion.first();
-                String version = parsedVersion.second();
-                boolean noprompt = cli.hasOption('y');
-                boolean isUpdate = cli.hasOption("update") || cli.hasOption('u');
-                String collections[] = cli.hasOption("collections")? PackageUtils.validateCollections(cli.getOptionValue("collections").split(",")): new String[] {};
-                packageManager.deploy(packageName, version, collections, cli.hasOption("cluster"), cli.getOptionValues("param"), isUpdate, noprompt);
+                if (cli.hasOption("cluster") || cli.hasOption("collections")) {
+                  Pair<String, String> parsedVersion = parsePackageVersion(cli.getArgList().get(1).toString());
+                  String packageName = parsedVersion.first();
+                  String version = parsedVersion.second();
+                  boolean noprompt = cli.hasOption('y');
+                  boolean isUpdate = cli.hasOption("update") || cli.hasOption('u');
+                  String collections[] = cli.hasOption("collections")? PackageUtils.validateCollections(cli.getOptionValue("collections").split(",")): new String[] {};
+                  packageManager.deploy(packageName, version, collections, cli.hasOption("cluster"), cli.getOptionValues("param"), isUpdate, noprompt);
+                } else {
+                  PackageUtils.printRed("Either specify -cluster to deploy cluster level plugins or -collections <list-of-collections> to deploy collection level plugins");
+                }
                 break;
               }
               case "undeploy":
               {
-                Pair<String, String> parsedVersion = parsePackageVersion(cli.getArgList().get(1).toString());
-                if (parsedVersion.second() != null) {
-                  throw new SolrException(ErrorCode.BAD_REQUEST, "Only package name expected, without a version. Actual: " + cli.getArgList().get(1));
+                if (cli.hasOption("cluster") || cli.hasOption("collections")) {
+                  Pair<String, String> parsedVersion = parsePackageVersion(cli.getArgList().get(1).toString());
+                  if (parsedVersion.second() != null) {
+                    throw new SolrException(ErrorCode.BAD_REQUEST, "Only package name expected, without a version. Actual: " + cli.getArgList().get(1));
+                  }
+                  String packageName = parsedVersion.first();
+                  String collections[] = cli.hasOption("collections")? PackageUtils.validateCollections(cli.getOptionValue("collections").split(",")): new String[] {};
+                  packageManager.undeploy(packageName, collections, cli.hasOption("cluster"));
+                } else {
+                  PackageUtils.printRed("Either specify -cluster to undeploy cluster level plugins or -collections <list-of-collections> to undeploy collection level plugins");
                 }
-                String packageName = parsedVersion.first();
-                String collections[] = cli.hasOption("collections")? PackageUtils.validateCollections(cli.getOptionValue("collections").split(",")): new String[] {};
-                packageManager.undeploy(packageName, collections, cli.hasOption("cluster"));
                 break;
               }
               case "help":
