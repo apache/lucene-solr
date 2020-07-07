@@ -1858,11 +1858,13 @@ public class TestPolicy extends SolrTestCaseJ4 {
     for (int i = 0; i < COUNT_THREADS; i++) {
       threads[i] = new Thread(() -> {
         try {
-          // This thread requests a session, computes using it for 50ms then returns is, executes for 1000ms more,
+          // This thread requests a session, computes using it for 25ms then returns is, executes for 1000ms more,
           // releases the sessions and finishes.
           PolicyHelper.SessionWrapper session = PolicyHelper.getSession(solrCloudManager);
-          seenSessions.add(session);
-          Thread.sleep(50);
+          synchronized (seenSessions) {
+            seenSessions.add(session);
+          }
+          Thread.sleep(25);
           session.returnSession(session.get());
           Thread.sleep(1000);
           session.release();
@@ -1879,11 +1881,13 @@ public class TestPolicy extends SolrTestCaseJ4 {
     }
 
     assertEquals(COUNT_THREADS, completedThreads.get());
-    // The value asserted below is somewhat arbitrary. Running locally max seen is 10, so hopefully 30 is safe.
-    // Idea is to verify we do not allocate a high number of sessions even if many concurrent session
+    // The value asserted below is somewhat arbitrary. Running locally usually uses up to 5 sessions, so hopefully 30 is
+    // safe. Idea is to verify we do not allocate a high number of sessions even if many concurrent session
     // requests arrive at the same time. The session computing time is short in purpose. If it were long, it would be
-    // expected for more sessions to be allocated.
-    assertTrue("Too many sessions created: " + seenSessions.size(), seenSessions.size() < 30);
+    // expected for more sessions to be needed.
+    // Note we joined with all the threads having updated seenSessions so no need to synchronize ("All actions in a thread
+    // happen before any other thread successfully returns from a join() on that thread" - JSR-133)
+    assertTrue("Too many (>=30) sessions created: " + seenSessions.size(), seenSessions.size() < 30);
 
     PolicyHelper.SessionRef sessionRef = (PolicyHelper.SessionRef) solrCloudManager.getObjectCache().get(PolicyHelper.SessionRef.class.getName());
     assertTrue(sessionRef.isEmpty());
