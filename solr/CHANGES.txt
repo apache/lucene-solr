@@ -29,6 +29,8 @@ Improvements
 Optimizations
 ---------------------
 
+* SOLR-14354: HttpShardHandler send requests in async (Cao Manh Dat).
+
 * SOLR-14610: ReflectMapWriter to use MethodHandle instead of old reflection (noble)
 
 * SOLR-13132: JSON Facet perf improvements to support "sweeping" collection of "relatedness()"
