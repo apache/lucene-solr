@@ -215,6 +215,10 @@ Improvements
 
 * SOLR-14539: Introducing {!bool excludeTags=...} for Query DSL. (Mikhail Khludnev)
 
+* SOLR-14566: Request ID's ('rid') are now added by default to distributed search requests, and can be used to correlate 
+  logs from the receiving coordinator node with those from downstream shard requests.  This can be disabled by providing a
+  disableRequestId=true request parameter. (Jason Gerlowski)
+
 Optimizations
 ---------------------
 * SOLR-8306: Do not collect expand documents when expand.rows=0 (Marshall Sanders, Amelia Henderson)
