@@ -521,8 +521,9 @@ public class RegExp {
    *              regular expression
    */
   public RegExp(String s, int syntax_flags, int match_flags) throws IllegalArgumentException {    
-    // (for BWC reasons we don't validate invalid bits, just trim instead)
-    syntax_flags  = syntax_flags & 0xff;
+    if (syntax_flags >  ALL) {
+      throw new IllegalArgumentException("Illegal syntax flag");
+    }
     
     if (match_flags > 0 && match_flags <= ALL) {
       throw new IllegalArgumentException("Illegal match flag");
