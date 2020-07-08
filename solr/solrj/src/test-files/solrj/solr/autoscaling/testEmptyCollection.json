@@ -19,7 +19,6 @@
   "router":{
     "name":"compositeId",
     "field":"shard_s"},
-  "maxShardsPerNode":"-1",
   "autoAddReplicas":"false",
   "nrtReplicas":1,
   "tlogReplicas":0}},

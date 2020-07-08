@@ -52,12 +52,12 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
 
     try (CloudSolrClient client = createCloudClient(null)) {
       // Mix up a bunch of different combinations of shards and replicas in order to exercise boundary cases.
-      // shards, replicationfactor, maxreplicaspernode
+      // shards, replicationfactor
       int shards = random().nextInt(7);
       if (shards < 2) shards = 2;
       int rFactor = random().nextInt(4);
       if (rFactor < 2) rFactor = 2;
-      createCollection(null, COLLECTION_NAME, shards, rFactor, shards * rFactor + 1, client, null, "conf1");
+      createCollection(null, COLLECTION_NAME, shards, rFactor, client, null, "conf1");
     }
 
     waitForCollection(cloudClient.getZkStateReader(), COLLECTION_NAME, 2);

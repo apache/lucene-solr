@@ -434,8 +434,6 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       List<String> nodeList = new ArrayList<>(nodes.size());
       nodeList.addAll(nodes);
 
-      // TODO: Have maxShardsPerNode param for this operation?
-
       // Remove the node that hosts the parent shard for replica creation.
       nodeList.remove(nodeName);
 

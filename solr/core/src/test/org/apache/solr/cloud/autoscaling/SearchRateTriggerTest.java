@@ -100,11 +100,9 @@ public class SearchRateTriggerTest extends SolrCloudTestCase {
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(COLL1,
         "conf", 2, 2);
     CloudSolrClient solrClient = cluster.getSolrClient();
-    create.setMaxShardsPerNode(1);
     create.process(solrClient);
     create = CollectionAdminRequest.createCollection(COLL2,
         "conf", 2, 2);
-    create.setMaxShardsPerNode(1);
     create.process(solrClient);
 
     CloudUtil.waitForState(cloudManager, COLL1, 60, TimeUnit.SECONDS, clusterShape(2, 2));
@@ -238,7 +236,6 @@ public class SearchRateTriggerTest extends SolrCloudTestCase {
     TimeSource timeSource = cloudManager.getTimeSource();
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(COLL1,
         "conf", 2, 2);
-    create.setMaxShardsPerNode(1);
     create.process(solrClient);
     CloudUtil.waitForState(cloudManager, COLL1, 60, TimeUnit.SECONDS, clusterShape(2, 4));
 

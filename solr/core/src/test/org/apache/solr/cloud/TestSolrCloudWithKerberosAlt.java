@@ -50,8 +50,7 @@ public class TestSolrCloudWithKerberosAlt extends SolrCloudTestCase {
 
   private static final int numShards = 1;
   private static final int numReplicas = 1;
-  private static final int maxShardsPerNode = 1;
-  private static final int nodeCount = (numShards*numReplicas + (maxShardsPerNode-1))/maxShardsPerNode;
+  private static final int nodeCount = numShards*numReplicas;
   private static final String configName = "solrCloudCollectionConfig";
   private static final String collectionName = "testkerberoscollection";
   
@@ -122,7 +121,6 @@ public class TestSolrCloudWithKerberosAlt extends SolrCloudTestCase {
   private void testCollectionCreateSearchDelete() throws Exception {
     CloudSolrClient client = cluster.getSolrClient();
     CollectionAdminRequest.createCollection(collectionName, configName, numShards, numReplicas)
-        .setMaxShardsPerNode(maxShardsPerNode)
         .process(client);
 
     cluster.waitForActiveCollection(collectionName, numShards, numShards * numReplicas);

@@ -95,7 +95,6 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
 
   protected void createTestCollection() throws Exception {
     CollectionAdminRequest.createCollection(collectionName, "conf", 2, numNodes)
-        .setMaxShardsPerNode(2)
         .process(solrClient);
     indexDocs(solrClient, collectionName, NUM_DOCS, 0, generator);
     indexDocs(control, "collection1", NUM_DOCS, 0, generator);

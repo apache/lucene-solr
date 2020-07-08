@@ -112,7 +112,6 @@
                 "force_set_state":"false",
                 "leader":"true"}}}},
         "router":{"name":"compositeId"},
-        "maxShardsPerNode":"-1",
         "autoAddReplicas":"false",
         "nrtReplicas":"2",
         "tlogReplicas":"0",

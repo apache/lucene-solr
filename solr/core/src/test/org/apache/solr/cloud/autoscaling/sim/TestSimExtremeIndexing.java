@@ -96,7 +96,7 @@ public class TestSimExtremeIndexing extends SimSolrCloudTestCase {
   public void testScaleUp() throws Exception {
     String collectionName = "testScaleUp_collection";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
-        "conf", 2, 2).setMaxShardsPerNode(10);
+        "conf", 2, 2);
     create.process(solrClient);
 
     CloudUtil.waitForState(cluster, collectionName, 90, TimeUnit.SECONDS,

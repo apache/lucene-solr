@@ -154,7 +154,7 @@ public class RulesTest extends SolrCloudTestCase {
     // adding an additional replica should fail since our rule says at most one replica
     // per node, and we know every node already has one replica
     expectedException.expect(BaseHttpSolrClient.RemoteSolrException.class);
-    expectedException.expectMessage(containsString("current number of eligible live nodes 0"));
+    expectedException.expectMessage(containsString("Could not identify nodes matching the rules"));
     CollectionAdminRequest.addReplicaToShard(rulesColl, "shard2").process(cluster.getSolrClient());
     
   }

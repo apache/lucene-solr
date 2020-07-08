@@ -136,7 +136,7 @@ public class IndexSizeTriggerSizeEstimationTest extends SolrCloudTestCase {
   public void testEstimatedIndexSize() throws Exception {
     String collectionName = "testEstimatedIndexSize_collection";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
-        "conf", 2, 2).setMaxShardsPerNode(2);
+        "conf", 2, 2);
     create.process(solrClient);
 
     CloudUtil.waitForState(cloudManager, "failed to create " + collectionName, collectionName,

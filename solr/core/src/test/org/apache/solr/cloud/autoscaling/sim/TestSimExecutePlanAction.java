@@ -94,7 +94,6 @@ public class TestSimExecutePlanAction extends SimSolrCloudTestCase {
     String collectionName = "testExecute";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
         "conf", 1, 2);
-    create.setMaxShardsPerNode(1);
     create.process(solrClient);
 
     if (log.isInfoEnabled()) {
@@ -192,7 +191,6 @@ public class TestSimExecutePlanAction extends SimSolrCloudTestCase {
     String collectionName = "testIntegration";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
         "conf", 1, 2);
-    create.setMaxShardsPerNode(1);
     create.process(solrClient);
 
     CloudUtil.waitForState(cluster, "Timed out waiting for replicas of new collection to be active",

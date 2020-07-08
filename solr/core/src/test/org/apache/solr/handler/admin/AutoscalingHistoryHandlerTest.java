@@ -93,7 +93,6 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
     otherNodes.remove(systemCollNode);
     CollectionAdminRequest.createCollection(COLL_NAME, null, 1, 3)
         .setCreateNodeSet(String.join(",", otherNodes))
-        .setMaxShardsPerNode(3)
         .process(solrClient);
     cluster.waitForActiveCollection(COLL_NAME, 1, 3);
   }

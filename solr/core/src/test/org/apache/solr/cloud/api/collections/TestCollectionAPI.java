@@ -69,11 +69,10 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       } else {
         req = CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf1",2, 1, 0, 1);
       }
-      req.setMaxShardsPerNode(2);
       setV2(req);
       client.request(req);
       assertV2CallsCount();
-      createCollection(null, COLLECTION_NAME1, 1, 1, 1, client, null, "conf1");
+      createCollection(null, COLLECTION_NAME1, 1, 1, client, null, "conf1");
     }
 
     waitForCollection(cloudClient.getZkStateReader(), COLLECTION_NAME, 2);
@@ -93,38 +92,12 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     replicaPropTest();
     clusterStatusZNodeVersion();
     testCollectionCreationCollectionNameValidation();
-    testCollectionCreationTooManyShards();
     testReplicationFactorValidaton();
     testCollectionCreationShardNameValidation();
     testAliasCreationNameValidation();
     testShardCreationNameValidation();
     testNoConfigset();
     testModifyCollection(); // deletes replicationFactor property from collections, be careful adding new tests after this one!
-  }
-
-  private void testCollectionCreationTooManyShards() throws Exception {
-    try (CloudSolrClient client = createCloudClient(null)) {
-      ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set("action", CollectionParams.CollectionAction.CREATE.toString());
-      params.set("name", "collection_too_many");
-      params.set("router.name", "implicit");
-      params.set("numShards", "10");
-      params.set("maxShardsPerNode", 1);
-      params.set("shards", "b0,b1,b2,b3,b4,b5,b6,b7,b8,b9");
-      @SuppressWarnings({"rawtypes"})
-      SolrRequest request = new QueryRequest(params);
-      request.setPath("/admin/collections");
-
-      try {
-        client.request(request);
-        fail("A collection creation request with too many shards than allowed by maxShardsPerNode should not have succeeded");
-      } catch (BaseHttpSolrClient.RemoteSolrException e) {
-        final String errorMessage = e.getMessage();
-        assertTrue(errorMessage.contains("Cannot create collection"));
-        assertTrue(errorMessage.contains("This requires 10 shards to be created (higher than the allowed number)"));
-        assertMissingCollection(client, "collection_too_many");
-      }
-    }
   }
 
   private void assertMissingCollection(CloudSolrClient client, String collectionName) throws Exception {
@@ -441,7 +414,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   private void clusterStatusZNodeVersion() throws Exception {
     String cname = "clusterStatusZNodeVersion";
     try (CloudSolrClient client = createCloudClient(null)) {
-      setV2(CollectionAdminRequest.createCollection(cname, "conf1", 1, 1).setMaxShardsPerNode(1)).process(client);
+      setV2(CollectionAdminRequest.createCollection(cname, "conf1", 1, 1)).process(client);
       assertV2CallsCount();
       waitForRecoveriesToFinish(cname, true);
 

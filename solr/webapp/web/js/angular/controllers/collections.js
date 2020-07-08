@@ -102,7 +102,6 @@ solrAdminApp.controller('CollectionsController',
           numShards: 1,
           configName: "",
           replicationFactor: 1,
-          maxShardsPerNode: 1,
           autoAddReplicas: 'false'
         };
       };
@@ -153,7 +152,6 @@ solrAdminApp.controller('CollectionsController',
                 numShards: coll.numShards,
                 "collection.configName": coll.configName,
                 replicationFactor: coll.replicationFactor,
-                maxShardsPerNode: coll.maxShardsPerNode,
                 autoAddReplicas: coll.autoAddReplicas
             };
             if (coll.shards) params.shards = coll.shards;

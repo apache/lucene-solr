@@ -204,7 +204,6 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
     String collectionName = "testBasic";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
         "conf", 5, 5, 5, 5);
-    create.setMaxShardsPerNode(1);
     create.setAutoAddReplicas(false);
     create.setCreateNodeSet(String.join(",", nodes));
     create.process(solrClient);
@@ -283,12 +282,10 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
       final int pReps = TestUtil.nextInt(random(), 2, 25 - numShards);
       final int repsPerShard = (nReps + tReps + pReps);
       final int totalCores = repsPerShard * numShards;
-      final int maxShardsPerNode = atLeast(2) + (totalCores / NUM_NODES);
       final String name = "large_sim_collection" + i;
       
       final CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection
         (name, "conf", numShards, nReps, tReps, pReps);
-      create.setMaxShardsPerNode(maxShardsPerNode);
       create.setAutoAddReplicas(false);
       
       log.info("CREATE: {}", create);
@@ -332,7 +329,6 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
     String collectionName = "testNodeAdded";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
         "conf", NUM_NODES / 10, NUM_NODES / 8, NUM_NODES / 8, NUM_NODES / 8);
-    create.setMaxShardsPerNode(5);
     create.setAutoAddReplicas(false);
     create.process(solrClient);
 
@@ -549,7 +545,6 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
     String collectionName = "testNodeLost";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
         "conf", NUM_NODES / 5, NUM_NODES / 10);
-    create.setMaxShardsPerNode(5);
     create.setAutoAddReplicas(false);
     create.process(solrClient);
 

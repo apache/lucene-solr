@@ -29,7 +29,6 @@
       "port":8985}},
 "clusterstate":{"c1":{
   "router":{"name":"compositeId"},
-  "maxShardsPerNode":-1,
   "shards":{
     "s1":{"replicas":{
       "r1":{

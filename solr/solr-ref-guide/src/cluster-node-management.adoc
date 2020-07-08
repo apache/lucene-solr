@@ -94,7 +94,6 @@ http://localhost:8983/solr/admin/collections?action=CLUSTERSTATUS
                 "core":"collection1",
                 "node_name":"127.0.1.1:7500_solr",
                 "base_url":"http://127.0.1.1:7500/solr"}}}},
-        "maxShardsPerNode":"1",
         "router":{"name":"compositeId"},
         "replicationFactor":"1",
         "znodeVersion": 11,

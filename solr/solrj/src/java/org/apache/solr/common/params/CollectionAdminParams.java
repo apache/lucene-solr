@@ -127,4 +127,9 @@ public interface CollectionAdminParams {
 
   /** Option to follow aliases when deciding the target of a collection admin command. */
   String FOLLOW_ALIASES = "followAliases";
+  /**
+   * When AddReplica is called with this set to true, then we do not try to find node assignments
+   * for the add replica API. If set to true, a valid "node" should be specified.
+   */
+  String SKIP_NODE_ASSIGNMENT = "skipNodeAssignment";
 }

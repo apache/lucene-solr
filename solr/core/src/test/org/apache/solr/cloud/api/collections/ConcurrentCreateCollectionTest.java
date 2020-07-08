@@ -71,8 +71,7 @@ public class ConcurrentCreateCollectionTest extends SolrCloudTestCase {
   private CollectionAdminRequest.Create createCollectionRequest(String cname, int numShards, int numReplicas) throws Exception {
     CollectionAdminRequest.Create creq = CollectionAdminRequest
         //  .createCollection(cname, "conf", NODES - 1, NODES - 1)
-        .createCollection(cname, "conf", numShards, numReplicas)
-        .setMaxShardsPerNode(100);
+        .createCollection(cname, "conf", numShards, numReplicas);
     creq.setWaitForFinalState(true);
     creq.setAutoAddReplicas(true);
     return creq;
@@ -135,8 +134,7 @@ public class ConcurrentCreateCollectionTest extends SolrCloudTestCase {
       String cname = "STARTCOLLECTION";
       CollectionAdminRequest.Create creq = CollectionAdminRequest
           //  .createCollection(cname, "conf", NODES - 1, NODES - 1)
-          .createCollection(cname, "conf", unbalancedSize, 1)
-          .setMaxShardsPerNode(100);
+          .createCollection(cname, "conf", unbalancedSize, 1);
       creq.setWaitForFinalState(true);
       // creq.setAutoAddReplicas(true);
       if (useCollectionPolicy) { creq.setPolicy("policy1"); }

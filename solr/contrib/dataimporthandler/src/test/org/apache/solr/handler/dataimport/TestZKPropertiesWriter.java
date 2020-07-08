@@ -104,7 +104,6 @@ public class TestZKPropertiesWriter extends SolrCloudTestCase {
   @SuppressWarnings({"unchecked"})
   public void testZKPropertiesWriter() throws Exception {
     CollectionAdminRequest.createCollectionWithImplicitRouter("collection1", "conf", "1", 1)
-        .setMaxShardsPerNode(1)
         .process(cluster.getSolrClient());
 
     // DIH talks core, SolrCloud talks collection.

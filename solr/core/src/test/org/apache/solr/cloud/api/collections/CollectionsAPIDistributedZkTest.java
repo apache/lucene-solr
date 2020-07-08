@@ -225,16 +225,6 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testTooManyReplicas() {
-    @SuppressWarnings({"rawtypes"})
-    CollectionAdminRequest req = CollectionAdminRequest.createCollection("collection", "conf", 2, 10);
-
-    expectThrows(Exception.class, () -> {
-      cluster.getSolrClient().request(req);
-    });
-  }
-
-  @Test
   public void testMissingNumShards() {
     // No numShards should fail
     ModifiableSolrParams params = new ModifiableSolrParams();
@@ -354,18 +344,6 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testMaxNodesPerShard() {
-    int numLiveNodes = cluster.getJettySolrRunners().size();
-    int numShards = (numLiveNodes/2) + 1;
-    int replicationFactor = 2;
-
-    expectThrows(SolrException.class, () -> {
-      CollectionAdminRequest.createCollection("oversharded", "conf", numShards, replicationFactor)
-          .process(cluster.getSolrClient());
-    });
-  }
-
-  @Test
   public void testCreateNodeSet() throws Exception {
     JettySolrRunner jetty1 = cluster.getRandomJetty(random());
     JettySolrRunner jetty2 = cluster.getRandomJetty(random());
@@ -413,11 +391,9 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
 
       int numShards = TestUtil.nextInt(random(), 0, cluster.getJettySolrRunners().size()) + 1;
       int replicationFactor = TestUtil.nextInt(random(), 0, 3) + 1;
-      int maxShardsPerNode = (((numShards * replicationFactor) / cluster.getJettySolrRunners().size())) + 1;
 
       createRequests[i]
-          = CollectionAdminRequest.createCollection("awhollynewcollection_" + i, "conf2", numShards, replicationFactor)
-          .setMaxShardsPerNode(maxShardsPerNode);
+          = CollectionAdminRequest.createCollection("awhollynewcollection_" + i, "conf2", numShards, replicationFactor);
       createRequests[i].processAsync(cluster.getSolrClient());
       
       Coll coll = new Coll();
@@ -613,7 +589,6 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     String collectionName = "addReplicaColl";
 
     CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2)
-        .setMaxShardsPerNode(4)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(collectionName, 2, 4);
 

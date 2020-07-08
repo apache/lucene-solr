@@ -84,7 +84,7 @@ public class ScheduledTriggerIntegrationTest extends SolrCloudTestCase {
     // this collection will place 2 cores on 1st node and 1 core on 2nd node
     String collectionName = "testScheduledTrigger";
     CollectionAdminRequest.createCollection(collectionName, 1, 3)
-        .setMaxShardsPerNode(5).process(solrClient);
+        .process(solrClient);
     
     cluster.waitForActiveCollection(collectionName, 1, 3);
 

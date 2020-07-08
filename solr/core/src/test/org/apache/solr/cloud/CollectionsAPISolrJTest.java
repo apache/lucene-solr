@@ -364,7 +364,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     String collectionName = "solrj_implicit";
     CollectionAdminResponse response
         = CollectionAdminRequest.createCollectionWithImplicitRouter(collectionName, "conf", "shardA,shardB", 1, 1, 1)
-        .setMaxShardsPerNode(3)
         .process(cluster.getSolrClient());
 
     assertEquals(0, response.getStatus());
@@ -1071,13 +1070,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
     waitForState("Expecting attribute 'replicationFactor' to be 25", collection,
         (n, c) -> 25 == c.getReplicationFactor());
-
-    CollectionAdminRequest.modifyCollection(collection, null)
-        .unsetAttribute("maxShardsPerNode")
-        .process(cluster.getSolrClient());
-
-    waitForState("Expecting attribute 'maxShardsPerNode' to be deleted", collection,
-        (n, c) -> null == c.get("maxShardsPerNode"));
 
     expectThrows(IllegalArgumentException.class,
         "An attempt to set unknown collection attribute should have failed",

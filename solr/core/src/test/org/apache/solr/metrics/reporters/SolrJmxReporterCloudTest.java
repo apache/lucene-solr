@@ -58,7 +58,6 @@ public class SolrJmxReporterCloudTest extends SolrCloudTestCase {
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
-        .setMaxShardsPerNode(2)
         .process(cluster.getSolrClient());
   }
   @AfterClass

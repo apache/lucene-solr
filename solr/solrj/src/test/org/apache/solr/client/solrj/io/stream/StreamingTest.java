@@ -123,7 +123,6 @@ public static void configureCluster() throws Exception {
     collection = MULTI_REPLICA_COLLECTIONORALIAS;
   }
   CollectionAdminRequest.createCollection(collection, "conf", numShards, 1, 1, 1)
-      .setMaxShardsPerNode(numShards * 3)
       .process(cluster.getSolrClient());
   cluster.waitForActiveCollection(collection, numShards, numShards * 3);
   if (useAlias) {

@@ -322,8 +322,8 @@ public class Assign {
 
   // Only called from addReplica (and by extension createShard) (so far).
   //
-  // Gets a list of candidate nodes to put the required replica(s) on. Throws errors if not enough replicas
-  // could be created on live nodes given maxShardsPerNode, Replication factor (if from createShard) etc.
+  // Gets a list of candidate nodes to put the required replica(s) on. Throws errors if the AssignStrategy
+  // can't allocate valid positions.
   @SuppressWarnings({"unchecked"})
   public static List<ReplicaPosition> getNodesForNewReplicas(ClusterState clusterState, String collectionName,
                                                           String shard, int nrtReplicas, int tlogReplicas, int pullReplicas,
@@ -331,8 +331,7 @@ public class Assign {
     log.debug("getNodesForNewReplicas() shard: {} , nrtReplicas : {} , tlogReplicas: {} , pullReplicas: {} , createNodeSet {}"
         , shard, nrtReplicas, tlogReplicas, pullReplicas, createNodeSet);
     DocCollection coll = clusterState.getCollection(collectionName);
-    int maxShardsPerNode = coll.getMaxShardsPerNode() == -1 ? Integer.MAX_VALUE : coll.getMaxShardsPerNode();
-    List<String> createNodeList;
+    List<String> createNodeList = null;
 
     if (createNodeSet instanceof List) {
       createNodeList = (List<String>) createNodeSet;
@@ -345,22 +344,6 @@ public class Assign {
     // gets a log message of detail about the nodes that are up, and a message that policies could not
     // be satisfied which then requires study to diagnose the issue.
     checkLiveNodes(createNodeList,clusterState);
-
-    if (createNodeList == null) { // We only care if we haven't been told to put new replicas on specific nodes.
-      HashMap<String, ReplicaCount> nodeNameVsShardCount = getNodeNameVsShardCount(collectionName, clusterState, null);
-      long availableSlots = 0;
-      for (Map.Entry<String, ReplicaCount> ent : nodeNameVsShardCount.entrySet()) {
-        //ADDREPLICA can put more than maxShardsPerNode on an instance, so this test is necessary.
-        if (maxShardsPerNode > ent.getValue().thisCollectionNodes) {
-          availableSlots += (maxShardsPerNode - ent.getValue().thisCollectionNodes);
-        }
-      }
-      if (availableSlots < nrtReplicas + tlogReplicas + pullReplicas) {
-        throw new AssignmentException(
-            String.format(Locale.ROOT, "Cannot create %d new replicas for collection %s given the current number of eligible live nodes %d and a maxShardsPerNode of %d",
-                nrtReplicas, collectionName, nodeNameVsShardCount.size(), maxShardsPerNode));
-      }
-    }
 
     AssignRequest assignRequest = new AssignRequestBuilder()
         .forCollection(collectionName)
@@ -425,13 +408,12 @@ public class Assign {
     }
 
     // if we were given a list, just use that, don't worry about counts
-    if (createNodeList != null) { // Overrides petty considerations about maxShardsPerNode
+    if (createNodeList != null) {
       return nodeNameVsShardCount;
     }
 
     // if we get here we were not given a createNodeList, build a map with real counts.
     DocCollection coll = clusterState.getCollection(collectionName);
-    int maxShardsPerNode = coll.getMaxShardsPerNode() == -1 ? Integer.MAX_VALUE : coll.getMaxShardsPerNode();
     Map<String, DocCollection> collections = clusterState.getCollectionsMap();
     for (Map.Entry<String, DocCollection> entry : collections.entrySet()) {
       DocCollection c = entry.getValue();
@@ -444,7 +426,6 @@ public class Assign {
             count.totalNodes++; // Used to "weigh" whether this node should be used later.
             if (entry.getKey().equals(collectionName)) {
               count.thisCollectionNodes++;
-              if (count.thisCollectionNodes >= maxShardsPerNode) nodeNameVsShardCount.remove(replica.getNodeName());
             }
           }
         }
