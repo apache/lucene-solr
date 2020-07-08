@@ -17,7 +17,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-WARNING: The Data Import Handler is deprecated as of v8.6 and is scheduled to be removed in 9.0.
+WARNING: The Data Import Handler is deprecated is scheduled to be removed in 9.0. This functionality will likely migrate to a 3rd-party plugin in the near future.
 
 Many search applications store the content to be indexed in a structured data store, such as a relational database. The Data Import Handler (DIH) provides a mechanism for importing content from a data store and indexing it.
 

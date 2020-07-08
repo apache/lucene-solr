@@ -16,7 +16,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-WARNING: HDFS support in Solr is deprecated as of 8.6 and maybe be removed in 9.0. See SOLR-14021 for details.
+WARNING: Storing indexes in HDFS is deprecated and may be be removed in 9.0. This functionality may be moved to a 3rd-party plugin in the future.
 
 Solr has support for writing and reading its index and transaction log files to the HDFS distributed filesystem.
 
