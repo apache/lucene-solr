@@ -19,6 +19,11 @@ Improvements
 
 * SOLR-14537: Improve performance of ExportWriter. (ab, Joel Bernstein)
 
+* SOLR-14566: Request ID's ('rid') are now added by default to distributed search requests, and can be used to correlate 
+  logs from the receiving coordinator node with those from downstream shard requests.  This can be disabled by providing a
+  disableRequestId=true request parameter. (Jason Gerlowski)
+
+
 
 Optimizations
 ---------------------
