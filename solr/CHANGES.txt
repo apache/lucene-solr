@@ -25,6 +25,8 @@ Improvements
 
 * SOLR-14387: SolrClient.getById() will escape comma separater within ids (Markus Schuch via Mike Drob)
 
+* SOLR-10814: Add short-name feature to RuleBasedAuthz plugin (Mike Drob, Hrishikesh Gadre)
+
 Other Changes
 ----------------------
 * LUCENE-9391: Upgrade HPPC to 0.8.2. (Haoyu Zhai)
