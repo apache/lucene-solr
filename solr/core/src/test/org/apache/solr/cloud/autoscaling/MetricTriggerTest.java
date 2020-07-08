@@ -51,7 +51,6 @@ public class MetricTriggerTest extends SolrCloudTestCase {
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(DEFAULT_TEST_COLLECTION_NAME,
         "conf", 1, 1);
     CloudSolrClient solrClient = cluster.getSolrClient();
-    create.setMaxShardsPerNode(1);
     create.process(solrClient);
     cluster.waitForActiveCollection(DEFAULT_TEST_COLLECTION_NAME, 1, 1);
   }

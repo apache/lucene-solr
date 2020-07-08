@@ -776,14 +776,13 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
   @Override
   protected CollectionAdminResponse createCollection(Map<String, List<Integer>> collectionInfos,
-                                                     String collectionName, String configSetName, int numShards, int numReplicas, int maxShardsPerNode, SolrClient client, String createNodeSetStr) throws SolrServerException, IOException {
+                                                     String collectionName, String configSetName, int numShards, int numReplicas, SolrClient client, String createNodeSetStr) throws SolrServerException, IOException {
     // TODO: Use CollectionAdminRequest for this test
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", CollectionAction.CREATE.toString());
 
     params.set(OverseerCollectionMessageHandler.NUM_SLICES, numShards);
     params.set(ZkStateReader.REPLICATION_FACTOR, numReplicas);
-    params.set(ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode);
     if (createNodeSetStr != null) params.set(OverseerCollectionMessageHandler.CREATE_NODE_SET, createNodeSetStr);
 
     int clientIndex = clients.size() > 1 ? random().nextInt(2) : 0;
@@ -959,7 +958,6 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     log.info("### STARTING testANewCollectionInOneInstanceWithManualShardAssignement");
     assertEquals(0, CollectionAdminRequest.createCollection(oneInstanceCollection2, "conf1", 2, 2)
         .setCreateNodeSet("")
-        .setMaxShardsPerNode(4)
         .process(cloudClient).getStatus());
 
     List<SolrClient> collectionClients = new ArrayList<>();
@@ -1107,7 +1105,6 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     log.info("### STARTING testANewCollectionInOneInstance");
     CollectionAdminResponse response = CollectionAdminRequest.createCollection(oneInstanceCollection, "conf1", 2, 2)
         .setCreateNodeSet(jettys.get(0).getNodeName())
-        .setMaxShardsPerNode(4)
         .process(cloudClient);
     assertEquals(0, response.getStatus());
     List<SolrClient> collectionClients = new ArrayList<>();

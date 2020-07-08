@@ -308,9 +308,8 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
       }
 
       try (CloudSolrClient client = createCloudClient("collection1", 30000)) {
-        // We don't really know how many live nodes we have at this point, so "maxShardsPerNode" needs to be > 1
         createCollection(null, "testcollection",
-              1, 1, 10, client, null, "conf1"); 
+              1, 1, client, null, "conf1");
       }
       List<Integer> numShardsNumReplicas = new ArrayList<>(2);
       numShardsNumReplicas.add(1);

@@ -63,7 +63,6 @@ public class CdcrBidirectionalTest extends SolrTestCaseJ4 {
       cluster1.uploadConfigSet(configset("cdcr-cluster1"), "cdcr-cluster1");
       CollectionAdminRequest.createCollection("cdcr-cluster1", "cdcr-cluster1", 2, 1)
           .withProperty("solr.directoryFactory", "solr.StandardDirectoryFactory")
-          .setMaxShardsPerNode(2)
           .process(cluster1.getSolrClient());
       CloudSolrClient cluster1SolrClient = cluster1.getSolrClient();
       cluster1SolrClient.setDefaultCollection("cdcr-cluster1");
@@ -71,7 +70,6 @@ public class CdcrBidirectionalTest extends SolrTestCaseJ4 {
       cluster2.uploadConfigSet(configset("cdcr-cluster2"), "cdcr-cluster2");
       CollectionAdminRequest.createCollection("cdcr-cluster2", "cdcr-cluster2", 2, 1)
           .withProperty("solr.directoryFactory", "solr.StandardDirectoryFactory")
-          .setMaxShardsPerNode(2)
           .process(cluster2.getSolrClient());
       CloudSolrClient cluster2SolrClient = cluster2.getSolrClient();
       cluster2SolrClient.setDefaultCollection("cdcr-cluster2");

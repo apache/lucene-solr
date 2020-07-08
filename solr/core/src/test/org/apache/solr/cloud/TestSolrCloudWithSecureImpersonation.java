@@ -183,7 +183,6 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
         return msp;
       }
     };
-    create.setMaxShardsPerNode(1);
     response = create.process(solrCluster.getSolrClient());
 
     miniCluster.waitForActiveCollection(name, 1, 1);

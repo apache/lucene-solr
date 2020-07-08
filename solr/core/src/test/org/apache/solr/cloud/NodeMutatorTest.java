@@ -43,10 +43,9 @@ public class NodeMutatorTest extends SolrTestCaseJ4Test {
   public void downNodeReportsAllImpactedCollectionsAndNothingElse() throws IOException {
     NodeMutator nm = new NodeMutator();
 
-    //We use 2 nodes with maxShardsPerNode as 1
     //Collection1: 2 shards X 1 replica = replica1 on node1 and replica2 on node2
     //Collection2: 1 shard X 1 replica = replica1 on node2
-    ZkStateReader reader = ClusterStateMockUtil.buildClusterState("csrr2rDcsr2", 1, 1, NODE1, NODE2);
+    ZkStateReader reader = ClusterStateMockUtil.buildClusterState("csrr2rDcsr2", 1, NODE1, NODE2);
     ClusterState clusterState = reader.getClusterState();
     assertEquals(clusterState.getCollection("collection1").getReplica("replica1").getBaseUrl(), NODE1_URL);
     assertEquals(clusterState.getCollection("collection1").getReplica("replica2").getBaseUrl(), NODE2_URL);
@@ -60,11 +59,10 @@ public class NodeMutatorTest extends SolrTestCaseJ4Test {
     assertEquals(writes.get(0).collection.getReplica("replica2").getState(), Replica.State.ACTIVE);
     reader.close();
 
-    //We use 3 nodes with maxShardsPerNode as 1
     //Collection1: 2 shards X 1 replica = replica1 on node1 and replica2 on node2
     //Collection2: 1 shard X 1 replica = replica1 on node2
     //Collection3: 1 shard X 3 replica = replica1 on node1 , replica2 on node2, replica3 on node3
-    reader = ClusterStateMockUtil.buildClusterState("csrr2rDcsr2csr1r2r3", 1, 1, NODE1, NODE2, NODE3);
+    reader = ClusterStateMockUtil.buildClusterState("csrr2rDcsr2csr1r2r3", 1, NODE1, NODE2, NODE3);
     clusterState = reader.getClusterState();
     assertEquals(clusterState.getCollection("collection1").getReplica("replica1").getBaseUrl(), NODE1_URL);
     assertEquals(clusterState.getCollection("collection1").getReplica("replica2").getBaseUrl(), NODE2_URL);

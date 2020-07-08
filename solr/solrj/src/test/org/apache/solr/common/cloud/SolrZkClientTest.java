@@ -171,7 +171,6 @@ public class SolrZkClientTest extends SolrCloudTestCase {
     assertEquals(wrapped1A.hashCode(), wrapped2A.hashCode());
 
     CollectionAdminRequest.createCollection(getSaferTestName(), "_default", 1, 1)
-        .setMaxShardsPerNode(2)
         .process(solrClient);
 
     CollectionAdminRequest.setCollectionProperty(getSaferTestName(),"foo", "bar")

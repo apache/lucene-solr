@@ -129,7 +129,6 @@ public class SystemLogListenerTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection("test",
         "conf",3, 2);
-    create.setMaxShardsPerNode(3);
     create.process(solrClient);
 
     waitForState("Timed out waiting for replicas of new collection to be active",

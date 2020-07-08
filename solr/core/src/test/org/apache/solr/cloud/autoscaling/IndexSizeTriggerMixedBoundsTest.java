@@ -124,7 +124,7 @@ public class IndexSizeTriggerMixedBoundsTest extends SolrCloudTestCase {
   public void testMixedBounds() throws Exception {
     String collectionName = "testMixedBounds_collection";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
-        "conf", 2, 2).setMaxShardsPerNode(2);
+        "conf", 2, 2);
     create.process(solrClient);
     CloudUtil.waitForState(cloudManager, "failed to create " + collectionName, collectionName,
         CloudUtil.clusterShape(2, 2, false, true));

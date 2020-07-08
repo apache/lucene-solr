@@ -269,7 +269,6 @@ public class TestSimPolicyCloud extends SimSolrCloudTestCase {
         Utils.getObjectByPath(json, true, "cluster-policy[2]/port"));
 
     CollectionAdminRequest.createCollectionWithImplicitRouter("policiesTest", "conf", "s1", 1, 1, 1)
-        .setMaxShardsPerNode(-1)
         .process(solrClient);
     CloudUtil.waitForState(cluster, "Timeout waiting for collection to become active", "policiesTest",
         CloudUtil.clusterShape(1, 3, false, true));
