@@ -73,6 +73,12 @@ public class TestRegexpQuery extends LuceneTestCase {
     return searcher.count(query);
   }
   
+  private long caseInsensitiveRegexQueryNrHits(String regex) throws IOException {
+    RegexpQuery query = new RegexpQuery(newTerm(regex), RegExp.ALL, RegExp.ASCII_CASE_INSENSITIVE,
+        Operations.DEFAULT_MAX_DETERMINIZED_STATES);
+    return searcher.count(query);
+  }  
+  
   public void testRegex1() throws IOException {
     assertEquals(1, regexQueryNrHits("q.[aeiou]c.*"));
   }
@@ -89,6 +95,11 @@ public class TestRegexpQuery extends LuceneTestCase {
     assertEquals(1, regexQueryNrHits("<420000-600000>"));
     assertEquals(0, regexQueryNrHits("<493433-600000>"));
   }
+  
+  public void testCaseInsensitive() throws IOException {
+    assertEquals(0, regexQueryNrHits("Quick"));
+    assertEquals(1, caseInsensitiveRegexQueryNrHits("Quick"));
+  }  
   
   public void testRegexComplement() throws IOException {
     assertEquals(1, regexQueryNrHits("4934~[3]"));

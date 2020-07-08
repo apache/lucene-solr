@@ -11,7 +11,8 @@ API Changes
 
 New Features
 ---------------------
-(No changes)
+
+* LUCENE-9386: RegExpQuery added case insensitive matching option. (Mark Harwood)
 
 Improvements
 ---------------------
