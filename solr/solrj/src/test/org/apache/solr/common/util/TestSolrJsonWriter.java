@@ -74,7 +74,8 @@ public class TestSolrJsonWriter  extends SolrTestCaseJ4 {
     System.out.println("JSON Map write time : "+write2String(map, iters));
 
     System.out.println("javabin REFLECT write time : "+write2Javabin(c1,iters));
-    System.out.println("javabin Map write time : "+write2Javabin(map, iters));*/
+    System.out.println("javabin Map write time : "+write2Javabin(map, iters));
+    */
 
   }
 
@@ -101,12 +102,12 @@ public class TestSolrJsonWriter  extends SolrTestCaseJ4 {
     }
     return System.currentTimeMillis()-start;
 
+//    JSON REFLECT write time : 76
+//    JSON Map write time : 42
+//    javabin REFLECT write time : 50
+//    javabin Map write time : 32
 //
-//    JSON REFLECT write time : 107
-//    JSON Map write time : 62
-//    javabin REFLECT write time : 48
-//    javabin Map write time : 34
-//
+//    before
 //    JSON REFLECT write time : 181
 //    JSON Map write time : 38
 //    javabin REFLECT write time : 111
