@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 import org.apache.http.NoHttpResponseException;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.BaseCloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
@@ -30,7 +31,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
 
@@ -76,8 +79,16 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
     createCollection(testCollectionName, "conf1", 2, 2, 1);
     cloudClient.setDefaultCollection(testCollectionName);
 
-    List<Replica> notLeaders =
-        ensureAllReplicasAreActive(testCollectionName, "shard1", 2, 2, 30);
+    cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, BaseCloudSolrClient.expectedShardsAndActiveReplicas(2, 4));
+
+
+    ArrayList<Replica> notLeaders = new ArrayList<>();
+    List<Replica> replicas = cloudClient.getZkStateReader().getClusterState().getCollection(testCollectionName).getReplicas();
+    for (Replica replica :replicas) {
+      if (!replica.getBool("leader", false)) {
+        notLeaders.add(replica);
+      }
+    }
     assertTrue("Expected 1 replicas for collection " + testCollectionName
             + " but found " + notLeaders.size() + "; clusterState: "
             + printClusterStateInfo(),
@@ -125,8 +136,15 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
     createCollection(testCollectionName, "conf1", 1, 3, 1);
     cloudClient.setDefaultCollection(testCollectionName);
 
-    List<Replica> notLeaders =
-        ensureAllReplicasAreActive(testCollectionName, "shard1", 1, 3, 30);
+    cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, BaseCloudSolrClient.expectedShardsAndActiveReplicas(1, 3));
+
+    ArrayList<Replica> notLeaders = new ArrayList<>();
+    List<Replica> replicas = cloudClient.getZkStateReader().getClusterState().getCollection(testCollectionName).getReplicas();
+    for (Replica replica :replicas) {
+      if (!replica.getBool("leader", false)) {
+        notLeaders.add(replica);
+      }
+    }
     assertTrue("Expected 2 replicas for collection " + testCollectionName
             + " but found " + notLeaders.size() + "; clusterState: "
             + printClusterStateInfo(),

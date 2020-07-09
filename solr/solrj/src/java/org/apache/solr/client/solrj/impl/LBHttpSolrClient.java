@@ -18,7 +18,9 @@ package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.http.client.HttpClient;
@@ -27,6 +29,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.QoSParams;
 
 /**
  * LBHttpSolrClient or "LoadBalanced HttpSolrClient" is a load balancing wrapper around
@@ -74,6 +77,7 @@ public class LBHttpSolrClient extends LBSolrClient {
 
   private Integer connectionTimeout;
   private volatile Integer soTimeout;
+  private final Map<String, String> headers;
 
   /**
    * @deprecated use {@link LBSolrClient.Req} instead
@@ -132,6 +136,7 @@ public class LBHttpSolrClient extends LBSolrClient {
     this.connectionTimeout = builder.connectionTimeoutMillis;
     this.soTimeout = builder.socketTimeoutMillis;    
     this.parser = builder.responseParser;
+    this.headers = builder.headers;
     for (String baseUrl: builder.baseSolrUrls) {
       urlToClient.put(baseUrl, makeSolrClient(baseUrl));
     }
@@ -139,12 +144,6 @@ public class LBHttpSolrClient extends LBSolrClient {
 
   private HttpClient constructClient(String[] solrServerUrl) {
     ModifiableSolrParams params = new ModifiableSolrParams();
-    if (solrServerUrl != null && solrServerUrl.length > 1) {
-      // we prefer retrying another server
-      params.set(HttpClientUtil.PROP_USE_RETRY, false);
-    } else {
-      params.set(HttpClientUtil.PROP_USE_RETRY, true);
-    }
     return HttpClientUtil.createClient(params);
   }
 
@@ -154,7 +153,8 @@ public class LBHttpSolrClient extends LBSolrClient {
       synchronized (this) {
         httpSolrClientBuilder
             .withBaseSolrUrl(server)
-            .withHttpClient(httpClient);
+            .withHttpClient(httpClient)
+            .withHeaders(headers);
         if (connectionTimeout != null) {
           httpSolrClientBuilder.withConnectionTimeout(connectionTimeout);
         }
@@ -166,7 +166,8 @@ public class LBHttpSolrClient extends LBSolrClient {
     } else {
       final HttpSolrClient.Builder clientBuilder = new HttpSolrClient.Builder(server)
           .withHttpClient(httpClient)
-          .withResponseParser(parser);
+          .withResponseParser(parser)
+          .withHeaders(headers);
       if (connectionTimeout != null) {
         clientBuilder.withConnectionTimeout(connectionTimeout);
       }
@@ -255,10 +256,27 @@ public class LBHttpSolrClient extends LBSolrClient {
   public static class Builder extends SolrClientBuilder<Builder> {
     protected final List<String> baseSolrUrls;
     protected HttpSolrClient.Builder httpSolrClientBuilder;
+    protected Map<String,String> headers = new HashMap<>();
 
     public Builder() {
       this.baseSolrUrls = new ArrayList<>();
       this.responseParser = new BinaryResponseParser();
+    }
+
+    //do not set this from an external client
+    public Builder markInternalRequest() {
+      this.headers.put(QoSParams.REQUEST_SOURCE, QoSParams.INTERNAL);
+      return this;
+    }
+
+    public Builder withHeaders(Map<String, String> headers) {
+      this.headers.putAll(headers);
+      return this;
+    }
+
+    public Builder withHeader(String header, String value) {
+      this.headers.put(header, value);
+      return this;
     }
 
     public HttpSolrClient.Builder getHttpSolrClientBuilder() {

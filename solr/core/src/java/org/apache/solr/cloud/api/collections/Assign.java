@@ -62,7 +62,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.POLICY;
-import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.CREATE_NODE_SET;
 import static org.apache.solr.common.cloud.DocCollection.SNITCH;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 
@@ -235,9 +234,9 @@ public class Assign {
 
   public static List<String> getLiveOrLiveAndCreateNodeSetList(final Set<String> liveNodes, final ZkNodeProps message, final Random random) {
     List<String> nodeList;
-    final String createNodeSetStr = message.getStr(CREATE_NODE_SET);
+    final String createNodeSetStr = message.getStr(ZkStateReader.CREATE_NODE_SET);
     final List<String> createNodeList = (createNodeSetStr == null) ? null :
-        StrUtils.splitSmart((OverseerCollectionMessageHandler.CREATE_NODE_SET_EMPTY.equals(createNodeSetStr) ?
+        StrUtils.splitSmart((ZkStateReader.CREATE_NODE_SET_EMPTY.equals(createNodeSetStr) ?
             "" : createNodeSetStr), ",", true);
 
     if (createNodeList != null) {

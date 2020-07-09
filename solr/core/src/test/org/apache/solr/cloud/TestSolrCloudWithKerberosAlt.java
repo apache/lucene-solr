@@ -25,12 +25,16 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.QuickPatchThreadsFilter;
+import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.apache.solr.util.BadZookeeperThreadsFilter;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,11 +43,14 @@ import org.slf4j.LoggerFactory;
  * Test 5 nodes Solr cluster with Kerberos plugin enabled.
  */
 @ThreadLeakFilters(defaultFilters = true, filters = {
-    BadZookeeperThreadsFilter.class // Zookeeper login leaks TGT renewal threads
+        SolrIgnoredThreadsFilter.class,
+        QuickPatchThreadsFilter.class,
+        BadZookeeperThreadsFilter.class // Zookeeper login leaks TGT renewal threads
 })
 
 @LuceneTestCase.Slow
 @ThreadLeakLingering(linger = 10000) // minikdc has some lingering threads
+@Ignore // nocommit debug
 public class TestSolrCloudWithKerberosAlt extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

@@ -27,13 +27,16 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.TreeSet;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.common.SolrException;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
@@ -224,7 +227,7 @@ public class ZkMaintenanceUtils {
   }
 
   // This not just a copy operation since the config manager takes care of construction the znode path to configsets
-  public static void upConfig(SolrZkClient zkClient, Path confPath, String confName) throws IOException {
+  public static void upConfig(SolrZkClient zkClient, Path confPath, String confName) throws IOException, KeeperException {
     ZkConfigManager manager = new ZkConfigManager(zkClient);
 
     // Try to download the configset
@@ -276,7 +279,7 @@ public class ZkMaintenanceUtils {
   }
   
   public static void uploadToZK(SolrZkClient zkClient, final Path fromPath, final String zkPath,
-                                final Pattern filenameExclusions) throws IOException {
+                                final Pattern filenameExclusions) throws IOException, KeeperException {
 
     String path = fromPath.toString();
     if (path.endsWith("*")) {
@@ -287,7 +290,7 @@ public class ZkMaintenanceUtils {
         
     if (!Files.exists(rootPath))
       throw new IOException("Path " + rootPath + " does not exist");
-
+    Map<String,byte[]> dataMap = new HashMap(64);
     Files.walkFileTree(rootPath, new SimpleFileVisitor<Path>() {
       @Override
       public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
@@ -297,17 +300,11 @@ public class ZkMaintenanceUtils {
           return FileVisitResult.CONTINUE;
         }
         String zkNode = createZkNodeName(zkPath, rootPath, file);
-        try {
-          // if the path exists (and presumably we're uploading data to it) just set its data
-          if (file.toFile().getName().equals(ZKNODE_DATA_FILE) && zkClient.exists(zkNode, true)) {
-            zkClient.setData(zkNode, file.toFile(), true);
-          } else {
-            zkClient.makePath(zkNode, file.toFile(), false, true);
-          }
-        } catch (KeeperException | InterruptedException e) {
-          throw new IOException("Error uploading file " + file.toString() + " to zookeeper path " + zkNode,
-              SolrZkClient.checkInterrupted(e));
+        if (!zkNode.startsWith("/")) {
+          zkNode = "/" + zkNode;
         }
+        dataMap.put(zkNode, Files.readAllBytes(file));
+
         return FileVisitResult.CONTINUE;
       }
 
@@ -318,6 +315,9 @@ public class ZkMaintenanceUtils {
         return FileVisitResult.CONTINUE;
       }
     });
+
+
+    zkClient.mkDirs(dataMap);
   }
 
   private static boolean isEphemeral(SolrZkClient zkClient, String zkPath) throws KeeperException, InterruptedException {

@@ -18,6 +18,7 @@ package org.apache.solr.cloud.autoscaling;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +32,7 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
 import org.apache.solr.client.solrj.cloud.autoscaling.NotEmptyException;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.zookeeper.KeeperException;
@@ -56,7 +58,9 @@ public class InactiveMarkersPlanAction extends TriggerActionBase {
 
   public InactiveMarkersPlanAction() {
     super();
-    TriggerUtils.validProperties(validProperties, TTL_PROP);
+    Set<String> vProperties = new HashSet<>(validProperties);
+    TriggerUtils.validProperties(vProperties, TTL_PROP);
+    this.validProperties = vProperties;
   }
 
   @Override

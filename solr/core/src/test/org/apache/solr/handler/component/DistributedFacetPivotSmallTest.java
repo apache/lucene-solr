@@ -45,8 +45,6 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
   @Test
   @ShardsFixed(num = 4)
   public void test() throws Exception {
-    
-    del("*:*");
 
     // NOTE: we use the literal (4 character) string "null" as a company name
     // to help ensure there isn't any bugs where the literal string is treated as if it 

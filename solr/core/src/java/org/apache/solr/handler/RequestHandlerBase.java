@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler;
 
+import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Map;
@@ -52,7 +53,7 @@ import static org.apache.solr.core.RequestParams.USEPARAM;
 /**
  *
  */
-public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfoBean, NestedRequestHandler, ApiSupport {
+public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfoBean, NestedRequestHandler, ApiSupport, Closeable {
 
   @SuppressWarnings({"rawtypes"})
   protected NamedList initArgs = null;
@@ -332,6 +333,12 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   @Override
   public Collection<Api> getApis() {
     return ImmutableList.of(new ApiBag.ReqHandlerToApi(this, ApiBag.constructSpec(pluginInfo)));
+  }
+
+
+  @Override
+  public void close() {
+
   }
 }
 

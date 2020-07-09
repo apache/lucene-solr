@@ -25,6 +25,7 @@ import org.apache.zookeeper.server.quorum.QuorumPeerMain;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -39,7 +40,7 @@ import java.util.Properties;
 import java.util.regex.Pattern;
 
 
-public class SolrZkServer {
+public class SolrZkServer implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String ZK_WHITELIST_PROPERTY = "zookeeper.4lw.commands.whitelist";
@@ -142,14 +143,9 @@ public class SolrZkServer {
 
     zkThread.setDaemon(true);
     zkThread.start();
-    try {
-      Thread.sleep(500); // pause for ZooKeeper to start
-    } catch (Exception e) {
-      log.error("STARTING ZOOKEEPER", e);
-    }
   }
 
-  public void stop() {
+  public void close() {
     if (zkRun == null) return;
     zkThread.interrupt();
   }

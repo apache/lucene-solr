@@ -67,7 +67,7 @@ public class SolrLogPostTool {
     HttpSolrClient.Builder builder = new HttpSolrClient.Builder();
     SolrClient client = null;
     try {
-      client = builder.withBaseSolrUrl(baseUrl).build();
+      client = builder.withBaseSolrUrl(baseUrl).markInternalRequest().build();
       File rf = new File(root);
       List<File> files = new ArrayList();
       gatherFiles(rf, files);

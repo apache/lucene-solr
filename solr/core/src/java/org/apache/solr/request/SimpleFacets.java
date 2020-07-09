@@ -60,6 +60,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.StringHelper;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
@@ -115,8 +116,8 @@ public class SimpleFacets {
   protected final SolrQueryRequest req;
   protected final ResponseBuilder rb;
 
-  protected FacetDebugInfo fdebugParent;
-  protected FacetDebugInfo fdebug;
+  protected volatile FacetDebugInfo fdebugParent;
+  protected volatile FacetDebugInfo fdebug;
 
   // per-facet values
   protected final static class ParsedParams {
@@ -172,6 +173,8 @@ public class SimpleFacets {
 
   public void setFacetDebugInfo(FacetDebugInfo fdebugParent) {
     this.fdebugParent = fdebugParent;
+    fdebug = new FacetDebugInfo();
+    fdebugParent.addChild(fdebug);
   }
 
   protected ParsedParams parseParams(String type, String param) throws SyntaxError, IOException {
@@ -516,12 +519,29 @@ public class SimpleFacets {
               String warningMessage 
                   = "Raising facet.mincount from " + mincount + " to 1, because field " + field + " is Points-based.";
               log.warn(warningMessage);
-              List<String> warnings = (List<String>)rb.rsp.getResponseHeader().get("warnings");
-              if (null == warnings) {
-                warnings = new ArrayList<>();
-                rb.rsp.getResponseHeader().add("warnings", warnings);
+
+              NamedList<String> headers = rb.rsp.getHeaders();
+              synchronized (headers) {
+                List<String> warnings;
+                Object warns = rb.rsp.getResponseHeader().get("warnings");
+                if (warns != null) {
+
+                  if (warns instanceof String) {
+                    warnings = Collections.synchronizedList(new ArrayList<>());
+                    warnings.add((String) warns);
+                  } else if (warns instanceof List) {
+                    warnings = (List<String>) rb.rsp.getResponseHeader().get("warnings");
+                  } else {
+                    log.warn("Found unexpected object type {}", warns);
+                    warnings = new ArrayList<>();
+                    warnings.add(warns.toString());
+                  }
+                } else {
+                  warnings = Collections.synchronizedList(new ArrayList<>());
+                  rb.rsp.getResponseHeader().add("warnings", warnings);
+                }
+                warnings.add(warningMessage);
               }
-              warnings.add(warningMessage);
 
               mincount = 1;
             }
@@ -795,21 +815,17 @@ public class SimpleFacets {
     // Also, a subtlety of directExecutor is that no matter how many times you "submit" a job, it's really
     // just a method call in that it's run by the calling thread.
     int maxThreads = req.getParams().getInt(FacetParams.FACET_THREADS, 0);
-    Executor executor = maxThreads == 0 ? directExecutor : facetExecutor;
-    final Semaphore semaphore = new Semaphore((maxThreads <= 0) ? Integer.MAX_VALUE : maxThreads);
-    List<Future<NamedList>> futures = new ArrayList<>(facetFs.length);
+    // nocommit
+    // Executor executor = maxThreads == 0 ? directExecutor : facetExecutor;
 
-    if (fdebugParent != null) {
-      fdebugParent.putInfoItem("maxThreads", maxThreads);
-    }
-
-    try {
+//    if (fdebugParent != null) {
+//      fdebugParent.putInfoItem("maxThreads", maxThreads);
+//    }
+    List<Callable<NamedList>> calls = new ArrayList<>(facetFs.length);
+    try (ParWork worker = new ParWork(this)) {
       //Loop over fields; submit to executor, keeping the future
       for (String f : facetFs) {
-        if (fdebugParent != null) {
-          fdebug = new FacetDebugInfo();
-          fdebugParent.addChild(fdebug);
-        }
+
         final ParsedParams parsed = parseParams(FacetParams.FACET_FIELD, f);
         final SolrParams localParams = parsed.localParams;
         final String termList = localParams == null ? null : localParams.get(CommonParams.TERMS);
@@ -832,28 +848,24 @@ public class SimpleFacets {
             throw timeout;
           }
           catch (Exception e) {
+            ParWork.propegateInterrupt(e);
             throw new SolrException(ErrorCode.SERVER_ERROR,
                                     "Exception during facet.field: " + facetValue, e);
-          } finally {
-            semaphore.release();
           }
         };
 
-        RunnableFuture<NamedList> runnableFuture = new FutureTask<>(callable);
-        semaphore.acquire();//may block and/or interrupt
-        executor.execute(runnableFuture);//releases semaphore when done
-        futures.add(runnableFuture);
+        calls.add(callable);
+
       }//facetFs loop
 
-      //Loop over futures to get the values. The order is the same as facetFs but shouldn't matter.
+      // expert use of per thread exec
+      List<Future<NamedList>> futures = ParWork.getExecutor().invokeAll(calls);
+
       for (Future<NamedList> future : futures) {
         res.addAll(future.get());
       }
-      assert semaphore.availablePermits() >= maxThreads;
-    } catch (InterruptedException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Error while processing facet fields: InterruptedException", e);
-    } catch (ExecutionException ee) {
+      // assert semaphore.availablePermits() >= maxThreads;
+    } catch (Exception ee) {
       Throwable e = ee.getCause();//unwrap
       if (e instanceof RuntimeException) {
         throw (RuntimeException) e;

@@ -30,10 +30,12 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException.NoAuthException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Ignore // nocommit debug
 public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

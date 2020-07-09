@@ -149,7 +149,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     IndexReader r4 = sr4.getSearcher().getRawReader();
 
     // force an index change so the registered searcher won't be the one we are testing (and
-    // then we should be able to test the refCount going all the way to 0
+    // then we should be able to test the refCount going all the way to 1
     assertU(adoc("id","7", "v_f","7574"));
     assertU(commit()); 
 
@@ -159,7 +159,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     sr3.close();
     assertEquals(baseRefCount, r4.getRefCount());
     sr4.close();
-    assertEquals(baseRefCount-1, r4.getRefCount());
+    assertEquals(baseRefCount, r4.getRefCount());
 
 
     SolrQueryRequest sr5 = req("q","foo");

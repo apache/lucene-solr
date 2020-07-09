@@ -42,8 +42,6 @@ public class DistributedFacetExistsSmallTest extends BaseDistributedSearchTestCa
 
   @Before
   public void prepareIndex() throws Exception {
-    del("*:*");
-
     final Random rnd = random();
     index(id, maxId=rnd.nextInt(5), FLD, "AAA");
     index(id, maxId+=1+rnd.nextInt(5), FLD, "B");

@@ -42,5 +42,7 @@ A solrconfig.xml snippet containing indexConfig settings for randomized testing.
        use the single process lockType for speed - but tests that explicitly need
        to vary the lockType canset it as needed.
   -->
+
   <lockType>${solr.tests.lockType:single}</lockType>
+
 </indexConfig>

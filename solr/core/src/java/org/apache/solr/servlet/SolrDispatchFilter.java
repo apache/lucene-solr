@@ -44,6 +44,7 @@ import java.util.Locale;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
@@ -60,7 +61,6 @@ import io.opentracing.Tracer;
 import io.opentracing.tag.Tags;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHeaders;
-import org.apache.http.client.HttpClient;
 import org.apache.lucene.util.Version;
 import org.apache.solr.api.V2HttpCall;
 import org.apache.solr.common.SolrException;
@@ -85,6 +85,8 @@ import org.apache.solr.security.PublicKeyHandler;
 import org.apache.solr.util.tracing.GlobalTracer;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
+import org.apache.zookeeper.KeeperException;
+import org.eclipse.jetty.client.HttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -102,7 +104,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   protected final CountDownLatch init = new CountDownLatch(1);
 
   protected String abortErrorMessage = null;
-  //TODO using Http2Client
+
   protected HttpClient httpClient;
   private ArrayList<Pattern> excludePatterns;
   
@@ -140,10 +142,14 @@ public class SolrDispatchFilter extends BaseSolrFilter {
 
   public static final String SOLR_LOG_LEVEL = "solr.log.level";
 
+  static {
+    SSLConfigurationsFactory.current().init(); // TODO: if we don't need SSL, skip ...
+  }
+
   @Override
   public void init(FilterConfig config) throws ServletException
   {
-    SSLConfigurationsFactory.current().init();
+    log.info("SolrDispatchFilter.init(): {}", this.getClass().getClassLoader());
     if (log.isTraceEnabled()) {
       log.trace("SolrDispatchFilter.init(): {}", this.getClass().getClassLoader());
     }
@@ -182,7 +188,6 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       final Path solrHomePath = solrHome == null ? SolrPaths.locateSolrHome() : Paths.get(solrHome);
       coresInit = createCoreContainer(solrHomePath, extraProperties);
       SolrPaths.ensureUserFilesDataDir(solrHomePath);
-      this.httpClient = coresInit.getUpdateShardHandler().getDefaultHttpClient();
       setupJvmMetrics(coresInit);
       if (log.isDebugEnabled()) {
         log.debug("user.dir={}", System.getProperty("user.dir"));
@@ -196,10 +201,11 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         throw (Error) t;
       }
     }
-
     }finally{
       log.trace("SolrDispatchFilter.init() done");
-      this.cores = coresInit; // crucially final assignment 
+      if (cores != null) {
+        this.httpClient = cores.getUpdateShardHandler().getUpdateOnlyHttpClient().getHttpClient();
+      }
       init.countDown();
     }
   }
@@ -271,9 +277,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
    */
   protected CoreContainer createCoreContainer(Path solrHome, Properties extraProperties) {
     NodeConfig nodeConfig = loadNodeConfig(solrHome, extraProperties);
-    final CoreContainer coreContainer = new CoreContainer(nodeConfig, true);
-    coreContainer.load();
-    return coreContainer;
+    this.cores = new CoreContainer(nodeConfig, true);
+    cores.load();
+    return cores;
   }
 
   /**
@@ -288,15 +294,19 @@ public class SolrDispatchFilter extends BaseSolrFilter {
 
     String zkHost = System.getProperty("zkHost");
     if (!StringUtils.isEmpty(zkHost)) {
-      int startUpZkTimeOut = Integer.getInteger("waitForZk", 30);
-      startUpZkTimeOut *= 1000;
-      try (SolrZkClient zkClient = new SolrZkClient(zkHost, startUpZkTimeOut)) {
-        if (zkClient.exists("/solr.xml", true)) {
-          log.info("solr.xml found in ZooKeeper. Loading...");
+      int startUpZkTimeOut = Integer.getInteger("waitForZk", 10);
+      try (SolrZkClient zkClient = new SolrZkClient(zkHost, (int) TimeUnit.SECONDS.toMillis(startUpZkTimeOut))) {
+
+        log.info("Trying solr.xml in ZooKeeper...");
+        try {
           byte[] data = zkClient.getData("/solr.xml", null, null, true);
           return SolrXmlConfig.fromInputStream(solrHome, new ByteArrayInputStream(data), nodeProperties, true);
+        } catch (KeeperException.NoNodeException e) {
+          // okay
         }
+
       } catch (Exception e) {
+        SolrZkClient.checkInterrupted(e);
         throw new SolrException(ErrorCode.SERVER_ERROR, "Error occurred while loading solr.xml from zookeeper", e);
       }
       log.info("Loading solr.xml from SolrHome (not found in ZooKeeper)");
@@ -656,8 +666,21 @@ public class SolrDispatchFilter extends BaseSolrFilter {
               stream = ClosedServletOutputStream.CLOSED_SERVLET_OUTPUT_STREAM;
             }
           };
+
+
         }
 
+        @Override
+        public void sendError(int sc, String msg) throws IOException {
+          response.setStatus(sc);
+          response.getWriter().write(msg);
+        }
+
+
+        @Override
+        public void sendError(int sc) throws IOException {
+          sendError(sc, "Solr ran into an unexpected problem and doesn't seem to know more about it. There may be more information in the Solr logs.");
+        }
       };
     } else {
       return response;

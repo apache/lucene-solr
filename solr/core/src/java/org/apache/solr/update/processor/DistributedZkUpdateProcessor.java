@@ -47,6 +47,7 @@ import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.RoutingRule;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
@@ -149,79 +150,112 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
   @Override
   public void processCommit(CommitUpdateCommand cmd) throws IOException {
-    clusterState = zkController.getClusterState();
+    {
+      log.info("processCommit(CommitUpdateCommand cmd={}) - start", cmd);
 
-    assert TestInjection.injectFailUpdateRequests();
 
-    if (isReadOnly()) {
-      throw new SolrException(ErrorCode.FORBIDDEN, "Collection " + collection + " is read-only.");
-    }
+      clusterState = zkController.getClusterState();
 
-    updateCommand = cmd;
+      assert TestInjection.injectFailUpdateRequests();
 
-    List<SolrCmdDistributor.Node> nodes = null;
-    Replica leaderReplica = null;
-    zkCheck();
-    try {
-      leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, cloudDesc.getShardId());
-    } catch (InterruptedException e) {
-      Thread.interrupted();
-      throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Exception finding leader for shard " + cloudDesc.getShardId(), e);
-    }
-    isLeader = leaderReplica.getName().equals(cloudDesc.getCoreNodeName());
-
-    nodes = getCollectionUrls(collection, EnumSet.of(Replica.Type.TLOG,Replica.Type.NRT), true);
-    if (nodes == null) {
-      // This could happen if there are only pull replicas
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Unable to distribute commit operation. No replicas available of types " + Replica.Type.TLOG + " or " + Replica.Type.NRT);
-    }
-
-    nodes.removeIf((node) -> node.getNodeProps().getNodeName().equals(zkController.getNodeName())
-        && node.getNodeProps().getCoreName().equals(req.getCore().getName()));
-
-    if (!isLeader && req.getParams().get(COMMIT_END_POINT, "").equals("replicas")) {
-      if (replicaType == Replica.Type.PULL) {
-        log.warn("Commit not supported on replicas of type {}", Replica.Type.PULL);
-      } else if (replicaType == Replica.Type.NRT) {
-        doLocalCommit(cmd);
-      }
-    } else {
-      // zk
-      ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
-
-      List<SolrCmdDistributor.Node> useNodes = null;
-      if (req.getParams().get(COMMIT_END_POINT) == null) {
-        useNodes = nodes;
-        params.set(DISTRIB_UPDATE_PARAM, DistribPhase.TOLEADER.toString());
-        params.set(COMMIT_END_POINT, "leaders");
-        if (useNodes != null) {
-          params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
-              zkController.getBaseUrl(), req.getCore().getName()));
-          cmdDistrib.distribCommit(cmd, useNodes, params);
-          cmdDistrib.blockAndDoRetries();
-        }
+      if (isReadOnly()) {
+        throw new SolrException(ErrorCode.FORBIDDEN, "Collection " + collection + " is read-only.");
       }
 
-      if (isLeader) {
-        params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
+      updateCommand = cmd;
 
-        params.set(COMMIT_END_POINT, "replicas");
+      List<SolrCmdDistributor.Node> nodes = null;
+      Replica leaderReplica = null;
+      zkCheck();
 
-        useNodes = getReplicaNodesForLeader(cloudDesc.getShardId(), leaderReplica);
+      nodes = getCollectionUrls(collection, EnumSet.of(Replica.Type.TLOG,Replica.Type.NRT), true);
 
-        if (useNodes != null) {
-          params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
-              zkController.getBaseUrl(), req.getCore().getName()));
 
-          cmdDistrib.distribCommit(cmd, useNodes, params);
+
+      if (nodes != null) {
+        nodes.removeIf((node) -> node.getNodeProps().getNodeName().equals(zkController.getNodeName())
+                && node.getNodeProps().getCoreName().equals(req.getCore().getName()));
+
+//      if (nodes.size() == 0) {
+//        log.info("Found no other shards or replicas, local commit liveNodes={} clusterstate={}", clusterState.getLiveNodes(), clusterState.getCollection(collection));
+//        doLocalCommit(cmd);
+//        return;
+//      }
+      }
+
+
+
+      try {
+        leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, cloudDesc.getShardId());
+      } catch (InterruptedException e) {
+        log.error("processCommit(CommitUpdateCommand=" + cmd + ")", e);
+
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Exception finding leader for shard " + cloudDesc.getShardId(), e);
+
+      }
+      isLeader = leaderReplica.getName().equals(cloudDesc.getCoreNodeName());
+
+
+      if (nodes == null) {
+        // This could happen if there are only pull replicas
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                "Unable to distribute commit operation. No replicas available of types " + Replica.Type.TLOG + " or " + Replica.Type.NRT);
+      }
+
+      if (!isLeader && req.getParams().get(COMMIT_END_POINT, "").equals("replicas")) {
+        if (replicaType == Replica.Type.PULL) {
+          log.warn("Commit not supported on replicas of type " + Replica.Type.PULL);
+        } else if (replicaType == Replica.Type.NRT) {
+          log.info("Do a local commit on NRT endpoint");
+          doLocalCommit(cmd);
+        }
+      } else {
+        // zk
+        ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
+
+        List<SolrCmdDistributor.Node> useNodes = null;
+        if (req.getParams().get(COMMIT_END_POINT) == null) {
+          useNodes = nodes;
+
+          params.set(DISTRIB_UPDATE_PARAM, DistribPhase.TOLEADER.toString());
+          params.set(COMMIT_END_POINT, "leaders");
+          if (useNodes != null && useNodes.size() > 0) {
+            log.info("send commit to leaders nodes={}", useNodes);
+            params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
+                    zkController.getBaseUrl(), req.getCore().getName()));
+            cmdDistrib.distribCommit(cmd, useNodes, params);
+            cmdDistrib.blockAndDoRetries();
+          }
         }
 
-        doLocalCommit(cmd);
+        if (isLeader) {
 
-        if (useNodes != null) {
+          log.info("Do a local commit on NRT endpoint");
+          doLocalCommit(cmd);
+
+          params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
+
+          params.set(COMMIT_END_POINT, "replicas");
+
+          useNodes = getReplicaNodesForLeader(cloudDesc.getShardId(), leaderReplica);
+
+          if (useNodes != null && useNodes.size() > 0) {
+            log.info("send commit to replicas nodes={}", useNodes);
+
+            params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
+                    zkController.getBaseUrl(), req.getCore().getName()));
+
+            cmdDistrib.distribCommit(cmd, useNodes, params);
+          }
+
+          // if (useNodes != null && useNodes.size() > 0) {
           cmdDistrib.blockAndDoRetries();
+          //  }
         }
+      }
+
+      if (log.isDebugEnabled()) {
+        log.debug("processCommit(CommitUpdateCommand) - end");
       }
     }
   }
@@ -1163,6 +1197,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
             log.error("Setting up to try to start recovery on replica {} with url {} by increasing leader term", coreNodeName, replicaUrl, rootCause);
             replicasShouldBeInLowerTerms.add(coreNodeName);
           } catch (Exception exc) {
+            SolrZkClient.checkInterrupted(exc);
             Throwable setLirZnodeFailedCause = SolrException.getRootCause(exc);
             log.error("Leader failed to set replica {} state to DOWN due to: {}"
                 , error.req.node.getUrl(), setLirZnodeFailedCause, setLirZnodeFailedCause);

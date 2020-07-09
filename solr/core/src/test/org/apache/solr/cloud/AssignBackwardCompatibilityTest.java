@@ -22,6 +22,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -40,6 +41,7 @@ import org.slf4j.LoggerFactory;
  * then the counter of collection does not exist in Zk
  * TODO Remove in Solr 9.0
  */
+@LuceneTestCase.Nightly
 public class AssignBackwardCompatibilityTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

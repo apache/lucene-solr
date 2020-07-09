@@ -48,6 +48,7 @@ import org.apache.solr.util.DateMathParser;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.solr.client.solrj.RoutedAliasTypes.TIME;
@@ -56,6 +57,7 @@ import static org.apache.solr.client.solrj.RoutedAliasTypes.TIME;
  * Direct http tests of the CreateRoutedAlias functionality.
  */
 @SolrTestCaseJ4.SuppressSSL
+@Ignore // nocommit debug
 public class CreateRoutedAliasTest extends SolrCloudTestCase {
 
   @BeforeClass
@@ -71,21 +73,10 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
 //        .process(cluster.getSolrClient());
   }
 
-  private CloudSolrClient solrClient;
-
-  @Before
-  public void doBefore() throws Exception {
-    solrClient = getCloudSolrClient(cluster);
-  }
-
   @After
   public void doAfter() throws Exception {
     cluster.deleteAllCollections(); // deletes aliases too
 
-    if (null != solrClient) {
-      solrClient.close();
-      solrClient = null;
-    }
   }
 
   // This is a fairly complete test where we set many options and see that it both affected the created
@@ -138,7 +129,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
 
     Thread.sleep(1000);
     // Test created collection:
-    final DocCollection coll = solrClient.getClusterStateProvider().getState(initialCollectionName).get();
+    final DocCollection coll = cluster.getSolrClient().getClusterStateProvider().getState(initialCollectionName).get();
     //System.err.println(coll);
     //TODO how do we assert the configSet ?
     assertEquals(ImplicitDocRouter.class, coll.getRouter().getClass());
@@ -194,7 +185,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
     assertCollectionExists(initialCollectionName);
 
     // Test created collection:
-    final DocCollection coll = solrClient.getClusterStateProvider().getState(initialCollectionName).get();
+    final DocCollection coll = cluster.getSolrClient().getClusterStateProvider().getState(initialCollectionName).get();
     //TODO how do we assert the configSet ?
     assertEquals(CompositeIdRouter.class, coll.getRouter().getClass());
     assertEquals("foo_s", ((Map)coll.get("router")).get("field"));
@@ -359,7 +350,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
   }
 
   private void assertSuccess(HttpUriRequest msg) throws IOException {
-    CloseableHttpClient httpClient = (CloseableHttpClient) solrClient.getHttpClient();
+    CloseableHttpClient httpClient = (CloseableHttpClient) cluster.getSolrClient().getHttpClient();
     try (CloseableHttpResponse response = httpClient.execute(msg)) {
       if (200 != response.getStatusLine().getStatusCode()) {
         System.err.println(EntityUtils.toString(response.getEntity()));
@@ -369,7 +360,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
   }
 
   private void assertFailure(HttpUriRequest msg, String expectedErrorSubstring) throws IOException {
-    CloseableHttpClient httpClient = (CloseableHttpClient) solrClient.getHttpClient();
+    CloseableHttpClient httpClient = (CloseableHttpClient) cluster.getSolrClient().getHttpClient();
     try (CloseableHttpResponse response = httpClient.execute(msg)) {
       assertEquals(400, response.getStatusLine().getStatusCode());
       String entity = EntityUtils.toString(response.getEntity());
@@ -379,10 +370,10 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
   }
 
   private void assertCollectionExists(String name) throws IOException, SolrServerException {
-    solrClient.getClusterStateProvider().connect(); // TODO get rid of this
+    cluster.getSolrClient().getClusterStateProvider().connect(); // TODO get rid of this
     //  https://issues.apache.org/jira/browse/SOLR-9784?focusedCommentId=16332729
 
-    assertNotNull(name + " not found", solrClient.getClusterStateProvider().getState(name));
+    assertNotNull(name + " not found", cluster.getSolrClient().getClusterStateProvider().getState(name));
     // note: could also do:
     //List collections = CollectionAdminRequest.listCollections(solrClient);
   }

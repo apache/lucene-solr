@@ -75,9 +75,9 @@ import static org.apache.solr.common.util.ExecutorUtil.awaitTermination;
 public class ScheduledTriggers implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final int DEFAULT_SCHEDULED_TRIGGER_DELAY_SECONDS = 1;
-  public static final int DEFAULT_ACTION_THROTTLE_PERIOD_SECONDS = 5;
-  public static final int DEFAULT_COOLDOWN_PERIOD_SECONDS = 5;
-  public static final int DEFAULT_TRIGGER_CORE_POOL_SIZE = 4;
+  public static int DEFAULT_ACTION_THROTTLE_PERIOD_SECONDS =55;
+  public static int DEFAULT_COOLDOWN_PERIOD_SECONDS = 5;
+  public static int DEFAULT_TRIGGER_CORE_POOL_SIZE = 4;
 
   static final Map<String, Object> DEFAULT_PROPERTIES = new HashMap<>();
 
@@ -134,7 +134,7 @@ public class ScheduledTriggers implements Closeable {
 
   private final TriggerListeners listeners;
 
-  private final List<TriggerListener> additionalListeners = new ArrayList<>();
+  private final List<TriggerListener> additionalListeners = Collections.synchronizedList(new ArrayList<>());
 
   private AutoScalingConfig autoScalingConfig;
 
@@ -214,16 +214,10 @@ public class ScheduledTriggers implements Closeable {
    * @throws AlreadyClosedException if this class has already been closed
    */
   public synchronized void add(AutoScaling.Trigger newTrigger) throws Exception {
-    if (isClosed) {
-      throw new AlreadyClosedException("ScheduledTriggers has been closed and cannot be used anymore");
-    }
     TriggerWrapper st;
     try {
       st = new TriggerWrapper(newTrigger, cloudManager, queueStats);
     } catch (Exception e) {
-      if (isClosed || e instanceof AlreadyClosedException) {
-        throw new AlreadyClosedException("ScheduledTriggers has been closed and cannot be used anymore");
-      }
       if (cloudManager.isClosed()) {
         log.error("Failed to add trigger {} - closing or disconnected from data provider", newTrigger.getName(), e);
       } else {
@@ -465,9 +459,6 @@ public class ScheduledTriggers implements Closeable {
       Thread.currentThread().interrupt();
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Thread interrupted", e);
     } catch (Exception e) {
-      if (cloudManager.isClosed())  {
-        throw new AlreadyClosedException("The Solr instance has been shutdown");
-      }
       // we catch but don't rethrow because a failure to wait for pending tasks
       // should not keep the actions from executing
       log.error("Unexpected exception while waiting for pending tasks to finish", e);
@@ -596,25 +587,16 @@ public class ScheduledTriggers implements Closeable {
     }
 
     public boolean enqueue(TriggerEvent event) {
-      if (isClosed) {
-        throw new AlreadyClosedException("ScheduledTrigger " + trigger.getName() + " has been closed.");
-      }
       return queue.offerEvent(event);
     }
 
     public TriggerEvent dequeue() {
-      if (isClosed) {
-        throw new AlreadyClosedException("ScheduledTrigger " + trigger.getName() + " has been closed.");
-      }
       TriggerEvent event = queue.pollEvent();
       return event;
     }
 
     @Override
     public void run() {
-      if (isClosed) {
-        throw new AlreadyClosedException("ScheduledTrigger " + trigger.getName() + " has been closed.");
-      }
       // fire a trigger only if an action is not pending
       // note this is not fool proof e.g. it does not prevent an action being executed while a trigger
       // is still executing. There is additional protection against that scenario in the event listener.
@@ -680,9 +662,9 @@ public class ScheduledTriggers implements Closeable {
   }
 
   private class TriggerListeners {
-    Map<String, Map<TriggerEventProcessorStage, List<TriggerListener>>> listenersPerStage = new HashMap<>();
-    Map<String, TriggerListener> listenersPerName = new HashMap<>();
-    List<TriggerListener> additionalListeners = new ArrayList<>();
+    final Map<String, Map<TriggerEventProcessorStage, List<TriggerListener>>> listenersPerStage = new ConcurrentHashMap<>();
+    final Map<String, TriggerListener> listenersPerName = new ConcurrentHashMap<>();
+    final Set<TriggerListener> additionalListeners = ConcurrentHashMap.newKeySet();
     ReentrantLock updateLock = new ReentrantLock();
 
     public TriggerListeners() {
@@ -691,7 +673,6 @@ public class ScheduledTriggers implements Closeable {
 
     private TriggerListeners(Map<String, Map<TriggerEventProcessorStage, List<TriggerListener>>> listenersPerStage,
                              Map<String, TriggerListener> listenersPerName) {
-      this.listenersPerStage = new HashMap<>();
       listenersPerStage.forEach((n, listeners) -> {
         Map<TriggerEventProcessorStage, List<TriggerListener>> perStage = this.listenersPerStage.computeIfAbsent(n, name -> new HashMap<>());
         listeners.forEach((s, lst) -> {
@@ -699,7 +680,7 @@ public class ScheduledTriggers implements Closeable {
           newLst.addAll(lst);
         });
       });
-      this.listenersPerName = new HashMap<>(listenersPerName);
+      this.listenersPerName .putAll(listenersPerName);
     }
 
     public TriggerListeners copy() {

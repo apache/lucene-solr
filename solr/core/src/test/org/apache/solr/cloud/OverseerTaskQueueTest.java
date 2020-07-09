@@ -52,7 +52,7 @@ public class OverseerTaskQueueTest extends DistributedQueueTest {
     final Map<String, Object> props = new HashMap<>();
     props.put(CommonParams.NAME, "coll1");
     props.put(CollectionAdminParams.COLL_CONF, "myconf");
-    props.put(OverseerCollectionMessageHandler.NUM_SLICES, 1);
+    props.put(ZkStateReader.NUM_SHARDS_PROP, 1);
     props.put(ZkStateReader.REPLICATION_FACTOR, 3);
     props.put(CommonAdminParams.ASYNC, requestId);
     tq.offer(Utils.toJSON(props));

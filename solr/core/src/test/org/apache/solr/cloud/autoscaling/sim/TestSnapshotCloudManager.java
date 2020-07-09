@@ -54,6 +54,7 @@ import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,6 +62,7 @@ import org.slf4j.LoggerFactory;
 /**
  *
  */
+@Ignore // nocommit debug
 public class TestSnapshotCloudManager extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -71,6 +73,7 @@ public class TestSnapshotCloudManager extends SolrCloudTestCase {
   // set up a real cluster as the source of test data
   @BeforeClass
   public static void setupCluster() throws Exception {
+    System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
     configureCluster(NODE_COUNT)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();

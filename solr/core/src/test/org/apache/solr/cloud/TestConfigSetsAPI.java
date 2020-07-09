@@ -100,6 +100,7 @@ import static org.junit.matchers.JUnitMatchers.containsString;
 /**
  * Simple ConfigSets API tests on user errors and simple success cases.
  */
+@Ignore // nocommit debug
 public class TestConfigSetsAPI extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

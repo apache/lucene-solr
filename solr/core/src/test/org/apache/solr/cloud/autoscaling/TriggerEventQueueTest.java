@@ -33,6 +33,7 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.TimeSource;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.mockito.Mockito.mock;
@@ -41,6 +42,7 @@ import static org.mockito.Mockito.when;
 /**
  *
  */
+@Ignore // nocommit debug
 public class TriggerEventQueueTest extends SolrTestCaseJ4 {
 
   SolrCloudManager cloudManager;

@@ -31,11 +31,13 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.update.processor.CdcrUpdateProcessor;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
+@Ignore // nocommit debug
 public class CdcrVersionReplicationTest extends BaseCdcrDistributedZkTest {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -46,6 +48,11 @@ public class CdcrVersionReplicationTest extends BaseCdcrDistributedZkTest {
   public CdcrVersionReplicationTest() {
     schemaString = "schema15.xml";      // we need a string id
     super.createTargetCollection = false;
+  }
+
+  @BeforeClass
+  public static void beforeCdcrVersionReplicationTest() throws Exception {
+    System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
   }
 
   SolrClient createClientRandomly() throws Exception {

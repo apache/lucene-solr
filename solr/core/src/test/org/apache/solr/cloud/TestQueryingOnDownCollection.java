@@ -95,8 +95,7 @@ public class TestQueryingOnDownCollection extends SolrCloudTestCase {
 
     client.close();
 
-    assertEquals(error.code(), SolrException.ErrorCode.INVALID_STATE.code);
-    assertTrue(error.getMessage().contains("No active replicas found for collection: " + COLLECTION_NAME));
+    assertEquals(404, error.code());
 
     // run same set of tests on v2 client which uses V2HttpCall
     Http2SolrClient v2Client = new Http2SolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
@@ -109,8 +108,7 @@ public class TestQueryingOnDownCollection extends SolrCloudTestCase {
 
     v2Client.close();
 
-    assertEquals(error.code(), SolrException.ErrorCode.INVALID_STATE.code);
-    assertTrue(error.getMessage().contains("No active replicas found for collection: " + COLLECTION_NAME));
+    assertEquals(404, error.code());
   }
 
   private void downAllReplicas() throws Exception {

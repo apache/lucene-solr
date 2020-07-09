@@ -25,12 +25,14 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+@Ignore // nocommit debug
 public class TestCloudManagedSchema extends AbstractFullDistribZkTestBase {
 
   public TestCloudManagedSchema() {

@@ -54,7 +54,7 @@ public final class HttpCacheHeaderUtil {
    *
    * @see #calcEtag
    */
-  private static WeakIdentityMap<SolrCore, EtagCacheVal> etagCoreCache = WeakIdentityMap.newConcurrentHashMap();
+  private static WeakIdentityMap<String, EtagCacheVal> etagCoreCache = WeakIdentityMap.newConcurrentHashMap();
 
   /** @see #etagCoreCache */
   private static class EtagCacheVal {
@@ -89,12 +89,12 @@ public final class HttpCacheHeaderUtil {
     final long currentIndexVersion
       = solrReq.getSearcher().getIndexReader().getVersion();
 
-    EtagCacheVal etagCache = etagCoreCache.get(core);
+    EtagCacheVal etagCache = etagCoreCache.get(core.toString());
     if (null == etagCache) {
       final String etagSeed
         = core.getSolrConfig().getHttpCachingConfig().getEtagSeed();
       etagCache = new EtagCacheVal(etagSeed);
-      etagCoreCache.put(core, etagCache);
+      etagCoreCache.put(core.toString(), etagCache);
     }
     
     return etagCache.calcEtag(currentIndexVersion);

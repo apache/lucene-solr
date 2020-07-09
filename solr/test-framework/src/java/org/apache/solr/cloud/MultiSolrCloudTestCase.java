@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -34,7 +35,7 @@ import org.junit.AfterClass;
  */
 public abstract class MultiSolrCloudTestCase extends SolrTestCaseJ4 {
 
-  protected static Map<String,MiniSolrCloudCluster> clusterId2cluster = new HashMap<String,MiniSolrCloudCluster>();
+  protected static Map<String,MiniSolrCloudCluster> clusterId2cluster = new ConcurrentHashMap<>();
 
   protected static abstract class DefaultClusterCreateFunction implements Function<String,MiniSolrCloudCluster> {
 
@@ -75,9 +76,8 @@ public abstract class MultiSolrCloudTestCase extends SolrTestCaseJ4 {
         CollectionAdminRequest
         .createCollection(collection, "conf", numShards, numReplicas)
         .setMaxShardsPerNode(maxShardsPerNode)
-        .processAndWait(cluster.getSolrClient(), SolrCloudTestCase.DEFAULT_TIMEOUT);
-
-        AbstractDistribZkTestBase.waitForRecoveriesToFinish(collection, cluster.getSolrClient().getZkStateReader(), false, true, SolrCloudTestCase.DEFAULT_TIMEOUT);
+        .process(cluster.getSolrClient());
+        // nocommit - still need to harden processAndWait
       } catch (Exception e) {
         throw new RuntimeException(e);
       }

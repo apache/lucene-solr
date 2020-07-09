@@ -29,7 +29,7 @@ public interface OverseerMessageHandler {
    *
    * @return response
    */
-  OverseerSolrResponse processMessage(ZkNodeProps message, String operation);
+  OverseerSolrResponse processMessage(ZkNodeProps message, String operation) throws InterruptedException;
 
   /**
    * @return the name of the OverseerMessageHandler

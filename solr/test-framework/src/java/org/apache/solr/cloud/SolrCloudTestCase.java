@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -40,6 +41,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.embedded.SolrQueuedThreadPool;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
@@ -57,6 +59,7 @@ import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,7 +85,8 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static final int DEFAULT_TIMEOUT = 45; // this is an important timeout for test stability - can't be too short
+  public static final int DEFAULT_TIMEOUT = 15; // this is an important timeout for test stability - can't be too short
+  private static SolrQueuedThreadPool qtp;
 
   private static class Config {
     final String name;
@@ -90,6 +94,17 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     private Config(String name, Path path) {
       this.name = name;
       this.path = path;
+    }
+  }
+
+
+  @BeforeClass
+  public static void beforeSolrCloudTestCase() {
+    qtp = getQtp();
+    try {
+      qtp.start();
+    } catch (Exception e) {
+      throw new RuntimeException(e);
     }
   }
 
@@ -216,7 +231,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
      * @throws Exception if an error occurs on startup
      */
     public MiniSolrCloudCluster build() throws Exception {
-      JettyConfig jettyConfig = jettyConfigBuilder.build();
+      JettyConfig jettyConfig = jettyConfigBuilder.withExecutor(qtp).build();
       MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(nodeCount, baseDir, solrxml, jettyConfig,
           null, securityJson, trackJettyMetrics);
       CloudSolrClient client = cluster.getSolrClient();
@@ -281,6 +296,11 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
         cluster = null;
       }
     }
+    if (qtp != null) {
+
+      qtp.close();
+      qtp = null;
+    }
   }
 
   @Before
@@ -311,7 +331,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
    * @param predicate  a predicate to match against the collection state
    */
   protected static void waitForState(String message, String collection, CollectionStatePredicate predicate, int timeout, TimeUnit timeUnit) {
-    log.info("waitForState ({}): {}", collection, message);
+    log.info("waitForState {}", collection);
     AtomicReference<DocCollection> state = new AtomicReference<>();
     AtomicReference<Set<String>> liveNodesLastSeen = new AtomicReference<>();
     try {
@@ -320,8 +340,11 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
         liveNodesLastSeen.set(n);
         return predicate.matches(n, c);
       });
-    } catch (Exception e) {
+    } catch (TimeoutException e) {
       fail(message + "\n" + e.getMessage() + "\nLive Nodes: " + Arrays.toString(liveNodesLastSeen.get().toArray()) + "\nLast available state: " + state.get());
+    } catch (Exception e) {
+      log.error("Exception waiting for state", e);
+      fail(e.getMessage() + "\nLive Nodes: " + Arrays.toString(liveNodesLastSeen.get().toArray()) + "\nLast available state: " + state.get());
     }
   }
 

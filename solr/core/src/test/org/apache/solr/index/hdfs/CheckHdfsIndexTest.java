@@ -24,9 +24,14 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.index.BaseTestCheckIndex;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.QuickPatchThreadsFilter;
+import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
+import org.apache.solr.cloud.SolrCloudBridgeTestCase;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.store.hdfs.HdfsDirectory;
@@ -41,10 +46,13 @@ import org.junit.Test;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 
 @ThreadLeakFilters(defaultFilters = true, filters = {
-    BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
+        SolrIgnoredThreadsFilter.class,
+        QuickPatchThreadsFilter.class,
+        BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
 // commented out on: 24-Dec-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
-public class CheckHdfsIndexTest extends AbstractFullDistribZkTestBase {
+@LuceneTestCase.Nightly // TODO speed up
+public class CheckHdfsIndexTest extends SolrCloudBridgeTestCase {
   private static MiniDFSCluster dfsCluster;
   private static Path path;
 
@@ -54,13 +62,14 @@ public class CheckHdfsIndexTest extends AbstractFullDistribZkTestBase {
   public CheckHdfsIndexTest() {
     super();
     sliceCount = 1;
-    fixShardCount(1);
 
     testCheckIndex = new BaseTestCheckIndex();
   }
 
   @BeforeClass
   public static void setupClass() throws Exception {
+    System.setProperty("solr.spellcheck.enabled", "false");
+
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
     path = new Path(HdfsTestUtil.getURI(dfsCluster) + "/solr/");
   }
@@ -100,19 +109,11 @@ public class CheckHdfsIndexTest extends AbstractFullDistribZkTestBase {
     }
   }
 
-  @Override
-  protected String getDataDir(String dataDir) throws IOException {
-    return HdfsTestUtil.getDataDir(dfsCluster, dataDir);
-  }
-
   @Test
   public void doTest() throws Exception {
-    waitForRecoveriesToFinish(false);
 
     indexr(id, 1);
     commit();
-
-    waitForRecoveriesToFinish(false);
 
     String[] args;
     {

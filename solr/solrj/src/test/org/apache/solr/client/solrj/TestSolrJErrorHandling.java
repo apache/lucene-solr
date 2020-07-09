@@ -151,12 +151,12 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
     for (int i=0; i<numThreads; i++) {
       final int threadNum = i;
       threads.add( new Thread() {
-                     int reqLeft = numRequests;
+                     AtomicInteger reqLeft = new AtomicInteger(numRequests);
 
                      @Override
                      public void run() {
                        try {
-                         while (--reqLeft >= 0) {
+                         while (reqLeft.decrementAndGet() >= 0) {
                            tries.incrementAndGet();
                            doSingle(client, threadNum);
                          }
@@ -197,7 +197,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
   // this always failed with the Jetty 9.3 snapshot
   void doIt(HttpSolrClient client) throws Exception {
     client.deleteByQuery("*:*");
-    doThreads(client,10,100);
+    doThreads(client, TEST_NIGHTLY ? 10 : 3,TEST_NIGHTLY ? 100 : 25);
     // doSingle(client, 1);
   }
 

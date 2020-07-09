@@ -342,7 +342,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
      * Will attempt to call {@link #invoke(String, String, SolrParams)} up to five times, retrying on any IO Exceptions
      */
     public SimpleSolrResponse invokeWithRetry(String solrNode, String path, SolrParams params) throws InterruptedException, IOException, SolrServerException {
-      int retries = 5;
+      int retries = 3;
       int cnt = 0;
 
       while (cnt++ < retries) {
@@ -364,14 +364,13 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
             if (log.isInfoEnabled()) {
               log.info("Error on getting remote info, trying again: {}", e.getMessage());
             }
-            Thread.sleep(500);
           } else {
             throw e;
           }
         }
       }
 
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Could not get remote info after many retries on NoHttpResponseException");
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Could not get remote info after " + cnt + " retries on NoHttpResponseException");
     }
 
     public SimpleSolrResponse invoke(String solrNode, String path, SolrParams params)
@@ -383,6 +382,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
           .withHttpClient(solrClient.getHttpClient())
           .withBaseSolrUrl(url)
           .withResponseParser(new BinaryResponseParser())
+          .markInternalRequest()
           .build()) {
         NamedList<Object> rsp = client.request(request);
         request.response.nl = rsp;

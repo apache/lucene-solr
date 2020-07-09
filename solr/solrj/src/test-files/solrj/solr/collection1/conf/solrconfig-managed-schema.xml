@@ -28,5 +28,9 @@
     <str name="managedSchemaResourceName">managed-schema</str>
   </schemaFactory>
 
+  <indexConfig>
+    <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
+    <lockType>${solr.tests.lockType:single}</lockType>
+  </indexConfig>
 </config>
 

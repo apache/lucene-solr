@@ -24,7 +24,10 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardTokenizerFactory;
@@ -255,6 +258,15 @@ public class SolrSuggester implements Accountable {
           log.debug("Context Filtering Query not supported by {}", lookup.getClass());
         }
         suggestions = lookup.lookup(options.token, false, options.count);
+      }
+    }
+    Set<String> sugset = new HashSet<>(suggestions.size());
+    Iterator<LookupResult> it = suggestions.iterator();
+
+    while (it.hasNext()) {
+      LookupResult key = it.next();
+      if (!sugset.add(key.toString())) {
+        it.remove();
       }
     }
     res.add(getName(), options.token.toString(), suggestions);

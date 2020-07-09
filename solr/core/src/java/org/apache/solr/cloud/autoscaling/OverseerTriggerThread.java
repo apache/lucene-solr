@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -36,6 +38,7 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.common.AlreadyClosedException;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.IOUtils;
@@ -76,9 +79,9 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
   /*
   Following variables are only accessed or modified when updateLock is held
    */
-  private int znodeVersion = 0;
+  private volatile int znodeVersion = 0;
 
-  private Map<String, AutoScaling.Trigger> activeTriggers = new HashMap<>();
+  private Map<String, AutoScaling.Trigger> activeTriggers = new ConcurrentHashMap<>();
 
   private volatile int processedZnodeVersion = -1;
 
@@ -94,16 +97,22 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
 
   @Override
   public void close() throws IOException {
-    updateLock.lock();
+    isClosed = true;
+    IOUtils.closeQuietly(triggerFactory);
+    IOUtils.closeQuietly(scheduledTriggers);
+
+    activeTriggers.clear();
+
     try {
-      isClosed = true;
-      activeTriggers.clear();
+      updateLock.lockInterruptibly();
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
+    try {
       updated.signalAll();
     } finally {
       updateLock.unlock();
     }
-    IOUtils.closeQuietly(triggerFactory);
-    IOUtils.closeQuietly(scheduledTriggers);
     log.debug("OverseerTriggerThread has been closed explicitly");
   }
 
@@ -139,10 +148,6 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
     // we also automatically add a scheduled maintenance trigger
     while (!isClosed)  {
       try {
-        if (Thread.currentThread().isInterrupted()) {
-          log.warn("Interrupted");
-          break;
-        }
         AutoScalingConfig autoScalingConfig = cloudManager.getDistribStateManager().getAutoScalingConfig();
         AutoScalingConfig updatedConfig = withDefaultPolicy(autoScalingConfig);
         updatedConfig = withAutoAddReplicasTrigger(updatedConfig);
@@ -152,7 +157,8 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
         cloudManager.getDistribStateManager().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(updatedConfig), updatedConfig.getZkVersion());
         break;
       } catch (AlreadyClosedException e) {
-        break;
+        log.info("Already closed");
+        return;
       } catch (BadVersionException bve) {
         // somebody else has changed the configuration so we must retry
       } catch (InterruptedException e) {
@@ -177,12 +183,13 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
 
     try {
       refreshAutoScalingConf(new AutoScalingWatcher());
-    } catch (ConnectException e) {
-      log.warn("ZooKeeper watch triggered for autoscaling conf, but Solr cannot talk to ZK: [{}]", e.getMessage());
-    } catch (InterruptedException e) {
+    } catch (IOException e) {
+      log.error("IO error: [{}]", e);
+    } catch (InterruptedException | AlreadyClosedException e) {
       // Restore the interrupted status
       Thread.currentThread().interrupt();
-      log.warn("Interrupted", e);
+      log.info("Interrupted", e);
+      return;
     } catch (Exception e)  {
       log.error("Unexpected exception", e);
     }
@@ -203,7 +210,7 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
           log.debug("Current znodeVersion {}, lastZnodeVersion {}", znodeVersion, lastZnodeVersion);
           
           if (znodeVersion == lastZnodeVersion) {
-            updated.await();
+            updated.await(10, TimeUnit.SECONDS);
             
             // are we closed?
             if (isClosed) {
@@ -220,11 +227,11 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
         } finally {
           updateLock.unlock();
         }
-      } catch (InterruptedException e) {
+      } catch (InterruptedException | AlreadyClosedException e) {
         // Restore the interrupted status
         Thread.currentThread().interrupt();
-        log.warn("Interrupted", e);
-        break;
+        log.info("Interrupted", e);
+        return;
       }
      
       // update the current config
@@ -245,27 +252,40 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
           try {
             scheduledTriggers.add(entry.getValue());
           } catch (AlreadyClosedException e) {
-
+            log.info("already closed");
+            return;
           } catch (Exception e) {
-            log.warn("Exception initializing trigger {}, configuration ignored", entry.getKey(), e);
+            ParWork.propegateInterrupt(e);
+            if (e instanceof KeeperException.SessionExpiredException || e instanceof InterruptedException) {
+              log.error("", e);
+              return;
+            }
+            log.error("Exception initializing trigger {}, configuration ignored", entry.getKey(), e);
           }
         }
       } catch (AlreadyClosedException e) {
-        // this _should_ mean that we're closing, complain loudly if that's not the case
-        if (isClosed) {
-          return;
-        } else {
-          throw new IllegalStateException("Caught AlreadyClosedException from ScheduledTriggers, but we're not closed yet!", e);
-        }
+        log.info("already closed");
+        return;
       }
       log.debug("-- deactivating old nodeLost / nodeAdded markers");
-      deactivateMarkers(ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH);
-      deactivateMarkers(ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH);
+      try {
+        deactivateMarkers(ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH);
+        deactivateMarkers(ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH);
+      } catch (InterruptedException | AlreadyClosedException e) {
+        ParWork.propegateInterrupt(e);
+        return;
+      } catch (KeeperException e) {
+        log.error("", e);
+        return;
+      } catch (Exception e) {
+        log.error("Exception deactivating markers", e);
+      }
+
       processedZnodeVersion = znodeVersion;
     }
   }
 
-  private void deactivateMarkers(String path) {
+  private void deactivateMarkers(String path) throws InterruptedException, IOException, KeeperException, BadVersionException {
     DistribStateManager stateManager = cloudManager.getDistribStateManager();
     try {
       List<String> markers = stateManager.listData(path);
@@ -281,8 +301,6 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
       }
     } catch (NoSuchElementException e) {
       // ignore
-    } catch (Exception e) {
-      log.warn("Error deactivating old markers", e);
     }
   }
 
@@ -296,9 +314,9 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
 
       try {
         refreshAutoScalingConf(this);
-      } catch (ConnectException e) {
-        log.warn("ZooKeeper watch triggered for autoscaling conf, but we cannot talk to ZK: [{}]", e.getMessage());
-      } catch (InterruptedException e) {
+      } catch (IOException e) {
+        log.warn("IO Error: [{}]", e);
+      } catch (InterruptedException | AlreadyClosedException e) {
         // Restore the interrupted status
         Thread.currentThread().interrupt();
         log.warn("Interrupted", e);
@@ -310,7 +328,7 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
   }
 
   private void refreshAutoScalingConf(Watcher watcher) throws InterruptedException, IOException {
-    updateLock.lock();
+    updateLock.lockInterruptibly();
     try {
       if (isClosed) {
         return;
@@ -390,7 +408,7 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
       return Collections.emptyMap();
     }
 
-    Map<String, AutoScaling.Trigger> triggerMap = new HashMap<>(triggers.size());
+    Map<String, AutoScaling.Trigger> triggerMap = new ConcurrentHashMap<>(triggers.size());
 
     for (Map.Entry<String, AutoScalingConfig.TriggerConfig> entry : triggers.entrySet()) {
       AutoScalingConfig.TriggerConfig cfg = entry.getValue();

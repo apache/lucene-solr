@@ -111,22 +111,24 @@ public class SearchRateTrigger extends TriggerBase {
     this.state.put("lastNodeEvent", lastNodeEvent);
     this.state.put("lastShardEvent", lastShardEvent);
     this.state.put("lastReplicaEvent", lastReplicaEvent);
-    TriggerUtils.validProperties(validProperties,
-        COLLECTIONS_PROP, AutoScalingParams.SHARD, AutoScalingParams.NODE,
-        METRIC_PROP,
-        MAX_OPS_PROP,
-        MIN_REPLICAS_PROP,
-        ABOVE_OP_PROP,
-        BELOW_OP_PROP,
-        ABOVE_NODE_OP_PROP,
-        BELOW_NODE_OP_PROP,
-        ABOVE_RATE_PROP,
-        BELOW_RATE_PROP,
-        ABOVE_NODE_RATE_PROP,
-        BELOW_NODE_RATE_PROP,
-        // back-compat props
-        BC_COLLECTION_PROP,
-        BC_RATE_PROP);
+    Set<String> vProperties = new HashSet<>(validProperties);
+    TriggerUtils.validProperties(vProperties,
+            COLLECTIONS_PROP, AutoScalingParams.SHARD, AutoScalingParams.NODE,
+            METRIC_PROP,
+            MAX_OPS_PROP,
+            MIN_REPLICAS_PROP,
+            ABOVE_OP_PROP,
+            BELOW_OP_PROP,
+            ABOVE_NODE_OP_PROP,
+            BELOW_NODE_OP_PROP,
+            ABOVE_RATE_PROP,
+            BELOW_RATE_PROP,
+            ABOVE_NODE_RATE_PROP,
+            BELOW_NODE_RATE_PROP,
+            // back-compat props
+            BC_COLLECTION_PROP,
+            BC_RATE_PROP);
+    this.validProperties = vProperties;
   }
 
   @Override

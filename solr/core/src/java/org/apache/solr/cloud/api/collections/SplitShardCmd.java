@@ -311,7 +311,10 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
         ocmh.overseer.offerStateUpdate(Utils.toJSON(new ZkNodeProps(propMap)));
 
         // wait until we are able to see the new shard in cluster state and refresh the local view of the cluster state
-        clusterState = ocmh.waitForNewShard(collectionName, subSlice);
+        ocmh.waitForNewShard(collectionName, subSlice);
+
+        // refresh cluster state
+        clusterState = zkStateReader.getClusterState();
 
         log.debug("Adding first replica {} as part of slice {} of collection {} on {}"
             , subShardName, subSlice, collectionName, nodeName);
@@ -350,7 +353,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
         for (String subShardName : subShardNames) {
           // wait for parent leader to acknowledge the sub-shard core
           log.debug("Asking parent leader to wait for: {} to be alive on: {}", subShardName, nodeName);
-          String coreNodeName = ocmh.waitForCoreNodeName(collectionName, nodeName, subShardName);
+          String coreNodeName = OverseerCollectionMessageHandler.waitForCoreNodeName(zkStateReader, collectionName, nodeName, subShardName);
           CoreAdminRequest.WaitForState cmd = new CoreAdminRequest.WaitForState();
           cmd.setCoreName(subShardName);
           cmd.setNodeName(nodeName);

@@ -129,15 +129,15 @@ public class ZkDistributedQueue implements DistributedQueue {
   public ZkDistributedQueue(SolrZkClient zookeeper, String dir, Stats stats, int maxQueueSize, IsClosed higherLevelIsClosed) {
     this.dir = dir;
 
-    ZkCmdExecutor cmdExecutor = new ZkCmdExecutor(zookeeper.getZkClientTimeout(), higherLevelIsClosed);
-    try {
-      cmdExecutor.ensureExists(dir, zookeeper);
-    } catch (KeeperException e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, e);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new SolrException(ErrorCode.SERVER_ERROR, e);
-    }
+//    ZkCmdExecutor cmdExecutor = new ZkCmdExecutor(zookeeper.getZkClientTimeout(), higherLevelIsClosed);
+//    try {
+//      cmdExecutor.ensureExists(dir, zookeeper);
+//    } catch (KeeperException e) {
+//      throw new SolrException(ErrorCode.SERVER_ERROR, e);
+//    } catch (InterruptedException e) {
+//      Thread.currentThread().interrupt();
+//      throw new SolrException(ErrorCode.SERVER_ERROR, e);
+//    }
 
     this.zookeeper = zookeeper;
     this.stats = stats;

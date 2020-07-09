@@ -26,7 +26,9 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 
+@Ignore // nocommit debug
 public class ZkFailoverTest extends SolrCloudTestCase {
 
   @BeforeClass

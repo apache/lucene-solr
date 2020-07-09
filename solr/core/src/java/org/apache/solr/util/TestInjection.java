@@ -538,10 +538,11 @@ public class TestInjection {
   }
 
   static Set<Hook> newSearcherHooks = ConcurrentHashMap.newKeySet();
-  
+
   public interface Hook {
     public void newSearcher(String collectionName);
-    public void waitForSearcher(String collection, int cnt, int timeoutms, boolean failOnTimeout) throws InterruptedException;
+    public void insertHook(String collection, int cnt);
+    public void waitForSearcher(int timeoutms, boolean failOnTimeout) throws InterruptedException;
   }
   
   public static boolean newSearcherHook(Hook hook) {

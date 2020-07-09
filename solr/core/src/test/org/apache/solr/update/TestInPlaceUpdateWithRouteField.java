@@ -81,14 +81,12 @@ public class TestInPlaceUpdateWithRouteField extends SolrCloudTestCase {
       createCmd.setShards(Arrays.stream(shards).collect(Collectors.joining(",")));
     }
     createCmd.process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(COLLECTION, shards.length, shards.length * replicas);
   }
 
   @Test
   public void testUpdatingDocValuesWithRouteField() throws Exception {
 
-     new UpdateRequest()
-      .deleteByQuery("*:*").commit(cluster.getSolrClient(), COLLECTION);
-    
      new UpdateRequest().add(createDocs(NUMBER_OF_DOCS)).commit(cluster.getSolrClient(), COLLECTION);
 
     int id = TestUtil.nextInt(random(), 1, NUMBER_OF_DOCS - 1);

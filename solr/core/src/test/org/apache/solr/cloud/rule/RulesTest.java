@@ -43,6 +43,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.After;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.slf4j.Logger;
@@ -77,6 +78,7 @@ public class RulesTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Ignore // nocommit debug
   public void doIntegrationTest() throws Exception {
     assertEquals("Sanity Check: someone changed the cluster; " +
                  "test logic requires specific number of jetty nodes",
@@ -308,6 +310,7 @@ public class RulesTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Ignore // nocommit debug
   public void testInvokeApi() throws Exception {
     JettySolrRunner jetty = cluster.getRandomJetty(random());
     try (SolrClient client = getHttpSolrClient(jetty.getBaseUrl().toString())) {

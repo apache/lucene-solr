@@ -22,6 +22,7 @@
   <jmx />
   <indexConfig>
     <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
+    <lockType>${solr.tests.lockType:single}</lockType>
   </indexConfig>
 
   <!-- Used to specify an alternate directory to hold all index data.

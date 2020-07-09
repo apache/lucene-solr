@@ -26,6 +26,8 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
+import org.apache.lucene.util.QuickPatchThreadsFilter;
+import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.apache.solr.util.FSHDFSUtils;
@@ -34,13 +36,18 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 
 @ThreadLeakFilters(defaultFilters = true, filters = {
-    BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
+        SolrIgnoredThreadsFilter.class,
+        QuickPatchThreadsFilter.class,
+        BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
+// nocommit - i have a workaround for this threadleak
+@Ignore
 public class HdfsRecoverLeaseTest extends SolrTestCaseJ4 {
   
   private static MiniDFSCluster dfsCluster;

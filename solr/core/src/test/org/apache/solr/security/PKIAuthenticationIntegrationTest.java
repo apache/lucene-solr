@@ -30,6 +30,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.Utils;
 import org.junit.After;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +38,7 @@ import org.slf4j.LoggerFactory;
 import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.util.Utils.makeMap;
 
+@Ignore // nocommit debug
 public class PKIAuthenticationIntegrationTest extends SolrCloudAuthTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -44,6 +46,7 @@ public class PKIAuthenticationIntegrationTest extends SolrCloudAuthTestCase {
   
   @BeforeClass
   public static void setupCluster() throws Exception {
+    System.setProperty("solr.disablePublicKeyHandler", "false");
     final String SECURITY_CONF = Utils.toJSONString
       (makeMap("authorization", singletonMap("class", MockAuthorizationPlugin.class.getName()),
                "authentication", singletonMap("class", MockAuthenticationPlugin.class.getName())));

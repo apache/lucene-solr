@@ -96,8 +96,6 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
   @ShardsFixed(num = 3)
   // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
   public void stressTest() throws Exception {
-    waitForRecoveriesToFinish(true);
-
     this.leaderClient = getClientForLeader();
     assertNotNull("Couldn't obtain client for the leader of the shard", this.leaderClient);
 
@@ -112,7 +110,7 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
     // query variables
     final int percentRealtimeQuery = 75;
     // number of cumulative read/write operations by all threads
-    final AtomicLong operations = new AtomicLong(5000);  
+    final AtomicLong operations = new AtomicLong(TEST_NIGHTLY ? 5000 : 500);
     int nReadThreads = 5 + random().nextInt(12);
 
 
@@ -474,8 +472,7 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
       //
       // what we can do however, is commit all completed updates, and *then* compare solr search results
       // against the (new) committed model....
-      
-      waitForThingsToLevelOut(30, TimeUnit.SECONDS); // NOTE: this does an automatic commit for us & ensures replicas are up to date
+
       committedModel = new HashMap<>(model);
 
       // first, prune the model of any docs that have negative versions

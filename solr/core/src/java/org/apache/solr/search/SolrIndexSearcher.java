@@ -55,6 +55,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -148,11 +149,17 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private static DirectoryReader getReader(SolrCore core, SolrIndexConfig config, DirectoryFactory directoryFactory,
                                            String path) throws IOException {
     final Directory dir = directoryFactory.get(path, DirContext.DEFAULT, config.lockType);
+    DirectoryReader dr = null;
     try {
-      return core.getIndexReaderFactory().newReader(dir, core);
+      dr = core.getIndexReaderFactory().newReader(dir, core);
+      return dr;
     } catch (Exception e) {
-      directoryFactory.release(dir);
+      ParWork.propegateInterrupt(e);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error opening Reader", e);
+    } finally {
+      if (dir != null) {
+        directoryFactory.release(dir);
+      }
     }
   }
 
@@ -229,8 +236,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     // We don't need to reserve the directory because we get it from the factory
     this(core, path, schema, name, getReader(core, config, directoryFactory, path), true, enableCache, false,
         directoryFactory);
-    // Release the directory at close.
-    this.releaseDirectory = true;
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})
@@ -257,14 +262,14 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       core.getDeletionPolicy().saveCommitPoint(reader.getIndexCommit().getGeneration());
     }
 
-    if (reserveDirectory) {
-      // Keep the directory from being released while we use it.
-      directoryFactory.incRef(getIndexReader().directory());
-      // Make sure to release it when closing.
-      this.releaseDirectory = true;
-    }
+//    if (reserveDirectory) {
+//      // Keep the directory from being released while we use it.
+//      directoryFactory.incRef(getIndexReader().directory());
+//      // Make sure to release it when closing.
+//      this.releaseDirectory = true;
+//    }
 
-    this.closeReader = closeReader;
+    this.closeReader = false;
     setSimilarity(schema.getSimilarity());
 
     final SolrConfig solrConfig = core.getSolrConfig();
@@ -291,7 +296,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       if (solrConfig.userCacheConfigs.isEmpty()) {
         cacheMap = NO_GENERIC_CACHES;
       } else {
-        cacheMap = new HashMap<>(solrConfig.userCacheConfigs.size());
+        cacheMap = new ConcurrentHashMap<>(solrConfig.userCacheConfigs.size());
         for (Map.Entry<String,CacheConfig> e : solrConfig.userCacheConfigs.entrySet()) {
           SolrCache cache = e.getValue().newInstance();
           if (cache != null) {
@@ -472,28 +477,33 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     // can't use super.close() since it just calls reader.close() and that may only be called once
     // per reader (even if incRef() was previously called).
 
-    long cpg = reader.getIndexCommit().getGeneration();
+    boolean releaseCommitPoint = false;
+    long cpg = 0;
+    if (reader.getRefCount() > 0) {
+      releaseCommitPoint = true;
+      cpg = reader.getIndexCommit().getGeneration();
+    }
     try {
       if (closeReader) rawReader.decRef();
     } catch (Exception e) {
       SolrException.log(log, "Problem dec ref'ing reader", e);
     }
 
-    if (directoryFactory.searchersReserveCommitPoints()) {
+    if (releaseCommitPoint && directoryFactory.searchersReserveCommitPoints()) {
       core.getDeletionPolicy().releaseCommitPoint(cpg);
     }
 
-    for (@SuppressWarnings({"rawtypes"})SolrCache cache : cacheList) {
-      try {
-        cache.close();
-      } catch (Exception e) {
-        SolrException.log(log, "Exception closing cache " + cache.name(), e);
+    try (ParWork worker = new ParWork(this)) {
+      for (SolrCache cache : cacheList) {
+        worker.collect(cache);
+        worker.addCollect("Caches");
       }
     }
 
-    if (releaseDirectory) {
-      directoryFactory.release(getIndexReader().directory());
-    }
+//    if (releaseDirectory) {
+//      directoryFactory.release(getIndexReader().directory());
+//    }
+
 
     try {
       SolrInfoBean.super.close();
@@ -2291,6 +2301,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         }
         return total;
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         return -1;
       }
     }, true, "indexCommitSize", Category.SEARCHER.toString(), scope);

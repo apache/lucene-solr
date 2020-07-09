@@ -677,10 +677,10 @@ public class SolrCLI implements CLIO {
         }
         if (--attempts > 0 && checkCommunicationError(exc)) {
           if (!isFirstAttempt) // only show the log warning after the second attempt fails
-            log.warn("Request to {} failed due to: {}, sleeping for 5 seconds before re-trying the request ..."
+            log.warn("Request to {} failed due to: {}, sleeping for 250 ms before re-trying the request ..."
                 , getUrl, exc.getMessage());
           try {
-            Thread.sleep(5000);
+            Thread.sleep(250);
           } catch (InterruptedException ie) { Thread.interrupted(); }
 
           // retry using recursion with one-less attempt available
@@ -1641,7 +1641,7 @@ public class SolrCLI implements CLIO {
             q = new SolrQuery("*:*");
             q.setRows(0);
             q.set(DISTRIB, "false");
-            try (HttpSolrClient solr = new HttpSolrClient.Builder(coreUrl).build()) {
+            try (HttpSolrClient solr = new HttpSolrClient.Builder(coreUrl).markInternalRequest().build()) {
 
               String solrUrl = solr.getBaseURL();
 
@@ -2981,7 +2981,7 @@ public class SolrCLI implements CLIO {
       echo("\nPOSTing request to Config API: " + solrUrl + updatePath);
       echo(jsonBody);
 
-      try (SolrClient solrClient = new HttpSolrClient.Builder(solrUrl).build()) {
+      try (SolrClient solrClient = new HttpSolrClient.Builder(solrUrl).markInternalRequest().build()) {
         NamedList<Object> result = postJsonToSolr(solrClient, updatePath, jsonBody);
         Integer statusCode = (Integer)((NamedList)result.get("responseHeader")).get("status");
         if (statusCode == 0) {
@@ -4089,7 +4089,7 @@ public class SolrCLI implements CLIO {
     }
 
     private static boolean runningSolrIsCloud(String url) throws Exception {
-      try (final HttpSolrClient client = new HttpSolrClient.Builder(url).build()) {
+      try (final HttpSolrClient client = new HttpSolrClient.Builder(url).markInternalRequest().build()) {
         final SolrRequest<CollectionAdminResponse> request = new CollectionAdminRequest.ClusterStatus();
         final CollectionAdminResponse response = request.process(client);
         return response != null;

@@ -42,8 +42,6 @@ public class DistributedQueryComponentCustomSortTest extends BaseDistributedSear
   @Test
   @ShardsFixed(num = 3)
   public void test() throws Exception {
-    del("*:*");
-
     index(id, "1", "text", "a", "payload", ByteBuffer.wrap(new byte[] { 0x12, 0x62, 0x15 }),                     //  2 
           // quick check to prove "*" dynamicField hasn't been broken by somebody mucking with schema
           "asdfasdf_field_should_match_catchall_dynamic_field_adsfasdf", "value");

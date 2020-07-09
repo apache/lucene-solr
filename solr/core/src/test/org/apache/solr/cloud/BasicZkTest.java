@@ -28,6 +28,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -37,6 +38,7 @@ import org.junit.Test;
  * do that.
  */
 @Slow
+@Ignore // nocommit debug
 public class BasicZkTest extends AbstractZkTestCase {
   
   @BeforeClass

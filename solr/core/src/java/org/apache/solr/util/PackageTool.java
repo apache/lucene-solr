@@ -64,8 +64,8 @@ public class PackageTool extends SolrCLI.ToolBase {
 
   public static String solrUrl = null;
   public static String solrBaseUrl = null;
-  public PackageManager packageManager;
-  public RepositoryManager repositoryManager;
+  public volatile PackageManager packageManager;
+  public volatile RepositoryManager repositoryManager;
 
   @Override
   @SuppressForbidden(reason = "We really need to print the stacktrace here, otherwise "
@@ -81,7 +81,7 @@ public class PackageTool extends SolrCLI.ToolBase {
       log.info("ZK: {}", zkHost);
       String cmd = cli.getArgList().size() == 0? "help": cli.getArgs()[0];
 
-      try (HttpSolrClient solrClient = new HttpSolrClient.Builder(solrBaseUrl).build()) {
+      try (HttpSolrClient solrClient = new HttpSolrClient.Builder(solrBaseUrl).markInternalRequest().build()) {
         if (cmd != null) {
           packageManager = new PackageManager(solrClient, solrBaseUrl, zkHost); 
           try {

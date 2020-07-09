@@ -22,6 +22,7 @@ import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -45,7 +46,6 @@ public class TrollingIndexReaderFactory extends StandardIndexReaderFactory {
   private static final int keepStackTraceLines = 20;
   protected static final int maxTraces = 4;
 
-  
   private static Trap setTrap(Trap troll) {
     trap = troll;  
     return troll;
@@ -106,6 +106,7 @@ public class TrollingIndexReaderFactory extends StandardIndexReaderFactory {
     Predicate<StackTraceElement> judge = new Predicate<StackTraceElement>() {
       @Override
       public boolean test(StackTraceElement trace) {
+        System.out.println("trace:" + trace);
         return trace.getClassName().indexOf(className)>=0;
       }
       @Override
@@ -150,8 +151,9 @@ public class TrollingIndexReaderFactory extends StandardIndexReaderFactory {
   }
   
   public static Trap catchCount(int boundary) {
+
     return setTrap(new Trap() {
-      
+      private Random random = new Random(); // using lucenes is tough, need a new one per thread and created in right context
       private AtomicInteger count = new AtomicInteger();
     
       @Override
@@ -165,7 +167,7 @@ public class TrollingIndexReaderFactory extends StandardIndexReaderFactory {
       protected boolean shouldExit() {
         int now = count.incrementAndGet();
         boolean trigger = now==boundary 
-            || (now>boundary && LuceneTestCase.rarely(LuceneTestCase.random()));
+            || (now>boundary && LuceneTestCase.rarely(random));
         if (trigger) {
           Exception e = new Exception("stack sniffer"); 
           e.fillInStackTrace();

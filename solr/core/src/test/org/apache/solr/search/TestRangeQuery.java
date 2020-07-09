@@ -255,11 +255,11 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     // fields that a value source range query should work on
     String[] frange_fields = {"foo_i","foo_l","foo_f","foo_d"};
 
-    final int l= -1 * atLeast(50);
-    final int u= atLeast(250);
+    final int l= -1 * atLeast(TEST_NIGHTLY ? 50 : 15);
+    final int u= atLeast(TEST_NIGHTLY ? 250 : 50);
 
     // sometimes a very small index, sometimes a very large index
-    final int numDocs = random().nextBoolean() ? random().nextInt(50) : atLeast(1000);
+    final int numDocs = random().nextBoolean() ? random().nextInt(50) : atLeast(TEST_NIGHTLY ? 1000 : 100);
     createIndex(numDocs, new DocProcessor() {
       @Override
       public void process(SolrInputDocument doc) {

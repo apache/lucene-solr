@@ -44,6 +44,7 @@ import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.CreateMode;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
@@ -169,11 +170,12 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @Ignore // nocommit debug
   public void testReadConfigName() throws Exception {
     Path zkDir = createTempDir("zkData");
-    CoreContainer cc = null;
 
     ZkTestServer server = new ZkTestServer(zkDir);
+    CoreContainer cc = new MockCoreContainer();
     try {
       server.run();
 
@@ -190,8 +192,6 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
           CreateMode.PERSISTENT, true);
 
       zkClient.close();
-      
-      cc = getCoreContainer();
 
       CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "solr").build();
       ZkController zkController = new ZkController(cc, server.getZkAddress(), TIMEOUT, cloudConfig, () -> null);
@@ -212,13 +212,12 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
 
   public void testGetHostName() throws Exception {
     Path zkDir = createTempDir("zkData");
-    CoreContainer cc = null;
 
     ZkTestServer server = new ZkTestServer(zkDir);
+    CoreContainer cc = new MockCoreContainer();
     try {
       server.run();
 
-      cc = getCoreContainer();
       ZkController zkController = null;
 
       try {
@@ -240,6 +239,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
 
   @Slow
   @LogLevel(value = "org.apache.solr.cloud=DEBUG;org.apache.solr.cloud.overseer=DEBUG")
+  @Ignore // nocommit debug
   public void testPublishAndWaitForDownStates() throws Exception  {
 
     /*
@@ -323,24 +323,21 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
     }
   }
 
-  private CoreContainer getCoreContainer() {
-    return new MockCoreContainer();
-  }
-
   @Override
   public void tearDown() throws Exception {
     super.tearDown();
   }
 
   private static class MockCoreContainer extends CoreContainer {
-    UpdateShardHandler updateShardHandler = new UpdateShardHandler(UpdateShardHandlerConfig.DEFAULT);
-
+    HttpShardHandlerFactory shardHandlerFactory;
+    UpdateShardHandler updateShardHandler;
     public MockCoreContainer() {
       super(SolrXmlConfig.fromString(TEST_PATH(), "<solr/>"));
       HttpShardHandlerFactory httpShardHandlerFactory = new HttpShardHandlerFactory();
       httpShardHandlerFactory.init(new PluginInfo("shardHandlerFactory", Collections.emptyMap()));
-      this.shardHandlerFactory = httpShardHandlerFactory;
+      shardHandlerFactory = httpShardHandlerFactory;
       this.coreAdminHandler = new CoreAdminHandler();
+      updateShardHandler = new UpdateShardHandler(UpdateShardHandlerConfig.DEFAULT);
     }
 
     @Override
@@ -354,6 +351,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
 
     @Override
     public void shutdown() {
+      shardHandlerFactory.close();
       updateShardHandler.close();
       super.shutdown();
     }

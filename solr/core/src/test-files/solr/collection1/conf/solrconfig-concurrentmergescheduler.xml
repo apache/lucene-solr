@@ -30,6 +30,7 @@
       <int name="maxThreadCount">42</int>
       <bool name="ioThrottle">false</bool>
     </mergeScheduler>
+    <lockType>${solr.tests.lockType:single}</lockType>
   </indexConfig>
 
   <requestHandler name="/select" class="solr.SearchHandler"></requestHandler>

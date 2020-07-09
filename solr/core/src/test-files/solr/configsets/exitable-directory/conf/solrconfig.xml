@@ -23,6 +23,11 @@
 
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
 
+  <indexConfig>
+    <lockType>${solr.tests.lockType:single}</lockType>
+    <infoStream>${solr.tests.infostream:false}</infoStream>
+  </indexConfig>
+
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}">
     <!-- used to keep RAM reqs down for HdfsDirectoryFactory -->
     <bool name="solr.hdfs.blockcache.enabled">${solr.hdfs.blockcache.enabled:true}</bool>

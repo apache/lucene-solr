@@ -39,6 +39,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -107,7 +108,6 @@ public class ExportTool extends SolrCLI.ToolBase {
     int bufferSize = 1024 * 1024;
     PrintStream output;
     String uniqueKey;
-    CloudSolrClient solrClient;
     DocsSink sink;
 
 
@@ -151,11 +151,11 @@ public class ExportTool extends SolrCLI.ToolBase {
 
     abstract void exportDocs() throws Exception;
 
-    void fetchUniqueKey() throws SolrServerException, IOException {
-      solrClient = new CloudSolrClient.Builder(Collections.singletonList(baseurl)).build();
+    CloudSolrClient fetchUniqueKey(CloudSolrClient solrClient) throws SolrServerException, IOException {
       NamedList<Object> response = solrClient.request(new GenericSolrRequest(SolrRequest.METHOD.GET, "/schema/uniquekey",
           new MapSolrParams(Collections.singletonMap("collection", coll))));
       uniqueKey = (String) response.get("uniqueKey");
+      return solrClient;
     }
 
     public static StreamingResponseCallback getStreamer(Consumer<SolrDocument> sink) {
@@ -381,8 +381,8 @@ public class ExportTool extends SolrCLI.ToolBase {
     ArrayBlockingQueue<SolrDocument> queue = new ArrayBlockingQueue(1000);
     SolrDocument EOFDOC = new SolrDocument();
     volatile boolean failed = false;
-    Map<String, CoreHandler> corehandlers = new HashMap();
-    private long startTime ;
+    Map<String, CoreHandler> corehandlers = new ConcurrentHashMap<>();
+    private final long startTime ;
 
     @SuppressForbidden(reason = "Need to print out time")
     public MultiThreadedRunner(String url) {
@@ -394,52 +394,61 @@ public class ExportTool extends SolrCLI.ToolBase {
     @Override
     @SuppressForbidden(reason = "Need to print out time")
     void exportDocs() throws Exception {
-      sink = getSink();
-      fetchUniqueKey();
-      ClusterStateProvider stateProvider = solrClient.getClusterStateProvider();
-      DocCollection coll = stateProvider.getCollection(this.coll);
-      Map<String, Slice> m = coll.getSlicesMap();
-      producerThreadpool = ExecutorUtil.newMDCAwareFixedThreadPool(m.size(),
-          new SolrNamedThreadFactory("solrcli-exporter-producers"));
-      consumerThreadpool = ExecutorUtil.newMDCAwareFixedThreadPool(1,
-          new SolrNamedThreadFactory("solrcli-exporter-consumer"));
-      sink.start();
-      CountDownLatch consumerlatch = new CountDownLatch(1);
+      CloudSolrClient solrClient = new CloudSolrClient.Builder(Collections.singletonList(baseurl)).build();
       try {
-        addConsumer(consumerlatch);
-        addProducers(m);
-        if (output != null) {
-          output.println("NO: of shards : " + corehandlers.size());
-        }
-        CountDownLatch producerLatch = new CountDownLatch(corehandlers.size());
-        corehandlers.forEach((s, coreHandler) -> producerThreadpool.submit(() -> {
-          try {
-            coreHandler.exportDocsFromCore();
-          } catch (Exception e) {
-            if(output != null) output.println("Error exporting docs from : "+s);
+      sink = getSink();
+      fetchUniqueKey(solrClient);
 
-          }
-          producerLatch.countDown();
-        }));
+        ClusterStateProvider stateProvider = solrClient.getClusterStateProvider();
+        DocCollection coll = stateProvider.getCollection(this.coll);
+        Map<String, Slice> m = coll.getSlicesMap();
+        producerThreadpool = ExecutorUtil.newMDCAwareFixedThreadPool(m.size(),
+                new SolrNamedThreadFactory("solrcli-exporter-producers"));
+        consumerThreadpool = ExecutorUtil.newMDCAwareFixedThreadPool(1,
+                new SolrNamedThreadFactory("solrcli-exporter-consumer"));
+        sink.start();
+        CountDownLatch consumerlatch = new CountDownLatch(1);
 
-        producerLatch.await();
-        queue.offer(EOFDOC, 10, TimeUnit.SECONDS);
-        consumerlatch.await();
-      } finally {
-        sink.end();
-        solrClient.close();
-        producerThreadpool.shutdownNow();
-        consumerThreadpool.shutdownNow();
-        if (failed) {
-          try {
-            Files.delete(new File(out).toPath());
-          } catch (IOException e) {
-            //ignore
+          addConsumer(consumerlatch);
+          addProducers(m);
+          if (output != null) {
+            output.println("NO: of shards : " + corehandlers.size());
           }
+          CountDownLatch producerLatch = new CountDownLatch(corehandlers.size());
+          corehandlers.forEach((s, coreHandler) -> producerThreadpool.submit(() -> {
+            try {
+              coreHandler.exportDocsFromCore();
+            } catch (Exception e) {
+              if (output != null) output.println("Error exporting docs from : " + s);
+
+            }
+            producerLatch.countDown();
+          }));
+
+          producerLatch.await();
+          queue.offer(EOFDOC, 10, TimeUnit.SECONDS);
+          consumerlatch.await();
+        } finally {
+          solrClient.close();
+          sink.end();
+
+          producerThreadpool.shutdownNow();
+          consumerThreadpool.shutdownNow();
+
+          ExecutorUtil.awaitTermination(producerThreadpool);
+          ExecutorUtil.awaitTermination(consumerThreadpool);
+
+          if (failed) {
+            try {
+              Files.delete(new File(out).toPath());
+            } catch (IOException e) {
+              //ignore
+            }
+          }
+          System.out.println("\nTotal Docs exported: " + (docsWritten.get() - 1) +
+                  ". Time taken: " + ((System.currentTimeMillis() - startTime) / 1000) + "secs");
         }
-        System.out.println("\nTotal Docs exported: "+ (docsWritten.get() -1)+
-            ". Time taken: "+( (System.currentTimeMillis() - startTime)/1000) + "secs");
-      }
+
     }
 
     private void addProducers(Map<String, Slice> m) {
@@ -488,7 +497,7 @@ public class ExportTool extends SolrCLI.ToolBase {
 
       boolean exportDocsFromCore()
           throws IOException, SolrServerException {
-        HttpSolrClient client = new HttpSolrClient.Builder(baseurl).build();
+        HttpSolrClient client = new HttpSolrClient.Builder(baseurl).markInternalRequest().build();
         try {
           expectedDocs = getDocCount(replica.getCoreName(), client);
           GenericSolrRequest request;

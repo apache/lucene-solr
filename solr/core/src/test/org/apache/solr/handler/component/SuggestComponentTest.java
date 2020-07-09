@@ -34,6 +34,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    useFactory(null);
     initCore("solrconfig-suggestercomponent.xml","schema.xml");
   }
   

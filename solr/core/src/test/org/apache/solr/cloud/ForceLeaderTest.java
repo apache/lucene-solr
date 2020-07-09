@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -27,6 +28,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.BaseCloudSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.SolrException;
@@ -46,6 +48,9 @@ import org.slf4j.LoggerFactory;
 @Nightly // this test is currently too slow for non nightly
 public class ForceLeaderTest extends HttpPartitionTest {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  public ForceLeaderTest() throws Exception {
+  }
 
   @BeforeClass
   public static void beforeClassSetup() {
@@ -80,7 +85,15 @@ public class ForceLeaderTest extends HttpPartitionTest {
 
     try {
       cloudClient.setDefaultCollection(testCollectionName);
-      List<Replica> notLeaders = ensureAllReplicasAreActive(testCollectionName, SHARD1, 1, 3, maxWaitSecsToSeeAllActive);
+      cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, BaseCloudSolrClient.expectedShardsAndActiveReplicas(1, 3));
+
+      ArrayList<Replica> notLeaders = new ArrayList<>();
+      List<Replica> replicas = cloudClient.getZkStateReader().getClusterState().getCollection(testCollectionName).getReplicas();
+      for (Replica replica :replicas) {
+        if (!replica.getBool("leader", false)) {
+          notLeaders.add(replica);
+        }
+      }
       assertEquals("Expected 2 replicas for collection " + testCollectionName
           + " but found " + notLeaders.size() + "; clusterState: "
           + printClusterStateInfo(testCollectionName), 2, notLeaders.size());
@@ -276,7 +289,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
 
   private void doForceLeader(String collectionName, String shard) throws IOException, SolrServerException {
     CollectionAdminRequest.ForceLeader forceLeader = CollectionAdminRequest.forceLeaderElection(collectionName, shard);
-    try(CloudSolrClient cloudClient = getCloudSolrClient(zkServer.getZkAddress(), random().nextBoolean(), 30000, 60000)) {
+    try(CloudSolrClient cloudClient = getCloudSolrClient(zkServer.getZkAddress(), random().nextBoolean())) {
       cloudClient.request(forceLeader);
     }
   }

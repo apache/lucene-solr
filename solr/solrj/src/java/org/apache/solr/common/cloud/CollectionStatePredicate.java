@@ -17,6 +17,9 @@
 
 package org.apache.solr.common.cloud;
 
+import org.apache.solr.client.solrj.SolrServerException;
+
+import java.io.IOException;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;

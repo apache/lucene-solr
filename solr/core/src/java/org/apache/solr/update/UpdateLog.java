@@ -51,6 +51,7 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.lucene.util.BytesRef;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrDocumentBase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -59,6 +60,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
@@ -74,7 +76,7 @@ import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.util.OrderedExecutor;
+import org.apache.solr.common.util.OrderedExecutor;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
@@ -186,7 +188,11 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   protected volatile State state = State.ACTIVE;
 
   protected TransactionLog bufferTlog;
-  protected TransactionLog tlog;
+  protected volatile TransactionLog tlog;
+  protected final byte[] buffer = new byte[65536];
+  protected final byte[] obuffer = new byte[65536];
+  protected final byte[] tbuffer = new byte[65536];
+
   protected TransactionLog prevTlog;
   protected TransactionLog prevTlogOnPrecommit;
   protected final Deque<TransactionLog> logs = new LinkedList<>();  // list of recent logs, newest first
@@ -228,22 +234,22 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     }
   }
 
-  protected LinkedList<DBQ> deleteByQueries = new LinkedList<>();
+  protected final LinkedList<DBQ> deleteByQueries = new LinkedList<>();
 
-  protected String[] tlogFiles;
-  protected File tlogDir;
-  protected Collection<String> globalStrings;
+  protected volatile String[] tlogFiles;
+  protected volatile File tlogDir;
+  protected volatile Collection<String> globalStrings;
 
-  protected String dataDir;
-  protected String lastDataDir;
+  protected volatile String dataDir;
+  protected volatile String lastDataDir;
 
-  protected VersionInfo versionInfo;
+  protected volatile VersionInfo versionInfo;
 
-  protected SyncLevel defaultSyncLevel = SyncLevel.FLUSH;
+  protected volatile SyncLevel defaultSyncLevel = SyncLevel.FLUSH;
 
   volatile UpdateHandler uhandler;    // a core reload can change this reference!
   protected volatile boolean cancelApplyBufferUpdate;
-  List<Long> startingVersions;
+  volatile List<Long> startingVersions;
 
   // metrics
   protected Gauge<Integer> bufferedOpsGauge;
@@ -284,6 +290,10 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     public String toString() {
       return "LogPtr(" + pointer + ")";
     }
+  }
+
+  public UpdateLog() {
+
   }
 
   public long getTotalLogsSize() {
@@ -353,82 +363,88 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
    * for an existing log whenever the core or update handler changes.
    */
   public void init(UpdateHandler uhandler, SolrCore core) {
-    dataDir = core.getUlogDir();
+    ObjectReleaseTracker.track(this);
+    try {
+      dataDir = core.getUlogDir();
 
-    this.uhandler = uhandler;
+      this.uhandler = uhandler;
 
-    if (dataDir.equals(lastDataDir)) {
-      versionInfo.reload();
-      core.getCoreMetricManager().registerMetricProducer(SolrInfoBean.Category.TLOG.toString(), this);
+      if (dataDir.equals(lastDataDir)) {
+        versionInfo.reload();
+        core.getCoreMetricManager().registerMetricProducer(SolrInfoBean.Category.TLOG.toString(), this);
+
+        if (debug) {
+          log.debug("UpdateHandler init: tlogDir={}, next id={} this is a reopen...nothing else to do", tlogDir, id);
+        }
+        return;
+      }
+      lastDataDir = dataDir;
+      tlogDir = new File(dataDir, TLOG_NAME);
+      tlogDir.mkdirs();
+      tlogFiles = getLogList(tlogDir);
+      id = getLastLogId() + 1;   // add 1 since we will create a new log for the next update
 
       if (debug) {
-        log.debug("UpdateHandler init: tlogDir={}, next id={} this is a reopen...nothing else to do", tlogDir, id);
+        log.debug("UpdateHandler init: tlogDir={}, existing tlogs={}, next id={}", tlogDir, Arrays.asList(tlogFiles), id);
       }
-      return;
-    }
-    lastDataDir = dataDir;
-    tlogDir = new File(dataDir, TLOG_NAME);
-    tlogDir.mkdirs();
-    tlogFiles = getLogList(tlogDir);
-    id = getLastLogId() + 1;   // add 1 since we will create a new log for the next update
 
-    if (debug) {
-      log.debug("UpdateHandler init: tlogDir={}, existing tlogs={}, next id={}", tlogDir, Arrays.asList(tlogFiles), id);
-    }
+      String[] oldBufferTlog = getBufferLogList(tlogDir);
+      if (oldBufferTlog != null && oldBufferTlog.length != 0) {
+        existOldBufferLog = true;
+      }
+      TransactionLog oldLog = null;
+      for (String oldLogName : tlogFiles) {
+        File f = new File(tlogDir, oldLogName);
+        try {
+          oldLog = newTransactionLog(f, null, true, new byte[8192]);
+          addOldLog(oldLog, false);  // don't remove old logs on startup since more than one may be uncapped.
+        } catch (Exception e) {
+          SolrException.log(log, "Failure to open existing log file (non fatal) " + f, e);
+          deleteFile(f);
+        }
+      }
 
-    String[] oldBufferTlog = getBufferLogList(tlogDir);
-    if (oldBufferTlog != null && oldBufferTlog.length != 0) {
-      existOldBufferLog = true;
-    }
-    TransactionLog oldLog = null;
-    for (String oldLogName : tlogFiles) {
-      File f = new File(tlogDir, oldLogName);
+      // Record first two logs (oldest first) at startup for potential tlog recovery.
+      // It's possible that at abnormal close both "tlog" and "prevTlog" were uncapped.
+      for (TransactionLog ll : logs) {
+        newestLogsOnStartup.addFirst(ll);
+        if (newestLogsOnStartup.size() >= 2) break;
+      }
+
       try {
-        oldLog = newTransactionLog(f, null, true);
-        addOldLog(oldLog, false);  // don't remove old logs on startup since more than one may be uncapped.
-      } catch (Exception e) {
-        SolrException.log(log, "Failure to open existing log file (non fatal) " + f, e);
-        deleteFile(f);
-      }
-    }
-
-    // Record first two logs (oldest first) at startup for potential tlog recovery.
-    // It's possible that at abnormal close both "tlog" and "prevTlog" were uncapped.
-    for (TransactionLog ll : logs) {
-      newestLogsOnStartup.addFirst(ll);
-      if (newestLogsOnStartup.size() >= 2) break;
-    }
-
-    try {
-      versionInfo = new VersionInfo(this, numVersionBuckets);
-    } catch (SolrException e) {
-      log.error("Unable to use updateLog: {}", e.getMessage(), e);
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                              "Unable to use updateLog: " + e.getMessage(), e);
-    }
-
-    // TODO: these startingVersions assume that we successfully recover from all non-complete tlogs.
-    try (RecentUpdates startingUpdates = getRecentUpdates()) {
-      startingVersions = startingUpdates.getVersions(numRecordsToKeep);
-
-      // populate recent deletes list (since we can't get that info from the index)
-      for (int i = startingUpdates.deleteList.size() - 1; i >= 0; i--) {
-        DeleteUpdate du = startingUpdates.deleteList.get(i);
-        oldDeletes.put(new BytesRef(du.id), new LogPtr(-1, du.version));
+        versionInfo = new VersionInfo(this, numVersionBuckets);
+      } catch (SolrException e) {
+        log.error("Unable to use updateLog: {}", e.getMessage(), e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                "Unable to use updateLog: " + e.getMessage(), e);
       }
 
-      // populate recent deleteByQuery commands
-      for (int i = startingUpdates.deleteByQueryList.size() - 1; i >= 0; i--) {
-        Update update = startingUpdates.deleteByQueryList.get(i);
-        @SuppressWarnings({"unchecked"})
-        List<Object> dbq = (List<Object>) update.log.lookup(update.pointer);
-        long version = (Long) dbq.get(1);
-        String q = (String) dbq.get(2);
-        trackDeleteByQuery(q, version);
-      }
+      // TODO: these startingVersions assume that we successfully recover from all non-complete tlogs.
+      try (RecentUpdates startingUpdates = getRecentUpdates()) {
+        startingVersions = startingUpdates.getVersions(numRecordsToKeep);
 
+        // populate recent deletes list (since we can't get that info from the index)
+        for (int i = startingUpdates.deleteList.size() - 1; i >= 0; i--) {
+          DeleteUpdate du = startingUpdates.deleteList.get(i);
+          oldDeletes.put(new BytesRef(du.id), new LogPtr(-1, du.version));
+        }
+
+        // populate recent deleteByQuery commands
+        for (int i = startingUpdates.deleteByQueryList.size() - 1; i >= 0; i--) {
+          Update update = startingUpdates.deleteByQueryList.get(i);
+          @SuppressWarnings({"unchecked"})
+          List<Object> dbq = (List<Object>) update.log.lookup(update.pointer);
+          long version = (Long) dbq.get(1);
+          String q = (String) dbq.get(2);
+          trackDeleteByQuery(q, version);
+        }
+
+      }
+      core.getCoreMetricManager().registerMetricProducer(SolrInfoBean.Category.TLOG.toString(), this);
+    } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
+      ObjectReleaseTracker.release(this);
     }
-    core.getCoreMetricManager().registerMetricProducer(SolrInfoBean.Category.TLOG.toString(), this);
   }
 
   @Override
@@ -468,7 +484,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
    * Returns a new {@link org.apache.solr.update.TransactionLog}. Sub-classes can override this method to
    * change the implementation of the transaction log.
    */
-  public TransactionLog newTransactionLog(File tlogFile, Collection<String> globalStrings, boolean openExisting) {
+  public TransactionLog newTransactionLog(File tlogFile, Collection<String> globalStrings, boolean openExisting, byte[] buffer) {
     return new TransactionLog(tlogFile, globalStrings, openExisting);
   }
 
@@ -1317,7 +1333,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   protected void ensureBufferTlog() {
     if (bufferTlog != null) return;
     String newLogName = String.format(Locale.ROOT, LOG_FILENAME_PATTERN, BUFFER_TLOG_NAME, System.nanoTime());
-    bufferTlog = newTransactionLog(new File(tlogDir, newLogName), globalStrings, false);
+    bufferTlog = newTransactionLog(new File(tlogDir, newLogName), globalStrings, false, new byte[8182]);
     bufferTlog.isBuffer = true;
   }
 
@@ -1334,8 +1350,12 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
   protected void ensureLog() {
     if (tlog == null) {
-      String newLogName = String.format(Locale.ROOT, LOG_FILENAME_PATTERN, TLOG_NAME, id);
-      tlog = newTransactionLog(new File(tlogDir, newLogName), globalStrings, false);
+      synchronized (this) {
+        if (tlog == null) {
+          String newLogName = String.format(Locale.ROOT, LOG_FILENAME_PATTERN, TLOG_NAME, id);
+          tlog = newTransactionLog(new File(tlogDir, newLogName), globalStrings, false, new byte[8182]);
+        }
+      }
     }
   }
 
@@ -1388,8 +1408,11 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     try {
       ExecutorUtil.shutdownAndAwaitTermination(recoveryExecutor);
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       SolrException.log(log, e);
     }
+
+    ObjectReleaseTracker.release(this);
   }
 
 
@@ -1712,8 +1735,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   }
 
 
-  public static Runnable testing_logReplayHook;  // called before each log read
-  public static Runnable testing_logReplayFinishHook;  // called when log replay has finished
+  public static volatile Runnable testing_logReplayHook;  // called before each log read
+  public static volatile Runnable testing_logReplayFinishHook;  // called when log replay has finished
 
 
 

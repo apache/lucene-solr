@@ -101,7 +101,7 @@ public class TestSimComputePlanAction extends SimSolrCloudTestCase {
     response = rsp.getResponse();
     assertEquals(response.get("result").toString(), "success");
     assertAutoscalingUpdateComplete();
-    cluster.getTimeSource().sleep(TimeUnit.SECONDS.toMillis(ScheduledTriggers.DEFAULT_COOLDOWN_PERIOD_SECONDS));
+    cluster.getTimeSource().sleep(TimeUnit.SECONDS.toMillis(5));
   }
 
   @After

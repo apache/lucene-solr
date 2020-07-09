@@ -18,6 +18,7 @@ package org.apache.solr.spelling;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
@@ -37,8 +38,12 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FilterDirectory;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.EphemeralDirectoryFactory;
+import org.apache.solr.core.RAMDirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -52,7 +57,8 @@ import org.apache.solr.search.SolrIndexSearcher;
  * @since solr 1.3
  */
 public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
-  
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   public static final String SPELLCHECKER_ARG_NAME = "spellchecker";
   public static final String LOCATION = "sourceLocation";
   public static final String INDEX_DIR = "spellcheckIndexDir";
@@ -84,7 +90,15 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
     super.init(config, core);
     indexDir = (String) config.get(INDEX_DIR);
     String accuracy = (String) config.get(ACCURACY);
+
+    if (core.getDirectoryFactory() instanceof EphemeralDirectoryFactory) {
+      log.warn("Found an ephemeral directory factory, switching spellcheck index to also be ephemeral");
+      indexDir = null;
+    }
+
     //If indexDir is relative then create index inside core.getDataDir()
+    //If the core data dir does not exist, assume we are using ramdir or hdfs
+    //or something not suitable to assume disk
     if (indexDir != null)   {
       if (!new File(indexDir).isAbsolute()) {
         indexDir = core.getDataDir() + File.separator + indexDir;

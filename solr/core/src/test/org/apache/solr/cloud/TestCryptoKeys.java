@@ -33,11 +33,14 @@ import org.apache.solr.handler.TestBlobHandler;
 import org.apache.solr.util.CryptoKeys;
 import org.apache.solr.util.RestTestHarness;
 import org.apache.zookeeper.CreateMode;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
 import static org.apache.solr.handler.TestSolrConfigHandlerCloud.compareValues;
 
+@Ignore // nocommit debug
 public class TestCryptoKeys extends AbstractFullDistribZkTestBase {
 
   public TestCryptoKeys() {
@@ -45,9 +48,15 @@ public class TestCryptoKeys extends AbstractFullDistribZkTestBase {
     sliceCount = 1;
   }
 
+  @BeforeClass
+  public static void setupCluster() throws Exception {
+    System.setProperty("solr.disablePublicKeyHandler", "false");
+  }
+
   @Test
   public void test() throws Exception {
     System.setProperty("enable.runtime.lib", "true");
+    System.setProperty("solr.disablePublicKeyHandler", "true");
     setupRestTestHarnesses();
     String pk1sig = "G8LEW7uJ1is81Aqqfl3Sld3qDtOxPuVFeTLJHFJWecgDvUkmJNFXmf7nkHOVlXnDWahp1vqZf0W02VHXg37lBw==";
     String pk2sig = "pCyBQycB/0YvLVZfKLDIIqG1tFwM/awqzkp2QNpO7R3ThTqmmrj11wEJFDRLkY79efuFuQPHt40EE7jrOKoj9jLNELsfEqvU3jw9sZKiDONY+rV9Bj9QPeW8Pgt+F9Y1";

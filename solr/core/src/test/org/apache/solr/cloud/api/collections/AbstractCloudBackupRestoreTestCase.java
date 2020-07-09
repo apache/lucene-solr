@@ -111,8 +111,8 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
 
     CollectionAdminRequest.Create create = isImplicit ?
         // NOTE: use shard list with same # of shards as NUM_SHARDS; we assume this later
-        CollectionAdminRequest.createCollectionWithImplicitRouter(getCollectionName(), "conf1", "shard1,shard2", replFactor, numTlogReplicas, numPullReplicas) :
-        CollectionAdminRequest.createCollection(getCollectionName(), "conf1", NUM_SHARDS, replFactor, numTlogReplicas, numPullReplicas);
+        CollectionAdminRequest.createCollectionWithImplicitRouter(getCollectionName(), "_default", "shard1,shard2", replFactor, numTlogReplicas, numPullReplicas) :
+        CollectionAdminRequest.createCollection(getCollectionName(), "_default", NUM_SHARDS, replFactor, numTlogReplicas, numPullReplicas);
 
     if (random().nextBoolean()) {
       create.setMaxShardsPerNode(-1);
@@ -157,7 +157,7 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     }
 
     testBackupAndRestore(getCollectionName(), backupReplFactor);
-    testConfigBackupOnly("conf1", getCollectionName());
+    testConfigBackupOnly("_default", getCollectionName());
     testInvalidPath(getCollectionName());
   }
 
@@ -169,7 +169,7 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     numPullReplicas = TestUtil.nextInt(random(), 0, 1);
 
     CollectionAdminRequest.Create create =
-        CollectionAdminRequest.createCollection(getCollectionName(), "conf1", NUM_SHARDS, replFactor, numTlogReplicas, numPullReplicas);
+        CollectionAdminRequest.createCollection(getCollectionName(), "_default", NUM_SHARDS, replFactor, numTlogReplicas, numPullReplicas);
 
     if (NUM_SHARDS * (replFactor + numTlogReplicas + numPullReplicas) > cluster.getJettySolrRunners().size()) {
       create.setMaxShardsPerNode((int)Math.ceil(NUM_SHARDS * (replFactor + numTlogReplicas + numPullReplicas) / cluster.getJettySolrRunners().size())); //just to assert it survives the restoration
@@ -397,7 +397,7 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     }
 
     assertEquals(backupCollection.getAutoAddReplicas(), restoreCollection.getAutoAddReplicas());
-    assertEquals(sameConfig ? "conf1" : "customConfigName",
+    assertEquals(sameConfig ? "_default" : "customConfigName",
         cluster.getSolrClient().getZkStateReader().readConfigName(restoreCollectionName));
 
     Map<String, Integer> numReplicasByNodeName = new HashMap<>();

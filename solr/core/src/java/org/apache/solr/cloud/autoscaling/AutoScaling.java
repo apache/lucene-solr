@@ -154,9 +154,6 @@ public class AutoScaling {
 
     @Override
     public synchronized Trigger create(TriggerEventType type, String name, Map<String, Object> props) throws TriggerValidationException {
-      if (isClosed) {
-        throw new AlreadyClosedException("TriggerFactory has already been closed, cannot create new triggers");
-      }
       if (type == null) {
         throw new IllegalArgumentException("Trigger type must not be null");
       }

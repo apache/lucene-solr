@@ -31,7 +31,7 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
-import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -46,6 +46,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -53,6 +54,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.TimeOut;
@@ -60,14 +62,14 @@ import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.solr.common.cloud.ZkStateReader.ALIASES;
 
+@Ignore // nocommit leaking...
+@LuceneTestCase.Nightly
 public class AliasIntegrationTest extends SolrCloudTestCase {
-
-  private CloseableHttpClient httpClient;
-  private CloudSolrClient solrClient;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -80,16 +82,12 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    solrClient = getCloudSolrClient(cluster);
-    httpClient = (CloseableHttpClient) solrClient.getHttpClient();
   }
 
   @After
   @Override
   public void tearDown() throws Exception {
     super.tearDown();
-    IOUtils.close(solrClient, httpClient);
-
     cluster.deleteAllCollections(); // note: deletes aliases too
   }
 
@@ -410,10 +408,12 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
   }
 
   private void assertSuccess(HttpUriRequest msg) throws IOException {
-    try (CloseableHttpResponse response = httpClient.execute(msg)) {
-      if (200 != response.getStatusLine().getStatusCode()) {
-        System.err.println(EntityUtils.toString(response.getEntity()));
-        fail("Unexpected status: " + response.getStatusLine());
+    try (CloudSolrClient client = getCloudSolrClient(cluster)){
+      try (CloseableHttpResponse response = (CloseableHttpResponse)client.getHttpClient().execute(msg)) {
+        if (200 != response.getStatusLine().getStatusCode()) {
+          System.err.println(EntityUtils.toString(response.getEntity()));
+          fail("Unexpected status: " + response.getStatusLine());
+        }
       }
     }
   }
@@ -748,13 +748,14 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
       // cluster's CloudSolrClient
       responseConsumer.accept(cluster.getSolrClient().query(collectionList, solrQuery));
     } else {
-      // new CloudSolrClient (random shardLeadersOnly)
-      try (CloudSolrClient solrClient = getCloudSolrClient(cluster)) {
-        if (random().nextBoolean()) {
-          solrClient.setDefaultCollection(collectionList);
-          responseConsumer.accept(solrClient.query(null, solrQuery));
-        } else {
-          responseConsumer.accept(solrClient.query(collectionList, solrQuery));
+      try (CloudSolrClient client = getCloudSolrClient(cluster)) {
+        try (CloudSolrClient solrClient = client) {
+          if (random().nextBoolean()) {
+            solrClient.setDefaultCollection(collectionList);
+            responseConsumer.accept(solrClient.query(null, solrQuery));
+          } else {
+            responseConsumer.accept(solrClient.query(collectionList, solrQuery));
+          }
         }
       }
     }

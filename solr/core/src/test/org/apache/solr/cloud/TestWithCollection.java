@@ -24,7 +24,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
@@ -61,6 +63,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.WITH_COLLECTIO
  * See SOLR-11990 for more details.
  */
 @LogLevel("org.apache.solr.cloud.autoscaling=TRACE;org.apache.solr.client.solrj.cloud.autoscaling=DEBUG;org.apache.solr.cloud.overseer=DEBUG")
+@LuceneTestCase.Nightly // nocommit look at speeding up
 public class TestWithCollection extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -202,12 +205,19 @@ public class TestWithCollection extends SolrCloudTestCase {
     CollectionAdminRequest.modifyCollection(xyz, null)
         .unsetAttribute("withCollection")
         .process(solrClient);
-    TimeOut timeOut = new TimeOut(5, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    while (!timeOut.hasTimedOut()) {
-      DocCollection c1 = cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(xyz);
-      if (c1.getStr("withCollection") == null) break;
-      Thread.sleep(200);
+    try {
+      cluster.getSolrClient().getZkStateReader().waitForState(xyz, 10l, TimeUnit.SECONDS, (n, c) -> {
+        if (c == null) return false;
+
+        if (c.getStr("withCollection") == null) {
+          return true;
+        }
+        return false;
+      });
+    } catch (TimeoutException e) {
+      fail("Timed out waiting to see withCollection go away");
     }
+
     DocCollection c1 = cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(xyz);
     assertNull(c1.getStr("withCollection"));
     CollectionAdminRequest.deleteCollection(abc).process(solrClient);

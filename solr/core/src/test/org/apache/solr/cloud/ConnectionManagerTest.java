@@ -38,7 +38,7 @@ import org.junit.Test;
 @Slow
 public class ConnectionManagerTest extends SolrTestCaseJ4 {
   
-  static final int TIMEOUT = 3000;
+  static final int TIMEOUT = TEST_NIGHTLY ? 3000 : 1000;
   
   @Ignore
   public void testConnectionManager() throws Exception {

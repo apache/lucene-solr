@@ -709,8 +709,8 @@ public class TestExportWriter extends SolrTestCaseJ4 {
   }
 
   private void createLargeIndex() throws Exception {
-    int BATCH_SIZE = 1000;
-    int NUM_BATCHES = 100;
+    int BATCH_SIZE = TEST_NIGHTLY ? 1000 : 100;
+    int NUM_BATCHES = TEST_NIGHTLY ? 100 : 10;
     SolrInputDocument[] docs = new SolrInputDocument[BATCH_SIZE];
     for (int i = 0; i < NUM_BATCHES; i++) {
       for (int j = 0; j < BATCH_SIZE; j++) {
@@ -734,11 +734,19 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     assertU(commit());
     createLargeIndex();
     SolrQueryRequest req = req("q", "*:*", "qt", "/export", "fl", "id", "sort", "id asc", "expr", "top(n=2,input(),sort=\"id desc\")");
-    assertJQ(req,
-        "response/numFound==100000",
-        "response/docs/[0]/id=='99999'",
-        "response/docs/[1]/id=='99998'"
-        );
+    if (TEST_NIGHTLY) {
+      assertJQ(req,
+              "response/numFound==100000",
+              "response/docs/[0]/id=='99999'",
+              "response/docs/[1]/id=='99998'"
+      );
+    } else {
+      assertJQ(req,
+              "response/numFound==1000",
+              "response/docs/[0]/id=='999'",
+              "response/docs/[1]/id=='998'"
+      );
+    }
     req = req("q", "*:*", "qt", "/export", "fl", "id,sortabledv_udvas", "sort", "sortabledv_udvas asc", "expr", "unique(input(),over=\"sortabledv_udvas\")");
     String rsp = h.query(req);
     Map<String, Object> rspMap = mapper.readValue(rsp, HashMap.class);

@@ -36,6 +36,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +45,7 @@ import org.slf4j.LoggerFactory;
  *  This class tests higher level SPLITSHARD functionality when splitByPrefix is specified.
  *  See SplitHandlerTest for random tests of lower-level split selection logic.
  */
+@Ignore // nocommit debug
 public class SplitByPrefixTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

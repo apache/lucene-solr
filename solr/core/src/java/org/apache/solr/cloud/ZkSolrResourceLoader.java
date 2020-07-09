@@ -111,7 +111,7 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
 
     try {
       // delegate to the class loader (looking into $INSTANCE_DIR/lib jars)
-      is = classLoader.getResourceAsStream(resource.replace(File.separatorChar, '/'));
+      is = resourceClassLoader.getResourceAsStream(resource.replace(File.separatorChar, '/'));
     } catch (Exception e) {
       throw new IOException("Error opening " + resource, e);
     }

@@ -111,6 +111,7 @@ public class ZkShardTerms implements AutoCloseable{
    * @param replicasNeedingRecovery set of replicas in which their terms should be lower than leader's term
    */
   public void ensureTermsIsHigher(String leader, Set<String> replicasNeedingRecovery) {
+    log.info("leader={} replicasNeedingRecvoery={}", leader, replicasNeedingRecovery);
     if (replicasNeedingRecovery.isEmpty()) return;
 
     ShardTerms newTerms;
@@ -304,6 +305,7 @@ public class ZkShardTerms implements AutoCloseable{
    * @throws KeeperException.NoNodeException correspond ZK term node is not created
    */
   private boolean saveTerms(ShardTerms newTerms) throws KeeperException.NoNodeException {
+    log.info("Save terms={}", newTerms);
     byte[] znodeData = Utils.toJSON(newTerms);
     try {
       Stat stat = zkClient.setData(znodePath, znodeData, newTerms.getVersion(), true);
@@ -316,6 +318,9 @@ public class ZkShardTerms implements AutoCloseable{
     } catch (KeeperException.NoNodeException e) {
       throw e;
     } catch (Exception e) {
+      if (e instanceof  InterruptedException) {
+        Thread.currentThread().interrupt();
+      }
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error while saving shard term for collection: " + collection, e);
     }
     return false;

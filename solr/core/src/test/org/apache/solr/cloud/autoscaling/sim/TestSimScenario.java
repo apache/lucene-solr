@@ -28,12 +28,14 @@ import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
 import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.LogLevel;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  *
  */
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG")
+@Ignore // nocommit debug
 public class TestSimScenario extends SimSolrCloudTestCase {
 
   // simple scenario to test .autoAddReplicas trigger

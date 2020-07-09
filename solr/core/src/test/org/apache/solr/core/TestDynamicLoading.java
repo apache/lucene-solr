@@ -32,11 +32,13 @@ import org.apache.solr.handler.TestBlobHandler;
 import org.apache.solr.util.RestTestHarness;
 import org.apache.solr.util.SimplePostTool;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
 import static org.apache.solr.handler.TestSolrConfigHandlerCloud.compareValues;
 
+@Ignore // nocommit debug
 public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
 
   @BeforeClass

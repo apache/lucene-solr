@@ -981,11 +981,6 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
   }
 
   private void setupDistributedPivotFacetDocuments() throws Exception{
-    
-    //Clear docs
-    del("*:*");
-    commit();
-
     final int maxDocs = 50;
     final SolrClient zeroShard = clients.get(0);
     final SolrClient oneShard = clients.get(1);

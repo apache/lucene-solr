@@ -42,17 +42,6 @@ public class DistributedMap {
 
   public DistributedMap(SolrZkClient zookeeper, String dir) {
     this.dir = dir;
-
-    ZkCmdExecutor cmdExecutor = new ZkCmdExecutor(zookeeper.getZkClientTimeout());
-    try {
-      cmdExecutor.ensureExists(dir, zookeeper);
-    } catch (KeeperException e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, e);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new SolrException(ErrorCode.SERVER_ERROR, e);
-    }
-
     this.zookeeper = zookeeper;
   }
 

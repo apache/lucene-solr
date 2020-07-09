@@ -34,6 +34,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.analytics.util.AnalyticsResponseHeadings;
 import org.apache.solr.analytics.util.MedianCalculator;
 import org.apache.solr.analytics.util.OrdinalCalculator;
+import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -64,7 +65,7 @@ public class LegacyAbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClassAbstractAnalysis() {
-    xPathFact = XPathFactory.newInstance();
+    xPathFact = XmlConfigFile.xpathFactory;
   }
 
   @AfterClass
@@ -88,7 +89,7 @@ public class LegacyAbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
   }
 
   protected Node getNode(String xPath) throws XPathExpressionException {
-    return (Node)xPathFact.newXPath().compile(xPath).evaluate(doc, XPathConstants.NODE);
+    return (Node)XmlConfigFile.xpath.compile(xPath).evaluate(doc, XPathConstants.NODE);
   }
   private NodeList getNodes(String n1, String n2, String n3, String element, String n4) throws XPathExpressionException {
     // Construct the XPath expression. The form better not change or all these will fail.
@@ -97,7 +98,7 @@ public class LegacyAbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
     sb.append("/lst[@name='").append(n3).append("']");
     sb.append("/lst[@name!='(MISSING)']");
     sb.append("//").append(element).append("[@name='").append(n4).append("']");
-    return (NodeList)xPathFact.newXPath().compile(sb.toString()).evaluate(doc, XPathConstants.NODESET);
+    return (NodeList)XmlConfigFile.xpath.compile(sb.toString()).evaluate(doc, XPathConstants.NODESET);
 
   }
   protected ArrayList<String> getStringList(String n1, String n2, String n3, String element, String n4)
@@ -336,7 +337,7 @@ public class LegacyAbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
 
   protected NodeList getNodes(String xPath) throws XPathExpressionException {
     StringBuilder sb = new StringBuilder(xPath);
-    return (NodeList) xPathFact.newXPath().compile(sb.toString()).evaluate(doc, XPathConstants.NODESET);
+    return (NodeList) XmlConfigFile.xpath.compile(sb.toString()).evaluate(doc, XPathConstants.NODESET);
   }
 
 }

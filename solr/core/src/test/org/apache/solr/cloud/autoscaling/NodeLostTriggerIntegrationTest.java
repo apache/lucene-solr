@@ -45,6 +45,7 @@ import org.apache.zookeeper.data.Stat;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -129,6 +130,7 @@ public class NodeLostTriggerIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Ignore // nocommit debug
   public void testNodeLostTriggerRestoreState() throws Exception {
 
     final String triggerName = "node_lost_restore_trigger";
@@ -241,6 +243,7 @@ public class NodeLostTriggerIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Ignore // nocommit debug
   public void testNodeLostTrigger() throws Exception {
     CloudSolrClient solrClient = cluster.getSolrClient();
     String setTriggerCommand = "{" +

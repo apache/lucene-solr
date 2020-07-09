@@ -61,11 +61,17 @@ public class MetricTrigger extends TriggerBase {
 
   public MetricTrigger(String name) {
     super(TriggerEventType.METRIC, name);
-    TriggerUtils.requiredProperties(requiredProperties, validProperties, METRIC);
-    TriggerUtils.validProperties(validProperties, ABOVE, BELOW, PREFERRED_OP,
-        AutoScalingParams.COLLECTION,
-        AutoScalingParams.SHARD,
-        AutoScalingParams.NODE);
+
+    Set<String> vProperties = new HashSet<>(validProperties);
+    TriggerUtils.validProperties(vProperties, ABOVE, BELOW, PREFERRED_OP,
+            AutoScalingParams.COLLECTION,
+            AutoScalingParams.SHARD,
+            AutoScalingParams.NODE);
+    this.validProperties = vProperties;
+
+    Set<String> rProperties = new HashSet<>(requiredProperties);
+    TriggerUtils.requiredProperties(rProperties, validProperties, METRIC);
+    this.requiredProperties = rProperties;
   }
 
   @Override

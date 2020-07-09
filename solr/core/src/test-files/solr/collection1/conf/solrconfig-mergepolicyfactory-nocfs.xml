@@ -27,6 +27,7 @@
     <mergePolicyFactory class="org.apache.solr.index.TieredMergePolicyFactory">
       <double name="noCFSRatio">0.5</double>
     </mergePolicyFactory>
+    <lockType>${solr.tests.lockType:single}</lockType>
   </indexConfig>
 
   <requestHandler name="/select" class="solr.SearchHandler"></requestHandler>

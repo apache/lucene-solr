@@ -48,7 +48,6 @@ public class DistributedTermsComponentTest extends BaseDistributedSearchTestCase
   @Test
   public void test() throws Exception {
     Random random = random();
-    del("*:*");
 
     index(id, random.nextInt(), "b_t", "snake a,b spider shark snail slug seal", "foo_i_p", "1");
     query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "foo_i_p");

@@ -56,9 +56,12 @@ dependencies {
   api 'org.apache.commons:commons-lang3'
   api 'com.carrotsearch:hppc'
   api 'com.fasterxml.jackson.core:jackson-databind'
+  api 'com.fasterxml.woodstox:woodstox-core'
   api 'commons-cli:commons-cli'
   api 'commons-codec:commons-codec'
   api 'commons-collections:commons-collections'
+
+  implementation 'net.sf.saxon:Saxon-HE'
 
   implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-smile'
 

@@ -18,10 +18,12 @@ package org.apache.solr.cloud.autoscaling;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -31,6 +33,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
 import org.slf4j.Logger;
@@ -50,11 +53,13 @@ public class InactiveShardPlanAction extends TriggerActionBase {
 
   public static final int DEFAULT_TTL_SECONDS = 3600 * 24 * 2;
 
-  private int cleanupTTL;
+  private volatile int cleanupTTL;
 
   public InactiveShardPlanAction() {
     super();
-    TriggerUtils.validProperties(validProperties, TTL_PROP);
+    Set<String> vProperties = new HashSet<>(validProperties);
+    TriggerUtils.validProperties(vProperties, TTL_PROP);
+    this.validProperties = vProperties;
   }
 
   @Override

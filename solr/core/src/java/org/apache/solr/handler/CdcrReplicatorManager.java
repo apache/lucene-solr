@@ -261,7 +261,7 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
         Replica leader = state.getClient().getZkStateReader().getLeaderRetry(targetCollection, shard, 30000); // assume same shard exists on target
         String leaderCoreUrl = leader.getCoreUrl();
         HttpClient httpClient = state.getClient().getLbClient().getHttpClient();
-        try (HttpSolrClient client = new HttpSolrClient.Builder(leaderCoreUrl).withHttpClient(httpClient).build()) {
+        try (HttpSolrClient client = new HttpSolrClient.Builder(leaderCoreUrl).withHttpClient(httpClient).markInternalRequest().build()) {
           sendCdcrCommand(client, CdcrParams.CdcrAction.CANCEL_BOOTSTRAP);
         } catch (SolrServerException e) {
           log.error("Error sending cancel bootstrap message to target collection: {} shard: {} leader: {}",
@@ -364,7 +364,7 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
       Replica leader = state.getClient().getZkStateReader().getLeaderRetry(targetCollection, shard, 30000); // assume same shard exists on target
       String leaderCoreUrl = leader.getCoreUrl();
       HttpClient httpClient = state.getClient().getLbClient().getHttpClient();
-      try (HttpSolrClient client = new HttpSolrClient.Builder(leaderCoreUrl).withHttpClient(httpClient).build()) {
+      try (HttpSolrClient client = new HttpSolrClient.Builder(leaderCoreUrl).withHttpClient(httpClient).markInternalRequest().build()) {
         log.info("Attempting to bootstrap target collection: {} shard: {} leader: {}", targetCollection, shard, leaderCoreUrl);
         try {
           @SuppressWarnings({"rawtypes"})
@@ -387,7 +387,7 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
         Replica leader = state.getClient().getZkStateReader().getLeaderRetry(targetCollection, shard, 30000); // assume same shard exists on target
         String leaderCoreUrl = leader.getCoreUrl();
         HttpClient httpClient = state.getClient().getLbClient().getHttpClient();
-        try (HttpSolrClient client = new HttpSolrClient.Builder(leaderCoreUrl).withHttpClient(httpClient).build()) {
+        try (HttpSolrClient client = new HttpSolrClient.Builder(leaderCoreUrl).withHttpClient(httpClient).markInternalRequest().build()) {
           @SuppressWarnings({"rawtypes"})
           NamedList response = sendCdcrCommand(client, CdcrParams.CdcrAction.BOOTSTRAP_STATUS);
           String status = (String) response.get(RESPONSE_STATUS);

@@ -45,10 +45,12 @@ import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.core.SolrConfig.UpdateHandlerInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrMetricProducer;
@@ -138,7 +140,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       commitWithinSoftCommit = false;
       commitTracker.setOpenSearcher(true);
     }
-
+    ObjectReleaseTracker.track(this);
   }
   
   public DirectUpdateHandler2(SolrCore core, UpdateHandler updateHandler) {
@@ -804,16 +806,16 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   @Override
   public void close() throws IOException {
     log.debug("closing {}", this);
-
-    commitTracker.close();
-    softCommitTracker.close();
-
-    numDocsPending.reset();
-    try {
-      super.close();
-    } catch (Exception e) {
-      throw new IOException("Error closing", e);
+    try (ParWork closer = new ParWork(this, true)) {
+      closer.add("", commitTracker, softCommitTracker, ()->{ numDocsPending.reset();
+        try {
+          super.close();
+        } catch (IOException e) {
+          log.error("", e);
+        }
+      });
     }
+    ObjectReleaseTracker.release(this);
   }
 
   // IndexWriterCloser interface method - called from solrCoreState.decref(this)
@@ -833,10 +835,10 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     }
     try {
 
-      if (TestInjection.injectSkipIndexWriterCommitOnClose(writer)) {
+      if (TestInjection.injectSkipIndexWriterCommitOnClose(writer) || Boolean.getBoolean("solr.skipCommitOnClose")) {
         // if this TestInjection triggers, we do some simple rollback()
         // (which closes the underlying IndexWriter) and then return immediately
-        log.warn("Skipping commit for IndexWriter.close() due to TestInjection");
+        log.warn("Skipping commit for IndexWriter.close() due to TestInjection or system property");
         if (writer != null) {
           writer.rollback();
         }

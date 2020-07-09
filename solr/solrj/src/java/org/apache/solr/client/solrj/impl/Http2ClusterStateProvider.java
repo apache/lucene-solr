@@ -27,7 +27,7 @@ public class Http2ClusterStateProvider extends BaseHttpClusterStateProvider {
   final boolean closeClient;
 
   public Http2ClusterStateProvider(List<String> solrUrls, Http2SolrClient httpClient) throws Exception {
-    this.httpClient = httpClient == null? new Http2SolrClient.Builder().build(): httpClient;
+    this.httpClient = httpClient == null? new Http2SolrClient.Builder().markInternalRequest().build(): httpClient;
     this.closeClient = httpClient == null;
     init(solrUrls);
   }
@@ -41,6 +41,6 @@ public class Http2ClusterStateProvider extends BaseHttpClusterStateProvider {
 
   @Override
   protected SolrClient getSolrClient(String baseUrl) {
-    return new Http2SolrClient.Builder(baseUrl).withHttpClient(httpClient).build();
+    return new Http2SolrClient.Builder(baseUrl).withHttpClient(httpClient).markInternalRequest().build();
   }
 }

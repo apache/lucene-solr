@@ -93,19 +93,14 @@ public class TlogReplayBufferedWhileIndexingTest extends AbstractFullDistribZkTe
     
     allJetty.get(0).start();
     
-    Thread.sleep(45000);
-  
-    waitForThingsToLevelOut(); // we can insert random update delays, so this can take a while, especially when beasting this test
-    
-    Thread.sleep(2000);
+    Thread.sleep(10000);
+
     
     waitForRecoveriesToFinish(DEFAULT_COLLECTION, cloudClient.getZkStateReader(), false, true);
     
     for (StoppableIndexingThread thread : threads) {
       thread.safeStop();
     }
-    
-    waitForThingsToLevelOut(30, TimeUnit.SECONDS);
 
     checkShardConsistency(false, false);
 

@@ -108,10 +108,18 @@ public class TestJsonFacets extends SolrTestCaseHS {
     if (null != TEST_ONLY_ONE_FACET_METHOD) {
       return Arrays.<Object[]>asList(new Object[] { TEST_ONLY_ONE_FACET_METHOD });
     }
-    
-    // wrap each enum val in an Object[] and return as Iterable
-    return () -> Arrays.stream(FacetField.FacetMethod.values())
-      .map(it -> new Object[]{it}).iterator();
+
+    if (TEST_NIGHTLY) {
+      // wrap each enum val in an Object[] and return as Iterable
+      return () -> Arrays.stream(FacetField.FacetMethod.values())
+              .map(it -> new Object[]{it}).iterator();
+    } else {
+      // wrap each enum val in an Object[] and return as Iterable
+      List<FacetField.FacetMethod> vals = Arrays.asList(FacetField.FacetMethod.values());
+      Collections.shuffle(vals);
+      return () -> Collections.singletonList(vals.get(0)).stream()
+              .map(it -> new Object[]{it}).iterator();
+    }
   }
 
   public TestJsonFacets(FacetField.FacetMethod defMethod) {
@@ -1127,7 +1135,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     int limit=0;
     switch (random().nextInt(4)) {
       case 0: limit=-1; break;
-      case 1: limit=1000000; break;
+      case 1: limit=(TEST_NIGHTLY ? 1000000 : 10); break;
       case 2: // fallthrough
       case 3: // fallthrough
     }
@@ -2421,7 +2429,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
       assertEquals(1, DebugAgg.Acc.creates.get() - creates);
       assertTrue( DebugAgg.Acc.resets.get() - resets <= 1);
-      assertTrue( DebugAgg.Acc.last.numSlots <= 2 ); // probably "1", but may be special slot for something.  As long as it's not cardinality of the field
+      assertTrue( DebugAgg.Acc.lastNumSlots <= 2 ); // probably "1", but may be special slot for something.  As long as it's not cardinality of the field
 
 
       creates = DebugAgg.Acc.creates.get();
@@ -2436,7 +2444,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
       assertEquals(1, DebugAgg.Acc.creates.get() - creates);
       assertTrue( DebugAgg.Acc.resets.get() - resets == 0);
-      assertTrue( DebugAgg.Acc.last.numSlots >= 5 ); // all slots should be done in a single shot. there may be more than 5 due to special slots or hashing.
+      assertTrue( DebugAgg.Acc.lastNumSlots >= 5 ); // all slots should be done in a single shot. there may be more than 5 due to special slots or hashing.
 
 
       // When limit:-1, we should do most stats in first phase (SOLR-10634)
@@ -2450,7 +2458,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
       assertEquals(1, DebugAgg.Acc.creates.get() - creates);
       assertTrue( DebugAgg.Acc.resets.get() - resets == 0);
-      assertTrue( DebugAgg.Acc.last.numSlots >= 5 ); // all slots should be done in a single shot. there may be more than 5 due to special slots or hashing.
+      assertTrue( DebugAgg.Acc.lastNumSlots >= 5 ); // all slots should be done in a single shot. there may be more than 5 due to special slots or hashing.
 
       // Now for a numeric field
       // When limit:-1, we should do most stats in first phase (SOLR-10634)
@@ -2464,7 +2472,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
       assertEquals(1, DebugAgg.Acc.creates.get() - creates);
       assertTrue( DebugAgg.Acc.resets.get() - resets == 0);
-      assertTrue( DebugAgg.Acc.last.numSlots >= 5 ); // all slots should be done in a single shot. there may be more than 5 due to special slots or hashing.
+      assertTrue( DebugAgg.Acc.lastNumSlots >= 5 ); // all slots should be done in a single shot. there may be more than 5 due to special slots or hashing.
 
 
       // But if we need to calculate domains anyway, it probably makes sense to calculate most stats in the 2nd phase (along with sub-facets)
@@ -2478,7 +2486,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
       assertEquals(1, DebugAgg.Acc.creates.get() - creates);
       assertTrue( DebugAgg.Acc.resets.get() - resets >=4);
-      assertTrue( DebugAgg.Acc.last.numSlots <= 2 ); // probably 1, but could be higher
+      assertTrue( DebugAgg.Acc.lastNumSlots <= 2 ); // probably 1, but could be higher
 
       // Now with a numeric field
       // But if we need to calculate domains anyway, it probably makes sense to calculate most stats in the 2nd phase (along with sub-facets)
@@ -2492,7 +2500,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
       assertEquals(1, DebugAgg.Acc.creates.get() - creates);
       assertTrue( DebugAgg.Acc.resets.get() - resets >=4);
-      assertTrue( DebugAgg.Acc.last.numSlots <= 2 ); // probably 1, but could be higher
+      assertTrue( DebugAgg.Acc.lastNumSlots <= 2 ); // probably 1, but could be higher
     }
     //////////////////////////////////////////////////////////////// end phase testing
 
@@ -2980,7 +2988,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     int numCat = 1;
     int numWhere = 2000000000;
     int commitPercent = 10;
-    int ndocs=1000;
+    int ndocs=TEST_NIGHTLY ? 1000 : 100;
 
     Map<Integer, Map<Integer, List<Integer>>> model = new HashMap<>();  // cat->where->list<ids>
     for (int i=0; i<ndocs; i++) {
@@ -3025,12 +3033,21 @@ public class TestJsonFacets extends SolrTestCaseHS {
       );
     }
 
-    client.testJQ(params(p, "q", "*:*"
-        , "json.facet", "{f1:{type:terms, field:id, limit:1, offset:990}}"
-        )
-        , "facets=={ 'count':" + ndocs + "," +
-            "'f1':{buckets:[{val:'00990',count:1}]}} "
-    );
+    if (TEST_NIGHTLY) {
+      client.testJQ(params(p, "q", "*:*"
+              , "json.facet", "{f1:{type:terms, field:id, limit:1, offset:990}}"
+              )
+              , "facets=={ 'count':" + ndocs + "," +
+                      "'f1':{buckets:[{val:'00990',count:1}]}} "
+      );
+    } else {
+      client.testJQ(params(p, "q", "*:*"
+              , "json.facet", "{f1:{type:terms, field:id, limit:1, offset:90}}"
+              )
+              , "facets=={ 'count':" + ndocs + "," +
+                      "'f1':{buckets:[{val:'00090',count:1}]}} "
+      );
+    }
 
 
     for (int i=0; i<20; i++) {

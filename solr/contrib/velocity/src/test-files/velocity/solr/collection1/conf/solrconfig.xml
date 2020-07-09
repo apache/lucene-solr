@@ -19,6 +19,11 @@
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
 
+  <indexConfig>
+    <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
+    <lockType>${solr.tests.lockType:single}</lockType>
+  </indexConfig>
+
   <!--<lib dir="../../contrib/velocity/lib" />-->
   <!--<lib dir="../../dist/" regex="solr-velocity-\d.*\.jar" />-->
 

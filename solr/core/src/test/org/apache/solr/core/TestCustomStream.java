@@ -24,11 +24,13 @@ import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.handler.TestBlobHandler;
 import org.apache.solr.util.RestTestHarness;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * Created by caomanhdat on 6/3/16.
  */
+@Ignore // nocommit debug
 public class TestCustomStream extends AbstractFullDistribZkTestBase {
 
   @BeforeClass

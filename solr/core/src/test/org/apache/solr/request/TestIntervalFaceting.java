@@ -254,7 +254,7 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
   @Slow
   public void testRandom() throws Exception {
     // All field values will be a number between 0 and cardinality
-    int cardinality = 10000;
+    int cardinality = TEST_NIGHTLY ? 10000 : 1000;
     // Fields to use for interval faceting
     String[] fields = new String[]{
         "test_s_dv", "test_i_dv", "test_l_dv", "test_f_dv", "test_d_dv", "test_dt_dv",
@@ -262,14 +262,14 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
         "test_l", "test_f", "test_d", "test_dt", "test_ss", "test_is", "test_fs", "test_ls", "test_ds", "test_dts",
         "test_i_p", "test_is_p", "test_l_p", "test_ls_p", "test_f_p", "test_fs_p", "test_d_p", "test_ds_p", "test_dts_p"
         };
-    for (int i = 0; i < atLeast(500); i++) {
+    for (int i = 0; i < atLeast(TEST_NIGHTLY ? 500 : 100); i++) {
       if (random().nextInt(50) == 0) {
         //have some empty docs
         assertU(adoc("id", String.valueOf(i)));
         continue;
       }
 
-      if (random().nextInt(100) == 0 && i > 0) {
+      if (random().nextInt(TEST_NIGHTLY ? 100 : 10) == 0 && i > 0) {
         //delete some docs
         assertU(delI(String.valueOf(i - 1)));
       }
@@ -309,7 +309,7 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
     }
     assertU(commit());
 
-    for (int i = 0; i < atLeast(10000); i++) {
+    for (int i = 0; i < atLeast(TEST_NIGHTLY ? 10000 : 100); i++) {
       doTestQuery(cardinality, fields);
     }
 

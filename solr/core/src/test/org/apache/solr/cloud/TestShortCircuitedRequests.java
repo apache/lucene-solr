@@ -34,7 +34,6 @@ public class TestShortCircuitedRequests extends AbstractFullDistribZkTestBase {
   @Test
   @ShardsFixed(num = 4)
   public void test() throws Exception {
-    waitForRecoveriesToFinish(false);
     assertEquals(4, cloudClient.getZkStateReader().getClusterState().getCollection(DEFAULT_COLLECTION).getSlices().size());
     index("id", "a!doc1");  // shard3
     index("id", "b!doc1");  // shard1

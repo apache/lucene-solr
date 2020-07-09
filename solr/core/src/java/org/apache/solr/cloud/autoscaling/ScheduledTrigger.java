@@ -25,8 +25,10 @@ import java.time.format.DateTimeFormatterBuilder;
 import java.time.temporal.ChronoField;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
@@ -66,8 +68,14 @@ public class ScheduledTrigger extends TriggerBase {
 
   public ScheduledTrigger(String name) {
     super(TriggerEventType.SCHEDULED, name);
-    TriggerUtils.requiredProperties(requiredProperties, validProperties, "startTime", "every");
-    TriggerUtils.validProperties(validProperties, "timeZone", "graceDuration", AutoScalingParams.PREFERRED_OP);
+    Set<String> vProperties = new HashSet<>(validProperties);
+
+    Set<String> rProperties = new HashSet<>(requiredProperties);
+    TriggerUtils.requiredProperties(rProperties, vProperties, "startTime", "every");
+    this.requiredProperties = rProperties;
+
+    TriggerUtils.validProperties(vProperties, "timeZone", "graceDuration", AutoScalingParams.PREFERRED_OP);
+    this.validProperties = vProperties;
   }
 
   @Override

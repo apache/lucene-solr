@@ -32,6 +32,7 @@ import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
@@ -75,6 +76,7 @@ import org.slf4j.LoggerFactory;
  */
 @Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-9061")
+@LuceneTestCase.Nightly // TODO speed up
 public class TestDistributedSearch extends BaseDistributedSearchTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -103,12 +105,10 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     // the same http client pretty fast - this lowered setting makes sure
     // we validate the connection before use on the restarted
     // server so that we don't use a bad one
-    System.setProperty("validateAfterInactivity", "200");
-    
+    System.setProperty("validateAfterInactivity", "100");
+
     System.setProperty("solr.httpclient.retries", "0");
     System.setProperty("distribUpdateSoTimeout", "5000");
-    
-
   }
 
   public TestDistributedSearch() {
@@ -124,7 +124,6 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     QueryResponse rsp = null;
     int backupStress = stress; // make a copy so we can restore
 
-    del("*:*");
     indexr(id,1, i1, 100, tlong, 100,t1,"now is the time for all good men",
            "foo_sev_enum", "Medium",
            tdate_a, "2010-04-20T11:00:00Z",
@@ -175,14 +174,14 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     indexr(id, 15, "SubjectTerms_mfacet", new String[]  {"test 1", "test 2", "test3"});
     indexr(id, 16, "SubjectTerms_mfacet", new String[]  {"test 1", "test 2", "test3"});
     String[] vals = new String[100];
-    for (int i=0; i<100; i++) {
+    for (int i=0; i< (TEST_NIGHTLY ? 100 : 25); i++) {
       vals[i] = "test " + i;
     }
     indexr(id, 17, "SubjectTerms_mfacet", vals);
     
     
 
-    for (int i=100; i<150; i++) {
+    for (int i=100; i<(TEST_NIGHTLY ? 150 : 50); i++) {
       indexr(id, i);      
     }
 
@@ -359,7 +358,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     assertEquals("Should be exactly 2 range facets returned after minCounts taken into account ", 3, minResp.getFacetRanges().size());
     assertEquals("Should only be 1 query facets returned after minCounts taken into account ", 1, minResp.getFacetQuery().size());
 
-    checkMinCountsField(minResp.getFacetField(i1).getValues(), new Object[]{null, 55L}); // Should just be the null entries for field
+    checkMinCountsField(minResp.getFacetField(i1).getValues(), new Object[]{null, (TEST_NIGHTLY ? 55L : 5L)}); // Should just be the null entries for field
 
     checkMinCountsRange(minResp.getFacetRanges().get(0).getCounts(), new Object[]{"0", 5L}); // range on i1
     checkMinCountsRange(minResp.getFacetRanges().get(1).getCounts(), new Object[]{"0", 3L, "100", 3L}); // range on tlong
@@ -404,7 +403,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     query("q", "toyata", "fl", "id,lowerfilt", "spellcheck", true, "spellcheck.q", "toyata", "qt", "/spellCheckCompRH_Direct", "shards.qt", "/spellCheckCompRH_Direct");
 
     stress=0;  // turn off stress... we want to tex max combos in min time
-    for (int i=0; i<25*RANDOM_MULTIPLIER; i++) {
+    for (int i=0; i<(TEST_NIGHTLY ? 25 : 5)*RANDOM_MULTIPLIER; i++) {
       String f = fieldNames[random().nextInt(fieldNames.length)];
       if (random().nextBoolean()) f = t1;  // the text field is a really interesting one to facet on (and it's multi-valued too)
 
@@ -412,7 +411,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
       // TODO: do a better random query
       String q = random().nextBoolean() ? "*:*" : "id:(1 3 5 7 9 11 13) OR id_i1:[100 TO " + random().nextInt(50) + "]";
 
-      int nolimit = random().nextBoolean() ? -1 : 10000;  // these should be equivalent
+      int nolimit = random().nextBoolean() ? -1 : TEST_NIGHTLY ? 10000 : 100;  // these should be equivalent
 
       // if limit==-1, we should always get exact matches
       query("q",q, "rows",0, "facet","true", "facet.field",f, "facet.limit",nolimit, "facet.sort","count", "facet.mincount",random().nextInt(5), "facet.offset",random().nextInt(10));
@@ -1041,7 +1040,6 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     for (JettySolrRunner downJetty : downJettys) {
       downJetty.start();
     }
-    
 
     // This index has the same number for every field
     
@@ -1050,6 +1048,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     // query("q","matchesnothing","fl","*,score", "debugQuery", "true");
     
     // Thread.sleep(10000000000L);
+    Thread.sleep(250);
 
     del("*:*"); // delete all docs and test stats request
     commit();
@@ -1136,8 +1135,8 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
       long act_count = counts.get(counts_idx).getCount();
       String exp_name = (String) pairs[pairs_idx];
       long exp_count = (long) pairs[pairs_idx + 1];
-      assertEquals("Expected ordered entry " + exp_name + " at position " + counts_idx + " got " + act_name, act_name, exp_name);
-      assertEquals("Expected count for entry: " + exp_name + " at position " + counts_idx + " got " + act_count, act_count, exp_count);
+      assertEquals("Expected ordered entry " + exp_name + " at position " + counts_idx + " got " + act_name, exp_name, act_name);
+      assertEquals("Expected count for entry: " + exp_name + " at position " + counts_idx + " got " + act_count, exp_count, act_count);
     }
   }
 

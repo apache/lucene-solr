@@ -42,6 +42,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -49,6 +50,7 @@ import org.junit.Test;
  */
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG")
 @SolrTestCaseJ4.SuppressSSL
+@Ignore // nocommit - yuck, speed this up
 public class HttpTriggerListenerTest extends SolrCloudTestCase {
 
   private static CountDownLatch triggerFiredLatch;

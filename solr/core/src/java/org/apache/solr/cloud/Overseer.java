@@ -29,11 +29,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
+import net.sf.saxon.trans.Err;
 import org.apache.lucene.util.Version;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -50,6 +59,7 @@ import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.cloud.overseer.ZkStateWriter;
 import org.apache.solr.cloud.overseer.ZkWriteCommand;
 import org.apache.solr.common.AlreadyClosedException;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -61,10 +71,12 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.Pair;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
@@ -74,6 +86,8 @@ import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -139,17 +153,31 @@ import com.codahale.metrics.Timer;
 public class Overseer implements SolrCloseable {
   public static final String QUEUE_OPERATION = "operation";
 
+  public static final String OVERSEER_COLLECTION_QUEUE_WORK = "/overseer/collection-queue-work";
+
+  public static final String OVERSEER_QUEUE = "/overseer/queue";
+
+  public static final String OVERSEER_ASYNC_IDS = "/overseer/async_ids";
+
+  public static final String OVERSEER_COLLECTION_MAP_FAILURE = "/overseer/collection-map-failure";
+
+  public static final String OVERSEER_COLLECTION_MAP_COMPLETED = "/overseer/collection-map-completed";
+
+  public static final String OVERSEER_COLLECTION_MAP_RUNNING = "/overseer/collection-map-running";
+
+  public static final String OVERSEER_QUEUE_WORK = "/overseer/queue-work";
+
   // System properties are used in tests to make them run fast
   public static final int STATE_UPDATE_DELAY = ZkStateReader.STATE_UPDATE_DELAY;
   public static final int STATE_UPDATE_BATCH_SIZE = Integer.getInteger("solr.OverseerStateUpdateBatchSize", 10000);
   public static final int STATE_UPDATE_MAX_QUEUE = 20000;
 
   public static final int NUM_RESPONSES_TO_STORE = 10000;
-  public static final String OVERSEER_ELECT = "/overseer_elect";
+  public static final String OVERSEER_ELECT = "/overseer/overseer_elect";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private volatile ElectionContext context;
 
-  enum LeaderStatus {DONT_KNOW, NO, YES}
 
   /**
    * <p>This class is responsible for dequeueing state change requests from the ZooKeeper queue at <code>/overseer/queue</code>
@@ -168,117 +196,123 @@ public class Overseer implements SolrCloseable {
     //Internal queue where overseer stores events that have not yet been published into cloudstate
     //If Overseer dies while extracting the main queue a new overseer will start from this queue
     private final ZkDistributedQueue workQueue;
-    // Internal map which holds the information about running tasks.
-    private final DistributedMap runningMap;
-    // Internal map which holds the information about successfully completed tasks.
-    private final DistributedMap completedMap;
-    // Internal map which holds the information about failed tasks.
-    private final DistributedMap failureMap;
 
-    private final Stats zkStats;
-
-    private boolean isClosed = false;
+    private volatile boolean isClosed = false;
 
     public ClusterStateUpdater(final ZkStateReader reader, final String myId, Stats zkStats) {
       this.zkClient = reader.getZkClient();
-      this.zkStats = zkStats;
       this.stateUpdateQueue = getStateUpdateQueue(zkStats);
       this.workQueue = getInternalWorkQueue(zkClient, zkStats);
-      this.failureMap = getFailureMap(zkClient);
-      this.runningMap = getRunningMap(zkClient);
-      this.completedMap = getCompletedMap(zkClient);
       this.myId = myId;
       this.reader = reader;
     }
 
-    public Stats getStateUpdateQueueStats() {
-      return stateUpdateQueue.getZkStats();
-    }
-
-    public Stats getWorkQueueStats()  {
-      return workQueue.getZkStats();
-    }
-
     @Override
     public void run() {
+      if (log.isDebugEnabled()) {
+        log.debug("Overseer run() - start");
+      }
+
       MDCLoggingContext.setNode(zkController.getNodeName() );
-
-      LeaderStatus isLeader = amILeader();
-      while (isLeader == LeaderStatus.DONT_KNOW) {
-        log.debug("am_i_leader unclear {}", isLeader);
-        isLeader = amILeader();  // not a no, not a yes, try ask again
-      }
-
-      if (log.isInfoEnabled()) {
-        log.info("Starting to work on the main queue : {}", LeaderElector.getNodeName(myId));
-      }
       try {
+
+      try {
+        if (log.isDebugEnabled()) {
+          log.debug("set watch on leader znode");
+        }
+        zkClient.exists(Overseer.OVERSEER_ELECT + "/leader", new Watcher() {
+
+          @Override
+          public void process(WatchedEvent event) {
+            if (Event.EventType.None.equals(event.getType())) {
+              return;
+            }
+            log.info("Overseer leader has changed, closing ...");
+            Overseer.this.close();
+          }} , true);
+      } catch (KeeperException.SessionExpiredException e) {
+        log.warn("ZooKeeper session expired");
+        return;
+      } catch (InterruptedException | AlreadyClosedException e) {
+        ParWork.propegateInterrupt(e);
+        return;
+      } catch (Exception e) {
+       log.error("Error", e);
+      }
+
+      log.info("Starting to work on the main queue : {}", LeaderElector.getNodeName(myId));
+
         ZkStateWriter zkStateWriter = null;
-        ClusterState clusterState = null;
-        boolean refreshClusterState = true; // let's refresh in the first iteration
+        ClusterState clusterState = reader.getClusterState();
+        assert clusterState != null;
+
         // we write updates in batch, but if an exception is thrown when writing new clusterstate,
         // we do not sure which message is bad message, therefore we will re-process node one by one
         int fallbackQueueSize = Integer.MAX_VALUE;
         ZkDistributedQueue fallbackQueue = workQueue;
         while (!this.isClosed) {
-          isLeader = amILeader();
-          if (LeaderStatus.NO == isLeader) {
-            break;
-          }
-          else if (LeaderStatus.YES != isLeader) {
-            log.debug("am_i_leader unclear {}", isLeader);
-            continue; // not a no, not a yes, try ask again
-          }
-
-          //TODO consider removing 'refreshClusterState' and simply check if clusterState is null
-          if (refreshClusterState) {
+          if (zkStateWriter == null) {
             try {
-              reader.forciblyRefreshAllClusterStateSlow();
-              clusterState = reader.getClusterState();
               zkStateWriter = new ZkStateWriter(reader, stats);
-              refreshClusterState = false;
-
+            //  clusterState = reader.getClusterState();
               // if there were any errors while processing
               // the state queue, items would have been left in the
               // work queue so let's process those first
               byte[] data = fallbackQueue.peek();
-              while (fallbackQueueSize > 0 && data != null)  {
+              while (fallbackQueueSize > 0 && data != null) {
                 final ZkNodeProps message = ZkNodeProps.load(data);
-                if (log.isDebugEnabled()) {
-                  log.debug("processMessage: fallbackQueueSize: {}, message = {}", fallbackQueue.getZkStats().getQueueLength(), message);
-                }
+                log.debug("processMessage: fallbackQueueSize: {}, message = {}", fallbackQueue.getZkStats().getQueueLength(), message);
                 // force flush to ZK after each message because there is no fallback if workQueue items
                 // are removed from workQueue but fail to be written to ZK
                 try {
-                  clusterState = processQueueItem(message, clusterState, zkStateWriter, false, null);
+                  clusterState = processQueueItem(message, reader.getClusterState(), zkStateWriter, false, null);
+                  assert clusterState != null;
+                } catch (InterruptedException | AlreadyClosedException e) {
+                  ParWork.propegateInterrupt(e);
+                  return;
+                } catch (KeeperException.SessionExpiredException e) {
+                  log.error("run()", e);
+
+                  log.warn("Solr cannot talk to ZK, exiting Overseer work queue loop", e);
+                  return;
                 } catch (Exception e) {
-                  if (isBadMessage(e)) {
-                    log.warn("Exception when process message = {}, consider as bad message and poll out from the queue", message);
-                    fallbackQueue.poll();
+                  SolrException exp = new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+                  try {
+                    if (isBadMessage(e)) {
+                      log.warn(
+                              "Exception when process message = {}, consider as bad message and poll out from the queue",
+                              message);
+                      fallbackQueue.poll();
+                    }
+                  } catch (Exception e1) {
+                    ParWork.propegateInterrupt(e1);
+                    exp.addSuppressed(e1);
                   }
-                  throw e;
+
+                  throw exp;
                 }
                 fallbackQueue.poll(); // poll-ing removes the element we got by peek-ing
                 data = fallbackQueue.peek();
                 fallbackQueueSize--;
               }
               // force flush at the end of the loop, if there are no pending updates, this is a no op call
-              clusterState = zkStateWriter.writePendingUpdates();
+              //clusterState = zkStateWriter.writePendingUpdates(clusterState);
+              assert clusterState != null;
               // the workQueue is empty now, use stateUpdateQueue as fallback queue
               fallbackQueue = stateUpdateQueue;
               fallbackQueueSize = 0;
-            } catch (AlreadyClosedException e) {
-              return;
             } catch (KeeperException.SessionExpiredException e) {
+              log.error("run()", e);
+
               log.warn("Solr cannot talk to ZK, exiting Overseer work queue loop", e);
               return;
-            } catch (InterruptedException e) {
-              Thread.currentThread().interrupt();
+            } catch (InterruptedException | AlreadyClosedException e) {
+              ParWork.propegateInterrupt(e);
               return;
             } catch (Exception e) {
               log.error("Exception in Overseer when process message from work queue, retrying", e);
-              refreshClusterState = true;
-              continue;
+
+              throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
             }
           }
 
@@ -286,16 +320,17 @@ public class Overseer implements SolrCloseable {
           try {
             // We do not need to filter any nodes here cause all processed nodes are removed once we flush clusterstate
             queue = new LinkedList<>(stateUpdateQueue.peekElements(1000, 3000L, (x) -> true));
-          } catch (KeeperException.SessionExpiredException e) {
-            log.warn("Solr cannot talk to ZK, exiting Overseer main queue loop", e);
-            return;
-          } catch (InterruptedException e) {
+          } catch (InterruptedException | AlreadyClosedException e) {
             Thread.currentThread().interrupt();
             return;
-          } catch (AlreadyClosedException e) {
+          } catch (KeeperException.SessionExpiredException e) {
+            log.error("run()", e);
 
+            log.warn("Solr cannot talk to ZK, exiting Overseer work queue loop", e);
+            return;
           } catch (Exception e) {
-            log.error("Exception in Overseer main queue loop", e);
+            ParWork.propegateInterrupt(e);
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
           }
           try {
             Set<String> processedNodes = new HashSet<>();
@@ -303,9 +338,7 @@ public class Overseer implements SolrCloseable {
               for (Pair<String, byte[]> head : queue) {
                 byte[] data = head.second();
                 final ZkNodeProps message = ZkNodeProps.load(data);
-                if (log.isDebugEnabled()) {
-                  log.debug("processMessage: queueSize: {}, message = {} current state version: {}", stateUpdateQueue.getZkStats().getQueueLength(), message, clusterState.getZkClusterStateVersion());
-                }
+                // log.debug("processMessage: queueSize: {}, message = {} current state version: {}", stateUpdateQueue.getZkStats().getQueueLength(), message, clusterState.getZkClusterStateVersion());
 
                 processedNodes.add(head.first());
                 fallbackQueueSize = processedNodes.size();
@@ -322,118 +355,98 @@ public class Overseer implements SolrCloseable {
             fallbackQueueSize = processedNodes.size();
             // we should force write all pending updates because the next iteration might sleep until there
             // are more items in the main queue
-            clusterState = zkStateWriter.writePendingUpdates();
+           // clusterState = zkStateWriter.writePendingUpdates(clusterState);
             // clean work queue
             stateUpdateQueue.remove(processedNodes);
             processedNodes.clear();
-          } catch (KeeperException.SessionExpiredException e) {
-            log.warn("Solr cannot talk to ZK, exiting Overseer main queue loop", e);
-            return;
-          } catch (InterruptedException e) {
+          } catch (InterruptedException | AlreadyClosedException e) {
             Thread.currentThread().interrupt();
             return;
-          } catch (AlreadyClosedException e) {
-  
+          } catch (KeeperException.SessionExpiredException e) {
+            log.error("run()", e);
+
+            log.warn("Solr cannot talk to ZK, exiting Overseer work queue loop", e);
+            return;
           } catch (Exception e) {
-            log.error("Exception in Overseer main queue loop", e);
-            refreshClusterState = true; // it might have been a bad version error
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
           }
         }
       } finally {
-        if (log.isInfoEnabled()) {
-          log.info("Overseer Loop exiting : {}", LeaderElector.getNodeName(myId));
+        log.info("Overseer Loop exiting : {}", LeaderElector.getNodeName(myId));
+
+        if (!isClosed) {
+          Overseer.this.close();
         }
-        //do this in a separate thread because any wait is interrupted in this main thread
-        new Thread(this::checkIfIamStillLeader, "OverseerExitThread").start();
+      }
+
+      if (log.isDebugEnabled()) {
+        log.debug("run() - end");
       }
     }
 
     // Return true whenever the exception thrown by ZkStateWriter is correspond
     // to a invalid state or 'bad' message (in this case, we should remove that message from queue)
     private boolean isBadMessage(Exception e) {
+      if (log.isDebugEnabled()) {
+        log.debug("isBadMessage(Exception e={}) - start", e);
+      }
+
       if (e instanceof KeeperException) {
         KeeperException ke = (KeeperException) e;
-        return ke.code() == KeeperException.Code.NONODE || ke.code() == KeeperException.Code.NODEEXISTS;
+        boolean isBadMessage = ke.code() == KeeperException.Code.NONODE || ke.code() == KeeperException.Code.NODEEXISTS;
+        if (log.isDebugEnabled()) {
+          log.debug("isBadMessage(Exception)={} - end", isBadMessage);
+        }
+        return isBadMessage;
       }
-      return !(e instanceof InterruptedException);
+      if (log.isDebugEnabled()) {
+        log.debug("isBadMessage(Exception)=false - end");
+      }
+      return false;
     }
 
-    private ClusterState processQueueItem(ZkNodeProps message, ClusterState clusterState, ZkStateWriter zkStateWriter, boolean enableBatching, ZkStateWriter.ZkWriteCallback callback) throws Exception {
+    private ClusterState processQueueItem(ZkNodeProps message, final ClusterState clusterState, ZkStateWriter zkStateWriter, boolean enableBatching, ZkStateWriter.ZkWriteCallback callback) throws Exception {
+      log.info("Consume state update from queue {}", message);
+      assert clusterState != null;
+      AtomicReference<ClusterState> state = new AtomicReference<>();
+
       final String operation = message.getStr(QUEUE_OPERATION);
       if (operation == null) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Message missing " + QUEUE_OPERATION + ":" + message);
       }
-      List<ZkWriteCommand> zkWriteCommands = null;
-      final Timer.Context timerContext = stats.time(operation);
-      try {
-        zkWriteCommands = processMessage(clusterState, message, operation);
-        stats.success(operation);
-      } catch (Exception e) {
-        // generally there is nothing we can do - in most cases, we have
-        // an issue that will fail again on retry or we cannot communicate with     a
-        // ZooKeeper in which case another Overseer should take over
-        // TODO: if ordering for the message is not important, we could
-        // track retries and put it back on the end of the queue
-        log.error("Overseer could not process the current clusterstate state update message, skipping the message: {}", message, e);
-        stats.error(operation);
-      } finally {
-        timerContext.stop();
-      }
-      if (zkWriteCommands != null) {
-        clusterState = zkStateWriter.enqueueUpdate(clusterState, zkWriteCommands, callback);
-        if (!enableBatching)  {
-          clusterState = zkStateWriter.writePendingUpdates();
-        }
-      }
-      return clusterState;
-    }
+      AtomicBoolean stop = new AtomicBoolean(false);
+      ParWork.getExecutor().invokeAll(Collections.singleton(new Callable<Object>() { // ### expert use
 
-    private void checkIfIamStillLeader() {
-      if (zkController != null && (zkController.getCoreContainer().isShutDown() || zkController.isClosed())) {
-        return;//shutting down no need to go further
-      }
-      org.apache.zookeeper.data.Stat stat = new org.apache.zookeeper.data.Stat();
-      final String path = OVERSEER_ELECT + "/leader";
-      byte[] data;
-      try {
-        data = zkClient.getData(path, null, stat, true);
-      } catch (AlreadyClosedException e) {
-        return;
-      } catch (Exception e) {
-        log.warn("Error communicating with ZooKeeper", e);
-        return;
-      }
-      try {
-        Map m = (Map) Utils.fromJSON(data);
-        String id = (String) m.get(ID);
-        if(overseerCollectionConfigSetProcessor.getId().equals(id)){
-          try {
-            log.warn("I (id={}) am exiting, but I'm still the leader",
-                overseerCollectionConfigSetProcessor.getId());
-            zkClient.delete(path,stat.getVersion(),true);
-          } catch (KeeperException.BadVersionException e) {
-            //no problem ignore it some other Overseer has already taken over
-          } catch (Exception e) {
-            log.error("Could not delete my leader node {}", path, e);
-          }
+          @Override
+          public Object call() throws Exception {
 
-        } else{
-          log.info("somebody else (id={}) has already taken up the overseer position", id);
-        }
-      } finally {
-        //if I am not shutting down, Then I need to rejoin election
-        try {
-          if (zkController != null && !zkController.getCoreContainer().isShutDown()) {
-            zkController.rejoinOverseerElection(null, false);
-          }
-        } catch (Exception e) {
-          log.warn("Unable to rejoinElection ",e);
-        }
-      }
+            List<ZkWriteCommand> zkWriteOps = processMessage(clusterState, message, operation);
+                ZkStateWriter zkStateWriter = new ZkStateWriter(zkController.getZkStateReader(), new Stats());
+                ClusterState cs = zkStateWriter.enqueueUpdate(clusterState, zkWriteOps,
+                        new ZkStateWriter.ZkWriteCallback() {
+
+                          @Override
+                          public void onWrite() throws Exception {
+                            // log.info("on write callback");
+                          }
+
+                        });
+                System.out.println("return cs:" + cs);
+                state.set(cs);
+                return null;
+
+
+          }}));
+
+      return (state.get() != null ? state.get() : clusterState);
     }
 
     private List<ZkWriteCommand> processMessage(ClusterState clusterState,
-        final ZkNodeProps message, final String operation) {
+                                                final ZkNodeProps message, final String operation) {
+      //if (log.isDebugEnabled()) {
+        log.info("processMessage(ClusterState clusterState={}, ZkNodeProps message={}, String operation={}) - start", clusterState, message, operation);
+     // }
+
       CollectionParams.CollectionAction collectionAction = CollectionParams.CollectionAction.get(operation);
       if (collectionAction != null) {
         switch (collectionAction) {
@@ -455,7 +468,11 @@ public class Overseer implements SolrCloseable {
             ExclusiveSliceProperty dProp = new ExclusiveSliceProperty(clusterState, message);
             if (dProp.balanceProperty()) {
               String collName = message.getStr(ZkStateReader.COLLECTION_PROP);
-              return Collections.singletonList(new ZkWriteCommand(collName, dProp.getDocCollection()));
+              List<ZkWriteCommand> returnList = Collections.singletonList(new ZkWriteCommand(collName, dProp.getDocCollection()));
+              if (log.isDebugEnabled()) {
+                log.debug("processMessage(ClusterState, ZkNodeProps, String) - end");
+              }
+              return returnList;
             }
             break;
           case MODIFYCOLLECTION:
@@ -465,7 +482,7 @@ public class Overseer implements SolrCloseable {
             return Collections.singletonList(new ClusterStateMutator(getSolrCloudManager()).migrateStateFormat(clusterState, message));
           default:
             throw new RuntimeException("unknown operation:" + operation
-                + " contents:" + message.getProperties());
+                    + " contents:" + message.getProperties());
         }
       } else {
         OverseerAction overseerAction = OverseerAction.get(operation);
@@ -487,9 +504,7 @@ public class Overseer implements SolrCloseable {
             return Collections.singletonList(new SliceMutator(getSolrCloudManager()).updateShardState(clusterState, message));
           case QUIT:
             if (myId.equals(message.get(ID))) {
-              if (log.isInfoEnabled()) {
-                log.info("Quit command received {} {}", message, LeaderElector.getNodeName(myId));
-              }
+              log.info("Quit command received {} {}", message, LeaderElector.getNodeName(myId));
               overseerCollectionConfigSetProcessor.close();
               close();
             } else {
@@ -503,61 +518,32 @@ public class Overseer implements SolrCloseable {
         }
       }
 
-      return Collections.singletonList(ZkStateWriter.NO_OP);
-    }
-
-    private LeaderStatus amILeader() {
-      Timer.Context timerContext = stats.time("am_i_leader");
-      boolean success = true;
-      String propsId = null;
-      try {
-        ZkNodeProps props = ZkNodeProps.load(zkClient.getData(
-            OVERSEER_ELECT + "/leader", null, null, true));
-        propsId = props.getStr(ID);
-        if (myId.equals(propsId)) {
-          return LeaderStatus.YES;
-        }
-      } catch (KeeperException e) {
-        success = false;
-        if (e.code() == KeeperException.Code.CONNECTIONLOSS) {
-          log.error("", e);
-          return LeaderStatus.DONT_KNOW;
-        } else if (e.code() != KeeperException.Code.SESSIONEXPIRED) {
-          log.warn("", e);
-        } else {
-          log.debug("", e);
-        }
-      } catch (InterruptedException e) {
-        success = false;
-        Thread.currentThread().interrupt();
-      } catch (AlreadyClosedException e) {
-        success = false;
-      } catch (Exception e) {
-        success = false;
-        log.warn("Unexpected exception", e);
-      } finally {
-        timerContext.stop();
-        if (success)  {
-          stats.success("am_i_leader");
-        } else  {
-          stats.error("am_i_leader");
-        }
+      List<ZkWriteCommand> returnList = Collections.singletonList(ZkStateWriter.NO_OP);
+      if (log.isDebugEnabled()) {
+        log.debug("processMessage(ClusterState, ZkNodeProps, String) - end");
       }
-      log.info("According to ZK I (id={}) am no longer a leader. propsId={}", myId, propsId);
-      return LeaderStatus.NO;
+      return returnList;
     }
 
     @Override
-      public void close() {
-        this.isClosed = true;
+    public void close() {
+      if (log.isDebugEnabled()) {
+        log.debug("close() - start");
       }
+      //ExecutorUtil.shutdownAndAwaitTermination(executor);
+      this.isClosed = true;
+
+      if (log.isDebugEnabled()) {
+        log.debug("close() - end");
+      }
+    }
 
   }
 
   public static class OverseerThread extends Thread implements Closeable {
 
     protected volatile boolean isClosed;
-    private Closeable thread;
+    private final Closeable thread;
 
     public OverseerThread(ThreadGroup tg, Closeable thread) {
       super(tg, (Runnable) thread);
@@ -622,18 +608,26 @@ public class Overseer implements SolrCloseable {
     this.zkController = zkController;
     this.stats = new Stats();
     this.config = config;
+
   }
 
-  public synchronized void start(String id) {
+  public synchronized void start(String id, ElectionContext context) {
     MDCLoggingContext.setNode(zkController == null ?
         null :
         zkController.getNodeName());
     this.id = id;
+    this.context = context;
     closed = false;
+
+    try {
+      if (context != null) context.close();
+    } catch (Exception e) {
+      log.error("", e);
+    }
     doClose();
     stats = new Stats();
     log.info("Overseer (id={}) starting", id);
-    createOverseerNode(reader.getZkClient());
+    //createOverseerNode(reader.getZkClient());
     //launch cluster state updater thread
     ThreadGroup tg = new ThreadGroup("Overseer state updater.");
     updaterThread = new OverseerThread(tg, new ClusterStateUpdater(reader, id, stats), "OverseerStateUpdate-" + id);
@@ -818,8 +812,13 @@ public class Overseer implements SolrCloseable {
       log.info("Overseer (id={}) closing", id);
     }
     this.closed = true;
-    doClose();
 
+    try {
+     if (context != null) context.close();
+    } catch (Exception e) {
+      log.error("", e);
+    }
+    doClose();
     assert ObjectReleaseTracker.release(this);
   }
 
@@ -828,38 +827,33 @@ public class Overseer implements SolrCloseable {
     return closed;
   }
 
-  private void doClose() {
-    
-    if (updaterThread != null) {
-      IOUtils.closeQuietly(updaterThread);
-      updaterThread.interrupt();
+  void doClose() {
+    if (log.isDebugEnabled()) {
+      log.debug("doClose() - start");
     }
-    if (ccThread != null) {
-      IOUtils.closeQuietly(ccThread);
-      ccThread.interrupt();
+    try (ParWork closer = new ParWork(this, true)) {
+
+      closer.collect(() -> {
+        IOUtils.closeQuietly(ccThread);
+        ccThread.interrupt();
+      });
+
+      closer.collect(() -> {
+        IOUtils.closeQuietly(updaterThread);
+        updaterThread.interrupt();
+      });
+
+      closer.collect(() -> {
+        IOUtils.closeQuietly(triggerThread);
+        triggerThread.interrupt();
+      });
+
+      closer.addCollect("OverseerInternals");
     }
-    if (triggerThread != null)  {
-      IOUtils.closeQuietly(triggerThread);
-      triggerThread.interrupt();
+
+    if (log.isDebugEnabled()) {
+      log.debug("doClose() - end");
     }
-    if (updaterThread != null) {
-      try {
-        updaterThread.join();
-      } catch (InterruptedException e) {}
-    }
-    if (ccThread != null) {
-      try {
-        ccThread.join();
-      } catch (InterruptedException e) {}
-    }
-    if (triggerThread != null)  {
-      try {
-        triggerThread.join();
-      } catch (InterruptedException e)  {}
-    }
-    updaterThread = null;
-    ccThread = null;
-    triggerThread = null;
   }
 
   /**
@@ -1049,9 +1043,6 @@ public class Overseer implements SolrCloseable {
   }
 
   public void offerStateUpdate(byte[] data) throws KeeperException, InterruptedException {
-    if (zkController.getZkClient().isClosed()) {
-      throw new AlreadyClosedException();
-    }
     getStateUpdateQueue().offer(data);
   }
 

@@ -91,7 +91,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
 
   private static final int DEFAULT_LIMIT = FacetField.DEFAULT_FACET_LIMIT;
   private static final int MAX_FIELD_NUM = 15;
-  private static final int UNIQUE_FIELD_VALS = 50;
+  private static int UNIQUE_FIELD_VALS = 50;
 
   /** Multivalued string field suffixes that can be randomized for testing diff facet/join code paths */
   private static final String[] MULTI_STR_FIELD_SUFFIXES = new String[]
@@ -151,7 +151,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
       CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"));
     }
 
-    final int numDocs = atLeast(100);
+    final int numDocs = atLeast(TEST_NIGHTLY ? 100 : 15);
     for (int id = 0; id < numDocs; id++) {
       SolrInputDocument doc = sdoc("id", ""+id);
       for (int fieldNum = 0; fieldNum < MAX_FIELD_NUM; fieldNum++) {
@@ -311,10 +311,10 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
     // we get a really big one early on, we can test as much as possible, skip other iterations.
     //
     // (deeply nested facets may contain more buckets then the max, but we won't *check* all of them)
-    final int maxBucketsAllowed = atLeast(2000);
+    final int maxBucketsAllowed = atLeast(TEST_NIGHTLY ? 2000 : 200);
     final AtomicInteger maxBucketsToCheck = new AtomicInteger(maxBucketsAllowed);
     
-    final int numIters = atLeast(10);
+    final int numIters = atLeast(TEST_NIGHTLY ? 10 : 3);
     for (int iter = 0; iter < numIters && 0 < maxBucketsToCheck.get(); iter++) {
       assertFacetSKGsAreCorrect(maxBucketsToCheck, TermFacet.buildRandomFacets(),
                                 buildRandomQuery(), buildRandomQuery(), buildRandomQuery());

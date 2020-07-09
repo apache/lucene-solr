@@ -39,6 +39,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import org.apache.http.client.HttpClient;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.client.solrj.SolrClient;
@@ -107,6 +108,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
   public static final boolean configEditing_disabled = Boolean.getBoolean(CONFIGSET_EDITING_DISABLED_ARG);
   private static final Map<String, SolrConfig.SolrPluginInfo> namedPlugins;
   private Lock reloadLock = new ReentrantLock(true);
+  private HttpClient httpClient;
 
   public Lock getReloadLock() {
     return reloadLock;
@@ -148,6 +150,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
   @Override
   public void inform(SolrCore core) {
     isImmutableConfigSet = getImmutable(core);
+    this.httpClient = core.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient();
   }
 
   public static boolean getImmutable(SolrCore core) {
@@ -797,7 +800,9 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
     List<PerReplicaCallable> concurrentTasks = new ArrayList<>();
 
     for (String coreUrl : getActiveReplicaCoreUrls(zkController, collection)) {
-      PerReplicaCallable e = new PerReplicaCallable(coreUrl, prop, expectedVersion, maxWaitSecs);
+      PerReplicaCallable e = new PerReplicaCallable(
+              zkController.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient()
+              , coreUrl, prop, expectedVersion, maxWaitSecs);
       concurrentTasks.add(e);
     }
     if (concurrentTasks.isEmpty()) return; // nothing to wait for ...
@@ -895,18 +900,20 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
 
   @SuppressWarnings({"rawtypes"})
   private static class PerReplicaCallable extends SolrRequest implements Callable<Boolean> {
+    private final HttpClient httpClient;
     String coreUrl;
     String prop;
     int expectedZkVersion;
     Number remoteVersion = null;
     int maxWait;
 
-    PerReplicaCallable(String coreUrl, String prop, int expectedZkVersion, int maxWait) {
+    PerReplicaCallable(HttpClient defaultHttpClient, String coreUrl, String prop, int expectedZkVersion, int maxWait) {
       super(METHOD.GET, "/config/" + ZNODEVER);
       this.coreUrl = coreUrl;
       this.expectedZkVersion = expectedZkVersion;
       this.prop = prop;
       this.maxWait = maxWait;
+      this.httpClient = defaultHttpClient;
     }
 
     @Override
@@ -920,7 +927,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
     public Boolean call() throws Exception {
       final RTimer timer = new RTimer();
       int attempts = 0;
-      try (HttpSolrClient solr = new HttpSolrClient.Builder(coreUrl).build()) {
+      try (HttpSolrClient solr = new HttpSolrClient.Builder(coreUrl).withHttpClient(httpClient).markInternalRequest().build()) {
         // eventually, this loop will get killed by the ExecutorService's timeout
         while (true) {
           try {

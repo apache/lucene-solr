@@ -39,9 +39,9 @@ public class SolrHttpClientContextBuilder {
     public abstract Lookup<CookieSpecProvider> getCookieSpecRegistry();
   }
   
-  private CookieSpecRegistryProvider cookieSpecRegistryProvider;
-  private AuthSchemeRegistryProvider authSchemeRegistryProvider;
-  private CredentialsProviderProvider credentialsProviderProvider;
+  private volatile CookieSpecRegistryProvider cookieSpecRegistryProvider;
+  private volatile AuthSchemeRegistryProvider authSchemeRegistryProvider;
+  private volatile CredentialsProviderProvider credentialsProviderProvider;
 
   public SolrHttpClientContextBuilder() {
     super();

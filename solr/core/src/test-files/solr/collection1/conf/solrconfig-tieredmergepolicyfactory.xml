@@ -34,6 +34,7 @@
       <int name="maxMergeCount">987</int>
       <int name="maxThreadCount">42</int>
     </mergeScheduler>
+    <lockType>${solr.tests.lockType:single}</lockType>
   </indexConfig>
 
   <requestHandler name="/select" class="solr.SearchHandler"></requestHandler>

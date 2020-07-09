@@ -33,9 +33,12 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.junit.After;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore // nocommit uplaods same config set multiple times
 public class XCJFQueryTest extends SolrCloudTestCase {
 
   private static final int NUM_NODES = 3;
@@ -59,6 +62,12 @@ public class XCJFQueryTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection("parts", "xcjf", NUM_SHARDS, NUM_REPLICAS)
         .process(cluster.getSolrClient());
 
+  }
+
+  @After
+  public void tearDown() throws IOException, SolrServerException {
+//    cluster.deleteAllCollections();
+//    cluster.deleteAllConfigSets();
   }
 
   public static void setupIndexes(boolean routeByKey) throws IOException, SolrServerException {

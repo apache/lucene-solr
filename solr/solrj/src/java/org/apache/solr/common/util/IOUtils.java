@@ -34,4 +34,14 @@ public class IOUtils {
       log.error("Error while closing", e);
     }
   }
+
+  public static void closeQuietly(AutoCloseable closeable) {
+    try {
+      if (closeable != null) {
+        closeable.close();
+      }
+    } catch (Exception e) {
+      log.error("Error while closing", e);
+    }
+  }
 }

@@ -29,6 +29,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
@@ -55,16 +56,18 @@ import static org.apache.solr.common.params.AutoScalingParams.REPLICA_TYPE;
 public class NodeAddedTrigger extends TriggerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private Set<String> lastLiveNodes = new HashSet<>();
+  private Set<String> lastLiveNodes = ConcurrentHashMap.newKeySet();
 
-  private Map<String, Long> nodeNameVsTimeAdded = new HashMap<>();
+  private Map<String, Long> nodeNameVsTimeAdded = new ConcurrentHashMap<>();
 
   private String preferredOp;
   private Replica.Type replicaType = Replica.Type.NRT;
 
   public NodeAddedTrigger(String name) {
     super(TriggerEventType.NODEADDED, name);
-    TriggerUtils.validProperties(validProperties, PREFERRED_OP, REPLICA_TYPE);
+    Set<String> vProperties = new HashSet<>(validProperties);
+    TriggerUtils.validProperties(vProperties, PREFERRED_OP, REPLICA_TYPE);
+    this.validProperties = vProperties;
   }
 
   @Override

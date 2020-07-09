@@ -27,9 +27,15 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class NestedShardedAtomicUpdateTest extends AbstractFullDistribZkTestBase {
+
+  @BeforeClass
+  public static void beforeLeaderFailureAfterFreshStartTest() {
+    System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
+  }
 
   public NestedShardedAtomicUpdateTest() {
     stress = 0;

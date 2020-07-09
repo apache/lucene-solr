@@ -27,6 +27,7 @@ import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.core.CoreContainer;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class TestZkChroot extends SolrTestCaseJ4 {
@@ -94,6 +95,7 @@ public class TestZkChroot extends SolrTestCaseJ4 {
   }
   
   @Test
+  @Ignore // nocommit debug
   public void testNoBootstrapConf() throws Exception {
     String chroot = "/foo/bar2";
     

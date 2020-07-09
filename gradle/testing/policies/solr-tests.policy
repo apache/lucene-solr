@@ -20,6 +20,8 @@
 // permissions needed for tests to pass, based on properties set by the build system
 // NOTE: if the property is not set, the permission entry is ignored.
 grant {
+  permission java.io.FilePermission "/home/mm/junit.properties", "read";
+
   // 3rd party jar resources (where symlinks are not supported), test-files/ resources
   permission java.io.FilePermission "${common.dir}${/}-", "read";
   permission java.io.FilePermission "${common.dir}${/}..${/}solr${/}-", "read";

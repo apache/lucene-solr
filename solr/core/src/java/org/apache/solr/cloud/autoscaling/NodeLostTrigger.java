@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -29,6 +30,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
@@ -47,6 +49,7 @@ import static org.apache.solr.cloud.autoscaling.OverseerTriggerThread.MARKER_ACT
 import static org.apache.solr.cloud.autoscaling.OverseerTriggerThread.MARKER_INACTIVE;
 import static org.apache.solr.cloud.autoscaling.OverseerTriggerThread.MARKER_STATE;
 import static org.apache.solr.common.params.AutoScalingParams.PREFERRED_OP;
+import static org.apache.solr.common.params.AutoScalingParams.REPLICA_TYPE;
 
 /**
  * Trigger for the {@link TriggerEventType#NODELOST} event
@@ -54,15 +57,17 @@ import static org.apache.solr.common.params.AutoScalingParams.PREFERRED_OP;
 public class NodeLostTrigger extends TriggerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private Set<String> lastLiveNodes = new HashSet<>();
+  private Set<String> lastLiveNodes = ConcurrentHashMap.newKeySet();
 
-  private Map<String, Long> nodeNameVsTimeRemoved = new HashMap<>();
+  private Map<String, Long> nodeNameVsTimeRemoved = new ConcurrentHashMap<>();
 
   private String preferredOp;
 
   public NodeLostTrigger(String name) {
     super(TriggerEventType.NODELOST, name);
-    TriggerUtils.validProperties(validProperties, PREFERRED_OP);
+    Set<String> vProperties = new HashSet<>(validProperties);
+    TriggerUtils.validProperties(vProperties, PREFERRED_OP);
+    this.validProperties = vProperties;
   }
 
   @Override
@@ -232,6 +237,7 @@ public class NodeLostTrigger extends TriggerBase {
     public NodeLostEvent(TriggerEventType eventType, String source, List<Long> times, List<String> nodeNames, String preferredOp) {
       // use the oldest time as the time of the event
       super(eventType, source, times.get(0), null);
+
       properties.put(NODE_NAMES, nodeNames);
       properties.put(EVENT_TIMES, times);
       properties.put(PREFERRED_OP, preferredOp);

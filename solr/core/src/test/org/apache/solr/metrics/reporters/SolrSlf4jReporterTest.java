@@ -33,6 +33,8 @@ import org.apache.solr.logging.LogWatcherConfig;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricReporter;
 import org.apache.solr.util.TestHarness;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,8 +42,14 @@ import org.slf4j.LoggerFactory;
 /**
  *
  */
+@Ignore // nocommit debug
 public class SolrSlf4jReporterTest extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    System.setProperty("solr.disableJmxReporter", "false");
+  }
 
   @Test
   public void testReporter() throws Exception {

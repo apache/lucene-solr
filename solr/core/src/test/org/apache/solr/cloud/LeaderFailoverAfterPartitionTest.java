@@ -20,14 +20,17 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.BaseCloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -40,11 +43,12 @@ import java.util.concurrent.TimeUnit;
  */
 @Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@Ignore // nocommit debug
 public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public LeaderFailoverAfterPartitionTest() {
+  public LeaderFailoverAfterPartitionTest() throws Exception {
     super();
   }
 
@@ -52,8 +56,6 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
   @Test
   //28-June-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void test() throws Exception {
-    waitForThingsToLevelOut(30, TimeUnit.SECONDS);
-
     // kill a leader and make sure recovery occurs as expected
     testRf3WithLeaderFailover();
   }
@@ -67,9 +69,17 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
     cloudClient.setDefaultCollection(testCollectionName);
     
     sendDoc(1);
-    
-    List<Replica> notLeaders = 
-        ensureAllReplicasAreActive(testCollectionName, "shard1", 1, 3, maxWaitSecsToSeeAllActive);
+
+    cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, BaseCloudSolrClient.expectedShardsAndActiveReplicas(1, 3));
+
+
+    ArrayList<Replica> notLeaders = new ArrayList<>();
+    List<Replica> replicas = cloudClient.getZkStateReader().getClusterState().getCollection(testCollectionName).getReplicas();
+    for (Replica replica :replicas) {
+      if (!replica.getBool("leader", false)) {
+        notLeaders.add(replica);
+      }
+    }
     assertTrue("Expected 2 replicas for collection " + testCollectionName
         + " but found " + notLeaders.size() + "; clusterState: "
         + printClusterStateInfo(testCollectionName),
@@ -98,7 +108,16 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
     proxy1.reopen();
     
     // sent 4 docs in so far, verify they are on the leader and replica
-    notLeaders = ensureAllReplicasAreActive(testCollectionName, "shard1", 1, 3, maxWaitSecsToSeeAllActive); 
+    cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, BaseCloudSolrClient.expectedShardsAndActiveReplicas(1, 3));
+
+
+    notLeaders = new ArrayList<>();
+    replicas = cloudClient.getZkStateReader().getClusterState().getCollection(testCollectionName).getReplicas();
+    for (Replica replica :replicas) {
+      if (!replica.getBool("leader", false)) {
+        notLeaders.add(replica);
+      }
+    }
     
     sendDoc(4);
     
@@ -112,7 +131,16 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
     JettySolrRunner leaderJetty = getJettyOnPort(getReplicaPort(leader));
     
     // since maxShardsPerNode is 1, we're safe to kill the leader
-    notLeaders = ensureAllReplicasAreActive(testCollectionName, "shard1", 1, 3, maxWaitSecsToSeeAllActive);    
+    cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, BaseCloudSolrClient.expectedShardsAndActiveReplicas(1, 3));
+
+
+    notLeaders = new ArrayList<>();
+    replicas = cloudClient.getZkStateReader().getClusterState().getCollection(testCollectionName).getReplicas();
+    for (Replica replica :replicas) {
+      if (!replica.getBool("leader", false)) {
+        notLeaders.add(replica);
+      }
+    }
     proxy0 = getProxyForReplica(notLeaders.get(0));
     proxy0.close();
         

@@ -45,6 +45,7 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,6 +54,7 @@ import org.slf4j.LoggerFactory;
  * Tests the Cloud Collections API.
  */
 @Slow
+@Ignore // nocommit debug
 public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
 
   private static final int MAX_TIMEOUT_SECONDS = 90;

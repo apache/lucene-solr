@@ -93,7 +93,7 @@ public class TestCloudSolrClientConnections extends SolrTestCaseJ4 {
     // consistent regardless of wether it's constructed with a zkhost or an existing ZkStateReader
     try {
       final ZkClientClusterStateProvider zkHost_provider
-        = new ZkClientClusterStateProvider(cluster.getZkServer().getZkAddress());
+        = new ZkClientClusterStateProvider(cluster.getSolrClient().getZkStateReader());
       
       checkAndCloseProvider(zkHost_provider);
       

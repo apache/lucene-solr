@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 
+import org.apache.commons.io.output.StringBuilderWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +38,7 @@ public class ObjectReleaseTracker {
   public static Map<Object,String> OBJECTS = new ConcurrentHashMap<>();
   
   public static boolean track(Object object) {
-    StringWriter sw = new StringWriter();
+    StringBuilderWriter sw = new StringBuilderWriter(1000);
     PrintWriter pw = new PrintWriter(sw);
     new ObjectTrackerException(object.getClass().getName()).printStackTrace(pw);
     OBJECTS.put(object, sw.toString());
@@ -68,7 +69,7 @@ public class ObjectReleaseTracker {
       
       error = "ObjectTracker found " + entries.size() + " object(s) that were not released!!! " + objects + "\n";
       for (Entry<Object,String> entry : entries) {
-        error += entry.getValue() + "\n";
+        error += entry.getKey() + "\n" + entry.getValue() + "\n";
       }
     }
     
@@ -84,7 +85,7 @@ public class ObjectReleaseTracker {
           try {
             ((Closeable)entry.getKey()).close();
           } catch (Throwable t) {
-            log.error("", t);
+            log.warn("", t);
           }
         } else if (entry.getKey() instanceof ExecutorService) {
           try {
@@ -97,8 +98,8 @@ public class ObjectReleaseTracker {
     }
   }
   
-  private static class ObjectTrackerException extends RuntimeException {
-    ObjectTrackerException(String msg) {
+  public static class ObjectTrackerException extends RuntimeException {
+    public ObjectTrackerException(String msg) {
       super(msg);
     }
   }

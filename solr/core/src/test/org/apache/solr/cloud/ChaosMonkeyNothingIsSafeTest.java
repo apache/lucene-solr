@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -34,6 +35,7 @@ import org.junit.Test;
 
 @Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@LuceneTestCase.Nightly // nocommit, speed up and bridge
 public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase {
   private static final int FAIL_TOLERANCE = 100;
 
@@ -133,7 +135,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
   }
   
   protected CloudSolrClient createCloudClient(String defaultCollection, int socketTimeout) {
-    CloudSolrClient client = getCloudSolrClient(zkServer.getZkAddress(), random().nextBoolean(), 30000, socketTimeout);
+    CloudSolrClient client = getCloudSolrClient(zkServer.getZkAddress(), random().nextBoolean(), DEFAULT_CONNECTION_TIMEOUT, socketTimeout);
     if (defaultCollection != null) client.setDefaultCollection(defaultCollection);
     return client;
   }
@@ -151,17 +153,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       handle.clear();
       handle.put("timestamp", SKIPVAL);
       ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-      // make sure we have leaders for each shard
-      for (int j = 1; j < sliceCount; j++) {
-        zkStateReader.getLeaderRetry(DEFAULT_COLLECTION, "shard" + j, 10000);
-      }      // make sure we again have leaders for each shard
-      
-      waitForRecoveriesToFinish(false);
-      
-      // we cannot do delete by query
-      // as it's not supported for recovery
-      del("*:*");
-      
+
       List<StoppableThread> threads = new ArrayList<>();
       List<StoppableIndexingThread> indexTreads = new ArrayList<>();
       int threadCount = TEST_NIGHTLY ? 3 : 1;
@@ -226,13 +218,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       for (StoppableThread indexThread : threads) {
         indexThread.join();
       }
-      
-      // try and wait for any replications and what not to finish...
-      
-      Thread.sleep(2000);
-      
-      // wait until there are no recoveries...
-      waitForThingsToLevelOut();
+
       
       // make sure we again have leaders for each shard
       for (int j = 1; j < sliceCount; j++) {
@@ -254,9 +240,8 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
               + ") - we expect it can happen, but shouldn't easily", failCount > FAIL_TOLERANCE);
         }
       }
-      
-      
-      waitForThingsToLevelOut(20, TimeUnit.SECONDS);
+
+      waitForRecoveriesToFinish(false);
       
       commit();
       
@@ -288,7 +273,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
 
       try (CloudSolrClient client = createCloudClient("collection1", 30000)) {
           createCollection(null, "testcollection",
-              1, 1, 1, client, null, "conf1");
+              1, 1, 1, client, null, "_default");
 
       }
       List<Integer> numShardsNumReplicas = new ArrayList<>(2);

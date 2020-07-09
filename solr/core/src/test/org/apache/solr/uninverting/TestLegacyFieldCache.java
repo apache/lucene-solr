@@ -32,6 +32,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.legacy.LegacyDoubleField;
 import org.apache.solr.legacy.LegacyFloatField;
 import org.apache.solr.legacy.LegacyIntField;
@@ -47,6 +48,7 @@ import org.junit.BeforeClass;
 
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -220,8 +222,9 @@ public class TestLegacyFieldCache extends SolrTestCase {
           public void run() {
 
             try {
+              Random random = LuceneTestCase.random();
               while(!failed.get()) {
-                final int op = random().nextInt(3);
+                final int op = random.nextInt(3);
                 if (op == 0) {
                   // Purge all caches & resume, once all
                   // threads get here:

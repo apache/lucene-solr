@@ -48,6 +48,7 @@ import org.apache.solr.util.RestTestHarness;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.noggit.JSONParser;
 import org.restlet.ext.servlet.ServerServlet;
 import org.slf4j.Logger;
@@ -84,10 +85,10 @@ public class TestSolrConfigHandler extends RestTestBase {
 
     createJettyAndHarness(tmpSolrHome.getAbsolutePath(), "solrconfig-managed-schema.xml", "schema-rest.xml",
         "/solr", true, extraServlets);
-    if (random().nextBoolean()) {
-      log.info("These tests are run with V2 API");
-      restTestHarness.setServerProvider(() -> jetty.getBaseUrl().toString() + "/____v2/cores/" + DEFAULT_TEST_CORENAME);
-    }
+//    if (random().nextBoolean()) {
+//      log.info("These tests are run with V2 API");
+//      restTestHarness.setServerProvider(() -> jetty.getBaseUrl().toString() + "/____v2/cores/" + DEFAULT_TEST_CORENAME);
+//    }
   }
 
   @After
@@ -103,7 +104,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     restTestHarness = null;
   }
 
-
+  @Ignore //nocommit debug
   public void testProperty() throws Exception {
     RestTestHarness harness = restTestHarness;
     MapWriter confMap = getRespMap("/config", harness);
@@ -167,6 +168,7 @@ public class TestSolrConfigHandler extends RestTestBase {
 
   }
 
+  @Ignore //nocommit debug
   public void testReqHandlerAPIs() throws Exception {
     reqhandlertests(restTestHarness, null, null);
   }
@@ -592,6 +594,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     return m;
   }
 
+  @Ignore //nocommit debug
   public void testReqParams() throws Exception {
     RestTestHarness harness = restTestHarness;
     String payload = " {\n" +

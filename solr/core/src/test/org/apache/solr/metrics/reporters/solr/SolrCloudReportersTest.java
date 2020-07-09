@@ -32,6 +32,7 @@ import org.apache.solr.metrics.SolrMetricReporter;
 import org.apache.solr.metrics.reporters.SolrJmxReporter;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.codahale.metrics.Metric;
@@ -39,17 +40,11 @@ import com.codahale.metrics.Metric;
 /**
  *
  */
+@Ignore // nocommit fix silly sleeps
 public class SolrCloudReportersTest extends SolrCloudTestCase {
   volatile int leaderRegistries;
   volatile int clusterRegistries;
   volatile int jmxReporter;
-
-
-
-  @BeforeClass
-  public static void configureDummyCluster() throws Exception {
-    configureCluster(0).configure();
-  }
 
   @Before
   public void closePreviousCluster() throws Exception {
@@ -60,6 +55,7 @@ public class SolrCloudReportersTest extends SolrCloudTestCase {
 
   @Test
   // commented 4-Sep-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
+  @Ignore // nocommit remove silly sleep
   public void testExplicitConfiguration() throws Exception {
     String solrXml = IOUtils.toString(SolrCloudReportersTest.class.getResourceAsStream("/solr/solr-solrreporter.xml"), "UTF-8");
     configureCluster(2)

@@ -67,8 +67,6 @@ public class DistributedQueryElevationComponentTest extends BaseDistributedSearc
   @ShardsFixed(num = 3)
   public void test() throws Exception {
 
-
-    del("*:*");
     indexr(id,"1", "int_i", "1", "text", "XXXX XXXX", "field_t", "anything");
     indexr(id,"2", "int_i", "2", "text", "YYYY YYYY", "plow_t", "rake");
     indexr(id,"3", "int_i", "3", "text", "ZZZZ ZZZZ");

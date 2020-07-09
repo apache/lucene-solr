@@ -27,6 +27,10 @@
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
 
+  <indexConfig>
+    <lockType>${solr.lockType:single}</lockType>
+  </indexConfig>
+
   <updateRequestProcessorChain name="parse-date">
     <processor class="solr.ParseDateFieldUpdateProcessorFactory">
       <str name="format">yyyy-MM-dd'T'HH:mm:ss.SSSz</str>

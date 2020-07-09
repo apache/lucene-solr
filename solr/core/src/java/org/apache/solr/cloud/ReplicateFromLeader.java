@@ -17,6 +17,8 @@
 
 package org.apache.solr.cloud;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 
 import org.apache.lucene.index.IndexCommit;
@@ -36,7 +38,7 @@ import org.apache.solr.update.UpdateLog;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ReplicateFromLeader {
+public class ReplicateFromLeader implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final CoreContainer cc;
@@ -133,7 +135,12 @@ public class ReplicateFromLeader {
 
   public void stopReplication() {
     if (replicationProcess != null) {
-      replicationProcess.shutdown();
+      replicationProcess.close();
     }
+  }
+
+  @Override
+  public void close() throws IOException {
+    stopReplication();
   }
 }

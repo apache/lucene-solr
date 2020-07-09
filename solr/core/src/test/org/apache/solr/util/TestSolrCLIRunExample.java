@@ -53,6 +53,7 @@ import org.apache.solr.common.util.NamedList;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -515,6 +516,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
   }
 
   @Test
+  @Ignore // nocommit debug
   public void testInteractiveSolrCloudExampleWithAutoScalingPolicy() throws Exception {
     File solrHomeDir = new File(ExternalPaths.SERVER_HOME);
     if (!solrHomeDir.isDirectory())

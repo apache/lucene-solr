@@ -27,6 +27,7 @@
     <mergePolicyFactory class="org.apache.solr.index.DummyMergePolicyFactory">
       <int name="mergeFactor">8</int>
     </mergePolicyFactory>
+    <lockType>${solr.lockType:single}</lockType>
   </indexConfig>
 
   <updateHandler class="solr.DirectUpdateHandler2"/>

@@ -63,9 +63,7 @@ public class DistributedQueryComponentOptimizationTest extends SolrCloudTestCase
 
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 3, 1)
         .setMaxShardsPerNode(1)
-        .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
-    cluster.getSolrClient().waitForState(COLLECTION, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
-        (n, c) -> DocCollection.isFullyActive(n, c, sliceCount, 1));
+        .process(cluster.getSolrClient());
 
     new UpdateRequest()
         .add(sdoc(id, "1", "text", "a", "test_sS", "21", "payload", ByteBuffer.wrap(new byte[]{0x12, 0x62, 0x15})))

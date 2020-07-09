@@ -78,7 +78,7 @@ public class CdcrUpdateLog extends UpdateLog {
   }
 
   @Override
-  public TransactionLog newTransactionLog(File tlogFile, Collection<String> globalStrings, boolean openExisting) {
+  public TransactionLog newTransactionLog(File tlogFile, Collection<String> globalStrings, boolean openExisting, byte[] buffer) {
     return new CdcrTransactionLog(tlogFile, globalStrings, openExisting);
   }
 
@@ -333,7 +333,7 @@ public class CdcrUpdateLog extends UpdateLog {
     for (String oldLogName : tlogFiles) {
       File f = new File(tlogDir, oldLogName);
       try {
-        oldLog = newTransactionLog(f, null, true);
+        oldLog = newTransactionLog(f, null, true, new byte[8182]);
         addOldLog(oldLog, false);  // don't remove old logs on startup since more than one may be uncapped.
       } catch (Exception e) {
         SolrException.log(log, "Failure to open existing log file (non fatal) " + f, e);

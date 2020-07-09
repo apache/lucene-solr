@@ -5,6 +5,7 @@ com.cybozu.labs:langdetect=1.1-20120112
 com.drewnoakes:metadata-extractor=2.11.0
 com.epam:parso=2.0.11
 com.fasterxml.jackson*:*=2.10.1
+com.fasterxml.woodstox:woodstox-core:6.0.3
 com.github.ben-manes.caffeine:caffeine=2.8.4
 com.github.virtuald:curvesapi=1.06
 com.github.zafarkhaja:java-semver=0.9.0
@@ -105,3 +106,4 @@ org.tallison:jmatio=1.5
 org.tukaani:xz=1.8
 ua.net.nlp:morfologik-ukrainian-search=4.9.1
 xerces:xercesImpl=2.12.0
+net.sf.saxon:Saxon-HE=10.1

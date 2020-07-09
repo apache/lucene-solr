@@ -82,39 +82,41 @@ public class TestJettySolrRunner extends SolrTestCaseJ4 {
     JettyConfig config = JettyConfig.builder().build();
 
     JettySolrRunner jetty = new JettySolrRunner(solrHome.toString(), config);
+    try {
+      Exception result;
+      BindException be = new BindException();
+      IOException test = new IOException();
 
-    Exception result;
-    BindException be = new BindException();
-    IOException test = new IOException();
+      result = jetty.lookForBindException(test);
+      assertEquals(result, test);
 
-    result = jetty.lookForBindException(test);
-    assertEquals(result, test);
+      test = new IOException();
+      result = jetty.lookForBindException(test);
+      assertEquals(result, test);
 
-    test = new IOException();
-    result = jetty.lookForBindException(test);
-    assertEquals(result, test);
+      test = new IOException((Throwable) null);
+      result = jetty.lookForBindException(test);
+      assertEquals(result, test);
 
-    test = new IOException((Throwable) null);
-    result = jetty.lookForBindException(test);
-    assertEquals(result, test);
+      test = new IOException() {
+        @Override
+        public synchronized Throwable getCause() {
+          return this;
+        }
+      };
+      result = jetty.lookForBindException(test);
+      assertEquals(result, test);
 
-    test = new IOException() {
-      @Override
-      public synchronized Throwable getCause() {
-        return this;
-      }
-    };
-    result = jetty.lookForBindException(test);
-    assertEquals(result, test);
+      test = new IOException(new RuntimeException());
+      result = jetty.lookForBindException(test);
+      assertEquals(result, test);
 
-    test = new IOException(new RuntimeException());
-    result = jetty.lookForBindException(test);
-    assertEquals(result, test);
-
-    test = new IOException(new RuntimeException(be));
-    result = jetty.lookForBindException(test);
-    assertEquals(result, be);
-
+      test = new IOException(new RuntimeException(be));
+      result = jetty.lookForBindException(test);
+      assertEquals(result, be);
+    } finally {
+      jetty.close();
+    }
   }
 
 

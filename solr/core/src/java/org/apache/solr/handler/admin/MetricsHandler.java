@@ -357,7 +357,12 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     }
 
     public MetricFilter asMetricFilter() {
-      return (name, metric) -> klass == null || klass.isInstance(metric);
+      return new MetricFilter() {
+        @Override
+        public boolean matches(String name, Metric metric) {
+          return klass == null || klass.isInstance(metric);
+        }
+      };
     }
   }
 }

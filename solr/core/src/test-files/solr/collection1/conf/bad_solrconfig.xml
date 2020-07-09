@@ -24,5 +24,6 @@
   <schemaFactory class="ClassicIndexSchemaFactory"/>
   <indexConfig>
     <useCompoundFile>${unset.sys.property}</useCompoundFile>
+    <lockType>${solr.tests.lockType:single}</lockType>
   </indexConfig>
 </config>

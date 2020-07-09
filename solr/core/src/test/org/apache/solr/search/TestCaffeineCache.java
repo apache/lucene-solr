@@ -148,7 +148,7 @@ public class TestCaffeineCache extends SolrTestCase {
 
   @Test
   public void testMaxIdleTime() throws Exception {
-    int IDLE_TIME_SEC = 5;
+    int IDLE_TIME_SEC = TEST_NIGHTLY ? 5 : 1;
     CountDownLatch removed = new CountDownLatch(1);
     AtomicReference<RemovalCause> removalCause = new AtomicReference<>();
     CaffeineCache<String, String> cache = new CaffeineCache<>() {
@@ -170,7 +170,7 @@ public class TestCaffeineCache extends SolrTestCase {
     // the eviction is piggy-backed on put()
     Thread.sleep(TimeUnit.SECONDS.toMillis(IDLE_TIME_SEC * 2));
     cache.put("abc", "xyz");
-    boolean await = removed.await(30, TimeUnit.SECONDS);
+    boolean await = removed.await(10, TimeUnit.SECONDS);
     assertTrue("did not expire entry in in time", await);
     assertEquals(RemovalCause.EXPIRED, removalCause.get());
     assertNull(cache.get("foo"));

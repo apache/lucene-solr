@@ -1599,7 +1599,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
           deleteAsyncId(requestId).process(client);
           return state;
         }
-        TimeUnit.SECONDS.sleep(1);
+        TimeUnit.MILLISECONDS.sleep(250);
       }
       return state;
     }

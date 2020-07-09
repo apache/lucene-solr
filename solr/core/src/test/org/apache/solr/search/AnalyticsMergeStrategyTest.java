@@ -50,7 +50,6 @@ public class AnalyticsMergeStrategyTest extends BaseDistributedSearchTestCase {
   @Test
   @ShardsFixed(num = 3)
   public void test() throws Exception {
-    del("*:*");
 
     index_specific(0,"id","1", "sort_i", "5");
     index_specific(0,"id","2", "sort_i", "50");

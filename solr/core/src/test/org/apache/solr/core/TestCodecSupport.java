@@ -35,7 +35,9 @@ import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.TestHarness;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 
+@Ignore // nocommit debug
 public class TestCodecSupport extends SolrTestCaseJ4 {
 
   @BeforeClass

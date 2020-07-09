@@ -221,7 +221,7 @@
 
 
 
-  <searchComponent name="spellcheck" class="org.apache.solr.handler.component.SpellCheckComponent">
+  <searchComponent name="spellcheck" enable="${solr.spellcheck.enabled:true}" class="org.apache.solr.handler.component.SpellCheckComponent">
     <!-- This is slightly different from the field value so we can test dealing with token offset changes -->
     <str name="queryAnalyzerFieldType">lowerpunctfilt</str>
 
@@ -309,7 +309,7 @@
    -->
   <queryConverter name="queryConverter" class="org.apache.solr.spelling.SpellingQueryConverter"/>
 
-  <requestHandler name="/spellCheckCompRH" class="org.apache.solr.handler.component.SearchHandler">
+  <requestHandler name="/spellCheckCompRH" enable="${solr.spellcheck.enabled:true}" class="org.apache.solr.handler.component.SearchHandler">
     <lst name="defaults">
       <!-- omp = Only More Popular -->
       <str name="spellcheck.onlyMorePopular">false</str>
@@ -322,7 +322,7 @@
       <str>spellcheck</str>
     </arr>
   </requestHandler>
-  <requestHandler name="/spellCheckCompRH_Direct" class="org.apache.solr.handler.component.SearchHandler">
+  <requestHandler name="/spellCheckCompRH_Direct" enable="${solr.spellcheck.enabled:true}" class="org.apache.solr.handler.component.SearchHandler">
     <lst name="defaults">
       <str name="spellcheck.dictionary">direct</str>
       <str name="spellcheck.onlyMorePopular">false</str>
@@ -333,7 +333,7 @@
       <str>spellcheck</str>
     </arr>
   </requestHandler>
-  <requestHandler name="/spellCheckWithWordbreak" class="org.apache.solr.handler.component.SearchHandler">
+  <requestHandler name="/spellCheckWithWordbreak" enable="${solr.spellcheck.enabled:true}" class="org.apache.solr.handler.component.SearchHandler">
     <lst name="defaults">
       <str name="spellcheck.dictionary">default</str>
       <str name="spellcheck.dictionary">wordbreak</str>
@@ -343,7 +343,7 @@
       <str>spellcheck</str>
     </arr>
   </requestHandler>
-  <requestHandler name="/spellCheckWithWordbreak_Direct" class="org.apache.solr.handler.component.SearchHandler">
+  <requestHandler name="/spellCheckWithWordbreak_Direct" enable="${solr.spellcheck.enabled:true}" class="org.apache.solr.handler.component.SearchHandler">
     <lst name="defaults">
       <str name="spellcheck.dictionary">direct</str>
       <str name="spellcheck.dictionary">wordbreak</str>
@@ -353,7 +353,7 @@
       <str>spellcheck</str>
     </arr>
   </requestHandler>
-  <requestHandler name="/spellCheckCompRH1" class="org.apache.solr.handler.component.SearchHandler">
+  <requestHandler name="/spellCheckCompRH1" enable="${solr.spellcheck.enabled:true}" class="org.apache.solr.handler.component.SearchHandler">
       <lst name="defaults">
         <str name="defType">dismax</str>
         <str name="qf">lowerfilt1^1</str>

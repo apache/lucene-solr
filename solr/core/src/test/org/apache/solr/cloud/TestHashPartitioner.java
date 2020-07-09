@@ -55,7 +55,7 @@ public class TestHashPartitioner extends SolrTestCaseJ4 {
 
     int defaultLowerBits = 0x0000ffff;
 
-    for (int i = 1; i <= 30000; i++) {
+    for (int i = 1; i <= (TEST_NIGHTLY ? 30000 : 3000); i++) {
       // start skipping at higher numbers
       if (i > 100) i+=13;
       else if (i > 1000) i+=31;

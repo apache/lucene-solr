@@ -32,6 +32,7 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.metrics.AggregateMetric;
 import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +40,7 @@ import org.slf4j.LoggerFactory;
 /**
  *
  */
+@Ignore // nocommit fix silly sleeps
 public class SolrShardReporterTest extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

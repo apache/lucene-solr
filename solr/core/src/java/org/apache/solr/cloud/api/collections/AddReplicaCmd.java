@@ -17,8 +17,6 @@
 
 package org.apache.solr.cloud.api.collections;
 
-
-import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.CREATE_NODE_SET;
 import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.SKIP_CREATE_REPLICA_IN_CLUSTER_STATE;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
@@ -53,6 +51,7 @@ import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.cloud.ActiveReplicaWatcher;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrCloseableLatch;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -60,6 +59,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonAdminParams;
@@ -125,7 +125,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     final String asyncId = message.getStr(ASYNC);
 
     String node = message.getStr(CoreAdminParams.NODE);
-    String createNodeSetStr = message.getStr(CREATE_NODE_SET);
+    String createNodeSetStr = message.getStr(ZkStateReader.CREATE_NODE_SET);
 
     if (node != null && createNodeSetStr != null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Both 'node' and 'createNodeSet' parameters cannot be specified together.");
@@ -179,7 +179,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     Runnable runnable = () -> {
       shardRequestTracker.processResponses(results, shardHandler, true, "ADDREPLICA failed to create replica");
       for (CreateReplica replica : createReplicas) {
-        ocmh.waitForCoreNodeName(collectionName, replica.node, replica.coreName);
+        ocmh.waitForCoreNodeName(zkStateReader, collectionName, replica.node, replica.coreName);
       }
       if (onComplete != null) onComplete.run();
     };
@@ -202,7 +202,9 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
         runnable.run();
       }
     } else {
-      ocmh.tpe.submit(runnable);
+      try (ParWork worker = new ParWork(this)) {
+        worker.add("AddReplica", runnable);
+      }
     }
 
     return createReplicas.stream()
@@ -240,30 +242,30 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     }
 
     ModifiableSolrParams params = new ModifiableSolrParams();
-
     ZkStateReader zkStateReader = ocmh.zkStateReader;
     if (!Overseer.isLegacy(zkStateReader)) {
+      ZkNodeProps props = new ZkNodeProps(
+              Overseer.QUEUE_OPERATION, ADDREPLICA.toLower(),
+              ZkStateReader.COLLECTION_PROP, collectionName,
+              ZkStateReader.SHARD_ID_PROP, createReplica.sliceName,
+              ZkStateReader.CORE_NAME_PROP, createReplica.coreName,
+              ZkStateReader.STATE_PROP, Replica.State.DOWN.toString(),
+              ZkStateReader.BASE_URL_PROP, zkStateReader.getBaseUrlForNodeName(createReplica.node),
+              ZkStateReader.NODE_NAME_PROP, createReplica.node,
+              ZkStateReader.REPLICA_TYPE, createReplica.replicaType.name());
+      if (createReplica.coreNodeName != null) {
+        props = props.plus(ZkStateReader.CORE_NODE_NAME_PROP, createReplica.coreNodeName);
+      }
       if (!skipCreateReplicaInClusterState) {
-        ZkNodeProps props = new ZkNodeProps(
-            Overseer.QUEUE_OPERATION, ADDREPLICA.toLower(),
-            ZkStateReader.COLLECTION_PROP, collectionName,
-            ZkStateReader.SHARD_ID_PROP, createReplica.sliceName,
-            ZkStateReader.CORE_NAME_PROP, createReplica.coreName,
-            ZkStateReader.STATE_PROP, Replica.State.DOWN.toString(),
-            ZkStateReader.BASE_URL_PROP, zkStateReader.getBaseUrlForNodeName(createReplica.node),
-            ZkStateReader.NODE_NAME_PROP, createReplica.node,
-            ZkStateReader.REPLICA_TYPE, createReplica.replicaType.name());
-        if (createReplica.coreNodeName != null) {
-          props = props.plus(ZkStateReader.CORE_NODE_NAME_PROP, createReplica.coreNodeName);
-        }
         try {
           ocmh.overseer.offerStateUpdate(Utils.toJSON(props));
         } catch (Exception e) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Exception updating Overseer state queue", e);
         }
       }
+      String coreUrl = ZkCoreNodeProps.getCoreUrl(props.getStr(ZkStateReader.BASE_URL_PROP), createReplica.coreName);;
       params.set(CoreAdminParams.CORE_NODE_NAME,
-          ocmh.waitToSeeReplicasInState(collectionName, Collections.singletonList(createReplica.coreName)).get(createReplica.coreName).getName());
+          ocmh.waitToSeeReplicasInState(collectionName, Collections.singletonList(coreUrl), false).get(coreUrl).getName());
     }
 
     String configName = zkStateReader.readConfigName(collectionName);
@@ -359,10 +361,10 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     int totalReplicas = numNrtReplicas + numPullReplicas + numTlogReplicas;
 
     String node = message.getStr(CoreAdminParams.NODE);
-    Object createNodeSetStr = message.get(OverseerCollectionMessageHandler.CREATE_NODE_SET);
+    Object createNodeSetStr = message.get(ZkStateReader.CREATE_NODE_SET);
     if (createNodeSetStr == null) {
       if (node != null) {
-        message.getProperties().put(OverseerCollectionMessageHandler.CREATE_NODE_SET, node);
+        message.getProperties().put(ZkStateReader.CREATE_NODE_SET, node);
         createNodeSetStr = node;
       }
     }

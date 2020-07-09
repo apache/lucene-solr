@@ -72,8 +72,6 @@ import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.CREATE_NODE_SET;
-import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.NUM_SLICES;
 import static org.apache.solr.common.cloud.ZkStateReader.CLUSTER_PROPS;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
@@ -423,11 +421,11 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
       throws SolrServerException, IOException {
     return createCollection(collectionInfos, collectionName,
         Utils.makeMap(
-            NUM_SLICES, numShards,
+            ZkStateReader.NUM_SHARDS_PROP, numShards,
             REPLICATION_FACTOR, replicationFactor,
-            CREATE_NODE_SET, createNodeSetStr,
+            ZkStateReader.CREATE_NODE_SET, createNodeSetStr,
             MAX_SHARDS_PER_NODE, maxShardsPerNode),
-        client, "conf1");
+        client, "_default");
   }
 
   private CollectionAdminResponse createCollection(Map<String, List<Integer>> collectionInfos, String collectionName,
@@ -439,7 +437,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
     for (Map.Entry<String, Object> entry : collectionProps.entrySet()) {
       if (entry.getValue() != null) params.set(entry.getKey(), String.valueOf(entry.getValue()));
     }
-    Integer numShards = (Integer) collectionProps.get(OverseerCollectionMessageHandler.NUM_SLICES);
+    Integer numShards = (Integer) collectionProps.get(ZkStateReader.NUM_SHARDS_PROP);
     if (numShards == null) {
       String shardNames = (String) collectionProps.get(OverseerCollectionMessageHandler.SHARDS_PROP);
       numShards = StrUtils.splitSmart(shardNames, ',').size();
@@ -584,7 +582,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
 
     try (SolrClient client = createCloudClient(temporaryCollection)) {
       assertEquals(0, CollectionAdminRequest
-          .createCollection(temporaryCollection, "conf1", shardCount, 1)
+          .createCollection(temporaryCollection, "_default", shardCount, 1)
           .setCreateNodeSet("")
           .process(client).getStatus());
       for (int i = 0; i < jettys.size(); i++) {
@@ -777,7 +775,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
   protected static SolrClient createNewSolrServer(String baseUrl) {
     try {
       // setup the server...
-      HttpSolrClient s = getHttpSolrClient(baseUrl, DEFAULT_CONNECTION_TIMEOUT);
+      HttpSolrClient s = getHttpSolrClient(baseUrl, DEFAULT_ZK_SESSION_TIMEOUT);
       return s;
     } catch (Exception ex) {
       throw new RuntimeException(ex);

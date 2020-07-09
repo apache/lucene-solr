@@ -28,6 +28,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -49,6 +50,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -65,15 +67,41 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
+    System.setProperty("distribUpdateSoTimeout", "3000");
+    System.setProperty("socketTimeout", "5000");
+    System.setProperty("connTimeout", "3000");
+    System.setProperty("solr.test.socketTimeout.default", "5000");
+    System.setProperty("solr.connect_timeout.default", "3000");
+    System.setProperty("solr.so_commit_timeout.default", "5000");
+    System.setProperty("solr.httpclient.defaultConnectTimeout", "3000");
+    System.setProperty("solr.httpclient.defaultSoTimeout", "5000");
+
+    System.setProperty("solr.httpclient.retries", "1");
+    System.setProperty("solr.retries.on.forward", "1");
+    System.setProperty("solr.retries.to.followers", "1");
+
+    System.setProperty("solr.waitForState", "10"); // secs
+
+    System.setProperty("solr.default.collection_op_timeout", "30000");
+
+
     // use a 5 node cluster so with a typical 2x2 collection one node isn't involved
     // helps to randomly test edge cases of hitting a node not involved in collection
-    configureCluster(5).configure();
+    configureCluster(TEST_NIGHTLY ? 5 : 3).configure();
   }
 
   @After
   public void purgeAllCollections() throws Exception {
+    zkClient().printLayout();
     cluster.deleteAllCollections();
     cluster.getSolrClient().setDefaultCollection(null);
+  }
+
+
+  @AfterClass
+  public static void after() throws Exception {
+    zkClient().printLayout();
   }
 
   /**
@@ -85,11 +113,8 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
   public static String createAndSetNewDefaultCollection() throws Exception {
     final CloudSolrClient cloudClient = cluster.getSolrClient();
     final String name = "test_collection_" + NAME_COUNTER.getAndIncrement();
-    assertEquals(RequestStatusState.COMPLETED,
-                 CollectionAdminRequest.createCollection(name, "_default", 2, 2)
-                 .processAndWait(cloudClient, DEFAULT_TIMEOUT));
-    cloudClient.waitForState(name, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
-                             (n, c) -> DocCollection.isFullyActive(n, c, 2, 2));
+    CollectionAdminRequest.createCollection(name, "_default", 2, 2).setMaxShardsPerNode(5)
+                 .process(cloudClient);
     cloudClient.setDefaultCollection(name);
     return name;
   }
@@ -137,7 +162,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     
   }
 
-
+  @Nightly
   public void testThatCantForwardToLeaderFails() throws Exception {
     final CloudSolrClient cloudClient = cluster.getSolrClient();
     final String collectionName = "test_collection_" + NAME_COUNTER.getAndIncrement();
@@ -172,10 +197,10 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
                      CollectionAdminRequest.createCollection(collectionName, 2, 1)
                      .setCreateNodeSet(leaderToPartition.getNodeName() + "," + otherLeader.getNodeName())
                      .processAndWait(cloudClient, DEFAULT_TIMEOUT));
-        
+
         cloudClient.waitForState(collectionName, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
                                  (n, c) -> DocCollection.isFullyActive(n, c, 2, 1));
-        
+
         { // HACK: Check the leaderProps for the shard hosted on the node we're going to kill...
           final Replica leaderProps = cloudClient.getZkStateReader()
             .getClusterState().getCollection(collectionName)
@@ -399,11 +424,12 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
             final UpdateRequest req = new UpdateRequest();
             for (int docId = 0; docId < numDocsPerBatch && keepGoing(); docId++) {
               req.add(sdoc("id", "indexer" + name + "_" + batchId + "_" + docId,
-                           "test_t", TestUtil.randomRealisticUnicodeString(random(), 200)));
+                           "test_t", TestUtil.randomRealisticUnicodeString(LuceneTestCase.random(), 200)));
             }
             assertEquals(0, req.process(cloudClient).getStatus());
           }
         } catch (Throwable e) {
+          e.printStackTrace();
           abort.countDown();
           throw new RuntimeException(e);
         }

@@ -58,6 +58,7 @@ import org.apache.solr.security.AuditLoggerPlugin.JSONAuditEventFormatter;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,6 +78,7 @@ import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHas
  * Validate that audit logging works in a live cluster
  */
 @SolrTestCaseJ4.SuppressSSL
+@Ignore // nocommit debug
 public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

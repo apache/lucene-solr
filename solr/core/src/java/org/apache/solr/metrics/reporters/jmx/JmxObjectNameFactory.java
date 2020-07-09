@@ -80,7 +80,7 @@ public class JmxObjectNameFactory implements ObjectNameFactory {
     // as specified in the constructor (except for the 'type' key that ends
     // up at top level) - unlike ObjectName(String, Map) constructor
     // that seems to have a mind of its own...
-    StringBuilder sb = new StringBuilder();
+    StringBuilder sb = new StringBuilder(512);
     if (domain.equals(currentDomain)) {
       if (subdomains != null && subdomains.length > 1) {
         // use only first segment as domain

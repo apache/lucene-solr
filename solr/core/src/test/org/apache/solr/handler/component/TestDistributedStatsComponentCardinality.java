@@ -53,7 +53,7 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
 
   final static long BIG_PRIME = 982451653L;
 
-  final static int MIN_NUM_DOCS = 10000;
+  final static int MIN_NUM_DOCS = TEST_NIGHTLY ? 10000 : 1000;
   final static int MAX_NUM_DOCS = MIN_NUM_DOCS * 2;
 
   final static List<String> STAT_FIELDS = 
@@ -71,7 +71,7 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
     fixShardCount(TEST_NIGHTLY ? 7 : random().nextInt(3) + 1);
 
     handle.put("maxScore", SKIPVAL);
-    NUM_DOCS = TestUtil.nextInt(random(), 10000, 15000);
+    NUM_DOCS = TestUtil.nextInt(random(), TEST_NIGHTLY ? 10000 : 1000, TEST_NIGHTLY ? 15000 : 1500);
     MAX_LONG = TestUtil.nextLong(random(), 0, NUM_DOCS * BIG_PRIME);
     MIN_LONG = MAX_LONG - (((long)NUM_DOCS-1) * BIG_PRIME);
   }
@@ -119,7 +119,7 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
       assertEquals(MAX_LONG, Math.round((double) rsp.getFieldStatsInfo().get("long_l").getMax()));
     }
 
-    final int NUM_QUERIES = atLeast(100);
+    final int NUM_QUERIES = atLeast((TEST_NIGHTLY ? 100 : 10));
 
     // Some Randomized queries with randomized log2m and max regwidth
     for (int i = 0; i < NUM_QUERIES; i++) {
@@ -136,8 +136,8 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
       // use max regwidth to try and prevent hash collisions from introducing problems
       final int regwidth = HLL.MAXIMUM_REGWIDTH_PARAM;
 
-      final int lowId = TestUtil.nextInt(random(), 1, NUM_DOCS-2000);
-      final int highId = TestUtil.nextInt(random(), lowId+1000, NUM_DOCS);
+      final int lowId = TestUtil.nextInt(random(), 1, NUM_DOCS - (TEST_NIGHTLY ? 2000 : 200));
+      final int highId = TestUtil.nextInt(random(), lowId+(TEST_NIGHTLY ? 1000 : 100), NUM_DOCS);
       final int numMatches = 1+highId-lowId;
 
       SolrParams p = buildCardinalityQ(lowId, highId, log2m, regwidth);
@@ -173,8 +173,8 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
     // Some Randomized queries with both low and high accuracy options
     for (int i = 0; i < NUM_QUERIES; i++) {
 
-      final int lowId = TestUtil.nextInt(random(), 1, NUM_DOCS-2000);
-      final int highId = TestUtil.nextInt(random(), lowId+1000, NUM_DOCS);
+      final int lowId = TestUtil.nextInt(random(), 1, NUM_DOCS-(TEST_NIGHTLY ? 2000 : 200));
+      final int highId = TestUtil.nextInt(random(), lowId+(TEST_NIGHTLY ? 1000 : 100), NUM_DOCS);
       final int numMatches = 1+highId-lowId;
 
       // WTF? - https://github.com/aggregateknowledge/java-hll/issues/15

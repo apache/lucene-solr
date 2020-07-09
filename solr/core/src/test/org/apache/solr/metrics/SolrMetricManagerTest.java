@@ -32,9 +32,15 @@ import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.metrics.reporters.MockMetricReporter;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class SolrMetricManagerTest extends SolrTestCaseJ4 {
+
+  @BeforeClass
+  public static void beforeSolrMetricManagerTest() throws Exception {
+    System.setProperty("solr.disableJmxReporter", "false");
+  }
 
   @Test
   public void testSwapRegistries() throws Exception {

@@ -70,6 +70,7 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
   @Override
   public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+    log.info("delete collection called");
     Object o = message.get(MaintainRoutedAliasCmd.INVOKED_BY_ROUTED_ALIAS);
     if (o != null) {
       ((Runnable)o).run(); // this will ensure the collection is removed from the alias before it disappears.
@@ -133,7 +134,7 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       ZkNodeProps internalMsg = message.plus(NAME, collection);
 
       @SuppressWarnings({"unchecked"})
-      List<Replica> failedReplicas = ocmh.collectionCmd(internalMsg, params, results, null, asyncId, okayExceptions);
+      List<Replica> failedReplicas = ocmh.collectionCmd(internalMsg, params, results, null, null, okayExceptions);
       for (Replica failedReplica : failedReplicas) {
         boolean isSharedFS = failedReplica.getBool(ZkStateReader.SHARED_STORAGE_PROP, false) && failedReplica.get("dataDir") != null;
         if (isSharedFS) {
@@ -148,7 +149,7 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       ocmh.overseer.offerStateUpdate(Utils.toJSON(m));
 
       // wait for a while until we don't see the collection
-      zkStateReader.waitForState(collection, 60, TimeUnit.SECONDS, (collectionState) -> collectionState == null);
+      zkStateReader.waitForState(collection, 10, TimeUnit.SECONDS, (collectionState) -> collectionState == null);
 
       // we can delete any remaining unique aliases
       if (!aliasReferences.isEmpty()) {
@@ -176,17 +177,18 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 //            "Could not fully remove collection: " + collection);
 //      }
     } finally {
-
+      // HUH? This is delete collection, taking out /collections/name
+      // How can you leave /collections/name/counter?
       try {
         String collectionPath =  ZkStateReader.getCollectionPathRoot(collection);
-        if (zkStateReader.getZkClient().exists(collectionPath, true)) {
-          if (removeCounterNode) {
-            zkStateReader.getZkClient().clean(collectionPath);
-          } else {
+
+//          if (removeCounterNode) {
+//            zkStateReader.getZkClient().clean(collectionPath);
+//          } else {
             final String counterNodePath = Assign.getCounterNodePath(collection);
             zkStateReader.getZkClient().clean(collectionPath, s -> !s.equals(counterNodePath));
-          }
-        }
+     //     }
+
       } catch (InterruptedException e) {
         SolrException.log(log, "Cleaning up collection in zk was interrupted:"
             + collection, e);
@@ -194,6 +196,9 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       } catch (KeeperException e) {
         SolrException.log(log, "Problem cleaning up collection in zk:"
             + collection, e);
+        if (e instanceof  KeeperException.SessionExpiredException) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        }
       }
     }
   }

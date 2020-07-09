@@ -22,6 +22,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.apache.commons.io.output.StringBuilderWriter;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
 import org.slf4j.MDC;
@@ -172,12 +174,12 @@ public class SolrException extends RuntimeException {
   @Override
   public String toString() { return super.toString(); }
 
-  public static String toStr(Throwable e) {   
-    CharArrayWriter cw = new CharArrayWriter();
-    PrintWriter pw = new PrintWriter(cw);
+  public static String toStr(Throwable e) {
+    StringBuilderWriter sw = new StringBuilderWriter(2000 + (e.getMessage() == null ? 0 : e.getMessage().length()));
+    PrintWriter pw = new PrintWriter(sw);
     e.printStackTrace(pw);
-    pw.flush();
-    return cw.toString();
+    pw.close();
+    return sw.toString();
 
 /** This doesn't work for some reason!!!!!
     StringWriter sw = new StringWriter();

@@ -25,6 +25,7 @@
     <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
     <infoStream>true</infoStream>
     <mergePolicyFactory class="org.apache.solr.util.RandomMergePolicyFactory" />
+    <lockType>${solr.tests.lockType:single}</lockType>
   </indexConfig>
 
   <schemaFactory class="ClassicIndexSchemaFactory"/>

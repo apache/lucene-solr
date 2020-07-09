@@ -58,7 +58,6 @@ import static org.apache.solr.common.params.CommonParams.NAME;
  * Loads {@code solr.xml}.
  */
 public class SolrXmlConfig {
-
   // TODO should these from* methods return a NodeConfigBuilder so that the caller (a test) can make further
   //  manipulations like add properties and set the CorePropertiesLocator and "async" mode?
 
@@ -529,7 +528,7 @@ public class SolrXmlConfig {
     }
     // if there's an MBean server running but there was no JMX reporter then add a default one
     MBeanServer mBeanServer = JmxUtil.findFirstMBeanServer();
-    if (mBeanServer != null && !hasJmxReporter) {
+    if (mBeanServer != null && !hasJmxReporter && !Boolean.getBoolean("solr.disableJmxReporter")) {
       log.info("MBean server found: {}, but no JMX reporters were configured - adding default JMX reporter.", mBeanServer);
       Map<String,Object> attributes = new HashMap<>();
       attributes.put("name", "default");

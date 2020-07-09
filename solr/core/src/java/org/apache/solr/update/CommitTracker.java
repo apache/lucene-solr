@@ -16,6 +16,7 @@
  */
 package org.apache.solr.update;
 
+import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 
 import java.util.Locale;
@@ -28,6 +29,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -46,7 +49,7 @@ import org.slf4j.LoggerFactory;
  * 
  * Public for tests.
  */
-public final class CommitTracker implements Runnable {
+public final class CommitTracker implements Runnable, Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   // scheduler delay for maxDoc-triggered autocommits
@@ -92,6 +95,7 @@ public final class CommitTracker implements Runnable {
     this.openSearcher = openSearcher;
 
     log.info("{} AutoCommit: {}", name, this);
+    ObjectReleaseTracker.track(this);
   }
 
   public boolean getOpenSearcher() {
@@ -104,6 +108,8 @@ public final class CommitTracker implements Runnable {
       pending = null;
     }
     scheduler.shutdown();
+    ExecutorUtil.awaitTermination(scheduler);
+    ObjectReleaseTracker.release(this);
   }
   
   /** schedule individual commits */

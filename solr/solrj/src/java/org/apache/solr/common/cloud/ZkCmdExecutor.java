@@ -17,16 +17,27 @@
 package org.apache.solr.common.cloud;
 
 import org.apache.solr.common.AlreadyClosedException;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ConnectionManager.IsClosed;
+import org.apache.solr.common.util.TimeOut;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.lang.invoke.MethodHandles;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 
 public class ZkCmdExecutor {
-  private long retryDelay = 1500L; // 1 second would match timeout, so 500 ms over for padding
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  private long retryDelay = 500L; // 1 second would match timeout, so 500 ms over for padding
   private int retryCount;
-  private double timeouts;
+  private long timeoutms;
   private IsClosed isClosed;
   
   public ZkCmdExecutor(int timeoutms) {
@@ -41,9 +52,8 @@ public class ZkCmdExecutor {
    *          the client timeout for the ZooKeeper clients that will be used
    *          with this class.
    */
-  public ZkCmdExecutor(int timeoutms, IsClosed isClosed) {
-    timeouts = timeoutms / 1000.0;
-    this.retryCount = Math.round(0.5f * ((float)Math.sqrt(8.0f * timeouts + 1.0f) - 1.0f)) + 1;
+  public ZkCmdExecutor(long timeoutms, IsClosed isClosed) {
+    this.timeoutms = timeoutms;
     this.isClosed = isClosed;
   }
   
@@ -63,9 +73,11 @@ public class ZkCmdExecutor {
   public <T> T retryOperation(ZkOperation operation)
       throws KeeperException, InterruptedException {
     KeeperException exception = null;
-    for (int i = 0; i < retryCount; i++) {
+    TimeOut timeout = new TimeOut(timeoutms, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
+    int tryCnt = 0;
+    while (true) {
       try {
-        if (i > 0 && isClosed()) {
+        if (tryCnt > 0 && isClosed()) {
           throw new AlreadyClosedException();
         }
         return (T) operation.execute();
@@ -77,10 +89,15 @@ public class ZkCmdExecutor {
           Thread.currentThread().interrupt();
           throw new InterruptedException();
         }
-        if (i != retryCount -1) {
-          retryDelay(i);
+
+        if (timeout.hasTimedOut()) {
+          break;
         }
+
+        retryDelay(tryCnt);
+
       }
+      tryCnt++;
     }
     throw exception;
   }
@@ -123,7 +140,9 @@ public class ZkCmdExecutor {
    *          the number of the attempts performed so far
    */
   protected void retryDelay(int attemptCount) throws InterruptedException {
-    Thread.sleep((attemptCount + 1) * retryDelay);
+    long sleep = (attemptCount + 1) * retryDelay;
+    log.info("delaying for retry, attempt={} retryDelay={} sleep={} timeout={}", attemptCount, retryDelay, sleep, timeoutms);
+    Thread.sleep(sleep);
   }
 
 }

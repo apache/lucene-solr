@@ -19,6 +19,7 @@ package org.apache.solr.core.backup.repository;
 
 import java.io.IOException;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.HdfsDirectoryFactory;
@@ -27,6 +28,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
+@LuceneTestCase.Nightly
 public class HdfsBackupRepositoryTest {
 
   @Test(expected = NullPointerException.class)

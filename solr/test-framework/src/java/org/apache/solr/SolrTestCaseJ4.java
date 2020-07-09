@@ -86,6 +86,7 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.embedded.SolrQueuedThreadPool;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
@@ -146,6 +147,7 @@ import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.TestHarness;
 import org.apache.solr.util.TestInjection;
 import org.apache.zookeeper.KeeperException;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -170,14 +172,6 @@ import static org.apache.solr.update.processor.DistributingUpdateProcessorFactor
  * To change which core is used when loading the schema and solrconfig.xml, simply
  * invoke the {@link #initCore(String, String, String, String)} method.
  */
-@ThreadLeakFilters(defaultFilters = true, filters = {
-    SolrIgnoredThreadsFilter.class,
-    QuickPatchThreadsFilter.class
-})
-@SuppressSysoutChecks(bugUrl = "Solr dumps tons of logs to console.")
-@SuppressFileSystems("ExtrasFS") // might be ok, the failures with e.g. nightly runs might be "normal"
-@RandomizeSSL()
-@ThreadLeakLingering(linger = 10000)
 public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -201,8 +195,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   protected static String coreName = DEFAULT_TEST_CORENAME;
 
-  public static int DEFAULT_CONNECTION_TIMEOUT = 60000;  // default socket connection timeout in ms
-  
   private static String initialRootLogLevel;
   
   protected volatile static ExecutorService testExecutor;
@@ -250,14 +242,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     /** Point to JIRA entry. */
     public String bugUrl();
   }
-  
-  // these are meant to be accessed sequentially, but are volatile just to ensure any test
-  // thread will read the latest value
-  protected static volatile SSLTestConfig sslConfig;
-
-  @Rule
-  public TestRule solrTestRules = 
-    RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
   @BeforeClass
   public static void setupTestCases() {
@@ -278,20 +262,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     // non-null after calling setupTestCases()
     initAndGetDataDir();
 
-    System.setProperty("solr.zkclienttimeout", "90000"); 
-    
-    System.setProperty("solr.httpclient.retries", "1");
-    System.setProperty("solr.retries.on.forward", "1");
-    System.setProperty("solr.retries.to.followers", "1");
-
-    System.setProperty("solr.v2RealPath", "true");
-    System.setProperty("zookeeper.forceSync", "no");
-    System.setProperty("jetty.testMode", "true");
-    System.setProperty("enable.update.log", usually() ? "true" : "false");
-    System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
-    System.setProperty("solr.clustering.enabled", "false");
-    System.setProperty("solr.peerSync.useRangeVersions", String.valueOf(random().nextBoolean()));
-    System.setProperty("solr.cloud.wait-for-updates-with-stale-state-pause", "500");
+   // System.setProperty("solr.cloud.wait-for-updates-with-stale-state-pause", "500");
 
     System.setProperty("pkiHandlerPrivateKeyPath", SolrTestCaseJ4.class.getClassLoader().getResource("cryptokeys/priv_key512_pkcs8.pem").toExternalForm());
     System.setProperty("pkiHandlerPublicKeyPath", SolrTestCaseJ4.class.getClassLoader().getResource("cryptokeys/pub_key512.der").toExternalForm());
@@ -300,27 +271,20 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     startTrackingSearchers();
     ignoreException("ignore_exception");
     newRandomConfig();
-
-    sslConfig = buildSSLConfig();
-    // based on randomized SSL config, set SocketFactoryRegistryProvider appropriately
-    HttpClientUtil.setSocketFactoryRegistryProvider(sslConfig.buildClientSocketFactoryRegistryProvider());
-    Http2SolrClient.setDefaultSSLConfig(sslConfig.buildClientSSLConfig());
-    if(isSSLMode()) {
-      // SolrCloud tests should usually clear this
-      System.setProperty("urlScheme", "https");
-    }
   }
 
   @AfterClass
   public static void teardownTestCases() throws Exception {
     TestInjection.notifyPauseForeverDone();
+    if (null != testExecutor) {
+      testExecutor.shutdown();
+    }
     try {
       try {
         deleteCore();
       } catch (Exception e) {
         log.error("Error deleting SolrCore.");
       }
-      
       if (null != testExecutor) {
         ExecutorUtil.shutdownAndAwaitTermination(testExecutor);
         testExecutor = null;
@@ -330,7 +294,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
       if (suiteFailureMarker.wasSuccessful()) {
         // if the tests passed, make sure everything was closed / released
-        String orr = clearObjectTrackerAndCheckEmpty(60, false);
+        String orr = clearObjectTrackerAndCheckEmpty(0, false);
         assertNull(orr, orr);
       } else {
         ObjectReleaseTracker.tryClose();
@@ -352,13 +316,10 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       System.clearProperty("solr.cloud.wait-for-updates-with-stale-state-pause");
       System.clearProperty("solr.zkclienttmeout");
       System.clearProperty(ZK_WHITELIST_PROPERTY);
-      HttpClientUtil.resetHttpClientBuilder();
-      Http2SolrClient.resetSslContextFactory();
 
       clearNumericTypesProperties();
 
       // clean up static
-      sslConfig = null;
       testSolrHome = null;
 
       IpTables.unblockAllPorts();
@@ -428,7 +389,9 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
             }
           }
         }
-        TimeUnit.SECONDS.sleep(1);
+        if (waitSeconds > 0) {
+          TimeUnit.SECONDS.sleep(1);
+        }
       } catch (InterruptedException e) { break; }
     }
     while (retries++ < waitSeconds);
@@ -472,10 +435,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     LogLevel.Configurer.restoreLogLevels(savedMethodLogLevels);
     savedMethodLogLevels.clear();
   }
-  
-  protected static boolean isSSLMode() {
-    return sslConfig != null && sslConfig.isSSLMode();
-  }
 
   private static boolean changedFactory = false;
   private static String savedFactory;
@@ -502,26 +461,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     } else {
       System.clearProperty("solr.directoryFactory");
     }
-  }
-
-  private static SSLTestConfig buildSSLConfig() {
-
-    SSLRandomizer sslRandomizer =
-      SSLRandomizer.getSSLRandomizerForClass(RandomizedContext.current().getTargetClass());
-    
-    if (Constants.MAC_OS_X) {
-      // see SOLR-9039
-      // If a solution is found to remove this, please make sure to also update
-      // TestMiniSolrCloudClusterSSL.testSslAndClientAuth as well.
-      sslRandomizer = new SSLRandomizer(sslRandomizer.ssl, 0.0D, (sslRandomizer.debug + " w/ MAC_OS_X supressed clientAuth"));
-    }
-
-    SSLTestConfig result = sslRandomizer.createSSLTestConfig();
-    if (log.isInfoEnabled()) {
-      log.info("Randomized ssl ({}) and clientAuth ({}) via: {}",
-          result.isSSLMode(), result.isClientAuthMode(), sslRandomizer.debug);
-    }
-    return result;
   }
 
   protected static JettyConfig buildJettyConfig(String context) {
@@ -830,11 +769,10 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return h.getCoreContainer();
   }
 
-  public static CoreContainer createCoreContainer(String coreName, String dataDir, String solrConfig, String schema) {
+  public static CoreContainer createCoreContainer(String dataDir, String solrConfig, String schema) {
     NodeConfig nodeConfig = TestHarness.buildTestNodeConfig(TEST_PATH());
     CoresLocator locator = new TestHarness.TestCoresLocator(coreName, dataDir, solrConfig, schema);
     CoreContainer cc = createCoreContainer(nodeConfig, locator);
-    h.coreName = coreName;
     return cc;
   }
 
@@ -3081,4 +3019,23 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   protected static final Map<Class,String> RANDOMIZED_NUMERIC_FIELDTYPES
     = Collections.unmodifiableMap(private_RANDOMIZED_NUMERIC_FIELDTYPES);
 
+  public static SolrQueuedThreadPool getQtp() {
+
+    SolrQueuedThreadPool qtp = new SolrQueuedThreadPool("solr-test-qtp", true);;
+    // qtp.setReservedThreads(0);
+          qtp.setName("solr-test-qtp");
+          qtp.setMaxThreads(Integer.getInteger("solr.maxContainerThreads", 10000));
+          qtp.setLowThreadsThreshold(Integer.getInteger("solr.lowContainerThreadsThreshold", -1)); // we don't use this or connections will get cut
+          qtp.setMinThreads(Integer.getInteger("solr.minContainerThreads", 4));
+          qtp.setIdleTimeout(Integer.getInteger("solr.containerThreadsIdle", 5000));
+
+          qtp.setStopTimeout((int) TimeUnit.MINUTES.toMillis(2));
+          qtp.setReservedThreads(-1); // -1 auto sizes, important to keep
+          // qtp.setStopTimeout((int) TimeUnit.MINUTES.toMillis(1));
+
+
+
+
+    return qtp;
+  }
 }

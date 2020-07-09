@@ -1151,6 +1151,10 @@ public class RealTimeGetComponent extends SearchComponent
       boolean success = peerSync.sync().isSuccess();
       // TODO: more complex response?
       rb.rsp.add("sync", success);
+
+      if (!success) {
+        rb.req.getCore().getSolrCoreState().doRecovery(rb.req.getCore().getCoreContainer(), rb.req.getCore().getCoreDescriptor());
+      }
     } catch (IOException e) {
       log.error("Error while closing", e);
     }

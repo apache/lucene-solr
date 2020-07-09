@@ -32,9 +32,11 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.SnapShooter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 @LuceneTestCase.Slow
+@Ignore // nocommit speed up
 public class CleanupOldIndexTest extends SolrCloudTestCase {
 
   @BeforeClass
@@ -61,7 +63,7 @@ public class CleanupOldIndexTest extends SolrCloudTestCase {
   public void test() throws Exception {
 
     CollectionAdminRequest.createCollection(COLLECTION, "conf1", 1, 2)
-        .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
+        .process(cluster.getSolrClient());
     cluster.getSolrClient().setDefaultCollection(COLLECTION); // TODO make this configurable on StoppableIndexingThread
 
     int[] maxDocList = new int[] {300, 500, 700};
@@ -71,7 +73,13 @@ public class CleanupOldIndexTest extends SolrCloudTestCase {
     indexThread.start();
 
     // give some time to index...
-    int[] waitTimes = new int[] {3000, 4000};
+    int[] waitTimes;
+    if (TEST_NIGHTLY) {
+      waitTimes = new int[] {3000, 4000};
+    } else {
+      waitTimes = new int[] {500, 1000};
+    }
+
     Thread.sleep(waitTimes[random().nextInt(waitTimes.length - 1)]);
 
     // create some "old" index directories
@@ -103,10 +111,6 @@ public class CleanupOldIndexTest extends SolrCloudTestCase {
 
     // bring shard replica up
     jetty.start();
-
-    // make sure replication can start
-    Thread.sleep(3000);
-
     // stop indexing threads
     indexThread.safeStop();
     indexThread.join();

@@ -41,8 +41,8 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
 
 
   volatile ZkStateReader zkStateReader;
-  private boolean closeZkStateReader = true;
-  String zkHost;
+  private boolean closeZkStateReader = false;
+  final String zkHost;
   int zkConnectTimeout = 15000;
   int zkClientTimeout = 45000;
 
@@ -50,16 +50,13 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
   private volatile boolean isClosed = false;
 
   public ZkClientClusterStateProvider(ZkStateReader zkStateReader) {
+    this(zkStateReader, false);
+  }
+
+  public ZkClientClusterStateProvider(ZkStateReader zkStateReader, boolean closeReader) {
     this.zkStateReader = zkStateReader;
-    this.closeZkStateReader =  false;
-  }
-
-  public ZkClientClusterStateProvider(Collection<String> zkHosts, String chroot) {
-    zkHost = buildZkHostString(zkHosts,chroot);
-  }
-
-  public ZkClientClusterStateProvider(String zkHost){
-    this.zkHost = zkHost;
+    this.zkHost = zkStateReader.getZkClient().getZkServerAddress();
+    this.closeZkStateReader = closeReader;
   }
 
   @Override
@@ -150,7 +147,7 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
    * @param configName the name of the config
    * @throws IOException if an IO error occurs
    */
-  public void uploadConfig(Path configPath, String configName) throws IOException {
+  public void uploadConfig(Path configPath, String configName) throws IOException, KeeperException {
     getZkStateReader().getConfigManager().uploadConfigDir(configPath, configName);
   }
 
@@ -176,13 +173,6 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
             zk.createClusterStateWatchersAndUpdate();
             log.info("Cluster at {} ready", zkHost);
             zkStateReader = zk;
-          } catch (InterruptedException e) {
-            zk.close();
-            Thread.currentThread().interrupt();
-            throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
-          } catch (KeeperException e) {
-            zk.close();
-            throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
           } catch (Exception e) {
             if (zk != null) zk.close();
             // do not wrap because clients may be relying on the underlying exception being thrown

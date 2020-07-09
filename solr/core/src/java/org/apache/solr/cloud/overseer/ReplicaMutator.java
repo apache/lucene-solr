@@ -31,6 +31,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
+import org.apache.solr.client.solrj.impl.BaseCloudSolrClient;
 import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.api.collections.Assign;
@@ -225,7 +226,7 @@ public class ReplicaMutator {
     //collection does not yet exist, create placeholders if num shards is specified
     boolean collectionExists = prevState.hasCollection(cName);
     if (!collectionExists && numShards != null) {
-      ClusterStateMutator.getShardNames(numShards, shardNames);
+      BaseCloudSolrClient.getShardNames(numShards, shardNames);
       Map<String, Object> createMsg = Utils.makeMap(NAME, cName);
       createMsg.putAll(message.getProperties());
       writeCommand = new ClusterStateMutator(cloudManager).createCollection(prevState, new ZkNodeProps(createMsg));

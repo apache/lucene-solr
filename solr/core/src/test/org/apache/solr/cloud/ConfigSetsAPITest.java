@@ -50,7 +50,7 @@ public class ConfigSetsAPITest extends SolrCloudTestCase {
   @Test
   public void testConfigSetDeleteWhenInUse() throws Exception {
     CollectionAdminRequest.createCollection("test_configset_delete", "conf1", 1, 1)
-        .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
+        .process(cluster.getSolrClient());
 
     // TODO - check exception response!
     ConfigSetAdminRequest.Delete deleteConfigRequest = new ConfigSetAdminRequest.Delete();
@@ -61,6 +61,7 @@ public class ConfigSetsAPITest extends SolrCloudTestCase {
   }
 
   @Test
+  @Nightly // TODO speedup
   public void testSharedSchema() throws Exception {
     CollectionAdminRequest.createCollection("col1", "cShare", 1, 1)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);

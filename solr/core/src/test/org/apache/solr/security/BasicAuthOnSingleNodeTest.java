@@ -25,6 +25,7 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.SolrCloudAuthTestCase;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,6 +70,7 @@ public class BasicAuthOnSingleNodeTest extends SolrCloudAuthTestCase {
   }
 
   @Test
+  @Ignore // nocommit debug
   public void testDeleteSecurityJsonZnode() throws Exception {
     try (Http2SolrClient client = new Http2SolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
         .build()){

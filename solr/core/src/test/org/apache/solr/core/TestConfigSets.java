@@ -25,6 +25,7 @@ import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -41,6 +42,11 @@ public class TestConfigSets extends SolrTestCaseJ4 {
   public TestRule testRule = RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
   public static String solrxml = "<solr><str name=\"configSetBaseDir\">${configsets:configsets}</str></solr>";
+
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    useFactory(null);
+  }
 
   public CoreContainer setupContainer(String configSetsBaseDir) {
     Path testDirectory = createTempDir();

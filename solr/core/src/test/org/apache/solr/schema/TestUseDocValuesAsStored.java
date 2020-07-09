@@ -37,6 +37,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.core.AbstractBadConfigTestBase;
+import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.util.DOMUtil;
 import org.junit.After;
 import org.junit.Before;
@@ -77,7 +78,7 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
       DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
       InputStream stream = TestUseDocValuesAsStored.class.getResourceAsStream("/solr/collection1/conf/enumsConfig.xml");
       Document doc = builder.parse(new InputSource(IOUtils.getDecodingReader(stream, StandardCharsets.UTF_8)));
-      XPath xpath = XPathFactory.newInstance().newXPath();
+      XPath xpath = XmlConfigFile.xpath;
       NodeList nodes = (NodeList)xpath.evaluate
           ("/enumsConfig/enum[@name='severity']/value", doc, XPathConstants.NODESET);
       SEVERITY = new String[nodes.getLength()];
@@ -176,7 +177,7 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
 
   @Test
   public void testRandomSingleAndMultiValued() throws Exception {
-    for (int c = 0 ; c < 10 * RANDOM_MULTIPLIER ; ++c) {
+    for (int c = 0 ; c < (TEST_NIGHTLY ? 10 : 3) * RANDOM_MULTIPLIER ; ++c) {
       clearIndex();
       int[] arity = new int[9];
       for (int a = 0 ; a < arity.length ; ++a) {

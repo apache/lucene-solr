@@ -90,7 +90,7 @@ public class TemplateUpdateProcessorTest extends SolrCloudTestCase {
     add.setParams(params);
     NamedList<Object> result = cluster.getSolrClient().request(CollectionAdminRequest.createCollection("c", "conf1", 1, 1));
     Utils.toJSONString(result.asMap(4));
-    AbstractFullDistribZkTestBase.waitForCollection(cluster.getSolrClient().getZkStateReader(), "c",1);
+    cluster.waitForActiveCollection("c", 1, 1);
     cluster.getSolrClient().request(add, "c");
     QueryResponse rsp = cluster.getSolrClient().query("c",
         new ModifiableSolrParams().add("q","id:1"));

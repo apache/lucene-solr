@@ -82,6 +82,8 @@ public class TestRestoreCore extends SolrJettyTestBase {
 
   @Before
   public void setUp() throws Exception {
+    useFactory(null);
+    System.setProperty("solr.skipCommitOnClose", "true");
     super.setUp();
     String configFile = "solrconfig-master.xml";
 
@@ -172,7 +174,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
       TestReplicationHandlerBackup.runBackupCommand(masterJetty, ReplicationHandler.CMD_RESTORE, params);
 
       while (!fetchRestoreStatus(baseUrl, DEFAULT_TEST_CORENAME)) {
-        Thread.sleep(1000);
+        Thread.sleep(250);
       }
 
       //See if restore was successful by checking if all the docs are present again

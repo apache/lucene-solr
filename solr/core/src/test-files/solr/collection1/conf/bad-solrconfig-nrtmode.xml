@@ -28,6 +28,7 @@
   <!-- BEGIN: BAD -->
   <indexConfig>
     <nrtMode>false</nrtMode>
+    <lockType>${solr.tests.lockType:single}</lockType>
   </indexConfig>
   <!-- END: BAD -->
 

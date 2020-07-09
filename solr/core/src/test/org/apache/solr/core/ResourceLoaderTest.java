@@ -44,7 +44,6 @@ import org.apache.solr.response.JSONResponseWriter;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
 import static org.apache.solr.core.SolrResourceLoader.assertAwareCompatibility;
-import static org.apache.solr.core.SolrResourceLoader.clearCache;
 import static org.hamcrest.core.Is.is;
 
 public class ResourceLoaderTest extends SolrTestCaseJ4 {
@@ -212,9 +211,8 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
   }
 
   public void testCacheWrongType() throws Exception {
-    clearCache();
-
     SolrResourceLoader loader = new SolrResourceLoader();
+    loader.clearCache();
     Class[] params = { Map.class };
     Map<String,String> args = Map.of("minGramSize", "1", "maxGramSize", "2");
     final String className = "solr.NGramTokenizerFactory";

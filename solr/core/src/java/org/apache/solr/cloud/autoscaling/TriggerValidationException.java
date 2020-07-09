@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud.autoscaling;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -53,7 +54,7 @@ public class TriggerValidationException extends Exception {
       return;
     }
     if (keyValues.length % 2 != 0) {
-      throw new IllegalArgumentException("number of arguments representing key & value pairs must be even");
+      throw new IllegalArgumentException("number of arguments representing key & value pairs must be even: " + keyValues.length + " " + Arrays.asList(keyValues));
     }
     for (int i = 0; i < keyValues.length; i += 2) {
       details.put(keyValues[i], keyValues[i + 1]);

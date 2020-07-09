@@ -56,13 +56,13 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -411,38 +411,17 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     return sb.toString();
   }
 
+  private volatile boolean destroyServersCalled = false;
   protected void destroyServers() throws Exception {
-    ExecutorService customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("closeThreadPool"));
-    
-    customThreadPool.submit(() -> Collections.singleton(controlClient).parallelStream().forEach(c -> {
-      IOUtils.closeQuietly(c);
-    }));
+    System.out.println("DESTROYSERVERS");
+//    if (destroyServersCalled) throw new RuntimeException("destroyServers already called");
+//    destroyServersCalled = true;
+    try (ParWork closer = new ParWork(this, true)) {
 
-    customThreadPool.submit(() -> {
-      try {
-        controlJetty.stop();
-      } catch (NullPointerException e) {
-        // ignore
-      } catch (Exception e) {
-        log.error("Error stopping Control Jetty", e);
-      }
-    });
+      closer.add("clients", controlClient, clients);
 
-    for (SolrClient client : clients) {
-      customThreadPool.submit(() ->  IOUtils.closeQuietly(client));
+      closer.add("jetties", jettys, controlJetty);
     }
-    
-    for (JettySolrRunner jetty : jettys) {
-      customThreadPool.submit(() -> {
-        try {
-          jetty.stop();
-        } catch (Exception e) {
-          log.error("Error stopping Jetty", e);
-        }
-      });
-    }
-
-    ExecutorUtil.shutdownAndAwaitTermination(customThreadPool);
     
     clients.clear();
     jettys.clear();
@@ -675,7 +654,8 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     if (setDistribParams) setDistributedParams(params);
 
     QueryResponse rsp = queryServer(params);
-
+    System.out.println("rsp:" + rsp);
+    System.out.println("rsp:" + controlRsp);
     compareResponses(rsp, controlRsp);
 
     if (stress > 0) {
@@ -994,7 +974,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     handle.put("rf", SKIPVAL);
     String cmp = compare(a.getResponse(), b.getResponse(), flags, handle);
     if (cmp != null) {
-      log.error("Mismatched responses:\n{}\n{}", a, b);
+      log.error("Mismatched responses:\n{}\n{}\nhandle=" + handle, a, b);
       Assert.fail(cmp);
     }
   }

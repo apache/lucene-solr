@@ -35,7 +35,7 @@ public class CollectionStateFormat2Test extends SolrCloudTestCase {
   
   @After
   public void afterTest() throws Exception {
-    cluster.deleteAllCollections();
+
   }
   
   @Test
@@ -45,9 +45,6 @@ public class CollectionStateFormat2Test extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2)
         .process(cluster.getSolrClient());
 
-    cluster.waitForActiveCollection(collectionName, 2, 4);
-    
-    waitForState("Collection not created", collectionName, (n, c) -> DocCollection.isFullyActive(n, c, 2, 2));
     assertTrue("State Format 2 collection path does not exist",
         zkClient().exists(ZkStateReader.getCollectionPath(collectionName), true));
 
@@ -61,7 +58,6 @@ public class CollectionStateFormat2Test extends SolrCloudTestCase {
 
     // remove collection
     CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
-    waitForState("Collection not deleted", collectionName, (n, coll) -> coll == null);
 
     assertFalse("collection state should not exist externally",
         zkClient().exists(ZkStateReader.getCollectionPath(collectionName), true));

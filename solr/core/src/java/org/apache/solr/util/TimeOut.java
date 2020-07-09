@@ -28,9 +28,15 @@ public class TimeOut {
 
   private final long timeoutAt, startTime;
   private final TimeSource timeSource;
+  private final long period;
 
   public TimeOut(long interval, TimeUnit unit, TimeSource timeSource) {
+    this(interval, unit, 250, timeSource);
+  }
+
+  public TimeOut(long interval, TimeUnit unit, long period, TimeSource timeSource) {
     this.timeSource = timeSource;
+    this.period = period;
     startTime = timeSource.getTimeNs();
     this.timeoutAt = startTime + NANOSECONDS.convert(interval, unit);
   }
@@ -61,7 +67,7 @@ public class TimeOut {
   public void waitFor(String messageOnTimeOut, Supplier<Boolean> supplier)
       throws InterruptedException, TimeoutException {
     while (!supplier.get() && !hasTimedOut()) {
-      timeSource.sleep(250);
+      timeSource.sleep(period);
     }
     if (hasTimedOut()) throw new TimeoutException(messageOnTimeOut);
   }

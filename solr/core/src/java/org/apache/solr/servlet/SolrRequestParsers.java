@@ -679,12 +679,12 @@ public class SolrRequestParsers {
       // get query String from request body, using the charset given in content-type:
       final String cs = ContentStreamBase.getCharsetFromContentType(req.getContentType());
       final Charset charset = (cs == null) ? StandardCharsets.UTF_8 : Charset.forName(cs);
-
+      FastInputStream fin = null;
       try {
         // Protect container owned streams from being closed by us, see SOLR-8933
-        in = FastInputStream.wrap( in == null ? new CloseShieldInputStream(req.getInputStream()) : in );
+        fin = FastInputStream.wrap( in == null ? new CloseShieldInputStream(req.getInputStream()) : in );
 
-        final long bytesRead = parseFormDataContent(in, maxLength, charset, map, false);
+        final long bytesRead = parseFormDataContent(fin, maxLength, charset, map, false);
         if (bytesRead == 0L && totalLength > 0L) {
           throw getParameterIncompatibilityException();
         }
@@ -693,7 +693,9 @@ public class SolrRequestParsers {
       } catch (IllegalStateException ise) {
         throw (SolrException) getParameterIncompatibilityException().initCause(ise);
       } finally {
-        IOUtils.closeWhileHandlingException(in);
+        if (in == null) {
+          IOUtils.closeWhileHandlingException(fin);
+        }
       }
 
       return new MultiMapSolrParams(map);

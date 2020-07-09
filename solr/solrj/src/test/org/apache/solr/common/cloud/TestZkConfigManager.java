@@ -62,7 +62,7 @@ public class TestZkConfigManager extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testUploadConfig() throws IOException {
+  public void testUploadConfig() throws IOException, KeeperException {
 
     zkServer.ensurePathExists("/solr");
 
@@ -128,7 +128,7 @@ public class TestZkConfigManager extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testUploadWithACL() throws IOException {
+  public void testUploadWithACL() throws IOException, KeeperException {
 
     zkServer.ensurePathExists("/acl");
 

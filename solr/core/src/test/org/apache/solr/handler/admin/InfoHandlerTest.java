@@ -23,16 +23,19 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class InfoHandlerTest extends SolrTestCaseJ4 {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
+    System.setProperty("solr.disableJmxReporter", "false");
     initCore("solrconfig.xml", "schema.xml");
   }
   
   @Test
+  @Ignore // nocommit debug
   public void testCoreAdminHandler() throws Exception {
 
     final CoreContainer cores = h.getCoreContainer();

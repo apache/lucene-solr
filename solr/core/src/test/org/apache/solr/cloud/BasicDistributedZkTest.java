@@ -28,8 +28,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionService;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -40,6 +42,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
@@ -72,6 +75,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -96,6 +100,7 @@ import org.slf4j.LoggerFactory;
  */
 @Slow 
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@LuceneTestCase.Nightly // TODO speedup
 public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -112,16 +117,25 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   String oddField="oddField_s";
   String missingField="ignore_exception__missing_but_valid_field_t";
 
-  private Map<String,List<SolrClient>> otherCollectionClients = new HashMap<>();
+  private Map<String,List<SolrClient>> otherCollectionClients = new ConcurrentHashMap<>();
 
   private String oneInstanceCollection = "oneInstanceCollection";
   private String oneInstanceCollection2 = "oneInstanceCollection2";
   
   private AtomicInteger nodeCounter = new AtomicInteger();
   
+  protected ExecutorService executor = new ExecutorUtil.MDCAwareThreadPoolExecutor(
+      4,
+      Integer.MAX_VALUE,
+      15, TimeUnit.SECONDS, // terminate idle threads after 15 sec
+      new SynchronousQueue<>(),  // directly hand off tasks
+      new SolrNamedThreadFactory("BaseDistributedSearchTestCase"),
+      false
+  );
+
   CompletionService<Object> completionService;
   Set<Future<Object>> pending;
-  
+
   private static Hook newSearcherHook = new Hook() {
     volatile CountDownLatch latch;
     AtomicReference<String> collection = new AtomicReference<>();
@@ -138,18 +152,24 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
         }
       }
     }
-  
-    public void waitForSearcher(String collection, int cnt, int timeoutms, boolean failOnTimeout) throws InterruptedException {
-      latch = new CountDownLatch(cnt);
-      this.collection.set(collection);
+
+    public void waitForSearcher(int timeoutms, boolean failOnTimeout) throws InterruptedException {
+
       boolean timeout = !latch.await(timeoutms, TimeUnit.MILLISECONDS);
       if (timeout && failOnTimeout) {
         fail("timed out waiting for new searcher event " + latch.getCount());
       }
     }
-  
+
+    @Override
+    public void insertHook(String collection, int cnt) {
+      latch = new CountDownLatch(cnt);
+      this.collection.set(collection);
+    }
+
   };
-  
+
+
   public BasicDistributedZkTest() {
     // we need DVs on point fields to compute stats & facets
     if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
@@ -161,7 +181,8 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   }
   
   @BeforeClass
-  public static void beforeBDZKTClass() {
+  public static void beforeBDZKTClass() throws Exception {
+    useFactory(null);
     TestInjection.newSearcherHook(newSearcherHook);
   }
 
@@ -188,37 +209,31 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   }
 
   @Test
-  @ShardsFixed(num = 4)
   // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
   public void test() throws Exception {
     // setLoggingLevel(null);
-
-    ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-    // make sure we have leaders for each shard
-    for (int j = 1; j < sliceCount; j++) {
-      zkStateReader.getLeaderRetry(DEFAULT_COLLECTION, "shard" + j, 10000);
-    }      // make sure we again have leaders for each shard
-    
-    waitForRecoveriesToFinish(false);
     
     handle.clear();
     handle.put("timestamp", SKIPVAL);
 
-    del("*:*");
-    queryAndCompareShards(params("q", "*:*", "distrib", "false", "sanity_check", "is_empty"));
+    // many of these tests are repeated from a non solrcloud test
+    // instead of running them again N times, make some of this nightly
+    if (TEST_NIGHTLY) {
+      queryAndCompareShards(params("q", "*:*", "distrib", "false", "sanity_check", "is_empty"));
 
-    // ask every individual replica of every shard to update+commit the same doc id
-    // with an incrementing counter on each update+commit
-    int foo_i_counter = 0;
-    for (SolrClient client : clients) {
-      foo_i_counter++;
-      indexDoc(client, params("commit", "true"), // SOLR-4923
-               sdoc(id,1, i1,100, tlong,100, "foo_i", foo_i_counter));
-      // after every update+commit, check all the shards consistency
-      queryAndCompareShards(params("q", "id:1", "distrib", "false", 
-                                   "sanity_check", "non_distrib_id_1_lookup"));
-      queryAndCompareShards(params("q", "id:1", 
-                                   "sanity_check", "distrib_id_1_lookup"));
+      // ask every individual replica of every shard to update+commit the same doc id
+      // with an incrementing counter on each update+commit
+      int foo_i_counter = 0;
+      for (SolrClient client : clients) {
+        foo_i_counter++;
+        indexDoc(client, params("commit", "true"), // SOLR-4923
+                sdoc(id, 1, i1, 100, tlong, 100, "foo_i", foo_i_counter));
+        // after every update+commit, check all the shards consistency
+        queryAndCompareShards(params("q", "id:1", "distrib", "false",
+                "sanity_check", "non_distrib_id_1_lookup"));
+        queryAndCompareShards(params("q", "id:1",
+                "sanity_check", "distrib_id_1_lookup"));
+      }
     }
 
     indexr(id,1, i1, 100, tlong, 100,t1,"now is the time for all good men"
@@ -257,9 +272,9 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
     commit();
 
-    testTokenizedGrouping();
+    if (TEST_NIGHTLY) testTokenizedGrouping();
     testSortableTextFaceting();
-    testSortableTextSorting();
+    if (TEST_NIGHTLY) testSortableTextSorting();
     testSortableTextGrouping();
 
     queryAndCompareShards(params("q", "*:*", 
@@ -388,36 +403,42 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
       assertEquals("unexpected pre-commitWithin document count on node: " + ((HttpSolrClient)client).getBaseURL(), before, client.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
 
+    SolrClient client = clients.get(0);
+    assertEquals("unexpected pre-commitWithin document count on node: " + ((HttpSolrClient)client).getBaseURL() + "/" + DEFAULT_COLLECTION, before, client.query(new SolrQuery("*:*")).getResults().getNumFound());
+
+    newSearcherHook.insertHook(DEFAULT_COLLECTION, 1);
+
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("commitWithin", 10);
     add(cloudClient, params , getDoc("id", 300), getDoc("id", 301));
 
-    newSearcherHook.waitForSearcher(DEFAULT_COLLECTION, 2, 20000, false);
+    newSearcherHook.waitForSearcher(5000, false);
     
     ClusterState clusterState = getCommonCloudSolrClient().getZkStateReader().getClusterState();
     DocCollection dColl = clusterState.getCollection(DEFAULT_COLLECTION);
 
-    assertSliceCounts("should have found 2 docs, 300 and 301", before + 2, dColl);
+    assertSliceCounts("should have found 2 docs, 300 and 301", before + 2, DEFAULT_COLLECTION);
 
     // try deleteById commitWithin
     UpdateRequest deleteByIdReq = new UpdateRequest();
     deleteByIdReq.deleteById("300");
     deleteByIdReq.setCommitWithin(10);
     deleteByIdReq.process(cloudClient);
-    
-    newSearcherHook.waitForSearcher(DEFAULT_COLLECTION, 2, 20000, false);
 
-    assertSliceCounts("deleteById commitWithin did not work", before + 1, dColl);
+    newSearcherHook.waitForSearcher( 5000, false);
+
+    assertSliceCounts("deleteById commitWithin did not work", before + 1, DEFAULT_COLLECTION);
     
     // try deleteByQuery commitWithin
+    newSearcherHook.insertHook(DEFAULT_COLLECTION, 1);
     UpdateRequest deleteByQueryReq = new UpdateRequest();
     deleteByQueryReq.deleteByQuery("id:301");
     deleteByQueryReq.setCommitWithin(10);
     deleteByQueryReq.process(cloudClient);
 
-    newSearcherHook.waitForSearcher(DEFAULT_COLLECTION, 2, 20000, false);
+    newSearcherHook.waitForSearcher(5000, false);
     
-    assertSliceCounts("deleteByQuery commitWithin did not work", before, dColl);
+    assertSliceCounts("deleteByQuery commitWithin did not work", before, DEFAULT_COLLECTION);
     
 
     // TODO: This test currently fails because debug info is obtained only
@@ -531,16 +552,10 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     assertTrue("Expected error from server that SortableTextFields are required", ex.getMessage().contains("Sorting on a tokenized field that is not a SortableTextField is not supported in cloud mode"));
   }
 
-  private void assertSliceCounts(String msg, long expected, DocCollection dColl) throws Exception {
-    long found = checkSlicesSameCounts(dColl);
-    
-    if (found != expected) {
-      // we get one do over in a bad race
-      Thread.sleep(1000);
-      found = checkSlicesSameCounts(dColl);
-    }
-    
-    assertEquals(msg, expected, checkSlicesSameCounts(dColl));
+  private void assertSliceCounts(String msg, long expected, String collection) throws Exception {
+    ZkStateReader zkStateReader = cloudClient.getZkStateReader();
+    cloudClient.getZkStateReader().waitForState(collection, 3000, TimeUnit.SECONDS, (n,c) -> checkSlicesSameCounts(c) == expected);
+    assertEquals(msg, expected, checkSlicesSameCounts(zkStateReader.getClusterState().getCollection(collection)));
   }
 
   // Ensure that total docs found is the expected number.
@@ -550,11 +565,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     try {
       getCommonCloudSolrClient().getZkStateReader().waitForState(DEFAULT_COLLECTION, waitMillis, TimeUnit.MILLISECONDS, (n, c) -> {
         long docTotal;
-        try {
-          docTotal = checkSlicesSameCounts(c);
-        } catch (SolrServerException | IOException e) {
-          throw new RuntimeException(e);
-        }
+        docTotal = checkSlicesSameCounts(c);
         total.set(docTotal);
         if (docTotal == expectedNumFound) {
           return true;
@@ -575,7 +586,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
   // Insure that counts are the same for all replicas in each shard
   // Return the total doc count for the query.
-  private long checkSlicesSameCounts(DocCollection dColl) throws SolrServerException, IOException {
+  private long checkSlicesSameCounts(DocCollection dColl) {
     long docTotal = 0; // total number of documents found counting only one replica per slice.
     for (Slice slice : dColl.getActiveSlices()) {
       long sliceDocCount = -1;
@@ -593,6 +604,9 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
               return -1;
             }
           }
+        } catch (Exception e) {
+          SolrZkClient.checkInterrupted(e);
+          throw new RuntimeException(e);
         }
       }
     }
@@ -745,7 +759,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
                                                final int numShards, int numReplicas) {
     assertNotNull(nodeName);
     try {
-      assertEquals(0, CollectionAdminRequest.createCollection(collection, "conf1", numShards, 1)
+      assertEquals(0, CollectionAdminRequest.createCollection(collection, "_default", numShards, 1)
           .setCreateNodeSet("")
           .process(client).getStatus());
     } catch (SolrServerException | IOException e) {
@@ -781,10 +795,10 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", CollectionAction.CREATE.toString());
 
-    params.set(OverseerCollectionMessageHandler.NUM_SLICES, numShards);
+    params.set(ZkStateReader.NUM_SHARDS_PROP, numShards);
     params.set(ZkStateReader.REPLICATION_FACTOR, numReplicas);
     params.set(ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode);
-    if (createNodeSetStr != null) params.set(OverseerCollectionMessageHandler.CREATE_NODE_SET, createNodeSetStr);
+    if (createNodeSetStr != null) params.set(ZkStateReader.CREATE_NODE_SET, createNodeSetStr);
 
     int clientIndex = clients.size() > 1 ? random().nextInt(2) : 0;
     List<Integer> list = new ArrayList<>();
@@ -849,9 +863,10 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
       addFields(doc, id, i, fieldA, val, fieldB, val);
       UpdateResponse ures = add(updateClient, updateParams, doc);
       assertEquals(chain + ": update failed", 0, ures.getStatus());
-      ures = updateClient.commit();
-      assertEquals(chain + ": commit failed", 0, ures.getStatus());
     }
+
+    UpdateResponse ures = clients.get(random().nextInt(clients.size())).commit();
+    assertEquals(chain + ": commit failed", 0, ures.getStatus());
 
     // query for each doc, and check both fields to ensure the value is correct
     for (int i = 1; i < numLoops; i++) {
@@ -952,7 +967,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
   private void testANewCollectionInOneInstanceWithManualShardAssignement() throws Exception {
     log.info("### STARTING testANewCollectionInOneInstanceWithManualShardAssignement");
-    assertEquals(0, CollectionAdminRequest.createCollection(oneInstanceCollection2, "conf1", 2, 2)
+    assertEquals(0, CollectionAdminRequest.createCollection(oneInstanceCollection2, "_default", 2, 2)
         .setCreateNodeSet("")
         .setMaxShardsPerNode(4)
         .process(cloudClient).getStatus());
@@ -1100,7 +1115,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
   private void testANewCollectionInOneInstance() throws Exception {
     log.info("### STARTING testANewCollectionInOneInstance");
-    CollectionAdminResponse response = CollectionAdminRequest.createCollection(oneInstanceCollection, "conf1", 2, 2)
+    CollectionAdminResponse response = CollectionAdminRequest.createCollection(oneInstanceCollection, "_default", 2, 2)
         .setCreateNodeSet(jettys.get(0).getNodeName())
         .setMaxShardsPerNode(4)
         .process(cloudClient);
@@ -1266,7 +1281,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   private void createNewCollection(final String collection) throws InterruptedException {
     try {
       assertEquals(0, CollectionAdminRequest
-          .createCollection(collection, "conf1", 2, 1)
+          .createCollection(collection, "_default", 2, 1)
           .setCreateNodeSet("")
           .process(cloudClient).getStatus());
     } catch (Exception e) {
@@ -1352,5 +1367,6 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     otherCollectionClients = null;
     List<Runnable> tasks = executor.shutdownNow();
     assertTrue(tasks.isEmpty());
+    ExecutorUtil.awaitTermination(executor);
   }
 }

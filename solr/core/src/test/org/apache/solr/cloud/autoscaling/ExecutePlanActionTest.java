@@ -29,14 +29,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.BaseCloudSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.CloudTestUtils.AutoScalingRequest;
 import org.apache.solr.cloud.CloudUtil;
+import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -63,6 +66,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_P
  * Test for {@link ExecutePlanAction}
  */
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG")
+@LuceneTestCase.Nightly // nocommit speed up
 public class ExecutePlanActionTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -133,9 +137,6 @@ public class ExecutePlanActionTest extends SolrCloudTestCase {
     
     cluster.waitForActiveCollection(collectionName, 1, 2);
 
-    waitForState("Timed out waiting for replicas of new collection to be active",
-        collectionName, clusterShape(1, 2));
-
     JettySolrRunner sourceNode = cluster.getRandomJetty(random());
     String sourceNodeName = sourceNode.getNodeName();
     ClusterState clusterState = solrClient.getZkStateReader().getClusterState();
@@ -198,8 +199,7 @@ public class ExecutePlanActionTest extends SolrCloudTestCase {
       assertNotNull(response.get("success"));
     }
 
-    waitForState("Timed out waiting for replicas of new collection to be active",
-        collectionName, clusterShape(1, 2));
+    cluster.waitForActiveCollection(collectionName, 1, 2);
   }
 
   @Test
@@ -250,8 +250,6 @@ public class ExecutePlanActionTest extends SolrCloudTestCase {
         cluster.waitForJettyToStop(j);
       }
     }
-    
-    Thread.sleep(1000);
 
     waitForState("Timed out waiting for replicas of collection to be 2 again",
         collectionName, clusterShape(1, 2));
@@ -265,7 +263,7 @@ public class ExecutePlanActionTest extends SolrCloudTestCase {
 
   @Test
   public void testTaskTimeout() throws Exception  {
-    int DELAY = 2000;
+    int DELAY = TEST_NIGHTLY ? 1000 : 100;
     boolean taskTimeoutFail = random().nextBoolean();
     TestInjection.delayInExecutePlanAction = DELAY;
     CloudSolrClient solrClient = cluster.getSolrClient();
@@ -306,7 +304,7 @@ public class ExecutePlanActionTest extends SolrCloudTestCase {
       }
     }
 
-    boolean await = finishedProcessing.await(DELAY * 5, TimeUnit.MILLISECONDS);
+    boolean await = finishedProcessing.await(15000, TimeUnit.MILLISECONDS);
     if (taskTimeoutFail) {
       assertFalse("finished processing event but should fail", await);
     } else {
@@ -351,9 +349,6 @@ public class ExecutePlanActionTest extends SolrCloudTestCase {
 
     cluster.waitForActiveCollection(collectionName, 1, 2);
 
-    waitForState("Timed out waiting for replicas of new collection to be active",
-        collectionName, clusterShape(1, 2));
-
     // don't stop the jetty that runs our SolrCloudManager
     JettySolrRunner runner = cluster.stopJettySolrRunner(1);
     cluster.waitForJettyToStop(runner);
@@ -370,8 +365,7 @@ public class ExecutePlanActionTest extends SolrCloudTestCase {
 
     // the task never completed - we actually lost a replica
     try {
-      CloudUtil.waitForState(cloudManager, collectionName, 5, TimeUnit.SECONDS,
-          CloudUtil.clusterShape(1, 2));
+      CloudUtil.waitForState(cloudManager, collectionName, 2, TimeUnit.SECONDS, BaseCloudSolrClient.expectedShardsAndActiveReplicas(1, 2));
       fail("completed a task that should have failed");
     } catch (TimeoutException te) {
       // expected

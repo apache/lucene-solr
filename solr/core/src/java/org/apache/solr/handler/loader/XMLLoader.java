@@ -38,6 +38,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.ctc.wstx.shaded.msv_core.verifier.jaxp.SAXParserFactoryImpl;
+import com.ctc.wstx.stax.WstxInputFactory;
 import com.google.common.collect.Lists;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.EmptyEntityResolver;
@@ -83,17 +85,14 @@ public class XMLLoader extends ContentStreamLoader {
   private static final String XSLT_CACHE_PARAM = "xsltCacheLifetimeSeconds"; 
 
   public static final int XSLT_CACHE_DEFAULT = 60;
-  
-  int xsltCacheLifetimeSeconds;
-  XMLInputFactory inputFactory;
-  SAXParserFactory saxFactory;
 
-  @Override
-  public XMLLoader init(SolrParams args) {
-    // Init StAX parser:
-    inputFactory = XMLInputFactory.newInstance();
+  private static int xsltCacheLifetimeSeconds = XSLT_CACHE_DEFAULT;
+  private static XMLInputFactory inputFactory = new WstxInputFactory();
+  private static SAXParserFactory saxFactory = new SAXParserFactoryImpl();
+  static {
     EmptyEntityResolver.configureXMLInputFactory(inputFactory);
     inputFactory.setXMLReporter(xmllog);
+
     try {
       // The java 1.6 bundled stax parser (sjsxp) does not currently have a thread-safe
       // XMLInputFactory, as that implementation tries to cache and reuse the
@@ -107,17 +106,17 @@ public class XMLLoader extends ContentStreamLoader {
       // isimplementation specific.
       log.debug("Unable to set the 'reuse-instance' property for the input chain: {}", inputFactory);
     }
-    
+
     // Init SAX parser (for XSL):
-    saxFactory = SAXParserFactory.newInstance();
     saxFactory.setNamespaceAware(true); // XSL needs this!
     EmptyEntityResolver.configureSAXParserFactory(saxFactory);
-    
-    xsltCacheLifetimeSeconds = XSLT_CACHE_DEFAULT;
-    if(args != null) {
-      xsltCacheLifetimeSeconds = args.getInt(XSLT_CACHE_PARAM,XSLT_CACHE_DEFAULT);
-      log.debug("xsltCacheLifetimeSeconds={}", xsltCacheLifetimeSeconds);
-    }
+  }
+
+
+  @Override
+  public XMLLoader init(SolrParams args) {
+
+
     return this;
   }
 

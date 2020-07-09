@@ -76,6 +76,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Replica;
@@ -260,7 +261,7 @@ public class IndexFetcher {
     // test don't want to define this
     soTimeout = Integer.getInteger("solr.indexfetcher.sotimeout", -1);
     if (soTimeout == -1) {
-      soTimeout = getParameter(initArgs, HttpClientUtil.PROP_SO_TIMEOUT, 120000, null);
+      soTimeout = getParameter(initArgs, HttpClientUtil.PROP_SO_TIMEOUT, Integer.getInteger("solr.indexfetch.so_timeout.default", 120000), null);
     }
 
     if (initArgs.getBooleanArg(TLOG_FILES) != null) {
@@ -269,6 +270,7 @@ public class IndexFetcher {
 
     String httpBasicAuthUser = (String) initArgs.get(HttpClientUtil.PROP_BASIC_AUTH_USER);
     String httpBasicAuthPassword = (String) initArgs.get(HttpClientUtil.PROP_BASIC_AUTH_PASS);
+    // nocommit, share connectionpool
     myHttpClient = createHttpClient(solrCore, httpBasicAuthUser, httpBasicAuthPassword, useExternalCompression);
   }
   
@@ -299,6 +301,7 @@ public class IndexFetcher {
         .withHttpClient(myHttpClient)
         .withConnectionTimeout(connTimeout)
         .withSocketTimeout(soTimeout)
+        .markInternalRequest()
         .build()) {
 
       return client.request(req);
@@ -325,6 +328,7 @@ public class IndexFetcher {
         .withHttpClient(myHttpClient)
         .withConnectionTimeout(connTimeout)
         .withSocketTimeout(soTimeout)
+        .markInternalRequest()
         .build()) {
       @SuppressWarnings({"rawtypes"})
       NamedList response = client.request(req);
@@ -697,6 +701,7 @@ public class IndexFetcher {
       } catch (SolrException e) {
         throw e;
       } catch (InterruptedException e) {
+        ParWork.propegateInterrupt(e);
         throw new InterruptedException("Index fetch interrupted");
       } catch (Exception e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Index fetch failed : ", e);
@@ -720,11 +725,13 @@ public class IndexFetcher {
       Directory indexDir, boolean deleteTmpIdxDir, File tmpTlogDir, boolean successfulInstall) throws IOException {
     try {
       if (!successfulInstall) {
-        try {
-          logReplicationTimeAndConfFiles(null, successfulInstall);
-        } catch (Exception e) {
-          // this can happen on shutdown, a fetch may be running in a thread after DirectoryFactory is closed
-          log.warn("Could not log failed replication details", e);
+        if (!core.getCoreContainer().isShutDown()) {
+          try {
+            logReplicationTimeAndConfFiles(null, successfulInstall);
+          } catch (Exception e) {
+            // this can happen on shutdown, a fetch may be running in a thread after DirectoryFactory is closed
+            log.warn("Could not log failed replication details", e);
+          }
         }
       }
 
@@ -861,11 +868,12 @@ public class IndexFetcher {
         props.store(outFile, "Replication details");
         dir.sync(Collections.singleton(tmpFileName));
       } finally {
-        IOUtils.closeQuietly(outFile);
+        ParWork.close(outFile);
       }
       
       solrCore.getDirectoryFactory().renameWithOverwrite(dir, tmpFileName, REPLICATION_PROPERTIES);
-    } catch (Exception e) {
+    } catch (Throwable e) {
+      ParWork.propegateInterrupt(e);
       log.warn("Exception while updating statistics", e);
     } finally {
       if (dir != null) {
@@ -1881,6 +1889,7 @@ public class IndexFetcher {
           .withResponseParser(null)
           .withConnectionTimeout(connTimeout)
           .withSocketTimeout(soTimeout)
+          .markInternalRequest()
           .build()) {
         QueryRequest req = new QueryRequest(params);
         response = client.request(req);
@@ -1891,7 +1900,7 @@ public class IndexFetcher {
         return new FastInputStream(is);
       } catch (Exception e) {
         //close stream on error
-        org.apache.commons.io.IOUtils.closeQuietly(is);
+        ParWork.close(is);
         throw new IOException("Could not download file '" + fileName + "'", e);
       }
     }
@@ -1993,6 +2002,7 @@ public class IndexFetcher {
         .withHttpClient(myHttpClient)
         .withConnectionTimeout(connTimeout)
         .withSocketTimeout(soTimeout)
+        .markInternalRequest()
         .build()) {
       QueryRequest request = new QueryRequest(params);
       return client.request(request);

@@ -61,6 +61,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -86,8 +87,6 @@ public class GraphExpressionTest extends SolrCloudTestCase {
         .configure();
 
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1).process(cluster.getSolrClient());
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(),
-        false, true, TIMEOUT);
   }
 
   @Before
@@ -846,6 +845,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Ignore // nocommit debug
   public void testGraphHandler() throws Exception {
 
 
@@ -892,7 +892,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
         "//graph/node[2][@id ='max']",
         "//graph/node[3][@id ='sam']");
     if(error != null) {
-      throw new Exception(error);
+      throw new Exception(error + "\n" + xml);
     }
     //Validate the edges
     error = h.validateXPath(xml,

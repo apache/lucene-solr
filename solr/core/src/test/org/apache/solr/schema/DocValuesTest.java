@@ -550,7 +550,7 @@ public class DocValuesTest extends SolrTestCaseJ4 {
           largestValue[i], positiveInfinity[i], zero[i]};
 
       List<Number> values = new ArrayList<>();
-      int numDocs = 1 + random().nextInt(10);
+      int numDocs = 1 + random().nextInt(TEST_NIGHTLY ? 10 : 5);
       for (int j=0; j<numDocs; j++) {
         
         if (random().nextInt(100) < 5) { // Add a boundary value with 5% probability
@@ -572,7 +572,7 @@ public class DocValuesTest extends SolrTestCaseJ4 {
 
       log.info("Indexed values: {}", values);
       // Querying
-      int numQueries = 10000;
+      int numQueries = TEST_NIGHTLY ? 10000 : 100;
       for (int j=0; j<numQueries; j++) {
         boolean minInclusive = random().nextBoolean();
         boolean maxInclusive = random().nextBoolean();

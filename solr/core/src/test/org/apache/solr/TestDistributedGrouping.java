@@ -23,6 +23,7 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -63,8 +64,6 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
 
   @Test
   public void test() throws Exception {
-    del("*:*");
-    commit();
 
     handle.clear();
     handle.put("timestamp", SKIPVAL);
@@ -111,7 +110,7 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     indexr(id, 15, "SubjectTerms_mfacet", new String[]  {"test 1", "test 2", "test3"});
     indexr(id, 16, "SubjectTerms_mfacet", new String[]  {"test 1", "test 2", "test3"});
     String[] vals = new String[100];
-    for (int i=0; i<100; i++) {
+    for (int i=0; i<(TEST_NIGHTLY ? 100 : 10); i++) {
       vals[i] = "test " + i;
     }
     indexr(id, 17, "SubjectTerms_mfacet", vals);
@@ -147,14 +146,14 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
         oddField, "odd eggs"
     );
 
-    for (int i = 100; i < 150; i++) {
+    for (int i = 100; i < (TEST_NIGHTLY ? 150 : 25); i++) {
       indexr(id, i);
     }
 
     int[] values = new int[]{9999, 99999, 999999, 9999999};
     for (int shard = 0; shard < clients.size(); shard++) {
       int groupValue = values[shard];
-      for (int i = 500; i < 600; i++) {
+      for (int i = 500; i <  (TEST_NIGHTLY ? 600 : 510); i++) {
         index_specific(shard, 
                        i1, groupValue, 
                        s1, "a", 
@@ -313,63 +312,126 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     nl = (NamedList<?>) nl.getVal(0);
     int matches = (Integer) nl.getVal(0);
     int groupCount = (Integer) nl.get("ngroups");
-    assertEquals(100 * shardsArr.length, matches);
+    assertEquals((TEST_NIGHTLY ? 100 : 10) * shardsArr.length, matches);
     assertEquals(shardsArr.length, groupCount);
 
 
     // We validate distributed grouping with scoring as first sort.
     // note: this 'q' matches all docs and returns the 'id' as the score, which is unique and so our results should be deterministic.
     handle.put("maxScore", SKIP);// TODO see SOLR-6612
-    query("q", "{!func}id_i1", "rows", 100, "fl", "score,id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " desc", "group.sort", "score desc"); // SOLR-2955
-    query("q", "{!func}id_i1", "rows", 100, "fl", "score,id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", "score desc, _docid_ asc, id asc");
-    query("q", "{!func}id_i1", "rows", 100, "fl", "score,id," + i1, "group", "true", "group.field", i1, "group.limit", -1);
 
-    query("q", "*:*",
-        "group", "true",
-        "group.query", t1 + ":kings OR " + t1 + ":eggs", "group.limit", "3",
-        "fl", "id,score", "sort", i1 + " asc, id asc");
-    query("q", "*:*",
-        "group", "true",
-        "group.query", t1 + ":kings OR " + t1 + ":eggs", "group.limit", "3",
-        "fl", "id,score", "group.format", "simple", "sort", i1 + " asc, id asc");
-    query("q", "*:*",
-        "group", "true",
-        "group.query", t1 + ":kings OR " + t1 + ":eggs", "group.limit", "3",
-        "fl", "id,score", "group.main", "true", "sort", i1 + " asc, id asc");
+    try (ParWork worker = new ParWork(this)) {
+      worker.collect(()->{
+        try {
+          query("q", "{!func}id_i1", "rows", 100, "fl", "score,id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " desc", "group.sort", "score desc"); // SOLR-2955
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      });
+      worker.collect(()->{
+        try {
+          query("q", "{!func}id_i1", "rows", 100, "fl", "score,id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", "score desc, _docid_ asc, id asc");
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      });
+      worker.collect(()->{
+        try {
+          query("q", "{!func}id_i1", "rows", 100, "fl", "score,id," + i1, "group", "true", "group.field", i1, "group.limit", -1);
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      });
+      worker.collect(()->{
+        try {
+          query("q", "*:*",
+                  "group", "true",
+                  "group.query", t1 + ":kings OR " + t1 + ":eggs", "group.limit", "3",
+                  "fl", "id,score", "sort", i1 + " asc, id asc");
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      });
+      worker.collect(()->{
+        try {
+          query("q", "*:*",
+                  "group", "true",
+                  "group.query", t1 + ":kings OR " + t1 + ":eggs", "group.limit", "3",
+                  "fl", "id,score", "group.format", "simple", "sort", i1 + " asc, id asc");
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      });
+      worker.collect(()->{
+        try {
+          query("q", "*:*",
+                  "group", "true",
+                  "group.query", t1 + ":kings OR " + t1 + ":eggs", "group.limit", "3",
+                  "fl", "id,score", "group.main", "true", "sort", i1 + " asc, id asc");
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      });
 
-    // grouping shouldn't care if there are multiple fl params, or what order the fl field names are in
-    variantQuery(params("q", "*:*",
-                        "group", "true", "group.field", i1dv, "group.limit", "10",
-                        "sort", i1 + " asc, id asc")
-                 , params("fl", "id," + i1dv)
-                 , params("fl", i1dv + ",id")
-                 , params("fl", "id", "fl", i1dv)
-                 , params("fl", i1dv, "fl", "id")
-                 );
-    variantQuery(params("q", "*:*", "rows", "100",
-                        "group", "true", "group.field", s1dv, "group.limit", "-1", 
-                        "sort", b1dv + " asc, id asc",
-                        "group.sort", "id desc")
-                 , params("fl", "id," + s1dv + "," + tdate_a)
-                 , params("fl", "id", "fl", s1dv, "fl", tdate_a)
-                 , params("fl", tdate_a, "fl", s1dv, "fl", "id")
-                 );
-    variantQuery(params("q", "*:*", "rows", "100",
-                        "group", "true", "group.field", s1dv, "group.limit", "-1", 
-                        "sort", b1dv + " asc, id asc",
-                        "group.sort", "id desc")
-                 , params("fl", s1dv + "," + tdate_a)
-                 , params("fl", s1dv, "fl", tdate_a)
-                 , params("fl", tdate_a, "fl", s1dv)
-                 );
-    variantQuery(params("q", "{!func}id_i1", "rows", "100",
-                        "group", "true", "group.field", i1, "group.limit", "-1",
-                        "sort", tlong+" asc, id desc")
-                 , params("fl", t1 + ",score," + i1dv)
-                 , params("fl", t1, "fl", "score", "fl", i1dv)
-                 , params("fl", "score", "fl", t1, "fl", i1dv)
-                 );
-                             
+      worker.collect(()->{
+        try {
+          // grouping shouldn't care if there are multiple fl params, or what order the fl field names are in
+          variantQuery(params("q", "*:*",
+                  "group", "true", "group.field", i1dv, "group.limit", "10",
+                  "sort", i1 + " asc, id asc")
+                  , params("fl", "id," + i1dv)
+                  , params("fl", i1dv + ",id")
+                  , params("fl", "id", "fl", i1dv)
+                  , params("fl", i1dv, "fl", "id")
+          );
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      });
+      worker.collect(()->{
+        try {
+          variantQuery(params("q", "*:*", "rows", "100",
+                  "group", "true", "group.field", s1dv, "group.limit", "-1",
+                  "sort", b1dv + " asc, id asc",
+                  "group.sort", "id desc")
+                  , params("fl", "id," + s1dv + "," + tdate_a)
+                  , params("fl", "id", "fl", s1dv, "fl", tdate_a)
+                  , params("fl", tdate_a, "fl", s1dv, "fl", "id")
+          );
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      });
+      worker.collect(()->{
+        try {
+          variantQuery(params("q", "*:*", "rows", "100",
+                  "group", "true", "group.field", s1dv, "group.limit", "-1",
+                  "sort", b1dv + " asc, id asc",
+                  "group.sort", "id desc")
+                  , params("fl", s1dv + "," + tdate_a)
+                  , params("fl", s1dv, "fl", tdate_a)
+                  , params("fl", tdate_a, "fl", s1dv)
+          );
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      });
+      worker.collect(()->{
+        try {
+          variantQuery(params("q", "{!func}id_i1", "rows", "100",
+                  "group", "true", "group.field", i1, "group.limit", "-1",
+                  "sort", tlong+" asc, id desc")
+                  , params("fl", t1 + ",score," + i1dv)
+                  , params("fl", t1, "fl", "score", "fl", i1dv)
+                  , params("fl", "score", "fl", t1, "fl", i1dv)
+          );
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      });
+      worker.addCollect("someTestQueries");
+    }
+
     // some explicit checks of non default sorting, and sort/group.sort with diff clauses
     query("q", "{!func}id_i1", "rows", 100, "fl", tlong + ",id," + i1, "group", "true",
           "group.field", i1, "group.limit", -1,

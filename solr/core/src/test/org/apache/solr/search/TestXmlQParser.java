@@ -23,9 +23,11 @@ import org.apache.lucene.queryparser.xml.CoreParser;
 import org.apache.lucene.queryparser.xml.TestCoreParser;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.junit.AfterClass;
+import org.junit.Ignore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Ignore // nocommit debug
 public class TestXmlQParser extends TestCoreParser {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

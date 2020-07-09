@@ -51,6 +51,11 @@
   -->
   <schemaFactory class="ClassicIndexSchemaFactory"/>
 
+  <indexConfig>
+    <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
+    <lockType>${solr.tests.lockType:single}</lockType>
+  </indexConfig>
+
   <updateHandler class="solr.DirectUpdateHandler2">
     <updateLog>
       <str name="dir">${solr.core0.data.dir:}</str>

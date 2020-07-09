@@ -17,6 +17,7 @@
 package org.apache.solr.util;
 
 import javax.net.ssl.SSLContext;
+import java.lang.invoke.MethodHandles;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -45,6 +46,8 @@ import org.eclipse.jetty.util.security.CertificateUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import com.carrotsearch.randomizedtesting.RandomizedTest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * An SSLConfig that provides {@link SSLConfig} and {@link SocketFactoryRegistryProvider} for both clients and servers
@@ -52,6 +55,8 @@ import com.carrotsearch.randomizedtesting.RandomizedTest;
  * Solr test-framework classes
  */
 public class SSLTestConfig {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   private static final String TEST_KEYSTORE_BOGUSHOST_RESOURCE = "SSLTestConfig.hostname-and-ip-missmatch.keystore";
   private static final String TEST_KEYSTORE_LOCALHOST_RESOURCE = "SSLTestConfig.testing.keystore";
   private static final String TEST_PASSWORD = "secret";
@@ -142,10 +147,12 @@ public class SSLTestConfig {
    */
   public SocketFactoryRegistryProvider buildClientSocketFactoryRegistryProvider() {
     if (isSSLMode()) {
+      log.info("using ssl connection factory");
       SSLConnectionSocketFactory sslConnectionFactory = buildClientSSLConnectionSocketFactory();
       assert null != sslConnectionFactory;
       return new SSLSocketFactoryRegistryProvider(sslConnectionFactory);
     } else {
+      log.info("using http connection factory");
       return HTTP_ONLY_SCHEMA_PROVIDER;
     }
   }

@@ -69,6 +69,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.RateLimiter;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
@@ -395,7 +396,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     } catch (Exception e) {
       log.warn("Exception in finding checksum of {}", f, e);
     } finally {
-      IOUtils.closeQuietly(fis);
+      ParWork.close(fis);
     }
     return null;
   }
@@ -421,6 +422,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       }
       return currentIndexFetcher.fetchLatestIndex(forceReplication);
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       SolrException.log(log, "Index fetch failed ", e);
       if (currentIndexFetcher != pollingIndexFetcher) {
         currentIndexFetcher.destroy();
@@ -1175,6 +1177,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         }
       } finally {
         if (dir != null) {
+          core.getDirectoryFactory().doneWithDirectory(dir);
           core.getDirectoryFactory().release(dir);
         }
       }
@@ -1409,22 +1412,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       @Override
       public void postClose(SolrCore core) {}
     });
-  }
-
-  public void shutdown() {
-    if (executorService != null) executorService.shutdown();
-    if (pollingIndexFetcher != null) {
-      pollingIndexFetcher.destroy();
-    }
-    if (currentIndexFetcher != null && currentIndexFetcher != pollingIndexFetcher) {
-      currentIndexFetcher.destroy();
-    }
-    ExecutorUtil.shutdownAndAwaitTermination(restoreExecutor);
-    if (restoreFuture != null) {
-      restoreFuture.cancel(false);
-    }
-    
-    ExecutorUtil.shutdownAndAwaitTermination(executorService);
   }
 
   /**
@@ -1763,6 +1750,24 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     } else {
       throw new SolrException(ErrorCode.SERVER_ERROR, INTERVAL_ERR_MSG);
     }
+  }
+
+  @Override
+  public void close() {
+
+    if (executorService != null) executorService.shutdown();
+    if (pollingIndexFetcher != null) {
+      pollingIndexFetcher.destroy();
+    }
+    if (currentIndexFetcher != null && currentIndexFetcher != pollingIndexFetcher) {
+      currentIndexFetcher.destroy();
+    }
+    ExecutorUtil.shutdownAndAwaitTermination(restoreExecutor);
+    if (restoreFuture != null) {
+      restoreFuture.cancel(false);
+    }
+
+    ExecutorUtil.shutdownAndAwaitTermination(executorService);
   }
 
   private static final String SUCCESS = "success";

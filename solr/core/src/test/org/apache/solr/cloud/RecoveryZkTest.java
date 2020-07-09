@@ -43,6 +43,7 @@ public class RecoveryZkTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    System.setProperty("solr.skipCommitOnClose", "false");
     configureCluster(2)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
@@ -70,7 +71,7 @@ public class RecoveryZkTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(collection, "conf", 1, 2)
         .setMaxShardsPerNode(1)
         .process(cluster.getSolrClient());
-    waitForState("Expected a collection with one shard and two replicas", collection, clusterShape(1, 2));
+
     cluster.getSolrClient().setDefaultCollection(collection);
 
     // start a couple indexing threads
@@ -107,15 +108,14 @@ public class RecoveryZkTest extends SolrCloudTestCase {
 
     JettySolrRunner jetty = cluster.getReplicaJetty(replica);
     jetty.stop();
+    cluster.waitForJettyToStop(jetty);
     
     // wait a moment - lets allow some docs to be indexed so replication time is non 0
     Thread.sleep(waitTimes[random().nextInt(waitTimes.length - 1)]);
     
     // bring shard replica up
     jetty.start();
-    
-    // make sure replication can start
-    Thread.sleep(3000);
+    cluster.waitForNode(jetty, 10);
 
     // stop indexing threads
     indexThread.safeStop();
@@ -127,7 +127,7 @@ public class RecoveryZkTest extends SolrCloudTestCase {
     new UpdateRequest()
         .commit(cluster.getSolrClient(), collection);
 
-    cluster.getSolrClient().waitForState(collection, 120, TimeUnit.SECONDS, clusterShape(1, 2));
+    cluster.waitForActiveCollection(collection, 1, 2);
 
     // test that leader and replica have same doc count
     state = getCollectionState(collection);

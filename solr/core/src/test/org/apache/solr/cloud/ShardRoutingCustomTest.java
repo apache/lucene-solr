@@ -23,8 +23,10 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.Replica;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore // nocommit debug
 public class ShardRoutingCustomTest extends AbstractFullDistribZkTestBase {
 
   String collection = DEFAULT_COLLECTION;  // enable this to be configurable (more work needs to be done)

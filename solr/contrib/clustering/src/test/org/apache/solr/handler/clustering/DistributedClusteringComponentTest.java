@@ -32,7 +32,6 @@ public class DistributedClusteringComponentTest extends
 
   @Test
   public void test() throws Exception {
-    del("*:*");
     int numberOfDocs = 0;
     for (String[] doc : AbstractClusteringTestCase.DOCUMENTS) {
       index(id, Integer.toString(numberOfDocs++), "url", doc[0], "title", doc[1], "snippet", doc[2]);

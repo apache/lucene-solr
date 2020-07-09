@@ -32,6 +32,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.api.Api;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -71,9 +72,6 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   protected final CoreContainer coreContainer;
   protected final Map<String, Map<String, TaskObject>> requestStatusMap;
   private final CoreAdminHandlerApi coreAdminHandlerApi;
-
-  protected ExecutorService parallelExecutor = ExecutorUtil.newMDCAwareFixedThreadPool(50,
-      new SolrNamedThreadFactory("parallelCoreAdminExecutor"));
 
   protected static int MAX_TRACKED_REQUESTS = 100;
   public static String RUNNING = "running";
@@ -123,8 +121,6 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     super.initializeMetrics(parentContext, scope);
-    parallelExecutor = MetricUtils.instrumentedExecutorService(parallelExecutor, this, solrMetricsContext.getMetricRegistry(),
-        SolrMetricManager.mkName("parallelCoreAdminExecutor", getCategory().name(), scope, "threadPool"));
   }
   @Override
   public Boolean registerV2() {
@@ -183,11 +179,13 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
         try {
           MDC.put("CoreAdminHandler.asyncId", taskId);
           MDC.put("CoreAdminHandler.action", op.action.toString());
-          parallelExecutor.execute(() -> {
+          ParWork.getExecutor().execute(() -> { // ### SUPER DUPER EXPERT USAGE
             boolean exceptionCaught = false;
             try {
-              callInfo.call();
-              taskObject.setRspObject(callInfo.rsp);
+              if (!cores.isShutDown()) {
+                callInfo.call();
+                taskObject.setRspObject(callInfo.rsp);
+              }
             } catch (Exception e) {
               exceptionCaught = true;
               taskObject.setRspObjectFromException(e);
@@ -373,8 +371,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
    * Method to ensure shutting down of the ThreadPool Executor.
    */
   public void shutdown() {
-    if (parallelExecutor != null)
-      ExecutorUtil.shutdownAndAwaitTermination(parallelExecutor);
+
   }
 
   private static final Map<String, CoreAdminOperation> opMap = new HashMap<>();

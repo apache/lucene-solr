@@ -37,6 +37,12 @@
 
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
 
+  <indexConfig>
+    <lockType>${solr.tests.lockType:single}</lockType>
+    <infoStream>${solr.tests.infostream:false}</infoStream>
+  </indexConfig>
+
+
   <updateRequestProcessorChain name="cdcr-processor-chain">
     <processor class="solr.CdcrUpdateProcessorFactory"/>
     <processor class="solr.RunUpdateProcessorFactory"/>

@@ -377,7 +377,8 @@ public class DistribPackageStore implements PackageStore {
     } finally {
       coreContainer.getUpdateShardHandler().getUpdateExecutor().submit(() -> {
         try {
-          Thread.sleep(10 * 1000);
+      //    Thread.sleep(10 * 1000);
+          // nocommit yikes!
         } finally {
           tmpFiles.remove(info.path);
         }

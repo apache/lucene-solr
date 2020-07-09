@@ -28,6 +28,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.CoreContainer;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -44,6 +45,12 @@ public class TestTrackingShardHandlerFactory extends AbstractFullDistribZkTestBa
   @Override
   protected String getSolrXml() {
     return "solr-trackingshardhandler.xml";
+  }
+
+
+  @BeforeClass
+  public static void beforeTestTrackingShardHandlerFactory() throws Exception {
+    System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
   }
 
   @Test
@@ -66,7 +73,7 @@ public class TestTrackingShardHandlerFactory extends AbstractFullDistribZkTestBa
       assertSame(trackingQueue, trackingShardHandlerFactory.getTrackingQueue());
     }
 
-    createCollection(collectionName, "conf1", 2, 1, 1);
+    createCollection(collectionName, "_default", 2, 1, 1);
 
     waitForRecoveriesToFinish(collectionName, true);
 

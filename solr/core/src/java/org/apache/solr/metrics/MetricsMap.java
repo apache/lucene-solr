@@ -54,6 +54,8 @@ import org.slf4j.LoggerFactory;
 public class MetricsMap implements Gauge<Map<String,Object>>, DynamicMBean {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  private static Field[] FIELDS = SimpleType.class.getFields();
+
   // set to true to use cached statistics between getMBeanInfo calls to work
   // around over calling getStatistics on MBeanInfos when iterating over all attributes (SOLR-6586)
   private final boolean useCachedStatsBetweenGetMBeanInfoCalls = Boolean.getBoolean("useCachedStatsBetweenGetMBeanInfoCalls");
@@ -181,7 +183,7 @@ public class MetricsMap implements Gauge<Map<String,Object>>, DynamicMBean {
 
   private OpenType determineType(Class type) {
     try {
-      for (Field field : SimpleType.class.getFields()) {
+      for (Field field : FIELDS) {
         if (field.getType().equals(SimpleType.class)) {
           SimpleType candidate = (SimpleType) field.get(SimpleType.class);
           if (candidate.getTypeName().equals(type.getName())) {

@@ -46,6 +46,7 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -121,6 +122,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @Ignore // nocommit debug
   public void testCoreAdminHandler() throws Exception {
     final File workDir = createTempDir().toFile();
     
@@ -248,6 +250,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @Ignore // nocommit debug
   public void testDeleteInstanceDir() throws Exception  {
     File solrHomeDirectory = createTempDir("solr-home").toFile();
     copySolrHomeToTemp(solrHomeDirectory, "corex");
@@ -352,6 +355,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
   }
   
   @Test
+  @Ignore // nocommit debug - probably delete dirs ...
   public void testDeleteInstanceDirAfterCreateFailure() throws Exception  {
     assumeFalse("Ignore test on windows because it does not delete data directory immediately after unload", Constants.WINDOWS);
     File solrHomeDirectory = createTempDir("solr-home").toFile();

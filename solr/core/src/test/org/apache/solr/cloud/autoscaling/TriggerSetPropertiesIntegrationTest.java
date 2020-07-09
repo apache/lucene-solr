@@ -42,15 +42,18 @@ import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.LogLevel;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;org.apache.solr.client.solrj.cloud.autoscaling=DEBUG")
+@Ignore // nocommit debug an speed up
 public class TriggerSetPropertiesIntegrationTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    ScheduledTriggers.DEFAULT_TRIGGER_CORE_POOL_SIZE = 4;
     configureCluster(2)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();

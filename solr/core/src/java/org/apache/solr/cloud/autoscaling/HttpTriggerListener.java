@@ -18,6 +18,7 @@ package org.apache.solr.cloud.autoscaling;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -62,7 +63,7 @@ public class HttpTriggerListener extends TriggerListenerBase {
   private String urlTemplate;
   private String payloadTemplate;
   private String contentType;
-  private Map<String, String> headerTemplates = new HashMap<>();
+  private volatile Map<String, String> headerTemplates = Collections.unmodifiableMap(new HashMap<>());
   private int timeout = HttpClientUtil.DEFAULT_CONNECT_TIMEOUT;
   private boolean followRedirects;
 
@@ -79,11 +80,13 @@ public class HttpTriggerListener extends TriggerListenerBase {
     urlTemplate = (String)config.properties.get("url");
     payloadTemplate = (String)config.properties.get("payload");
     contentType = (String)config.properties.get("contentType");
+    Map<String, String> hTemplates = new HashMap<>();
     config.properties.forEach((k, v) -> {
       if (k.startsWith("header.")) {
-        headerTemplates.put(k.substring(7), String.valueOf(v));
+        hTemplates.put(k.substring(7), String.valueOf(v));
       }
     });
+    headerTemplates = hTemplates;
     timeout = PropertiesUtil.toInteger(String.valueOf(config.properties.get("timeout")), HttpClientUtil.DEFAULT_CONNECT_TIMEOUT);
     followRedirects = PropertiesUtil.toBoolean(String.valueOf(config.properties.get("followRedirects")));
   }

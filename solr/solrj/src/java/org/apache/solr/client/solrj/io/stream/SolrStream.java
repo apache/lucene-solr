@@ -110,7 +110,7 @@ public class SolrStream extends TupleStream {
 
   public void open() throws IOException {
     if(cache == null) {
-      client = new HttpSolrClient.Builder(baseUrl).build();
+      client = new HttpSolrClient.Builder(baseUrl).markInternalRequest().build();
     } else {
       client = cache.getHttpSolrClient(baseUrl);
     }

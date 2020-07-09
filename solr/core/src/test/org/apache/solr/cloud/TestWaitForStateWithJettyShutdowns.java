@@ -37,11 +37,17 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 
 import static org.apache.solr.cloud.SolrCloudTestCase.clusterShape;
 
+import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  @BeforeClass
+  public static void setupCluster() throws Exception {
+    System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
+  }
 
   public void testWaitForStateAfterShutDown() throws Exception {
     final String col_name = "test_col";
@@ -101,7 +107,7 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
           try {
             cluster.getSolrClient().waitForState(col_name, 180, TimeUnit.SECONDS,
                                                  new LatchCountingPredicateWrapper(latch,
-                                                                                   clusterShape(1, 0)));
+                                                                                   clusterShape(1, 1)));
           } catch (Exception e) {
             log.error("background thread got exception", e);
             throw new RuntimeException(e);

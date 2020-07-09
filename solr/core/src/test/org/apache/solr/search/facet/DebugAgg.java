@@ -88,7 +88,7 @@ class DebugAgg extends AggValueSource {
     public static AtomicLong resizes = new AtomicLong(0);
     public static AtomicLong collectDocs = new AtomicLong(0);
     public static AtomicLong collectDocSets = new AtomicLong(0);
-    public static Acc last;
+    public static volatile int lastNumSlots;
 
     public SlotAcc sub;
     public long numDocs;
@@ -96,7 +96,7 @@ class DebugAgg extends AggValueSource {
 
     public Acc(FacetContext fcontext, long numDocs, int numSlots, SlotAcc sub) {
       super(fcontext);
-      this.last = this;
+      this.lastNumSlots = numSlots;
       this.numDocs = numDocs;
       this.numSlots = numSlots;
       this.sub = sub;
@@ -141,6 +141,7 @@ class DebugAgg extends AggValueSource {
     public void resize(Resizer resizer) {
       resizes.addAndGet(1);
       this.numSlots = resizer.getNewSize();
+      this.lastNumSlots = numSlots;
       sub.resize(resizer);
     }
 

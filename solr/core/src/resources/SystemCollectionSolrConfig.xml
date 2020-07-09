@@ -2,6 +2,9 @@
 <config>
   <luceneMatchVersion>LATEST</luceneMatchVersion>
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.StandardDirectoryFactory}"/>
+  <indexConfig>
+    <lockType>${solr.lockType:single}</lockType>
+  </indexConfig>
   <updateHandler class="solr.DirectUpdateHandler2">
     <updateLog>
       <str name="dir">${solr.ulog.dir:}</str>

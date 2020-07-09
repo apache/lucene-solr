@@ -19,6 +19,7 @@ package org.apache.solr.servlet;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
+import org.apache.commons.io.output.StringBuilderWriter;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
@@ -66,7 +67,7 @@ public class ResponseUtils {
     
     // For any regular code, don't include the stack trace
     if (code == 500 || code < 100) {
-      StringWriter sw = new StringWriter();
+      StringBuilderWriter sw = new StringBuilderWriter(1000);
       ex.printStackTrace(new PrintWriter(sw));
       SolrException.log(log, null, ex);
       info.add("trace", sw.toString());

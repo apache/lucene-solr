@@ -19,6 +19,9 @@ package org.apache.solr.cloud;
 
 public class ForceLeaderWithTlogReplicasTest extends ForceLeaderTest {
 
+  public ForceLeaderWithTlogReplicasTest() throws Exception {
+  }
+
   @Override
   protected boolean useTlogReplicas() {
     return true;

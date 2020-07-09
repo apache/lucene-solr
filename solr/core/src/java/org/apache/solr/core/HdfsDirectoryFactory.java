@@ -48,6 +48,7 @@ import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.SingleInstanceLockFactory;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
@@ -135,19 +136,28 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
   @Override
   public void close() throws IOException {
     super.close();
-    Collection<FileSystem> values = tmpFsCache.asMap().values();
-    for (FileSystem fs : values) {
-      IOUtils.closeQuietly(fs);
+
+    try (ParWork closer = new ParWork(this)) {
+
+      Collection<FileSystem> values = tmpFsCache.asMap().values();
+      for (FileSystem fs : values) {
+        closer.collect(fs);
+      }
+      closer.collect(()->{
+        tmpFsCache.invalidateAll();
+        tmpFsCache.cleanUp();
+        try {
+          SolrMetricProducer.super.close();
+        } catch (IOException e) {
+          log.warn("", e);
+        }
+      });
+
+      closer.collect(MetricsHolder.metrics);
+      closer.collect(LocalityHolder.reporter);
+      closer.addCollect("hdfsDirFactoryClose");
     }
-    tmpFsCache.invalidateAll();
-    tmpFsCache.cleanUp();
-    try {
-      SolrMetricProducer.super.close();
-      MetricsHolder.metrics.close();
-      LocalityHolder.reporter.close();
-    } catch (Exception e) {
-      throw new IOException(e);
-    }
+
   }
 
   private final static class LocalityHolder {

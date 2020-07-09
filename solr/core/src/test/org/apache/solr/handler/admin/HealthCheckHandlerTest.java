@@ -53,8 +53,9 @@ import static org.apache.solr.common.params.CommonParams.HEALTH_CHECK_HANDLER_PA
 public class HealthCheckHandlerTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
+    System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
     configureCluster(1)
-        .addConfig("conf", configset("cloud-minimal"))
+        .addConfig("_default", configset("cloud-minimal"))
         .configure();
   }
 

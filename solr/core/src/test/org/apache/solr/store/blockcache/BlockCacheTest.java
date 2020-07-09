@@ -31,6 +31,7 @@ import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCase;
 
+import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.Test;
 
 @ThreadLeakFilters(defaultFilters = true, filters = {

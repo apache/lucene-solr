@@ -16,10 +16,15 @@
  */
 package org.apache.solr.update;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Vector;
 
+import org.apache.solr.common.ParWork;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.HdfsDirectoryFactory;
 import org.apache.solr.core.PluginInfo;
@@ -40,7 +45,8 @@ import org.slf4j.LoggerFactory;
  *
  * @since solr 0.9
  */
-public abstract class UpdateHandler implements SolrInfoBean {
+public abstract class
+UpdateHandler implements SolrInfoBean, Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected final SolrCore core;
@@ -52,7 +58,7 @@ public abstract class UpdateHandler implements SolrInfoBean {
   protected Vector<SolrEventListener> softCommitCallbacks = new Vector<>();
   protected Vector<SolrEventListener> optimizeCallbacks = new Vector<>();
 
-  protected final UpdateLog ulog;
+  protected volatile UpdateLog ulog;
 
   protected SolrMetricsContext solrMetricsContext;
 
@@ -89,6 +95,12 @@ public abstract class UpdateHandler implements SolrInfoBean {
     }
   }
 
+  @Override
+  public void close() throws IOException {
+    if (ulog != null) ulog.close();
+    ObjectReleaseTracker.release(this);
+  }
+
   protected void callPostCommitCallbacks() {
     for (SolrEventListener listener : commitCallbacks) {
       listener.postCommit();
@@ -112,34 +124,41 @@ public abstract class UpdateHandler implements SolrInfoBean {
   }
   
   public UpdateHandler(SolrCore core, UpdateLog updateLog)  {
-    this.core=core;
-    idField = core.getLatestSchema().getUniqueKeyField();
-    idFieldType = idField!=null ? idField.getType() : null;
-    parseEventListeners();
-    PluginInfo ulogPluginInfo = core.getSolrConfig().getPluginInfo(UpdateLog.class.getName());
+    ObjectReleaseTracker.track(this);
+    try {
+      this.core = core;
+      idField = core.getLatestSchema().getUniqueKeyField();
+      idFieldType = idField != null ? idField.getType() : null;
+      parseEventListeners();
+      PluginInfo ulogPluginInfo = core.getSolrConfig().getPluginInfo(UpdateLog.class.getName());
 
-    // If this is a replica of type PULL, don't create the update log
-    boolean skipUpdateLog = core.getCoreDescriptor().getCloudDescriptor() != null && !core.getCoreDescriptor().getCloudDescriptor().requiresTransactionLog();
-    if (updateLog == null && ulogPluginInfo != null && ulogPluginInfo.isEnabled() && !skipUpdateLog) {
-      DirectoryFactory dirFactory = core.getDirectoryFactory();
-      if (dirFactory instanceof HdfsDirectoryFactory) {
-        ulog = new HdfsUpdateLog(((HdfsDirectoryFactory)dirFactory).getConfDir());
+      // If this is a replica of type PULL, don't create the update log
+      boolean skipUpdateLog = core.getCoreDescriptor().getCloudDescriptor() != null && !core.getCoreDescriptor().getCloudDescriptor().requiresTransactionLog();
+      if (updateLog == null && ulogPluginInfo != null && ulogPluginInfo.isEnabled() && !skipUpdateLog) {
+        DirectoryFactory dirFactory = core.getDirectoryFactory();
+        if (dirFactory instanceof HdfsDirectoryFactory) {
+          ulog = new HdfsUpdateLog(((HdfsDirectoryFactory) dirFactory).getConfDir());
+        } else {
+          String className = ulogPluginInfo.className == null ? UpdateLog.class.getName() : ulogPluginInfo.className;
+          ulog = core.getResourceLoader().newInstance(className, UpdateLog.class);
+        }
+
+        if (!core.isReloaded() && !dirFactory.isPersistent()) {
+          ulog.clearLog(core, ulogPluginInfo);
+        }
+
+        if (log.isInfoEnabled()) {
+          log.info("Using UpdateLog implementation: {}", ulog.getClass().getName());
+        }
+        ulog.init(ulogPluginInfo);
+        ulog.init(this, core);
       } else {
-        String className = ulogPluginInfo.className == null ? UpdateLog.class.getName() : ulogPluginInfo.className;
-        ulog = core.getResourceLoader().newInstance(className, UpdateLog.class);
+        ulog = updateLog;
       }
-
-      if (!core.isReloaded() && !dirFactory.isPersistent()) {
-        ulog.clearLog(core, ulogPluginInfo);
-      }
-
-      if (log.isInfoEnabled()) {
-        log.info("Using UpdateLog implementation: {}", ulog.getClass().getName());
-      }
-      ulog.init(ulogPluginInfo);
-      ulog.init(this, core);
-    } else {
-      ulog = updateLog;
+    } catch (Exception e) {
+      IOUtils.closeQuietly(ulog);
+      ObjectReleaseTracker.release(this);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
   }
 

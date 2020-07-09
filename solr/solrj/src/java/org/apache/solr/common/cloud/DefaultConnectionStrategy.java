@@ -61,11 +61,7 @@ public class DefaultConnectionStrategy extends ZkClientConnectionStrategy {
 
     } finally {
       if (!success) {
-        try {
-          zk.close();
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-        }
+        zk.close();
       }
     }
     

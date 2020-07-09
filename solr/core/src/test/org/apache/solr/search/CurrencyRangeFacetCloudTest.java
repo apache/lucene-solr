@@ -77,6 +77,8 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
                      .setMaxShardsPerNode(maxShardsPerNode)
                      .setProperties(Collections.singletonMap(CoreAdminParams.CONFIG, "solrconfig-minimal.xml"))
                      .process(cluster.getSolrClient())).getStatus());
+
+    cluster.waitForActiveCollection(COLLECTION, numShards, numShards * numReplicas);
     
     cluster.getSolrClient().setDefaultCollection(COLLECTION);
     

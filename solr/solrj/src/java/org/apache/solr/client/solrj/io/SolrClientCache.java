@@ -16,6 +16,7 @@
  */
 package org.apache.solr.client.solrj.io;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.invoke.MethodHandles;
@@ -29,6 +30,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +39,7 @@ import org.slf4j.LoggerFactory;
  *  The SolrClientCache caches SolrClients so they can be reused by different TupleStreams.
  **/
 
-public class SolrClientCache implements Serializable {
+public class SolrClientCache implements Serializable, Closeable {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -45,11 +47,12 @@ public class SolrClientCache implements Serializable {
   private final HttpClient httpClient;
 
   public SolrClientCache() {
-    httpClient = null;
+    this(null);
   }
 
   public SolrClientCache(HttpClient httpClient) {
     this.httpClient = httpClient;
+    ObjectReleaseTracker.track(this);
   }
 
   public synchronized CloudSolrClient getCloudSolrClient(String zkHost) {
@@ -80,7 +83,7 @@ public class SolrClientCache implements Serializable {
       if (httpClient != null) {
         builder = builder.withHttpClient(httpClient);
       }
-      client = builder.build();
+      client = builder.markInternalRequest().build();
       solrClients.put(host, client);
     }
     return client;
@@ -95,5 +98,6 @@ public class SolrClientCache implements Serializable {
       }
     }
     solrClients.clear();
+    ObjectReleaseTracker.release(this);
   }
 }

@@ -32,6 +32,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import com.carrotsearch.randomizedtesting.annotations.Nightly;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -68,6 +69,7 @@ import org.slf4j.LoggerFactory;
  */
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG")
 @LuceneTestCase.Slow
+@Nightly // this test should be faster
 public class IndexSizeTriggerSizeEstimationTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -83,6 +85,7 @@ public class IndexSizeTriggerSizeEstimationTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    useFactory(null);
     configureCluster(2)
     .addConfig("conf", configset("cloud-minimal"))
     .configure();
@@ -233,7 +236,7 @@ public class IndexSizeTriggerSizeEstimationTest extends SolrCloudTestCase {
 
     timeSource.sleep(TimeUnit.MILLISECONDS.convert(waitForSeconds + 1, TimeUnit.SECONDS));
 
-    boolean await = finished.await(90000 / SPEED, TimeUnit.MILLISECONDS);
+    boolean await = finished.await(15000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("did not finish processing in time", await);
     // suspend the trigger
     String suspendTriggerCommand = "{" +

@@ -40,6 +40,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -132,6 +133,7 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
         } catch (KeeperException e) {
           log.warn("Error deleting replica: {}", r, e);
           cleanupLatch.countDown();
+          throw e;
         } catch (Exception e) {
           log.warn("Error deleting replica: {}", r, e);
           cleanupLatch.countDown();
@@ -152,6 +154,7 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
     } catch (SolrException e) {
       throw e;
     } catch (Exception e) {
+      SolrZkClient.checkInterrupted(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Error executing delete operation for collection: " + collectionName + " shard: " + sliceId, e);
     }

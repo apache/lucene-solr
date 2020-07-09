@@ -85,8 +85,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    */
   public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router, int zkVersion, String znode) {
     super(props==null ? props = new HashMap<>() : props);
-    // -1 means any version in ZK CAS, so we choose Integer.MAX_VALUE instead to avoid accidental overwrites
-    this.znodeVersion = zkVersion == -1 ? Integer.MAX_VALUE : zkVersion;
+    this.znodeVersion = zkVersion == -1 ? 0 : zkVersion;
     this.name = name;
 
     this.slices = slices;
@@ -285,7 +284,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
 
   @Override
   public String toString() {
-    return "DocCollection("+name+"/" + znode + "/" + znodeVersion + ")=" + toJSONString(this);
+    return "DocCollection("+name+":" + znode + ":v=" + znodeVersion + ")=" + toJSONString(this);
   }
 
   @Override
@@ -379,6 +378,19 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
       for (Replica replica : slice) {
         if (Objects.equals(replica.getNodeName(), nodeName) && Objects.equals(replica.getCoreName(), coreName))
           return slice.getName();
+      }
+    }
+    return null;
+  }
+
+  public String getShardId(String coreNodeName) {
+    assert coreNodeName != null;
+
+    for (Slice slice : this) {
+      for (Replica replica : slice) {
+        if (replica.getName().equals(coreNodeName)) {
+          return slice.getName();
+        }
       }
     }
     return null;

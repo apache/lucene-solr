@@ -68,7 +68,6 @@ public class DistributedSuggestComponentTest extends BaseDistributedSearchTestCa
 
   @Test
   public void test() throws Exception {
-    del("*:*");
     index(id, "1", "cat", "This is another title", "price", "10", "weight", "10");
     index(id, "2", "cat", "Yet another", "price", "15", "weight", "10");
     index(id, "3", "cat", "Yet another title", "price", "20", "weight", "20");

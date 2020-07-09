@@ -20,10 +20,12 @@ package org.apache.solr.core;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
@@ -33,14 +35,14 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private int cacheSize = NodeConfig.NodeConfigBuilder.DEFAULT_TRANSIENT_CACHE_SIZE;
+  public volatile int cacheSize = NodeConfig.NodeConfigBuilder.DEFAULT_TRANSIENT_CACHE_SIZE;
 
-  protected CoreContainer coreContainer;
+  protected final CoreContainer coreContainer;
 
-  protected final Map<String, CoreDescriptor> transientDescriptors = new LinkedHashMap<>();
+  protected final Map<String, CoreDescriptor> transientDescriptors = new ConcurrentHashMap<>(132, 0.75f, 50);
 
   //WARNING! The _only_ place you put anything into the list of transient cores is with the putTransientCore method!
-  protected Map<String, SolrCore> transientCores = new LinkedHashMap<>(); // For "lazily loaded" cores
+  protected volatile Map<String, SolrCore> transientCores; // For "lazily loaded" cores
 
   /**
    * @param container The enclosing CoreContainer. It allows us to access everything we need.
@@ -63,7 +65,7 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
     }
     doInit();
   }
-  // This just moves the 
+  // This just moves the
   private void doInit() {
     NodeConfig cfg = coreContainer.getNodeConfig();
     if (cfg.getTransientCachePluginInfo() == null) {
@@ -78,32 +80,29 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
       }
     }
 
+    log.info("Allocating transient cache for {} transient cores", cacheSize);
     // it's possible for cache
     if (cacheSize < 0) { // Trap old flag
-      cacheSize = Integer.MAX_VALUE;
+      cacheSize = NodeConfig.NodeConfigBuilder.DEFAULT_TRANSIENT_CACHE_SIZE;
     }
 
     // Now don't allow ridiculous allocations here, if the size is > 1,000, we'll just deal with
     // adding cores as they're opened. This blows up with the marker value of -1.
-    int actualCacheSize = Math.min(cacheSize, 1000);
-    log.info("Allocating transient cache for {} transient cores", actualCacheSize);
-    transientCores = new LinkedHashMap<>(actualCacheSize, 0.75f, true) {
+    transientCores = Collections.synchronizedMap(new LinkedHashMap<String, SolrCore>(Math.min(cacheSize, 1000), 0.75f, true) {
       @Override
       protected boolean removeEldestEntry(Map.Entry<String, SolrCore> eldest) {
         if (size() > cacheSize) {
           SolrCore coreToClose = eldest.getValue();
-          if (log.isInfoEnabled()) {
-            log.info("Closing transient core [{}]", coreToClose.getName());
-          }
-          coreContainer.queueCoreToClose(coreToClose);
+          log.info("Closing transient core [{}]", coreToClose.getName());
+          coreToClose.close();
           return true;
         }
         return false;
       }
-    };
+    });
   }
 
-  
+
   @Override
   public Collection<SolrCore> prepareForShutdown() {
     // Return a copy of the values
@@ -126,13 +125,13 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
   public Set<String> getAllCoreNames() {
     return transientDescriptors.keySet();
   }
-  
+
   @Override
   public Set<String> getLoadedCoreNames() {
     return transientCores.keySet();
   }
 
-  // Remove a core from the internal structures, presumably it 
+  // Remove a core from the internal structures, presumably it
   // being closed. If the core is re-opened, it will be re-added by CoreContainer.
   @Override
   public SolrCore removeCore(String name) {

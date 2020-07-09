@@ -634,7 +634,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
     HttpClient client = ocmh.overseer.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient();
     try (HttpSolrClient solrClient = new HttpSolrClient.Builder()
         .withHttpClient(client)
-        .withBaseSolrUrl(daemonUrl).build()) {
+        .withBaseSolrUrl(daemonUrl).markInternalRequest().build()) {
       ModifiableSolrParams q = new ModifiableSolrParams();
       q.set(CommonParams.QT, "/stream");
       q.set("action", "list");
@@ -687,6 +687,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
     HttpClient client = ocmh.overseer.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient();
     try (HttpSolrClient solrClient = new HttpSolrClient.Builder()
         .withHttpClient(client)
+        .markInternalRequest()
         .withBaseSolrUrl(daemonUrl).build()) {
       ModifiableSolrParams q = new ModifiableSolrParams();
       q.set(CommonParams.QT, "/stream");

@@ -32,6 +32,7 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class ZkSolrClientTest extends SolrTestCaseJ4 {
@@ -205,8 +206,12 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
     try {
       server = new ZkTestServer(zkDir);
       server.run();
-
-      final int timeout = random().nextInt(10000) + 5000;
+      final int timeout;
+      if (TEST_NIGHTLY) {
+        timeout = random().nextInt(1000) + 500;
+      } else {
+        timeout = random().nextInt(1000) + 500;
+      }
       
       ZkCmdExecutor zkCmdExecutor = new ZkCmdExecutor(timeout);
       final long start = System.nanoTime();
@@ -226,12 +231,13 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @Ignore // nocommit debug
   public void testMultipleWatchesAsync() throws Exception {
     try (ZkConnection conn = new ZkConnection()) {
       final SolrZkClient zkClient = conn.getClient();
       zkClient.makePath("/collections", true);
 
-      final int numColls = random().nextInt(100);
+      final int numColls = random().nextInt(TEST_NIGHTLY ? 100 : 10);
       final CountDownLatch latch = new CountDownLatch(numColls);
       final CountDownLatch watchesDone = new CountDownLatch(numColls);
       final Set<String> collectionsInProgress = new HashSet<>(numColls);
@@ -307,18 +313,7 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
       zkClient.makePath("collections/collection99/config=collection3", true);
       
       zkClient.makePath("/collections/collection97/shards", true);
-      
-      // pause for the watches to fire
-      Thread.sleep(700);
-      
-      if (cnt.intValue() < 2) {
-        Thread.sleep(4000); // wait a bit more
-      }
-      
-      if (cnt.intValue() < 2) {
-        Thread.sleep(4000); // wait a bit more
-      }
-      
+
       assertEquals(2, cnt.intValue());
 
     }
@@ -371,11 +366,5 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
   @Override
   public void tearDown() throws Exception {
     super.tearDown();
-  }
-  
-  @AfterClass
-  public static void afterClass() throws InterruptedException {
-    // wait just a bit for any zk client threads to outlast timeout
-    Thread.sleep(2000);
   }
 }

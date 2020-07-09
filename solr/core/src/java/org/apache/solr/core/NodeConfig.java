@@ -297,11 +297,11 @@ public class NodeConfig {
     private final Path solrHome;
     private final String nodeName;
 
-    public static final int DEFAULT_CORE_LOAD_THREADS = 3;
+    public static final int DEFAULT_CORE_LOAD_THREADS = 12;
     //No:of core load threads in cloud mode is set to a default of 8
-    public static final int DEFAULT_CORE_LOAD_THREADS_IN_CLOUD = 8;
+    public static final int DEFAULT_CORE_LOAD_THREADS_IN_CLOUD = 12;
 
-    public static final int DEFAULT_TRANSIENT_CACHE_SIZE = Integer.MAX_VALUE;
+    public static final int DEFAULT_TRANSIENT_CACHE_SIZE = 32;
 
     private static final String DEFAULT_ADMINHANDLERCLASS = "org.apache.solr.handler.admin.CoreAdminHandler";
     private static final String DEFAULT_INFOHANDLERCLASS = "org.apache.solr.handler.admin.InfoHandler";

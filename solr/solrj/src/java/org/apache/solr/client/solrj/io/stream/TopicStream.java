@@ -489,6 +489,14 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
           try {
             SolrDocument doc = httpClient.getById(id);
             if(doc != null) {
+              // TODO something is wrong here, you can get a String instead of List
+              // but the following does not work
+//              if (cp instanceof List) {
+//                checkpoints = (List<String>) cp;
+//              } else {
+//                checkpoints = Collections.singletonList((String)cp);
+//              }
+
               List<String> checkpoints = (List<String>)doc.getFieldValue("checkpoint_ss");
               for (String checkpoint : checkpoints) {
                 String[] pair = checkpoint.split("~");

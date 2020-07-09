@@ -75,6 +75,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Slow
+@Ignore // nocommit debug
 public class TestTlogReplica extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -88,7 +89,6 @@ public class TestTlogReplica extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    System.setProperty("solr.waitToSeeReplicasInStateTimeoutSeconds", "30");
     configureCluster(2) // 2 + random().nextInt(3)
         .addConfig("conf", configset("cloud-minimal-inplace-updates"))
         .configure();
@@ -117,6 +117,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
       if (!jetty.isRunning()) {
         log.warn("Jetty {} not running, probably some bad test. Starting it", jetty.getLocalPort());
         jetty.start();
+        cluster.waitForNode(jetty, 10000);
       }
     }
     if (cluster.getSolrClient().getZkStateReader().getClusterState().getCollectionOrNull(collectionName) != null) {
@@ -395,6 +396,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     } else {
       leaderJetty = cluster.getReplicaJetty(s.getLeader());
       leaderJetty.stop();
+      cluster.waitForJettyToStop(leaderJetty);
       waitForState("Leader replica not removed", collectionName, clusterShape(1, 1));
       // Wait for cluster state to be updated
       waitForState("Replica state not updated in cluster state",
@@ -417,6 +419,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
       
     } else {
       leaderJetty.start();
+      cluster.waitForNode(leaderJetty, 10000);
     }
     waitForState("Expected collection to be 1x2", collectionName, clusterShape(1, 2));
     // added replica should replicate from the leader
@@ -450,6 +453,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
 
     JettySolrRunner pullReplicaJetty = cluster.getReplicaJetty(docCollection.getSlice("shard1").getReplicas(EnumSet.of(Replica.Type.TLOG)).get(0));
     pullReplicaJetty.stop();
+    cluster.waitForJettyToStop(pullReplicaJetty);
     waitForState("Replica not removed", collectionName, activeReplicaCount(0, 1, 0));
     waitForLeaderChange(pullReplicaJetty, "shard1");
 //    // Also wait for the replica to be placed in state="down"
@@ -460,6 +464,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     waitForNumDocsInAllActiveReplicas(2);
 
     pullReplicaJetty.start();
+    cluster.waitForNode(pullReplicaJetty, 10000);
     waitForState("Replica not added", collectionName, activeReplicaCount(0, 2, 0));
     waitForNumDocsInAllActiveReplicas(2);
   }
@@ -545,11 +550,13 @@ public class TestTlogReplica extends SolrCloudTestCase {
         .process(cloudClient, collectionName);
     JettySolrRunner solrRunner = getSolrRunner(false).get(0);
     solrRunner.stop();
+    cluster.waitForJettyToStop(solrRunner);
     waitForState("Replica still up", collectionName, activeReplicaCount(0,1,0));
     new UpdateRequest()
         .add(sdoc("id", "6"))
         .process(cloudClient, collectionName);
     solrRunner.start();
+    cluster.waitForNode(solrRunner, 10000);
     waitForState("Replica didn't recover", collectionName, activeReplicaCount(0,2,0));
     // We skip peerSync, so replica will always trigger commit on leader
     // We query only the non-leader replicas, since we haven't opened a new searcher on the leader yet
@@ -570,11 +577,13 @@ public class TestTlogReplica extends SolrCloudTestCase {
     try {
       TestInjection.skipIndexWriterCommitOnClose = true;
       solrRunner.stop();
+      cluster.waitForJettyToStop(solrRunner);
       waitForState("Replica still up", collectionName, activeReplicaCount(0,1,0));
     } finally {
       TestInjection.skipIndexWriterCommitOnClose = false;
     }
     solrRunner.start();
+    cluster.waitForNode(solrRunner, 10000);
     waitForState("Replica didn't recover", collectionName, activeReplicaCount(0,2,0));
     waitForNumDocsInAllReplicas(5, getNonLeaderReplias(collectionName), 10); //timeout for stale collection state
     checkRTG(3,7, cluster.getJettySolrRunners());
@@ -593,7 +602,9 @@ public class TestTlogReplica extends SolrCloudTestCase {
       }
     };
     solrRunner.stop();
+    cluster.waitForJettyToStop(solrRunner);
     solrRunner.start();
+    cluster.waitForNode(solrRunner, 10000);
     waitingForReplay.acquire();
     // If I add the doc immediately, the leader fails to communicate with the follower with broken pipe.
     // Options are, wait or retry...
@@ -661,6 +672,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
         .process(cloudClient, collectionName);
     JettySolrRunner oldLeaderJetty = getSolrRunner(true).get(0);
     oldLeaderJetty.stop();
+    cluster.waitForJettyToStop(oldLeaderJetty);
     waitForState("Replica not removed", collectionName, activeReplicaCount(0, 1, 0));
 
     // Even after the replica is gone, a leader may not be elected yet. Wait for it. 
@@ -671,6 +683,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
         .add(sdoc("id", "4"))
         .process(cloudClient, collectionName);
     oldLeaderJetty.start();
+    cluster.waitForNode(oldLeaderJetty, 10000);
     waitForState("Replica not added", collectionName, activeReplicaCount(0, 2, 0));
     checkRTG(1,4, cluster.getJettySolrRunners());
     new UpdateRequest()
@@ -708,9 +721,11 @@ public class TestTlogReplica extends SolrCloudTestCase {
     }
     JettySolrRunner oldLeaderJetty = getSolrRunner(true).get(0);
     oldLeaderJetty.stop();
+    cluster.waitForJettyToStop(oldLeaderJetty);
     waitForState("Replica not removed", collectionName, activeReplicaCount(0, 1, 0));
     waitForLeaderChange(oldLeaderJetty, "shard1");
     oldLeaderJetty.start();
+    cluster.waitForNode(oldLeaderJetty, 10000);
     waitForState("Replica not added", collectionName, activeReplicaCount(0, 2, 0));
     checkRTG(1,1, cluster.getJettySolrRunners());
     SolrDocument doc = cluster.getSolrClient().getById(collectionName,"1");

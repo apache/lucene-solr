@@ -38,13 +38,15 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CorePropertiesLocator;
 import org.junit.After;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore // nocommit debug
 public class LegacyCloudClusterPropTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-
+    useFactory(null);
     // currently this test is fine with a single shard with a single replica and it's simpler. Could easily be
     // extended to multiple shards/replicas, but there's no particular need.
     configureCluster(1)

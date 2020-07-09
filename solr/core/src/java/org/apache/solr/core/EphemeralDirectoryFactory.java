@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.solr.core;
+import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 
@@ -54,7 +55,8 @@ public abstract class EphemeralDirectoryFactory extends CachingDirectoryFactory 
   
   @Override
   public boolean isAbsolute(String path) {
-    return true;
+    // back compat
+    return new File(path).isAbsolute();
   }
   
   

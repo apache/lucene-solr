@@ -16,10 +16,13 @@
  */
 package org.apache.solr.common.cloud;
 
+import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.apache.solr.common.AlreadyClosedException;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -31,7 +34,7 @@ import static org.apache.zookeeper.Watcher.Event.KeeperState.AuthFailed;
 import static org.apache.zookeeper.Watcher.Event.KeeperState.Disconnected;
 import static org.apache.zookeeper.Watcher.Event.KeeperState.Expired;
 
-public class ConnectionManager implements Watcher {
+public class ConnectionManager implements Watcher, Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final String name;
@@ -111,15 +114,15 @@ public class ConnectionManager implements Watcher {
     if (event.getState() == AuthFailed || event.getState() == Disconnected || event.getState() == Expired) {
       log.warn("Watcher {} name: {} got event {} path: {} type: {}", this, name, event, event.getPath(), event.getType());
     } else {
-      if (log.isDebugEnabled()) {
-        log.debug("Watcher {} name: {} got event {} path: {} type: {}", this, name, event, event.getPath(), event.getType());
+      if (log.isInfoEnabled()) {
+        log.info("Watcher {} name: {} got event {} path: {} type: {}", this, name, event, event.getPath(), event.getType());
       }
     }
 
-    if (isClosed()) {
-      log.debug("Client->ZooKeeper status change trigger but we are already closed");
-      return;
-    }
+//    if (isClosed()) {
+//      log.debug("Client->ZooKeeper status change trigger but we are already closed");
+//      return;
+//    }
 
     KeeperState state = event.getState();
 
@@ -141,6 +144,13 @@ public class ConnectionManager implements Watcher {
         try {
           beforeReconnect.command();
         } catch (Exception e) {
+
+          if (e instanceof  InterruptedException) {
+            // does not currently throw InterruptedException
+            // but could change
+            ParWork.propegateInterrupt(e);
+          }
+
           log.warn("Exception running beforeReconnect command", e);
         }
       }
@@ -159,11 +169,24 @@ public class ConnectionManager implements Watcher {
 
                     try {
                       client.updateKeeper(keeper);
-                    } catch (InterruptedException e) {
-                      closeKeeper(keeper);
-                      Thread.currentThread().interrupt();
-                      // we must have been asked to stop
-                      throw new RuntimeException(e);
+                    } catch (Exception e) {
+                      log.error("$ZkClientConnectionStrategy.ZkUpdate.update(SolrZooKeeper=" + keeper + ")", e);
+                      ParWork.propegateInterrupt(e);
+                      SolrException exp = new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+                      try {
+                        closeKeeper(keeper);
+                      } catch (Exception e1) {
+                        log.error("$ZkClientConnectionStrategy.ZkUpdate.update(SolrZooKeeper=" + keeper + ")", e1);
+                        ParWork.propegateInterrupt(e);
+                        exp.addSuppressed(e1);
+                      }
+
+                      if (Thread.currentThread().isInterrupted()) {
+                        Thread.currentThread().interrupt();
+                        return;
+                      }
+
+                      throw exp;
                     }
 
                     if (onReconnect != null) {
@@ -171,11 +194,30 @@ public class ConnectionManager implements Watcher {
                     }
 
                   } catch (Exception e1) {
+                    ParWork.propegateInterrupt(e1);
+                    SolrException exp = new SolrException(SolrException.ErrorCode.SERVER_ERROR, e1);
+
+
                     // if there was a problem creating the new SolrZooKeeper
                     // or if we cannot run our reconnect command, close the keeper
                     // our retry loop will try to create one again
-                    closeKeeper(keeper);
-                    throw new RuntimeException(e1);
+                    try {
+                      closeKeeper(keeper);
+                    } catch (Exception e) {
+                      ParWork.propegateInterrupt(e);
+                      exp.addSuppressed(e);
+                    }
+
+                    if (Thread.currentThread().isInterrupted()) {
+                      Thread.currentThread().interrupt();
+                      return;
+                    }
+
+                    throw exp;
+                  }
+
+                  if (log.isDebugEnabled()) {
+                    log.debug("$ZkClientConnectionStrategy.ZkUpdate.update(SolrZooKeeper) - end");
                   }
                 }
               });
@@ -183,12 +225,17 @@ public class ConnectionManager implements Watcher {
           break;
 
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
+          if (e instanceof  InterruptedException) {
+            return;
+          }
           SolrException.log(log, "", e);
           log.info("Could not connect due to error, sleeping for 1s and trying again");
-          waitSleep(1000);
+          waitSleep(500);
         }
 
       } while (!isClosed());
+
       log.info("zkClient Connected: {}", connected);
     } else if (state == KeeperState.Disconnected) {
       log.warn("zkClient has disconnected");
@@ -212,6 +259,15 @@ public class ConnectionManager implements Watcher {
   public void close() {
     this.isClosed = true;
     this.likelyExpiredState = LikelyExpiredState.EXPIRED;
+
+//    try {
+//      waitForDisconnected(10000);
+//    } catch (InterruptedException e) {
+//      ParWork.propegateInterrupt(e);
+//      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+//    } catch (TimeoutException e) {
+//      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+//    }
   }
 
   private boolean isClosed() {
@@ -237,18 +293,20 @@ public class ConnectionManager implements Watcher {
     long left = 1;
     while (!connected && left > 0) {
       if (isClosed()) {
-        break;
+        throw new AlreadyClosedException();
       }
       try {
-        wait(500);
+        wait(250);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
-        break;
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
       left = expire - System.nanoTime();
     }
-    if (!connected) {
-      throw new TimeoutException("Could not connect to ZooKeeper " + zkServerAddress + " within " + waitForConnection + " ms");
+    synchronized (this) {
+      if (!connected) {
+        throw new TimeoutException("Could not connect to ZooKeeper " + zkServerAddress + " within " + waitForConnection + " ms");
+      }
     }
     log.info("Client is connected to ZooKeeper");
   }
@@ -258,7 +316,7 @@ public class ConnectionManager implements Watcher {
     long expire = System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS);
     long left = timeout;
     while (connected && left > 0) {
-      wait(left);
+      wait(250);
       left = expire - System.nanoTime();
     }
     if (connected) {
@@ -267,14 +325,6 @@ public class ConnectionManager implements Watcher {
   }
 
   private void closeKeeper(SolrZooKeeper keeper) {
-    try {
-      keeper.close();
-    } catch (InterruptedException e) {
-      // Restore the interrupted status
-      Thread.currentThread().interrupt();
-      log.error("", e);
-      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-          "", e);
-    }
+    keeper.close();
   }
 }

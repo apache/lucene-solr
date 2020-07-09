@@ -26,10 +26,14 @@ import java.util.LinkedHashSet;
 
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -55,6 +59,12 @@ public class AddReplicaTest extends SolrCloudTestCase {
     cluster.deleteAllCollections();
   }
 
+  @After
+  public void tearDown() throws Exception  {
+    super.tearDown();
+    cluster.getZkClient().printLayout();
+  }
+
   @Test
   public void testAddMultipleReplicas() throws Exception  {
 
@@ -70,8 +80,8 @@ public class AddReplicaTest extends SolrCloudTestCase {
         .setNrtReplicas(1)
         .setTlogReplicas(1)
         .setPullReplicas(1);
-    RequestStatusState status = addReplica.processAndWait(collection + "_xyz1", cloudClient, 120);
-    assertEquals(COMPLETED, status);
+    CollectionAdminResponse status = addReplica.process(cloudClient, collection + "_xyz1");
+    assertTrue(status.isSuccess());
     
     cluster.waitForActiveCollection(collection, 1, 4);
     
@@ -87,8 +97,13 @@ public class AddReplicaTest extends SolrCloudTestCase {
         .setNrtReplicas(3)
         .setTlogReplicas(1)
         .setPullReplicas(1);
-    status = addReplica.processAndWait(collection + "_xyz1", cloudClient, 120);
-    assertEquals(FAILED, status);
+    try {
+      addReplica.process(cloudClient, collection + "_xyz1");
+      fail("expected fail");
+    } catch (SolrException e) {
+
+    }
+
     docCollection = cloudClient.getZkStateReader().getClusterState().getCollectionOrNull(collection);
     assertNotNull(docCollection);
     // sanity check that everything is as before
@@ -105,13 +120,14 @@ public class AddReplicaTest extends SolrCloudTestCase {
       String nodeName = cluster.getRandomJetty(random()).getNodeName();
       if (createNodeSet.add(nodeName))  break;
     }
+    assert createNodeSet.size() > 0;
     addReplica = CollectionAdminRequest.addReplicaToShard(collection, "shard1")
         .setNrtReplicas(3)
         .setTlogReplicas(1)
         .setPullReplicas(1)
         .setCreateNodeSet(String.join(",", createNodeSet));
-    status = addReplica.processAndWait(collection + "_xyz1", cloudClient, 120);
-    assertEquals(COMPLETED, status);
+    status = addReplica.process(cloudClient, collection + "_xyz1");
+    assertTrue(status.isSuccess());
     waitForState("Timedout wait for collection to be created", collection, clusterShape(1, 9));
     docCollection = cloudClient.getZkStateReader().getClusterState().getCollectionOrNull(collection);
     assertNotNull(docCollection);

@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import static java.util.Collections.singletonMap;
 import static java.util.Collections.singletonList;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -59,6 +60,7 @@ import org.slf4j.LoggerFactory;
 
 /** Test of {@link DocExpirationUpdateProcessorFactory} in a cloud setup */
 @Slow // Has to do some sleeping to wait for a future expiration
+@LuceneTestCase.Nightly // TODO speedup
 public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

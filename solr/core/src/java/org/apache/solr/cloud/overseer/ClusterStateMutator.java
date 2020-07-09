@@ -26,7 +26,9 @@ import java.util.Map;
 
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.impl.BaseCloudSolrClient;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -36,6 +38,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.zookeeper.CreateMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,7 +57,7 @@ public class ClusterStateMutator {
 
   public ZkWriteCommand createCollection(ClusterState clusterState, ZkNodeProps message) {
     String cName = message.getStr(NAME);
-    log.debug("building a new cName: {}", cName);
+    if (log.isDebugEnabled()) log.debug("building a new cName: " + cName);
     if (clusterState.hasCollection(cName)) {
       log.warn("Collection {} already exists. exit", cName);
       return ZkStateWriter.NO_OP;
@@ -73,12 +76,12 @@ public class ClusterStateMutator {
       List<String> shardNames = new ArrayList<>();
 
       if (router instanceof ImplicitDocRouter) {
-        getShardNames(shardNames, message.getStr("shards", DocRouter.DEFAULT_NAME));
+        BaseCloudSolrClient.getShardNames(shardNames, message.getStr("shards", DocRouter.DEFAULT_NAME));
       } else {
         int numShards = message.getInt(ZkStateReader.NUM_SHARDS_PROP, -1);
         if (numShards < 1)
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "numShards is a required parameter for 'compositeId' router");
-        getShardNames(numShards, shardNames);
+        BaseCloudSolrClient.getShardNames(numShards, shardNames);
       }
       List<DocRouter.Range> ranges = router.partitionRange(shardNames.size(), router.fullRange());//maybe null
 
@@ -110,10 +113,10 @@ public class ClusterStateMutator {
 
     //TODO default to 2; but need to debug why BasicDistributedZk2Test fails early on
     String znode = message.getInt(DocCollection.STATE_FORMAT, 1) == 1 ? null
-        : ZkStateReader.getCollectionPath(cName);
+            : ZkStateReader.getCollectionPath(cName);
 
     DocCollection newCollection = new DocCollection(cName,
-        slices, collectionProps, router, -1, znode);
+            slices, collectionProps, router, -1, znode);
 
     return new ZkWriteCommand(cName, newCollection);
   }
@@ -137,30 +140,9 @@ public class ClusterStateMutator {
     return newClusterState;
   }
 
-  public static void getShardNames(Integer numShards, List<String> shardNames) {
-    if (numShards == null)
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "numShards" + " is a required param");
-    for (int i = 0; i < numShards; i++) {
-      final String sliceName = "shard" + (i + 1);
-      shardNames.add(sliceName);
-    }
-
-  }
-
-  public static void getShardNames(List<String> shardNames, String shards) {
-    if (shards == null)
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "shards" + " is a required param");
-    for (String s : shards.split(",")) {
-      if (s == null || s.trim().isEmpty()) continue;
-      shardNames.add(s.trim());
-    }
-    if (shardNames.isEmpty())
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "shards" + " is a required param");
-  }
-
   /*
-       * Return an already assigned id or null if not assigned
-       */
+   * Return an already assigned id or null if not assigned
+   */
   public static String getAssignedId(final DocCollection collection, final String nodeName) {
     Collection<Slice> slices = collection != null ? collection.getSlices() : null;
     if (slices != null) {
@@ -197,8 +179,8 @@ public class ClusterStateMutator {
     if (coll == null || coll.getStateFormat() == 2) return ZkStateWriter.NO_OP;
 
     return new ZkWriteCommand(coll.getName(),
-        new DocCollection(coll.getName(), coll.getSlicesMap(), coll.getProperties(), coll.getRouter(), 0,
-            ZkStateReader.getCollectionPath(collection)));
+            new DocCollection(coll.getName(), coll.getSlicesMap(), coll.getProperties(), coll.getRouter(), 0,
+                    ZkStateReader.getCollectionPath(collection)));
   }
 }
 

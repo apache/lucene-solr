@@ -29,7 +29,7 @@
       <str name="inner.class">org.apache.solr.index.DefaultMergePolicyFactory</str>
       <bool name="skipIntegrityCheck">${solr.tests.skipIntegrityCheck:false}</bool>
     </mergePolicyFactory>
-     
+    <lockType>${solr.tests.lockType:single}</lockType>
     <mergeScheduler class="org.apache.lucene.index.ConcurrentMergeScheduler"/>
   </indexConfig>
 

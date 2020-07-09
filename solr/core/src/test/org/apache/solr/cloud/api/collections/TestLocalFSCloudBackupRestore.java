@@ -33,6 +33,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.core.backup.repository.LocalFileSystemRepository;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -40,6 +41,7 @@ import org.junit.Test;
  * Solr backup/restore still requires a "shared" file-system. Its just that in this case such file-system would be
  * exposed via local file-system API.
  */
+@Ignore // nocommit debug
 public class TestLocalFSCloudBackupRestore extends AbstractCloudBackupRestoreTestCase {
   private static String backupLocation;
 

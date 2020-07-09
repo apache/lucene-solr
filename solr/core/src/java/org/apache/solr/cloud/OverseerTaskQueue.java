@@ -117,8 +117,8 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       try {
         zookeeper.setData(responsePath, event.getBytes(), true);
       } catch (KeeperException.NoNodeException ignored) {
-        // we must handle the race case where the node no longer exists
-        log.info("Response ZK path: {} doesn't exist. Requestor may have disconnected from ZooKeeper", responsePath);
+        // this will often not exist or have been removed
+        if (log.isDebugEnabled()) log.debug("Response ZK path: {} doesn't exist.", responsePath);
       }
       try {
         zookeeper.delete(path, -1, true);

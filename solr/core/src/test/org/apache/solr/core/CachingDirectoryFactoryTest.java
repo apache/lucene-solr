@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.DirectoryFactory.DirContext;
@@ -55,14 +56,14 @@ public class CachingDirectoryFactoryTest extends SolrTestCaseJ4 {
   
   private void doStressTest(final CachingDirectoryFactory df) throws Exception {
     List<Thread> threads = new ArrayList<>();
-    int threadCount = 11;
+    int threadCount = TEST_NIGHTLY ? 11 : 3;
     for (int i = 0; i < threadCount; i++) {
       Thread getDirThread = new GetDirThread(df);
       threads.add(getDirThread);
       getDirThread.start();
     }
     
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < (TEST_NIGHTLY ? 4 : 2); i++) {
       Thread releaseDirThread = new ReleaseDirThread(df);
       threads.add(releaseDirThread);
       releaseDirThread.start();
@@ -74,27 +75,28 @@ public class CachingDirectoryFactoryTest extends SolrTestCaseJ4 {
       incRefThread.start();
     }
 
-    Thread.sleep(TEST_NIGHTLY ? 30000 : 8000);
-    
+    Thread.sleep(TEST_NIGHTLY ? 30000 : 500);
+
     Thread closeThread = new Thread() {
       public void run() {
         try {
-          df.close();
+          synchronized (dirs) {
+            df.close();
+          }
         } catch (IOException e) {
           throw new RuntimeException(e);
         }
       }
     };
-    closeThread.start();
-    
-    
+
     stop = true;
     
     for (Thread thread : threads) {
       thread.join();
     }
-    
-    
+
+    closeThread.start();
+
     // do any remaining releases
     synchronized (dirs) {
       int sz = dirs.size();
@@ -115,7 +117,7 @@ public class CachingDirectoryFactoryTest extends SolrTestCaseJ4 {
   }
   
   private class ReleaseDirThread extends Thread {
-    Random random;
+
     private CachingDirectoryFactory df;
     
     public ReleaseDirThread(CachingDirectoryFactory df) {
@@ -124,7 +126,7 @@ public class CachingDirectoryFactoryTest extends SolrTestCaseJ4 {
     
     @Override
     public void run() {
-      random = random();
+      Random random = LuceneTestCase.random();
       while (!stop) {
         try {
           Thread.sleep(random.nextInt(50) + 1);
@@ -163,7 +165,7 @@ public class CachingDirectoryFactoryTest extends SolrTestCaseJ4 {
   }
   
   private class GetDirThread extends Thread {
-    Random random;
+
     private CachingDirectoryFactory df;
     
     public GetDirThread(CachingDirectoryFactory df) {
@@ -172,7 +174,7 @@ public class CachingDirectoryFactoryTest extends SolrTestCaseJ4 {
     
     @Override
     public void run() {
-      random = random();
+      Random random = LuceneTestCase.random();
       while (!stop) {
         try {
           Thread.sleep(random.nextInt(350) + 1);
@@ -213,7 +215,6 @@ public class CachingDirectoryFactoryTest extends SolrTestCaseJ4 {
   }
   
   private class IncRefThread extends Thread {
-    Random random;
     private CachingDirectoryFactory df;
     
     public IncRefThread(CachingDirectoryFactory df) {
@@ -222,7 +223,7 @@ public class CachingDirectoryFactoryTest extends SolrTestCaseJ4 {
     
     @Override
     public void run() {
-      random = random();
+      Random random = LuceneTestCase.random();
       while (!stop) {
         try {
           Thread.sleep(random.nextInt(300) + 1);

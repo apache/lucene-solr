@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -56,23 +57,23 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
   protected SolrCloudManager cloudManager;
   protected SolrResourceLoader loader;
   protected DistribStateManager stateManager;
-  protected final Map<String, Object> properties = new HashMap<>();
+  protected volatile Map<String, Object> properties = Collections.unmodifiableMap(new HashMap<>());
   /**
    * Set of valid property names. Subclasses may add to this set
    * using {@link TriggerUtils#validProperties(Set, String...)}
    */
-  protected final Set<String> validProperties = new HashSet<>();
+  protected volatile Set<String> validProperties = Collections.unmodifiableSet(new HashSet<>());
   /**
    * Set of required property names. Subclasses may add to this set
    * using {@link TriggerUtils#requiredProperties(Set, Set, String...)}
    * (required properties are also valid properties).
    */
-  protected final Set<String> requiredProperties = new HashSet<>();
+  protected volatile Set<String> requiredProperties =  Collections.emptySet();
   protected final TriggerEventType eventType;
   protected int waitForSecond;
   protected Map<String,Object> lastState;
   protected final AtomicReference<AutoScaling.TriggerEventProcessor> processorRef = new AtomicReference<>();
-  protected List<TriggerAction> actions;
+  protected volatile List<TriggerAction> actions;
   protected boolean enabled;
   protected boolean isClosed;
 
@@ -80,23 +81,25 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
   protected TriggerBase(TriggerEventType eventType, String name) {
     this.eventType = eventType;
     this.name = name;
-
+    Set<String> vProperties = new HashSet<>();
     // subclasses may further modify this set to include other supported properties
-    TriggerUtils.validProperties(validProperties, "name", "class", "event", "enabled", "waitFor", "actions");
+    TriggerUtils.validProperties(vProperties, "name", "class", "event", "enabled", "waitFor", "actions");
+
+   this. validProperties = Collections.unmodifiableSet(vProperties);
   }
 
   /**
    * Return a set of valid property names supported by this trigger.
    */
   public final Set<String> getValidProperties() {
-    return Collections.unmodifiableSet(this.validProperties);
+    return this.validProperties;
   }
 
   /**
    * Return a set of required property names supported by this trigger.
    */
   public final Set<String> getRequiredProperties() {
-    return Collections.unmodifiableSet(this.requiredProperties);
+    return this.requiredProperties;
   }
 
   @Override
@@ -104,13 +107,14 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
     this.cloudManager = cloudManager;
     this.loader = loader;
     this.stateManager = cloudManager.getDistribStateManager();
+    Map<String, Object> props = new HashMap<>(this.properties);
     if (properties != null) {
-      this.properties.putAll(properties);
+      props.putAll(properties);
     }
-    this.enabled = Boolean.parseBoolean(String.valueOf(this.properties.getOrDefault("enabled", "true")));
-    this.waitForSecond = ((Number) this.properties.getOrDefault("waitFor", -1L)).intValue();
+    this.enabled = Boolean.parseBoolean(String.valueOf(props.getOrDefault("enabled", "true")));
+    this.waitForSecond = ((Number) props.getOrDefault("waitFor", -1L)).intValue();
     @SuppressWarnings({"unchecked"})
-    List<Map<String, Object>> o = (List<Map<String, Object>>) properties.get("actions");
+    List<Map<String, Object>> o = (List<Map<String, Object>>) props.get("actions");
     if (o != null && !o.isEmpty()) {
       actions = new ArrayList<>(3);
       for (Map<String, Object> map : o) {
@@ -118,6 +122,7 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
         try {
           action = loader.newInstance((String)map.get("class"), TriggerAction.class);
         } catch (Exception e) {
+          log.error("", e);
           throw new TriggerValidationException("action", "exception creating action " + map + ": " + e.toString());
         }
         action.configure(loader, cloudManager, map);
@@ -129,10 +134,11 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
 
 
     Map<String, String> results = new HashMap<>();
-    TriggerUtils.checkProperties(this.properties, results, requiredProperties, validProperties);
+    TriggerUtils.checkProperties(props, results, requiredProperties, validProperties);
     if (!results.isEmpty()) {
       throw new TriggerValidationException(name, results);
     }
+    this.properties = props;
   }
 
   @Override

@@ -20,6 +20,7 @@ import io.opentracing.Span;
 import io.opentracing.Tracer;
 import io.opentracing.propagation.Format;
 import java.net.ConnectException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,7 +51,7 @@ class ShardRequestor implements Callable<ShardResponse> {
   // maps "localhost:8983|localhost:7574" to a shuffled List("http://localhost:8983","http://localhost:7574")
   // This is primarily to keep track of what order we should use to query the replicas of a shard
   // so that we use the same replica for all phases of a distributed request.
-  private Map<String, List<String>> shardToURLs = new HashMap<>();
+  //private Map<String, List<String>> shardToURLs = new HashMap<>();
 
   public ShardRequestor(ShardRequest sreq, String shard, ModifiableSolrParams params, HttpShardHandler httpShardHandler) {
     this.sreq = sreq;
@@ -67,12 +68,12 @@ class ShardRequestor implements Callable<ShardResponse> {
   // Not thread safe... don't use in Callable.
   // Don't modify the returned URL list.
   private List<String> getURLs(String shard) {
-    List<String> urls = shardToURLs.get(shard);
-    if (urls == null) {
-      urls = httpShardHandler.httpShardHandlerFactory.buildURLList(shard);
-      shardToURLs.put(shard, urls);
-    }
-    return urls;
+ //   List<String> urls = shardToURLs.get(shard);
+  //  if (urls == null) {
+      List<String> urls = httpShardHandler.httpShardHandlerFactory.buildURLList(shard);
+   //   shardToURLs.put(shard, urls);
+  //  }
+    return Collections.unmodifiableList(urls);
   }
 
   void init() {

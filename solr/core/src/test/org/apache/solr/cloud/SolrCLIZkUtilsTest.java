@@ -39,12 +39,14 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    useFactory(null);
     configureCluster(1)
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
@@ -156,6 +158,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Ignore // debug
   public void testCp() throws Exception {
     // First get something up on ZK
 

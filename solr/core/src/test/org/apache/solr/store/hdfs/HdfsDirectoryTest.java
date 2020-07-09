@@ -30,6 +30,8 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.QuickPatchThreadsFilter;
+import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.util.BadHdfsThreadsFilter;
@@ -42,7 +44,9 @@ import org.junit.Test;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 
 @ThreadLeakFilters(defaultFilters = true, filters = {
-    BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
+        SolrIgnoredThreadsFilter.class,
+        QuickPatchThreadsFilter.class,
+        BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
 public class HdfsDirectoryTest extends SolrTestCaseJ4 {
   
@@ -169,7 +173,7 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
     int i = 0;
     try {
       Set<String> names = new HashSet<>();
-      for (; i< 10; i++) {
+      for (; i< (TEST_NIGHTLY ? 10 : 3); i++) {
         Directory fsDir = new ByteBuffersDirectory();
         String name = getName();
         System.out.println("Working on pass [" + i  +"] contains [" + names.contains(name) + "]");

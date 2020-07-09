@@ -1373,7 +1373,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     
     double sum = 0;
     double sumOfSquares = 0;
-    final int count = 20;
+    final int count = TEST_NIGHTLY ? 20 : 30;
     for (int i = 0; i < count; i++) {
       int a_i = i % 10;
       assertU(adoc("id", String.valueOf(i), "a_f", "2.3", "b_f", "9.7", "a_i",
@@ -1383,7 +1383,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
       sum += a_i;
       sumOfSquares += (a_i) * (a_i);
     }
-    double stddev = Math.sqrt(((count * sumOfSquares) - (sum * sum))/ (20 * (count - 1.0D)));
+    double stddev = Math.sqrt(((count * sumOfSquares) - (sum * sum))/ (count * (count - 1.0D)));
     
     assertU(commit());
     

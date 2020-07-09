@@ -16,6 +16,11 @@
  <directoryFactory name="DirectoryFactory"
   class="${solr.directoryFactory:solr.RAMDirectoryFactory}" />
 
+ <indexConfig>
+  <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
+  <lockType>${solr.tests.lockType:single}</lockType>
+ </indexConfig>
+
  <schemaFactory class="ClassicIndexSchemaFactory" />
 
  <requestDispatcher>

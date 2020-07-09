@@ -30,6 +30,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.ZkIndexSchemaReader;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,9 +38,15 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@Ignore // nocommit debug
 public class TestOnReconnectListenerSupport extends AbstractFullDistribZkTestBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  @BeforeClass
+  public static void beforeLeaderFailureAfterFreshStartTest() {
+    System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
+  }
 
   public TestOnReconnectListenerSupport() {
     super();
@@ -60,11 +67,9 @@ public class TestOnReconnectListenerSupport extends AbstractFullDistribZkTestBas
 
   @Test
   public void test() throws Exception {
-    waitForThingsToLevelOut(30, TimeUnit.SECONDS);
-
     String testCollectionName = "c8n_onreconnect_1x1";
     String shardId = "shard1";
-    createCollectionRetry(testCollectionName, "conf1", 1, 1, 1);
+    createCollectionRetry(testCollectionName, "_default", 1, 1, 1);
     cloudClient.setDefaultCollection(testCollectionName);
 
     Replica leader = getShardLeader(testCollectionName, shardId, 30 /* timeout secs */);

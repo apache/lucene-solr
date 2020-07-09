@@ -23,6 +23,7 @@
 
   <indexConfig>
     <useCompoundFile>true</useCompoundFile>
+    <lockType>${solr.tests.lockType:single}</lockType>
   </indexConfig>
   <!-- BEGIN BAD: multiple indexConfig sections -->
   <indexConfig>

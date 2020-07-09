@@ -25,6 +25,7 @@ import java.util.Optional;
 
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ZkStateReader;
 
 /**
  * SolrJ client class to communicate with SolrCloud using Http2SolrClient.
@@ -46,6 +47,7 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
   private final LBHttp2SolrClient lbClient;
   private Http2SolrClient myClient;
   private final boolean clientIsInternal;
+  private ZkStateReader zkStateReader;
 
   /**
    * Create a new client object that connects to Zookeeper and is always aware
@@ -64,7 +66,9 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
         throw new IllegalArgumentException("Both zkHost(s) & solrUrl(s) have been specified. Only specify one.");
       }
       if (builder.zkHosts != null) {
-        this.stateProvider = new ZkClientClusterStateProvider(builder.zkHosts, builder.zkChroot);
+        this.zkStateReader = new ZkStateReader(ZkClientClusterStateProvider.buildZkHostString(builder.zkHosts, builder.zkChroot), 40000, 15000);
+        this.zkStateReader.createClusterStateWatchersAndUpdate();
+        this.stateProvider = new ZkClientClusterStateProvider(zkStateReader, true);
       } else if (builder.solrUrls != null && !builder.solrUrls.isEmpty()) {
         try {
           this.stateProvider = new Http2ClusterStateProvider(builder.solrUrls, builder.httpClient);
@@ -215,9 +219,10 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
      * Create a {@link CloudHttp2SolrClient} based on the provided configuration.
      */
     public CloudHttp2SolrClient build() {
+      CloudHttp2SolrClient cloudClient = new CloudHttp2SolrClient(this);
       if (stateProvider == null) {
         if (!zkHosts.isEmpty()) {
-          stateProvider = new ZkClientClusterStateProvider(zkHosts, zkChroot);
+          stateProvider = new ZkClientClusterStateProvider(cloudClient.getZkStateReader());
         }
         else if (!this.solrUrls.isEmpty()) {
           try {
@@ -230,7 +235,7 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
           throw new IllegalArgumentException("Both zkHosts and solrUrl cannot be null.");
         }
       }
-      return new CloudHttp2SolrClient(this);
+      return cloudClient;
     }
 
   }

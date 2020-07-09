@@ -61,7 +61,7 @@ public class ZkConfigManager {
    * @throws IOException
    *                    if an I/O error occurs or the path does not exist
    */
-  public void uploadConfigDir(Path dir, String configName) throws IOException {
+  public void uploadConfigDir(Path dir, String configName) throws IOException, KeeperException {
     zkClient.uploadToZK(dir, CONFIGS_ZKNODE + "/" + configName, UPLOAD_FILENAME_EXCLUDE_PATTERN);
   }
 
@@ -74,7 +74,7 @@ public class ZkConfigManager {
    *                    if an I/O error occurs or the path does not exist
    */
   public void uploadConfigDir(Path dir, String configName,
-      Pattern filenameExclusions) throws IOException {
+      Pattern filenameExclusions) throws IOException, KeeperException {
     zkClient.uploadToZK(dir, CONFIGS_ZKNODE + "/" + configName, filenameExclusions);
   }
 

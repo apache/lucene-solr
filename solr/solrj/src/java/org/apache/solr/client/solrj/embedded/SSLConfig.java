@@ -88,7 +88,7 @@ public class SSLConfig {
    * @see #createContextFactory()
    */
   public static SslContextFactory.Server createContextFactory(SSLConfig sslConfig) {
-    if (sslConfig != null) {
+    if (sslConfig != null && sslConfig.useSsl) {
       return sslConfig.createContextFactory();
     }
     // else...

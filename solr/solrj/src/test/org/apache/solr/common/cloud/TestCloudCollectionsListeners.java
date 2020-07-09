@@ -138,7 +138,7 @@ public class TestCloudCollectionsListeners extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection("testcollection1", "config", 4, 1)
         .processAndWait(client, MAX_WAIT_TIMEOUT);
     cluster.waitForActiveCollection("testcollection1", 4, 4);
-    
+
     CollectionAdminRequest.createCollection("testcollection2", "config", 4, 1)
         .processAndWait(client, MAX_WAIT_TIMEOUT);
     cluster.waitForActiveCollection("testcollection2", 4, 4);
@@ -163,10 +163,10 @@ public class TestCloudCollectionsListeners extends SolrCloudTestCase {
     assertEquals("CloudCollectionsListener has old collection with size > 0 after registration", 0, oldResults.get(1).size());
     assertEquals("CloudCollectionsListener has old collection with size > 0 after registration", 0, oldResults.get(2).size());
 
-    assertTrue("CloudCollectionsListener not notified of all collections after registration", newResults.get(1).contains("testcollection1"));
-    assertTrue("CloudCollectionsListener not notified of all collections after registration", newResults.get(1).contains("testcollection2"));
-    assertTrue("CloudCollectionsListener not notified of all collections after registration", newResults.get(2).contains("testcollection1"));
-    assertTrue("CloudCollectionsListener not notified of all collections after registration", newResults.get(2).contains("testcollection2"));
+    assertTrue("CloudCollectionsListener not notified of all collections after registration " + newResults.get(1), newResults.get(1).contains("testcollection1"));
+    assertTrue("CloudCollectionsListener not notified of all collections after registration " + newResults.get(1), newResults.get(1).contains("testcollection2"));
+    assertTrue("CloudCollectionsListener not notified of all collections after registration " + newResults.get(2), newResults.get(2).contains("testcollection1"));
+    assertTrue("CloudCollectionsListener not notified of all collections after registration " + newResults.get(2), newResults.get(2).contains("testcollection2"));
 
     CollectionAdminRequest.deleteCollection("testcollection1").processAndWait(client, MAX_WAIT_TIMEOUT);
 

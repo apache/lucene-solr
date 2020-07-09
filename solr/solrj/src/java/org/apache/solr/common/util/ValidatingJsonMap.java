@@ -17,6 +17,7 @@
 
 package org.apache.solr.common.util;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -256,10 +257,13 @@ public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
 
   public static ValidatingJsonMap fromJSON(Reader s, String includeLocation) {
     try {
-      ValidatingJsonMap map = (ValidatingJsonMap) getObjectBuilder(new JSONParser(s)).getObject();
-      handleIncludes(map, includeLocation, 4);
-      return map;
-    } catch (IOException e) {
+      try (BufferedReader br = new BufferedReader(s)) {
+        ValidatingJsonMap map = (ValidatingJsonMap) getObjectBuilder(new JSONParser(br)).getObject();
+        handleIncludes(map, includeLocation, 4);
+
+        return map;
+      }
+     } catch (IOException e) {
       throw new RuntimeException();
     }
   }

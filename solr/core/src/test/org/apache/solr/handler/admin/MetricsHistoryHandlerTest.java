@@ -33,18 +33,24 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.util.LogLevel;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.rrd4j.core.RrdDb;
+
+import javax.management.MBeanServer;
+import javax.management.MBeanServerFactory;
 
 /**
  *
  */
 @LogLevel("org.apache.solr.cloud=DEBUG")
+@Ignore // nocommit debug
 public class MetricsHistoryHandlerTest extends SolrCloudTestCase {
 
   private volatile static SolrCloudManager cloudManager;
@@ -57,9 +63,13 @@ public class MetricsHistoryHandlerTest extends SolrCloudTestCase {
   private volatile static MetricsHistoryHandler handler;
   private volatile static MetricsHandler metricsHandler;
 
+  private static MBeanServer TEST_MBEAN_SERVER;
+
   @BeforeClass
   public static void beforeClass() throws Exception {
-    simulated = random().nextBoolean();
+    System.setProperty("solr.disableJmxReporter", "false");
+    TEST_MBEAN_SERVER = MBeanServerFactory.createMBeanServer();
+    simulated = TEST_NIGHTLY ? random().nextBoolean() : true;
     Map<String, Object> args = new HashMap<>();
     args.put(MetricsHistoryHandler.SYNC_PERIOD_PROP, 1);
     args.put(MetricsHistoryHandler.COLLECT_PERIOD_PROP, 1);
@@ -111,6 +121,10 @@ public class MetricsHistoryHandlerTest extends SolrCloudTestCase {
     if (simulated) {
       cloudManager.close();
     }
+    if (null != TEST_MBEAN_SERVER) {
+      MBeanServerFactory.releaseMBeanServer(TEST_MBEAN_SERVER);
+      TEST_MBEAN_SERVER = null;
+    }
     handler = null;
     metricsHandler = null;
     cloudManager = null;
@@ -126,7 +140,7 @@ public class MetricsHistoryHandlerTest extends SolrCloudTestCase {
     // solr.jvm, solr.node, solr.collection..system
     assertEquals(list.toString(), 3, list.size());
     for (Pair<String, Long> p : list) {
-      RrdDb db = new RrdDb(MetricsHistoryHandler.URI_PREFIX + p.first(), true, handler.getFactory());
+      RrdDb db = RrdDb.getBuilder().setPath(MetricsHistoryHandler.URI_PREFIX + p.first()).setReadOnly(true).setBackendFactory( handler.getFactory()).setUsePool(true).build();
       int dsCount = db.getDsCount();
       int arcCount = db.getArcCount();
       assertTrue("dsCount should be > 0, was " + dsCount, dsCount > 0);

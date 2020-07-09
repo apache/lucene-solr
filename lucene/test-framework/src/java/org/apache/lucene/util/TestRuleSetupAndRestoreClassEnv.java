@@ -275,7 +275,9 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
    */
   @Override
   protected void after() throws Exception {
-    Codec.setDefault(savedCodec);
+    if (savedCodec != null) {
+      Codec.setDefault(savedCodec);
+    }
     InfoStream.setDefault(savedInfoStream);
     if (savedLocale != null) Locale.setDefault(savedLocale);
     if (savedTimeZone != null) TimeZone.setDefault(savedTimeZone);

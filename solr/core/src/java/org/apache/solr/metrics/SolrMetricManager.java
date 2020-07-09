@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -48,10 +49,12 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.MetricSet;
 import com.codahale.metrics.SharedMetricRegistries;
 import com.codahale.metrics.Timer;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.MetricsConfig;
 import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.SolrResourceLoader;
@@ -103,7 +106,7 @@ public class SolrMetricManager {
 
   private final ConcurrentMap<String, MetricRegistry> registries = new ConcurrentHashMap<>();
 
-  private final Map<String, Map<String, SolrMetricReporter>> reporters = new HashMap<>();
+  private final Map<String, Map<String, SolrMetricReporter>> reporters = new ConcurrentHashMap<>();
 
   private final Lock reportersLock = new ReentrantLock();
   private final Lock swapLock = new ReentrantLock();
@@ -864,15 +867,24 @@ public class SolrMetricManager {
    * @param solrCore      optional solr core
    * @param tag           optional tag for the reporters, to distinguish reporters logically created for different parent
    *                      component instances.
-   * @param group         selected group, not null
+   * @param group         selected group, not nullSolrMetricManagerTest
    * @param registryNames optional child registry name elements
    */
   public void loadReporters(PluginInfo[] pluginInfos, SolrResourceLoader loader, CoreContainer coreContainer, SolrCore solrCore, String tag, SolrInfoBean.Group group, String... registryNames) {
     if (pluginInfos == null || pluginInfos.length == 0) {
       return;
     }
+    List<Callable<PluginInfo>> calls = new ArrayList<>();
     String registryName = getRegistryName(group, registryNames);
     for (PluginInfo info : pluginInfos) {
+      boolean enabled = true;
+      Object enabledo = info.attributes.get("enabled");
+      if (enabledo != null) {
+         enabled = Boolean.parseBoolean(enabledo.toString());
+      }
+      if (!enabled) {
+        continue;
+      }
       String target = info.attributes.get("group");
       if (target == null) { // no "group"
         target = info.attributes.get("registry");
@@ -906,11 +918,21 @@ public class SolrMetricManager {
           continue;
         }
       }
-      try {
-        loadReporter(registryName, loader, coreContainer, solrCore, info, tag);
-      } catch (Exception e) {
-        log.warn("Error loading metrics reporter, plugin info: {}", info, e);
-      }
+
+      calls.add(()->{
+        try {
+          loadReporter(registryName, loader, coreContainer, solrCore, info, tag);
+        } catch (Exception e) {
+          log.warn("Error loading metrics reporter, plugin info: {}", info, e);
+        }
+        return info;
+      });
+
+    }
+
+    try (ParWork worker = new ParWork(this)) {
+      worker.collect(calls);
+      worker.addCollect("loadMetricsReporters");
     }
   }
 
@@ -1000,7 +1022,7 @@ public class SolrMetricManager {
     try {
       Map<String, SolrMetricReporter> perRegistry = reporters.get(registry);
       if (perRegistry == null) {
-        perRegistry = new HashMap<>();
+        perRegistry = new ConcurrentHashMap<>();
         reporters.put(registry, perRegistry);
       }
       if (tag != null && !tag.isEmpty()) {
@@ -1081,45 +1103,42 @@ public class SolrMetricManager {
    * @return names of closed reporters
    */
   public Set<String> closeReporters(String registry, String tag) {
+    long start = System.currentTimeMillis();
+    Set<String> removed = new HashSet<>();
+    List<SolrMetricReporter> closeReporters = new ArrayList<>();
     // make sure we use a name with prefix
     registry = enforcePrefix(registry);
     try {
-      if (!reportersLock.tryLock(10, TimeUnit.SECONDS)) {
-        log.warn("Could not obtain lock to modify reporters registry: {}", registry);
-        return Collections.emptySet();
-      }
-    } catch (InterruptedException e) {
-      log.warn("Interrupted while trying to obtain lock to modify reporters registry: {}", registry);
-      return Collections.emptySet();
-    }
-    log.info("Closing metric reporters for registry={} tag={}", registry, tag);
-    try {
-      Map<String, SolrMetricReporter> perRegistry = reporters.get(registry);
+
+      reportersLock.lock();
+
+      log.info("Closing metric reporters for registry=" + registry + ", tag=" + tag);
+      // nocommit
+      Map<String,SolrMetricReporter> perRegistry = reporters.get(registry);
       if (perRegistry != null) {
         Set<String> names = new HashSet<>(perRegistry.keySet());
-        Set<String> removed = new HashSet<>();
+
         names.forEach(name -> {
           if (tag != null && !tag.isEmpty() && !name.endsWith("@" + tag)) {
             return;
           }
           SolrMetricReporter reporter = perRegistry.remove(name);
-          try {
-            reporter.close();
-          } catch (IOException ioe) {
-            log.warn("Exception closing reporter {}", reporter, ioe);
-          }
+
+          closeReporters.add(reporter);
           removed.add(name);
         });
         if (removed.size() == names.size()) {
           reporters.remove(registry);
         }
-        return removed;
-      } else {
-        return Collections.emptySet();
       }
+
     } finally {
       reportersLock.unlock();
     }
+    try (ParWork closer = new ParWork(this, true)) {
+      closer.add("MetricReporters", closeReporters);
+    }
+    return removed;
   }
 
   /**

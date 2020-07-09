@@ -45,7 +45,7 @@ public class SolrClientFactory {
     standaloneBuilder.withConnectionTimeout(settings.getHttpConnectionTimeout())
         .withSocketTimeout(settings.getHttpReadTimeout());
 
-    HttpSolrClient httpSolrClient = standaloneBuilder.build();
+    HttpSolrClient httpSolrClient = standaloneBuilder.markInternalRequest().build();
     httpSolrClient.setParser(responseParser);
 
     return httpSolrClient;

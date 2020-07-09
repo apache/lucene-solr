@@ -31,6 +31,7 @@ import javax.xml.xpath.XPathFactory;
 
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.util.SafeXMLParsing;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -164,8 +165,7 @@ public class FileExchangeRateProvider implements ExchangeRateProvider {
 
     try {
       Document doc = SafeXMLParsing.parseConfigXML(log, loader, currencyConfigFile);
-      XPathFactory xpathFactory = XPathFactory.newInstance();
-      XPath xpath = xpathFactory.newXPath();
+      XPath xpath = XmlConfigFile.xpath;
       
       // Parse exchange rates.
       NodeList nodes = (NodeList) xpath.evaluate("/currencyConfig/rates/rate", doc, XPathConstants.NODESET);

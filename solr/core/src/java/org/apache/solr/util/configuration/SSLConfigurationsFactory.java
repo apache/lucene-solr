@@ -20,7 +20,7 @@ package org.apache.solr.util.configuration;
 import com.google.common.annotations.VisibleForTesting;
 
 public class SSLConfigurationsFactory {
-  static private SSLConfigurations currentConfigurations;
+  static private volatile SSLConfigurations currentConfigurations;
 
   /**
    * Creates if necessary and returns singleton object of Configurations. Can be used for

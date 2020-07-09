@@ -26,6 +26,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -52,10 +53,16 @@ import org.junit.Test;
  *
  */
 @LogLevel("org.apache.solr.cloud.api.collections.ReindexCollectionCmd=DEBUG")
+@LuceneTestCase.Nightly // nocommit speed up
 public class ReindexCollectionTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    System.setProperty("solr.default.collection_op_timeout", "15000");
+    System.setProperty("solr.httpclient.defaultSoTimeout", "15000");
+    System.setProperty("solr.test.socketTimeout.default", "15000");
+    System.setProperty("distribUpdateSoTimeout", "15000");
+
     configureCluster(2)
         // only *_s
         .addConfig("conf1", configset("cloud-minimal"))
@@ -149,9 +156,9 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
   @Test
   public void testSameTargetReindexing() throws Exception {
     doTestSameTargetReindexing(false, false);
-    doTestSameTargetReindexing(false, true);
+    if (TEST_NIGHTLY) doTestSameTargetReindexing(false, true);
     doTestSameTargetReindexing(true, false);
-    doTestSameTargetReindexing(true, true);
+    if (TEST_NIGHTLY) doTestSameTargetReindexing(true, true);
   }
 
   private void doTestSameTargetReindexing(boolean sourceRemove, boolean followAliases) throws Exception {

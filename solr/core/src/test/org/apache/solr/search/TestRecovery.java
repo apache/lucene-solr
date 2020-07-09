@@ -39,6 +39,7 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricRegistry;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.TimeSource;
@@ -53,6 +54,7 @@ import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,13 +62,14 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.search.TestRecovery.VersionProvider.getNextVersion;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
+@LuceneTestCase.Nightly // nocommit speedup
 public class TestRecovery extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   // means that we've seen the leader and have version info (i.e. we are a non-leader replica)
   private static String FROM_LEADER = DistribPhase.FROMLEADER.toString(); 
 
-  private static int timeout=60;  // acquire timeout in seconds.  change this to a huge number when debugging to prevent threads from advancing.
+  private static int timeout=15;  // acquire timeout in seconds.  change this to a huge number when debugging to prevent threads from advancing.
 
   // TODO: fix this test to not require FSDirectory
   static String savedFactory;
@@ -74,8 +77,11 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
   @Before
   public void beforeTest() throws Exception {
+    System.clearProperty("solr.skipCommitOnClose");
     savedFactory = System.getProperty("solr.DirectoryFactory");
-    System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
+    // mockdir will say files are left open
+    // System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
+    useFactory(null);
     randomizeUpdateLogImpl();
     initCore("solrconfig-tlog.xml","schema15.xml");
     
@@ -89,6 +95,8 @@ public class TestRecovery extends SolrTestCaseJ4 {
   @After
   public void afterTest() {
     TestInjection.reset(); // do after every test, don't wait for AfterClass
+    UpdateLog.testing_logReplayHook = null;
+    UpdateLog.testing_logReplayFinishHook = null;
     if (savedFactory == null) {
       System.clearProperty("solr.directoryFactory");
     } else {
@@ -372,6 +380,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
   }
 
   @Test
+  @Ignore // nocommit debug
   public void testLogReplayWithReorderedDBQ() throws Exception {
     testLogReplayWithReorderedDBQWrapper(() -> {
           String v1010 = getNextVersion();

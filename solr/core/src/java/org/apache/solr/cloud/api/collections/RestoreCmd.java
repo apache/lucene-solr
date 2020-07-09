@@ -179,7 +179,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
       }
 
       propMap.put(NAME, restoreCollectionName);
-      propMap.put(OverseerCollectionMessageHandler.CREATE_NODE_SET, OverseerCollectionMessageHandler.CREATE_NODE_SET_EMPTY); //no cores
+      propMap.put(ZkStateReader.CREATE_NODE_SET, ZkStateReader.CREATE_NODE_SET_EMPTY); //no cores
       propMap.put(CollectionAdminParams.COLL_CONF, restoreConfigName);
 
       // router.*
@@ -192,7 +192,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
       if (backupCollectionState.getRouter() instanceof ImplicitDocRouter) {
         propMap.put(OverseerCollectionMessageHandler.SHARDS_PROP, StrUtils.join(sliceNames, ','));
       } else {
-        propMap.put(OverseerCollectionMessageHandler.NUM_SLICES, sliceNames.size());
+        propMap.put(ZkStateReader.NUM_SHARDS_PROP, sliceNames.size());
         // ClusterStateMutator.createCollection detects that "slices" is in fact a slice structure instead of a
         //   list of names, and if so uses this instead of building it.  We clear the replica list.
         Collection<Slice> backupSlices = backupCollectionState.getActiveSlices();

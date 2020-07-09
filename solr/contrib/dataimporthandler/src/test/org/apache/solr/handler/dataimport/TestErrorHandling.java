@@ -39,7 +39,7 @@ public class TestErrorHandling extends AbstractDataImportHandlerTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
     savedFactory = System.getProperty("solr.DirectoryFactory");
-    System.setProperty("solr.directoryFactory", "solr.MockFSDirectoryFactory");
+    //System.setProperty("solr.directoryFactory", "solr.MockFSDirectoryFactory");
     initCore("dataimport-solrconfig.xml", "dataimport-schema.xml");
     ignoreException("Unexpected close tag");
   }

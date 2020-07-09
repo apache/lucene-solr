@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
+import org.apache.solr.cloud.SolrCloudBridgeTestCase;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.RestTestHarness;
@@ -39,23 +40,24 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.rest.schema.TestBulkSchemaAPI.getObj;
 import static org.apache.solr.rest.schema.TestBulkSchemaAPI.getSourceCopyFields;
 
-public class TestBulkSchemaConcurrent  extends AbstractFullDistribZkTestBase {
+public class TestBulkSchemaConcurrent extends SolrCloudBridgeTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
   public static void initSysProperties() {
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("enable.update.log", "true");
+    solrconfigString = getCloudSolrConfig();
   }
 
-  protected String getCloudSolrConfig() {
+  private static String getCloudSolrConfig() {
     return "solrconfig-managed-schema.xml";
   }
 
   @Test
   public void test() throws Exception {
 
-    final int threadCount = 5;
+    final int threadCount = TEST_NIGHTLY ? 7 : 2;
     setupRestTestHarnesses();
     Thread[] threads = new Thread[threadCount];
     final List<List> collectErrors = Collections.synchronizedList(new ArrayList<>());
@@ -128,7 +130,7 @@ public class TestBulkSchemaConcurrent  extends AbstractFullDistribZkTestBase {
     payload = payload.replace("replaceDynamicCopyFieldDest", dynamicCopyFldDest);
     payload = payload.replace("myNewFieldTypeName", newFieldTypeName);
 
-    RestTestHarness publisher = randomRestTestHarness(r);
+    RestTestHarness publisher = randomRestTestHarness(random());
     String response = publisher.post("/schema", SolrTestCaseJ4.json(payload));
     Map map = (Map) Utils.fromJSONString(response);
     Object errors = map.get("errors");
@@ -136,35 +138,33 @@ public class TestBulkSchemaConcurrent  extends AbstractFullDistribZkTestBase {
       errs.add(new String(Utils.toJSON(errors), StandardCharsets.UTF_8));
       return;
     }
-
+    System.out.println("Got map:" + map);
     //get another node
     Set<String> errmessages = new HashSet<>();
-    RestTestHarness harness = randomRestTestHarness(r);
-    try {
-      long startTime = System.nanoTime();
-      long maxTimeoutMillis = 100000;
-      while (TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS) < maxTimeoutMillis) {
-        errmessages.clear();
-        Map m = getObj(harness, aField, "fields");
-        if (m == null) errmessages.add(StrUtils.formatString("field {0} not created", aField));
-        
-        m = getObj(harness, dynamicFldName, "dynamicFields");
-        if (m == null) errmessages.add(StrUtils.formatString("dynamic field {0} not created", dynamicFldName));
+    RestTestHarness harness = randomRestTestHarness(random());
 
-        List l = getSourceCopyFields(harness, aField);
-        if (!checkCopyField(l, aField, dynamicCopyFldDest))
-          errmessages.add(StrUtils.formatString("CopyField source={0},dest={1} not created", aField, dynamicCopyFldDest));
-        
-        m = getObj(harness, newFieldTypeName, "fieldTypes");
-        if (m == null) errmessages.add(StrUtils.formatString("new type {0}  not created", newFieldTypeName));
-        
-        if (errmessages.isEmpty()) break;
-        
-        Thread.sleep(10);
-      }
-    } finally {
-      harness.close();
+    long startTime = System.nanoTime();
+    long maxTimeoutMillis = TEST_NIGHTLY ? 15000 : 3000;
+    while (TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS) < maxTimeoutMillis) {
+      errmessages.clear();
+      Map m = getObj(harness, aField, "fields");
+      if (m == null) errmessages.add(StrUtils.formatString("field {0} not created", aField));
+
+      m = getObj(harness, dynamicFldName, "dynamicFields");
+      if (m == null) errmessages.add(StrUtils.formatString("dynamic field {0} not created", dynamicFldName));
+
+      List l = getSourceCopyFields(harness, aField);
+      if (!checkCopyField(l, aField, dynamicCopyFldDest))
+        errmessages.add(StrUtils.formatString("CopyField source={0},dest={1} not created", aField, dynamicCopyFldDest));
+
+      m = getObj(harness, newFieldTypeName, "fieldTypes");
+      if (m == null) errmessages.add(StrUtils.formatString("new type {0}  not created", newFieldTypeName));
+
+      if (errmessages.isEmpty()) break;
+
+      Thread.sleep(250);
     }
+
     if (!errmessages.isEmpty()) {
       errs.addAll(errmessages);
     }
@@ -198,7 +198,7 @@ public class TestBulkSchemaConcurrent  extends AbstractFullDistribZkTestBase {
     payload = payload.replace("replaceDynamicField", dynamicFldName);
     payload = payload.replace("myNewFieldTypeName", newFieldTypeName);
 
-    RestTestHarness publisher = randomRestTestHarness(r);
+    RestTestHarness publisher = randomRestTestHarness(random());
     String response = publisher.post("/schema", SolrTestCaseJ4.json(payload));
     Map map = (Map) Utils.fromJSONString(response);
     Object errors = map.get("errors");
@@ -209,7 +209,7 @@ public class TestBulkSchemaConcurrent  extends AbstractFullDistribZkTestBase {
 
     //get another node
     Set<String> errmessages = new HashSet<>();
-    RestTestHarness harness = randomRestTestHarness(r);
+    RestTestHarness harness = randomRestTestHarness(random());
     try {
       long startTime = System.nanoTime();
       long maxTimeoutMillis = 100000;
@@ -260,7 +260,7 @@ public class TestBulkSchemaConcurrent  extends AbstractFullDistribZkTestBase {
     payload = payload.replace("replaceDynamicCopyFieldDest",dynamicCopyFldDest);
     payload = payload.replace("myNewFieldTypeName", newFieldTypeName);
 
-    RestTestHarness publisher = randomRestTestHarness(r);
+    RestTestHarness publisher = randomRestTestHarness(random());
     String response = publisher.post("/schema", SolrTestCaseJ4.json(payload));
     Map map = (Map) Utils.fromJSONString(response);
     Object errors = map.get("errors");
@@ -271,7 +271,7 @@ public class TestBulkSchemaConcurrent  extends AbstractFullDistribZkTestBase {
 
     //get another node
     Set<String> errmessages = new HashSet<>();
-    RestTestHarness harness = randomRestTestHarness(r);
+    RestTestHarness harness = randomRestTestHarness(random());
     try {
       long startTime = System.nanoTime();
       long maxTimeoutMillis = 100000;

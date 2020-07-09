@@ -29,6 +29,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
@@ -68,25 +69,28 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
     String collectionName;
     CloudDescriptor cloudDescriptor;
     try (SolrCore core = coreContainer.getCore(cname)) {
-      if (core == null) throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "core not found:" + cname);
-      collectionName = core.getCoreDescriptor().getCloudDescriptor().getCollectionName();
-      cloudDescriptor = core.getCoreDescriptor()
-          .getCloudDescriptor();
+      if (core == null) {
+        if (coreContainer.isCoreLoading(cname)) {
+          coreContainer.waitForLoadingCore(cname, 30000);
+          try (SolrCore core2 = coreContainer.getCore(cname)) {
+            collectionName = core2.getCoreDescriptor().getCloudDescriptor().getCollectionName();
+            cloudDescriptor = core2.getCoreDescriptor()
+                    .getCloudDescriptor();
+          }
+        } else {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "core not found:" + cname);
+        }
+      } else {
+        collectionName = core.getCoreDescriptor().getCloudDescriptor().getCollectionName();
+        cloudDescriptor = core.getCoreDescriptor()
+                .getCloudDescriptor();
+      }
     }
     AtomicReference<String> errorMessage = new AtomicReference<>();
     try {
       coreContainer.getZkController().getZkStateReader().waitForState(collectionName, conflictWaitMs, TimeUnit.MILLISECONDS, (n, c) -> {
         if (c == null)
           return false;
-
-        try (SolrCore core = coreContainer.getCore(cname)) {
-          if (core == null) throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "core not found:" + cname);
-          if (onlyIfLeader != null && onlyIfLeader) {
-            if (!core.getCoreDescriptor().getCloudDescriptor().isLeader()) {
-              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "We are not the leader");
-            }
-          }
-        }
 
         // wait until we are sure the recovering node is ready
         // to accept updates
@@ -156,7 +160,17 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
 
         return false;
       });
+
+      try (SolrCore core = coreContainer.getCore(cname)) {
+        if (core == null) throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "core not found:" + cname);
+        if (onlyIfLeader != null && onlyIfLeader) {
+          if (!core.getCoreDescriptor().getCloudDescriptor().isLeader()) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "We are not the leader");
+          }
+        }
+      }
     } catch (TimeoutException | InterruptedException e) {
+      SolrZkClient.checkInterrupted(e);
       String error = errorMessage.get();
       if (error == null)
         error = "Timeout waiting for collection state.";

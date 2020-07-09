@@ -34,6 +34,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.HttpClientBuilderPlugin;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +43,7 @@ import org.slf4j.LoggerFactory;
  * Test of the MiniSolrCloudCluster functionality with authentication enabled.
  */
 @LuceneTestCase.Slow
+@Ignore // nocommit debug
 public class TestAuthenticationFramework extends SolrCloudTestCase {
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -79,7 +81,7 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
     try {
       BaseHttpSolrClient.RemoteSolrException e = expectThrows(BaseHttpSolrClient.RemoteSolrException.class,
           this::collectionCreateSearchDeleteTwice);
-      assertTrue("Should've returned a 401 error", e.getMessage().contains("Error 401"));
+      assertEquals("Should've returned a 401 error: " +  e.getMessage(), 401, e.code());
     } finally {
       MockAuthenticationPlugin.expectedUsername = null;
       MockAuthenticationPlugin.expectedPassword = null;
@@ -132,9 +134,9 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
   }
 
   public static class MockAuthenticationPlugin extends AuthenticationPlugin implements HttpClientBuilderPlugin {
-    public static String expectedUsername;
-    public static String expectedPassword;
-    private HttpRequestInterceptor interceptor;
+    public static volatile String expectedUsername;
+    public static volatile String expectedPassword;
+    private volatile HttpRequestInterceptor interceptor;
     @Override
     public void init(Map<String,Object> pluginConfig) {}
 

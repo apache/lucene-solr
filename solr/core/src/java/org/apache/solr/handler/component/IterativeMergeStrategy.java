@@ -89,6 +89,7 @@ public abstract class IterativeMergeStrategy implements MergeStrategy  {
 
       this.solrClient = new Builder(originalShardResponse.getShardAddress())
           .withHttpClient(httpClient)
+          .markInternalRequest()
           .build();
       this.req = req;
       this.originalShardResponse = originalShardResponse;

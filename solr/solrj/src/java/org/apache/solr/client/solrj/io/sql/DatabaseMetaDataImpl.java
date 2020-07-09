@@ -119,7 +119,7 @@ class DatabaseMetaDataImpl implements DatabaseMetaData {
     for (String node : liveNodes) {
       try {
         String nodeURL = cloudSolrClient.getZkStateReader().getBaseUrlForNodeName(node);
-        solrClient = new Builder(nodeURL).build();
+        solrClient = new Builder(nodeURL).markInternalRequest().build();
 
         QueryResponse rsp = solrClient.query(sysQuery);
         return String.valueOf(((SimpleOrderedMap) rsp.getResponse().get("lucene")).get("solr-spec-version"));

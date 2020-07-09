@@ -34,16 +34,21 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.QoSParams;
+import org.apache.solr.common.util.Utils;
 
 /**
  * Facilitates testing Solr's REST API via a provided embedded Jetty
  */
 public class RestTestHarness extends BaseTestHarness implements Closeable {
   private RESTfulServerProvider serverProvider;
-  private CloseableHttpClient httpClient = HttpClientUtil.createClient(new
-      ModifiableSolrParams());
+  private CloseableHttpClient httpClient;
   
   public RestTestHarness(RESTfulServerProvider serverProvider) {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, 5000);
+    params.set(HttpClientUtil.PROP_SO_TIMEOUT, 10000);
+    httpClient = HttpClientUtil.createClient(params);
     this.serverProvider = serverProvider;
   }
   
@@ -104,11 +109,15 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
    * @exception Exception any exception in the response.
    */
   public String query(String request) throws Exception {
-    return getResponse(new HttpGet(getBaseURL() + request));
+    HttpGet get = new HttpGet(getBaseURL() + request);
+    get.addHeader(QoSParams.REQUEST_SOURCE, QoSParams.INTERNAL);
+    return getResponse(get);
   }
 
   public String adminQuery(String request) throws Exception {
-    return getResponse(new HttpGet(getAdminURL() + request));
+    HttpGet get = new HttpGet(getAdminURL() + request);
+    get.addHeader(QoSParams.REQUEST_SOURCE, QoSParams.INTERNAL);
+    return getResponse(get);
   }
 
   /**
@@ -121,6 +130,7 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
    */
   public String put(String request, String content) throws IOException {
     HttpPut httpPut = new HttpPut(getBaseURL() + request);
+    httpPut.addHeader(QoSParams.REQUEST_SOURCE, QoSParams.INTERNAL);
     httpPut.setEntity(new StringEntity(content, ContentType.create(
         "application/json", StandardCharsets.UTF_8)));
     
@@ -136,6 +146,7 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
    */
   public String delete(String request) throws IOException {
     HttpDelete httpDelete = new HttpDelete(getBaseURL() + request);
+    httpDelete.addHeader(QoSParams.REQUEST_SOURCE, QoSParams.INTERNAL);
     return getResponse(httpDelete);
   }
 
@@ -149,6 +160,7 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
    */
   public String post(String request, String content) throws IOException {
     HttpPost httpPost = new HttpPost(getBaseURL() + request);
+    httpPost.addHeader(QoSParams.REQUEST_SOURCE, QoSParams.INTERNAL);
     httpPost.setEntity(new StringEntity(content, ContentType.create(
         "application/json", StandardCharsets.UTF_8)));
     
@@ -215,7 +227,7 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
       entity = httpClient.execute(request, HttpClientUtil.createNewHttpClientRequestContext()).getEntity();
       return EntityUtils.toString(entity, StandardCharsets.UTF_8);
     } finally {
-      EntityUtils.consumeQuietly(entity);
+      Utils.consumeFully(entity);
     }
   }
 

@@ -58,6 +58,7 @@ import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.client.solrj.cloud.autoscaling.Variable;
 import org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
+import org.apache.solr.client.solrj.impl.BaseCloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -1008,7 +1009,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     boolean usePolicyFramework = !autoScalingConfig.getPolicy().getClusterPolicy().isEmpty() || policy != null;
 
     // fail fast if parameters are wrong or incomplete
-    List<String> shardNames = CreateCollectionCmd.populateShardNames(props, router);
+    List<String> shardNames = BaseCloudSolrClient.populateShardNames(props, router);
     int maxShardsPerNode = props.getInt(MAX_SHARDS_PER_NODE, 1);
     if (maxShardsPerNode == -1) maxShardsPerNode = Integer.MAX_VALUE;
     CreateCollectionCmd.checkReplicaTypes(props);
@@ -1376,7 +1377,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
           ZkStateReader.NRT_REPLICAS, String.valueOf(replicaTypesVsCount.get(Replica.Type.NRT)),
           ZkStateReader.TLOG_REPLICAS, String.valueOf(replicaTypesVsCount.get(Replica.Type.TLOG)),
           ZkStateReader.PULL_REPLICAS, String.valueOf(replicaTypesVsCount.get(Replica.Type.PULL)),
-          OverseerCollectionMessageHandler.CREATE_NODE_SET, message.getStr(OverseerCollectionMessageHandler.CREATE_NODE_SET)
+          ZkStateReader.CREATE_NODE_SET, message.getStr(ZkStateReader.CREATE_NODE_SET)
           );
 
       try {
@@ -1654,7 +1655,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       ZkNodeProps props = new ZkNodeProps(
           NAME, CollectionAdminParams.SYSTEM_COLL,
           REPLICATION_FACTOR, repFactor,
-          OverseerCollectionMessageHandler.NUM_SLICES, "1",
+          ZkStateReader.NUM_SHARDS_PROP, "1",
           CommonAdminParams.WAIT_FOR_FINAL_STATE, "true");
       simCreateCollection(props, new NamedList());
       CloudUtil.waitForState(cloudManager, CollectionAdminParams.SYSTEM_COLL, 120, TimeUnit.SECONDS,
@@ -2505,7 +2506,6 @@ public class SimClusterStateProvider implements ClusterStateProvider {
 
   @Override
   public ClusterState getClusterState() throws IOException {
-    ensureNotClosed();
     try {
       lock.lockInterruptibly();
       try {

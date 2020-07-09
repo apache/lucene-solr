@@ -48,6 +48,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    useFactory(null);
     initCore("solrconfig-spellcheckcomponent.xml","schema.xml");
   }
   

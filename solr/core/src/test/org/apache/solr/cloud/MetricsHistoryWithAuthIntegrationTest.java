@@ -16,12 +16,18 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.TimeOut;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.LogLevel;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -55,6 +61,7 @@ public class MetricsHistoryWithAuthIntegrationTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    System.setProperty("solr.disableJmxReporter", "false");
     String solrXml = MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML.replace("<metrics>\n",
         "<metrics>\n" + SOLR_XML_HISTORY_CONFIG);
     // Spin up a cluster with a protected /admin/metrics handler, and a 2 seconds metrics collectPeriod
@@ -65,8 +72,6 @@ public class MetricsHistoryWithAuthIntegrationTest extends SolrCloudTestCase {
         .configure();
     cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
     solrClient = cluster.getSolrClient();
-    // sleep a little to allow the handler to collect some metrics
-    cloudManager.getTimeSource().sleep(3000);
   }
 
   @AfterClass
@@ -78,16 +83,26 @@ public class MetricsHistoryWithAuthIntegrationTest extends SolrCloudTestCase {
   @SuppressWarnings("unchecked")
   @Test
   public void testValuesAreCollected() throws Exception {
-    NamedList<Object> rsp = solrClient.request(createHistoryRequest(params(
-        CommonParams.ACTION, "get", CommonParams.NAME, "solr.jvm")));
-    assertNotNull(rsp);
-    // default format is LIST
-    NamedList<Object> data = (NamedList<Object>)rsp.findRecursive("metrics", "solr.jvm", "data");
-    assertNotNull(data);
 
-    // Has actual values. These will be 0.0 if metrics could not be collected
-    NamedList<Object> memEntry = (NamedList<Object>) ((NamedList<Object>) data.iterator().next().getValue()).get("values");
-    List<Double> heap = (List<Double>) memEntry.getAll("memory.heap.used").get(0);
-    assertTrue("Expected memory.heap.used > 0 in history", heap.get(240) > 0.01);
+    // default format is LIST
+    TimeOut timeout = new TimeOut(5, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    final AtomicReference<NamedList<Object>> dataRef = new AtomicReference<>();
+    timeout.waitFor("", () -> {
+      try {
+        NamedList<Object> data = (NamedList<Object>) solrClient.request(createHistoryRequest(params(
+                CommonParams.ACTION, "get", CommonParams.NAME, "solr.jvm"))).findRecursive("metrics", "solr.jvm", "data");
+        if (data == null) return false;
+        NamedList<Object> memEntry = (NamedList<Object>) ((NamedList<Object>) data.iterator().next().getValue()).get("values");
+        List<Double> heap = (List<Double>) memEntry.getAll("memory.heap.used").get(0);
+        if (heap == null) return false;
+        if (heap.get(240) <= 0.01) return false;
+        dataRef.set(data);
+        return true;
+      } catch (SolrServerException e) {
+        throw new RuntimeException(e);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    });
   }
 }

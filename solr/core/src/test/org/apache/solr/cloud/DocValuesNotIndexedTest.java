@@ -466,6 +466,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
   private void doTestFacet(FieldProps props, QueryResponse rsp) {
     String name = props.getName();
     final List<FacetField.Count> counts = rsp.getFacetField(name).getValues();
+    System.out.println("rsp:" + rsp);
     long expectedCount = props.getExpectedCount();
     long foundCount = getCount(counts);
     assertEquals("Field " + name + " should have a count of " + expectedCount, expectedCount, foundCount);

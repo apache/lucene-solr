@@ -143,8 +143,6 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   @Test
   @ShardsFixed(num = 4)
   public void test() throws Exception {
-    del("*:*");
-
     ModifiableSolrParams params = new ModifiableSolrParams();
     List<Node> nodes = new ArrayList<>();
     AddUpdateCommand cmd = new AddUpdateCommand(null);
@@ -360,7 +358,9 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     testDeletes(true, true);
     testDeletes(true, false);
     getRfFromResponseShouldNotCloseTheInputStream();
-    testStuckUpdates();
+    if (TEST_NIGHTLY) {
+      testStuckUpdates();
+    }
   }
   
   private void testDeletes(boolean dbq, boolean withFailures) throws Exception {

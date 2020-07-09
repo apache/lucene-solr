@@ -24,12 +24,14 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.AfterClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * Tests that highlighting doesn't break on grouped documents
  * with duplicate unique key fields stored on multiple shards.
  */
+@Ignore // nocommit debug
 public class TestHighlightDedupGrouping extends BaseDistributedSearchTestCase {
 
   private static final String id_s1 = "id_s1"; // string copy of the id for highlighting
@@ -50,9 +52,6 @@ public class TestHighlightDedupGrouping extends BaseDistributedSearchTestCase {
   }
 
   private void basicTest() throws Exception {
-    del("*:*");
-    commit();
-
     handle.clear();
     handle.put("timestamp", SKIPVAL);
     handle.put("grouped", UNORDERED);   // distrib grouping doesn't guarantee order of top level group commands
@@ -79,9 +78,6 @@ public class TestHighlightDedupGrouping extends BaseDistributedSearchTestCase {
   }
 
   private void randomizedTest() throws Exception {
-    del("*:*");
-    commit();
-
     handle.clear();
     handle.put("timestamp", SKIPVAL);
     handle.put("grouped", UNORDERED);   // distrib grouping doesn't guarantee order of top level group commands

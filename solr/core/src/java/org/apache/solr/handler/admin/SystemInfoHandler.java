@@ -105,16 +105,17 @@ public class SystemInfoHandler extends RequestHandlerBase
     }
     
     RTimer timer = new RTimer();
-    try {
-      InetAddress addr = InetAddress.getLocalHost();
-      hostname = addr.getCanonicalHostName();
-    } catch (Exception e) {
-      log.warn("Unable to resolve canonical hostname for local host, possible DNS misconfiguration. SET THE '{}' {}"
-          , PREVENT_REVERSE_DNS_OF_LOCALHOST_SYSPROP
-          , " sysprop to true on startup to prevent future lookups if DNS can not be fixed.", e);
-      hostname = null;
-      return;
-    }
+    // nocommit - this is bad for tests, blocks a lot
+//    try {
+//      InetAddress addr = InetAddress.getLocalHost();
+//      hostname = addr.getCanonicalHostName();
+//    } catch (Exception e) {
+//      log.warn("Unable to resolve canonical hostname for local host, possible DNS misconfiguration. SET THE '{}' {}"
+//          , PREVENT_REVERSE_DNS_OF_LOCALHOST_SYSPROP
+//          , " sysprop to true on startup to prevent future lookups if DNS can not be fixed.", e);
+//      hostname = null;
+//      return;
+//    }
     timer.stop();
     
     if (15000D < timer.getTime()) {

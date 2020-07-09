@@ -39,6 +39,7 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.hamcrest.core.IsCollectionContaining;
 import org.hamcrest.core.IsEqual;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,9 +55,7 @@ public class TestDynamicFieldNamesIndexCorrectly extends AbstractFullDistribZkTe
   @Test
   @BaseDistributedSearchTestCase.ShardsFixed(num = 3)
   public void test() throws Exception {
-    waitForThingsToLevelOut(30, TimeUnit.SECONDS);
-
-    createCollection(COLLECTION, "conf1", 4, 1, 4);
+    createCollection(COLLECTION, "_default", 4, 1, 4);
     final int numRuns = 10;
     populateIndex(numRuns);
   }

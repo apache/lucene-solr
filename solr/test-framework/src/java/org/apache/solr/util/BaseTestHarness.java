@@ -18,6 +18,7 @@ package org.apache.solr.util;
 import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
@@ -30,37 +31,20 @@ import java.nio.charset.StandardCharsets;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.XML;
+import org.apache.solr.core.XmlConfigFile;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
 abstract public class BaseTestHarness {
-  private static final ThreadLocal<DocumentBuilder> builderTL = new ThreadLocal<>();
-  private static final ThreadLocal<XPath> xpathTL = new ThreadLocal<>();
+  private static final XPath xpath = XmlConfigFile.xpath;
+  private static final DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
 
-  public static DocumentBuilder getXmlDocumentBuilder() {
-    try {
-      DocumentBuilder builder = builderTL.get();
-      if (builder == null) {
-        builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-        builderTL.set(builder);
-      }
-      return builder;
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
+  public static DocumentBuilder getXmlDocumentBuilder() throws ParserConfigurationException {
+    return dbf.newDocumentBuilder();
   }
 
   public static XPath getXpath() {
-    try {
-      XPath xpath = xpathTL.get();
-      if (xpath == null) {
-        xpath = XPathFactory.newInstance().newXPath();
-        xpathTL.set(xpath);
-      }
-      return xpath;
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
+    return xpath;
   }
 
 
@@ -83,8 +67,8 @@ abstract public class BaseTestHarness {
           (xml.getBytes(StandardCharsets.UTF_8)));
     } catch (UnsupportedEncodingException e1) {
       throw new RuntimeException("Totally weird UTF-8 exception", e1);
-    } catch (IOException e2) {
-      throw new RuntimeException("Totally weird io exception", e2);
+    } catch (IOException | ParserConfigurationException e2) {
+      throw new RuntimeException("Parse or IO Exception", e2);
     }
 
     for (String xp : tests) {
@@ -110,6 +94,8 @@ abstract public class BaseTestHarness {
       throw new RuntimeException("Totally weird UTF-8 exception", e1);
     } catch (IOException e2) {
       throw new RuntimeException("Totally weird io exception", e2);
+    } catch (ParserConfigurationException e) {
+      throw new RuntimeException("Parse exception", e);
     }
 
     xpath = xpath.trim();

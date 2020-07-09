@@ -31,6 +31,12 @@
     <str name="managedSchemaResourceName">managed-schema</str>
   </schemaFactory>
 
+  <indexConfig>
+    <mergeScheduler class="${solr.mscheduler:org.apache.lucene.index.ConcurrentMergeScheduler}"/>
+    <lockType>${solr.tests.lockType:single}</lockType>
+    <infoStream>${solr.tests.infostream:false}</infoStream>
+  </indexConfig>
+
   <updateRequestProcessorChain name="add-fields-no-run-processor">
     <processor class="solr.AddSchemaFieldsUpdateProcessorFactory">
       <str name="defaultFieldType">text</str>

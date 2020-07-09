@@ -45,6 +45,7 @@ import org.apache.solr.common.util.SuppressForbidden;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class AutoAddReplicasPlanActionTest extends SolrCloudTestCase{
@@ -56,7 +57,7 @@ public class AutoAddReplicasPlanActionTest extends SolrCloudTestCase{
     System.setProperty("solr.retries.to.followers", "1"); 
 
   }
-  
+
   @Before
   public void beforeTest() throws Exception {
     configureCluster(3)
@@ -76,6 +77,7 @@ public class AutoAddReplicasPlanActionTest extends SolrCloudTestCase{
   }
 
   @Test
+  @Ignore // nocommit debug
   //Commented out 11-Dec-2018 @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13028")
   public void testSimple() throws Exception {
     JettySolrRunner jetty1 = cluster.getJettySolrRunner(0);
@@ -117,7 +119,7 @@ public class AutoAddReplicasPlanActionTest extends SolrCloudTestCase{
     NamedList response = cluster.getSolrClient().request(req);
     assertEquals(response.get("result").toString(), "success");
 
-    JettySolrRunner lostJetty = random().nextBoolean()? jetty1 : jetty2;
+    JettySolrRunner lostJetty = cluster.getRandomJetty(random(), jetty3);
     String lostNodeName = lostJetty.getNodeName();
     List<CloudDescriptor> cloudDescriptors = lostJetty.getCoreContainer().getCores().stream()
         .map(solrCore -> solrCore.getCoreDescriptor().getCloudDescriptor())
@@ -132,17 +134,17 @@ public class AutoAddReplicasPlanActionTest extends SolrCloudTestCase{
     reader.waitForLiveNodes(30, TimeUnit.SECONDS, missingLiveNode(lostNodeName));
 
 
-    List<SolrRequest> operations = getOperations(jetty3, lostNodeName);
+    List<SolrRequest> operations = getOperations(cluster.getRandomJetty(random(), lostJetty), lostNodeName);
     assertOperations(collection1, operations, lostNodeName, cloudDescriptors,  null);
 
     lostJetty.start();
-    cluster.waitForAllNodes(30);
+    cluster.waitForNode(lostJetty, 15);
     
     cluster.waitForActiveCollection(collection1, 2, 4);
     cluster.waitForActiveCollection(collection2, 1, 2);
     cluster.waitForActiveCollection(collection3, 3, 3);
     
-    assertTrue("Timeout waiting for all live and active", ClusterStateUtil.waitForAllActiveAndLiveReplicas(cluster.getSolrClient().getZkStateReader(), 30000));
+    assertTrue("Timeout waiting for all live and active", ClusterStateUtil.waitForAllActiveAndLiveReplicas(cluster.getSolrClient().getZkStateReader(), 10000));
     
     String setClusterPreferencesCommand = "{" +
         "'set-cluster-preferences': [" +
@@ -153,22 +155,22 @@ public class AutoAddReplicasPlanActionTest extends SolrCloudTestCase{
     // you can hit a stale connection from pool when restarting jetty
     try (CloudSolrClient cloudClient = new CloudSolrClient.Builder(Collections.singletonList(cluster.getZkServer().getZkAddress()),
         Optional.empty())
-            .withSocketTimeout(45000).withConnectionTimeout(15000).build()) {
+            .withSocketTimeout(15000).withConnectionTimeout(5000).build()) {
       response = cloudClient.request(req);
     }
 
     assertEquals(response.get("result").toString(), "success");
 
-    lostJetty = random().nextBoolean()? jetty1 : jetty2;
+    lostJetty = cluster.getRandomJetty(random(), jetty3);
     String lostNodeName2 = lostJetty.getNodeName();
     cloudDescriptors = lostJetty.getCoreContainer().getCores().stream()
         .map(solrCore -> solrCore.getCoreDescriptor().getCloudDescriptor())
         .collect(Collectors.toList());
-    
 
-    
+
+
     lostJetty.stop();
-   
+    cluster.waitForJettyToStop(lostJetty);
     reader.waitForLiveNodes(30, TimeUnit.SECONDS, missingLiveNode(lostNodeName2));
 
     try {
@@ -181,8 +183,7 @@ public class AutoAddReplicasPlanActionTest extends SolrCloudTestCase{
     assertOperations(collection1, operations, lostNodeName2, cloudDescriptors, jetty3);
 
     lostJetty.start();
-    cluster.waitForAllNodes(30);
-    
+    cluster.waitForNode(lostJetty, 10000);
     cluster.waitForActiveCollection(collection1, 2, 4);
     cluster.waitForActiveCollection(collection2, 1, 2);
     cluster.waitForActiveCollection(collection3, 3, 3);
@@ -202,7 +203,7 @@ public class AutoAddReplicasPlanActionTest extends SolrCloudTestCase{
     String lostNodeName3 = lostJetty.getNodeName();
     
     lostJetty.stop();
-    
+    cluster.waitForJettyToStop(lostJetty);
     reader.waitForLiveNodes(30, TimeUnit.SECONDS, missingLiveNode(lostNodeName3));
     
     operations = getOperations(jetty3, lostNodeName3);

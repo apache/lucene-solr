@@ -44,6 +44,7 @@ public class RemoteQueryErrorTest extends SolrCloudTestCase {
   public void test() throws Exception {
 
     CollectionAdminRequest.createCollection("collection", "conf", 2, 1).process(cluster.getSolrClient());
+    cluster.waitForActiveCollection("collection", 2, 2);
 
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       try (SolrClient client = jetty.newClient()) {

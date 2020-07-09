@@ -195,6 +195,7 @@ public class ZkCLI implements CLIO {
         zkServer.start();
       }
       SolrZkClient zkClient = null;
+      CoreContainer cc = null;
       try {
         zkClient = new SolrZkClient(zkServerAddress, 30000, 30000,
             () -> {
@@ -207,7 +208,7 @@ public class ZkCLI implements CLIO {
             System.exit(1);
           }
 
-          CoreContainer cc = new CoreContainer(Paths.get(solrHome), new Properties());
+          cc = new CoreContainer(Paths.get(solrHome), new Properties());
 
           if(!ZkController.checkChrootPath(zkServerAddress, true)) {
             stdout.println("A chroot was specified in zkHost but the znode doesn't exist. ");
@@ -361,10 +362,13 @@ public class ZkCLI implements CLIO {
         }
       } finally {
         if (solrPort != null) {
-          zkServer.stop();
+          zkServer.close();
         }
         if (zkClient != null) {
           zkClient.close();
+        }
+        if (cc != null) {
+          cc.shutdown();
         }
       }
     } catch (ParseException exp) {

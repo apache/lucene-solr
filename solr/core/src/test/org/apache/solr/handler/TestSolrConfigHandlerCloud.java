@@ -36,10 +36,12 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.RequestParams;
 import org.apache.solr.core.TestSolrConfigHandler;
 import org.apache.solr.util.RestTestHarness;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
 
+@Ignore // nocommit debug
 public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
 
   private static final long TIMEOUT_S = 10;

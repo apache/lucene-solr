@@ -138,14 +138,6 @@ public class RestartWhileUpdatingTest extends AbstractFullDistribZkTestBase {
     expireThread.join();
     
     Thread.sleep(1000);
-  
-    waitForThingsToLevelOut(320, TimeUnit.SECONDS);
-    
-    Thread.sleep(2000);
-    
-    waitForThingsToLevelOut(30, TimeUnit.SECONDS);
-    
-    Thread.sleep(5000);
     
     waitForRecoveriesToFinish(DEFAULT_COLLECTION, cloudClient.getZkStateReader(), false, true);
 

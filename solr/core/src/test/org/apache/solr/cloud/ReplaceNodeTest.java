@@ -40,10 +40,12 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Ignore // nocommit debug
 public class ReplaceNodeTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   @BeforeClass
@@ -96,14 +98,14 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     createReplaceNodeRequest(node2bdecommissioned, emptyNode, null).processAsync("000", cloudClient);
     CollectionAdminRequest.RequestStatus requestStatus = CollectionAdminRequest.requestStatus("000");
     boolean success = false;
-    for (int i = 0; i < 300; i++) {
+    for (int i = 0; i < 10; i++) {
       CollectionAdminRequest.RequestStatusResponse rsp = requestStatus.process(cloudClient);
       if (rsp.getRequestStatus() == RequestStatusState.COMPLETED) {
         success = true;
         break;
       }
       assertFalse(rsp.getRequestStatus() == RequestStatusState.FAILED);
-      Thread.sleep(50);
+      Thread.sleep(500);
     }
     assertTrue(success);
     try (HttpSolrClient coreclient = getHttpSolrClient(cloudClient.getZkStateReader().getBaseUrlForNodeName(node2bdecommissioned))) {
@@ -111,7 +113,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
       assertTrue(status.getCoreStatus().size() == 0);
     }
 
-    Thread.sleep(5000);
+    Thread.sleep(1000);
     collection = cloudClient.getZkStateReader().getClusterState().getCollection(coll);
     log.debug("### After decommission: {}", collection);
     // check what are replica states on the decommissioned node
@@ -127,14 +129,14 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     replaceNodeRequest.processAsync("001", cloudClient);
     requestStatus = CollectionAdminRequest.requestStatus("001");
 
-    for (int i = 0; i < 200; i++) {
+    for (int i = 0; i < 10; i++) {
       CollectionAdminRequest.RequestStatusResponse rsp = requestStatus.process(cloudClient);
       if (rsp.getRequestStatus() == RequestStatusState.COMPLETED) {
         success = true;
         break;
       }
       assertFalse(rsp.getRequestStatus() == RequestStatusState.FAILED);
-      Thread.sleep(50);
+      Thread.sleep(500);
     }
     assertTrue(success);
     try (HttpSolrClient coreclient = getHttpSolrClient(cloudClient.getZkStateReader().getBaseUrlForNodeName(emptyNode))) {

@@ -40,6 +40,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.analytics.util.AnalyticsResponseHeadings;
 import org.apache.solr.analytics.util.MedianCalculator;
 import org.apache.solr.analytics.util.OrdinalCalculator;
+import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -81,7 +82,7 @@ public class LegacyAbstractAnalyticsTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClassAbstractAnalysis() {
-    xPathFact = XPathFactory.newInstance();
+    xPathFact = XmlConfigFile.xpathFactory;
   }
 
   @AfterClass

@@ -25,6 +25,7 @@
     <!-- BEGIN BAD: multiple useCompoundFile -->
     <useCompoundFile>true</useCompoundFile>
     <useCompoundFile>false</useCompoundFile>
+    <lockType>${solr.tests.lockType:single}</lockType>
   </indexConfig>
 
   <schemaFactory class="ClassicIndexSchemaFactory"/>

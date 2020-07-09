@@ -42,6 +42,7 @@
       <int name="maxMergeAtOnce">3</int>
       <int name="segmentsPerTier">3</int>
     </mergePolicyFactory>
+    <lockType>${solr.tests.lockType:single}</lockType>
   </indexConfig>
 
   <updateHandler class="solr.DirectUpdateHandler2">

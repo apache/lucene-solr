@@ -28,6 +28,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
@@ -38,6 +39,7 @@ import static org.apache.solr.common.params.ShardParams._ROUTE_;
 /**
  * Tests the Custom Sharding API.
  */
+@Ignore // nocommit debug
 public class CustomCollectionTest extends SolrCloudTestCase {
 
   private static final int NODE_COUNT = 4;

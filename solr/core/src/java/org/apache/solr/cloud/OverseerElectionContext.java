@@ -17,94 +17,99 @@
 
 package org.apache.solr.cloud;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
+
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.util.Utils;
-import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.ID;
 
-final class OverseerElectionContext extends ElectionContext {
+final class OverseerElectionContext extends ShardLeaderElectionContextBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final SolrZkClient zkClient;
   private final Overseer overseer;
   private volatile boolean isClosed = false;
 
-  public OverseerElectionContext(SolrZkClient zkClient, Overseer overseer, final String zkNodeName) {
-    super(zkNodeName, Overseer.OVERSEER_ELECT, Overseer.OVERSEER_ELECT + "/leader", null, zkClient);
+  public OverseerElectionContext(final String zkNodeName, SolrZkClient zkClient, Overseer overseer) {
+    super(zkNodeName, Overseer.OVERSEER_ELECT, Overseer.OVERSEER_ELECT + "/leader", new ZkNodeProps(ID, zkNodeName), zkClient);
     this.overseer = overseer;
     this.zkClient = zkClient;
-    try {
-      new ZkCmdExecutor(zkClient.getZkClientTimeout()).ensureExists(Overseer.OVERSEER_ELECT, zkClient);
-    } catch (KeeperException e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, e);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new SolrException(ErrorCode.SERVER_ERROR, e);
-    }
   }
 
   @Override
-  void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStartMs) throws KeeperException,
-      InterruptedException {
+  void runLeaderProcess(ElectionContext context, boolean weAreReplacement, int pauseBeforeStartMs) throws KeeperException,
+          InterruptedException, IOException {
     if (isClosed) {
       return;
     }
-    log.info("I am going to be the leader {}", id);
-    final String id = leaderSeqPath
-        .substring(leaderSeqPath.lastIndexOf("/") + 1);
-    ZkNodeProps myProps = new ZkNodeProps(ID, id);
 
-    zkClient.makePath(leaderPath, Utils.toJSON(myProps),
-        CreateMode.EPHEMERAL, true);
-    if (pauseBeforeStartMs > 0) {
-      try {
-        Thread.sleep(pauseBeforeStartMs);
-      } catch (InterruptedException e) {
-        Thread.interrupted();
-        log.warn("Wait interrupted ", e);
-      }
-    }
+    super.runLeaderProcess(context, weAreReplacement, pauseBeforeStartMs);
+
     synchronized (this) {
       if (!this.isClosed && !overseer.getZkController().getCoreContainer().isShutDown()) {
-        overseer.start(id);
+        overseer.start(id, context);
       }
     }
+  }
+
+  public Overseer getOverseer() {
+    return  overseer;
   }
 
   @Override
   public void cancelElection() throws InterruptedException, KeeperException {
-    super.cancelElection();
-    overseer.close();
+
+    try {
+      super.cancelElection();
+    } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
+      log.error("Exception closing Overseer", e);
+    }
+    try {
+      overseer.doClose();
+    } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
+      log.error("Exception closing Overseer", e);
+    }
   }
 
   @Override
-  public synchronized void close() {
-    this.isClosed = true;
-    overseer.close();
+  public void close() {
+    try {
+      super.close();
+    } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
+      log.error("Exception canceling election", e);
+    }
+
+    try {
+      overseer.doClose();
+    } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
+      log.error("Exception closing Overseer", e);
+    }
+    this.isClosed  = true;
+
   }
 
   @Override
   public ElectionContext copy() {
-    return new OverseerElectionContext(zkClient, overseer, id);
+    return new OverseerElectionContext(id, zkClient, overseer);
   }
 
   @Override
   public void joinedElectionFired() {
-    overseer.close();
+
   }
 
   @Override
   public void checkIfIamLeaderFired() {
-    // leader changed - close the overseer
-    overseer.close();
-  }
 
+  }
 }
+

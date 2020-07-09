@@ -96,6 +96,7 @@ public class DirectoryFactoryTest extends SolrTestCase {
     // solr.data.home set with System property, and relative path
     System.setProperty("solr.data.home", "solrdata");
     config = loadNodeConfig("/solr/solr-solrDataHome.xml");
+    cc.shutdown();
     cc = new CoreContainer(config);
     df = directoryFactoryClass.getConstructor().newInstance();
     df.initCoreContainer(cc);
@@ -106,11 +107,13 @@ public class DirectoryFactoryTest extends SolrTestCase {
     // solr.data.home set but also solrDataHome set in solr.xml, which should override the former
     System.setProperty("test.solr.data.home", "/foo");
     config = loadNodeConfig("/solr/solr-solrDataHome.xml");
+    cc.shutdown();
     cc = new CoreContainer(config);
     df = directoryFactoryClass.getConstructor().newInstance();
     df.initCoreContainer(cc);
     df.init(new NamedList());
     assertDataHome("/foo/inst_dir/data", "inst_dir", df, cc);
+    cc.shutdown();
   }
 
   private void assertDataHome(String expected, String instanceDir, DirectoryFactory df, CoreContainer cc, String... properties) throws IOException {

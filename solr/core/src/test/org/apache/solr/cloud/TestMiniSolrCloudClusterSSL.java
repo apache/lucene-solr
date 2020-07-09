@@ -50,6 +50,7 @@ import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.util.SSLTestConfig;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.rules.TestRule;
 
@@ -63,6 +64,7 @@ import org.slf4j.LoggerFactory;
  *
  * @see TestSSLRandomization
  */
+@Ignore // nocommit debug
 public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
 
   private static final SSLContext DEFAULT_SSL_CONTEXT;

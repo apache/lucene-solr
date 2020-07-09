@@ -28,6 +28,10 @@
   <dataDir>${solr.data.dir:}</dataDir>
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
 
+  <indexConfig>
+    <lockType>${solr.lockType:single}</lockType>
+  </indexConfig>
+
   <!-- for postingsFormat="..." -->
   <codecFactory name="CodecFactory" class="solr.SchemaCodecFactory" />
 

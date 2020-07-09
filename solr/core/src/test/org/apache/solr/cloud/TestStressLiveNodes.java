@@ -24,6 +24,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -47,6 +48,7 @@ import org.slf4j.LoggerFactory;
  * burst a ZkStateReader detects the correct set.
  */
 @Slow
+@LuceneTestCase.Nightly // TODO speedup
 public class TestStressLiveNodes extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -69,17 +71,14 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
     
     CLOUD_CLIENT = cluster.getSolrClient();
     CLOUD_CLIENT.connect(); // force connection even though we aren't sending any requests
-    
+
     ZK_SERVER_ADDR = cluster.getZkServer().getZkAddress();
-    
+
   }
   
   @AfterClass
   private static void afterClass() throws Exception {
-    if (null != CLOUD_CLIENT) {
-      CLOUD_CLIENT.close();
-      CLOUD_CLIENT = null;
-    }
+
   }
 
   private static SolrZkClient newSolrZkClient() {
@@ -90,14 +89,9 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
 
   /** returns the true set of live nodes (currently in zk) as a sorted list */
   private static List<String> getTrueLiveNodesFromZk() throws Exception {
-    SolrZkClient client = newSolrZkClient();
-    try {
-      ArrayList<String> result = new ArrayList<>(client.getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null, true));
-      Collections.sort(result);
-      return result;
-    } finally {
-      client.close();
-    }
+    ArrayList<String> result = new ArrayList<>(CLOUD_CLIENT.getZkStateReader().getZkClient().getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null, true));
+    Collections.sort(result);
+    return result;
   }
 
   /** 

@@ -236,9 +236,9 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
         Overseer.QUEUE_OPERATION, CREATE.toLower(),
         NAME, tempSourceCollectionName,
         NRT_REPLICAS, 1,
-        OverseerCollectionMessageHandler.NUM_SLICES, 1,
+        ZkStateReader.NUM_SHARDS_PROP, 1,
         CollectionAdminParams.COLL_CONF, configName,
-        OverseerCollectionMessageHandler.CREATE_NODE_SET, sourceLeader.getNodeName());
+        ZkStateReader.CREATE_NODE_SET, sourceLeader.getNodeName());
     if (asyncId != null) {
       String internalAsyncId = asyncId + Math.abs(System.nanoTime());
       props.put(ASYNC, internalAsyncId);
@@ -252,7 +252,7 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
     Replica tempSourceLeader = zkStateReader.getLeaderRetry(tempSourceCollectionName, tempSourceSlice.getName(), 120000);
 
     String tempCollectionReplica1 = tempSourceLeader.getCoreName();
-    String coreNodeName = ocmh.waitForCoreNodeName(tempSourceCollectionName,
+    String coreNodeName = ocmh.waitForCoreNodeName(zkStateReader, tempSourceCollectionName,
         sourceLeader.getNodeName(), tempCollectionReplica1);
     // wait for the replicas to be seen as active on temp source leader
     if (log.isInfoEnabled()) {
@@ -320,7 +320,7 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
       syncRequestTracker.processResponses(results, shardHandler, true, "MIGRATE failed to create replica of " +
         "temporary collection in target leader node.");
     }
-    coreNodeName = ocmh.waitForCoreNodeName(tempSourceCollectionName,
+    coreNodeName = ocmh.waitForCoreNodeName(zkStateReader, tempSourceCollectionName,
         targetLeader.getNodeName(), tempCollectionReplica2);
     // wait for the replicas to be seen as active on temp source leader
     if (log.isInfoEnabled()) {

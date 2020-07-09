@@ -201,7 +201,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
     final String standardOutput = byteStream.toString(StandardCharsets.UTF_8.name());
     String separator = System.lineSeparator();
-    assertEquals("/ (1)" + separator + " /test (0)" + separator + separator, standardOutput);
+    assertEquals("/ (c=1,v=1)" + separator + " /test (c=0,v=0)" + separator + separator, standardOutput);
   }
 
   @Test
@@ -218,7 +218,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
     final String standardOutput = byteStream.toString(StandardCharsets.UTF_8.name());
     String separator = System.lineSeparator();
-    assertEquals("/test (1)" + separator + " /test/path (0)" + separator + separator, standardOutput);
+    assertEquals("/test (c=1,v=0)" + separator + " /test/path (c=0,v=0)" + separator + separator, standardOutput);
   }
 
   @Test
@@ -335,9 +335,10 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     assertEquals(e.code(), KeeperException.Code.NONODE);
   }
 
+  @Nightly // should be configurable to be faster
   public void testInvalidZKAddress() throws SolrException {
     SolrException ex = expectThrows(SolrException.class, () -> {
-      new SolrZkClient("----------:33332", 100);
+      new SolrZkClient("----------:33332", 10);
     });
     zkClient.close();
   }
@@ -376,7 +377,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     }
 
     boolean excepted = false;
-    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractDistribZkTestBase.DEFAULT_CONNECTION_TIMEOUT)) {
+    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), DEFAULT_ZK_SESSION_TIMEOUT)) {
       zkClient.getData("/", null, null, true);
     } catch (KeeperException.NoAuthException e) {
       excepted = true;

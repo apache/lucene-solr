@@ -822,7 +822,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
         IOException {
       try (HttpSolrClient client = new HttpSolrClient.Builder(leaderUrl)
           .withConnectionTimeout(30000)
-          .build()) {
+          .markInternalRequest().build()) {
         UpdateRequest ureq = new UpdateRequest();
         ureq.setParams(new ModifiableSolrParams());
         ureq.getParams().set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
@@ -862,6 +862,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
       try (HttpSolrClient server = new HttpSolrClient.Builder(baseUrl)
           .withConnectionTimeout(15000)
           .withSocketTimeout(60000)
+          .markInternalRequest()
           .build()) {
 
         ModifiableSolrParams params = new ModifiableSolrParams();

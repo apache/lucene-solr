@@ -39,6 +39,9 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.QuickPatchThreadsFilter;
+import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.common.util.IOUtils;
@@ -61,15 +64,18 @@ import org.junit.Test;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
 @ThreadLeakFilters(defaultFilters = true, filters = {
-    BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
+        SolrIgnoredThreadsFilter.class,
+        QuickPatchThreadsFilter.class,
+        BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
 // TODO: longer term this should be combined with TestRecovery somehow ??
+@LuceneTestCase.Nightly
 public class TestRecoveryHdfs extends SolrTestCaseJ4 {
   // means that we've seen the leader and have version info (i.e. we are a non-leader replica)
   private static final String FROM_LEADER = DistribPhase.FROMLEADER.toString();
 
   // acquire timeout in seconds.  change this to a huge number when debugging to prevent threads from advancing.
-  private static final int TIMEOUT = 60;
+  private static final int TIMEOUT = 15;
 
   private static MiniDFSCluster dfsCluster;
   private static String hdfsUri;
@@ -82,6 +88,9 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
+    System.setProperty("solr.spellcheck.enabled", "false");
+    System.setProperty("solr.skipCommitOnClose", "false");
+
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
     hdfsUri = HdfsTestUtil.getURI(dfsCluster);
     

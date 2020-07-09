@@ -71,8 +71,8 @@ import org.apache.solr.update.UpdateShardHandlerConfig;
  *
  */
 public class TestHarness extends BaseTestHarness {
-  public String coreName;
-  protected volatile CoreContainer container;
+  public volatile String coreName;
+  protected final CoreContainer container;
   public UpdateRequestHandler updater;
  
   /**
@@ -126,7 +126,7 @@ public class TestHarness extends BaseTestHarness {
     * @param solrConfig solrconfig instance
     * @param indexSchema schema instance
     */
-  public TestHarness( String dataDirectory,
+  public TestHarness(String dataDirectory,
                       SolrConfig solrConfig,
                       IndexSchema indexSchema) {
       this(SolrTestCaseJ4.DEFAULT_TEST_CORENAME, dataDirectory, solrConfig, indexSchema);
@@ -139,9 +139,8 @@ public class TestHarness extends BaseTestHarness {
    * @param indexSchema schema resource name
    */
   public TestHarness(String coreName, String dataDir, String solrConfig, String indexSchema) {
-    this(buildTestNodeConfig(SolrPaths.locateSolrHome()),
+    this(coreName, buildTestNodeConfig(SolrPaths.locateSolrHome()),
         new TestCoresLocator(coreName, dataDir, solrConfig, indexSchema));
-    this.coreName = (coreName == null) ? SolrTestCaseJ4.DEFAULT_TEST_CORENAME : coreName;
   }
 
   public TestHarness(String coreName, String dataDir, SolrConfig solrConfig, IndexSchema indexSchema) {
@@ -158,15 +157,20 @@ public class TestHarness extends BaseTestHarness {
   }
 
   public TestHarness(NodeConfig nodeConfig) {
-    this(nodeConfig, new CorePropertiesLocator(nodeConfig.getCoreRootDirectory()));
+    this(null, nodeConfig, new CorePropertiesLocator(nodeConfig.getCoreRootDirectory()));
+  }
+
+  public TestHarness(NodeConfig config, CoresLocator coresLocator) {
+    this(null, config, coresLocator);
   }
 
   /**
    * Create a TestHarness using a specific config
    * @param config the ConfigSolr to use
    */
-  public TestHarness(NodeConfig config, CoresLocator coresLocator) {
-    container = new CoreContainer(config, coresLocator);
+  public TestHarness(String coreName, NodeConfig config, CoresLocator coresLocator) {
+    this.coreName = (coreName == null) ? SolrTestCaseJ4.DEFAULT_TEST_CORENAME : coreName;
+    container = new CoreContainer(config, coresLocator, false);
     container.load();
     updater = new UpdateRequestHandler();
     updater.init(null);
@@ -186,19 +190,19 @@ public class TestHarness extends BaseTestHarness {
         30000, 30000,
         UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY, UpdateShardHandlerConfig.DEFAULT_MAXRECOVERYTHREADS);
     // universal default metric reporter
-    Map<String,Object> attributes = new HashMap<>();
-    attributes.put("name", "default");
-    attributes.put("class", SolrJmxReporter.class.getName());
-    PluginInfo defaultPlugin = new PluginInfo("reporter", attributes);
-    MetricsConfig metricsConfig = new MetricsConfig.MetricsConfigBuilder()
-        .setMetricReporterPlugins(new PluginInfo[] {defaultPlugin})
-        .build();
+//    Map<String,Object> attributes = new HashMap<>();
+//    attributes.put("name", "default");
+//    attributes.put("class", SolrJmxReporter.class.getName());
+//    PluginInfo defaultPlugin = new PluginInfo("reporter", attributes);
+//    MetricsConfig metricsConfig = new MetricsConfig.MetricsConfigBuilder()
+//        .setMetricReporterPlugins(new PluginInfo[] {defaultPlugin})
+//        .build();
 
     return new NodeConfig.NodeConfigBuilder("testNode", solrHome)
         .setUseSchemaCache(Boolean.getBoolean("shareSchema"))
         .setCloudConfig(cloudConfig)
         .setUpdateShardHandlerConfig(updateShardHandlerConfig)
-        .setMetricsConfig(metricsConfig)
+       // .setMetricsConfig(metricsConfig)
         .build();
   }
 
@@ -366,7 +370,6 @@ public class TestHarness extends BaseTestHarness {
   public void close() {
     if (container != null) {
       container.shutdown();
-      container = null;
     }
   }
 

@@ -50,10 +50,12 @@ import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@Ignore // nocommit debug
 public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
   
   private final static int REPLICATION_TIMEOUT_SECS = 10;
@@ -129,13 +131,9 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
 
   @Override
   public void tearDown() throws Exception {
-    if (cluster.getSolrClient().getZkStateReader().getClusterState().getCollectionOrNull(collectionName) != null) {
-      log.info("tearDown deleting collection");
-      CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
-      log.info("Collection deleted");
-      waitForDeletion(collectionName);
-    }
+    cluster.deleteAllCollections();
     collectionName = null;
+    TestInjection.reset();
     super.tearDown();
   }
   

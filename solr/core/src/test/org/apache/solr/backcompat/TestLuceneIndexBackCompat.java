@@ -30,16 +30,26 @@ import java.util.Properties;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.index.TestBackwardsCompatibility;
+import org.apache.lucene.search.TimeLimitingCollector;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.util.TestHarness;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /** Verify we can read/write previous versions' Lucene indexes. */
+@Ignore // nocommit debug...
 public class TestLuceneIndexBackCompat extends SolrTestCaseJ4 {
   private static final String[] oldNames = TestBackwardsCompatibility.getOldNames();
   private static final String[] oldSingleSegmentNames = TestBackwardsCompatibility.getOldSingleSegmentNames();
+
+  @BeforeClass
+  public static void beforeTestLuceneIndexBackCompat() throws Exception {
+    useFactory(null);
+  }
 
   @Test
   public void testOldIndexes() throws Exception {

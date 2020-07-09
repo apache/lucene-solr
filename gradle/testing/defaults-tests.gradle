@@ -51,10 +51,11 @@ allprojects {
     }
 
     test {
+      reports.junitXml.destination file(propertyOrDefault("reports.dest", "${reports.junitXml.destination.toString()}"))
       ext {
         testOutputsDir = file("${reports.junitXml.destination}/outputs")
       }
-
+      binaryResultsDirectory = file(propertyOrDefault("binaryResultsDirectory", binaryResultsDirectory))
       if (verboseMode) {
         maxParallelForks = 1
       } else {
@@ -65,9 +66,9 @@ allprojects {
       useJUnit()
 
       minHeapSize = propertyOrDefault("tests.minheapsize", "256m")
-      maxHeapSize = propertyOrDefault("tests.heapsize", "512m")
+      maxHeapSize = propertyOrDefault("tests.heapsize", "3000m")
 
-      jvmArgs Commandline.translateCommandline(propertyOrDefault("tests.jvmargs", "-XX:TieredStopAtLevel=1"))
+      jvmArgs Commandline.translateCommandline(propertyOrDefault("tests.jvmargs", ""))
 
       systemProperty 'java.util.logging.config.file', file("${commonDir}/tools/junit4/logging.properties")
       systemProperty 'java.awt.headless', 'true'

@@ -86,7 +86,7 @@ public class MockTokenizer extends Tokenizer {
   private boolean enableChecks = true;
   
   // evil: but we don't change the behavior with this random, we only switch up how we read
-  private final Random random = new Random(RandomizedContext.current().getRandom().nextLong());
+  //private final Random random = new Random(RandomizedContext.current().getRandom().nextLong());
   
   public MockTokenizer(AttributeFactory factory, CharacterRunAutomaton runAutomaton, boolean lowerCase, int maxTokenLength) {
     super(factory);
@@ -227,7 +227,8 @@ public class MockTokenizer extends Tokenizer {
   }
   
   protected int readChar() throws IOException {
-    switch(random.nextInt(10)) {
+    // this random can be created out of context and cause fails due to 'static test class initializers are not permitted to access random contexts'
+    switch(0) { // random.nextInt(10)
       case 0: {
         // read(char[])
         char c[] = new char[1];

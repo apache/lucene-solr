@@ -241,6 +241,7 @@ public class DaemonStream extends TupleStream implements Expressible {
     if (streamRunner != null) {
       streamRunner.setShutdown(true);
     }
+
     this.closed = true;
   }
 
@@ -278,7 +279,7 @@ public class DaemonStream extends TupleStream implements Expressible {
 
   private class StreamRunner implements Runnable {
 
-    private long sleepMillis = 1000;
+    private long sleepMillis = 100;
     private long runInterval;
     private long lastRun;
     private String id;

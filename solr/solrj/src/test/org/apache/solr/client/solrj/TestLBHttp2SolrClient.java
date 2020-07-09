@@ -71,9 +71,10 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
   static String savedFactory;
 
   @BeforeClass
-  public static void beforeClass() {
+  public static void beforeClass() throws Exception {
     savedFactory = System.getProperty("solr.DirectoryFactory");
-    System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
+    //System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
+    useFactory(null);
     System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
   }
 

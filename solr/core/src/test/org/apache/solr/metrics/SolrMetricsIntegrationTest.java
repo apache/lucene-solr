@@ -40,8 +40,11 @@ import org.apache.solr.util.JmxUtil;
 import org.apache.solr.util.TestHarness;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore // nocommit debug
 public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
   private static final int MAX_ITERATIONS = 20;
   private static final String CORE_NAME = "metrics_integration";
@@ -61,12 +64,18 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
   private String tag;
   private int jmxReporter;
 
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    System.setProperty("solr.disableJmxReporter", "false");
+  }
+
   private void assertTagged(Map<String, SolrMetricReporter> reporters, String name) {
     assertTrue("Reporter '" + name + "' missing in " + reporters, reporters.containsKey(name + "@" + tag));
   }
 
   @Before
   public void beforeTest() throws Exception {
+    System.setProperty("solr.disableJmxReporter", "false");
     Path home = Paths.get(TEST_HOME());
     // define these properties, they are used in solrconfig.xml
     System.setProperty("solr.test.sys.prop1", "propone");
@@ -78,7 +87,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
                               "solrconfig.xml", "schema.xml"));
                              
     h.coreName = DEFAULT_TEST_CORENAME;
-    jmxReporter = JmxUtil.findFirstMBeanServer() != null ? 1 : 0;
+    jmxReporter = 1;
     metricManager = cc.getMetricManager();
     tag = h.getCore().getCoreMetricManager().getTag();
     // initially there are more reporters, because two of them are added via a matching collection name

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.core;
 
+import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -30,7 +31,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  */
-public final class RequestHandlers {
+public final class RequestHandlers implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected final SolrCore core;

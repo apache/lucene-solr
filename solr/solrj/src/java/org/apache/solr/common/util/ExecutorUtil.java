@@ -21,14 +21,18 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
@@ -79,14 +83,24 @@ public class ExecutorUtil {
 
   public static void awaitTermination(ExecutorService pool) {
     boolean shutdown = false;
-    while (!shutdown) {
+
+    boolean interrupted = false;
+    do {
       try {
         // Wait a while for existing tasks to terminate
         shutdown = pool.awaitTermination(60, TimeUnit.SECONDS);
       } catch (InterruptedException ie) {
-        // Preserve interrupt status
-        Thread.currentThread().interrupt();
+        interrupted = true;
       }
+    } while (shutdown == false);
+
+    if (interrupted) {
+      // Preserve interrupt status
+      Thread.currentThread().interrupt();
+    }
+    
+    if (!pool.isTerminated() || !pool.isShutdown()) {
+      throw new RuntimeException("Timeout waiting for executor to shutdown");
     }
   }
 

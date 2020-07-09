@@ -26,11 +26,13 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.util.TestInjection;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * Tests for PREPRECOVERY CoreAdmin API
  */
+@Ignore // nocommit debug
 public class TestPrepRecovery extends SolrCloudTestCase {
 
   @BeforeClass
@@ -39,8 +41,9 @@ public class TestPrepRecovery extends SolrCloudTestCase {
     System.setProperty("solr.ulog.numRecordsToKeep", "1000");
     // the default is 180s and our waitForState times out in 90s
     // so we lower this so that we can still test timeouts
-    System.setProperty("leaderConflictResolveWait", "5000");
-    System.setProperty("prepRecoveryReadTimeoutExtraWait", "1000");
+    System.setProperty("leaderConflictResolveWait", "2000");
+    System.setProperty("prepRecoveryReadTimeoutExtraWait", "0");
+
     
     configureCluster(2)
         .addConfig("config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
@@ -54,6 +57,7 @@ public class TestPrepRecovery extends SolrCloudTestCase {
   }
 
   @Test
+  @Ignore // nocommit debug
   public void testLeaderUnloaded() throws Exception {
     CloudSolrClient solrClient = cluster.getSolrClient();
 
@@ -65,6 +69,7 @@ public class TestPrepRecovery extends SolrCloudTestCase {
         collectionName, clusterShape(1, 2));
 
     JettySolrRunner newNode = cluster.startJettySolrRunner();
+    cluster.waitForNode(newNode, 10);
     String newNodeName = newNode.getNodeName();
 
     // add a replica to the new node so that it starts watching the collection
@@ -84,8 +89,7 @@ public class TestPrepRecovery extends SolrCloudTestCase {
         .process(solrClient);
 
     // in the absence of the fixes made in SOLR-10914, this statement will timeout after 90s
-    waitForState("Expected collection: testLeaderUnloaded to be live with 1 shard and 3 replicas",
-        collectionName, clusterShape(1, 3));
+    cluster.waitForActiveCollection(collectionName, 1, 3);
   }
 
   @Test
@@ -106,8 +110,7 @@ public class TestPrepRecovery extends SolrCloudTestCase {
 
       // in the absence of fixes made in SOLR-9716, prep recovery waits forever and the following statement
       // times out
-      waitForState("Expected collection: testLeaderNotResponding to be live with 1 shard and 2 replicas",
-          collectionName, clusterShape(1, 2), 30, TimeUnit.SECONDS);
+      cluster.waitForActiveCollection(collectionName, 1, 2);
     } finally {
       TestInjection.prepRecoveryOpPauseForever = null;
       TestInjection.notifyPauseForeverDone();

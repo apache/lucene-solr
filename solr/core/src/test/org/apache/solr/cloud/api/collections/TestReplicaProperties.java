@@ -34,9 +34,11 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.zookeeper.KeeperException;
+import org.junit.Ignore;
 import org.junit.Test;
 
 @Slow
+@Ignore // nocommit debug
 public class TestReplicaProperties extends ReplicaPropertiesBase {
 
   public static final String COLLECTION_NAME = "testcollection";
@@ -57,7 +59,7 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
       if (shards < 2) shards = 2;
       int rFactor = random().nextInt(4);
       if (rFactor < 2) rFactor = 2;
-      createCollection(null, COLLECTION_NAME, shards, rFactor, shards * rFactor + 1, client, null, "conf1");
+      createCollection(null, COLLECTION_NAME, shards, rFactor, shards * rFactor + 1, client, null, "_default");
     }
 
     waitForCollection(cloudClient.getZkStateReader(), COLLECTION_NAME, 2);

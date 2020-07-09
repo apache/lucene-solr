@@ -43,6 +43,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
@@ -298,7 +299,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
     }
     
     // Merge Shard responses
-    SuggesterResult suggesterResult = merge(suggesterResults, count);
+    SuggesterResult suggesterResult = merge(suggesterResults, count, rb.req.getParams().getBool(SpellingParams.SPELLCHECK_EXTENDED_RESULTS, false));
     Map<String, SimpleOrderedMap<NamedList<Object>>> namedListResults = 
         new HashMap<>();
     toNamedList(suggesterResult, namedListResults);
@@ -312,16 +313,35 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
    * number of {@link LookupResult}, sorted by their associated 
    * weights
    * */
-  private static SuggesterResult merge(List<SuggesterResult> suggesterResults, int count) {
+  private static SuggesterResult merge(List<SuggesterResult> suggesterResults, int count, boolean extended) {
     SuggesterResult result = new SuggesterResult();
     Set<String> allTokens = new HashSet<>();
     Set<String> suggesterNames = new HashSet<>();
-    
+    Map<String,LookupResult> keys = new HashMap<>();
     // collect all tokens
     for (SuggesterResult shardResult : suggesterResults) {
       for (String suggesterName : shardResult.getSuggesterNames()) {
-        allTokens.addAll(shardResult.getTokens(suggesterName));
         suggesterNames.add(suggesterName);
+        Set<String> tokens = shardResult.getTokens(suggesterName);
+        allTokens.addAll(tokens);
+        for (String token : tokens) {
+          List<LookupResult> removeLookupResults = new ArrayList<>();
+           List<LookupResult> lookupResults = shardResult.getLookupResult(suggesterName, token);
+          for (LookupResult lresult : lookupResults) {
+            LookupResult oldLookupResult = keys.put(lresult.toString(), lresult);
+            if (oldLookupResult != null) {
+              removeLookupResults.add(lresult);
+              if (extended) {
+                for (BytesRef context : lresult.contexts) {
+                  System.out.println("context:" + context.utf8ToString());
+                }
+              }
+            }
+          }
+          for (LookupResult lresult : removeLookupResults) {
+            lookupResults.remove(lresult);
+          }
+        }
       }
     }
     
@@ -447,6 +467,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
     if (suggestionsMap == null) {
       return result;
     }
+
     // for each token
     for(Map.Entry<String, SimpleOrderedMap<NamedList<Object>>> entry : suggestionsMap.entrySet()) {
       String suggesterName = entry.getKey();

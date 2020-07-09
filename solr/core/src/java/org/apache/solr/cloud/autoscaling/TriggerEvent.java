@@ -25,6 +25,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
@@ -138,7 +139,7 @@ public class TriggerEvent implements MapWriter {
   protected final String source;
   protected final long eventTime;
   protected final TriggerEventType eventType;
-  protected final Map<String, Object> properties = new HashMap<>();
+  protected final Map<String, Object> properties = new ConcurrentHashMap<>();
   protected final boolean ignored;
 
   public TriggerEvent(TriggerEventType eventType, String source, long eventTime,
@@ -163,8 +164,9 @@ public class TriggerEvent implements MapWriter {
     this.source = source;
     this.eventTime = eventTime;
     if (properties != null) {
-      this.properties.putAll(properties);
+      properties.putAll(properties);
     }
+
     this.ignored = ignored;
   }
 

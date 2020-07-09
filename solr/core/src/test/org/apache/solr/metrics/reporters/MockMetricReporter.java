@@ -29,9 +29,9 @@ public class MockMetricReporter extends SolrMetricReporter {
 
   public String configurable;
 
-  public boolean didInit = false;
-  public boolean didClose = false;
-  public boolean didValidate = false;
+  public volatile boolean didInit = false;
+  public volatile boolean didClose = false;
+  public volatile boolean didValidate = false;
 
   public MockMetricReporter(SolrMetricManager metricManager, String registryName) {
     super(metricManager, registryName);

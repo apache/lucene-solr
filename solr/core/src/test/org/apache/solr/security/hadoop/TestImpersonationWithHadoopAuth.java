@@ -36,6 +36,7 @@ import org.apache.solr.security.HadoopAuthPlugin;
 import org.apache.solr.servlet.SolrRequestParsers;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.solr.security.HttpParamDelegationTokenPlugin.USER_PARAM;
@@ -43,6 +44,7 @@ import static org.apache.solr.security.hadoop.ImpersonationUtil.getExpectedGroup
 import static org.apache.solr.security.hadoop.ImpersonationUtil.getExpectedHostExMsg;
 import static org.apache.solr.security.hadoop.ImpersonationUtil.getProxyRequest;
 
+@Ignore // nocommit debug
 public class TestImpersonationWithHadoopAuth  extends SolrCloudTestCase {
   protected static final int NUM_SERVERS = 2;
   private static final boolean defaultAddRequestHeadersToContext =
@@ -51,6 +53,8 @@ public class TestImpersonationWithHadoopAuth  extends SolrCloudTestCase {
   @SuppressWarnings("unchecked")
   @BeforeClass
   public static void setupClass() throws Exception {
+    System.setProperty("solr.disableJmxReporter", "false");
+    System.setProperty("solr.disablePublicKeyHandler", "false");
     HdfsTestUtil.checkAssumptions();
 
     InetAddress loopback = InetAddress.getLoopbackAddress();

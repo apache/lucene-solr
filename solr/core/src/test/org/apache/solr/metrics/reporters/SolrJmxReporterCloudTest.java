@@ -69,7 +69,7 @@ public class SolrJmxReporterCloudTest extends SolrCloudTestCase {
 
   @Test
   public void testJmxReporter() throws Exception {
-    CollectionAdminRequest.reloadCollection(COLLECTION).processAndWait(cluster.getSolrClient(), 60);
+    CollectionAdminRequest.reloadCollection(COLLECTION).process(cluster.getSolrClient());
     CloudSolrClient solrClient = cluster.getSolrClient();
     // index some docs
     for (int i = 0; i < 100; i++) {

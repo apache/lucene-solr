@@ -35,7 +35,8 @@ public class SuggesterTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     savedFactory = System.getProperty("solr.DirectoryFactory");
-    System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
+    //System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
+    useFactory(null);
     initCore("solrconfig-spellchecker.xml","schema-spellchecker.xml");
   }
   

@@ -54,6 +54,8 @@ import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.jwt.JwtClaims;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -66,6 +68,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * </p>
  */
 @SolrTestCaseJ4.SuppressSSL
+@Ignore // nocommit debug
 public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   protected static final int NUM_SERVERS = 2;
   protected static final int NUM_SHARDS = 2;
@@ -75,6 +78,11 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   private String baseUrl;
   private JsonWebSignature jws;
   private String jwtTokenWrongSignature;
+
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    System.setProperty("solr.disablePublicKeyHandler", "false");
+  }
 
   @Override
   @Before

@@ -30,6 +30,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
+import java.nio.file.StandardOpenOption;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
@@ -41,7 +42,10 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.util.IOUtils;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.util.XMLErrorLogger;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.request.SolrRequestHandler;
@@ -52,15 +56,21 @@ import org.apache.solr.schema.ManagedIndexSchemaFactory;
 import org.apache.solr.schema.SimilarityFactory;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
+import org.apache.solr.util.SystemIdResolver;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 
 /**
  * @since solr 1.3
  */
 public class SolrResourceLoader implements ResourceLoader, Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
 
   private static final String base = "org.apache.solr";
   private static final String[] packages = {
@@ -72,13 +82,27 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   private static final Charset UTF_8 = StandardCharsets.UTF_8;
 
 
+  private static final javax.xml.parsers.DocumentBuilderFactory dbf;
+  private final DocumentBuilder db;
+
+  static {
+    dbf = DocumentBuilderFactory.newInstance();
+    try {
+      dbf.setXIncludeAware(true);
+      dbf.setNamespaceAware(true);
+    } catch(UnsupportedOperationException e) {
+      log.warn("XML parser doesn't support XInclude option");
+    }
+  }
+
   private String name = "";
   protected URLClassLoader classLoader;
+  protected URLClassLoader resourceClassLoader;
   private final Path instanceDir;
 
-  private final List<SolrCoreAware> waitingForCore = Collections.synchronizedList(new ArrayList<SolrCoreAware>());
-  private final List<SolrInfoBean> infoMBeans = Collections.synchronizedList(new ArrayList<SolrInfoBean>());
-  private final List<ResourceLoaderAware> waitingForResources = Collections.synchronizedList(new ArrayList<ResourceLoaderAware>());
+  private final Set<SolrCoreAware> waitingForCore = ConcurrentHashMap.newKeySet(5000);
+  private final Set<SolrInfoBean> infoMBeans = ConcurrentHashMap.newKeySet(5000);
+  private final Set<ResourceLoaderAware> waitingForResources = ConcurrentHashMap.newKeySet(5000);
 
   private volatile boolean live;
 
@@ -146,6 +170,20 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
       parent = getClass().getClassLoader();
     }
     this.classLoader = URLClassLoader.newInstance(new URL[0], parent);
+    this.resourceClassLoader = URLClassLoader.newInstance(new URL[0], parent);
+
+    try {
+      db = dbf.newDocumentBuilder();
+    } catch (ParserConfigurationException e) {
+      log.error("Error in parser configuration", e);
+      throw new RuntimeException(e);
+    }
+    db.setEntityResolver(new SystemIdResolver(this));
+    db.setErrorHandler(xmllog);
+  }
+
+  public DocumentBuilder getDocumentBuilder() {
+    return db;
   }
 
   /**
@@ -158,11 +196,13 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
    */
   synchronized void addToClassLoader(List<URL> urls) {
     URLClassLoader newLoader = addURLsToClassLoader(classLoader, urls);
+    URLClassLoader newResourceClassLoader = addURLsToClassLoader(resourceClassLoader, urls);
     if (newLoader == classLoader) {
       return; // short-circuit
     }
 
     this.classLoader = newLoader;
+    this.resourceClassLoader = newResourceClassLoader;
     this.needToReloadLuceneSPI = true;
 
     if (log.isInfoEnabled()) {
@@ -181,6 +221,10 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
    * and before using this ResourceLoader.
    */
   synchronized void reloadLuceneSPI() {
+    if (Boolean.getBoolean("solr.skipReloadSPI")) {
+      return;
+    }
+
     // TODO improve to use a static Set<URL> to check when we need to
     if (!needToReloadLuceneSPI) {
       return;
@@ -318,12 +362,12 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
 
     // Delegate to the class loader (looking into $INSTANCE_DIR/lib jars).
     // We need a ClassLoader-compatible (forward-slashes) path here!
-    InputStream is = classLoader.getResourceAsStream(resource.replace(File.separatorChar, '/'));
+    InputStream is = resourceClassLoader.getResourceAsStream(resource.replace(File.separatorChar, '/'));
 
     // This is a hack just for tests (it is not done in ZKResourceLoader)!
     // TODO can we nuke this?
     if (is == null && System.getProperty("jetty.testMode") != null) {
-      is = classLoader.getResourceAsStream(("conf/" + resource).replace(File.separatorChar, '/'));
+      is = resourceClassLoader.getResourceAsStream(("conf/" + resource).replace(File.separatorChar, '/'));
     }
 
     if (is == null) {
@@ -344,7 +388,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
     if (Files.exists(inInstanceDir) && Files.isReadable(inInstanceDir))
       return inInstanceDir.toAbsolutePath().normalize().toString();
 
-    try (InputStream is = classLoader.getResourceAsStream(resource.replace(File.separatorChar, '/'))) {
+    try (InputStream is = resourceClassLoader.getResourceAsStream(resource.replace(File.separatorChar, '/'))) {
       if (is != null)
         return "classpath:" + resource;
     } catch (IOException e) {
@@ -400,10 +444,10 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   /*
    * A static map of short class name to fully qualified class name
    */
-  private static final Map<String, String> classNameCache = new ConcurrentHashMap<>();
+  private final Map<String, String> classNameCache = new ConcurrentHashMap<>(256, 0.75f, 2048);
 
   @VisibleForTesting
-  static void clearCache() {
+   void clearCache() {
     classNameCache.clear();
   }
 
@@ -428,6 +472,15 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
    * @return the loaded class. An exception is thrown if it fails
    */
   public <T> Class<? extends T> findClass(String cname, Class<T> expectedType, String... subpackages) {
+    if (!cname.startsWith("solr.") && cname.contains(".")) {
+      try {
+        return Class.forName(cname, true, classLoader).asSubclass(expectedType);
+      } catch (ClassNotFoundException e) {
+
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, name +" Error loading class '" + cname + "'", e);
+      }
+    }
+
     if (subpackages == null || subpackages.length == 0 || subpackages == packages) {
       subpackages = packages;
       String c = classNameCache.get(cname);
@@ -604,19 +657,30 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
    * Tell all {@link SolrCoreAware} instances about the SolrCore
    */
   public void inform(SolrCore core) {
+
     // make a copy to avoid potential deadlock of a callback calling newInstance and trying to
     // add something to waitingForCore.
-    SolrCoreAware[] arr;
 
     while (waitingForCore.size() > 0) {
-      synchronized (waitingForCore) {
-        arr = waitingForCore.toArray(new SolrCoreAware[waitingForCore.size()]);
-        waitingForCore.clear();
-      }
-
-      for (SolrCoreAware aware : arr) {
+      for (SolrCoreAware aware : waitingForCore) {
+        waitingForCore.remove(aware);
         aware.inform(core);
       }
+      try (ParWork worker = new ParWork(this)) {
+        waitingForCore.forEach(aware -> {
+          worker.collect(()-> {
+            try {
+              aware.inform(core);
+            } catch (Exception e) {
+              log.error("Exception informing SolrCore", e);
+            }
+            waitingForCore.remove(aware);
+          });
+        });
+
+        worker.addCollect("informResourceLoader");
+      }
+
     }
 
     // this is the last method to be called in SolrCore before the latch is released.
@@ -629,17 +693,30 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   public void inform(ResourceLoader loader) throws IOException {
 
     // make a copy to avoid potential deadlock of a callback adding to the list
-    ResourceLoaderAware[] arr;
 
     while (waitingForResources.size() > 0) {
-      synchronized (waitingForResources) {
-        arr = waitingForResources.toArray(new ResourceLoaderAware[waitingForResources.size()]);
-        waitingForResources.clear();
-      }
+      try (ParWork worker = new ParWork(this)) {
+        waitingForResources.forEach(r -> {
+          worker.collect(()-> {
+            try {
+              r.inform(loader);
+            } catch (Exception e) {
+              log.error("Exception informing ResourceLoader", e);
+            }
+            waitingForResources.remove(r);
+          });
+        });
 
-      for (ResourceLoaderAware aware : arr) {
-        aware.inform(loader);
+        worker.addCollect("informResourceLoader");
       }
+//      if (waitingForResources.size() == 0) {
+//        try {
+//          Thread.sleep(50); // lttle throttle
+//        } catch (Exception e) {
+//          SolrZkClient.checkInterrupted(e);
+//          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+//        }
+//      }
     }
   }
 
@@ -650,25 +727,38 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
    */
   public void inform(Map<String, SolrInfoBean> infoRegistry) {
     // this can currently happen concurrently with requests starting and lazy components
-    // loading.  Make sure infoMBeans doesn't change.
+    // loading. Make sure infoMBeans doesn't change.
 
-    SolrInfoBean[] arr;
-    synchronized (infoMBeans) {
-      arr = infoMBeans.toArray(new SolrInfoBean[infoMBeans.size()]);
-      waitingForResources.clear();
-    }
+    while (infoMBeans.size() > 0) {
 
+      try (ParWork worker = new ParWork(this)) {
+        infoMBeans.forEach(imb -> {
+          worker.collect(()-> {
+            try {
+              try {
+                infoRegistry.put(imb.getName(), imb);
+              } catch (Exception e) {
+                SolrZkClient.checkInterrupted(e);
+                log.warn("could not register MBean '" + imb.getName() + "'.", e);
+              }
+            } catch (Exception e) {
+              log.error("Exception informing info registry", e);
+            }
+            infoMBeans.remove(imb);
+          });
+        });
 
-    for (SolrInfoBean bean : arr) {
-      // Too slow? I suspect not, but we may need
-      // to start tracking this in a Set.
-      if (!infoRegistry.containsValue(bean)) {
-        try {
-          infoRegistry.put(bean.getName(), bean);
-        } catch (Exception e) {
-          log.warn("could not register MBean '{}'.", bean.getName(), e);
-        }
+        worker.addCollect("informResourceLoader");
       }
+
+//      if (infoMBeans.size() == 0) {
+//        try {
+//          Thread.sleep(50); // lttle throttle
+//        } catch (InterruptedException e) {
+//          SolrZkClient.checkInterrupted(e);
+//          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+//        }
+//      }
     }
   }
 
@@ -751,10 +841,11 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   @Override
   public void close() throws IOException {
     IOUtils.close(classLoader);
+    IOUtils.close(resourceClassLoader);
   }
 
-  public List<SolrInfoBean> getInfoMBeans() {
-    return Collections.unmodifiableList(infoMBeans);
+  public Set<SolrInfoBean> getInfoMBeans() {
+    return Collections.unmodifiableSet(infoMBeans);
   }
 
 
@@ -770,7 +861,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg);
         }
       }
-      try (OutputStream out = new FileOutputStream(confFile);) {
+      try (OutputStream out = Files.newOutputStream(confFile.toPath(), StandardOpenOption.CREATE)) {
         out.write(content);
       }
       log.info("Written confile {}", resourceName);

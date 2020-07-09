@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.OrderedExecutor;
 import org.junit.Test;
 
 import org.slf4j.Logger;

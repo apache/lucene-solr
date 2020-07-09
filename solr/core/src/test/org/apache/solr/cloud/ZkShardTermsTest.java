@@ -31,9 +31,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.ShardTerms;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
 import org.junit.BeforeClass;
@@ -204,7 +206,7 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
     }
 
     List<String> failedReplicas = new ArrayList<>(replicas);
-    Collections.shuffle(failedReplicas, random());
+    Collections.shuffle(failedReplicas, LuceneTestCase.random());
     while (failedReplicas.size() > 2) {
       failedReplicas.remove(0);
     }
@@ -216,9 +218,10 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
         try (ZkShardTerms zkShardTerms = new ZkShardTerms(collection, "shard1", cluster.getZkClient())) {
           while (!stop.get()) {
             try {
-              Thread.sleep(random().nextInt(200));
+              Thread.sleep(LuceneTestCase.random().nextInt(TEST_NIGHTLY ? 200 : 50));
               zkShardTerms.setTermEqualsToLeader(replica);
             } catch (InterruptedException e) {
+              ParWork.propegateInterrupt(e);
               e.printStackTrace();
             }
           }
@@ -230,11 +233,11 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
     long maxTerm = 0;
     try (ZkShardTerms shardTerms = new ZkShardTerms(collection, "shard1", cluster.getZkClient())) {
       shardTerms.registerTerm("leader");
-      TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, new TimeSource.CurrentTimeSource());
+      TimeOut timeOut = new TimeOut(5, TimeUnit.SECONDS, new TimeSource.CurrentTimeSource());
       while (!timeOut.hasTimedOut()) {
         maxTerm++;
         assertEquals(shardTerms.getTerms().get("leader"), Collections.max(shardTerms.getTerms().values()));
-        Thread.sleep(100);
+        Thread.sleep(500);
       }
       assertTrue(maxTerm >= Collections.max(shardTerms.getTerms().values()));
     }
@@ -331,7 +334,7 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
     TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, new TimeSource.CurrentTimeSource());
     while (!timeOut.hasTimedOut()) {
       if (expected == supplier.get()) return;
-      Thread.sleep(100);
+      Thread.sleep(500);
     }
     assertEquals(expected, supplier.get());
   }

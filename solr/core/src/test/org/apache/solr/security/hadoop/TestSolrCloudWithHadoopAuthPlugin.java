@@ -31,6 +31,7 @@ import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class TestSolrCloudWithHadoopAuthPlugin extends SolrCloudAuthTestCase {
@@ -41,6 +42,8 @@ public class TestSolrCloudWithHadoopAuthPlugin extends SolrCloudAuthTestCase {
 
   @BeforeClass
   public static void setupClass() throws Exception {
+    System.setProperty("solr.disableJmxReporter", "false");
+    System.setProperty("solr.disablePublicKeyHandler", "false");
     HdfsTestUtil.checkAssumptions();
 
     setupMiniKdc();
@@ -104,6 +107,7 @@ public class TestSolrCloudWithHadoopAuthPlugin extends SolrCloudAuthTestCase {
   }
 
   @Test
+  @Ignore // nocommit debug
   public void testBasics() throws Exception {
     testCollectionCreateSearchDelete();
     // sometimes run a second test e.g. to test collection create-delete-create scenario

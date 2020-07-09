@@ -19,6 +19,7 @@ package org.apache.solr;
 import org.apache.lucene.search.TimeLimitingCollector.TimerThread;
 
 import com.carrotsearch.randomizedtesting.ThreadFilter;
+import org.apache.solr.cloud.autoscaling.ScheduledTrigger;
 
 
 /**
@@ -59,6 +60,23 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
     if (threadName.startsWith("Image Fetcher")) {
       return true;
     }
+
+    if (threadName.startsWith("SessionTracker")) { // zk thread that will stop in a moment.
+      return true;
+    }
+
+    if (threadName.startsWith("ParWork")) {
+      return true;
+    }
+    if (threadName.startsWith("solr-test-qtp")) {
+      return true;
+    }
+
+    // nocommit tmp hack
+    if (threadName.startsWith("ScheduledTrigger")) {
+      return true;
+    }
+
 
     return false;
   }

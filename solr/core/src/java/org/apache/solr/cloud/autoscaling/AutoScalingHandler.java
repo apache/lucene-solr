@@ -590,6 +590,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     try {
       t = triggerFactory.create(trigger.event, trigger.name, trigger.properties);
     } catch (Exception e) {
+      log.error("", e);
       op.addError("Error validating trigger config " + trigger.name + ": " + e.toString());
       return currentConfig;
     } finally {

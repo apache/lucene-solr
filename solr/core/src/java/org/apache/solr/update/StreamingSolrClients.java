@@ -29,7 +29,9 @@ import java.util.concurrent.ExecutorService;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.QoSParams;
 import org.apache.solr.update.SolrCmdDistributor.Error;
 import org.eclipse.jetty.client.api.Response;
 import org.slf4j.Logger;
@@ -74,6 +76,7 @@ public class StreamingSolrClients {
           .withThreadCount(runnerCount)
           .withExecutorService(updateExecutor)
           .alwaysStreamDeletes()
+          .markInternalRequest()
           .build();
       client.setPollQueueTime(pollQueueTime); // minimize connections created
       solrClients.put(url, client);

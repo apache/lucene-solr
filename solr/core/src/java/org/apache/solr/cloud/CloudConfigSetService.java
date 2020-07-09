@@ -56,7 +56,8 @@ public class CloudConfigSetService extends ConfigSetService {
       if (!zkController.getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + colName, true)) {
         // TODO remove this functionality or maybe move to a CLI mechanism
         log.warn("Auto-creating collection (in ZK) from core descriptor (on disk).  This feature may go away!");
-        CreateCollectionCmd.createCollectionZkNode(zkController.getSolrCloudManager().getDistribStateManager(), colName, cd.getCloudDescriptor().getParams());
+        // nocommit
+        CreateCollectionCmd.createCollectionZkNode(zkController.getSolrCloudManager().getDistribStateManager(), colName, cd.getCloudDescriptor().getParams(), null);
       }
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();

@@ -45,7 +45,6 @@ public class TestDistributedMissingSort extends BaseDistributedSearchTestCase {
   }
 
   private void index() throws Exception {
-    del("*:*");
     indexr(id,1, sint1_ml, 100, sint1_mf, 100, long1_ml, 100, long1_mf, 100,
         "foo_f", 1.414f, "foo_b", "true", "foo_d", 1.414d,
         string1_ml, "DE", string1_mf, "DE");

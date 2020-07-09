@@ -29,12 +29,14 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Phaser;
@@ -61,6 +63,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.QoSParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.Base64;
@@ -120,6 +123,7 @@ public class Http2SolrClient extends SolrClient {
   private static final Charset FALLBACK_CHARSET = StandardCharsets.UTF_8;
   private static final String DEFAULT_PATH = "/select";
   private static final List<String> errPath = Arrays.asList("metadata", "error-class");
+  private final Map<String, String> headers;
 
   private HttpClient httpClient;
   private volatile Set<String> queryParams = Collections.emptySet();
@@ -147,6 +151,8 @@ public class Http2SolrClient extends SolrClient {
       this.serverBaseUrl = serverBaseUrl;
     }
 
+    this.headers = builder.headers;
+
     if (builder.idleTimeout != null && builder.idleTimeout > 0) idleTimeout = builder.idleTimeout;
     else idleTimeout = HttpClientUtil.DEFAULT_SO_TIMEOUT;
 
@@ -164,8 +170,12 @@ public class Http2SolrClient extends SolrClient {
   }
 
   // internal usage only
-  HttpClient getHttpClient() {
+  public HttpClient getHttpClient() {
     return httpClient;
+  }
+
+  public void addHeaders(Map<String,String> headers) {
+    this.headers.putAll(headers);
   }
 
   // internal usage only
@@ -177,8 +187,9 @@ public class Http2SolrClient extends SolrClient {
     HttpClient httpClient;
 
     BlockingArrayQueue<Runnable> queue = new BlockingArrayQueue<>(256, 256);
-    ThreadPoolExecutor httpClientExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(32,
-        256, 60, TimeUnit.SECONDS, queue, new SolrNamedThreadFactory("h2sc"));
+    ThreadPoolExecutor httpClientExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(Integer.getInteger("solr.http2solrclient.corepool.size", 4),
+            Integer.getInteger("solr.http2solrclient.maxpool.size", 10), Integer.getInteger("solr.http2solrclient.pool.keepalive", 10000),
+            TimeUnit.MILLISECONDS, queue, new SolrNamedThreadFactory("h2sc"));
 
     SslContextFactory.Client sslContextFactory;
     boolean ssl;
@@ -211,11 +222,10 @@ public class Http2SolrClient extends SolrClient {
 
     httpClient.setExecutor(httpClientExecutor);
     httpClient.setStrictEventOrdering(false);
-    httpClient.setConnectBlocking(true);
+    httpClient.setConnectBlocking(false);
     httpClient.setFollowRedirects(false);
     httpClient.setMaxRequestsQueuedPerDestination(asyncTracker.getMaxRequestsQueuedPerDestination());
     httpClient.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, AGENT));
-
     httpClient.setIdleTimeout(idleTimeout);
     if (builder.connectionTimeout != null) httpClient.setConnectTimeout(builder.connectionTimeout);
     try {
@@ -322,6 +332,10 @@ public class Http2SolrClient extends SolrClient {
         .method(HttpMethod.POST)
         .header(HttpHeader.CONTENT_TYPE, contentType)
         .content(provider);
+    for (Map.Entry<String,String> entry : headers.entrySet()) {
+      postRequest.header(entry.getKey(), entry.getValue());
+    }
+
     decorateRequest(postRequest, updateRequest);
     InputStreamResponseListener responseListener = new InputStreamResponseListener();
     postRequest.send(responseListener);
@@ -520,16 +534,25 @@ public class Http2SolrClient extends SolrClient {
       }
     }
 
+
     if (SolrRequest.METHOD.GET == solrRequest.getMethod()) {
       if (streams != null || contentWriter != null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "GET can't send streams!");
       }
 
-      return httpClient.newRequest(basePath + path + wparams.toQueryString()).method(HttpMethod.GET);
+      Request req = httpClient.newRequest(basePath + path + wparams.toQueryString()).method(HttpMethod.GET);
+      for (Map.Entry<String,String> entry : headers.entrySet()) {
+        req.header(entry.getKey(), entry.getValue());
+      }
+      return req;
     }
 
     if (SolrRequest.METHOD.DELETE == solrRequest.getMethod()) {
-      return httpClient.newRequest(basePath + path + wparams.toQueryString()).method(HttpMethod.DELETE);
+      Request req = httpClient.newRequest(basePath + path + wparams.toQueryString()).method(HttpMethod.DELETE);
+      for (Map.Entry<String,String> entry : headers.entrySet()) {
+        req.header(entry.getKey(), entry.getValue());
+      }
+      return req;
     }
 
     if (SolrRequest.METHOD.POST == solrRequest.getMethod() || SolrRequest.METHOD.PUT == solrRequest.getMethod()) {
@@ -548,6 +571,9 @@ public class Http2SolrClient extends SolrClient {
         Request req = httpClient
             .newRequest(url + wparams.toQueryString())
             .method(method);
+        for (Map.Entry<String,String> entry : headers.entrySet()) {
+          req.header(entry.getKey(), entry.getValue());
+        }
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         contentWriter.write(baos);
 
@@ -560,14 +586,21 @@ public class Http2SolrClient extends SolrClient {
         Request req = httpClient
             .newRequest(url + queryParams.toQueryString())
             .method(method);
+        for (Map.Entry<String,String> entry : headers.entrySet()) {
+          req.header(entry.getKey(), entry.getValue());
+        }
         return fillContentStream(req, streams, wparams, isMultipart);
       } else {
         // It is has one stream, it is the post body, put the params in the URL
         ContentStream contentStream = streams.iterator().next();
-        return httpClient
-            .newRequest(url + wparams.toQueryString())
-            .method(method)
-            .content(new InputStreamContentProvider(contentStream.getStream()), contentStream.getContentType());
+        Request req = httpClient
+                .newRequest(url + wparams.toQueryString())
+                .method(method)
+                .content(new InputStreamContentProvider(contentStream.getStream()), contentStream.getContentType());
+        for (Map.Entry<String,String> entry : headers.entrySet()) {
+          req.header(entry.getKey(), entry.getValue());
+        }
+        return req;
       }
     }
 
@@ -806,6 +839,7 @@ public class Http2SolrClient extends SolrClient {
     private Integer maxConnectionsPerHost;
     private boolean useHttp1_1 = Boolean.getBoolean("solr.http1");
     protected String baseSolrUrl;
+    protected Map<String,String> headers = new ConcurrentHashMap<>();
 
     public Builder() {
 
@@ -852,6 +886,22 @@ public class Http2SolrClient extends SolrClient {
 
     public Builder connectionTimeout(int connectionTimeOut) {
       this.connectionTimeout = connectionTimeOut;
+      return this;
+    }
+
+    //do not set this from an external client
+    public Builder markInternalRequest() {
+      this.headers.put(QoSParams.REQUEST_SOURCE, QoSParams.INTERNAL);
+      return this;
+    }
+
+    public Builder withHeaders(Map<String, String> headers) {
+      this.headers.putAll(headers);
+      return this;
+    }
+
+    public Builder withHeader(String header, String value) {
+      this.headers.put(header, value);
       return this;
     }
   }

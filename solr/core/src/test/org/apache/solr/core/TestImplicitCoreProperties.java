@@ -29,7 +29,7 @@ public class TestImplicitCoreProperties extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void setupContainer() {
-    cc = createCoreContainer("collection1", "data", "solrconfig-implicitproperties.xml", "schema.xml");
+    cc = createCoreContainer("data", "solrconfig-implicitproperties.xml", "schema.xml");
   }
 
   @AfterClass

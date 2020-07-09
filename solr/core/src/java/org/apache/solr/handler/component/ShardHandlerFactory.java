@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.component;
 
+import java.io.Closeable;
 import java.util.Collections;
 import java.util.Locale;
 
@@ -26,7 +27,7 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.security.HttpClientBuilderPlugin;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 
-public abstract class ShardHandlerFactory {
+public abstract class ShardHandlerFactory implements Closeable {
 
   public abstract ShardHandler getShardHandler();
 

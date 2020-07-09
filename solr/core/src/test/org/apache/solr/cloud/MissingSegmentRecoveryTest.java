@@ -84,7 +84,6 @@ public class MissingSegmentRecoveryTest extends SolrCloudTestCase {
       return;
     }
     System.clearProperty("CoreInitFailedAction");
-    CollectionAdminRequest.deleteCollection(collection).process(cluster.getSolrClient());
   }
 
   @AfterClass

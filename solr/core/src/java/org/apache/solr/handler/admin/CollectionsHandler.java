@@ -22,6 +22,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.api.Api;
 import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.impl.BaseCloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -35,17 +36,21 @@ import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkController.NotInClusterStateException;
 import org.apache.solr.cloud.ZkShardTerms;
+import org.apache.solr.cloud.api.collections.CreateCollectionCmd;
+import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
 import org.apache.solr.cloud.api.collections.ReindexCollectionCmd;
 import org.apache.solr.cloud.api.collections.RoutedAlias;
 import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.cloud.rule.ReplicaAssigner;
 import org.apache.solr.cloud.rule.Rule;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.CollectionProperties;
+import org.apache.solr.common.cloud.CollectionStatePredicate;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
@@ -101,6 +106,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.POLICY;
@@ -111,10 +117,7 @@ import static org.apache.solr.client.solrj.response.RequestStatusState.RUNNING;
 import static org.apache.solr.client.solrj.response.RequestStatusState.SUBMITTED;
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.COLL_PROP_PREFIX;
-import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.CREATE_NODE_SET;
-import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.CREATE_NODE_SET_EMPTY;
 import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.CREATE_NODE_SET_SHUFFLE;
-import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.NUM_SLICES;
 import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ONLY_ACTIVE_NODES;
 import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ONLY_IF_DOWN;
 import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.REQUESTID;
@@ -288,13 +291,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         rsp.setException(exp);
       }
 
-      //TODO yuck; shouldn't create-collection at the overseer do this?  (conditionally perhaps)
-      if (action.equals(CollectionAction.CREATE) && asyncId == null) {
-        if (rsp.getException() == null) {
-          waitForActiveCollection(zkProps.getStr(NAME), cores, overseerResponse);
-        }
-      }
-
     } else {
       // submits and doesn't wait for anything (no response)
       coreContainer.getZkController().getOverseer().offerStateUpdate(Utils.toJSON(props));
@@ -305,7 +301,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
   static final Set<String> KNOWN_ROLES = ImmutableSet.of("overseer");
 
-  public static long DEFAULT_COLLECTION_OP_TIMEOUT = 180 * 1000;
+  public static long DEFAULT_COLLECTION_OP_TIMEOUT = Long.getLong("solr.default.collection_op_timeout", 180 * 1000);
 
   public SolrResponse sendToOCPQueue(ZkNodeProps m) throws KeeperException, InterruptedException {
     return sendToOCPQueue(m, DEFAULT_COLLECTION_OP_TIMEOUT);
@@ -459,9 +455,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       copy(req.getParams(), props,
           REPLICATION_FACTOR,
           COLL_CONF,
-          NUM_SLICES,
+          ZkStateReader.NUM_SHARDS_PROP,
           MAX_SHARDS_PER_NODE,
-          CREATE_NODE_SET,
+          ZkStateReader.CREATE_NODE_SET,
           CREATE_NODE_SET_SHUFFLE,
           SHARDS_PROP,
           STATE_FORMAT,
@@ -503,12 +499,12 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       }
       if (CollectionAdminParams.SYSTEM_COLL.equals(collectionName)) {
         //We must always create a .system collection with only a single shard
-        props.put(NUM_SLICES, 1);
+        props.put(ZkStateReader.NUM_SHARDS_PROP, 1);
         props.remove(SHARDS_PROP);
         createSysConfigSet(h.coreContainer);
 
       }
-      if (shardsParam == null) h.copyFromClusterProp(props, NUM_SLICES);
+      if (shardsParam == null) h.copyFromClusterProp(props, ZkStateReader.NUM_SHARDS_PROP);
       for (String prop : ImmutableSet.of(NRT_REPLICAS, PULL_REPLICAS, TLOG_REPLICAS))
         h.copyFromClusterProp(props, prop);
       copyPropertiesWithPrefix(req.getParams(), props, COLL_PROP_PREFIX);
@@ -558,14 +554,14 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           ReindexCollectionCmd.REMOVE_SOURCE,
           ReindexCollectionCmd.TARGET,
           ZkStateReader.CONFIGNAME_PROP,
-          NUM_SLICES,
+          ZkStateReader.NUM_SHARDS_PROP,
           NRT_REPLICAS,
           PULL_REPLICAS,
           TLOG_REPLICAS,
           REPLICATION_FACTOR,
           MAX_SHARDS_PER_NODE,
           POLICY,
-          CREATE_NODE_SET,
+          ZkStateReader.CREATE_NODE_SET,
           CREATE_NODE_SET_SHUFFLE,
           AUTO_ADD_REPLICAS,
           "shards",
@@ -595,6 +591,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       try (HttpSolrClient client = new Builder(nodeProps.getBaseUrl())
           .withConnectionTimeout(15000)
           .withSocketTimeout(60000)
+          .markInternalRequest()
           .build()) {
         RequestSyncShard reqSyncShard = new RequestSyncShard();
         reqSyncShard.setCollection(collection);
@@ -804,7 +801,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           NRT_REPLICAS,
           TLOG_REPLICAS,
           PULL_REPLICAS,
-          CREATE_NODE_SET,
+          ZkStateReader.CREATE_NODE_SET,
           WAIT_FOR_FINAL_STATE,
           FOLLOW_ALIASES);
       return copyPropertiesWithPrefix(req.getParams(), map, COLL_PROP_PREFIX);
@@ -936,6 +933,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           COLLECTION_PROP,
           "node",
           SHARD_ID_PROP,
+          ZkStateReader.CORE_NODE_NAME_PROP,
           _ROUTE_,
           CoreAdminParams.NAME,
           INSTANCE_DIR,
@@ -946,7 +944,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           NRT_REPLICAS,
           TLOG_REPLICAS,
           PULL_REPLICAS,
-          CREATE_NODE_SET,
+          ZkStateReader.CREATE_NODE_SET,
           FOLLOW_ALIASES);
       return copyPropertiesWithPrefix(req.getParams(), props, COLL_PROP_PREFIX);
     }),
@@ -1158,8 +1156,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to check the existance of " + uri + ". Is it valid?", ex);
       }
 
-      final String createNodeArg = req.getParams().get(CREATE_NODE_SET);
-      if (CREATE_NODE_SET_EMPTY.equals(createNodeArg)) {
+      final String createNodeArg = req.getParams().get(ZkStateReader.CREATE_NODE_SET);
+      if (ZkStateReader.CREATE_NODE_SET_EMPTY.equals(createNodeArg)) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
             "Cannot restore with a CREATE_NODE_SET of CREATE_NODE_SET_EMPTY."
@@ -1177,7 +1175,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       }
       // from CREATE_OP:
       copy(req.getParams(), params, COLL_CONF, REPLICATION_FACTOR, NRT_REPLICAS, TLOG_REPLICAS,
-          PULL_REPLICAS, MAX_SHARDS_PER_NODE, STATE_FORMAT, AUTO_ADD_REPLICAS, CREATE_NODE_SET, CREATE_NODE_SET_SHUFFLE);
+          PULL_REPLICAS, MAX_SHARDS_PER_NODE, STATE_FORMAT, AUTO_ADD_REPLICAS, ZkStateReader.CREATE_NODE_SET, CREATE_NODE_SET_SHUFFLE);
       copyPropertiesWithPrefix(req.getParams(), params, COLL_PROP_PREFIX);
       return params;
     }),
@@ -1356,98 +1354,61 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       }
 
       // Wait till we have an active leader
-      boolean success = false;
-      for (int i = 0; i < 9; i++) {
-        Thread.sleep(5000);
-        clusterState = handler.coreContainer.getZkController().getClusterState();
-        collection = clusterState.getCollection(collectionName);
-        slice = collection.getSlice(sliceId);
-        if (slice.getLeader() != null && slice.getLeader().getState() == State.ACTIVE) {
-          success = true;
-          break;
-        }
-        log.warn("Force leader attempt {}. Waiting 5 secs for an active leader. State of the slice: {}", (i + 1), slice); //logok
-      }
-
-      if (success) {
-        log.info("Successfully issued FORCELEADER command for collection: {}, shard: {}", collectionName, sliceId);
-      } else {
+      try {
+        zkController.getZkStateReader().getLeaderRetry(collectionName, sliceId, 30);
+      } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         log.info("Couldn't successfully force leader, collection: {}, shard: {}. Cluster state: {}", collectionName, sliceId, clusterState);
       }
+
     } catch (SolrException e) {
       throw e;
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throw new SolrException(ErrorCode.SERVER_ERROR,
           "Error executing FORCELEADER operation for collection: " + collectionName + " shard: " + sliceId, e);
     }
   }
 
-  public static void waitForActiveCollection(String collectionName, CoreContainer cc, SolrResponse createCollResponse)
-      throws KeeperException, InterruptedException {
-
-    if (createCollResponse.getResponse().get("exception") != null) {
-      // the main called failed, don't wait
-      if (log.isInfoEnabled()) {
-        log.info("Not waiting for active collection due to exception: {}", createCollResponse.getResponse().get("exception"));
-      }
-      return;
-    }
-
-    int replicaFailCount;
-    if (createCollResponse.getResponse().get("failure") != null) {
-      replicaFailCount = ((NamedList) createCollResponse.getResponse().get("failure")).size();
-    } else {
-      replicaFailCount = 0;
+  public static void waitForActiveCollection(String collectionName, CoreContainer cc, int numShards, int totalReplicas)
+          throws KeeperException, InterruptedException {
+    if (log.isDebugEnabled()) {
+      log.debug("waitForActiveCollection(String collectionName={}, CoreContainer cc={}) - start", collectionName, cc);
     }
 
     CloudConfig ccfg = cc.getConfig().getCloudConfig();
     Integer seconds = ccfg.getCreateCollectionWaitTimeTillActive();
     Boolean checkLeaderOnly = ccfg.isCreateCollectionCheckLeaderActive();
-    if (log.isInfoEnabled()) {
-      log.info("Wait for new collection to be active for at most {} seconds. Check all shard {}"
-          , seconds, (checkLeaderOnly ? "leaders" : "replicas"));
+    log.info("Wait for new collection to be active for at most " + seconds + " seconds. Check all shard "
+            + (checkLeaderOnly ? "leaders" : "replicas"));
+
+    waitForActiveCollection(cc, collectionName, seconds, TimeUnit.SECONDS, numShards, totalReplicas);
+
+    if (log.isDebugEnabled()) {
+      log.debug("waitForActiveCollection(String, CoreContainer, SolrResponse) - end");
     }
+  }
 
+  public static void waitForActiveCollection(CoreContainer cc , String collection, long wait, TimeUnit unit, int shards, int totalReplicas) {
+    log.info("waitForActiveCollection: {}", collection);
+    assert collection != null;
+    CollectionStatePredicate predicate = BaseCloudSolrClient.expectedShardsAndActiveReplicas(shards, totalReplicas);
+
+    AtomicReference<DocCollection> state = new AtomicReference<>();
+    AtomicReference<Set<String>> liveNodesLastSeen = new AtomicReference<>();
     try {
-      cc.getZkController().getZkStateReader().waitForState(collectionName, seconds, TimeUnit.SECONDS, (n, c) -> {
+      cc.getZkController().getZkStateReader().waitForState(collection, wait, unit, (n, c) -> {
+        state.set(c);
+        liveNodesLastSeen.set(n);
 
-        if (c == null) {
-          // the collection was not created, don't wait
-          return true;
-        }
-
-        if (c.getSlices() != null) {
-          Collection<Slice> shards = c.getSlices();
-          int replicaNotAliveCnt = 0;
-          for (Slice shard : shards) {
-            Collection<Replica> replicas;
-            if (!checkLeaderOnly) replicas = shard.getReplicas();
-            else {
-              replicas = new ArrayList<Replica>();
-              replicas.add(shard.getLeader());
-            }
-            for (Replica replica : replicas) {
-              String state = replica.getStr(ZkStateReader.STATE_PROP);
-              if (log.isDebugEnabled()) {
-                log.debug("Checking replica status, collection={} replica={} state={}", collectionName,
-                    replica.getCoreUrl(), state);
-              }
-              if (!n.contains(replica.getNodeName())
-                  || !state.equals(Replica.State.ACTIVE.toString())) {
-                replicaNotAliveCnt++;
-                return false;
-              }
-            }
-          }
-
-          return (replicaNotAliveCnt == 0) || (replicaNotAliveCnt <= replicaFailCount);
-        }
-        return false;
+        return predicate.matches(n, c);
       });
-    } catch (TimeoutException | InterruptedException e) {
-
-      String error = "Timeout waiting for active collection " + collectionName + " with timeout=" + seconds;
-      throw new NotInClusterStateException(ErrorCode.SERVER_ERROR, error);
+    } catch (TimeoutException e) {
+      throw new RuntimeException("Failed while waiting for active collection" + "\n" + e.getMessage() + " \nShards:" + shards + " Replicas:" + totalReplicas + "\nLive Nodes: " + Arrays.toString(liveNodesLastSeen.get().toArray())
+              + "\nLast available state: " + state.get());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }
 
   }

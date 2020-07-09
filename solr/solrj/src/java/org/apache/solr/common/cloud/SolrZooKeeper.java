@@ -23,18 +23,29 @@ import java.lang.reflect.Method;
 import java.net.SocketAddress;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.util.Collections;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 
+import org.apache.solr.common.ParWork;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.zookeeper.ClientCnxn;
 import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.ZooKeeperExposed;
+import org.apache.zookeeper.proto.RequestHeader;
 
 // we use this class to expose nasty stuff for tests
 @SuppressWarnings({"try"})
 public class SolrZooKeeper extends ZooKeeper {
-  final Set<Thread> spawnedThreads = new CopyOnWriteArraySet<>();
+  final Set<Thread> spawnedThreads = ConcurrentHashMap.newKeySet();
   
   // for test debug
   //static Map<SolrZooKeeper,Exception> clients = new ConcurrentHashMap<SolrZooKeeper,Exception>();
@@ -93,8 +104,82 @@ public class SolrZooKeeper extends ZooKeeper {
   }
   
   @Override
-  public synchronized void close() throws InterruptedException {
-    super.close();
+  public void close() {
+
+    try (ParWork worker = new ParWork(this)) {
+      worker.collect( () -> {
+//        try {
+//          SolrZooKeeper.super.close();
+//        } catch (InterruptedException e) {
+//          Thread.currentThread().interrupt();
+//          throw new RuntimeException(e);
+//        }
+        RequestHeader h = new RequestHeader();
+        h.setType(ZooDefs.OpCode.closeSession);
+
+        try {
+          cnxn.submitRequest(h, null, null, null);
+        } catch (InterruptedException e) {
+          ParWork.propegateInterrupt(e);
+        }
+
+        ZooKeeperExposed exposed = new ZooKeeperExposed(this, cnxn);
+        exposed.setSendThreadState( ZooKeeper.States.CLOSED);
+//     /   zkcall(cnxn, "sendThread", "close", null);
+        // zkcall(cnxn, "sendThread", "close", null);
+      }); // we don't wait for close because we wait below
+
+      worker.addCollect("zkServer");
+
+      worker.collect(() -> {
+        for (Thread t : spawnedThreads) {
+          t.interrupt();
+        }
+      });
+      worker.collect(() -> {
+        zkcall(cnxn, "sendThread", "interrupt", null);
+        zkcall(cnxn, "eventThread", "interrupt", null);
+//
+//      //  zkcall(cnxn, "sendThread", "join", 10l);
+//      //  zkcall(cnxn, "eventThread", "join", 10l);
+//
+//        zkcall(cnxn, "sendThread", "interrupt", null);
+//        zkcall(cnxn, "eventThread", "interrupt", null);
+//
+//        zkcall(cnxn, "sendThread", "join", 10l);
+//        zkcall(cnxn, "eventThread", "join", 10l);
+      });
+      worker.addCollect("zkClientClose");
+    }
+  }
+
+  private void zkcall(final ClientCnxn cnxn, String field, String meth, Object arg) {
+    try {
+      final Field sendThreadFld = cnxn.getClass().getDeclaredField(field);
+      sendThreadFld.setAccessible(true);
+      Object sendThread = sendThreadFld.get(cnxn);
+      if (sendThread != null) {
+        Method method;
+        if (arg != null) {
+          method = sendThread.getClass().getMethod(meth, long.class);
+        } else {
+          method = sendThread.getClass().getMethod(meth);
+        }
+        method.setAccessible(true);
+        try {
+          if (arg != null) {
+            method.invoke(sendThread, arg);
+          } else {
+            method.invoke(sendThread);
+          }
+        } catch (InvocationTargetException e) {
+          // is fine
+        }
+      }
+    } catch (Exception e) {
+      SolrZkClient.checkInterrupted(e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
   }
   
 //  public static void assertCloses() {

@@ -19,6 +19,7 @@ package org.apache.solr.schema;
 
 import java.util.concurrent.TimeUnit;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -30,12 +31,14 @@ import org.apache.solr.common.util.Utils;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+@LuceneTestCase.Nightly // nocommit speed up
 public class SchemaApiFailureTest extends SolrCloudTestCase {
 
   private static final String COLLECTION = "schema-api-failure";
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
     configureCluster(1).configure();
     CollectionAdminRequest.createCollection(COLLECTION, 2, 1) // _default configset
         .setMaxShardsPerNode(2)

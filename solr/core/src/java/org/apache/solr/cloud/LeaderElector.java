@@ -22,14 +22,16 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.solr.cloud.ZkController.ContextKey;
-import org.apache.solr.common.AlreadyClosedException;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -45,43 +47,41 @@ import org.slf4j.LoggerFactory;
  * leader is chosen. First call * {@link #setup(ElectionContext)} to ensure
  * the election process is init'd. Next call
  * {@link #joinElection(ElectionContext, boolean)} to start the leader election.
- * 
+ *
  * The implementation follows the classic ZooKeeper recipe of creating an
  * ephemeral, sequential node for each candidate and then looking at the set
  * of such nodes - if the created node is the lowest sequential node, the
  * candidate that created the node is the leader. If not, the candidate puts
- * a watch on the next lowest node it finds, and if that node goes down, 
+ * a watch on the next lowest node it finds, and if that node goes down,
  * starts the whole process over by checking if it's the lowest sequential node, etc.
- * 
+ *
  */
 public  class LeaderElector {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
-  static final String ELECTION_NODE = "/election";
-  
+
+  public static final String ELECTION_NODE = "/election";
+
   public final static Pattern LEADER_SEQ = Pattern.compile(".*?/?.*?-n_(\\d+)");
   private final static Pattern SESSION_ID = Pattern.compile(".*?/?(.*?-.*?)-n_\\d+");
-  private final static Pattern  NODE_NAME = Pattern.compile(".*?/?(.*?-)(.*?)-n_\\d+");
 
-  protected SolrZkClient zkClient;
-  
-  private ZkCmdExecutor zkCmdExecutor;
+  protected final SolrZkClient zkClient;
 
   private volatile ElectionContext context;
 
-  private ElectionWatcher watcher;
+  private volatile ElectionWatcher watcher;
 
-  private Map<ContextKey,ElectionContext> electionContexts;
-  private ContextKey contextKey;
+  private final Map<ContextKey,ElectionContext> electionContexts;
+  private final ContextKey contextKey;
 
-  public LeaderElector(SolrZkClient zkClient) {
-    this.zkClient = zkClient;
-    zkCmdExecutor = new ZkCmdExecutor(zkClient.getZkClientTimeout());
-  }
-  
+//  public LeaderElector(SolrZkClient zkClient) {
+//    this.zkClient = zkClient;
+//    this.contextKey = null;
+//    this.electionContexts = new ConcurrentHashMap<>(132, 0.75f, 50);
+//  }
+
   public LeaderElector(SolrZkClient zkClient, ContextKey key, Map<ContextKey,ElectionContext> electionContexts) {
+
     this.zkClient = zkClient;
-    zkCmdExecutor = new ZkCmdExecutor(zkClient.getZkClientTimeout());
     this.electionContexts = electionContexts;
     this.contextKey = key;
   }
@@ -99,7 +99,7 @@ public  class LeaderElector {
    * @param replacement has someone else been the leader already?
    */
   private void checkIfIamLeader(final ElectionContext context, boolean replacement) throws KeeperException,
-      InterruptedException, IOException {
+          InterruptedException, IOException {
     context.checkIfIamLeaderFired();
     // get all other numbers...
     final String holdElectionPath = context.electionPath + ELECTION_NODE;
@@ -112,29 +112,14 @@ public  class LeaderElector {
       return;
     }
 
-    // If any double-registrations exist for me, remove all but this latest one!
-    // TODO: can we even get into this state?
-    String prefix = zkClient.getSolrZooKeeper().getSessionId() + "-" + context.id + "-";
-    Iterator<String> it = seqs.iterator();
-    while (it.hasNext()) {
-      String elec = it.next();
-      if (!elec.equals(leaderSeqNodeName) && elec.startsWith(prefix)) {
-        try {
-          String toDelete = holdElectionPath + "/" + elec;
-          log.warn("Deleting duplicate registration: {}", toDelete);
-          zkClient.delete(toDelete, -1, true);
-        } catch (KeeperException.NoNodeException e) {
-          // ignore
-        }
-        it.remove();
-      }
-    }
 
     if (leaderSeqNodeName.equals(seqs.get(0))) {
       // I am the leader
       try {
-        if (zkClient.isClosed()) return; // but our zkClient is already closed
-        runIamLeaderProcess(context, replacement);
+        if (!context.isClosed()) {
+          runIamLeaderProcess(context, replacement);
+        }
+
       } catch (KeeperException.NodeExistsException e) {
         log.error("node exists",e);
         retryElection(context, false);
@@ -151,9 +136,15 @@ public  class LeaderElector {
       }
       try {
         String watchedNode = holdElectionPath + "/" + toWatch;
-        zkClient.getData(watchedNode, watcher = new ElectionWatcher(context.leaderSeqPath, watchedNode, getSeq(context.leaderSeqPath), context), null, true);
-        log.debug("Watching path {} to know if I could be the leader", watchedNode);
+
+        ElectionWatcher oldWatcher = watcher;
+        if (oldWatcher != null) oldWatcher.cancel();
+        zkClient.getData(watchedNode,
+                watcher = new ElectionWatcher(context.leaderSeqPath, watchedNode, getSeq(context.leaderSeqPath), context),
+                null, true);
+        if (log.isDebugEnabled()) log.debug("Watching path {} to know if I could be the leader", watchedNode);
       } catch (KeeperException.SessionExpiredException e) {
+        log.error("ZooKeeper session has expired");
         throw e;
       } catch (KeeperException.NoNodeException e) {
         // the previous node disappeared, check if we are the leader again
@@ -168,13 +159,13 @@ public  class LeaderElector {
 
   // TODO: get this core param out of here
   protected void runIamLeaderProcess(final ElectionContext context, boolean weAreReplacement) throws KeeperException,
-      InterruptedException, IOException {
-    context.runLeaderProcess(weAreReplacement,0);
+          InterruptedException, IOException {
+    context.runLeaderProcess(context, weAreReplacement,0);
   }
-  
+
   /**
    * Returns int given String of form n_0000000001 or n_0000000003, etc.
-   * 
+   *
    * @return sequence number
    */
   public static int getSeq(String nStringSequence) {
@@ -184,11 +175,11 @@ public  class LeaderElector {
       seq = Integer.parseInt(m.group(1));
     } else {
       throw new IllegalStateException("Could not find regex match in:"
-          + nStringSequence);
+              + nStringSequence);
     }
     return seq;
   }
-  
+
   private String getNodeId(String nStringSequence) {
     String id;
     Matcher m = SESSION_ID.matcher(nStringSequence);
@@ -196,42 +187,35 @@ public  class LeaderElector {
       id = m.group(1);
     } else {
       throw new IllegalStateException("Could not find regex match in:"
-          + nStringSequence);
+              + nStringSequence);
     }
     return id;
   }
 
   public static String getNodeName(String nStringSequence){
-    String result;
-    Matcher m = NODE_NAME.matcher(nStringSequence);
-    if (m.matches()) {
-      result = m.group(2);
-    } else {
-      throw new IllegalStateException("Could not find regex match in:"
-          + nStringSequence);
-    }
-    return result;
+
+    return nStringSequence;
 
   }
-  
+
   public int joinElection(ElectionContext context, boolean replacement) throws KeeperException, InterruptedException, IOException {
     return joinElection(context,replacement, false);
   }
 
-    /**
-     * Begin participating in the election process. Gets a new sequential number
-     * and begins watching the node with the sequence number before it, unless it
-     * is the lowest number, in which case, initiates the leader process. If the
-     * node that is watched goes down, check if we are the new lowest node, else
-     * watch the next lowest numbered node.
-     *
-     * @return sequential node number
-     */
+  /**
+   * Begin participating in the election process. Gets a new sequential number
+   * and begins watching the node with the sequence number before it, unless it
+   * is the lowest number, in which case, initiates the leader process. If the
+   * node that is watched goes down, check if we are the new lowest node, else
+   * watch the next lowest numbered node.
+   *
+   * @return sequential node number
+   */
   public int joinElection(ElectionContext context, boolean replacement,boolean joinAtHead) throws KeeperException, InterruptedException, IOException {
     context.joinedElectionFired();
-    
+
     final String shardsElectZkPath = context.electionPath + LeaderElector.ELECTION_NODE;
-    
+
     long sessionId = zkClient.getSolrZooKeeper().getSessionId();
     String id = sessionId + "-" + context.id;
     String leaderSeqPath = null;
@@ -244,21 +228,21 @@ public  class LeaderElector {
           List<String> nodes = OverseerTaskProcessor.getSortedElectionNodes(zkClient, shardsElectZkPath);
           if(nodes.size() <2){
             leaderSeqPath = zkClient.create(shardsElectZkPath + "/" + id + "-n_", null,
-                CreateMode.EPHEMERAL_SEQUENTIAL, false);
+                    CreateMode.EPHEMERAL_SEQUENTIAL, true);
           } else {
             String firstInLine = nodes.get(1);
             log.debug("The current head: {}", firstInLine);
             Matcher m = LEADER_SEQ.matcher(firstInLine);
             if (!m.matches()) {
               throw new IllegalStateException("Could not find regex match in:"
-                  + firstInLine);
+                      + firstInLine);
             }
             leaderSeqPath = shardsElectZkPath + "/" + id + "-n_"+ m.group(1);
             zkClient.create(leaderSeqPath, null, CreateMode.EPHEMERAL, false);
           }
         } else {
           leaderSeqPath = zkClient.create(shardsElectZkPath + "/" + id + "-n_", null,
-              CreateMode.EPHEMERAL_SEQUENTIAL, false);
+                  CreateMode.EPHEMERAL_SEQUENTIAL, true);
         }
 
         log.debug("Joined leadership election with path: {}", leaderSeqPath);
@@ -267,7 +251,7 @@ public  class LeaderElector {
       } catch (ConnectionLossException e) {
         // we don't know if we made our node or not...
         List<String> entries = zkClient.getChildren(shardsElectZkPath, null, true);
-        
+
         boolean foundId = false;
         for (String entry : entries) {
           String nodeId = getNodeId(entry);
@@ -281,12 +265,7 @@ public  class LeaderElector {
           cont = true;
           if (tries++ > 20) {
             throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-                "", e);
-          }
-          try {
-            Thread.sleep(50);
-          } catch (InterruptedException e2) {
-            Thread.currentThread().interrupt();
+                    "", e);
           }
         }
 
@@ -296,14 +275,9 @@ public  class LeaderElector {
         if (tries++ > 20) {
           context = null;
           throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-              "", e);
+                  "", e);
         }
         cont = true;
-        try {
-          Thread.sleep(50);
-        } catch (InterruptedException e2) {
-          Thread.currentThread().interrupt();
-        }
       }
     }
     checkIfIamLeader(context, replacement);
@@ -339,21 +313,20 @@ public  class LeaderElector {
         try {
           zkClient.delete(myNode, -1, true);
         } catch (KeeperException.NoNodeException nne) {
+          log.info("No znode found to delete at {}", myNode);
           // expected . don't do anything
         } catch (Exception e) {
-          log.warn("My watched node still exists and can't remove {}", myNode, e);
+          ParWork.propegateInterrupt(e);
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Exception canceling election", e);
         }
         return;
       }
       try {
         // am I the next leader?
         checkIfIamLeader(context, true);
-      } catch (AlreadyClosedException e) {
-
       } catch (Exception e) {
-        if (!zkClient.isClosed()) {
-          log.warn("", e);
-        }
+        ParWork.propegateInterrupt(e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Exception canceling election", e);
       }
     }
   }
@@ -362,18 +335,27 @@ public  class LeaderElector {
    * Set up any ZooKeeper nodes needed for leader election.
    */
   public void setup(final ElectionContext context) throws InterruptedException,
-      KeeperException {
+          KeeperException {
+    // nocommit - already created
     String electZKPath = context.electionPath + LeaderElector.ELECTION_NODE;
+
     if (context instanceof OverseerElectionContext) {
-      zkCmdExecutor.ensureExists(electZKPath, zkClient);
+      //zkCmdExecutor.ensureExists(electZKPath, zkClient);
     } else {
       // we use 2 param so that replica won't create /collection/{collection} if it doesn't exist
+      ShardLeaderElectionContext slec = (ShardLeaderElectionContext) context;
+
+      ZkCmdExecutor zkCmdExecutor = new ZkCmdExecutor(zkClient.getZkClientTimeout());
       zkCmdExecutor.ensureExists(electZKPath, (byte[])null, CreateMode.PERSISTENT, zkClient, 2);
+      System.out.println("CreateNODE:" + ZkStateReader.getShardLeadersPath(slec.collection, slec.shardId));
+      zkCmdExecutor.ensureExists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + slec.collection + "/"
+              + ZkStateReader.SHARD_LEADERS_ZKNODE + (slec.shardId != null ? ("/" + slec.shardId)
+              : ""), (byte[])null, CreateMode.PERSISTENT, zkClient, 2);
     }
 
     this.context = context;
   }
-  
+
   /**
    * Sort n string sequence list.
    */
@@ -388,10 +370,12 @@ public  class LeaderElector {
     ElectionWatcher watcher = this.watcher;
     ElectionContext ctx = context.copy();
     if (electionContexts != null) {
-      electionContexts.put(contextKey, ctx);
+      ElectionContext prevContext = electionContexts.put(contextKey, ctx);
+      if (prevContext != null) {
+        prevContext.close();
+      }
     }
     if (watcher != null) watcher.cancel();
-    this.context.cancelElection();
     this.context.close();
     this.context = ctx;
     joinElection(ctx, true, joinAtHead);

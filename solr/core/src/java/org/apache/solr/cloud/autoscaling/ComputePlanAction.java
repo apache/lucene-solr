@@ -40,6 +40,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static org.apache.solr.cloud.autoscaling.TriggerEvent.NODE_NAMES;
+import static org.apache.solr.common.params.AutoScalingParams.PREFERRED_OP;
 
 /**
  * This class is responsible for using the configured policy and preferences
@@ -56,7 +57,10 @@ public class ComputePlanAction extends TriggerActionBase {
 
   public ComputePlanAction() {
     super();
-    TriggerUtils.validProperties(validProperties, "collections");
+
+    Set<String> vProperties = new HashSet<>(validProperties);
+    TriggerUtils.validProperties(vProperties, "collections");
+    this.validProperties = vProperties;
   }
 
 

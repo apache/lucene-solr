@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
@@ -39,18 +40,18 @@ public abstract class TriggerListenerBase implements TriggerListener {
    * Set of valid property names. Subclasses may add to this set
    * using {@link TriggerUtils#validProperties(Set, String...)}
    */
-  protected final Set<String> validProperties = new HashSet<>();
+  protected final Set<String> validProperties = ConcurrentHashMap.newKeySet();
   /**
    * Set of required property names. Subclasses may add to this set
    * using {@link TriggerUtils#requiredProperties(Set, Set, String...)}
    * (required properties are also valid properties).
    */
-  protected final Set<String> requiredProperties = new HashSet<>();
+  protected final Set<String> requiredProperties = ConcurrentHashMap.newKeySet();
   /**
    * Subclasses can add to this set if they want to allow arbitrary properties that
    * start with one of valid prefixes.
    */
-  protected final Set<String> validPropertyPrefixes = new HashSet<>();
+  protected final Set<String> validPropertyPrefixes = ConcurrentHashMap.newKeySet();
 
   protected TriggerListenerBase() {
     TriggerUtils.requiredProperties(requiredProperties, validProperties, "trigger");

@@ -61,6 +61,7 @@ import org.apache.solr.util.HdfsUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.lucene.util.LuceneTestCase.TEST_NIGHTLY;
 import static org.apache.lucene.util.LuceneTestCase.random;
 
 public class HdfsTestUtil {
@@ -80,7 +81,7 @@ public class HdfsTestUtil {
   private static FileSystem badTlogOutStreamFs;
 
   public static MiniDFSCluster setupClass(String dir) throws Exception {
-    return setupClass(dir, true, true);
+    return setupClass(dir, TEST_NIGHTLY ? true : false, true);
   }
 
   public static MiniDFSCluster setupClass(String dir, boolean haTesting) throws Exception {
@@ -165,6 +166,7 @@ public class HdfsTestUtil {
     DefaultMetricsSystem.setInstance(new FakeMetricsSystem());
 
     Configuration conf = getBasicConfiguration(new Configuration());
+
     conf.set("hdfs.minidfs.basedir", dir + File.separator + "hdfsBaseDir");
     conf.set("dfs.namenode.name.dir", dir + File.separator + "nameNodeNameDir");
     // Disable metrics logging for HDFS
@@ -197,6 +199,29 @@ public class HdfsTestUtil {
 
     MiniDFSCluster dfsCluster = dfsClusterBuilder.build();
     HdfsUtil.TEST_CONF = getClientConfiguration(dfsCluster);
+    HdfsUtil.TEST_CONF.set("dfs.client.block.write.replace-datanode-on-failure.policy", "NEVER");
+    HdfsUtil.TEST_CONF.set("dfs.client.block.locateFollowingBlock.initial.delay.ms", "10");
+    HdfsUtil.TEST_CONF.set("dfs.client.block.write.locateFollowingBlock.initial.delay.ms", "10");
+    HdfsUtil.TEST_CONF.set("dfs.namenode.resource.du.reserved", "0");
+    HdfsUtil.TEST_CONF.set("dfs.namenode.resource.checked.volumes.minimum", Integer.toString(Integer.MAX_VALUE));
+    HdfsUtil.TEST_CONF.set("dfs.namenode.resource.check.interval", "60000");  // sucks
+    HdfsUtil.TEST_CONF.set("dfs.namenode.resource.checked.volumes.minimum", "0");  // sucks
+    HdfsUtil.TEST_CONF.set("dfs.client.socketcache.expiryMsec", "15000");
+    HdfsUtil.TEST_CONF.set("dfs.client.socketcache.capacity", "100");
+    HdfsUtil.TEST_CONF.set("dfs.datanode.hostname", "127.0.0.1");
+    HdfsUtil.TEST_CONF.set("dfs.client.hedged.read.threshold.millis", "15000");
+    HdfsUtil.TEST_CONF.set("dfs.client.read.shortcircuit.buffer.size", "4194304");
+    HdfsUtil.TEST_CONF.set("dfs.lease.renewal.retries", "1");
+    HdfsUtil.TEST_CONF.set("dfs.datanode.socket.reuse.keepalive", "30000");
+    HdfsUtil.TEST_CONF.set("dfs.client.write.exclude.nodes.cache.expiry.interval.millis", "10");
+    HdfsUtil.TEST_CONF.set("dfs.softlease.period", "30000");
+    HdfsUtil.TEST_CONF.set("dfs.hardlease.period", "30000");
+    HdfsUtil.TEST_CONF.set("dfs.short.circuit.shared.memory.watcher.interrupt.check.ms", "120000");
+    HdfsUtil.TEST_CONF.set("dfs.client.read.shortcircuit", "true");
+    HdfsUtil.TEST_CONF.set("dfs.client.use.legacy.blockreader.local", "true");
+    HdfsUtil.TEST_CONF.set("dfs.datanode.data.dir.perm", "750");
+    HdfsUtil.TEST_CONF.set("dfs.datanode.data.dir.perm", "750");
+
     System.setProperty("solr.hdfs.home", getDataDir(dfsCluster, "solr_hdfs_home"));
 
     dfsCluster.waitActive();
@@ -204,7 +229,7 @@ public class HdfsTestUtil {
     if (haTesting) dfsCluster.transitionToActive(0);
 
     int rndMode = random().nextInt(3);
-    if (safeModeTesting && rndMode == 1) {
+    if (!TEST_NIGHTLY && safeModeTesting && rndMode == 1) {
       NameNodeAdapter.enterSafeMode(dfsCluster.getNameNode(), false);
 
       int rnd = random().nextInt(10000);

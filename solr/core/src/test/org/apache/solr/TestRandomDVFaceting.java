@@ -82,7 +82,11 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
     Random rand = random();
     clearIndex();
     model = null;
-    indexSize = rand.nextBoolean() ? (rand.nextInt(10) + 1) : (rand.nextInt(100) + 10);
+    if (TEST_NIGHTLY) {
+      indexSize = rand.nextBoolean() ? (rand.nextInt(10) + 1) : (rand.nextInt(100) + 10);
+    } else {
+      indexSize = rand.nextBoolean() ? (rand.nextInt(3) + 1) : (rand.nextInt(5) + 10);
+    }
 
     types = new ArrayList<>();
     types.add(new FldType("id",ONE_ONE, new SVal('A','Z',4,4)));
@@ -120,7 +124,7 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
 
   void deleteSomeDocs() {
     Random rand = random();
-    int percent = rand.nextInt(100);
+    int percent = rand.nextInt(TEST_NIGHTLY ? 100 : 10);
     if (model == null) return;
     ArrayList<String> ids = new ArrayList<>(model.size());
     for (Comparable id : model.keySet()) {
@@ -149,7 +153,7 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
   @Test
   public void testRandomFaceting() throws Exception {
     Random rand = random();
-    int iter = atLeast(100);
+    int iter = atLeast(TEST_NIGHTLY ? 100 : 10);
     init();
     addMoreDocs(0);
     
@@ -207,7 +211,7 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
         if(rarely()) {
           params.add("facet.limit", "-1");
         } else {
-          int limit = 100;
+          int limit = TEST_NIGHTLY ? 100 : 10;
           if (rand.nextBoolean()) {
             limit = rand.nextInt(100) < 10 ? rand.nextInt(indexSize/2+1) : rand.nextInt(indexSize*2);
           }

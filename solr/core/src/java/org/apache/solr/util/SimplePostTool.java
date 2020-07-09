@@ -62,6 +62,7 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
+import org.apache.solr.core.XmlConfigFile;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -1040,8 +1041,8 @@ public class SimplePostTool {
    * Gets all nodes matching an XPath
    */
   public static NodeList getNodesFromXP(Node n, String xpath) throws XPathExpressionException {
-    XPathFactory factory = XPathFactory.newInstance();
-    XPath xp = factory.newXPath();
+    XPathFactory factory = XmlConfigFile.xpathFactory;
+    XPath xp = XmlConfigFile.xpath;
     XPathExpression expr = xp.compile(xpath);
     return (NodeList) expr.evaluate(n, XPathConstants.NODESET);
   }

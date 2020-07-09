@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -44,6 +45,7 @@ import org.slf4j.LoggerFactory;
 
 @Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@LuceneTestCase.Nightly // nocommit, speed up and bridge
 public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDistribZkTestBase {
   private static final int FAIL_TOLERANCE = 100;
 
@@ -141,7 +143,7 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
   }
   
   protected CloudSolrClient createCloudClient(String defaultCollection, int socketTimeout) {
-    CloudSolrClient client = getCloudSolrClient(zkServer.getZkAddress(), random().nextBoolean(), 30000, socketTimeout);
+    CloudSolrClient client = getCloudSolrClient(zkServer.getZkAddress(), random().nextBoolean(), DEFAULT_CONNECTION_TIMEOUT, socketTimeout);
     if (defaultCollection != null) client.setDefaultCollection(defaultCollection);
     return client;
   }
@@ -167,14 +169,6 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
       handle.clear();
       handle.put("timestamp", SKIPVAL);
       ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-      // make sure we have leaders for each shard
-      for (int j = 1; j < sliceCount; j++) {
-        zkStateReader.getLeaderRetry(DEFAULT_COLLECTION, "shard" + j, 10000);
-      }      // make sure we again have leaders for each shard
-      
-      waitForRecoveriesToFinish(false);
-
-      del("*:*");
       
       List<StoppableThread> threads = new ArrayList<>();
       List<StoppableIndexingThread> indexTreads = new ArrayList<>();
@@ -249,8 +243,7 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
       
       ChaosMonkey.wait(2000, DEFAULT_COLLECTION, zkStateReader);
       
-      // wait until there are no recoveries...
-      waitForThingsToLevelOut();
+      waitForRecoveriesToFinish(false);
       
       // make sure we again have leaders for each shard
       for (int j = 1; j < sliceCount; j++) {
@@ -310,7 +303,7 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
       try (CloudSolrClient client = createCloudClient("collection1", 30000)) {
         // We don't really know how many live nodes we have at this point, so "maxShardsPerNode" needs to be > 1
         createCollection(null, "testcollection",
-              1, 1, 10, client, null, "conf1"); 
+              1, 1, 10, client, null, "_default");
       }
       List<Integer> numShardsNumReplicas = new ArrayList<>(2);
       numShardsNumReplicas.add(1);

@@ -17,6 +17,7 @@
 package org.apache.solr.client.solrj.embedded;
 
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 import javax.servlet.Filter;
 import java.util.LinkedHashMap;
@@ -34,7 +35,6 @@ public class JettyConfig {
 
   public final boolean enableV2;
 
-
   public final boolean stopAtShutdown;
   
   public final Long waitForLoadingCoresToFinishMs;
@@ -47,9 +47,13 @@ public class JettyConfig {
   
   public final int portRetryTime;
 
+  public final boolean enableProxy;
+
+  public final QueuedThreadPool qtp;
+
   private JettyConfig(boolean onlyHttp1, int port, int portRetryTime , String context, boolean stopAtShutdown,
                       Long waitForLoadingCoresToFinishMs, Map<ServletHolder, String> extraServlets,
-                      Map<Class<? extends Filter>, String> extraFilters, SSLConfig sslConfig, boolean enableV2) {
+                      Map<Class<? extends Filter>, String> extraFilters, SSLConfig sslConfig, boolean enableV2, boolean enableProxy, QueuedThreadPool qtp) {
     this.onlyHttp1 = onlyHttp1;
     this.port = port;
     this.context = context;
@@ -60,6 +64,8 @@ public class JettyConfig {
     this.sslConfig = sslConfig;
     this.portRetryTime = portRetryTime;
     this.enableV2 = enableV2;
+    this.enableProxy = enableProxy;
+    this.qtp = qtp;
   }
 
   public static Builder builder() {
@@ -74,6 +80,12 @@ public class JettyConfig {
     builder.extraServlets = other.extraServlets;
     builder.extraFilters = other.extraFilters;
     builder.sslConfig = other.sslConfig;
+    builder.enableProxy = other.enableProxy;
+    builder.portRetryTime = other.portRetryTime;
+    builder.onlyHttp1 = other.onlyHttp1;
+    builder.waitForLoadingCoresToFinishMs = other.waitForLoadingCoresToFinishMs;
+    builder.enableV2 = other.enableV2;
+    builder.qtp = other.qtp;
     return builder;
   }
 
@@ -89,6 +101,8 @@ public class JettyConfig {
     Map<Class<? extends Filter>, String> extraFilters = new LinkedHashMap<>();
     SSLConfig sslConfig = null;
     int portRetryTime = 60;
+    boolean enableProxy;
+    QueuedThreadPool qtp;
 
     public Builder useOnlyHttp1(boolean useOnlyHttp1) {
       this.onlyHttp1 = useOnlyHttp1;
@@ -151,10 +165,20 @@ public class JettyConfig {
       return this;
     }
 
+    public Builder enableProxy(boolean enable) {
+      this.enableProxy = enable;
+      return this;
+    }
+
+    public Builder withExecutor(QueuedThreadPool qtp) {
+      this.qtp = qtp;
+      return this;
+    }
+
 
     public JettyConfig build() {
       return new JettyConfig(onlyHttp1, port, portRetryTime, context, stopAtShutdown,
-          waitForLoadingCoresToFinishMs, extraServlets, extraFilters, sslConfig, enableV2);
+          waitForLoadingCoresToFinishMs, extraServlets, extraFilters, sslConfig, enableV2, enableProxy, qtp);
     }
 
   }

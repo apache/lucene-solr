@@ -55,6 +55,7 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.LogLevel;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,6 +65,7 @@ import org.slf4j.LoggerFactory;
  */
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG")
 @LuceneTestCase.Slow
+@Ignore // nocommit debug
 public class IndexSizeTriggerMixedBoundsTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -73,8 +75,8 @@ public class IndexSizeTriggerMixedBoundsTest extends SolrCloudTestCase {
   private static int SPEED = 1;
 
   static Map<String, List<CapturedEvent>> listenerEvents = new ConcurrentHashMap<>();
-  static CountDownLatch listenerCreated;
-  static CountDownLatch finished;
+  static volatile CountDownLatch listenerCreated;
+  static volatile CountDownLatch finished;
 
   @BeforeClass
   public static void setupCluster() throws Exception {

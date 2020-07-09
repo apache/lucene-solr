@@ -21,9 +21,12 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import org.apache.hadoop.security.authentication.client.PseudoAuthenticator;
 import org.apache.hadoop.util.Time;
 import org.apache.http.HttpStatus;
+import org.apache.lucene.util.QuickPatchThreadsFilter;
+import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -41,10 +44,18 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@ThreadLeakFilters(defaultFilters = true, filters = {
+        SolrIgnoredThreadsFilter.class,
+        QuickPatchThreadsFilter.class,
+        BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
+})
+@Ignore // nocommit debug
 public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
   protected static final int NUM_SERVERS = 2;
   protected static final String USER_1 = "foo";
@@ -53,6 +64,7 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupClass() throws Exception {
+    System.setProperty("solr.disablePublicKeyHandler", "false");
     HdfsTestUtil.checkAssumptions();
 
     configureCluster(NUM_SERVERS)// nodes
@@ -146,7 +158,7 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
       if (lastStatusCode == expectedStatusCode) {
         return;
       }
-      Thread.sleep(1000);
+      Thread.sleep(250);
     }
     assertEquals("Did not receieve excepted status code", expectedStatusCode, lastStatusCode);
   }
@@ -172,7 +184,7 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
     else delegationTokenClient = new CloudSolrClient.Builder(Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
         .withLBHttpSolrClientBuilder(new LBHttpSolrClient.Builder()
             .withResponseParser(client.getParser())
-            .withSocketTimeout(30000).withConnectionTimeout(15000)
+            .withSocketTimeout(15000).withConnectionTimeout(10000)
             .withHttpSolrClientBuilder(
                 new HttpSolrClient.Builder()
                     .withKerberosDelegationToken(token)

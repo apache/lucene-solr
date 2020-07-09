@@ -35,12 +35,14 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 
 import static java.util.Arrays.asList;
 import static org.apache.solr.core.TestDynamicLoading.getFileContent;
 import static org.apache.solr.handler.TestSolrConfigHandlerCloud.compareValues;
 
 @SolrTestCaseJ4.SuppressSSL
+@Ignore // nocommit debug
 public class TestDynamicLoadingUrl extends AbstractFullDistribZkTestBase {
 
   @BeforeClass

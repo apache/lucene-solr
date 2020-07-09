@@ -117,12 +117,14 @@ public class SolrEntityProcessor extends EntityProcessorBase {
         solrClient = new Builder(url.toExternalForm())
             .withHttpClient(client)
             .withResponseParser(new XMLResponseParser())
+            .markInternalRequest()
             .build();
         log.info("using XMLResponseParser");
       } else {
         // TODO: it doesn't matter for this impl when passing a client currently, but we should close this!
         solrClient = new Builder(url.toExternalForm())
             .withHttpClient(client)
+            .markInternalRequest()
             .build();
         log.info("using BinaryResponseParser");
       }

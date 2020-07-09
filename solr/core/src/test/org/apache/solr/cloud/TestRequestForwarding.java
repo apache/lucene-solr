@@ -16,8 +16,11 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.InputStream;
 import java.net.URL;
+import java.net.URLEncoder;
 
+import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -61,8 +64,9 @@ public class TestRequestForwarding extends SolrTestCaseJ4 {
       };
       for (String q: queryStrings) {
         try {
-          URL url = new URL(jettySolrRunner.getBaseUrl().toString()+"/collection1/select?"+q);
-          url.openStream(); // Shouldn't throw any errors
+          URL url = new URL(jettySolrRunner.getBaseUrl().toString()+"/collection1/select?"+ URLEncoder.encode(q, "UTF-8"));
+          InputStream is = url.openStream(); // Shouldn't throw any errors
+          is.close();
         } catch (Exception ex) {
           throw new RuntimeException("Query '" + q + "' failed, ",ex);
         }

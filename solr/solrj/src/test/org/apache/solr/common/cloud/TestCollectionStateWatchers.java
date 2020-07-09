@@ -44,7 +44,7 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
 
   private static final int CLUSTER_SIZE = 4;
 
-  private static final int MAX_WAIT_TIMEOUT = 120; // seconds, only use for await -- NO SLEEP!!!
+  private static final int MAX_WAIT_TIMEOUT = 15; // seconds, only use for await -- NO SLEEP!!!
 
   private ExecutorService executor = null;
 
@@ -71,6 +71,7 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
       try {
         cluster.getSolrClient().waitForState(collection, timeout, unit, predicate);
       } catch (InterruptedException | TimeoutException e) {
+        e.printStackTrace();
         return Boolean.FALSE;
       }
       return Boolean.TRUE;
@@ -85,7 +86,7 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
         while (true) {
           if (predicate.call())
             return true;
-          TimeUnit.MILLISECONDS.sleep(10);
+          TimeUnit.MILLISECONDS.sleep(250);
         }
       }
       catch (InterruptedException e) {
@@ -99,6 +100,7 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
     }
     catch (TimeoutException e) {
       // pass failure message on
+      e.printStackTrace();
     }
     future.cancel(true);
     fail(message);
@@ -128,7 +130,7 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
 
     final JettySolrRunner extraJetty = cluster.startJettySolrRunner();
     final JettySolrRunner jettyToShutdown
-      = shutdownUnusedNode ? extraJetty : cluster.getJettySolrRunners().get(0);
+      = shutdownUnusedNode ? extraJetty : cluster.getRandomJetty(random());
     final int expectedNodesWithActiveReplicas = CLUSTER_SIZE - (shutdownUnusedNode ? 0 : 1);
     
     cluster.waitForAllNodes(MAX_WAIT_TIMEOUT);
@@ -321,6 +323,8 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
                                               (l, c) -> (l.size() == 1 + CLUSTER_SIZE));
     
     JettySolrRunner unusedJetty = cluster.startJettySolrRunner();
+    cluster.waitForNode(unusedJetty, 10000);
+
     assertTrue("CollectionStateWatcher not notified of new node", future.get());
     
     waitFor("CollectionStateWatcher should be removed", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
@@ -330,6 +334,8 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
                               (l, c) -> (l.size() == CLUSTER_SIZE));
 
     cluster.stopJettySolrRunner(unusedJetty);
+
+    cluster.waitForJettyToStop(unusedJetty);
     
     assertTrue("CollectionStateWatcher not notified of node lost", future.get());
     

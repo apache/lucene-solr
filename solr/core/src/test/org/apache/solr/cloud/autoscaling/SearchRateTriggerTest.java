@@ -55,11 +55,13 @@ import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  *
  */
+@Ignore // nocommit fix silly slow
 public class SearchRateTriggerTest extends SolrCloudTestCase {
   private static final String PREFIX = SearchRateTriggerTest.class.getSimpleName() + "-";
   private static final String COLL1 = PREFIX + "collection1";
@@ -238,9 +240,9 @@ public class SearchRateTriggerTest extends SolrCloudTestCase {
         "conf", 2, 2);
     create.setMaxShardsPerNode(1);
     create.process(solrClient);
-    CloudUtil.waitForState(cloudManager, COLL1, 60, TimeUnit.SECONDS, clusterShape(2, 4));
+    CloudUtil.waitForState(cloudManager, COLL1, 10, TimeUnit.SECONDS, clusterShape(2, 4));
 
-    long waitForSeconds = 5 + random().nextInt(5);
+    long waitForSeconds = 3 + random().nextInt(5);
     Map<String, Object> props = createTriggerProps(Arrays.asList(COLL1, COLL2), waitForSeconds, 1.0, 0.1);
     final List<TriggerEvent> events = new ArrayList<>();
 

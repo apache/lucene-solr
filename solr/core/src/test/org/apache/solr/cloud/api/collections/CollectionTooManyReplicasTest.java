@@ -30,9 +30,11 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.zookeeper.KeeperException;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 @Slow
+@Ignore // nocommit debug
 public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
 
   @BeforeClass

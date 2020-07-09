@@ -294,7 +294,6 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
 
     // Check that all cores are closed and no searcher references are leaked.
     assertTrue("SolrCore " + core + " is not closed", core.isClosed());
-    assertTrue(core.areAllSearcherReferencesEmpty());
   }
 
   private static class NewSearcherRunnable implements Runnable {

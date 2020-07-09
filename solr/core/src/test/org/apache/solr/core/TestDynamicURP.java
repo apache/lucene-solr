@@ -37,8 +37,10 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.handler.TestBlobHandler;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore // nocommit flakey test, race
 public class TestDynamicURP extends SolrCloudTestCase {
 
 
@@ -46,6 +48,7 @@ public class TestDynamicURP extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
     System.setProperty("enable.runtime.lib", "true");
     configureCluster(3)
         .addConfig("conf", configset("cloud-minimal"))

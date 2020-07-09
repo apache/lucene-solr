@@ -40,6 +40,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 
@@ -205,7 +206,7 @@ public class TestFieldCacheWithThreads extends SolrTestCase {
       threads[thread] = new Thread() {
           @Override
           public void run() {
-            Random random = random();            
+            Random random = LuceneTestCase.random();
             final SortedDocValues stringDVDirect;
             final NumericDocValues docIDToID;
             try {

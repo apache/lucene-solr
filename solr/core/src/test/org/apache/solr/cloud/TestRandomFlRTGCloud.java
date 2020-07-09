@@ -210,9 +210,9 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
 
   public void testRandomizedUpdatesAndRTGs() throws Exception {
 
-    final int maxNumDocs = atLeast(100);
+    final int maxNumDocs = atLeast(TEST_NIGHTLY ? 100 : 10);
     final int numSeedDocs = random().nextInt(maxNumDocs / 10); // at most ~10% of the max possible docs
-    final int numIters = atLeast(maxNumDocs * 10);
+    final int numIters = atLeast(maxNumDocs * (TEST_NIGHTLY ? 10 : 2));
     final SolrInputDocument[] knownDocs = new SolrInputDocument[maxNumDocs];
 
     log.info("Starting {} iters by seeding {} of {} max docs",

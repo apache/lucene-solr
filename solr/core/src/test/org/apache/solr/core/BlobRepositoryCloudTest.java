@@ -42,6 +42,8 @@ public class BlobRepositoryCloudTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
+
     configureCluster(1)  // only sharing *within* a node
         .addConfig("configname", TEST_PATH.resolve("resource-sharing"))
         .configure();

@@ -360,4 +360,8 @@ public class SolrQueryResponse {
   public Iterator<Entry<String, String>> httpHeaders() {
     return headers.iterator();
   }
+
+  public NamedList<String> getHeaders() {
+    return headers;
+  }
 }

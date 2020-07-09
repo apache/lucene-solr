@@ -19,6 +19,7 @@ package org.apache.solr.core;
 import javax.script.ScriptEngineManager;
 
 import org.junit.Assume;
+import org.junit.Ignore;
 
 public class TestBadConfig extends AbstractBadConfigTestBase {
 
@@ -43,6 +44,7 @@ public class TestBadConfig extends AbstractBadConfigTestBase {
                     "useCompoundFile");
   }
 
+  @Ignore // nocommit debug
   public void testUpdateLogButNoVersionField() throws Exception {
     
     System.setProperty("enable.update.log", "true");

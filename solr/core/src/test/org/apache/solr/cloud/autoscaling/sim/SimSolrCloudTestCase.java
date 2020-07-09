@@ -94,7 +94,7 @@ public class SimSolrCloudTestCase extends SolrTestCaseJ4 {
   }
 
   protected static void assertAutoscalingUpdateComplete() throws Exception {
-    (new TimeOut(30, TimeUnit.SECONDS, cluster.getTimeSource()))
+    (new TimeOut(15, TimeUnit.SECONDS, cluster.getTimeSource()))
         .waitFor("OverseerTriggerThread never caught up to the latest znodeVersion", () -> {
           try {
             AutoScalingConfig autoscalingConfig = cluster.getDistribStateManager().getAutoScalingConfig();

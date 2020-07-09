@@ -21,6 +21,7 @@ import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.mockfile.FilterPath;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -45,6 +46,7 @@ import org.junit.Test;
  * work as expected.
  */
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@LuceneTestCase.Nightly // nocommit - check out more
 public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
   private static final String SHARD2 = "shard2";
   private static final String SHARD1 = "shard1";
@@ -148,7 +150,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
   
   private void testNodeWithoutCollectionForwarding() throws Exception {
     assertEquals(0, CollectionAdminRequest
-        .createCollection(ONE_NODE_COLLECTION, "conf1", 1, 1)
+        .createCollection(ONE_NODE_COLLECTION, "_default", 1, 1)
         .setCreateNodeSet("")
         .process(cloudClient).getStatus());
     assertTrue(CollectionAdminRequest
@@ -382,17 +384,8 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     }
     commit();
     
-    Thread.sleep(1500);
-    
     deadShard.jetty.start();
-    
-    // make sure we have published we are recovering
-    Thread.sleep(1500);
-    
-    waitForThingsToLevelOut(1, TimeUnit.MINUTES);
-    
-    Thread.sleep(500);
-    
+
     waitForRecoveriesToFinish(false);
     
     checkShardConsistency(true, false);

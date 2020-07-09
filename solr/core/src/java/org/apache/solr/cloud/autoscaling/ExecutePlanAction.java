@@ -21,9 +21,11 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -63,7 +65,9 @@ public class ExecutePlanAction extends TriggerActionBase {
   boolean taskTimeoutFail;
 
   public ExecutePlanAction() {
-    TriggerUtils.validProperties(validProperties, TASK_TIMEOUT_SECONDS, TASK_TIMEOUT_FAIL);
+    Set<String> vProperties = new HashSet<>(validProperties);
+    TriggerUtils.validProperties(vProperties, TASK_TIMEOUT_SECONDS, TASK_TIMEOUT_FAIL);
+    this.validProperties = vProperties;
   }
 
   @Override
@@ -224,7 +228,7 @@ public class ExecutePlanAction extends TriggerActionBase {
       if (i > 0 && i % 5 == 0) {
         log.trace("Task with requestId={} still not complete after {}s. Last state={}", requestId, i * 5, state);
       }
-      cloudManager.getTimeSource().sleep(5000);
+      cloudManager.getTimeSource().sleep(250);
     }
     log.debug("Task with requestId={} did not complete within {} seconds. Last state={}", timeoutSeconds, requestId, state);
     return statusResponse;

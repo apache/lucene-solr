@@ -56,6 +56,7 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.util.RefCounted;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -67,6 +68,7 @@ import static org.apache.solr.search.SolrReturnFields.FIELD_SOURCES.ALL_FROM_STO
 import static org.apache.solr.search.SolrReturnFields.FIELD_SOURCES.MIXED_SOURCES;
 import static org.apache.solr.search.SolrReturnFields.FIELD_SOURCES.ALL_FROM_DV;
 
+@Ignore // nocommit debug
 public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
 
   @Rule

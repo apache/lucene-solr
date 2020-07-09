@@ -27,6 +27,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
@@ -116,7 +117,7 @@ public class AssignTest extends SolrTestCaseJ4 {
         List<Future<?>> futures = new ArrayList<>();
         for (int i = 0; i < 73; i++) {
           futures.add(executor.submit(() -> {
-            String collection = collections[random().nextInt(collections.length)];
+            String collection = collections[LuceneTestCase.random().nextInt(collections.length)];
             int id = Assign.incAndGetId(stateManager, collection, 0);
             Object val = collectionUniqueIds.get(collection).put(id, fixedValue);
             if (val != null) {

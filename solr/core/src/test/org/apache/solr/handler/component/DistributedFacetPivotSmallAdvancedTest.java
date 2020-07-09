@@ -46,7 +46,6 @@ public class DistributedFacetPivotSmallAdvancedTest extends BaseDistributedSearc
   @ShardsFixed(num = 2)
   public void test() throws Exception {
 
-    del("*:*");
     final SolrClient shard0 = clients.get(0);
     final SolrClient shard1 = clients.get(1);
 

@@ -24,15 +24,20 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -72,6 +77,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.QoSParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ContentStream;
@@ -111,6 +117,14 @@ import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.TimeOut;
 import org.apache.solr.util.tracing.GlobalTracer;
 import org.apache.zookeeper.KeeperException;
+import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.util.InputStreamContentProvider;
+import org.eclipse.jetty.client.util.InputStreamResponseListener;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.util.UrlEncoded;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -156,6 +170,7 @@ public class HttpSolrCall {
     }
   }
 
+  private final boolean preserveHost = false;
   protected final SolrDispatchFilter solrDispatchFilter;
   protected final CoreContainer cores;
   protected final HttpServletRequest req;
@@ -257,8 +272,8 @@ public class HttpSolrCall {
       if (core != null) {
         path = path.substring(idx);
       } else {
-        if (cores.isCoreLoading(origCorename)) { // extra mem barriers, so don't look at this before trying to get core
-          throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "SolrCore is loading");
+        while (cores.isCoreLoading(origCorename)) {
+          Thread.sleep(250); // nocommit - make efficient
         }
         // the core may have just finished loading
         core = cores.getCore(origCorename);
@@ -271,6 +286,13 @@ public class HttpSolrCall {
         }
       }
     }
+
+    if (core != null) {
+      while (cores.isCoreLoading(origCorename)) {
+        Thread.sleep(250); // nocommit - make efficient
+      }
+    }
+
 
     if (cores.isZooKeeperAware()) {
       // init collectionList (usually one name but not when there are aliases)
@@ -460,7 +482,7 @@ public class HttpSolrCall {
       if (!retry) {
         // we couldn't find a core to work with, try reloading aliases & this collection
         cores.getZkController().getZkStateReader().aliasesManager.update();
-        cores.getZkController().zkStateReader.forceUpdateCollection(collectionName);
+        cores.getZkController().zkStateReader.forceUpdateCollection(collectionName); // TODO: remove
         action = RETRY;
       }
     }
@@ -563,8 +585,8 @@ public class HttpSolrCall {
           return RETURN;
         case REMOTEQUERY:
           SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, new SolrQueryResponse(), action));
-          remoteQuery(coreUrl + path, resp);
-          return RETURN;
+          Action a = remoteQuery(coreUrl + path);
+          return a;
         case PROCESS:
           final Method reqMethod = Method.getMethod(req.getMethod());
           HttpCacheHeaderUtil.setCacheControlHeader(config, resp, reqMethod);
@@ -665,84 +687,157 @@ public class HttpSolrCall {
     return updatedQueryParams.toQueryString();
   }
 
-  //TODO using Http2Client
-  private void remoteQuery(String coreUrl, HttpServletResponse resp) throws IOException {
-    HttpRequestBase method;
-    HttpEntity httpEntity = null;
-    try {
-      String urlstr = coreUrl + getQuerySting();
+  private Action remoteQuery(String coreUrl) throws IOException {
+    if (req != null) {
 
-      boolean isPostOrPutRequest = "POST".equals(req.getMethod()) || "PUT".equals(req.getMethod());
-      if ("GET".equals(req.getMethod())) {
-        method = new HttpGet(urlstr);
-      } else if ("HEAD".equals(req.getMethod())) {
-        method = new HttpHead(urlstr);
-      } else if (isPostOrPutRequest) {
-        HttpEntityEnclosingRequestBase entityRequest =
-            "POST".equals(req.getMethod()) ? new HttpPost(urlstr) : new HttpPut(urlstr);
-        InputStream in = req.getInputStream();
-        HttpEntity entity = new InputStreamEntity(in, req.getContentLength());
-        entityRequest.setEntity(entity);
-        method = entityRequest;
-      } else if ("DELETE".equals(req.getMethod())) {
-        method = new HttpDelete(urlstr);
-      } else if ("OPTIONS".equals(req.getMethod())) {
-        method = new HttpOptions(urlstr);
+      log.info("proxy to:" + coreUrl + "?" + req.getQueryString());
+      // nocommit - dont proxy around too much
+      String fhost = req.getHeader(HttpHeader.X_FORWARDED_FOR.toString());
+      final URL proxyFromUrl;
+      if (fhost != null) {
+        // already proxied, allow this?
+        proxyFromUrl = new URL("http://" + fhost);
+        // OR? action = PASSTHROUGH;
+        // nocommit: look into how much we can proxy around
+        // Already proxied
+        sendError(404, "No SolrCore found to service request.");
+        return RETURN;
       } else {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "Unexpected method type: " + req.getMethod());
+        proxyFromUrl = null;
       }
 
-      for (Enumeration<String> e = req.getHeaderNames(); e.hasMoreElements(); ) {
-        String headerName = e.nextElement();
-        if (!"host".equalsIgnoreCase(headerName)
-            && !"authorization".equalsIgnoreCase(headerName)
-            && !"accept".equalsIgnoreCase(headerName)) {
-          method.addHeader(headerName, req.getHeader(headerName));
+      //System.out.println("protocol:" + req.getProtocol());
+      URL url = new URL(coreUrl + "?" + (req.getQueryString() != null ? req.getQueryString() : ""));
+      final Request proxyRequest;
+      try {
+        proxyRequest = solrDispatchFilter.httpClient.newRequest(url.toURI())
+                .method(req.getMethod())
+                .version(HttpVersion.fromString(req.getProtocol()));
+      } catch(IllegalArgumentException e) {
+        log.error("Error parsing URI for proxying " + url, e);
+        throw new SolrException(ErrorCode.SERVER_ERROR, e);
+      } catch (URISyntaxException e) {
+        log.error("Error parsing URI for proxying " + url, e);
+        throw new SolrException(ErrorCode.SERVER_ERROR, e);
+      }
+
+      copyRequestHeaders(req, proxyRequest);
+
+      addProxyHeaders(req, proxyRequest);
+
+      InputStreamContentProvider defferedContent = new InputStreamContentProvider(req.getInputStream());
+
+      if (hasContent(req)) {
+        proxyRequest.content(defferedContent);
+      }
+
+      InputStreamResponseListener listener = new InputStreamResponseListener() {
+        @Override
+        public void onFailure(Response resp, Throwable t) {
+          //System.out.println("proxy to failed");
+          super.onFailure(resp, t);
+
         }
-      }
-      // These headers not supported for HttpEntityEnclosingRequests
-      if (method instanceof HttpEntityEnclosingRequest) {
-        method.removeHeaders(TRANSFER_ENCODING_HEADER);
-        method.removeHeaders(CONTENT_LENGTH_HEADER);
-      }
 
-      final HttpResponse response
-          = solrDispatchFilter.httpClient.execute(method, HttpClientUtil.createNewHttpClientRequestContext());
-      int httpStatus = response.getStatusLine().getStatusCode();
-      httpEntity = response.getEntity();
+        @Override
+        public void onHeaders(Response resp) {
+          //System.out.println("resp code:" + resp.getStatus());
+          for (HttpField field : resp.getHeaders()) {
+            String headerName = field.getName();
+            String lowerHeaderName = headerName.toLowerCase(Locale.ENGLISH);
+//            System.out.println("response header: " + headerName + " : " + field.getValue() + " status:" +
+//                    resp.getStatus());
+            if (HOP_HEADERS.contains(lowerHeaderName))
+              continue;
 
-      resp.setStatus(httpStatus);
-      for (HeaderIterator responseHeaders = response.headerIterator(); responseHeaders.hasNext(); ) {
-        Header header = responseHeaders.nextHeader();
-
-        // We pull out these two headers below because they can cause chunked
-        // encoding issues with Tomcat
-        if (header != null && !header.getName().equalsIgnoreCase(TRANSFER_ENCODING_HEADER)
-            && !header.getName().equalsIgnoreCase(CONNECTION_HEADER)) {
-          resp.addHeader(header.getName(), header.getValue());
+            response.addHeader(headerName, field.getValue());
+          }
+          response.setStatus(resp.getStatus());
+          super.onHeaders(resp);
         }
-      }
+      };
 
-      if (httpEntity != null) {
-        if (httpEntity.getContentEncoding() != null)
-          resp.setHeader(httpEntity.getContentEncoding().getName(), httpEntity.getContentEncoding().getValue());
-        if (httpEntity.getContentType() != null) resp.setContentType(httpEntity.getContentType().getValue());
 
-        InputStream is = httpEntity.getContent();
-        OutputStream os = resp.getOutputStream();
+      proxyRequest.send(listener);
 
-        IOUtils.copyLarge(is, os);
-      }
 
-    } catch (IOException e) {
-      sendError(new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "Error trying to proxy request for url: " + coreUrl, e));
-    } finally {
-      Utils.consumeFully(httpEntity);
+      IOUtils.copyLarge(listener.getInputStream(), response.getOutputStream());
+      response.getOutputStream().flush(); // nocommit try not flushing
+
     }
 
+    return RETURN;
+  }
+
+  protected boolean hasContent(HttpServletRequest clientRequest) {
+    boolean hasContent = clientRequest.getContentLength() > 0 ||
+            clientRequest.getContentType() != null ||
+            clientRequest.getHeader(HttpHeader.TRANSFER_ENCODING.asString()) != null;
+    return hasContent;
+  }
+
+  protected void addProxyHeaders(HttpServletRequest clientRequest, Request proxyRequest) {
+    proxyRequest.header(HttpHeader.VIA, "HTTP/2.0 Solr Proxy"); //nocommit protocol hard code
+    proxyRequest.header(HttpHeader.X_FORWARDED_FOR, clientRequest.getRemoteAddr());
+    // we have some tricky to see in tests header size limitations
+    // proxyRequest.header(HttpHeader.X_FORWARDED_PROTO, clientRequest.getScheme());
+    // proxyRequest.header(HttpHeader.X_FORWARDED_HOST, clientRequest.getHeader(HttpHeader.HOST.asString()));
+    // proxyRequest.header(HttpHeader.X_FORWARDED_SERVER, clientRequest.getLocalName());
+    proxyRequest.header(QoSParams.REQUEST_SOURCE, QoSParams.INTERNAL);
+  }
+
+  protected void copyRequestHeaders(HttpServletRequest clientRequest, Request proxyRequest) {
+    // First clear possibly existing headers, as we are going to copy those from the client request.
+    proxyRequest.getHeaders().clear();
+
+    Set<String> headersToRemove = findConnectionHeaders(clientRequest);
+
+    for (Enumeration<String> headerNames = clientRequest.getHeaderNames(); headerNames.hasMoreElements();) {
+      String headerName = headerNames.nextElement();
+      String lowerHeaderName = headerName.toLowerCase(Locale.ENGLISH);
+
+      if (HttpHeader.HOST.is(headerName) && !preserveHost)
+        continue;
+
+      // Remove hop-by-hop headers.
+      if (HOP_HEADERS.contains(lowerHeaderName))
+        continue;
+      if (headersToRemove != null && headersToRemove.contains(lowerHeaderName))
+        continue;
+
+      for (Enumeration<String> headerValues = clientRequest.getHeaders(headerName); headerValues.hasMoreElements();) {
+        String headerValue = headerValues.nextElement();
+        if (headerValue != null) {
+          proxyRequest.header(headerName, headerValue);
+          //System.out.println("request header: " + headerName + " : " + headerValue);
+        }
+      }
+    }
+
+    // Force the Host header if configured
+    // if (_hostHeader != null)
+    // proxyRequest.header(HttpHeader.HOST, _hostHeader);
+  }
+
+  protected Set<String> findConnectionHeaders(HttpServletRequest clientRequest)
+  {
+    // Any header listed by the Connection header must be removed:
+    // http://tools.ietf.org/html/rfc7230#section-6.1.
+    Set<String> hopHeaders = null;
+    Enumeration<String> connectionHeaders = clientRequest.getHeaders(HttpHeader.CONNECTION.asString());
+    while (connectionHeaders.hasMoreElements())
+    {
+      String value = connectionHeaders.nextElement();
+      String[] values = value.split(",");
+      for (String name : values)
+      {
+        name = name.trim().toLowerCase(Locale.ENGLISH);
+        if (hopHeaders == null)
+          hopHeaders = new HashSet<>();
+        hopHeaders.add(name);
+      }
+    }
+    return hopHeaders;
   }
 
   protected void sendError(Throwable ex) throws IOException {
@@ -1235,5 +1330,28 @@ public class HttpSolrCall {
       size--;
       return e1;
     }
+  }
+
+  protected static final Set<String> HOP_HEADERS;
+  static
+  {
+    Set<String> hopHeaders = new HashSet<>(12);
+    hopHeaders.add("accept-encoding");
+    hopHeaders.add("connection");
+    hopHeaders.add("keep-alive");
+    hopHeaders.add("proxy-authorization");
+    hopHeaders.add("proxy-authenticate");
+    hopHeaders.add("proxy-connection");
+    hopHeaders.add("transfer-encoding");
+    hopHeaders.add("te");
+    hopHeaders.add("trailer");
+    hopHeaders.add("upgrade");
+//      hopHeaders.add(HttpHeader.X_FORWARDED_FOR.asString());
+//      hopHeaders.add(HttpHeader.X_FORWARDED_PROTO.asString());
+//      hopHeaders.add(HttpHeader.VIA.asString());
+//      hopHeaders.add(HttpHeader.X_FORWARDED_HOST.asString());
+//      hopHeaders.add(HttpHeader.SERVER.asString());
+//
+    HOP_HEADERS = Collections.unmodifiableSet(hopHeaders);
   }
 }

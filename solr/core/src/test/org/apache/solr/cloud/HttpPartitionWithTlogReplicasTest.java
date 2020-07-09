@@ -22,7 +22,11 @@ import org.apache.solr.SolrTestCaseJ4;
 
 @LuceneTestCase.Slow
 @SolrTestCaseJ4.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
-public class HttpPartitionWithTlogReplicasTest extends HttpPartitionTest {
+@LuceneTestCase.Nightly
+public class HttpPartitionWithTlogReplicasTest extends HttpPartitionTest  {
+
+  public HttpPartitionWithTlogReplicasTest() throws Exception {
+  }
 
   @Override
   protected boolean useTlogReplicas() {

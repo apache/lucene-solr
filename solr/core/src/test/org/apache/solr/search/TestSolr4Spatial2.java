@@ -40,6 +40,7 @@ import org.apache.solr.util.SpatialUtils;
 import org.apache.solr.util.TestUtils;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.distance.DistanceUtils;
@@ -50,6 +51,7 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    System.setProperty("solr.disableJmxReporter", "false");
     initCore("solrconfig-spatial.xml", "schema-spatial.xml");
   }
 
@@ -129,6 +131,7 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
   }
 
   @Test
+  @Ignore // nocommit debug
   public void testRptWithGeometryField() throws Exception {
     //note: fails with "srpt_geohash" because it's not as precise
     final boolean testCache = true;
@@ -138,6 +141,7 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
   }
 
   @Test
+  @Ignore // nocommit debug
   public void testRptWithGeometryGeo3dField() throws Exception {
     final boolean testCache = true;
     final boolean testHeatmap = true;
@@ -293,7 +297,6 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
 
     if (testCache) {
       // The tricky thing is verifying the cache works correctly...
-
       MetricsMap cacheMetrics = (MetricsMap) ((SolrMetricManager.GaugeWrapper)h.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.perSegSpatialFieldCache_" + fieldName)).getGauge();
       assertEquals("1", cacheMetrics.getValue().get("cumulative_inserts").toString());
       assertEquals("0", cacheMetrics.getValue().get("cumulative_hits").toString());

@@ -17,10 +17,12 @@
 package org.apache.solr.cloud.autoscaling;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.core.SolrResourceLoader;
@@ -30,14 +32,14 @@ import org.apache.solr.core.SolrResourceLoader;
  */
 public abstract class TriggerActionBase implements TriggerAction {
 
-  protected Map<String, Object> properties = new HashMap<>();
+  protected volatile Map<String, Object> properties = new HashMap<>();
   protected SolrResourceLoader loader;
   protected SolrCloudManager cloudManager;
   /**
    * Set of valid property names. Subclasses may add to this set
    * using {@link TriggerUtils#validProperties(Set, String...)}
    */
-  protected final Set<String> validProperties = new HashSet<>();
+  protected volatile Set<String> validProperties = Collections.EMPTY_SET;
   /**
    * Set of required property names. Subclasses may add to this set
    * using {@link TriggerUtils#requiredProperties(Set, Set, String...)}
@@ -47,7 +49,12 @@ public abstract class TriggerActionBase implements TriggerAction {
 
   protected TriggerActionBase() {
     // not strictly needed here because they are already checked during instantiation
-    TriggerUtils.validProperties(validProperties, "name", "class");
+    Set<String> vProperties = new HashSet<>();
+    // subclasses may further modify this set to include other supported properties
+    TriggerUtils.validProperties(vProperties, "name", "class");
+
+    this. validProperties = Collections.unmodifiableSet(vProperties);
+
   }
 
   @Override
@@ -70,7 +77,8 @@ public abstract class TriggerActionBase implements TriggerAction {
     this.loader = loader;
     this.cloudManager = cloudManager;
     if (properties != null) {
-      this.properties.putAll(properties);
+      Map<String, Object> props = new HashMap<>(properties);
+      this.properties = props;
     }
     // validate the config
     Map<String, String> results = new HashMap<>();

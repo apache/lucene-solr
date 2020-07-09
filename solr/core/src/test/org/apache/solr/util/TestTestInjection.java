@@ -18,6 +18,7 @@ package org.apache.solr.util;
 
 import java.util.Locale;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -86,6 +87,6 @@ public class TestTestInjection extends SolrTestCase {
   }
 
   public void testUsingConsistentRandomization() {
-    assertSame(random(), TestInjection.random());
+    assertSame(LuceneTestCase.random(), TestInjection.random());
   }
 }

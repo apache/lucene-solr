@@ -36,8 +36,10 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.FileUtils;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore // nocommit debug
 public class DeleteShardTest extends SolrCloudTestCase {
 
   // TODO: Custom hash slice deletion test
@@ -110,6 +112,7 @@ public class DeleteShardTest extends SolrCloudTestCase {
 
   @Test
   // commented 4-Sep-2018  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 09-Aug-2018
+  @Ignore //nocommit
   public void testDirectoryCleanupAfterDeleteShard() throws InterruptedException, IOException, SolrServerException {
 
     final String collection = "deleteshard_test";

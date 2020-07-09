@@ -31,6 +31,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -38,6 +39,7 @@ import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.security.HttpClientBuilderPlugin;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
@@ -129,7 +131,7 @@ public class UpdateShardHandler implements SolrInfoBean {
           .idleTimeout(cfg.getDistributedSocketTimeout())
           .maxConnectionsPerHost(cfg.getMaxUpdateConnectionsPerHost());
     }
-    updateOnlyClient = updateOnlyClientBuilder.build();
+    updateOnlyClient = updateOnlyClientBuilder.markInternalRequest().build();
     updateOnlyClient.addListenerFactory(updateHttpListenerFactory);
     Set<String> queryParams = new HashSet<>(2);
     queryParams.add(DistributedUpdateProcessor.DISTRIB_FROM);
@@ -248,23 +250,22 @@ public class UpdateShardHandler implements SolrInfoBean {
   }
 
   public void close() {
-    try {
-      // do not interrupt, do not interrupt
-      ExecutorUtil.shutdownAndAwaitTermination(updateExecutor);
-      ExecutorUtil.shutdownAndAwaitTermination(recoveryExecutor);
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    } finally {
-      try {
+    updateExecutor.shutdown();
+    recoveryExecutor.shutdown();
+
+    try (ParWork closer = new ParWork(this)) {
+      closer.add("Executors", updateExecutor, recoveryExecutor);
+      closer.add("HttpClients", updateOnlyClient, () -> {
+        HttpClientUtil.close(recoveryOnlyClient);
+        return recoveryOnlyClient;
+      }, () -> {
+        HttpClientUtil.close(defaultClient);
+        return defaultClient;
+      });
+      closer.add("ConnectionMgr&MetricsProducer", defaultConnectionManager, recoveryOnlyConnectionManager, () -> {
         SolrInfoBean.super.close();
-      } catch (Exception e) {
-        // do nothing
-      }
-      IOUtils.closeQuietly(updateOnlyClient);
-      HttpClientUtil.close(recoveryOnlyClient);
-      HttpClientUtil.close(defaultClient);
-      defaultConnectionManager.close();
-      recoveryOnlyConnectionManager.close();
+        return this;
+      });
     }
   }
 

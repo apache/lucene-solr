@@ -34,11 +34,13 @@ import java.util.concurrent.Callable;
 
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.Cmd;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -148,17 +150,22 @@ public class DeleteReplicaCmd implements Cmd {
       }
     }
 
-    for (Map.Entry<Slice, Set<String>> entry : shardToReplicasMapping.entrySet()) {
-      Slice shardSlice = entry.getKey();
-      String shardId = shardSlice.getName();
-      Set<String> replicas = entry.getValue();
-      //callDeleteReplica on all replicas
-      for (String replica: replicas) {
-        log.debug("Deleting replica {}  for shard {} based on count {}", replica, shardId, count);
-        deleteCore(shardSlice, collectionName, replica, message, shard, results, onComplete, parallel);
+    try (ParWork worker = new ParWork(this)) {
+
+      for (Map.Entry<Slice,Set<String>> entry : shardToReplicasMapping.entrySet()) {
+        Slice shardSlice = entry.getKey();
+        String shardId = shardSlice.getName();
+        Set<String> replicas = entry.getValue();
+        // callDeleteReplica on all replicas
+        for (String replica : replicas) {
+          if (log.isDebugEnabled()) log.debug("Deleting replica {}  for shard {} based on count {}", replica, shardId, count);
+          worker.collect(() -> { deleteCore(shardSlice, collectionName, replica, message, shard, results, onComplete, parallel); return replica; });
+        }
+        results.add("shard_id", shardId);
+        results.add("replicas_deleted", replicas);
       }
-      results.add("shard_id", shardId);
-      results.add("replicas_deleted", replicas);
+
+      worker.addCollect("DeleteReplicas");
     }
 
   }
@@ -255,16 +262,14 @@ public class DeleteReplicaCmd implements Cmd {
       try {
         if (isLive) {
           shardRequestTracker.processResponses(results, shardHandler, false, null);
-
-          //check if the core unload removed the corenode zk entry
-          if (ocmh.waitForCoreNodeGone(collectionName, shard, replicaName, 30000)) return Boolean.TRUE;
         }
 
         // try and ensure core info is removed from cluster state
         ocmh.deleteCoreNode(collectionName, replicaName, replica, core);
-        if (ocmh.waitForCoreNodeGone(collectionName, shard, replicaName, 30000)) return Boolean.TRUE;
+        if (ocmh.waitForCoreNodeGone(collectionName, shard, replicaName, 15000)) return Boolean.TRUE;
         return Boolean.FALSE;
       } catch (Exception e) {
+        SolrZkClient.checkInterrupted(e);
         results.add("failure", "Could not complete delete " + e.getMessage());
         throw e;
       } finally {
@@ -272,20 +277,23 @@ public class DeleteReplicaCmd implements Cmd {
       }
     };
 
-    if (!parallel) {
-      try {
-        if (!callable.call())
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                  "Could not remove replica : " + collectionName + "/" + shard + "/" + replicaName);
-      } catch (InterruptedException | KeeperException e) {
-        throw e;
-      } catch (Exception ex) {
-        throw new SolrException(SolrException.ErrorCode.UNKNOWN, "Error waiting for corenode gone", ex);
+//    if (!parallel) {
+//      try {
+//        if (!callable.call())
+//          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+//                  "Could not remove replica : " + collectionName + "/" + shard + "/" + replicaName);
+//      } catch (InterruptedException | KeeperException e) {
+//        throw e;
+//      } catch (Exception ex) {
+//        throw new SolrException(SolrException.ErrorCode.UNKNOWN, "Error waiting for corenode gone", ex);
+//      }
+//
+//    } else {
+      try (ParWork worker = new ParWork(this)) {
+        worker.add("AddReplica", callable);
       }
 
-    } else {
-      ocmh.tpe.submit(callable);
-    }
+ //   }
 
   }
 

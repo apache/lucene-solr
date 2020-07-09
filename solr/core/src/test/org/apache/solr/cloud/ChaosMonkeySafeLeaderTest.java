@@ -23,6 +23,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -30,17 +31,20 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @Slow
+@Ignore // nocommit debug
 public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
   
   private static final Integer RUN_LENGTH = Integer.parseInt(System.getProperty("solr.tests.cloud.cm.runlength", "-1"));
 
   @BeforeClass
-  public static void beforeSuperClass() {
+  public static void beforeSuperClass() throws Exception {
     schemaString = "schema15.xml";      // we need a string id
     System.setProperty("solr.autoCommit.maxTime", "15000");
-    System.clearProperty("solr.httpclient.retries");
-    System.clearProperty("solr.retries.on.forward");
-    System.clearProperty("solr.retries.to.followers"); 
+    System.setProperty("solr.httpclient.retries", "1");
+    System.setProperty("solr.retries.on.forward", "1");
+    System.setProperty("solr.retries.to.followers", "1");
+    useFactory(null);
+    System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
     setErrorHook();
   }
   
@@ -63,7 +67,6 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
   
   @Override
   public void distribSetUp() throws Exception {
-    useFactory("solr.StandardDirectoryFactory");
     super.distribSetUp();
   }
   
@@ -106,7 +109,7 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
     if (!pauseBetweenUpdates) {
       maxUpdates = 1000 + random().nextInt(1000);
     } else {
-      maxUpdates = 15000;
+      maxUpdates = 1500;
     }
     
     for (int i = 0; i < threadCount; i++) {
@@ -124,9 +127,9 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
         int[] runTimes;
         if (TEST_NIGHTLY) {
           runTimes = new int[] {5000, 6000, 10000, 15000, 25000, 30000,
-              30000, 45000, 90000, 120000};
+              30000, 45000, 90000};
         } else {
-          runTimes = new int[] {5000, 7000, 15000};
+          runTimes = new int[] {3000, 5000};
         }
         runLength = runTimes[random().nextInt(runTimes.length - 1)];
       }
@@ -148,19 +151,11 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
     for (StoppableIndexingThread indexThread : threads) {
       assertEquals(0, indexThread.getFailCount());
     }
-    
-    // try and wait for any replications and what not to finish...
 
-    Thread.sleep(2000);
 
-    waitForThingsToLevelOut(3, TimeUnit.MINUTES);
-    
-    // even if things were leveled out, a jetty may have just been stopped or something
-    // we wait again and wait to level out again to make sure the system is not still in flux
-    
-    Thread.sleep(3000);
+    waitForRecoveriesToFinish(false);
 
-    waitForThingsToLevelOut(3, TimeUnit.MINUTES);
+    commit();
 
     checkShardConsistency(batchSize == 1, true);
     
@@ -169,14 +164,14 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
     // try and make a collection to make sure the overseer has survived the expiration and session loss
 
     // sometimes we restart zookeeper as well
-    if (random().nextBoolean()) {
+    if (TEST_NIGHTLY && random().nextBoolean()) {
       zkServer.shutdown();
       zkServer = new ZkTestServer(zkServer.getZkDir(), zkServer.getPort());
       zkServer.run(false);
     }
 
     try (CloudSolrClient client = createCloudClient("collection1")) {
-        createCollection(null, "testcollection", 1, 1, 1, client, null, "conf1");
+        createCollection(null, "testcollection", 1, 1, 1, client, null, "_default");
 
     }
     List<Integer> numShardsNumReplicas = new ArrayList<>(2);

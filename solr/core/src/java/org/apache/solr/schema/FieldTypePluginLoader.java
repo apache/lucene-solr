@@ -36,6 +36,7 @@ import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.util.DOMUtil;
 import org.apache.solr.util.plugin.AbstractPluginLoader;
 import org.slf4j.Logger;
@@ -54,7 +55,7 @@ public final class FieldTypePluginLoader
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final XPath xpath = XPathFactory.newInstance().newXPath();
+  private final XPath xpath = XmlConfigFile.xpath;
 
   /**
    * @param schema The schema that will be used to initialize the FieldTypes

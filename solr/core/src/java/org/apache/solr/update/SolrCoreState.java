@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
 public abstract class SolrCoreState {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
-  protected boolean closed = false;
+  protected volatile boolean closed = false;
   private final Object updateLock = new Object();
   private final Object reloadLock = new Object();
   
@@ -161,6 +161,8 @@ public abstract class SolrCoreState {
   public abstract void doRecovery(CoreContainer cc, CoreDescriptor cd);
   
   public abstract void cancelRecovery();
+
+  public abstract void cancelRecovery(boolean wait, boolean prepForClose);
 
   public abstract void close(IndexWriterCloser closer);
 

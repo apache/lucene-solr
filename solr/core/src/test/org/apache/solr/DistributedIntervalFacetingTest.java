@@ -42,7 +42,6 @@ public class DistributedIntervalFacetingTest extends
 
   @Test
   public void test() throws Exception {
-    del("*:*");
     commit();
     testRandom();
     del("*:*");
@@ -104,18 +103,18 @@ public class DistributedIntervalFacetingTest extends
 
   private void testRandom() throws Exception {
     // All field values will be a number between 0 and cardinality
-    int cardinality = 1000000;
+    int cardinality = TEST_NIGHTLY ? 1000000 : 250;
     // Fields to use for interval faceting
     String[] fields = new String[]{"test_s_dv", "test_i_dv", "test_l_dv", "test_f_dv", "test_d_dv",
         "test_ss_dv", "test_is_dv", "test_fs_dv", "test_ls_dv", "test_ds_dv"};
-    for (int i = 0; i < atLeast(500); i++) {
+    for (int i = 0; i < atLeast(TEST_NIGHTLY ? 500 : 50); i++) {
       if (random().nextInt(50) == 0) {
         //have some empty docs
         indexr("id", String.valueOf(i));
         continue;
       }
 
-      if (random().nextInt(100) == 0 && i > 0) {
+      if (random().nextInt(TEST_NIGHTLY ? 100 : 20) == 0 && i > 0) {
         //delete some docs
         del("id:" + String.valueOf(i - 1));
       }
@@ -145,7 +144,7 @@ public class DistributedIntervalFacetingTest extends
         docFields[j++] = String.valueOf(random().nextDouble() * cardinality);
       }
       indexr(docFields);
-      if (random().nextInt(50) == 0) {
+      if (random().nextInt(TEST_NIGHTLY ? 50 : 5) == 0) {
         commit();
       }
     }
@@ -157,7 +156,7 @@ public class DistributedIntervalFacetingTest extends
     handle.put("maxScore", SKIPVAL);
 
 
-    for (int i = 0; i < atLeast(100); i++) {
+    for (int i = 0; i < atLeast(TEST_NIGHTLY ? 100 : 15); i++) {
       doTestQuery(cardinality, fields);
     }
 
@@ -183,7 +182,7 @@ public class DistributedIntervalFacetingTest extends
       params.set("facet.interval", getFieldWithKey(field));
     }
     // number of intervals
-    for (int i = 0; i < 1 + random().nextInt(20); i++) {
+    for (int i = 0; i < 1 + random().nextInt(TEST_NIGHTLY ? 20 : 5); i++) {
       Integer[] interval = getRandomRange(cardinality, field);
       String open = startOptions[interval[0] % 2];
       String close = endOptions[interval[1] % 2];

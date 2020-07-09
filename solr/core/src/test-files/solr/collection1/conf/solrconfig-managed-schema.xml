@@ -23,7 +23,7 @@
   <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
   <schemaFactory class="ManagedIndexSchemaFactory">
-    <bool name="mutable">${managed.schema.mutable}</bool>
+    <bool name="mutable">${managed.schema.mutable:true}</bool>
     <str name="managedSchemaResourceName">${managed.schema.resourceName:managed-schema}</str>
   </schemaFactory>
 

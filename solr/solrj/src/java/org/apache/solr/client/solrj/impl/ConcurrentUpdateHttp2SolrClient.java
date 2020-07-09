@@ -20,8 +20,10 @@ package org.apache.solr.client.solrj.impl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -36,6 +38,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient.Update;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.QoSParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -55,6 +58,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
   private static final long serialVersionUID = 1L;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final Update END_UPDATE = new Update(null, null);
+  private final Map<String, String> headers;
 
   private Http2SolrClient client;
   private final String basePath;
@@ -163,7 +167,8 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
       this.scheduler = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("concurrentUpdateScheduler"));
       this.shutdownExecutor = true;
     }
-
+    this.headers = builder.headers;
+    this.client.addHeaders(headers);
   }
 
   /**
@@ -683,6 +688,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     protected ExecutorService executorService;
     protected boolean streamDeletes;
     protected boolean closeHttp2Client;
+    protected Map<String,String> headers = new HashMap<>();
 
     public Builder(String baseSolrUrl, Http2SolrClient client) {
       this(baseSolrUrl, client, false);
@@ -692,6 +698,22 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
       this.baseSolrUrl = baseSolrUrl;
       this.client = client;
       this.closeHttp2Client = closeHttp2Client;
+    }
+
+    //do not set this from an external client
+    public Builder markInternalRequest() {
+      this.headers.put(QoSParams.REQUEST_SOURCE, QoSParams.INTERNAL);
+      return this;
+    }
+
+    public Builder withHeaders(Map<String, String> headers) {
+      this.headers.putAll(headers);
+      return this;
+    }
+
+    public Builder withHeader(String header, String value) {
+      this.headers.put(header, value);
+      return this;
     }
 
     /**

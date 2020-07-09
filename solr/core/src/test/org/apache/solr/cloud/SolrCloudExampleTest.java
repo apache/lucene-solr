@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -34,6 +35,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.impl.BaseCloudSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.StreamingUpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -43,6 +45,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrCLI;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,10 +69,14 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     sliceCount = 2;
   }
 
+  @BeforeClass
+  public static void beforeLeaderFailureAfterFreshStartTest() {
+    System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
+  }
+
   @Test
   // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 04-May-2018
   public void testLoadDocsIntoGettingStartedCollection() throws Exception {
-    waitForThingsToLevelOut(30, TimeUnit.SECONDS);
 
     log.info("testLoadDocsIntoGettingStartedCollection initialized OK ... running test logic");
 
@@ -103,9 +110,8 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     assertTrue("Collection '" + testCollectionName + "' doesn't exist after trying to create it!",
         cloudClient.getZkStateReader().getClusterState().hasCollection(testCollectionName));
 
-    // verify the collection is usable ...
-    ensureAllReplicasAreActive(testCollectionName, "shard1", 2, 2, 20);
-    ensureAllReplicasAreActive(testCollectionName, "shard2", 2, 2, 10);
+    cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, BaseCloudSolrClient.expectedShardsAndActiveReplicas(2, 4));
+
     cloudClient.setDefaultCollection(testCollectionName);
 
     int invalidToolExitStatus = 1;

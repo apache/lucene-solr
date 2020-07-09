@@ -25,6 +25,7 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
 
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.core.XmlConfigFile;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
@@ -32,7 +33,7 @@ import org.xml.sax.InputSource;
 public abstract class DOMUtilTestBase extends SolrTestCase {
   
   private DocumentBuilder builder;
-  private static final XPathFactory xpathFactory = XPathFactory.newInstance();
+  private static final XPathFactory xpathFactory = XmlConfigFile.xpathFactory;
   
   @Override
   public void setUp() throws Exception {
@@ -45,7 +46,7 @@ public abstract class DOMUtilTestBase extends SolrTestCase {
   }
   
   public Node getNode( Document doc, String path ) throws Exception {
-    XPath xpath = xpathFactory.newXPath();
+    XPath xpath = XmlConfigFile.xpath;
     return (Node)xpath.evaluate(path, doc, XPathConstants.NODE);
   }
   

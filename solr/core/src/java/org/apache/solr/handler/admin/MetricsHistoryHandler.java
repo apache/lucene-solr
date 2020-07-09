@@ -102,6 +102,7 @@ import org.rrd4j.core.DsDef;
 import org.rrd4j.core.FetchData;
 import org.rrd4j.core.FetchRequest;
 import org.rrd4j.core.RrdDb;
+import org.rrd4j.core.RrdDbPool;
 import org.rrd4j.core.RrdDef;
 import org.rrd4j.core.Sample;
 import org.rrd4j.graph.RrdGraph;
@@ -162,8 +163,8 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
   private final SolrCloudManager cloudManager;
   private final TimeSource timeSource;
   private final int collectPeriod;
-  private final Map<String, List<String>> counters = new HashMap<>();
-  private final Map<String, List<String>> gauges = new HashMap<>();
+  private final Map<String, List<String>> counters = new ConcurrentHashMap<>();
+  private final Map<String, List<String>> gauges = new ConcurrentHashMap<>();
   private final String overseerUrlScheme;
 
   private final Map<String, RrdDb> knownDbs = new ConcurrentHashMap<>();
@@ -324,12 +325,14 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
       if (data != null && data.getData() != null) {
         props = ZkNodeProps.load(data.getData());
       }
-    } catch (KeeperException | IOException | NoSuchElementException e) {
+    } catch (IOException | NoSuchElementException e) {
       log.warn("Could not obtain overseer's address, skipping.", e);
       return null;
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       return null;
+    } catch (KeeperException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
     if (props == null) {
       return null;
@@ -346,10 +349,6 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
       return null;
     }
     return nodeName;
-  }
-
-  private boolean amIOverseerLeader() {
-    return amIOverseerLeader(null);
   }
 
   private boolean amIOverseerLeader(String leader) {
@@ -450,9 +449,10 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
   }
 
   private void collectGlobalMetrics() {
-    if (!amIOverseerLeader()) {
-      return;
-    }
+    // nocommit - this stuff is slow and hackey and too hard to do righ this way
+//    if (!amIOverseerLeader()) {
+//      return;
+//    }
     Set<String> nodes = new HashSet<>(cloudManager.getClusterStateProvider().getLiveNodes());
     NodeStateProvider nodeStateProvider = cloudManager.getNodeStateProvider();
     Set<String> collTags = new HashSet<>();
@@ -640,7 +640,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
     RrdDb db = knownDbs.computeIfAbsent(registry, r -> {
       RrdDef def = createDef(r, group);
       try {
-        RrdDb newDb = new RrdDb(def, factory);
+        RrdDb newDb = RrdDb.getBuilder().setRrdDef(def).setBackendFactory(factory).setUsePool(true).build();
         return newDb;
       } catch (IOException e) {
         log.warn("Can't create RrdDb for registry {}, group {}: {}", registry, group, e);
@@ -744,7 +744,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
         }
         if (factory.exists(name)) {
           // get a throwaway copy (safe to close and discard)
-          RrdDb db = new RrdDb(URI_PREFIX + name, true, factory);
+          RrdDb db = RrdDb.getBuilder().setPath(URI_PREFIX + name).setReadOnly(true).setBackendFactory(factory).setUsePool(true).build();
           SimpleOrderedMap<Object> data = new SimpleOrderedMap<>();
           data.add("data", getDbData(db, dsNames, format, req.getParams()));
           data.add("lastModified", db.getLastUpdateTime());
@@ -760,7 +760,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
         }
         if (factory.exists(name)) {
           // get a throwaway copy (safe to close and discard)
-          RrdDb db = RrdDb.getBuilder().setBackendFactory(factory).setReadOnly(true).setPath(new URI(URI_PREFIX + name)).build();
+          RrdDb db = RrdDb.getBuilder().setBackendFactory(factory).setReadOnly(true).setPath(new URI(URI_PREFIX + name)).setUsePool(true).build();
           SimpleOrderedMap<Object> status = new SimpleOrderedMap<>();
           status.add("status", getDbStatus(db));
           status.add("node", nodeName);
@@ -783,14 +783,14 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
     }
     // when using in-memory DBs non-overseer node has no access to overseer DBs - in this case
     // forward the request to Overseer leader if available
-    if (!factory.isPersistent()) {
-      String leader = getOverseerLeader();
-      if (leader != null && !amIOverseerLeader(leader)) {
-        // get & merge remote response
-        NamedList<Object> remoteRes = handleRemoteRequest(leader, req);
-        mergeRemoteRes(rsp, remoteRes);
-      }
-    }
+//    if (!factory.isPersistent()) {
+//      String leader = getOverseerLeader();
+//      if (leader != null && !amIOverseerLeader(leader)) {
+//        // get & merge remote response
+//        NamedList<Object> remoteRes = handleRemoteRequest(leader, req);
+//        mergeRemoteRes(rsp, remoteRes);
+//      }
+//    }
     SimpleOrderedMap<Object> apiState = new SimpleOrderedMap<>();
     apiState.add("enableReplicas", enableReplicas);
     apiState.add("enableNodes", enableNodes);

@@ -43,6 +43,7 @@ public class DeleteNodeTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    useFactory(null);
     configureCluster(6)
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-dynamic").resolve("conf"))
         .configure();
@@ -97,14 +98,19 @@ public class DeleteNodeTest extends SolrCloudTestCase {
       }
     }
     new CollectionAdminRequest.DeleteNode(node2bdecommissioned).processAsync("003", cloudClient);
+
     CollectionAdminRequest.RequestStatus requestStatus = CollectionAdminRequest.requestStatus("003");
     CollectionAdminRequest.RequestStatusResponse rsp = null;
-    for (int i = 0; i < 200; i++) {
-      rsp = requestStatus.process(cloudClient);
-      if (rsp.getRequestStatus() == RequestStatusState.FAILED || rsp.getRequestStatus() == RequestStatusState.COMPLETED) {
-        break;
+    if (shouldFail) {
+      for (int i = 0; i < 10; i++) {
+        rsp = requestStatus.process(cloudClient);
+        if (rsp.getRequestStatus() == RequestStatusState.FAILED || rsp.getRequestStatus() == RequestStatusState.COMPLETED) {
+          break;
+        }
+        Thread.sleep(500);
       }
-      Thread.sleep(50);
+    } else {
+      rsp = requestStatus.process(cloudClient);
     }
     if (log.isInfoEnabled()) {
       log.info("####### DocCollection after: {}", cloudClient.getZkStateReader().getClusterState().getCollection(coll));

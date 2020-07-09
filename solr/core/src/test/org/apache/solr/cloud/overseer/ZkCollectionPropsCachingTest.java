@@ -29,12 +29,14 @@ import org.apache.solr.common.cloud.CollectionProperties;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @LuceneTestCase.Slow
 @SolrTestCaseJ4.SuppressSSL
+@Ignore // nocommit debug
 public class ZkCollectionPropsCachingTest extends SolrCloudTestCase {
   //
   // NOTE: This class can only have one test because our test for caching is to nuke the SolrZkClient to
@@ -49,7 +51,7 @@ public class ZkCollectionPropsCachingTest extends SolrCloudTestCase {
     Boolean useLegacyCloud = rarely();
     log.info("Using legacyCloud?: {}", useLegacyCloud);
 
-    configureCluster(4)
+    configureCluster(2)
         .withProperty(ZkStateReader.LEGACY_CLOUD, String.valueOf(useLegacyCloud))
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
@@ -76,12 +78,12 @@ public class ZkCollectionPropsCachingTest extends SolrCloudTestCase {
     collectionProps.setCollectionProperty(collectionName, "property1", "value1");
     checkValue("property1", "value1"); //Should be no cache, so the change should take effect immediately
 
-    zkStateReader.getCollectionProperties(collectionName,9000);
+    zkStateReader.getCollectionProperties(collectionName,900);
     zkStateReader.getZkClient().close();
     assertFalse(zkStateReader.isClosed());
     checkValue("property1", "value1"); //Should be cached, so the change should not try to hit zk
 
-    Thread.sleep(10000); // test the timeout feature
+    Thread.sleep(1000); // test the timeout feature
     try {
       checkValue("property1", "value1"); //Should not be cached anymore
       fail("cache should have expired, prev line should throw an exception trying to access zookeeper after closed");

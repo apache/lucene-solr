@@ -21,12 +21,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.AbstractBadConfigTestBase;
 import org.junit.After;
 import org.junit.Before;
 import org.locationtech.spatial4j.shape.Shape;
 
+@LuceneTestCase.Nightly // nocommit speed up
 public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
   
   private static File tmpSolrHome;

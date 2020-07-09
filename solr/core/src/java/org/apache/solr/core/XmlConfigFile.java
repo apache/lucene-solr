@@ -42,7 +42,9 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import net.sf.saxon.xpath.XPathFactoryImpl;
 import org.apache.commons.io.IOUtils;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.XMLErrorLogger;
@@ -63,17 +65,23 @@ import org.xml.sax.SAXException;
  */
 public class XmlConfigFile { // formerly simply "Config"
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
 
-  static final XPathFactory xpathFactory = XPathFactory.newInstance();
+
+  public static final XPathFactory xpathFactory = new XPathFactoryImpl();
+  public static final XPath xpath = xpathFactory.newXPath();
+
+  public static final  TransformerFactory tfactory = TransformerFactory.newInstance();
+
 
   private final Document doc;
-  private final Document origDoc; // with unsubstituted properties
+  //private final Document origDoc; // with unsubstituted properties
   private final String prefix;
   private final String name;
   private final SolrResourceLoader loader;
   private final Properties substituteProperties;
   private int zkVersion = -1;
+
+
 
   /**
    * Builds a config from a resource name with no xpath prefix.  Does no property substitution.
@@ -118,8 +126,6 @@ public class XmlConfigFile { // formerly simply "Config"
     this.name = name;
     this.prefix = (prefix != null && !prefix.endsWith("/"))? prefix + '/' : prefix;
     try {
-      javax.xml.parsers.DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-
       if (is == null) {
         InputStream in = loader.openResource(name);
         if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
@@ -130,22 +136,8 @@ public class XmlConfigFile { // formerly simply "Config"
         is.setSystemId(SystemIdResolver.createSystemIdFromResourceName(name));
       }
 
-      // only enable xinclude, if a SystemId is available
-      if (is.getSystemId() != null) {
-        try {
-          dbf.setXIncludeAware(true);
-          dbf.setNamespaceAware(true);
-        } catch(UnsupportedOperationException e) {
-          log.warn("{} XML parser doesn't support XInclude option", name);
-        }
-      }
-      
-      final DocumentBuilder db = dbf.newDocumentBuilder();
-      db.setEntityResolver(new SystemIdResolver(loader));
-      db.setErrorHandler(xmllog);
       try {
-        doc = db.parse(is);
-        origDoc = copyDoc(doc);
+        doc = loader.getDocumentBuilder().parse(is);
       } finally {
         // some XML parsers are broken and don't close the byte stream (but they should according to spec)
         IOUtils.closeQuietly(is.getByteStream());
@@ -153,7 +145,7 @@ public class XmlConfigFile { // formerly simply "Config"
       if (substituteProps != null) {
         DOMUtil.substituteProperties(doc, getSubstituteProperties());
       }
-    } catch (ParserConfigurationException | SAXException | TransformerException e)  {
+    } catch (SAXException e)  {
       SolrException.log(log, "Exception during parsing file: " + name, e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
@@ -179,15 +171,14 @@ public class XmlConfigFile { // formerly simply "Config"
     return this.substituteProperties;
   }
 
-  private static Document copyDoc(Document doc) throws TransformerException {
-    TransformerFactory tfactory = TransformerFactory.newInstance();
-    Transformer tx = tfactory.newTransformer();
-    DOMSource source = new DOMSource(doc);
-    DOMResult result = new DOMResult();
-    tx.transform(source, result);
-    return (Document) result.getNode();
-  }
-  
+//  private static Document copyDoc(Document doc) throws TransformerException {
+//    Transformer tx = tfactory.newTransformer();
+//    DOMSource source = new DOMSource(doc);
+//    DOMResult result = new DOMResult();
+//    tx.transform(source, result);
+//    return (Document) result.getNode();
+//  }
+//
   /**
    * @since solr 1.3
    */
@@ -212,7 +203,7 @@ public class XmlConfigFile { // formerly simply "Config"
   }
 
   public XPath getXPath() {
-    return xpathFactory.newXPath();
+    return xpath;
   }
 
   private String normalize(String path) {
@@ -220,7 +211,6 @@ public class XmlConfigFile { // formerly simply "Config"
   }
   
   public Object evaluate(String path, QName type) {
-    XPath xpath = xpathFactory.newXPath();
     try {
       String xstr=normalize(path);
 
@@ -237,12 +227,7 @@ public class XmlConfigFile { // formerly simply "Config"
     return getNode(path, doc, errifMissing);
   }
 
-  public Node getUnsubstitutedNode(String path, boolean errIfMissing) {
-    return getNode(path, origDoc, errIfMissing);
-  }
-
   public Node getNode(String path, Document doc, boolean errIfMissing) {
-    XPath xpath = xpathFactory.newXPath();
     String xstr = normalize(path);
 
     try {
@@ -276,7 +261,6 @@ public class XmlConfigFile { // formerly simply "Config"
   }
 
   public NodeList getNodeList(String path, boolean errIfMissing) {
-    XPath xpath = xpathFactory.newXPath();
     String xstr = normalize(path);
 
     try {

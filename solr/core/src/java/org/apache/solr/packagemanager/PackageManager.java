@@ -91,17 +91,19 @@ public class PackageManager implements Closeable {
       if (zkClient.exists(ZkStateReader.SOLR_PKGS_PATH, true) == true) {
         packagesZnodeMap = (Map)getMapper().readValue(
             new String(zkClient.getData(ZkStateReader.SOLR_PKGS_PATH, null, null, true), "UTF-8"), Map.class).get("packages");
-        for (Object packageName: packagesZnodeMap.keySet()) {
-          List pkg = (List)packagesZnodeMap.get(packageName);
-          for (Map pkgVersion: (List<Map>)pkg) {
-            Manifest manifest = PackageUtils.fetchManifest(solrClient, solrBaseUrl, pkgVersion.get("manifest").toString(), pkgVersion.get("manifestSHA512").toString());
-            List<Plugin> solrplugins = manifest.plugins;
-            SolrPackageInstance pkgInstance = new SolrPackageInstance(packageName.toString(), null, 
-                pkgVersion.get("version").toString(), manifest, solrplugins, manifest.parameterDefaults);
-            List<SolrPackageInstance> list = packages.containsKey(packageName)? packages.get(packageName): new ArrayList<SolrPackageInstance>();
-            list.add(pkgInstance);
-            packages.put(packageName.toString(), list);
-            ret.add(pkgInstance);
+        if (packagesZnodeMap != null) {
+          for (Object packageName : packagesZnodeMap.keySet()) {
+            List pkg = (List) packagesZnodeMap.get(packageName);
+            for (Map pkgVersion : (List<Map>) pkg) {
+              Manifest manifest = PackageUtils.fetchManifest(solrClient, solrBaseUrl, pkgVersion.get("manifest").toString(), pkgVersion.get("manifestSHA512").toString());
+              List<Plugin> solrplugins = manifest.plugins;
+              SolrPackageInstance pkgInstance = new SolrPackageInstance(packageName.toString(), null,
+                      pkgVersion.get("version").toString(), manifest, solrplugins, manifest.parameterDefaults);
+              List<SolrPackageInstance> list = packages.containsKey(packageName) ? packages.get(packageName) : new ArrayList<SolrPackageInstance>();
+              list.add(pkgInstance);
+              packages.put(packageName.toString(), list);
+              ret.add(pkgInstance);
+            }
           }
         }
       }

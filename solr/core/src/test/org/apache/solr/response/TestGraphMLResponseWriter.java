@@ -34,8 +34,10 @@ import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore // nocommit debug
 public class TestGraphMLResponseWriter extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {

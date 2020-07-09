@@ -69,7 +69,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
   public void distribSetUp() throws Exception {
     super.distribSetUp();
 
-    Path zkDir = testDir.toPath().resolve("zookeeper/server1/data");
+    Path zkDir = testDir.toPath().resolve("zookeeper-" + System.nanoTime() + "/server1/data");
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
 
@@ -96,43 +96,43 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     return getSchemaFile();
   }
 
-  @Override
-  protected void createServers(int numShards) throws Exception {
-    // give everyone there own solrhome
-    File controlHome = new File(new File(getSolrHome()).getParentFile(), "control" + homeCount.incrementAndGet());
-    FileUtils.copyDirectory(new File(getSolrHome()), controlHome);
-    setupJettySolrHome(controlHome);
-
-    controlJetty = createJetty(controlHome, null);      // let the shardId default to shard1
-    controlJetty.start();
-    controlClient = createNewSolrClient(controlJetty.getLocalPort());
-
-    assertTrue(CollectionAdminRequest
-        .createCollection("control_collection", 1, 1)
-        .setCreateNodeSet(controlJetty.getNodeName())
-        .process(controlClient).isSuccess());
-
-    ZkStateReader zkStateReader = jettys.get(0).getCoreContainer().getZkController()
-        .getZkStateReader();
-
-    waitForRecoveriesToFinish("control_collection", zkStateReader, false, true, 15);
-
-    StringBuilder sb = new StringBuilder();
-    for (int i = 1; i <= numShards; i++) {
-      if (sb.length() > 0) sb.append(',');
-      // give everyone there own solrhome
-      File jettyHome = new File(new File(getSolrHome()).getParentFile(), "jetty" + homeCount.incrementAndGet());
-      setupJettySolrHome(jettyHome);
-      JettySolrRunner j = createJetty(jettyHome, null, "shard" + (i + 2));
-      j.start();
-      jettys.add(j);
-      clients.add(createNewSolrClient(j.getLocalPort()));
-      sb.append(buildUrl(j.getLocalPort()));
-    }
-
-    shards = sb.toString();
-
-  }
+//  @Override
+//  protected void createServers(int numShards) throws Exception {
+//    // give everyone there own solrhome
+//    File controlHome = new File(new File(getSolrHome()).getParentFile(), "control" + homeCount.incrementAndGet());
+//    FileUtils.copyDirectory(new File(getSolrHome()), controlHome);
+//    setupJettySolrHome(controlHome);
+//
+//    controlJetty = createJetty(controlHome, null);      // let the shardId default to shard1
+//    controlJetty.start();
+//    controlClient = createNewSolrClient(controlJetty.getLocalPort());
+//
+//    assertTrue(CollectionAdminRequest
+//        .createCollection("control_collection", 1, 1)
+//        .setCreateNodeSet(controlJetty.getNodeName())
+//        .process(controlClient).isSuccess());
+//
+//    ZkStateReader zkStateReader = jettys.get(0).getCoreContainer().getZkController()
+//        .getZkStateReader();
+//
+//    waitForRecoveriesToFinish("control_collection", zkStateReader, false, true, 15);
+//
+//    StringBuilder sb = new StringBuilder();
+//    for (int i = 1; i <= numShards; i++) {
+//      if (sb.length() > 0) sb.append(',');
+//      // give everyone there own solrhome
+//      File jettyHome = new File(new File(getSolrHome()).getParentFile(), "jetty" + homeCount.incrementAndGet());
+//      setupJettySolrHome(jettyHome);
+//      JettySolrRunner j = createJetty(jettyHome, null, "shard" + (i + 2));
+//      j.start();
+//      jettys.add(j);
+//      clients.add(createNewSolrClient(j.getLocalPort()));
+//      sb.append(buildUrl(j.getLocalPort()));
+//    }
+//
+//    shards = sb.toString();
+//
+//  }
 
   protected void waitForRecoveriesToFinish(String collection, ZkStateReader zkStateReader, boolean verbose)
       throws Exception {
@@ -141,7 +141,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
 
   protected void waitForRecoveriesToFinish(String collection, ZkStateReader zkStateReader, boolean verbose, boolean failOnTimeout)
       throws Exception {
-    waitForRecoveriesToFinish(collection, zkStateReader, verbose, failOnTimeout, 330, SECONDS);
+    waitForRecoveriesToFinish(collection, zkStateReader, verbose, failOnTimeout, 10, SECONDS);
   }
 
   public static void waitForRecoveriesToFinish(String collection,
@@ -294,12 +294,10 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     resetExceptionIgnores();
 
     try {
-      zkServer.shutdown();
-    } catch (Exception e) {
-      throw new RuntimeException("Exception shutting down Zk Test Server.", e);
+      super.distribTearDown();
     } finally {
       try {
-        super.distribTearDown();
+        zkServer.shutdown();
       } finally {
         System.clearProperty(ZK_HOST);
         System.clearProperty("collection");

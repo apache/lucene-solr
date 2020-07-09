@@ -33,6 +33,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
@@ -40,6 +41,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 /**
  * See SOLR-9504
  */
+@Ignore // nocommit debug
 public class TestLeaderElectionWithEmptyReplica extends SolrCloudTestCase {
   private static final String COLLECTION_NAME = "solr_9504";
 
@@ -51,7 +53,7 @@ public class TestLeaderElectionWithEmptyReplica extends SolrCloudTestCase {
         .configure();
 
     CollectionAdminRequest.createCollection(COLLECTION_NAME, "config", 1, 1)
-        .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
+        .process(cluster.getSolrClient());
 
     cluster.waitForActiveCollection(COLLECTION_NAME, 1, 1);
   }
@@ -81,20 +83,20 @@ public class TestLeaderElectionWithEmptyReplica extends SolrCloudTestCase {
 
     // kill the leader
     replicaJetty.stop();
+    cluster.waitForJettyToStop(replicaJetty);
 
     // add a replica (asynchronously)
     CollectionAdminRequest.AddReplica addReplica = CollectionAdminRequest.addReplicaToShard(COLLECTION_NAME, "shard1");
     String asyncId = addReplica.processAsync(solrClient);
 
     // wait a bit
-    Thread.sleep(1000);
+    Thread.sleep(100);
 
     // bring the old leader node back up
     replicaJetty.start();
+    cluster.waitForNode(replicaJetty, 10);
 
-    // wait until everyone is active
-    solrClient.waitForState(COLLECTION_NAME, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
-        (n, c) -> DocCollection.isFullyActive(n, c, 1, 2));
+    cluster.waitForActiveCollection(COLLECTION_NAME, 1, 2);
 
     // now query each replica and check for consistency
     assertConsistentReplicas(solrClient, solrClient.getZkStateReader().getClusterState().getCollection(COLLECTION_NAME).getSlice("shard1"));

@@ -544,7 +544,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private long waitForDependentUpdates(AddUpdateCommand cmd, long versionOnUpdate,
                                boolean isReplayOrPeersync, VersionBucket bucket) throws IOException {
     long lastFoundVersion = 0;
-    TimeOut waitTimeout = new TimeOut(5, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    TimeOut waitTimeout = new TimeOut(Integer.getInteger("solr.dependentupdate.timeout", 5) , TimeUnit.SECONDS, TimeSource.NANO_TIME);
 
     vinfo.lockForUpdate();
     try {
@@ -616,7 +616,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       while (Math.abs(lastFoundVersion) < cmd.prevVersion && !waitTimeout.hasTimedOut()) {
         long timeLeftInNanos = waitTimeout.timeLeft(TimeUnit.NANOSECONDS);
         if(timeLeftInNanos > 0) { // 0 means: wait forever until notified, but we don't want that.
-          bucket.awaitNanos(timeLeftInNanos);
+          bucket.awaitNanos(250);
         }
         lookedUpVersion = vinfo.lookupVersion(cmd.getIndexedId());
         lastFoundVersion = lookedUpVersion == null ? 0L : lookedUpVersion;

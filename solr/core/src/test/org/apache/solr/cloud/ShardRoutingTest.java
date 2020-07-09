@@ -49,6 +49,8 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
     // dir will not persist - perhaps translog can empty on
     // start if using an EphemeralDirectoryFactory 
     useFactory(null);
+
+    System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
   }
 
   public ShardRoutingTest() {

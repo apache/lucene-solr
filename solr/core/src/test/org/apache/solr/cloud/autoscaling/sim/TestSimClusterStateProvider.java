@@ -71,8 +71,8 @@ public class TestSimClusterStateProvider extends SolrCloudTestCase {
   // set up a real cluster as the source of test data
   @BeforeClass
   public static void setupCluster() throws Exception {
-    simulated = random().nextBoolean();
-    simulated = true;
+    System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
+    simulated = TEST_NIGHTLY ? true : random().nextBoolean();
     log.info("####### Using simulated components? {}", simulated);
 
     configureCluster(NODE_COUNT)
@@ -181,7 +181,7 @@ public class TestSimClusterStateProvider extends SolrCloudTestCase {
     assertTrue(liveNodes.isEmpty());
 
     String node = addNode();
-    cloudManager.getTimeSource().sleep(2000);
+    cloudManager.getTimeSource().sleep(500);
     assertFalse(lastNodes.contains(node));
     lastNodes = new HashSet<>(cloudManager.getClusterStateProvider().getLiveNodes());
     assertTrue(lastNodes.contains(node));
@@ -191,7 +191,7 @@ public class TestSimClusterStateProvider extends SolrCloudTestCase {
     assertTrue(liveNodes.isEmpty());
 
     node = deleteNode();
-    cloudManager.getTimeSource().sleep(2000);
+    cloudManager.getTimeSource().sleep(500);
     assertTrue(lastNodes.contains(node));
     lastNodes = new HashSet<>(cloudManager.getClusterStateProvider().getLiveNodes());
     assertFalse(lastNodes.contains(node));
@@ -214,7 +214,7 @@ public class TestSimClusterStateProvider extends SolrCloudTestCase {
     Preference p = new Preference(Collections.singletonMap("maximize", "freedisk"));
     cfg = cfg.withPolicy(cfg.getPolicy().withClusterPreferences(Collections.singletonList(p)));
     setAutoScalingConfig(cfg);
-    if (!triggered.await(10, TimeUnit.SECONDS)) {
+    if (!triggered.await(5, TimeUnit.SECONDS)) {
       fail("Watch should be triggered on update!");
     }
     AutoScalingConfig cfg1 = cloudManager.getDistribStateManager().getAutoScalingConfig(null);

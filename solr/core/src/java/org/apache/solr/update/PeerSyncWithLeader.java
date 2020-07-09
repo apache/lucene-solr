@@ -80,7 +80,7 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
     this.uhandler = core.getUpdateHandler();
     this.ulog = uhandler.getUpdateLog();
     HttpClient httpClient = core.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient();
-    this.clientToLeader = new HttpSolrClient.Builder(leaderUrl).withHttpClient(httpClient).build();
+    this.clientToLeader = new HttpSolrClient.Builder(leaderUrl).withHttpClient(httpClient).markInternalRequest().build();
 
     this.updater = new PeerSync.Updater(msg(), core);
 

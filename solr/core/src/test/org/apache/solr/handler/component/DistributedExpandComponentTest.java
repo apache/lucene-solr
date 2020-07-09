@@ -48,8 +48,6 @@ public class DistributedExpandComponentTest extends BaseDistributedSearchTestCas
   @ShardsFixed(num = 3)
   public void test() throws Exception {
     final String group = (random().nextBoolean() ? "group_s" : "group_s_dv");
-    
-    del("*:*");
 
     index_specific(0,"id","1", "term_s", "YYYY", group, "group1", "test_i", "5",  "test_l", "10", "test_f", "2000");
     index_specific(0,"id","2", "term_s", "YYYY", group, "group1", "test_i", "50", "test_l", "100", "test_f", "200");

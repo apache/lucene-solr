@@ -99,11 +99,14 @@ public class IndexSizeTrigger extends TriggerBase {
 
   public IndexSizeTrigger(String name) {
     super(TriggerEventType.INDEXSIZE, name);
-    TriggerUtils.validProperties(validProperties,
-        ABOVE_BYTES_PROP, ABOVE_DOCS_PROP, ABOVE_OP_PROP,
-        BELOW_BYTES_PROP, BELOW_DOCS_PROP, BELOW_OP_PROP,
-        COLLECTIONS_PROP, MAX_OPS_PROP,
-        SPLIT_METHOD_PROP, SPLIT_FUZZ_PROP, SPLIT_BY_PREFIX);
+    Set<String> vProperties = new HashSet<>(validProperties);
+    TriggerUtils.validProperties(vProperties,
+            ABOVE_BYTES_PROP, ABOVE_DOCS_PROP, ABOVE_OP_PROP,
+            BELOW_BYTES_PROP, BELOW_DOCS_PROP, BELOW_OP_PROP,
+            COLLECTIONS_PROP, MAX_OPS_PROP,
+            SPLIT_METHOD_PROP, SPLIT_FUZZ_PROP, SPLIT_BY_PREFIX);
+    this.validProperties = vProperties;
+
   }
 
   @Override

@@ -20,8 +20,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -67,6 +69,7 @@ public class StoppableIndexingThread extends AbstractFullDistribZkTestBase.Stopp
     int numDone = 0;
     numDeletes = 0;
     numAdds = 0;
+    Random random = LuceneTestCase.random();
     
     while (true && !stop) {
       if (numCycles != -1) {
@@ -79,7 +82,7 @@ public class StoppableIndexingThread extends AbstractFullDistribZkTestBase.Stopp
       ++i;
       boolean addFailed = false;
       
-      if (doDeletes && AbstractFullDistribZkTestBase.random().nextBoolean() && deletes.size() > 0) {
+      if (doDeletes && random.nextBoolean() && deletes.size() > 0) {
         String deleteId = deletes.remove(0);
         try {
           numDeletes++;
@@ -126,13 +129,13 @@ public class StoppableIndexingThread extends AbstractFullDistribZkTestBase.Stopp
         addFails.add(id);
       }
       
-      if (!addFailed && doDeletes && AbstractFullDistribZkTestBase.random().nextBoolean()) {
+      if (!addFailed && doDeletes && random.nextBoolean()) {
         deletes.add(id);
       }
       
       if (docs.size() > 0 && pauseBetweenUpdates) {
         try {
-          Thread.sleep(AbstractFullDistribZkTestBase.random().nextInt(500) + 50);
+          Thread.sleep(random.nextInt(500) + 50);
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
         }

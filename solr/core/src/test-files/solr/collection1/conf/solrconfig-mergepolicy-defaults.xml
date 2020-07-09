@@ -26,6 +26,7 @@
     <!-- do not put any merge policy, merge factor 
          or CFS related settings here 
     -->
+    <lockType>${solr.tests.lockType:single}</lockType>
   </indexConfig>
 
   <requestHandler name="/select" class="solr.SearchHandler"></requestHandler>

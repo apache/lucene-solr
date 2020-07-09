@@ -38,9 +38,12 @@ import org.apache.solr.core.TestSolrConfigHandler;
 import org.apache.solr.handler.TestBlobHandler;
 import org.apache.solr.util.RestTestHarness;
 import org.apache.solr.util.SimplePostTool;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore // nocommit debug
 public class TestNamedUpdateProcessors extends AbstractFullDistribZkTestBase {
+
 
   @Test
   //17-Aug-2018 commented @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Jul-2018

@@ -45,7 +45,7 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
 
   private static final int CLUSTER_SIZE = 4;
 
-  private static final int MAX_WAIT_TIMEOUT = 120; // seconds, only use for await -- NO SLEEP!!!
+  private static final int MAX_WAIT_TIMEOUT = 10; // seconds, only use for await -- NO SLEEP!!!
 
   private ExecutorService executor = null;
 
@@ -63,6 +63,7 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
       executor.shutdown();
     }
     shutdownCluster();
+    executor.awaitTermination(15, TimeUnit.SECONDS);
     executor = null;
   }
 

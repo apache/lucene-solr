@@ -42,6 +42,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,6 +52,7 @@ import static org.hamcrest.CoreMatchers.not;
 /**
  * Tests using fromIndex that points to a collection in SolrCloud mode.
  */
+@Ignore // nocommit debug
 public class DistribJoinFromCollectionTest extends SolrCloudTestCase{
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -124,17 +126,6 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase{
   @AfterClass
   public static void shutdown() {
     log.info("DistribJoinFromCollectionTest logic complete ... deleting the {} and {} collections", toColl, fromColl);
-
-    // try to clean up
-    for (String c : new String[]{ toColl, fromColl }) {
-      try {
-        CollectionAdminRequest.Delete req =  CollectionAdminRequest.deleteCollection(c);
-        req.process(cluster.getSolrClient());
-      } catch (Exception e) {
-        // don't fail the test
-        log.warn("Could not delete collection {} after test completed due to:", c, e);
-      }
-    }
 
     log.info("DistribJoinFromCollectionTest succeeded ... shutting down now!");
   }

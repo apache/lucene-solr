@@ -31,6 +31,7 @@ import java.security.Principal;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -38,6 +39,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
@@ -148,7 +150,9 @@ public class HttpSolrClient extends BaseHttpSolrClient {
   private volatile Set<String> queryParams = Collections.emptySet();
   private volatile Integer connectionTimeout;
   private volatile Integer soTimeout;
-  
+
+  private volatile Map<String, String> headers = Collections.emptyMap();
+
   /**
    * @deprecated use {@link HttpSolrClient#HttpSolrClient(Builder)} instead, as it is a more extension/subclassing-friendly alternative
    */
@@ -208,6 +212,13 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     this.invariantParams = builder.invariantParams;
     this.connectionTimeout = builder.connectionTimeoutMillis;
     this.soTimeout = builder.socketTimeoutMillis;
+    this.headers = builder.headers;
+  }
+
+  private void addHeaders(SolrRequest request, HttpRequestBase method) {
+    for (Map.Entry<String, String> entry : headers.entrySet()) {
+      method.addHeader(new BasicHeader(entry.getKey(), entry.getValue()));
+    }
   }
 
   public Set<String> getQueryParams() {
@@ -262,6 +273,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
         method.setHeader(entry.getKey(), entry.getValue());
       }
     }
+    addHeaders(request, method);
     return executeMethod(method, request.getUserPrincipal(), processor, isV2ApiRequest(request));
   }
 
@@ -818,6 +830,7 @@ s   * @deprecated since 7.0  Use {@link Builder} methods instead.
     protected String baseSolrUrl;
     protected boolean compression;
     protected ModifiableSolrParams invariantParams = new ModifiableSolrParams();
+    private final Map<String,String> headers = new ConcurrentHashMap<>();
 
     public Builder() {
       this.responseParser = new BinaryResponseParser();
@@ -913,6 +926,26 @@ s   * @deprecated since 7.0  Use {@link Builder} methods instead.
 
       this.invariantParams.add(params);
       return this;
+    }
+
+    //do not set this from an external client
+    public Builder markInternalRequest() {
+      this.headers.put("Request-Source", "internal");
+      return this;
+    }
+
+    public Builder withHeaders(Map<String, String> headers) {
+      this.headers.putAll(headers);
+      return this;
+    }
+
+    public Builder withHeader(String header, String value) {
+      this.headers.put(header, value);
+      return this;
+    }
+
+    public Map<String, String> getHeaders() {
+      return headers;
     }
 
     /**

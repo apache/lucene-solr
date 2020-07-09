@@ -107,7 +107,7 @@ public class ShardsWhitelistTest extends MultiSolrCloudTestCase {
               for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
                 try {
                   runner.stop();
-                  runner.start(true);
+                  runner.start(true, true);
                 } catch (Exception e) {
                   throw new RuntimeException("Unable to restart runner", e);
                 }

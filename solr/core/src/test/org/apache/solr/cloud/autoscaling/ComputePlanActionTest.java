@@ -61,6 +61,7 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.MO
  * Test for {@link ComputePlanAction}
  */
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;org.apache.solr.cloud.Overseer=DEBUG;org.apache.solr.cloud.overseer=DEBUG;org.apache.solr.client.solrj.impl.SolrClientDataProvider=DEBUG;")
+@LuceneTestCase.Nightly // TODO: speed up
 public class ComputePlanActionTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -221,7 +222,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
       }
     }
     log.info("Stopped_node : {}", node);
-    cluster.waitForAllNodes(30);
+    cluster.waitForAllNodes(10);
 
     assertTrue("Trigger was not fired even after 10 seconds", triggerFiredLatch.await(10, TimeUnit.SECONDS));
     assertTrue(fired.get());
@@ -307,7 +308,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     }
     assertNotNull(stoppedNodeName);
 
-    assertTrue("Trigger was not fired even after 5 seconds", triggerFiredLatch.await(15, TimeUnit.SECONDS));
+    assertTrue("Trigger was not fired even after 5 seconds", triggerFiredLatch.await(10, TimeUnit.SECONDS));
     assertTrue(fired.get());
 
     TriggerEvent triggerEvent = eventRef.get();
@@ -654,8 +655,8 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
             collectionState.getReplicas().stream().allMatch(replica -> replica.isActive(liveNodes)));
 
     JettySolrRunner newNode = cluster.startJettySolrRunner();
-    cluster.waitForAllNodes(30);
-    assertTrue(triggerFiredLatch.await(30, TimeUnit.SECONDS));
+    cluster.waitForAllNodes(10);
+    assertTrue(triggerFiredLatch.await(10, TimeUnit.SECONDS));
     assertTrue(fired.get());
     Map actionContext = actionContextPropsRef.get();
     List operations = (List) actionContext.get("operations");
@@ -708,6 +709,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
 
   @Test
   // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
+  @Ignore // nocommit
   public void testNodeLostTriggerWithDeleteNodePreferredOp() throws Exception {
     String collectionNamePrefix = "testNodeLostTriggerWithDeleteNodePreferredOp";
     int numCollections = 1 + random().nextInt(3), numShards = 1 + random().nextInt(3);
@@ -752,7 +754,8 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
             collectionState.getReplicas().stream().allMatch(replica -> replica.isActive(liveNodes)));
 
     cluster.stopJettySolrRunner(newNode);
-    assertTrue(triggerFiredLatch.await(30, TimeUnit.SECONDS));
+    cluster.waitForJettyToStop(newNode);
+    assertTrue(triggerFiredLatch.await(10, TimeUnit.SECONDS));
     assertTrue(fired.get());
     Map actionContext = actionContextPropsRef.get();
     List operations = (List) actionContext.get("operations");

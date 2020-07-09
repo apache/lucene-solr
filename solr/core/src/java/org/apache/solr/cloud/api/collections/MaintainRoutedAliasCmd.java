@@ -25,6 +25,7 @@ import java.util.Map;
 
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.cloud.Overseer;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
@@ -124,16 +125,18 @@ public class MaintainRoutedAliasCmd extends AliasCmd {
       switch (action.actionType) {
         case ENSURE_REMOVED:
           if (exists) {
-            ocmh.tpe.submit(() -> {
-              try {
-                deleteTargetCollection(clusterState, results, aliasName, aliasesManager, action);
-              } catch (Exception e) {
-                log.warn("Deletion of {} by {} {} failed (this might be ok if two clients were"
-                    , action.targetCollection, ra.getAliasName()
-                    , " writing to a routed alias at the same time and both caused a deletion)");
-                log.debug("Exception for last message:", e);
-              }
-            });
+            try (ParWork worker = new ParWork(this)) {
+              worker.add("AddReplica", () -> {
+                try {
+                  deleteTargetCollection(clusterState, results, aliasName, aliasesManager, action);
+                } catch (Exception e) {
+                  log.warn("Deletion of {} by {} {} failed (this might be ok if two clients were"
+                          , action.targetCollection, ra.getAliasName()
+                          , " writing to a routed alias at the same time and both caused a deletion)");
+                  log.debug("Exception for last message:", e);
+                }
+              });
+            }
           }
           break;
         case ENSURE_EXISTS:

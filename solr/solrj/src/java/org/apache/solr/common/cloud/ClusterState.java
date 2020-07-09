@@ -230,7 +230,7 @@ public class ClusterState implements JSONWriter.Writable {
    * @return the ClusterState
    */
   public static ClusterState load(Integer version, byte[] bytes, Set<String> liveNodes, String znode) {
-    // System.out.println("######## ClusterState.load:" + (bytes==null ? null : new String(bytes)));
+    // System.out.println("######## ClusterState.load:" + version + "v " + (bytes==null ? null : new String(bytes)));
     if (bytes == null || bytes.length == 0) {
       return new ClusterState(version, liveNodes, Collections.<String, DocCollection>emptyMap());
     }

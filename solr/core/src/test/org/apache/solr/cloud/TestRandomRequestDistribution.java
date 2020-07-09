@@ -60,8 +60,6 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
   @Test
   @BaseDistributedSearchTestCase.ShardsFixed(num = 3)
   public void test() throws Exception {
-    waitForThingsToLevelOut(30, TimeUnit.SECONDS);
-
     for (CloudJettyRunner cloudJetty : cloudJettys) {
       nodeNames.add(cloudJetty.nodeName);
     }
@@ -76,11 +74,11 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
    */
   private void testRequestTracking() throws Exception {
 
-    CollectionAdminRequest.createCollection("a1x2", "conf1", 1, 2)
+    CollectionAdminRequest.createCollection("a1x2", "_default", 1, 2)
         .setCreateNodeSet(nodeNames.get(0) + ',' + nodeNames.get(1))
         .process(cloudClient);
 
-    CollectionAdminRequest.createCollection("b1x1", "conf1", 1, 1)
+    CollectionAdminRequest.createCollection("b1x1", "_default", 1, 1)
         .setCreateNodeSet(nodeNames.get(2))
         .process(cloudClient);
 
@@ -149,7 +147,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
   private void testQueryAgainstDownReplica() throws Exception {
 
     log.info("Creating collection 'football' with 1 shard and 2 replicas");
-    CollectionAdminRequest.createCollection("football", "conf1", 1, 2)
+    CollectionAdminRequest.createCollection("football", "_default", 1, 2)
         .setCreateNodeSet(nodeNames.get(0) + ',' + nodeNames.get(1))
         .process(cloudClient);
 

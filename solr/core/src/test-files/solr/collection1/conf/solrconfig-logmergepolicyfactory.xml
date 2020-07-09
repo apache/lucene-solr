@@ -30,6 +30,7 @@
       <int name="mergeFactor">11</int>
       <int name="maxMergeDocs">456</int>
     </mergePolicyFactory>
+    <lockType>${solr.tests.lockType:single}</lockType>
   </indexConfig>
 
   <requestHandler name="/select" class="solr.SearchHandler"></requestHandler>

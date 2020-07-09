@@ -30,8 +30,10 @@ import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.TimeOut;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore // nocommit debug
 public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestBase {
 
   public SimpleCollectionCreateDeleteTest() {

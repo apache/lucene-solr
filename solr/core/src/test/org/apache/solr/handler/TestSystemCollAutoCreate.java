@@ -18,13 +18,23 @@
 package org.apache.solr.handler;
 
 
-import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
+import org.apache.solr.cloud.SolrCloudBridgeTestCase;
 import org.apache.solr.common.cloud.DocCollection;
+import org.junit.Ignore;
 
-public class TestSystemCollAutoCreate extends AbstractFullDistribZkTestBase {
+@Ignore // nocommit debugl;
+public class TestSystemCollAutoCreate extends SolrCloudBridgeTestCase {
+
+  public TestSystemCollAutoCreate() {
+    super();
+    sliceCount = 1;
+    replicationFactor = 1;
+    numJettys = 1;
+  }
+
   // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
   public void testAutoCreate() throws Exception {
-    TestBlobHandler.checkBlobPost(cloudJettys.get(0).jetty.getBaseUrl().toExternalForm(), cloudClient);
+    TestBlobHandler.checkBlobPost(cluster.getJettySolrRunner(0).getBaseUrl().toExternalForm(), cloudClient);
     DocCollection sysColl = cloudClient.getZkStateReader().getClusterState().getCollection(".system");
   }
 }

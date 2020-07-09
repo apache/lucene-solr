@@ -83,7 +83,7 @@ public class TransactionLog implements Closeable {
   protected volatile boolean deleteOnClose = true;  // we can delete old tlogs since they are currently only used for real-time-get (and in the future, recovery)
 
   AtomicInteger refcount = new AtomicInteger(1);
-  Map<String, Integer> globalStringMap = new HashMap<>();
+  Map<String,Integer> globalStringMap = new HashMap<>();
   List<String> globalStringList = new ArrayList<>();
 
   // write a BytesRef as a byte array
@@ -91,7 +91,7 @@ public class TransactionLog implements Closeable {
     @Override
     public Object resolve(Object o, JavaBinCodec codec) throws IOException {
       if (o instanceof BytesRef) {
-        BytesRef br = (BytesRef) o;
+        BytesRef br = (BytesRef)o;
         codec.writeByteArray(br.bytes, br.offset, br.length);
         return null;
       }
@@ -222,8 +222,7 @@ public class TransactionLog implements Closeable {
   }
 
   // for subclasses
-  protected TransactionLog() {
-  }
+  protected TransactionLog() {}
 
   /** Returns the number of records in the log (currently includes the header and an optional commit).
    * Note: currently returns 0 for reopened existing log files.
@@ -362,9 +361,9 @@ public class TransactionLog implements Closeable {
   /**
    * Writes an add update command to the transaction log. This should be called only for
    * writing in-place updates, or else pass -1 as the prevPointer.
-   * @param cmd         The add update command to be written
+   * @param cmd The add update command to be written
    * @param prevPointer The pointer in the transaction log which this update depends
-   *                    on (applicable for in-place updates)
+   * on (applicable for in-place updates)
    * @return Returns the position pointer of the written update command
    */
   public long write(AddUpdateCommand cmd, long prevPointer) {
@@ -638,8 +637,7 @@ public class TransactionLog implements Closeable {
 
   /** Returns a reader that can be used while a log is still in use.
    * Currently only *one* LogReader may be outstanding, and that log may only
-   * be used from a single thread.
-   */
+   * be used from a single thread. */
   public LogReader getReader(long startingPos) {
     return new LogReader(startingPos);
   }
