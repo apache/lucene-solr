@@ -21,6 +21,7 @@ import org.apache.lucene.search.SortField;
 /**
  * Custom field wrapping an int, to test sorting via a custom comparator.
  * @deprecated Trie fields are deprecated as of Solr 7.0
+ * @see WrappedIntPointField
  */
 @Deprecated
 public class WrappedTrieIntField extends TrieIntField {
