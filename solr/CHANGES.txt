@@ -119,10 +119,14 @@ Improvements
   logs from the receiving coordinator node with those from downstream shard requests.  This can be disabled by providing a
   disableRequestId=true request parameter. (Jason Gerlowski)
 
+
+
 Optimizations
 ---------------------
 
 * SOLR-14354: HttpShardHandler send requests in async (Cao Manh Dat).
+
+* SOLR-14610: ReflectMapWriter to use MethodHandle instead of old reflection (noble)
 
 Bug Fixes
 ---------------------
@@ -132,8 +136,6 @@ Other Changes
 ---------------------
 
 * SOLR-14592: Upgrade Zookeeper to 3.6.1. NOTE: this required upgrading netty to 4.1.50 (Erick Erickson)
-
-* SOLR-14610: ReflectMapWriter to use VarHandle instead of reflection (noble)
 
 * SOLR-10742: SolrCores.getNamesForCore is quite inefficient and blocks other core operations. 
   NOTE: this experimental method has been removed (Erick Erickson)
