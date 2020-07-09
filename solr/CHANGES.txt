@@ -23,6 +23,7 @@ Improvements
   logs from the receiving coordinator node with those from downstream shard requests.  This can be disabled by providing a
   disableRequestId=true request parameter. (Jason Gerlowski)
 
+* SOLR-14635: ThreadDumpHandler has been enhanced to show lock ownership (hossman)
 
 
 Optimizations
