@@ -60,6 +60,10 @@ API Changes
 
 Improvements
 
+* LUCENE-8574: Add a new ExpressionValueSource which will enforce only one value per name
+  per hit in dependencies, ExpressionFunctionValues will no longer
+  recompute already computed values (Haoyu Zhai)
+
 * LUCENE-9370: RegExp query is no longer lenient about inappropriate backslashes and
   follows the Java Pattern policy for rejecting illegal syntax.  (Mark Harwood)
 
