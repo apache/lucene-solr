@@ -25,6 +25,8 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.concurrent.Future; // javadoc
 
+import org.apache.lucene.util.IOUtils;
+
 /**
  * An {@link FSDirectory} implementation that uses java.nio's FileChannel's
  * positional read, which allows multiple threads to read from the same file
@@ -79,7 +81,16 @@ public class NIOFSDirectory extends FSDirectory {
     ensureCanRead(name);
     Path path = getDirectory().resolve(name);
     FileChannel fc = FileChannel.open(path, StandardOpenOption.READ);
-    return new NIOFSIndexInput("NIOFSIndexInput(path=\"" + path + "\")", fc, context);
+    boolean success = false;
+    try {
+      final NIOFSIndexInput indexInput = new NIOFSIndexInput("NIOFSIndexInput(path=\"" + path + "\")", fc, context);
+      success = true;
+      return indexInput;
+    } finally {
+      if (success == false) {
+        IOUtils.closeWhileHandlingException(fc);
+      }
+    }
   }
   
   /**
