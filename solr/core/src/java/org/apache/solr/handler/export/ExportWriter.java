@@ -25,6 +25,7 @@ import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.TreeSet;
 
 import com.codahale.metrics.Timer;
 import org.apache.lucene.index.LeafReader;
@@ -610,6 +611,57 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       return new QuadValueSortDoc(sortValues[0], sortValues[1], sortValues[2], sortValues[3]);
     }
     return new SortDoc(sortValues);
+  }
+
+
+
+  private static class MergeIterator {
+
+    private TreeSet<SortDoc> set = new TreeSet();
+    private SegmentIterator[] segmentIterators;
+
+    public MergeIterator(SegmentIterator[] segmentIterators) {
+      this.segmentIterators = segmentIterators;
+      for(int i=0; i<segmentIterators.length; i++) {
+        SortDoc sortDoc = segmentIterators[i].next();
+        if(sortDoc != null) {
+          set.add(sortDoc);
+        }
+      }
+    }
+
+    /*
+    * Merge sorts the SortDocs from Segment Iterators
+    * Returns null when all docs are iterated.
+    */
+
+    public SortDoc next() {
+      //This method is free
+      SortDoc sortDoc = set.pollFirst();
+      SortDoc nextDoc = segmentIterators[sortDoc.ord].next();
+      if(nextDoc != null) {
+        //The entire expense of the operation is here
+        set.add(nextDoc);
+      }
+      return sortDoc;
+    }
+  }
+
+  private static class SegmentIterator {
+
+    private FixedBitSet bits;
+    private LeafReaderContext context;
+    private SortQueue sortQueue;
+
+    public SegmentIterator(FixedBitSet bits, LeafReaderContext context, SortQueue sortQueue) {
+      this.bits = bits;
+      this.context = context;
+      this.sortQueue = sortQueue;
+    }
+
+    public SortDoc next() {
+      return null;
+    }
   }
 
   public static class IgnoreException extends IOException {
