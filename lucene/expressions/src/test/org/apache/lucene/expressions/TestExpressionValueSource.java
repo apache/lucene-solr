@@ -128,6 +128,35 @@ public class TestExpressionValueSource extends LuceneTestCase {
     assertFalse(vs1.equals(vs4));
   }
 
+  public void testFibonacciExpr() throws Exception {
+    int n = 40;
+    SimpleBindings bindings = new SimpleBindings();
+    bindings.add("f0", DoubleValuesSource.constant(0));
+    bindings.add("f1", DoubleValuesSource.constant(1));
+    for (int i = 2; i < n + 1; i++) {
+      // Without using CachingExpressionValueSource this test will fail after 1 min around because of out of heap space when n=40
+      bindings.add("f" + Integer.toString(i), new CachingExpressionValueSource(
+          (ExpressionValueSource) JavascriptCompiler.compile("f" + Integer.toString(i - 1)+" + f" + Integer.toString(i - 2)).getDoubleValuesSource(bindings)));
+    }
+    DoubleValues values = bindings.getDoubleValuesSource("f" + Integer.toString(n)).getValues(null, null);
+
+    assertTrue(values.advanceExact(0));
+    assertEquals(fib(n), (int)values.doubleValue());
+  }
+
+  private int fib(int n) {
+    if (n == 0) {
+      return 0;
+    }
+    int prev = 0, curr = 1, tmp;
+    for (int i = 1; i < n; i++) {
+      tmp = curr;
+      curr += prev;
+      prev = tmp;
+    }
+    return curr;
+  }
+
   public void testRewrite() throws Exception {
     Expression expr = JavascriptCompiler.compile("a");
 
