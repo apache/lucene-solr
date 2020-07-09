@@ -651,16 +651,44 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
 
     private FixedBitSet bits;
     private LeafReaderContext context;
-    private SortQueue sortQueue;
+    private SortQueue queue;
+    private SortDoc sortDoc;
 
-    public SegmentIterator(FixedBitSet bits, LeafReaderContext context, SortQueue sortQueue) {
+    public SegmentIterator(FixedBitSet bits, LeafReaderContext context, SortQueue sortQueue, SortDoc sortDoc) {
       this.bits = bits;
       this.context = context;
-      this.sortQueue = sortQueue;
+      this.queue = sortQueue;
+      this.sortDoc = sortDoc;
+      topDocs();
     }
 
     public SortDoc next() {
-      return null;
+      SortDoc sortDoc = queue.pop();
+      if(sortDoc == null) {
+        topDocs();
+        sortDoc = queue.pop();
+        return sortDoc;
+      } else {
+        return sortDoc;
+      }
+    }
+
+    private void topDocs()  {
+      try {
+        queue.reset();
+        SortDoc top = queue.top();
+        DocIdSetIterator it = new BitSetIterator(bits, 0); // cost is not useful here
+        int docId;
+        while ((docId = it.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+          sortDoc.setValues(docId);
+          if (top.lessThan(sortDoc)) {
+            top.setValues(sortDoc);
+            top = queue.updateTop();
+          }
+        }
+      } catch(Exception e) {
+
+      }
     }
   }
 
