@@ -27,7 +27,9 @@ Improvements
 
 Optimizations
 ---------------------
-(No changes)
+
+* SOLR-14610: ReflectMapWriter to use MethodHandle instead of old reflection (noble)
+
 
 Bug Fixes
 ---------------------
