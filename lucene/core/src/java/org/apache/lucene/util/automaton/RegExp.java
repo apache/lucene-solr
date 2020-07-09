@@ -458,7 +458,7 @@ public class RegExp {
    *              regular expression
    */
   public RegExp(String s, int syntax_flags) throws IllegalArgumentException {
-    this(s, ALL, 0);
+    this(s, syntax_flags, 0);
   }
   
   /**
