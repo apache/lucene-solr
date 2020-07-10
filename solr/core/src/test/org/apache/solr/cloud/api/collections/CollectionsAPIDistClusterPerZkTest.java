@@ -294,8 +294,6 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
       cluster.waitForActiveCollection(coll.name, coll.numShards, coll.numShards * coll.replicationFactor);
     }
 
-    waitForStable(cnt, createRequests);
-
     for (int i = 0; i < cluster.getJettySolrRunners().size(); i++) {
       checkInstanceDirs(cluster.getJettySolrRunner(i));
     }
@@ -316,7 +314,7 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
         break;
       }
 
-      Thread.sleep(500);
+      Thread.sleep(100);
     }
     
     if (timeOut.hasTimedOut()) {
@@ -324,24 +322,6 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
     }
 
     // checkNoTwoShardsUseTheSameIndexDir();
-  }
-
-  private void waitForStable(int cnt, CollectionAdminRequest.Create[] createRequests) throws InterruptedException {
-    for (int i = 0; i < cnt; i++) {
-      String collectionName = "awhollynewcollection_" + i;
-      final int j = i;
-      waitForState("Expected to see collection " + collectionName, collectionName,
-          (n, c) -> {
-            CollectionAdminRequest.Create req = createRequests[j];
-            return DocCollection.isFullyActive(n, c, req.getNumShards(), req.getReplicationFactor());
-          });
-      
-      ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
-      // make sure we have leaders for each shard
-      for (int z = 1; z < createRequests[j].getNumShards(); z++) {
-        zkStateReader.getLeaderRetry(collectionName, "shard" + z, 10000);
-      }      // make sure we again have leaders for each shard
-    }
   }
 
   @Test
@@ -355,7 +335,7 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
     collectStartTimes(collectionName, urlToTimeBefore);
     assertTrue(urlToTimeBefore.size() > 0);
 
-    Thread.sleep(200);
+    Thread.sleep(50);
 
     CollectionAdminRequest.reloadCollection(collectionName).processAsync(cluster.getSolrClient());
 
@@ -379,7 +359,7 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
   }
 
   private boolean waitForReloads(String collectionName, Map<String,Long> urlToTimeBefore) throws SolrServerException, IOException {
-    TimeOut timeout = new TimeOut(45, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    TimeOut timeout = new TimeOut(5, TimeUnit.SECONDS, TimeSource.NANO_TIME);
 
     boolean allTimesAreCorrect = false;
     while (! timeout.hasTimedOut()) {

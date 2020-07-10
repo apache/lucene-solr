@@ -117,11 +117,8 @@ public class TestSkipOverseerOperations extends SolrCloudTestCase {
     for (JettySolrRunner solrRunner : notOverseerNodes) {
       solrRunner.start();
     }
-    
-    cluster.waitForAllNodes(30);
 
-    waitForState("Expected 2x1 for collection: " + collection, collection,
-        clusterShape(2, 2));
+    cluster.waitForActiveCollection(collection, 2, 4);
     CollectionAdminResponse resp2 = CollectionAdminRequest.getOverseerStatus().process(cluster.getSolrClient());
     assertEquals(getNumLeaderOpeations(resp) + 2, getNumLeaderOpeations(resp2));
     CollectionAdminRequest.deleteCollection(collection).process(cluster.getSolrClient());

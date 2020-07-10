@@ -86,10 +86,7 @@ public class LeaderElectionIntegrationTest extends SolrCloudTestCase {
     for (JettySolrRunner runner : stoppedRunners) {
       runner.start();
     }
-    waitForState("Expected to see nodes come back " + collection, collection,
-        (n, c) -> {
-          return n.size() == 6;
-        });
+
     CollectionAdminRequest.deleteCollection(collection).process(cluster.getSolrClient());
 
     // testLeaderElectionAfterClientTimeout

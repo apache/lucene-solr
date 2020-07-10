@@ -215,7 +215,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
         CollectionAdminResponse response = CollectionAdminRequest.reloadCollection(collectionName)
         .process(cluster.getSolrClient());
         assertEquals(0, response.getStatus());
-        waitForState("failed waiting for active colletion", collectionName, clusterShape(2, 8));
+        cluster.waitForActiveCollection(collectionName, 2, 8);
         reloaded = true;
       }
     }
@@ -273,7 +273,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     addReplicaToShard("shard2", Replica.Type.TLOG);
     docCollection = assertNumberOfReplicas(0, 4, 0, true, false);
 
-    waitForState("Expecting collection to have 2 shards and 2 replica each", collectionName, clusterShape(2, 4));
+    cluster.waitForActiveCollection(collectionName, 2, 4);
 
     //Delete tlog replica from shard1
     CollectionAdminRequest.deleteReplica(
@@ -331,7 +331,6 @@ public class TestTlogReplica extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, numNrtReplicas, numReplicas, 0)
       .setMaxShardsPerNode(100)
       .process(cluster.getSolrClient());
-    waitForState("Unexpected replica count", collectionName, activeReplicaCount(numNrtReplicas, numReplicas, 0));
     DocCollection docCollection = assertNumberOfReplicas(numNrtReplicas, numReplicas, 0, false, true);
     HttpClient httpClient = cluster.getSolrClient().getHttpClient();
     int id = 0;
@@ -421,7 +420,8 @@ public class TestTlogReplica extends SolrCloudTestCase {
       leaderJetty.start();
       cluster.waitForNode(leaderJetty, 10000);
     }
-    waitForState("Expected collection to be 1x2", collectionName, clusterShape(1, 2));
+
+    cluster.waitForActiveCollection(collectionName, 1, 2);
     // added replica should replicate from the leader
     waitForNumDocsInAllReplicas(2, docCollection.getReplicas(EnumSet.of(Replica.Type.TLOG)), REPLICATION_TIMEOUT_SECS);
   }
@@ -454,7 +454,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     JettySolrRunner pullReplicaJetty = cluster.getReplicaJetty(docCollection.getSlice("shard1").getReplicas(EnumSet.of(Replica.Type.TLOG)).get(0));
     pullReplicaJetty.stop();
     cluster.waitForJettyToStop(pullReplicaJetty);
-    waitForState("Replica not removed", collectionName, activeReplicaCount(0, 1, 0));
+
     waitForLeaderChange(pullReplicaJetty, "shard1");
 //    // Also wait for the replica to be placed in state="down"
 //    waitForState("Didn't update state", collectionName, clusterStateReflectsActiveAndDownReplicas());

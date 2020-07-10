@@ -196,8 +196,7 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     
     cluster.waitForActiveCollection(collectionName, 1, 3);
-    
-    waitForState("Timeout waiting for 1x3 collection", collectionName, clusterShape(1, 3));
+
     Replica replica2 = getCollectionState(collectionName).getSlice("shard1")
         .getReplicas(replica -> replica.getNodeName().equals(cluster.getJettySolrRunner(2).getNodeName())).get(0);
 
@@ -256,7 +255,7 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
     cluster.getJettySolrRunner(0).start();
     proxies.get(cluster.getJettySolrRunner(0)).reopen();
 
-    waitForState("Timeout waiting for 1x3 collection", collectionName, clusterShape(1, 3));
+    cluster.waitForActiveCollection(collectionName, 1, 3);
     assertDocsExistInAllReplicas(Arrays.asList(leader, replica1), collectionName, 1, 3);
 
     try {

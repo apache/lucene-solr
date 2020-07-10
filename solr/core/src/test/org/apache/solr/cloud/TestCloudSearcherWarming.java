@@ -124,8 +124,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
     // check waitForState only after we are sure the node has shutdown and have forced an update to liveNodes
     // ie: workaround SOLR-13490
     cluster.getSolrClient().getZkStateReader().updateLiveNodes();
-    waitForState("jetty count:" + cluster.getJettySolrRunners().size(), collectionName, clusterShape(1, 0));
-    
+    cluster.waitForActiveCollection(collectionName, 1, 0);
     // restart
     sleepTime.set(1000);
     runner.start();
@@ -145,8 +144,6 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, 1, 1)
         .setCreateNodeSet(cluster.getJettySolrRunner(0).getNodeName()).setMaxShardsPerNode(2);
     create.process(solrClient);
-
-    waitForState("The collection should have 1 shard and 1 replica", collectionName, clusterShape(1, 1));
 
     solrClient.setDefaultCollection(collectionName);
 
@@ -182,7 +179,6 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
         .setNode(newNode.getNodeName())
         .process(solrClient);
 
-    waitForState("The collection should have 1 shard and 2 replica", collectionName, clusterShape(1, 2));
     assertNull("No replica should have been active without registering a searcher, found: " + failingCoreNodeName.get(), failingCoreNodeName.get());
 
     // stop the old node
@@ -192,7 +188,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
     
     cluster.waitForJettyToStop(oldNode);
     // the newly created replica should become leader
-    waitForState("The collection should have 1 shard and 1 replica", collectionName, clusterShape(1, 1));
+    cluster.waitForActiveCollection(collectionName, 1, 1);
     // the above call is not enough because we want to assert that the down'ed replica is not active
     // but clusterShape will also return true if replica is not live -- which we don't want
     CollectionStatePredicate collectionStatePredicate = (liveNodes, collectionState) -> {
@@ -217,7 +213,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
     // now lets restart the old node
     log.info("Starting old node 1");
     cluster.startJettySolrRunner(oldNode);
-    waitForState("", collectionName, clusterShape(1, 2));
+    cluster.waitForActiveCollection(collectionName, 1, 2);
     // invoke statewatcher explicitly to avoid race condition where the assert happens before the state watcher is invoked by ZkStateReader
     cluster.getSolrClient().getZkStateReader().registerCollectionStateWatcher(collectionName, stateWatcher);
     assertNull("No replica should have been active without registering a searcher, found: " + failingCoreNodeName.get(), failingCoreNodeName.get());
@@ -225,7 +221,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
     oldNodeName.set(cluster.getJettySolrRunner(1).getNodeName());
     assertSame(oldNode, cluster.stopJettySolrRunner(1)); // old node is now at 1
     log.info("Stopping old node 2");
-    waitForState("", collectionName, clusterShape(1, 1));
+    cluster.waitForActiveCollection(collectionName, 1, 1);
     waitForState("", collectionName, collectionStatePredicate);
 
     // reset
@@ -239,7 +235,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
     // now lets restart the old node again
     log.info("Starting old node 2");
     cluster.startJettySolrRunner(oldNode);
-    waitForState("", collectionName, clusterShape(1, 2));
+    cluster.waitForActiveCollection(collectionName, 1, 2);
     // invoke statewatcher explicitly to avoid race condition where the assert happens before the state watcher is invoked by ZkStateReader
     cluster.getSolrClient().getZkStateReader().registerCollectionStateWatcher(collectionName, stateWatcher);
     assertNull("No replica should have been active without registering a searcher, found: " + failingCoreNodeName.get(), failingCoreNodeName.get());

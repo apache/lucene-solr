@@ -232,8 +232,6 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
     cluster.waitForActiveCollection("collection1meta", 2, 2);
     cluster.waitForActiveCollection("collection2meta", 1, 1);
 
-    waitForState("Expected collection1 to be created with 2 shards and 1 replica", "collection1meta", clusterShape(2, 2));
-    waitForState("Expected collection2 to be created with 1 shard and 1 replica", "collection2meta", clusterShape(1, 1));
     ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
     zkStateReader.createClusterStateWatchersAndUpdate();
 

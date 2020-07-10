@@ -59,7 +59,6 @@ public class MissingSegmentRecoveryTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(collection, "conf", 1, 2)
         .setMaxShardsPerNode(1)
         .process(cluster.getSolrClient());
-    waitForState("Expected a collection with one shard and two replicas", collection, clusterShape(1, 2));
     cluster.getSolrClient().setDefaultCollection(collection);
 
     List<SolrInputDocument> docs = new ArrayList<>();
@@ -106,7 +105,7 @@ public class MissingSegmentRecoveryTest extends SolrCloudTestCase {
     jetty.stop();
     jetty.start();
 
-    waitForState("Expected a collection with one shard and two replicas", collection, clusterShape(1, 2));
+    cluster.waitForActiveCollection(collection, 1, 2);
     
     QueryResponse resp = cluster.getSolrClient().query(collection, new SolrQuery("*:*"));
     assertEquals(10, resp.getResults().getNumFound());

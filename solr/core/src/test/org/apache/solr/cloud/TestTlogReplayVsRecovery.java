@@ -136,16 +136,13 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
                  .setNode(NODE0.getNodeName())
                  .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT));
     
-    waitForState("Timeout waiting for shard leader", COLLECTION, clusterShape(1, 1));
 
+    cluster.waitForActiveCollection(COLLECTION, 1, 2);
     assertEquals(RequestStatusState.COMPLETED,
                  CollectionAdminRequest.addReplicaToShard(COLLECTION, "shard1")
                  .setNode(NODE1.getNodeName())
                  .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT));
-    
-    cluster.waitForActiveCollection(COLLECTION, 1, 2);
-    
-    waitForState("Timeout waiting for 1x2 collection", COLLECTION, clusterShape(1, 2));
+
     
     final Replica leader = getCollectionState(COLLECTION).getSlice("shard1").getLeader();
     assertEquals("Sanity check failed", NODE0.getNodeName(), leader.getNodeName());
@@ -202,7 +199,6 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
       Replica newLeader = collectionState.getLeader("shard1");
       return newLeader != null && newLeader.getName().equals(leader.getName());
     });
-    waitForState("Timeout waiting for active collection", COLLECTION, clusterShape(1, 2));
     
     cluster.waitForActiveCollection(COLLECTION, 1, 2);
 

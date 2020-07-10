@@ -100,9 +100,6 @@ public class TestPrepRecovery extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(collectionName, 1, 1)
         .process(solrClient);
 
-    waitForState("Expected collection: testLeaderNotResponding to be live with 1 shard and 1 replicas",
-        collectionName, clusterShape(1, 1));
-
     TestInjection.prepRecoveryOpPauseForever = "true:100";
     try {
       CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")

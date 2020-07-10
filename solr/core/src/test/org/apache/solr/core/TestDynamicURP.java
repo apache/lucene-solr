@@ -68,7 +68,6 @@ public class TestDynamicURP extends SolrCloudTestCase {
 
 
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 3, 1).process(cluster.getSolrClient());
-    waitForState("", COLLECTION, clusterShape(3, 3));
   }
 
 

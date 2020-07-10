@@ -74,7 +74,6 @@ public class AddReplicaTest extends SolrCloudTestCase {
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collection, "conf1", 1, 1);
     create.setMaxShardsPerNode(2);
     cloudClient.request(create);
-    cluster.waitForActiveCollection(collection, 1, 1);
 
     CollectionAdminRequest.AddReplica addReplica = CollectionAdminRequest.addReplicaToShard(collection, "shard1")
         .setNrtReplicas(1)
@@ -82,8 +81,6 @@ public class AddReplicaTest extends SolrCloudTestCase {
         .setPullReplicas(1);
     CollectionAdminResponse status = addReplica.process(cloudClient, collection + "_xyz1");
     assertTrue(status.isSuccess());
-    
-    cluster.waitForActiveCollection(collection, 1, 4);
     
     DocCollection docCollection = cloudClient.getZkStateReader().getClusterState().getCollectionOrNull(collection);
     assertNotNull(docCollection);
@@ -128,7 +125,8 @@ public class AddReplicaTest extends SolrCloudTestCase {
         .setCreateNodeSet(String.join(",", createNodeSet));
     status = addReplica.process(cloudClient, collection + "_xyz1");
     assertTrue(status.isSuccess());
-    waitForState("Timedout wait for collection to be created", collection, clusterShape(1, 9));
+
+    cluster.waitForActiveCollection(collection, 1, 9);
     docCollection = cloudClient.getZkStateReader().getClusterState().getCollectionOrNull(collection);
     assertNotNull(docCollection);
     // sanity check that everything is as before

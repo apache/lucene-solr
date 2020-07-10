@@ -1076,7 +1076,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       }
 
       try {
-        getZkStateReader().waitForState(params.get("name"), 10, TimeUnit.SECONDS, expectedShardsAndActiveReplicas(shardNames.size(), expectedReplicas * shardNames.size()));
+        getZkStateReader().waitForState(params.get("name"), 10, TimeUnit.SECONDS, expectedShardsAndActiveReplicas(shardNames.size(), expectedReplicas * shardNames.size(), false));
       } catch (InterruptedException e) {
         ParWork.propegateInterrupt(e);
         throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Interrupted waiting for active collection");
@@ -1445,11 +1445,22 @@ public abstract class BaseCloudSolrClient extends SolrClient {
   }
 
   public static CollectionStatePredicate expectedShardsAndActiveReplicas(int expectedShards, int expectedReplicas) {
+    return expectedShardsAndActiveReplicas(expectedShards, expectedReplicas, true);
+  }
+
+  public static CollectionStatePredicate expectedShardsAndActiveReplicas(int expectedShards, int expectedReplicas, boolean exact) {
     return (liveNodes, collectionState) -> {
       if (collectionState == null)
         return false;
-      if (collectionState.getSlices().size() < expectedShards) {
-        return false;
+
+      if (!exact) {
+        if (collectionState.getSlices().size() < expectedShards) {
+          return false;
+        }
+      } else {
+        if (collectionState.getSlices().size() != expectedShards) {
+          return false;
+        }
       }
 
       if (expectedReplicas == 0) {
@@ -1468,8 +1479,14 @@ public abstract class BaseCloudSolrClient extends SolrClient {
           }
         }
       }
-      if (activeReplicas >= expectedReplicas) {
-        return true;
+      if (!exact) {
+        if (activeReplicas >= expectedReplicas) {
+          return true;
+        }
+      } else {
+        if (activeReplicas == expectedReplicas) {
+          return true;
+        }
       }
 
       return false;

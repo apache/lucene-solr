@@ -62,7 +62,7 @@ public class ZkFailoverTest extends SolrCloudTestCase {
         });
       threads[i].start();
     }
-    Thread.sleep(5000);
+    Thread.sleep(TEST_NIGHTLY ? 5000 : 100);
     zkTestServer = new ZkTestServer(zkTestServer.getZkDir(), zkTestServer.getPort());
     zkTestServer.run(false);
     for (Thread thread : threads) {
@@ -70,6 +70,7 @@ public class ZkFailoverTest extends SolrCloudTestCase {
     }
     waitForLiveNodes(2);
     waitForState("Timeout waiting for " + coll, coll, clusterShape(2, 2));
+    cluster.waitForActiveCollection(coll, 2, 4);
     QueryResponse rsp = new QueryRequest(new SolrQuery("*:*")).process(cluster.getSolrClient(), coll);
     assertEquals(1, rsp.getResults().getNumFound());
     zkTestServer.shutdown();

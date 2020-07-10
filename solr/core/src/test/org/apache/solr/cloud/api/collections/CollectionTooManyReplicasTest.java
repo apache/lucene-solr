@@ -161,9 +161,7 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
 
     // And finally, ensure that there are all the replicas we expect. We should have shards 1, 2 and 4 and each
     // should have exactly two replicas
-    waitForState("Expected shards shardstart, 1, 2 and 4, each with two active replicas", collectionName, (n, c) -> {
-      return DocCollection.isFullyActive(n, c, 4, 2);
-    });
+    cluster.waitForActiveCollection(collectionName, 4, 8);
     Map<String, Slice> slices = getCollectionState(collectionName).getSlicesMap();
     assertEquals("There should be exaclty four slices", slices.size(), 4);
     assertNotNull("shardstart should exist", slices.get("shardstart"));

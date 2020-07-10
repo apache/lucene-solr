@@ -87,9 +87,7 @@ public class SplitShardTest extends SolrCloudTestCase {
         .setNumSubShards(5)
         .setShardName("shard1");
     splitShard.process(cluster.getSolrClient());
-    waitForState("Timed out waiting for sub shards to be active. Number of active shards=" +
-            cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(COLLECTION_NAME).getActiveSlices().size(),
-        COLLECTION_NAME, activeClusterShape(6, 7));
+    cluster.waitForActiveCollection(COLLECTION_NAME, 6, 7);
 
     try {
       splitShard = CollectionAdminRequest.splitShard(COLLECTION_NAME).setShardName("shard2").setNumSubShards(10);
@@ -138,9 +136,7 @@ public class SplitShardTest extends SolrCloudTestCase {
         .setSplitFuzz(0.5f)
         .setShardName("shard1");
     splitShard.process(cluster.getSolrClient());
-    waitForState("Timed out waiting for sub shards to be active. Number of active shards=" +
-            cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(collectionName).getActiveSlices().size(),
-        collectionName, activeClusterShape(3, 4));
+    cluster.waitForActiveCollection(COLLECTION_NAME, 3, 4);
     DocCollection coll = cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(collectionName);
     Slice s1_0 = coll.getSlice("shard1_0");
     Slice s1_1 = coll.getSlice("shard1_1");
@@ -245,8 +241,7 @@ public class SplitShardTest extends SolrCloudTestCase {
       CollectionAdminRequest.SplitShard splitShard = CollectionAdminRequest.splitShard(collectionName)
           .setShardName("shard1");
       splitShard.process(client);
-      waitForState("Timed out waiting for sub shards to be active.",
-          collectionName, activeClusterShape(2, 3*repFactor));  // 2 repFactor for the new split shards, 1 repFactor for old replicas
+      cluster.waitForActiveCollection(COLLECTION_NAME, 2, 3*repFactor); // 2 repFactor for the new split shards, 1 repFactor for old replicas
 
       // make sure that docs were able to be indexed during the split
       assertTrue(model.size() > docCount);

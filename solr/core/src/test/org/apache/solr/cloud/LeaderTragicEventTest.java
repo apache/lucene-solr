@@ -80,21 +80,12 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
     CollectionAdminRequest
         .createCollection(collection, "config", 1, 2)
         .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(collection, 1, 2);
+
     try {
       List<String> addedIds = new ArrayList<>();
       Replica oldLeader = corruptLeader(collection, addedIds);
 
-      waitForState("Timeout waiting for new replica become leader", collection, (liveNodes, collectionState) -> {
-        Slice slice = collectionState.getSlice("shard1");
-
-        if (slice.getReplicas().size() != 2) return false;
-        if (slice.getLeader() == null) return false;
-        if (slice.getLeader().getName().equals(oldLeader.getName())) return false;
-
-        return true;
-      });
-      ClusterStateUtil.waitForAllActiveAndLiveReplicas(cluster.getSolrClient().getZkStateReader(), collection, 120000);
+      cluster.waitForActiveCollection(collection, 1, 2);
       Slice shard = getCollectionState(collection).getSlice("shard1");
       assertNotSame(shard.getLeader().getNodeName(), oldLeader.getNodeName());
       assertEquals(getNonLeader(shard).getNodeName(), oldLeader.getNodeName());
@@ -184,8 +175,6 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
           log.info("Stop jetty node : {} state:{}", otherReplicaJetty.getBaseUrl(), getCollectionState(collection));
         }
         otherReplicaJetty.stop();
-        cluster.waitForJettyToStop(otherReplicaJetty);
-        waitForState("Timeout waiting for replica get down", collection, (liveNodes, collectionState) -> getNonLeader(collectionState.getSlice("shard1")).getState() != Replica.State.ACTIVE);
       }
 
       Replica oldLeader = corruptLeader(collection, new ArrayList<>());
