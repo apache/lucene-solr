@@ -128,8 +128,12 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
           try {
             h.query(req("name:\"john smith\""));
           } catch (SolrException e) {
-            assertTrue("Expected error message was not received. Error message " + e.getMessage(),
-                e.getMessage().startsWith("Circuit Breakers tripped"));
+            if (!e.getMessage().startsWith("Circuit Breakers tripped")) {
+              if (log.isInfoEnabled()) {
+                log.info("Expected error message for testBuildingMemoryPressure was not received. Error message " + e.getMessage());
+              }
+              throw new RuntimeException("Expected error message was not received. Error message " + e.getMessage());
+            }
             failureCount.incrementAndGet();
           } catch (Exception e) {
             throw new RuntimeException(e.getMessage());
@@ -206,22 +210,30 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
   }
 
   private class BuildingUpMemoryPressureCircuitBreaker extends MemoryCircuitBreaker {
-    private AtomicInteger count = new AtomicInteger();
+    private AtomicInteger count;
 
     public BuildingUpMemoryPressureCircuitBreaker(SolrConfig solrConfig) {
       super(solrConfig);
+
+      this.count = new AtomicInteger(0);
     }
 
     @Override
     protected long calculateLiveMemoryUsage() {
-      if (count.getAndIncrement() >= 4) {
+      int localCount = count.getAndIncrement();
+
+      if (localCount >= 4) {
         //TODO: To be removed
-        System.out.println("Blocking query from BuildingUpMemoryPressureCircuitBreaker for count " + count.get());
+        if (log.isInfoEnabled()) {
+          System.out.println("Blocking query from BuildingUpMemoryPressureCircuitBreaker for count " + localCount);
+        }
         return Long.MAX_VALUE;
       }
 
       //TODO: To be removed
-      log.debug("BuildingUpMemoryPressureCircuitBreaker: Returning unblocking value for count " + count.get());
+      if (log.isInfoEnabled()) {
+        log.info("BuildingUpMemoryPressureCircuitBreaker: Returning unblocking value for count " + localCount);
+      }
       return Long.MIN_VALUE; // Random number guaranteed to not trip the circuit breaker
     }
   }
