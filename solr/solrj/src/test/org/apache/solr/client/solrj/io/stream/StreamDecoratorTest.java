@@ -99,9 +99,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(collection, "conf", 2, 1).process(cluster.getSolrClient());
     
     cluster.waitForActiveCollection(collection, 2, 2);
-    
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(collection, cluster.getSolrClient().getZkStateReader(),
-        false, true, TIMEOUT);
+
     if (useAlias) {
       CollectionAdminRequest.createAlias(COLLECTIONORALIAS, collection).process(cluster.getSolrClient());
     }

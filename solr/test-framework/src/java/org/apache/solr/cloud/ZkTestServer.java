@@ -863,7 +863,7 @@ public class ZkTestServer implements Closeable {
 
   public void makeSolrZkNode() throws Exception {
    try (SolrZkClient rootClient = new SolrZkClient(getZkHost(), TIMEOUT, 30000)) {
-     rootClient.makePath("/solr", true);
+     rootClient.mkDirs("/solr");
    }
   }
 

@@ -42,6 +42,7 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore // nocommit debug flakey
 public class AdminHandlersProxyTest extends SolrCloudTestCase {
   private CloseableHttpClient httpClient;
   private CloudSolrClient solrClient;
@@ -70,7 +71,6 @@ public class AdminHandlersProxyTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit flakey
   public void proxySystemInfoHandlerAllNodes() throws IOException, SolrServerException {
     MapSolrParams params = new MapSolrParams(Collections.singletonMap("nodes", "all"));
     GenericSolrRequest req = new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/info/system", params);

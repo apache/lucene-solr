@@ -463,13 +463,6 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     return (idx == numClients) ? CLOUD_CLIENT : CLIENTS.get(idx);
   }
 
-  public static void waitForRecoveriesToFinish(CloudSolrClient client) throws Exception {
-    assert null != client.getDefaultCollection();
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(client.getDefaultCollection(),
-                                                        client.getZkStateReader(),
-                                                        true, true, 330);
-  }
-
   /** 
    * Abstraction for diff types of things that can be added to an 'fl' param that can validate
    * the results are correct compared to an expected SolrInputDocument

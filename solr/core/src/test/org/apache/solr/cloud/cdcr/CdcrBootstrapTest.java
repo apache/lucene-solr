@@ -105,7 +105,6 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
         source.startJettySolrRunner(runner);
         source.waitForAllNodes(30);
         assertTrue(runner.isRunning());
-        AbstractDistribZkTestBase.waitForRecoveriesToFinish("cdcr-source", source.getSolrClient().getZkStateReader(), true, true, 330);
 
         response = sourceSolrClient.query(new SolrQuery("*:*"));
         assertEquals("Document mismatch on source after restart", numDocs, response.getResults().getNumFound());

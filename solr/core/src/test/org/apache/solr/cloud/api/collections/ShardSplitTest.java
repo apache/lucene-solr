@@ -142,7 +142,7 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
     String nodeName = replica.getNodeName();
 
     String collectionName = "testSplitStaticIndexReplication_" + splitMethod.toLower();
-    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 1);
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, "_default", 1, 1);
     create.setMaxShardsPerNode(5); // some high number so we can create replicas without hindrance
     create.setCreateNodeSet(nodeName); // we want to create the leader on a fixed node so that we know which one to restart later
     create.process(cloudClient);
@@ -359,7 +359,7 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
 
   private void doSplitMixedReplicaTypes(SolrIndexSplitter.SplitMethod splitMethod) throws Exception {
     String collectionName = "testSplitMixedReplicaTypes_" + splitMethod.toLower();
-    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 2, 0, 2); // TODO tlog replicas disabled right now.
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, "_default", 1, 2, 0, 2); // TODO tlog replicas disabled right now.
     create.setMaxShardsPerNode(5); // some high number so we can create replicas without hindrance
     create.process(cloudClient);
 
@@ -564,7 +564,7 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
   @Test
   public void testSplitLocking() throws Exception {
     String collectionName = "testSplitLocking";
-    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 2);
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, "_default", 1, 2);
     create.setMaxShardsPerNode(5); // some high number so we can create replicas without hindrance
     create.process(cloudClient);
 
@@ -641,7 +641,7 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
 
     log.info("Starting testSplitShardWithRule");
     String collectionName = "shardSplitWithRule_" + splitMethod.toLower();
-    CollectionAdminRequest.Create createRequest = CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 2)
+    CollectionAdminRequest.Create createRequest = CollectionAdminRequest.createCollection(collectionName, "_default", 1, 2)
             .setRule("shard:*,replica:<2,node:*");
 
     CollectionAdminResponse response = createRequest.process(cloudClient);

@@ -50,8 +50,6 @@ public class HttpSolrCallGetCoreTest extends SolrCloudTestCase {
         .createCollection(COLLECTION, "config", NUM_SHARD, REPLICA_FACTOR)
         .setMaxShardsPerNode(NUM_SHARD * REPLICA_FACTOR)
         .process(cluster.getSolrClient());
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(),
-        false, true, 30);
   }
 
   @Test

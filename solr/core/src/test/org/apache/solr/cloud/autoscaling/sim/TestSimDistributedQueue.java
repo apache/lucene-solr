@@ -72,15 +72,15 @@ public class TestSimDistributedQueue extends SolrTestCaseJ4 {
     assertNull(dq.poll());
 
     // should block until the background thread makes the offer
-    (new QueueChangerThread(dq, 1000)).start();
+    (new QueueChangerThread(dq, 500)).start();
     assertNotNull(dq.peek(15000));
     assertNotNull(dq.remove());
     assertNull(dq.poll());
 
     // timeout scenario ... background thread won't offer until long after the peek times out
-    QueueChangerThread qct = new QueueChangerThread(dq, 1000);
+    QueueChangerThread qct = new QueueChangerThread(dq, 100);
     qct.start();
-    assertNull(dq.peek(500));
+    assertNull(dq.peek(50));
     qct.join();
   }
 
@@ -162,26 +162,26 @@ public class TestSimDistributedQueue extends SolrTestCaseJ4 {
 
     // If we filter everything out, we should block for the full time.
     long start = System.nanoTime();
-    assertEquals(0, dq.peekElements(4, 1000, alwaysFalse).size());
+    assertEquals(0, dq.peekElements(4, 500, alwaysFalse).size());
     assertTrue(System.nanoTime() - start >= TimeUnit.MILLISECONDS.toNanos(500));
 
     // If someone adds a new matching element while we're waiting, we should return immediately.
     executor.submit(() -> {
       try {
-        Thread.sleep(500);
+        Thread.sleep(50);
         dq.offer(data);
       } catch (Exception e) {
         // ignore
       }
     });
     start = System.nanoTime();
-    assertEquals(1, dq.peekElements(4, 1000, child -> {
+    assertEquals(1, dq.peekElements(4, 500, child -> {
       // The 4th element in the queue will end with a "3".
       return child.endsWith("3");
     }).size());
     long elapsed = System.nanoTime() - start;
-    assertTrue(elapsed < TimeUnit.MILLISECONDS.toNanos(1000));
-    assertTrue(elapsed >= TimeUnit.MILLISECONDS.toNanos(250));
+    assertTrue(elapsed < TimeUnit.MILLISECONDS.toNanos(500));
+    assertTrue(""+elapsed, elapsed >= TimeUnit.MILLISECONDS.toNanos(50));
   }
 
 

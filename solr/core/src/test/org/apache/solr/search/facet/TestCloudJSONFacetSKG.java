@@ -145,13 +145,11 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
     CLOUD_CLIENT = cluster.getSolrClient();
     CLOUD_CLIENT.setDefaultCollection(COLLECTION_NAME);
 
-    waitForRecoveriesToFinish(CLOUD_CLIENT);
-
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"));
     }
 
-    final int numDocs = atLeast(TEST_NIGHTLY ? 100 : 15);
+    final int numDocs = atLeast(TEST_NIGHTLY ? 97 : 12) + 3;
     for (int id = 0; id < numDocs; id++) {
       SolrInputDocument doc = sdoc("id", ""+id);
       for (int fieldNum = 0; fieldNum < MAX_FIELD_NUM; fieldNum++) {
@@ -833,13 +831,6 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
    */
   public static long getNumFound(final SolrParams req) throws SolrServerException, IOException {
     return getRandClient(random()).query(req).getResults().getNumFound();
-  }
-  
-  public static void waitForRecoveriesToFinish(CloudSolrClient client) throws Exception {
-    assert null != client.getDefaultCollection();
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(client.getDefaultCollection(),
-                                                        client.getZkStateReader(),
-                                                        true, true, 330);
   }
   
   /** helper macro: fails on null keys, skips pairs with null values  */

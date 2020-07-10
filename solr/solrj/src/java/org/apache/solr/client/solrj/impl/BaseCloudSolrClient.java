@@ -849,6 +849,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     }
     List<String> inputCollections =
         collection == null ? Collections.emptyList() : StrUtils.splitSmart(collection, ",", true);
+
     return requestWithRetryOnStaleState(request, 0, inputCollections);
   }
 
@@ -1092,11 +1093,8 @@ public abstract class BaseCloudSolrClient extends SolrClient {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
     } else if (action != null && request.getParams().get(CoreAdminParams.ACTION).equals(CollectionParams.CollectionAction.ADDREPLICA.toString())) {
-      // nocommit
+      // nocommit how do we do this right? We need to know how many replicas at start of the request and look for at least that +1
     }
-
-
-
   }
 
   protected NamedList<Object> sendRequest(SolrRequest request, List<String> inputCollections)
@@ -1450,7 +1448,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     return (liveNodes, collectionState) -> {
       if (collectionState == null)
         return false;
-      if (collectionState.getSlices().size() != expectedShards) {
+      if (collectionState.getSlices().size() < expectedShards) {
         return false;
       }
 
@@ -1470,7 +1468,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
           }
         }
       }
-      if (activeReplicas == expectedReplicas) {
+      if (activeReplicas >= expectedReplicas) {
         return true;
       }
 

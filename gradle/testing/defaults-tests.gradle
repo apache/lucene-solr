@@ -66,9 +66,16 @@ allprojects {
       useJUnit()
 
       minHeapSize = propertyOrDefault("tests.minheapsize", "256m")
-      maxHeapSize = propertyOrDefault("tests.heapsize", "3000m")
+      maxHeapSize = propertyOrDefault("tests.heapsize", "512m")
 
-      jvmArgs Commandline.translateCommandline(propertyOrDefault("tests.jvmargs", "-XX:TieredStopAtLevel=1"))
+      int apc;
+      if (maxParallelForks > 1) {
+        apc = (int) Math.max(1, Runtime.runtime.availableProcessors() / 3.0d);
+      } else {
+        apc = Runtime.runtime.availableProcessors();
+      }
+
+      jvmArgs Commandline.translateCommandline(propertyOrDefault("tests.jvmargs", "-XX:TieredStopAtLevel=1 -XX:-UseBiasedLocking -XX:ActiveProcessorCount=" + apc));
 
       systemProperty 'java.util.logging.config.file', file("${commonDir}/tools/junit4/logging.properties")
       systemProperty 'java.awt.headless', 'true'

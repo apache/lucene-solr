@@ -209,7 +209,7 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
       server.run();
       final int timeout;
       if (TEST_NIGHTLY) {
-        timeout = random().nextInt(1000) + 500;
+        timeout = 50;
       } else {
         timeout = random().nextInt(1000) + 500;
       }

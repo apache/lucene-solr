@@ -888,16 +888,12 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
                    .setNode(new_leader_node.getNodeName())
                    // NOTE: don't use our stale_client for this -- don't tip it off of a collection change
                    .process(cluster.getSolrClient()).getStatus());
-      AbstractDistribZkTestBase.waitForRecoveriesToFinish
-        (COL, cluster.getSolrClient().getZkStateReader(), true, true, 330);
       
       // ...and delete our original leader.
       assertEquals("Couldn't create collection", 0,
                    CollectionAdminRequest.deleteReplica(COL, "shard1", old_leader_core_node_name)
                    // NOTE: don't use our stale_client for this -- don't tip it off of a collection change
                    .process(cluster.getSolrClient()).getStatus());
-      AbstractDistribZkTestBase.waitForRecoveriesToFinish
-        (COL, cluster.getSolrClient().getZkStateReader(), true, true, 330);
 
       // stale_client's collection state cache should now only point at a leader that no longer exists.
       

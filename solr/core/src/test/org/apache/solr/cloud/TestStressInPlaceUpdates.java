@@ -51,7 +51,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Slow
-public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
+public class TestStressInPlaceUpdates extends SolrCloudBridgeTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
@@ -70,7 +70,7 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
   public TestStressInPlaceUpdates() {
     super();
     sliceCount = 1;
-    fixShardCount(3);
+    numJettys = 3;
   }
 
   protected final ConcurrentHashMap<Integer, DocInfo> model = new ConcurrentHashMap<>();
@@ -93,7 +93,6 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
   SolrClient leaderClient = null;
 
   @Test
-  @ShardsFixed(num = 3)
   // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
   public void stressTest() throws Exception {
     this.leaderClient = getClientForLeader();

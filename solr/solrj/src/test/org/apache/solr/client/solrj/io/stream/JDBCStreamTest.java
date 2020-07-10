@@ -75,8 +75,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
       collection = COLLECTIONORALIAS;
     }
     CollectionAdminRequest.createCollection(collection, "conf", 2, 1).process(cluster.getSolrClient());
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(collection, cluster.getSolrClient().getZkStateReader(),
-        false, true, TIMEOUT);
+
     if (useAlias) {
       CollectionAdminRequest.createAlias(COLLECTIONORALIAS, collection).process(cluster.getSolrClient());
     }

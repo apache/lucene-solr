@@ -383,8 +383,6 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     } else {
       assertEquals(RequestStatusState.COMPLETED, restore.processAndWait(client, 60));//async
     }
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
-        restoreCollectionName, cluster.getSolrClient().getZkStateReader(), log.isDebugEnabled(), true, 30);
 
     //Check the number of results are the same
     DocCollection restoreCollection = client.getZkStateReader().getClusterState().getCollection(restoreCollectionName);

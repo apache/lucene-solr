@@ -198,8 +198,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
       } else {
         assertEquals(RequestStatusState.COMPLETED, restore.processAndWait(solrClient, 30));//async
       }
-      AbstractDistribZkTestBase.waitForRecoveriesToFinish(
-          restoreCollectionName, cluster.getSolrClient().getZkStateReader(), log.isDebugEnabled(), true, 30);
+
       BackupRestoreUtils.verifyDocs(nDocs, solrClient, restoreCollectionName);
     }
 

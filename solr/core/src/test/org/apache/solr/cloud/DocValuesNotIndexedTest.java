@@ -53,6 +53,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -62,6 +63,7 @@ import org.slf4j.LoggerFactory;
 
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
+@Ignore // nocommit flakey
 public class DocValuesNotIndexedTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -322,17 +324,17 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
   // make sure all the values for each field are unique. We need to have docs that have values that are _not_
   // unique.
   public void testGroupingDVOnlySortFirst() throws IOException, SolrServerException {
-    doGroupingDvOnly(fieldsToTestGroupSortFirst, "boolGSF");
+    doGroupingDvOnly(fieldsToTestGroupSortFirst, "boolGSF", 50);
   }
 
   @Test
   public void testGroupingDVOnlySortLast() throws IOException, SolrServerException {
-    doGroupingDvOnly(fieldsToTestGroupSortLast, "boolGSL");
+    doGroupingDvOnly(fieldsToTestGroupSortLast, "boolGSL", 50);
   }
 
-  private void doGroupingDvOnly(List<FieldProps> fieldProps, String boolName) throws IOException, SolrServerException {
-    List<SolrInputDocument> docs = new ArrayList<>(50);
-    for (int idx = 0; idx < 49; ++idx) {
+  private void doGroupingDvOnly(List<FieldProps> fieldProps, String boolName, int docCnt) throws IOException, SolrServerException {
+    List<SolrInputDocument> docs = new ArrayList<>(docCnt);
+    for (int idx = 0; idx < (docCnt -1); ++idx) {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", idx);
 

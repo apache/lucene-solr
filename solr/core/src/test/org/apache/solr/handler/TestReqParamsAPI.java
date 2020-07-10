@@ -100,8 +100,6 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
         "}";
     TestSolrConfigHandler.runConfigCommand(writeHarness, "/config", payload);
 
-    AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(COLL_NAME, cloudClient.getZkStateReader(), false, true, 90);
-
     payload = " {\n" +
         "  'set' : {'x': {" +
         "                    'a':'A val',\n" +

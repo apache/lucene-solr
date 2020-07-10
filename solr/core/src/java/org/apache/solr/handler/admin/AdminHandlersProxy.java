@@ -102,7 +102,7 @@ public class AdminHandlersProxy {
     
     for (Map.Entry<String, Pair<Future<NamedList<Object>>, SolrClient>> entry : responses.entrySet()) {
       try {
-        NamedList<Object> resp = entry.getValue().first().get(10, TimeUnit.SECONDS);
+        NamedList<Object> resp = entry.getValue().first().get(5, TimeUnit.SECONDS);
         entry.getValue().second().close();
         rsp.add(entry.getKey(), resp);
       } catch (ExecutionException ee) {

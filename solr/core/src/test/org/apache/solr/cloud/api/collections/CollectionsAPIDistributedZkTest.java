@@ -194,4 +194,20 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     });
   }
 
+  @Test
+  public void testMissingNumShards() {
+    // No numShards should fail
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("action", CollectionAction.CREATE.toString());
+    params.set("name", "acollection");
+    params.set(REPLICATION_FACTOR, 10);
+    params.set("collection.configName", "conf");
+
+    final SolrRequest request = new QueryRequest(params);
+    request.setPath("/admin/collections");
+
+    expectThrows(Exception.class, () -> {
+      cluster.getSolrClient().request(request);
+    });
+  }
 }

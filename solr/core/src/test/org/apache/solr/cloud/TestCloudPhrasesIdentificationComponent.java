@@ -82,8 +82,6 @@ public class TestCloudPhrasesIdentificationComponent extends SolrCloudTestCase {
     CLOUD_CLIENT = cluster.getSolrClient();
     CLOUD_CLIENT.setDefaultCollection(COLLECTION_NAME);
 
-    waitForRecoveriesToFinish(CLOUD_CLIENT);
-
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"));
     }
@@ -191,13 +189,6 @@ public class TestCloudPhrasesIdentificationComponent extends SolrCloudTestCase {
     int idx = TestUtil.nextInt(rand, 0, numClients);
 
     return (idx == numClients) ? CLOUD_CLIENT : CLIENTS.get(idx);
-  }
-
-  public static void waitForRecoveriesToFinish(CloudSolrClient client) throws Exception {
-    assert null != client.getDefaultCollection();
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(client.getDefaultCollection(),
-                                                        client.getZkStateReader(),
-                                                        true, true, 330);
   }
 
 }

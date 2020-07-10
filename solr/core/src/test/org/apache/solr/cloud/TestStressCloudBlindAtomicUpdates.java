@@ -286,7 +286,6 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
     
     
     // sanity check index contents
-    waitForRecoveriesToFinish(CLOUD_CLIENT);
     assertEquals(0, CLOUD_CLIENT.commit().getStatus());
     assertEquals(numDocsInIndex,
                  CLOUD_CLIENT.query(params("q", "*:*")).getResults().getNumFound());
@@ -327,7 +326,6 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
                  1L, abortLatch.getCount());
     
     TestInjection.reset();
-    waitForRecoveriesToFinish(CLOUD_CLIENT);
 
     // check all the final index contents match our expectations
     int incorrectDocs = 0;
@@ -478,14 +476,6 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
     int numClients = CLIENTS.size();
     int idx = TestUtil.nextInt(rand, 0, numClients);
     return (idx == numClients) ? CLOUD_CLIENT : CLIENTS.get(idx);
-  }
-
-  public static void waitForRecoveriesToFinish(CloudSolrClient client) throws Exception {
-    assert null != client.getDefaultCollection();
-    client.getZkStateReader().forceUpdateCollection(client.getDefaultCollection());
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(client.getDefaultCollection(),
-                                                        client.getZkStateReader(),
-                                                        true, true, 330);
   }
 
   /**

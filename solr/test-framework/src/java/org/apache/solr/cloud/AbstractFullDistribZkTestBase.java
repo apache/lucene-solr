@@ -1123,12 +1123,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     super.waitForRecoveriesToFinish(collection, zkStateReader, verbose);
   }
 
-  protected void waitForRecoveriesToFinish(boolean verbose, long timeoutSeconds)
-      throws Exception {
-    ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-    super.waitForRecoveriesToFinish(DEFAULT_COLLECTION, zkStateReader, verbose, true, timeoutSeconds);
-  }
-
   protected void checkQueries() throws Exception {
 
     handle.put("_version_", SKIPVAL);

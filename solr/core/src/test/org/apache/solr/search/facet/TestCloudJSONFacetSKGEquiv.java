@@ -139,8 +139,6 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
     CLOUD_CLIENT = cluster.getSolrClient();
     CLOUD_CLIENT.setDefaultCollection(COLLECTION_NAME);
 
-    waitForRecoveriesToFinish(CLOUD_CLIENT);
-
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"));
     }
@@ -970,13 +968,6 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
    */
   public static long getNumFound(final SolrParams req) throws SolrServerException, IOException {
     return getRandClient(random()).query(req).getResults().getNumFound();
-  }
-  
-  public static void waitForRecoveriesToFinish(CloudSolrClient client) throws Exception {
-    assert null != client.getDefaultCollection();
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(client.getDefaultCollection(),
-                                                        client.getZkStateReader(),
-                                                        true, true, 330);
   }
 
   /** helper macro: fails on null keys, skips pairs with null values  */

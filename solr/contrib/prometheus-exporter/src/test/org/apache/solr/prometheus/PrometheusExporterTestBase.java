@@ -69,9 +69,6 @@ public class PrometheusExporterTestBase extends SolrCloudTestCase {
         .setMaxShardsPerNode(MAX_SHARDS_PER_NODE)
         .process(cluster.getSolrClient());
 
-    AbstractDistribZkTestBase
-        .waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(), true, true, TIMEOUT);
-
     Helpers.indexAllDocs(cluster.getSolrClient());
   }
 

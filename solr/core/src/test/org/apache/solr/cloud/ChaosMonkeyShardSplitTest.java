@@ -65,6 +65,7 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
     System.clearProperty("solr.httpclient.retries");
     System.clearProperty("solr.retries.on.forward");
     System.clearProperty("solr.retries.to.followers");
+    System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
   }
 
   @Test
