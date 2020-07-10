@@ -47,21 +47,15 @@ public class TestDeleteCollectionOnDownNodes extends SolrCloudTestCase {
         .setMaxShardsPerNode(3)
         .process(cluster.getSolrClient());
 
-    cluster.waitForActiveCollection("halfdeletedcollection2", 60, TimeUnit.SECONDS, 4, 12);
-    
     // stop a couple nodes
     JettySolrRunner j1 = cluster.stopJettySolrRunner(cluster.getRandomJetty(random()));
     JettySolrRunner j2 = cluster.stopJettySolrRunner(cluster.getRandomJetty(random()));
 
-    cluster.waitForJettyToStop(j1);
-    cluster.waitForJettyToStop(j2);
 
     // delete the collection
     CollectionAdminRequest.deleteCollection("halfdeletedcollection2").process(cluster.getSolrClient());
-    waitForState("Timed out waiting for collection to be deleted", "halfdeletedcollection2", (n, c) -> c == null);
 
     assertFalse("Still found collection that should be gone",
         cluster.getSolrClient().getZkStateReader().getClusterState().hasCollection("halfdeletedcollection2"));
-
   }
 }

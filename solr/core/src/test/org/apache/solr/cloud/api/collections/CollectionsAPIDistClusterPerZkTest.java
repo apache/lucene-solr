@@ -202,8 +202,6 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
     // create another collection should still work
     CollectionAdminRequest.createCollection("acollectionafterbaddelete", "conf", 1, 2)
         .process(cluster.getSolrClient());
-    waitForState("Collection creation after a bad delete failed", "acollectionafterbaddelete",
-        (n, c) -> DocCollection.isFullyActive(n, c, 1, 2));
   }
 
   @Test
