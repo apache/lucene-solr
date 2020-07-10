@@ -892,7 +892,8 @@ public class SolrZkClient implements Closeable {
   public void close() {
     if (isClosed) return; // it's okay if we over close - same as solrcore
     isClosed = true;
-
+    zkConnManagerCallbackExecutor.shutdownNow();
+    zkCallbackExecutor.shutdownNow();
     try (ParWork worker = new ParWork(this, true)) {
 
       worker.add("ZkClientExecutors&ConnMgr", zkCallbackExecutor, zkConnManagerCallbackExecutor, connManager, keeper);
@@ -1079,7 +1080,10 @@ public class SolrZkClient implements Closeable {
 
     @Override
     public void process(final WatchedEvent event) {
-      log.debug("Submitting job to respond to event {}", event);
+      if (isClosed) {
+        return;
+      }
+      if (log.isDebugEnabled()) log.debug("Submitting job to respond to event {}", event);
       try {
         if (watcher instanceof ConnectionManager) {
           zkConnManagerCallbackExecutor.submit(() -> watcher.process(event));
