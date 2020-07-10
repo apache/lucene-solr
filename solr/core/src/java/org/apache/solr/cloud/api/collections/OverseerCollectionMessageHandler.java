@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -170,8 +170,10 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   // This is used for handling mutual exclusion of the tasks.
 
   final private LockTree lockTree = new LockTree();
-  ExecutorService tpe = new ExecutorUtil.MDCAwareThreadPoolExecutor(5, 10, 0L, TimeUnit.MILLISECONDS,
-      new SynchronousQueue<>(),
+  // With an unbounded queue such as LinkedBlockingQueue, maximumPoolSize is not used and corePoolSize is the max number
+  // of threads (see ThreadPoolExecutor class Javadoc)
+  ExecutorService tpe = new ExecutorUtil.MDCAwareThreadPoolExecutor(10, 10, 0L, TimeUnit.MILLISECONDS,
+      new LinkedBlockingQueue<>(),
       new SolrNamedThreadFactory("OverseerCollectionMessageHandlerThreadFactory"));
 
   protected static final Random RANDOM;
