@@ -79,14 +79,8 @@ public class TestSegmentSorting extends SolrCloudTestCase {
                                               NUM_SHARDS, REPLICATION_FACTOR)
       .setProperties(collectionProperties);
 
-    if (random().nextBoolean()) {
-      assertTrue( cmd.process(cloudSolrClient).isSuccess() );
-    } else { // async
-      assertEquals(RequestStatusState.COMPLETED, cmd.processAndWait(cloudSolrClient, 30));
-    }
+    assertTrue( cmd.process(cloudSolrClient).isSuccess() );
     
-    ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
-    cluster.waitForActiveCollection(collectionName, NUM_SHARDS, NUM_SHARDS * REPLICATION_FACTOR);
     
     cloudSolrClient.setDefaultCollection(collectionName);
   }
@@ -139,7 +133,7 @@ public class TestSegmentSorting extends SolrCloudTestCase {
     assertEquals(false, schemaOpts.get("stored"));
     
     // add some documents
-    final int numDocs = atLeast(1000);
+    final int numDocs = atLeast(TEST_NIGHTLY ? 1000 : 10);
     for (int id = 1; id <= numDocs; id++) {
       cloudSolrClient.add(sdoc("id", id, updateField, random().nextInt(60)));
                                
@@ -148,8 +142,8 @@ public class TestSegmentSorting extends SolrCloudTestCase {
 
     // do some random iterations of replacing docs, atomic updates against segment sort field, and commits
     // (at this point we're just sanity checking no serious failures)
-    for (int iter = 0; iter < 20; iter++) {
-      final int iterSize = atLeast(20);
+    for (int iter = 0; iter < (TEST_NIGHTLY ? 30 : 5); iter++) {
+      final int iterSize = atLeast((TEST_NIGHTLY ? 20 : 3));
       for (int i = 0; i < iterSize; i++) {
         // replace
         cloudSolrClient.add(sdoc("id", TestUtil.nextInt(random(), 1, numDocs),
@@ -172,7 +166,7 @@ public class TestSegmentSorting extends SolrCloudTestCase {
     
     // loop incase we're waiting for a newSearcher to be opened
     int newDocId = -1;
-    int attempts = 10;
+    int attempts = 3;
     while ((newDocId < 0) && (0 < attempts--)) {
       SolrDocumentList docs = cloudSolrClient.query(params("q", "id:"+id,
                                                            "fl","[docid]",
