@@ -73,6 +73,21 @@ For details of the default policy, see the section <<solrcloud-autoscaling-overv
 
 *Security*
 
+* Prior to Solr 8.6 Solr APIs which take a file system location, such as core creation, backup, restore, and others, did not validate the path and Solr would allow any absolute or relative path.
+Starting in 8.6 only paths that are relative to `SOLR_HOME`, `SOLR_DATA_HOME` and `coreRootDir` are allowed by default.
++
+If you need to create a core or store a backup outside the default paths, you will need to tell Solr which paths to allow.
+A new element in `solr.xml` called `allowPaths` takes a comma-separated list of allowed paths.
++
+When using the `solr.xml` file that ships with 8.6, you can configure the list of paths to allow through the system property `solr.allowPaths`.
+Please see `bin/solr.in.sh` or `bin\solr.in.cmd` for example usage.
+Using the value `*` will allow any path as in earlier versions.
++
+For more on this, see the section <<format-of-solr-xml.adoc#the-solr-element,Solr.xml Parameters>>.
++
+Windows SMB shares on the UNC format, such as `\\myhost\myshare\mypath` are now always disallowed.
+Please use drive letter mounts instead, i.e., `S:\mypath`.
+
 * A new authorization plugin `ExternalRoleRuleBasedAuthorizationPlugin` is now available.
 This plugin allows an authentication plugin (such as JWT) to supply a user's roles instead of maintaining a user-to-role mapping inside Solr.
 
@@ -92,24 +107,6 @@ For more information about how to use this, see the section <<exporting-result-s
 For the Unified Highlighter: The setting `hl.fragsizeIsMinimum` now defaults to `false` because `true` was found to be a significant performance regression when highlighting lots of text.
 This will yield longer highlights on average compared to Solr 8.5 but relatively unchanged compared to previous releases.
 Furthermore, if your application highlights lots of text, you may want to experiment with lowering `hl.fragAlignRatio` to trade ideal fragment alignment for better performance.
-
-*Restricting File Paths*
-
-Several Solr APIs allow specifying a file system location.
-This includes core creation, backup, restore and others.
-Prior to Solr 8.6 these parameters were not validated, and Solr would allow any absolute or relative path.
-From 8.6 we by default allow only paths that are relative to `SOLR_HOME`, `SOLR_DATA_HOME` and `coreRootDir`.
-If you need to create a core or store a backup outside these pre-allowed paths, you now need to tell Solr about what paths to allow.
-
-Solr can be configured with a comma separated list of paths to allow in `solr.xml` using the new `allowPaths` element.
-When using the `solr.xml` file that ships with 8.6, you can configure the list of paths to allow through the system property `solr.allowPaths`.
-Please see `bin/solr.in.sh` or `bin\solr.in.cmd` for example usage.
-Using the value `*` will allow any path as in earlier versions.
-
-For more on this, see the section <<format-of-solr-xml.adoc#the-solr-element,Solr.xml Parameters>>.
-
-Windows SMB shares on the UNC format, such as `\\myhost\myshare\mypath` are now always disallowed.
-Please use drive letter mounts instead, i.e. `S:\mypath`.
 
 *Deprecations*
 
