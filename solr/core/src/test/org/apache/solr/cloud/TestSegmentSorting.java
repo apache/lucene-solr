@@ -80,7 +80,7 @@ public class TestSegmentSorting extends SolrCloudTestCase {
       .setProperties(collectionProperties);
 
     assertTrue( cmd.process(cloudSolrClient).isSuccess() );
-    
+
     
     cloudSolrClient.setDefaultCollection(collectionName);
   }

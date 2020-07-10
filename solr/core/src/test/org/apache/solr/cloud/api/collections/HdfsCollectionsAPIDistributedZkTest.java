@@ -42,6 +42,7 @@ public class HdfsCollectionsAPIDistributedZkTest extends CollectionsAPIDistribut
 
   @BeforeClass
   public static void setupClass() throws Exception {
+    configSet = getConfigSet();
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
   }
 
@@ -54,8 +55,7 @@ public class HdfsCollectionsAPIDistributedZkTest extends CollectionsAPIDistribut
     }
   }
 
-  @Override
-  protected String getConfigSet() {
+  protected static String getConfigSet() {
     return "cloud-hdfs";
   }
 }

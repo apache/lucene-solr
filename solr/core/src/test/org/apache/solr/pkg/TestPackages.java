@@ -25,6 +25,7 @@ import java.util.concurrent.Callable;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -77,6 +78,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 
 @LogLevel("org.apache.solr.pkg.PackageLoader=DEBUG;org.apache.solr.pkg.PackageAPI=DEBUG")
 //@org.apache.lucene.util.LuceneTestCase.AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13822") // leaks files
+@LuceneTestCase.Nightly // nocommit debug - can be slow
 public class TestPackages extends SolrCloudTestCase {
 
   @Before

@@ -228,6 +228,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
   public void indexSimple(Client client) throws Exception {
     client.deleteByQuery("*:*", null);
+    client.commit();
     client.add(sdoc("id", "1", "cat_s", "A", "where_s", "NY", "num_d", "4", "num_i", "2",
         "num_is", "4", "num_is", "2",
         "val_b", "true", "sparse_s", "one"), null);
@@ -1056,6 +1057,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
   }
 
   @Test
+  @Nightly
   public void testStats() throws Exception {
     doStats(Client.localClient, params("debugQuery", Boolean.toString(random().nextBoolean()) ));
   }
@@ -2538,7 +2540,8 @@ public class TestJsonFacets extends SolrTestCaseHS {
   public void testPrelimSortingSingleNode() throws Exception {
     doTestPrelimSortingSingleNode(false, false);
   }
-  
+
+  @Nightly
   public void testPrelimSortingSingleNodeExtraStat() throws Exception {
     doTestPrelimSortingSingleNode(true, false);
   }
@@ -2967,6 +2970,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
 
   @Test
+  @Nightly
   public void testBigger() throws Exception {
     ModifiableSolrParams p = params("rows", "0", "cat_s", "cat_ss", "where_s", "where_ss");
     //    doBigger(Client.localClient, p);

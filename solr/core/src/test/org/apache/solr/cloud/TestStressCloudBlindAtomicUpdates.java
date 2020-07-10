@@ -134,8 +134,6 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
         .withProperty("schema", "schema-minimal-atomic-stress.xml")
         .process(CLOUD_CLIENT);
 
-    waitForRecoveriesToFinish(CLOUD_CLIENT);
-
     CLIENTS.clear();
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       assertNotNull("Cluster contains null jetty?", jetty);
@@ -178,7 +176,6 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
   @Before
   private void clearCloudCollection() throws Exception {
     TestInjection.reset();
-    waitForRecoveriesToFinish(CLOUD_CLIENT);
     
     assertEquals(0, CLOUD_CLIENT.deleteByQuery("*:*").getStatus());
     assertEquals(0, CLOUD_CLIENT.optimize().getStatus());
@@ -266,7 +263,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
 
     final CountDownLatch abortLatch = new CountDownLatch(1);
 
-    final int numDocsToCheck = atLeast(37);
+    final int numDocsToCheck = atLeast(TEST_NIGHTLY ? 37 : 7);
     final int numDocsInIndex = (numDocsToCheck * DOC_ID_INCR);
     final AtomicLong[] expected = new AtomicLong[numDocsToCheck];
 

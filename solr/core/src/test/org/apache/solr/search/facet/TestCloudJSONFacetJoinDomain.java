@@ -95,9 +95,18 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
     if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
     
     // multi replicas should not matter...
-    final int repFactor = usually() ? 1 : 2;
+    final int repFactor;
     // ... but we definitely want to test multiple shards
-    final int numShards = TestUtil.nextInt(random(), 1, (usually() ? 2 :3));
+    final int numShards;
+
+    if (TEST_NIGHTLY) {
+      numShards = TestUtil.nextInt(random(), 1, (usually() ? 2 :3));
+      repFactor = usually() ? 1 : 2;
+    } else {
+      numShards = 1;
+      repFactor = 1;
+    }
+
     final int numNodes = (numShards * repFactor);
    
     final String configName = DEBUG_LABEL + "_config-set";
@@ -115,13 +124,11 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
     CLOUD_CLIENT = cluster.getSolrClient();
     CLOUD_CLIENT.setDefaultCollection(COLLECTION_NAME);
 
-    waitForRecoveriesToFinish(CLOUD_CLIENT);
-
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"));
     }
 
-    final int numDocs = atLeast(100);
+    final int numDocs = atLeast(TEST_NIGHTLY ? 100 : 25);
     for (int id = 0; id < numDocs; id++) {
       SolrInputDocument doc = sdoc("id", ""+id);
       for (int fieldNum = 0; fieldNum < MAX_FIELD_NUM; fieldNum++) {
@@ -367,7 +374,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
   public void testTheTestRandomRefineParam() {
     // sanity check that randomRefineParam never violates isRefinementNeeded
     // (should be imposisble ... unless someone changes/breaks the randomization logic in the future)
-    final int numIters = atLeast(100);
+    final int numIters = atLeast(TEST_NIGHTLY ? 100 : 10);
     for (int iter = 0; iter < numIters; iter++) {
       final Integer limit = TermFacet.randomLimitParam(random());
       final Integer overrequest = TermFacet.randomOverrequestParam(random());
@@ -393,10 +400,10 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
     // we get a really big one early on, we can test as much as possible, skip other iterations.
     //
     // (deeply nested facets may contain more buckets then the max, but we won't *check* all of them)
-    final int maxBucketsAllowed = atLeast(2000);
+    final int maxBucketsAllowed = atLeast(TEST_NIGHTLY ? 2000 : 200);
     final AtomicInteger maxBucketsToCheck = new AtomicInteger(maxBucketsAllowed);
     
-    final int numIters = atLeast(20);
+    final int numIters = atLeast(TEST_NIGHTLY ? 20 : 3);
     for (int iter = 0; iter < numIters && 0 < maxBucketsToCheck.get(); iter++) {
       assertFacetCountsAreCorrect(maxBucketsToCheck, TermFacet.buildRandomFacets(), buildRandomQuery());
     }

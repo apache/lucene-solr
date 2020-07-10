@@ -88,8 +88,6 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(COLLECTION, "conf1", 4, 1)
         .setMaxShardsPerNode(2)
         .process(cluster.getSolrClient());
-    
-    cluster.waitForActiveCollection(COLLECTION, 4, 4);
 
     fieldsToTestSingle =
         Collections.unmodifiableList(Arrays.asList(
