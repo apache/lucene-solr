@@ -74,7 +74,7 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
     END_RANDOM_EPOCH_MILLIS = LocalDateTime.of(11000, Month.DECEMBER, 31, 23, 59, 59, 999_000_000) // AD, 5 digit year
         .toInstant(ZoneOffset.UTC).toEpochMilli();
     try {
-      DocumentBuilder builder = FieldTypeXmlAdapter.docBuilder;
+      DocumentBuilder builder = FieldTypeXmlAdapter.getDocumentBuilder();
       InputStream stream = TestUseDocValuesAsStored.class.getResourceAsStream("/solr/collection1/conf/enumsConfig.xml");
       Document doc = builder.parse(new InputSource(IOUtils.getDecodingReader(stream, StandardCharsets.UTF_8)));
       XPath xpath = XmlConfigFile.xpath;

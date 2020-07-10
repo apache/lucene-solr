@@ -27,9 +27,8 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 
-import net.sf.saxon.trans.Err;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.QoSParams;
+import org.apache.solr.common.util.SysStats;
 import org.eclipse.jetty.servlets.QoSFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +41,9 @@ public class SolrQoSFilter extends QoSFilter {
   static final String SUSPEND_INIT_PARAM = "suspendMs";
   static final int PROC_COUNT = ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors();
   protected int _origMaxRequests;
+
+
+  private static SysStats sysStats = SysStats.getSysStats();
 
   @Override
   public void init(FilterConfig filterConfig) {
@@ -64,16 +66,26 @@ public class SolrQoSFilter extends QoSFilter {
         log.warn("SystemLoadAverage not supported on this JVM");
         load = 0;
       }
-      double sLoad = load / (double)PROC_COUNT;
-      if (sLoad > 1.0D) {
+
+      double ourLoad = sysStats.getAvarageUsagePerCPU();
+      if (ourLoad > 1) {
         int cMax = getMaxRequests();
         if (cMax > 2) {
-          setMaxRequests((int) ((double)cMax * 0.60D));
+          setMaxRequests(Math.max(1, (int) ((double)cMax * 0.60D)));
         }
-      } else if (sLoad < 0.9D &&_origMaxRequests != getMaxRequests()) {
-        setMaxRequests(_origMaxRequests);
+      } else {
+        double sLoad = load / (double) PROC_COUNT;
+        if (sLoad > 1.0D) {
+          int cMax = getMaxRequests();
+          if (cMax > 2) {
+            setMaxRequests(Math.max(1, (int) ((double) cMax * 0.60D)));
+          }
+        } else if (sLoad < 0.9D && _origMaxRequests != getMaxRequests()) {
+          setMaxRequests(_origMaxRequests);
+        }
+        log.info("external request, load:" + sLoad); //nocommit: remove when testing is done
+
       }
-      log.info("external request, load:" + sLoad); //nocommit: remove when testing is done
 
       super.doFilter(req, response, chain);
 

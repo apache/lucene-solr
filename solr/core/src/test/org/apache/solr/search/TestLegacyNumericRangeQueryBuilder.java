@@ -168,7 +168,7 @@ public class TestLegacyNumericRangeQueryBuilder extends SolrTestCase {
   private static Document getDocumentFromString(String str)
       throws SAXException, IOException, ParserConfigurationException {
     InputStream is = new ByteArrayInputStream(str.getBytes(StandardCharsets.UTF_8));
-    DocumentBuilder builder = FieldTypeXmlAdapter.docBuilder;
+    DocumentBuilder builder = FieldTypeXmlAdapter.getDocumentBuilder();
     Document doc = builder.parse(is);
     is.close();
     return doc;

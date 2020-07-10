@@ -129,7 +129,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
   }
 
   private Document getDocument() throws ParserConfigurationException {
-    javax.xml.parsers.DocumentBuilder docBuilder = FieldTypeXmlAdapter.docBuilder;
+    javax.xml.parsers.DocumentBuilder docBuilder = FieldTypeXmlAdapter.getDocumentBuilder();
     return docBuilder.newDocument();
   }
 

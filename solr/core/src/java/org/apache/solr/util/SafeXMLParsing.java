@@ -54,7 +54,7 @@ public final class SafeXMLParsing  {
   /** Parses a config file from ResourceLoader. Xinclude and external entities are enabled, but cannot escape the resource loader. */
   public static Document parseConfigXML(Logger log, ResourceLoader loader, String file) throws SAXException, IOException {
     try (InputStream in = loader.openResource(file)) {
-      final DocumentBuilder db =  FieldTypeXmlAdapter.docBuilder;
+      final DocumentBuilder db =  FieldTypeXmlAdapter.getDocumentBuilder();
       return db.parse(in, SystemIdResolver.createSystemIdFromResourceName(file));
     }
   }

@@ -52,7 +52,7 @@ public class XmlInterpolationTest extends TaggerTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    xmlDocBuilder = FieldTypeXmlAdapter.docBuilder;
+    xmlDocBuilder = FieldTypeXmlAdapter.getDocumentBuilder();
 
     initCore("solrconfig-tagger.xml", "schema-tagger.xml");
   }

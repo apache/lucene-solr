@@ -532,7 +532,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     SolrQueryRequest req = req("foo");
     XMLWriter.writeResponse(writer,req,rsp);
 
-    DocumentBuilder builder = FieldTypeXmlAdapter.docBuilder;
+    DocumentBuilder builder = FieldTypeXmlAdapter.getDocumentBuilder();
     builder.parse(new ByteArrayInputStream
                   (writer.toString().getBytes(StandardCharsets.UTF_8)));
     req.close();

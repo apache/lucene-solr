@@ -37,7 +37,7 @@ public abstract class DOMUtilTestBase extends SolrTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    builder = FieldTypeXmlAdapter.docBuilder;
+    builder = FieldTypeXmlAdapter.getDocumentBuilder();
   }
 
   public Node getNode( String xml, String path ) throws Exception {

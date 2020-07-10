@@ -43,6 +43,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.util.OrderedExecutor;
+import org.apache.solr.common.util.SysStats;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,7 +69,7 @@ public class ParWork implements Closeable {
 
   private Set<Object> collectSet = null;
 
-  private static volatile ExecutorService executor;
+  private static SysStats sysStats = SysStats.getSysStats();
 
   private static class WorkUnit {
     private final List<Object> objects;
@@ -559,7 +560,7 @@ public class ParWork implements Closeable {
       exec = getExecutorService(0, 30, 5);
       THREAD_LOCAL_EXECUTOR.set(exec);
     }
-   // executor = exec;
+
     return exec;
   }
 

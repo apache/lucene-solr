@@ -16,6 +16,7 @@
  */
 package org.apache.solr.rest.schema;
 
+import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
 
@@ -29,6 +30,8 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SimilarityFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -38,20 +41,27 @@ import org.w3c.dom.Node;
  * XML format expected by the FieldTypePluginLoader.
  */
 public class FieldTypeXmlAdapter {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static DocumentBuilder docBuilder;
+  protected final static ThreadLocal<DocumentBuilder> THREAD_LOCAL_DB= new ThreadLocal<>();
 
-  static {
-    try {
-      docBuilder = SolrResourceLoader.dbf.newDocumentBuilder();
-    } catch (ParserConfigurationException e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, e);
+  public synchronized  static DocumentBuilder getDocumentBuilder() {
+    DocumentBuilder db = THREAD_LOCAL_DB.get();
+    if (db == null) {
+      try {
+        db = SolrResourceLoader.dbf.newDocumentBuilder();
+      } catch (ParserConfigurationException e) {
+        log.error("Error in parser configuration", e);
+        throw new RuntimeException(e);
+      }
+      THREAD_LOCAL_DB.set(db);
     }
+    return db;
   }
 
   public static Node toNode(Map<String,?> json) {
     
-    Document doc = docBuilder.newDocument();    
+    Document doc = getDocumentBuilder().newDocument();
     Element fieldType = doc.createElement(IndexSchema.FIELD_TYPE);
     appendAttrs(fieldType, json);
     

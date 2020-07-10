@@ -65,6 +65,10 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
       return true;
     }
 
+    if (threadName.startsWith("CPUMonitoringThread")) { // zk thread that will stop in a moment.
+      return true;
+    }
+
     if (threadName.startsWith("ParWork")) {
       return true;
     }

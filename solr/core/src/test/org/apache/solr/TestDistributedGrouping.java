@@ -167,15 +167,68 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     // test grouping
     // The second sort = id asc . The sorting behaviour is different in dist mode. See TopDocs#merge
     // The shard the result came from matters in the order if both document sortvalues are equal
-    query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc");
-    query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 0, "sort", i1 + " asc, id asc");
-    query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", "id asc, _docid_ asc");
-    query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", "{!func}add(" + i1 + ",5) asc, id asc");
-    query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc", "facet", "true", "facet.field", t1);
-    query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc", "stats", "true", "stats.field", tlong);
-    query("q", "kings", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc", "spellcheck", "true", "spellcheck.build", "true", "qt", "spellCheckCompRH", "df", "subject");
-    query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc", "facet", "true", "hl","true","hl.fl",t1);
-    query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc", "group.sort", "id desc");
+
+    try (ParWork worker = new ParWork(this)) {
+      worker.collect(() -> {
+        try {
+          query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc");
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+        worker.collect(() -> {
+          try {
+            query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", "id asc, _docid_ asc");
+          } catch (Exception e) {
+            throw new RuntimeException(e);
+          }
+        });
+        worker.collect(() -> {
+          try {
+            query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", "{!func}add(" + i1 + ",5) asc, id asc");
+          } catch (Exception e) {
+            throw new RuntimeException(e);
+          }
+        });
+        worker.collect(() -> {
+          try {
+            query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc", "facet", "true", "facet.field", t1);
+          } catch (Exception e) {
+            throw new RuntimeException(e);
+          }
+        });
+
+        worker.collect(() -> {
+          try {
+            query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc", "stats", "true", "stats.field", tlong);
+          } catch (Exception e) {
+            throw new RuntimeException(e);
+          }
+        });
+        worker.collect(() -> {
+          try {
+            query("q", "kings", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc", "spellcheck", "true", "spellcheck.build", "true", "qt", "spellCheckCompRH", "df", "subject");
+          } catch (Exception e) {
+            throw new RuntimeException(e);
+          }
+        });
+        worker.collect(() -> {
+          try {
+            query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc", "facet", "true", "hl","true","hl.fl",t1);
+          } catch (Exception e) {
+            throw new RuntimeException(e);
+          }
+        });
+        worker.collect(() -> {
+          try {
+            query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc", "group.sort", "id desc");
+          } catch (Exception e) {
+            throw new RuntimeException(e);
+          }
+        });
+      });
+      worker.addCollect("testQueries");
+    }
+
 
     query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.offset", 5, "group.limit", -1, "sort", i1 + " asc, id asc");
     query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "offset", 5, "rows", 5, "group.offset", 5, "group.limit", -1, "sort", i1 + " asc, id asc");
