@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
@@ -60,6 +61,8 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
   final CoreContainer coreContainer;
   final ApiBag containerApiBag;
 
+  private int znodeVersion = 0;
+
   private final Map<String, ApiInfo> currentPlugins = new HashMap<>();
 
   @Override
@@ -79,8 +82,9 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
 
   public synchronized void refresh() {
     Map<String, Object> pluginInfos = null;
+    AtomicInteger znodeVersion = new AtomicInteger(0);
     try {
-      pluginInfos = ContainerPluginsApi.plugins(coreContainer.zkClientSupplier);
+      pluginInfos = ContainerPluginsApi.plugins(coreContainer.zkClientSupplier, znodeVersion);
     } catch (IOException e) {
       log.error("Could not read plugins data", e);
       return;
@@ -160,6 +164,9 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
       }
 
     }
+    if(znodeVersion.get() >0) {
+      this.znodeVersion = znodeVersion.get();
+    }
   }
 
   private static String getActualPath(ApiInfo apiInfo, String path) {
@@ -230,13 +237,24 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
       if (pkg != null) {
         PackageLoader.Package p = coreContainer.getPackageLoader().getPackage(pkg);
         if (p == null) {
-          errs.add("Invalid package " + klassInfo.first());
-          return;
+          if (coreContainer.getPackageLoader().getPackageAPI().refreshState()) {
+            p = coreContainer.getPackageLoader().getPackage(pkg);
+          }
+          if (p == null) {
+            errs.add("Invalid package " + klassInfo.first());
+            return;
+          }
         }
         this.pkgVersion = p.getVersion(info.version);
         if (pkgVersion == null) {
-          errs.add("No such package version:" + pkg + ":" + info.version + " . available versions :" + p.allVersions());
-          return;
+          if (coreContainer.getPackageLoader().getPackageAPI().refreshState()) {
+            p = coreContainer.getPackageLoader().getPackage(pkg);
+            if (p != null) pkgVersion = p.getVersion(info.version);
+          }
+          if (pkgVersion == null) {
+            errs.add("No such package version:" + pkg + ":" + info.version + " . available versions :" + p.allVersions());
+            return;
+          }
         }
         try {
           klas = pkgVersion.getLoader().findClass(klassInfo.second(), Object.class);

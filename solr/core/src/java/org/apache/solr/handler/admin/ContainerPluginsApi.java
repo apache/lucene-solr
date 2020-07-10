@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -67,7 +68,7 @@ public class ContainerPluginsApi {
         path = "/cluster/plugin",
         permission = PermissionNameProvider.Name.COLL_READ_PERM)
     public void list(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
-      rsp.add(PLUGIN, plugins(zkClientSupplier));
+      rsp.add(PLUGIN, plugins(zkClientSupplier, null));
     }
   }
 
@@ -147,10 +148,12 @@ public class ContainerPluginsApi {
   }
 
   @SuppressWarnings("unchecked")
-  public static Map<String, Object> plugins(Supplier<SolrZkClient> zkClientSupplier) throws IOException {
+  public static Map<String, Object> plugins(Supplier<SolrZkClient> zkClientSupplier, AtomicInteger znodeVersion) throws IOException {
     SolrZkClient zkClient = zkClientSupplier.get();
     try {
-      Map<String, Object> clusterPropsJson = (Map<String, Object>) Utils.fromJSON(zkClient.getData(ZkStateReader.CLUSTER_PROPS, null, new Stat(), true));
+      Stat stat = new Stat();
+      Map<String, Object> clusterPropsJson = (Map<String, Object>) Utils.fromJSON(zkClient.getData(ZkStateReader.CLUSTER_PROPS, null, stat, true));
+      if(znodeVersion != null) znodeVersion.set(stat.getVersion());
       return (Map<String, Object>) clusterPropsJson.computeIfAbsent(PLUGIN, Utils.NEW_LINKED_HASHMAP_FUN);
     } catch (KeeperException.NoNodeException e) {
       return new LinkedHashMap<>();

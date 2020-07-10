@@ -20,6 +20,7 @@ package org.apache.solr.pkg;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -91,6 +92,28 @@ public class PackageAPI {
     }
   }
 
+  public boolean refreshState()  {
+    try {
+      SolrZkClient zkClient = coreContainer.getZkController().getZkClient();
+      Stat stat = zkClient.exists(SOLR_PKGS_PATH, null, true);
+      if(stat != null && stat.getVersion() > pkgs.znodeVersion){
+        //the version is updated and we have missed an update
+        reloadPackageData(null, stat, zkClient, SOLR_PKGS_PATH);
+        return true;
+      }
+    } catch (KeeperException e) {
+      //could not read
+      return false;
+
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      log.warn("Interrupted", e);
+      return false;
+    }
+    return false;
+
+  }
+
   private void registerListener(SolrZkClient zkClient)
       throws KeeperException, InterruptedException {
     String path = SOLR_PKGS_PATH;
@@ -110,9 +133,7 @@ public class PackageAPI {
                 // remake watch
                 final Watcher thisWatch = this;
                 final Stat stat = new Stat();
-                final byte[] data = zkClient.getData(path, thisWatch, stat, true);
-                pkgs = readPkgsFromZk(data, stat);
-                packageLoader.refreshPackageConf();
+                reloadPackageData(thisWatch, stat, zkClient, path);
               }
             } catch (KeeperException.ConnectionLossException | KeeperException.SessionExpiredException e) {
               log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK: ", e);
@@ -129,6 +150,12 @@ public class PackageAPI {
         }, true);
   }
 
+  private synchronized void reloadPackageData(Watcher thisWatch, Stat stat, SolrZkClient zkClient, String path)
+          throws KeeperException, InterruptedException {
+    final byte[] data = zkClient.getData(path, thisWatch, stat, true);
+    pkgs = readPkgsFromZk(data, stat);
+    packageLoader.refreshPackageConf();
+  }
 
   private Packages readPkgsFromZk(byte[] data, Stat stat) throws KeeperException, InterruptedException {
 
