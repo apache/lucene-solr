@@ -25,7 +25,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.solr.search.facet.SlotAcc.CountSlotAcc;
 import org.apache.solr.search.facet.SlotAcc.SweepCountAccStruct;
 
-public abstract class SweepDISI extends DocIdSetIterator implements SweepCountAware {
+abstract class SweepDISI extends DocIdSetIterator implements SweepCountAware {
 
   public final int size;
   final CountSlotAcc[] countAccs;
