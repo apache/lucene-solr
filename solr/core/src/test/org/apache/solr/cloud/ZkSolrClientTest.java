@@ -106,6 +106,7 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
     }
   }
 
+  @Nightly
   public void testReconnect() throws Exception {
     Path zkDir = createTempDir("zkData");
     ZkTestServer server = null;

@@ -85,7 +85,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static final int DEFAULT_TIMEOUT = 15; // this is an important timeout for test stability - can't be too short
+  public static final int DEFAULT_TIMEOUT = 15;
   private static SolrQueuedThreadPool qtp;
 
   private static class Config {

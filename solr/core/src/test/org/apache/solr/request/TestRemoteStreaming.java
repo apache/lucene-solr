@@ -41,12 +41,14 @@ import org.apache.solr.common.SolrInputDocument;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * See SOLR-2854.
  */
 @SuppressSSL     // does not yet work with ssl yet - uses raw java.net.URL API rather than HttpClient
+@Ignore // nocommit flakey
 public class TestRemoteStreaming extends SolrJettyTestBase {
   private static File solrHomeDirectory;
   

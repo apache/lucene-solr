@@ -196,6 +196,7 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Nightly
   public void testRaceConditionOnUpdates() throws InterruptedException {
     String collection = "raceConditionOnUpdates";
     List<String> replicas = Arrays.asList("rep1", "rep2", "rep3", "rep4");

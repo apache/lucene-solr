@@ -179,7 +179,7 @@ public class TransactionLog implements Closeable {
       long start = raf.length();
       channel = raf.getChannel();
       os = Channels.newOutputStream(channel);
-      fos = new FastOutputStream(os, new byte[65536], 0);
+      fos = new FastOutputStream(os, new byte[65536 * 2], 0);
       // fos = FastOutputStream.wrap(os);
 
       if (openExisting) {

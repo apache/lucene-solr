@@ -85,6 +85,7 @@ public class TestSimDistributedQueue extends SolrTestCaseJ4 {
   }
 
   @Test
+  @Nightly
   public void testDistributedQueueBlocking() throws Exception {
     String dqZNode = "/distqueue/test2";
     String testData = "hello world";
@@ -107,7 +108,7 @@ public class TestSimDistributedQueue extends SolrTestCaseJ4 {
     assertNull(dq.peek(10));
 
     // Rerun the earlier test make sure updates are still seen, post reconnection.
-    future = executor.submit(() -> new String(dq.peek(15000), UTF8));
+    future = executor.submit(() -> new String(dq.peek(5000), UTF8));
     try {
       future.get(1000, TimeUnit.MILLISECONDS);
       fail("TimeoutException expected");

@@ -152,6 +152,18 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testNoConfigSetExist() throws Exception {
+    expectThrows(Exception.class, () -> {
+      CollectionAdminRequest.createCollection("noconfig", "conf123", 1, 1)
+              .process(cluster.getSolrClient());
+    });
+
+    // in both cases, the collection should have default to the core name
+    //cluster.getSolrClient().getZkStateReader().forceUpdateCollection("noconfig");
+    assertFalse(CollectionAdminRequest.listCollections(cluster.getSolrClient()).contains("noconfig"));
+  }
+
+  @Test
   public void testMissingRequiredParameters() {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", CollectionAction.CREATE.toString());
@@ -160,6 +172,23 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     final SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
+    expectThrows(Exception.class, () -> {
+      cluster.getSolrClient().request(request);
+    });
+  }
+
+
+  @Test
+  public void testZeroNumShards() {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("action", CollectionAction.CREATE.toString());
+    params.set("name", "acollection");
+    params.set(REPLICATION_FACTOR, 10);
+    params.set("numShards", 0);
+    params.set("collection.configName", "conf");
+
+    final SolrRequest request = new QueryRequest(params);
+    request.setPath("/admin/collections");
     expectThrows(Exception.class, () -> {
       cluster.getSolrClient().request(request);
     });

@@ -535,6 +535,9 @@ public class ParWork implements Closeable {
         if (exp instanceof Error) {
           throw (Error) exp;
         }
+        if (exp instanceof  RuntimeException) {
+          throw (RuntimeException) exp;
+        }
         throw new RuntimeException(exp);
       }
     }
@@ -671,7 +674,11 @@ public class ParWork implements Closeable {
           if (t instanceof Error) {
             throw (Error) t;
           }
-          throw new WorkException(RAN_INTO_AN_ERROR_WHILE_DOING_WORK, t); // TODO, hmm how do I keep zk session timeout and interrupt in play?
+          if (t instanceof  RuntimeException) {
+            throw (RuntimeException) t;
+          } else {
+            throw new WorkException(RAN_INTO_AN_ERROR_WHILE_DOING_WORK, t); // TODO, hmm how do I keep zk session timeout and interrupt in play?
+          }
         }
       }
     } finally {

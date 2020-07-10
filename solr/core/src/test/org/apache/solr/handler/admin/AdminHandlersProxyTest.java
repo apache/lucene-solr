@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.lucene.util.IOUtils;
@@ -33,6 +34,8 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.TimeOut;
+import org.apache.solr.common.util.TimeSource;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -79,11 +82,15 @@ public class AdminHandlersProxyTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void proxyMetricsHandlerAllNodes() throws IOException, SolrServerException {
+  public void proxyMetricsHandlerAllNodes() throws IOException, SolrServerException, TimeoutException, InterruptedException {
     MapSolrParams params = new MapSolrParams(Collections.singletonMap("nodes", "all"));
     GenericSolrRequest req = new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics", params);
     SimpleSolrResponse rsp = req.process(solrClient, null);
     NamedList<Object> nl = rsp.getResponse();
+
+    TimeOut timeout = new TimeOut(5, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    timeout.waitFor("", () -> rsp.getResponse().size() > 2);
+
     assertEquals(3, nl.size());
     assertTrue(nl.getName(1).endsWith("_solr"));
     assertTrue(nl.getName(2).endsWith("_solr"));

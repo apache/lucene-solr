@@ -541,6 +541,7 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
   }
 
   @Test
+  @Nightly
   public void testOnlyPartialUpdatesBetweenCommits() throws Exception {
     // Full updates
     long version1 = addAndGetVersion(sdoc("id", "1", "title_s", "first", "val1_i_dvo", "1", "val2_l_dvo", "1"), params());
@@ -783,7 +784,7 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
   public void testReplay_Random_ManyDocsManyUpdates() throws Exception {
     
     // build up a random list of updates
-    final int maxDocId = atLeast(50);
+    final int maxDocId = atLeast(TEST_NIGHTLY ? 50 : 5);
     final int numUpdates = maxDocId * 3;
     checkRandomReplay(maxDocId, numUpdates);
   }
@@ -803,7 +804,7 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
   public void testReplay_Random_FewDocsManyShortSequences() throws Exception {
     
     // build up a random list of updates
-    final int numIters = atLeast(50);
+    final int numIters = atLeast(TEST_NIGHTLY ? 50 : 5);
     
     for (int i = 0; i < numIters; i++) {
       final int maxDocId = atLeast(3);

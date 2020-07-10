@@ -300,44 +300,42 @@ public class PluginBag<T> implements AutoCloseable {
     List<Runnable> otherPlugins = new ArrayList<>();
     List<Runnable> reqHandlerPlugins = new ArrayList<>();
 
-      for (PluginInfo info : infos) {
-        List<Runnable> list;
-        System.out.println("plugin clazz:" + meta.clazz);
-        if (meta.clazz.equals(SolrRequestHandler.class)) {
-          list = reqHandlerPlugins;
-        } else {
-          list = otherPlugins;
-        }
-
-        list.add(() -> {
-          System.out.println("load plugin:" + info.className);
-          PluginHolder<T> o = createPlugin(info);
-          String name = info.name;
-          if (meta.clazz.equals(SolrRequestHandler.class)) name = RequestHandlers.normalize(info.name);
-          PluginHolder<T> old = put(name, o);
-          if (old != null) {
-            log.warn("Multiple entries of {} with name {}", meta.getCleanTag(), name);
-          }
-        });
-
+    for (PluginInfo info : infos) {
+      List<Runnable> list;
+      if (meta.clazz.equals(SolrRequestHandler.class)) {
+        list = reqHandlerPlugins;
+      } else {
+        list = otherPlugins;
       }
+
+      list.add(() -> {
+        PluginHolder<T> o = createPlugin(info);
+        String name = info.name;
+        if (meta.clazz.equals(SolrRequestHandler.class)) name = RequestHandlers.normalize(info.name);
+        PluginHolder<T> old = put(name, o);
+        if (old != null) {
+          log.warn("Multiple entries of {} with name {}", meta.getCleanTag(), name);
+        }
+      });
+
+    }
     try (ParWork worker = new ParWork(this)) {
       worker.collect(otherPlugins);
       worker.addCollect("initOtherPlugins");
       worker.collect(reqHandlerPlugins);
       worker.addCollect("initReqHandlerPlugins");
     }
-      if (infos.size() > 0) { // Aggregate logging
-        if (log.isDebugEnabled()) {
-          log.debug("[{}] Initialized {} plugins of type {}: {}", solrCore.getName(), infos.size(), meta.getCleanTag(),
-                  infos.stream().map(i -> i.name).collect(Collectors.toList()));
-        }
+    if (infos.size() > 0) { // Aggregate logging
+      if (log.isDebugEnabled()) {
+        log.debug("[{}] Initialized {} plugins of type {}: {}", solrCore.getName(), infos.size(), meta.getCleanTag(),
+                infos.stream().map(i -> i.name).collect(Collectors.toList()));
       }
-      for (Map.Entry<String, T> e : defaults.entrySet()) {
-        if (!contains(e.getKey())) {
-          put(e.getKey(), new PluginHolder<T>(null, e.getValue()));
-        }
+    }
+    for (Map.Entry<String, T> e : defaults.entrySet()) {
+      if (!contains(e.getKey())) {
+        put(e.getKey(), new PluginHolder<T>(null, e.getValue()));
       }
+    }
 
   }
 

@@ -77,7 +77,7 @@ import static org.apache.solr.common.params.FacetParams.FACET_SORT;
  *
  */
 @SuppressSSL // Too Slow
-public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
+public class TestCloudPivotFacet extends SolrCloudBridgeTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -96,6 +96,8 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
   public TestCloudPivotFacet() {
     // we need DVs on point fields to compute stats & facets
     if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
+    useFieldRandomizedFactor = TestUtil.nextInt(random(), 2, 30);
+    log.info("init'ing useFieldRandomizedFactor = {}", useFieldRandomizedFactor);
   }
   
   /** 
@@ -107,8 +109,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
 
   @BeforeClass
   public static void initUseFieldRandomizedFactor() {
-    useFieldRandomizedFactor = TestUtil.nextInt(random(), 2, 30);
-    log.info("init'ing useFieldRandomizedFactor = {}", useFieldRandomizedFactor);
+
   }
 
   @Test
@@ -122,7 +123,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
     final Set<String> fieldNameSet = new HashSet<>();
     
     // build up a randomized index
-    final int numDocs = atLeast(500);
+    final int numDocs = atLeast(TEST_NIGHTLY ? 500 : 50);
     log.info("numDocs: {}", numDocs);
 
     for (int i = 1; i <= numDocs; i++) {
@@ -142,16 +143,16 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
     final String[] fieldNames = fieldNameSet.toArray(new String[fieldNameSet.size()]);
     Arrays.sort(fieldNames); // need determinism when picking random fields
 
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < (TEST_NIGHTLY ? 5 : 2); i++) {
 
       String q = "*:*";
       if (random().nextBoolean()) {
-        q = "id:[* TO " + TestUtil.nextInt(random(),300,numDocs) + "]";
+        q = "id:[* TO " + TestUtil.nextInt(random(),(TEST_NIGHTLY ? 300 : 30),numDocs) + "]";
       }
       ModifiableSolrParams baseP = params("rows", "0", "q", q);
       
       if (random().nextBoolean()) {
-        baseP.add("fq", "id:[* TO " + TestUtil.nextInt(random(),200,numDocs) + "]");
+        baseP.add("fq", "id:[* TO " + TestUtil.nextInt(random(),(TEST_NIGHTLY ? 200 : 20),numDocs) + "]");
       }
 
       final boolean stats = random().nextBoolean();

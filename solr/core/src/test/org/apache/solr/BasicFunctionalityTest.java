@@ -519,7 +519,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     String resp = h.query(lrf.makeRequest("q", "text:hello", CommonParams.DEBUG_QUERY, "true"));
     //System.out.println(resp);
     // second doc ranked first
-    assertTrue( resp.indexOf("\"2\"") < resp.indexOf("\"1\"") );
+;    assertTrue( resp.indexOf("\"2\"") < resp.indexOf("\"1\"") );
   }
 
   @Test

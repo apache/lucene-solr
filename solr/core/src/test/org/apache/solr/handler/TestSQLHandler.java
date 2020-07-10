@@ -1735,6 +1735,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
   }
 
   @Test
+  @Nightly
   public void testParallelTimeSeriesGrouping() throws Exception {
 
     new UpdateRequest()

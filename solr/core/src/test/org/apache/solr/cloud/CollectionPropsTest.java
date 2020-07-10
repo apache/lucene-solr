@@ -168,7 +168,7 @@ public class CollectionPropsTest extends SolrCloudTestCase {
         return;
       }
       lastValueSeen = value;
-      Thread.sleep(10);
+      Thread.sleep(250);
     }
     String collectionpropsInZk = null;
     try {

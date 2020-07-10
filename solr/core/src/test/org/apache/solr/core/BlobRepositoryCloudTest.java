@@ -34,8 +34,10 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.handler.TestBlobHandler;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore // nocommit flakey
 public class BlobRepositoryCloudTest extends SolrCloudTestCase {
 
   public static final Path TEST_PATH = getFile("solr/configsets").toPath();

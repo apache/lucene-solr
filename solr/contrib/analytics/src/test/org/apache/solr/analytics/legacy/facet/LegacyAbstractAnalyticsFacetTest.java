@@ -36,6 +36,7 @@ import org.apache.solr.analytics.util.MedianCalculator;
 import org.apache.solr.analytics.util.OrdinalCalculator;
 import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.util.BaseTestHarness;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -77,9 +78,7 @@ public class LegacyAbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
   }
 
   protected static void setResponse(String response) throws ParserConfigurationException, IOException, SAXException {
-    DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-    factory.setNamespaceAware(true); // never forget this!
-    DocumentBuilder builder = factory.newDocumentBuilder();
+    DocumentBuilder builder = BaseTestHarness.getXmlDocumentBuilder();
     doc = builder.parse(new InputSource(new ByteArrayInputStream(response.getBytes(StandardCharsets.UTF_8))));
     rawResponse = response;
   }

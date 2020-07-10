@@ -66,7 +66,7 @@ import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
  * and several clients pointed at specific nodes. These are all re-used across multiple test methods, 
  * and assumes that the state of the cluster is healthy between tests.
  * </p>
- *
+ *slowest_test_suite=org.apache.solr.cloud.DocValuesNotIndexedTest
  */
 @SuppressSSL(bugUrl="https://issues.apache.org/jira/browse/SOLR-9182 - causes OOM")
 public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
@@ -106,8 +106,6 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(COLLECTION_NAME, configName, numShards, repFactor)
         .setProperties(collectionProperties)
         .process(CLOUD_CLIENT);
-
-    cluster.waitForActiveCollection(COLLECTION_NAME, numShards, numShards * repFactor);
     
     if (NODE_CLIENTS != null) {
       for (HttpSolrClient client : NODE_CLIENTS) {
@@ -271,12 +269,12 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
 
       assertEquals("post update commit failed?", 0, CLOUD_CLIENT.commit().getStatus());
       
-      for (int j = 0; j < 5; j++) {
+      for (int j = 0; j < 3; j++) {
         if (expectedDocIds.cardinality() == countDocs(CLOUD_CLIENT)) {
           break;
         }
         log.info("sleeping to give searchers a chance to re-open #{}", j);
-        Thread.sleep(200);
+        Thread.sleep(50);
       }
 
       // check the index contents against our expectations
@@ -302,7 +300,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
    * @see #randomUnsetBit
    */
   public void testSanityRandomUnsetBit() {
-    final int max = atLeast(100);
+    final int max = atLeast(TEST_NIGHTLY ? 100: 5);
     BitSet bits = new BitSet(max+1);
     for (int i = 0; i <= max; i++) {
       assertFalse("how is bitset already full? iter="+i+" card="+bits.cardinality()+"/max="+max,

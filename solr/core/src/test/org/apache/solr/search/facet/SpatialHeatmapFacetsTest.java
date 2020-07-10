@@ -314,13 +314,12 @@ public class SpatialHeatmapFacetsTest extends BaseDistributedSearchTestCase {
   }
 
   @Test
-  @Repeat(iterations = 3)
   public void testPng() {
     //We test via round-trip randomized data:
 
     // Make random data
-    int columns = random().nextInt(100) + 1;
-    int rows = random().nextInt(100) + 1;
+    int columns = random().nextInt(TEST_NIGHTLY ? 100 : 10) + 1;
+    int rows = random().nextInt(TEST_NIGHTLY ? 100 : 10) + 1;
     int[] counts = new int[columns * rows];
     for (int i = 0; i < counts.length; i++) {
       final int ri = random().nextInt(10);

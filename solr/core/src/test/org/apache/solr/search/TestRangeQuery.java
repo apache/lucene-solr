@@ -255,11 +255,11 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     // fields that a value source range query should work on
     String[] frange_fields = {"foo_i","foo_l","foo_f","foo_d"};
 
-    final int l= -1 * atLeast(TEST_NIGHTLY ? 50 : 15);
-    final int u= atLeast(TEST_NIGHTLY ? 250 : 50);
+    final int l= -1 * atLeast(TEST_NIGHTLY ? 50 : 5);
+    final int u= atLeast(TEST_NIGHTLY ? 250 : 15);
 
     // sometimes a very small index, sometimes a very large index
-    final int numDocs = random().nextBoolean() ? random().nextInt(50) : atLeast(TEST_NIGHTLY ? 1000 : 100);
+    final int numDocs = random().nextBoolean() ? random().nextInt(TEST_NIGHTLY ? 1000 : 5) : atLeast(TEST_NIGHTLY ? 1000 : 10);
     createIndex(numDocs, new DocProcessor() {
       @Override
       public void process(SolrInputDocument doc) {
@@ -319,7 +319,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     // now build some random queries (against *any* field) and validate that using it in a DBQ changes
     // the index by the expected number of docs
     long numDocsLeftInIndex = numDocs;
-    final int numDBQs= atLeast(10);
+    final int numDBQs= atLeast(TEST_NIGHTLY ? 10 : 1);
     for (int i=0; i < numDBQs; i++) {
       int lower = TestUtil.nextInt(random(), 2 * l, u);
       int upper = TestUtil.nextInt(random(), lower, 2 * u);
@@ -401,7 +401,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
   }
 
   public void testCompareTypesRandomRangeQueries() throws Exception {
-    int cardinality = 10000;
+    int cardinality = TEST_NIGHTLY ? 10000 : 100;
     Map<NumberType,String[]> types = new HashMap<>(); //single and multivalued field types
     Map<NumberType,String[]> typesMv = new HashMap<>(); // multivalued field types only
     types.put(NumberType.INTEGER, new String[]{"ti", "ti_dv", "ti_ni_dv", "i_p", "i_ni_p", "i_ndv_p", "tis", "tis_dv", "tis_ni_dv", "is_p", "is_ni_p", "is_ndv_p"});
@@ -415,7 +415,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     typesMv.put(NumberType.DOUBLE, new String[]{"tds", "tds_dv", "tds_ni_dv", "ds_p", "ds_ni_p", "ds_ndv_p"});
     typesMv.put(NumberType.DATE, new String[]{"tdts", "tdts_dv", "tdts_ni_dv", "dts_p", "dts_ni_p", "dts_ndv_p"});
 
-    for (int i = 0; i < atLeast(500); i++) {
+    for (int i = 0; i < atLeast(TEST_NIGHTLY ? 500 : 50); i++) {
       if (random().nextInt(50) == 0) {
         //have some empty docs
         assertU(adoc("id", String.valueOf(i)));

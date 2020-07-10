@@ -456,6 +456,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     checkShardConsistency(params("q","*:*", "rows", ""+totalDocsExpected, "_trace","batches_done"));
   }
 
+  @Nightly
   public void testConcurrentIndexing() throws Exception {
     final CloudSolrClient cloudClient = cluster.getSolrClient();
     final String collectionName = createAndSetNewDefaultCollection();

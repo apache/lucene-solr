@@ -254,7 +254,9 @@ public class DebugComponent extends SearchComponent
             if (rb.isDebugResults()) {
               @SuppressWarnings({"rawtypes"})
               NamedList sexplain = (NamedList)sdebug.get("explain");
-              SolrPluginUtils.copyNamedListIntoArrayByDocPosInResponse(sexplain, rb.resultIds, arr);
+              if (sexplain != null) {
+                SolrPluginUtils.copyNamedListIntoArrayByDocPosInResponse(sexplain, rb.resultIds, arr);
+              }
             }
           }
         }

@@ -27,19 +27,33 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.ExecutorService;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.XML;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.XmlConfigFile;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
 abstract public class BaseTestHarness {
   private static final XPath xpath = XmlConfigFile.xpath;
-  private static final DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
 
-  public static DocumentBuilder getXmlDocumentBuilder() throws ParserConfigurationException {
-    return dbf.newDocumentBuilder();
+  protected final static ThreadLocal<DocumentBuilder> THREAD_LOCAL_DB = new ThreadLocal<>();
+
+  public synchronized static DocumentBuilder getXmlDocumentBuilder() throws ParserConfigurationException {
+    DocumentBuilder db = THREAD_LOCAL_DB.get();
+    if (db != null) {
+      return db;
+    } else {
+      try {
+        db = SolrResourceLoader.dbf.newDocumentBuilder();
+      } catch (ParserConfigurationException e) {
+        throw new RuntimeException(e);
+      }
+      THREAD_LOCAL_DB.set(db);
+    }
+    return db;
   }
 
   public static XPath getXpath() {

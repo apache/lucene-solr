@@ -162,22 +162,6 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testZeroNumShards() {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("action", CollectionAction.CREATE.toString());
-    params.set("name", "acollection");
-    params.set(REPLICATION_FACTOR, 10);
-    params.set("numShards", 0);
-    params.set("collection.configName", "conf");
-
-    final SolrRequest request = new QueryRequest(params);
-    request.setPath("/admin/collections");
-    expectThrows(Exception.class, () -> {
-      cluster.getSolrClient().request(request);
-    });
-  }
-
-  @Test
   @Ignore // nocommit we can speed this up
   public void testCreateShouldFailOnExistingCore() throws Exception {
     assertEquals(0, CollectionAdminRequest.createCollection("halfcollectionblocker", "conf", 1, 1)
@@ -204,18 +188,6 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
           .setCreateNodeSet(nn1 + "," + nn2)
           .process(cluster.getSolrClient());
     });
-  }
-
-  @Test
-  public void testNoConfigSetExist() throws Exception {
-    expectThrows(Exception.class, () -> {
-      CollectionAdminRequest.createCollection("noconfig", "conf123", 1, 1)
-          .process(cluster.getSolrClient());
-    });
-
-    // in both cases, the collection should have default to the core name
-    //cluster.getSolrClient().getZkStateReader().forceUpdateCollection("noconfig");
-    assertFalse(CollectionAdminRequest.listCollections(cluster.getSolrClient()).contains("noconfig"));
   }
 
   @Test

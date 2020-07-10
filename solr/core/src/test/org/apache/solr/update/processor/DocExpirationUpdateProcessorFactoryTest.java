@@ -156,6 +156,7 @@ public class DocExpirationUpdateProcessorFactoryTest extends UpdateProcessorTest
 
   }
 
+  @Nightly
   public void testAutomaticDeletes() throws Exception {
 
     // get a handle on our recorder
