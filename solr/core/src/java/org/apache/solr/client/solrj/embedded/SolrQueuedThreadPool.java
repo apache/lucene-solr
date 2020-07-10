@@ -34,6 +34,7 @@ public class SolrQueuedThreadPool extends QueuedThreadPool implements Closeable 
     private final boolean killStop;
     private final String name;
     private volatile Error error;
+    private final Object notify = new Object();
 
 
 
@@ -53,6 +54,9 @@ public class SolrQueuedThreadPool extends QueuedThreadPool implements Closeable 
             log.error("Error in Jetty thread pool thread", error);
             this.error = error;
         }
+        synchronized (notify) {
+            notify.notifyAll();
+        }
     }
 
 
@@ -67,23 +71,15 @@ public class SolrQueuedThreadPool extends QueuedThreadPool implements Closeable 
 //    }
 
     public void close() {
-        //  while (!isStopped()) {
+        while (getBusyThreads() != 0) {
             try {
-
-                setStopTimeout(1);
-                super.doStop();
-//                // this allows 15 seconds until we start interrupting
-//                Thread.sleep(250);
-
-                // now we wait up 30 seconds gracefully, then interrupt again before waiting for the rest of the timeout
-
+                synchronized (notify) {
+                    notify.wait(500);
+                }
             } catch (InterruptedException e) {
-                ParWork.propegateInterrupt(e);
-                throw new RuntimeException(e);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
+                Thread.currentThread().interrupt();
             }
-      //  }
+        }
 
         if (error != null) {
             throw error;
