@@ -51,6 +51,7 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.CollectionStatePredicate;
@@ -65,6 +66,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.util.RestTestHarness;
 import org.apache.zookeeper.CreateMode;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -120,7 +122,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
   protected final List<SolrClient> clients = new ArrayList<>();
   protected volatile static boolean createControl;
   protected volatile static CloudSolrClient controlClient;
-  private volatile static MiniSolrCloudCluster controlCluster;
+  protected volatile static MiniSolrCloudCluster controlCluster;
   protected volatile static String schemaString;
   protected volatile static String solrconfigString;
 
@@ -152,10 +154,15 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
     
     if (schemaString != null) {
       //cloudClient.getZkStateReader().getZkClient().uploadToZK(TEST_PATH().resolve("collection1").resolve("conf").resolve(schemaString), "/configs/_default", null);
-      
-      zkClient.setData("/configs/_default/schema.xml", TEST_PATH().resolve("collection1").resolve("conf").resolve(schemaString).toFile(), true);
-      byte[] data = FileUtils.readFileToByteArray(TEST_PATH().resolve("collection1").resolve("conf").resolve(schemaString).toFile());
-      zkClient.create("/configs/_default/managed-schema", data, CreateMode.PERSISTENT, true);
+      if (zkClient.exists("/configs/_default/schema.xml", true)) {
+        zkClient.setData("/configs/_default/schema.xml", TEST_PATH().resolve("collection1").resolve("conf").resolve(schemaString).toFile(), true);
+      } else if (zkClient.exists("/configs/_default/managed-schema", true)) {
+        byte[] data = FileUtils.readFileToByteArray(TEST_PATH().resolve("collection1").resolve("conf").resolve(schemaString).toFile());
+        zkClient.setData("/configs/_default/managed-schema", data, true);
+      } else {
+        byte[] data = FileUtils.readFileToByteArray(TEST_PATH().resolve("collection1").resolve("conf").resolve(schemaString).toFile());
+        zkClient.create("/configs/_default/managed-schema", data, CreateMode.PERSISTENT, true);
+      }
     }
     if (solrconfigString != null) {
       //cloudClient.getZkStateReader().getZkClient().uploadToZK(TEST_PATH().resolve("collection1").resolve("conf").resolve(solrconfigString), "/configs/_default, null);
@@ -404,7 +411,20 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
       }
     }
   }
-  
+
+  void doQuery(String expectedDocs, String... queryParams) throws Exception {
+    Set<String> expectedIds = new HashSet<>( StrUtils.splitSmart(expectedDocs, ",", true) );
+
+    QueryResponse rsp = cloudClient.query(params(queryParams));
+    Set<String> obtainedIds = new HashSet<>();
+    for (SolrDocument doc : rsp.getResults()) {
+      obtainedIds.add((String) doc.get("id"));
+    }
+
+    assertEquals(expectedIds, obtainedIds);
+  }
+
+
   protected void setDistributedParams(ModifiableSolrParams params) {
     params.set("shards", getShardsString());
   }

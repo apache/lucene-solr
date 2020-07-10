@@ -113,7 +113,7 @@ public class TestDistribDocBasedVersion extends SolrCloudBridgeTestCase {
     log.info("### STARTING doTestHardFail");
 
     // use a leader so we test both forwarding and non-forwarding logic
-    cluster.getRandomJettyLeader(random(), DEFAULT_COLLECTION, bucket1);
+    cluster.getShardLeaderJetty(DEFAULT_COLLECTION, bucket1);
 
     // solrClient = cloudClient;   CloudSolrServer doesn't currently support propagating error codes
 
@@ -180,7 +180,7 @@ public class TestDistribDocBasedVersion extends SolrCloudBridgeTestCase {
     // now test with a non-smart client
     //
     // use a leader so we test both forwarding and non-forwarding logic
-    cluster.getRandomJettyLeader(random(), DEFAULT_COLLECTION, bucket1);
+    cluster.getShardLeaderJetty(DEFAULT_COLLECTION, bucket1);
 
     vadd("b!doc5", 10);
     vadd("c!doc6", 11);

@@ -16,32 +16,6 @@
  */
 package org.apache.solr.schema;
 
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.math.RoundingMode;
-import java.text.SimpleDateFormat;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
 import com.google.common.collect.ImmutableMap;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoublePoint;
@@ -74,8 +48,35 @@ import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.math.RoundingMode;
+import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
 /** Tests for PointField functionality */
-public class TestPointFields extends SolrTestCaseJ4 {
+@LuceneTestCase.Nightly
+public class TestPointFields2 extends SolrTestCaseJ4 {
 
   // long overflow can occur in some date calculations if gaps are too large, so we limit to a million years BC & AD.
   private static final long MIN_DATE_EPOCH_MILLIS = LocalDateTime.parse("-1000000-01-01T00:00:00").toInstant(ZoneOffset.ofHours(0)).toEpochMilli();
@@ -101,11 +102,6 @@ public class TestPointFields extends SolrTestCaseJ4 {
     super.tearDown();
   }
 
-  @Override
-  public void clearIndex()  {
-    delQ("*:*");
-  }
-  
   @Test
   public void testIntPointFieldExactQuery() throws Exception {
     doTestIntPointFieldExactQuery("number_p_i", false);
@@ -118,9 +114,19 @@ public class TestPointFields extends SolrTestCaseJ4 {
   }
   
   @Test
-  public void testIntPointFieldNonSearchableExactQuery() throws Exception {
-    doTestIntPointFieldExactQuery("number_p_i_ni", false, false);
-    doTestIntPointFieldExactQuery("number_p_i_ni_ns", false, false);
+  public void testIntPointFieldReturn() throws Exception {
+    int numValues = 10 * RANDOM_MULTIPLIER;
+    String[] ints = toStringArray(getRandomInts(numValues, false));
+    doTestPointFieldReturn("number_p_i", "int", ints);
+    doTestPointFieldReturn("number_p_i_dv_ns", "int", ints);
+    doTestPointFieldReturn("number_p_i_ni", "int", ints);
+  }
+  
+  @Test
+  public void testIntPointFieldRangeQuery() throws Exception {
+    doTestIntPointFieldRangeQuery("number_p_i", "int", false);
+    doTestIntPointFieldRangeQuery("number_p_i_ni_ns_dv", "int", false);
+    doTestIntPointFieldRangeQuery("number_p_i_dv", "int", false);
   }
   
   @Test
@@ -129,6 +135,164 @@ public class TestPointFields extends SolrTestCaseJ4 {
     doTestPointFieldNonSearchableRangeQuery("number_p_i_ni_ns", toStringArray(getRandomInts(1, false)));
     int numValues = 2 * RANDOM_MULTIPLIER;
     doTestPointFieldNonSearchableRangeQuery("number_p_i_ni_ns_mv", toStringArray(getRandomInts(numValues, false)));
+  }
+  
+  @Test
+  public void testIntPointFieldSortAndFunction() throws Exception {
+
+    final SortedSet<String> regexToTest = dynFieldRegexesForType(IntPointField.class);
+    final List<String> sequential = Arrays.asList("0", "1", "2", "3", "4", "5", "6", "7", "8", "9");
+    final List<Integer> randomInts = getRandomInts(10, false);
+    final List<Integer> randomIntsMissing = getRandomInts(10, true);
+    
+    for (String r : Arrays.asList("*_p_i", "*_p_i_dv", "*_p_i_dv_ns", "*_p_i_ni_dv",
+                                  "*_p_i_ni_dv_ns", "*_p_i_ni_ns_dv")) {
+      assertTrue(r, regexToTest.remove(r));
+      String field = r.replace("*", "number");
+      doTestPointFieldSort(field, sequential);
+      doTestPointFieldSort(field, randomInts);
+      doTestIntPointFunctionQuery(field);
+    }
+    for (String r : Arrays.asList("*_p_i_smf", "*_p_i_dv_smf", "*_p_i_ni_dv_smf",
+                                  "*_p_i_sml", "*_p_i_dv_sml", "*_p_i_ni_dv_sml")) {
+      assertTrue(r, regexToTest.remove(r));
+      String field = r.replace("*", "number");
+      doTestPointFieldSort(field, sequential);
+      doTestPointFieldSort(field, randomIntsMissing);
+      doTestIntPointFunctionQuery(field);
+    }
+
+    // no docvalues
+    for (String r : Arrays.asList("*_p_i_ni", "*_p_i_ni_ns")) {
+      assertTrue(r, regexToTest.remove(r));
+      String field = r.replace("*", "number");
+      doTestPointFieldSortError(field, "w/o docValues", toStringArray(getRandomInts(1, false)));
+      doTestPointFieldFunctionQueryError(field, "w/o docValues", toStringArray(getRandomInts(1, false)));
+    }
+    
+    // multivalued, no docvalues
+    for (String r : Arrays.asList("*_p_i_mv", "*_p_i_ni_mv", "*_p_i_ni_ns_mv", 
+                                  "*_p_i_mv_smf", "*_p_i_mv_sml")) {
+           
+      assertTrue(r, regexToTest.remove(r));
+      String field = r.replace("*", "number");
+      doTestPointFieldSortError(field, "w/o docValues", toStringArray(getRandomInts(1, false)));
+      int numValues = 2 * RANDOM_MULTIPLIER;
+      doTestPointFieldSortError(field, "w/o docValues", toStringArray(getRandomInts(numValues, false)));
+      doTestPointFieldFunctionQueryError(field, "multivalued", toStringArray(getRandomInts(1, false)));
+      doTestPointFieldFunctionQueryError(field, "multivalued", toStringArray(getRandomInts(numValues, false)));
+    }
+
+    // multivalued, w/ docValues
+    for (String r : Arrays.asList("*_p_i_ni_mv_dv", "*_p_i_ni_dv_ns_mv",
+                                  "*_p_i_dv_ns_mv", "*_p_i_mv_dv",
+                                  "*_p_i_mv_dv_smf", "*_p_i_ni_mv_dv_smf",
+                                  "*_p_i_mv_dv_sml", "*_p_i_ni_mv_dv_sml"
+                                  )) {
+      assertTrue(r, regexToTest.remove(r));
+      String field = r.replace("*", "number");
+
+      // NOTE: only testing one value per doc here, but TestMinMaxOnMultiValuedField
+      // covers this in more depth
+      doTestPointFieldSort(field, sequential);
+      doTestPointFieldSort(field, randomInts);
+
+      // value source (w/o field(...,min|max)) usuage should still error...
+      int numValues = 2 * RANDOM_MULTIPLIER;
+      doTestPointFieldFunctionQueryError(field, "multivalued", toStringArray(getRandomInts(1, false)));
+      doTestPointFieldFunctionQueryError(field, "multivalued", toStringArray(getRandomInts(numValues, false)));
+    }
+    
+    assertEquals("Missing types in the test", Collections.<String>emptySet(), regexToTest);
+  }
+  
+  @Test
+  @Nightly
+  public void testIntPointFieldFacetField() throws Exception {
+    doTestPointFieldFacetField("number_p_i", "number_p_i_dv", getSequentialStringArrayWithInts(10));
+    clearIndex();
+    assertU(commit());
+    doTestPointFieldFacetField("number_p_i", "number_p_i_dv", toStringArray(getRandomInts(10, false)));
+  }
+
+  @Test
+  @Nightly
+  public void testIntPointFieldRangeFacet() throws Exception {
+    String docValuesField = "number_p_i_dv";
+    String nonDocValuesField = "number_p_i";
+    int numValues = 10 * RANDOM_MULTIPLIER;
+    int numBuckets = numValues / 2;
+    List<Integer> values;
+    List<Integer> sortedValues;
+    int max;
+    do {
+      values = getRandomInts(numValues, false);
+      sortedValues = values.stream().sorted().collect(Collectors.toList());
+    } while ((max = sortedValues.get(sortedValues.size() - 1)) >= Integer.MAX_VALUE - numValues); // leave room for rounding 
+    int min = sortedValues.get(0);
+    int gap = (int)(((long)(max + numValues) - (long)min) / (long)numBuckets);
+    int[] bucketCount = new int[numBuckets];
+    int bucketNum = 0;
+    int minBucketVal = min;
+    for (Integer value : sortedValues) {
+      while (((long)value - (long)minBucketVal) >= (long)gap) {
+        ++bucketNum;
+        minBucketVal += gap;
+      }
+      ++bucketCount[bucketNum];
+    }
+
+    for (int i = 0 ; i < numValues ; i++) {
+      assertU(adoc("id", String.valueOf(i), docValuesField, String.valueOf(values.get(i)), nonDocValuesField, String.valueOf(values.get(i))));
+    }
+    assertU(commit());
+
+    assertTrue(h.getCore().getLatestSchema().getField(docValuesField).hasDocValues());
+    assertTrue(h.getCore().getLatestSchema().getField(docValuesField).getType() instanceof PointField);
+    String[] testStrings = new String[numBuckets + 1];
+    testStrings[numBuckets] = "//*[@numFound='" + numValues + "']";
+    minBucketVal = min;
+    for (int i = 0 ; i < numBuckets ; minBucketVal += gap, ++i) {
+      testStrings[i] = "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + docValuesField
+          + "']/lst[@name='counts']/int[@name='" + minBucketVal + "'][.='" + bucketCount[i] + "']";
+    }
+    assertQ(req("q", "*:*", "facet", "true", "facet.range", docValuesField, "facet.range.start", String.valueOf(min),
+        "facet.range.end", String.valueOf(max), "facet.range.gap", String.valueOf(gap)),
+        testStrings);
+    assertQ(req("q", "*:*", "facet", "true", "facet.range", docValuesField, "facet.range.start", String.valueOf(min),
+        "facet.range.end", String.valueOf(max), "facet.range.gap", String.valueOf(gap), "facet.range.method", "dv"),
+        testStrings);
+
+    assertFalse(h.getCore().getLatestSchema().getField(nonDocValuesField).hasDocValues());
+    assertTrue(h.getCore().getLatestSchema().getField(nonDocValuesField).getType() instanceof PointField);
+    minBucketVal = min;
+    for (int i = 0 ; i < numBuckets ; minBucketVal += gap, ++i) {
+      testStrings[i] = "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + nonDocValuesField
+          + "']/lst[@name='counts']/int[@name='" + minBucketVal + "'][.='" + bucketCount[i] + "']";
+    }
+    // Range Faceting with method = filter should work
+    assertQ(req("q", "*:*", "facet", "true", "facet.range", nonDocValuesField, "facet.range.start", String.valueOf(min),
+        "facet.range.end", String.valueOf(max), "facet.range.gap", String.valueOf(gap), "facet.range.method", "filter"),
+        testStrings);
+    // this should actually use filter method instead of dv
+    assertQ(req("q", "*:*", "facet", "true", "facet.range", nonDocValuesField, "facet.range.start", String.valueOf(min),
+        "facet.range.end", String.valueOf(max), "facet.range.gap", String.valueOf(gap), "facet.range.method", "dv"),
+        testStrings);
+  }
+
+  @Test
+  public void testIntPointStats() throws Exception {
+    int numValues = 10 * RANDOM_MULTIPLIER;
+    // don't produce numbers with exponents, since XPath comparison operators can't handle them
+    List<Integer> values  = getRandomInts(numValues, false, 9999999);
+    // System.err.println(Arrays.toString(values.toArray(new Integer[values.size()])));
+    List<Integer> sortedValues = values.stream().sorted().collect(Collectors.toList());
+    double min = (double)sortedValues.get(0);
+    double max = (double)sortedValues.get(sortedValues.size() - 1);
+
+    String[] valArray = toStringArray(values);
+    doTestPointStats("number_p_i", "number_p_i_dv", valArray, min, max, numValues, 1, 0D);
+    doTestPointStats("number_p_i", "number_p_i_mv_dv", valArray, min, max, numValues, 1, 0D);
   }
 
   @Test
@@ -144,7 +308,121 @@ public class TestPointFields extends SolrTestCaseJ4 {
     doTestPointFieldMultiValuedExactQuery("number_p_i_ni_mv", ints, false);
     doTestPointFieldMultiValuedExactQuery("number_p_i_ni_ns_mv", ints, false);
   }
+  
+  @Test
+  public void testIntPointFieldMultiValuedReturn() throws Exception {
+    String[] ints = toStringArray(getRandomInts(20, false));
+    doTestPointFieldMultiValuedReturn("number_p_i_mv", "int", ints);
+    doTestPointFieldMultiValuedReturn("number_p_i_ni_mv_dv", "int", ints);
+    doTestPointFieldMultiValuedReturn("number_p_i_dv_ns_mv", "int", ints);
+  }
+  
+  @Test
+  @Nightly
+  public void testIntPointFieldMultiValuedRangeQuery() throws Exception {
+    String[] ints = toStringArray(getRandomInts(20, false).stream().sorted().collect(Collectors.toList()));
+    doTestPointFieldMultiValuedRangeQuery("number_p_i_mv", "int", ints);
+    doTestPointFieldMultiValuedRangeQuery("number_p_i_ni_mv_dv", "int", ints);
+    doTestPointFieldMultiValuedRangeQuery("number_p_i_mv_dv", "int", ints);
+  }
+  
+  @Test
+  public void testIntPointFieldNotIndexed() throws Exception {
+    String[] ints = toStringArray(getRandomInts(10, false));
+    doTestFieldNotIndexed("number_p_i_ni", ints);
+    doTestFieldNotIndexed("number_p_i_ni_mv", ints);
+  }
+  
+  //TODO MV SORT?
+  @Test
+  public void testIntPointFieldMultiValuedFacetField() throws Exception {
+    doTestPointFieldMultiValuedFacetField("number_p_i_mv", "number_p_i_mv_dv", getSequentialStringArrayWithInts(20));
+    String[] randomSortedInts = toStringArray(getRandomInts(20, false).stream().sorted().collect(Collectors.toList()));
+    doTestPointFieldMultiValuedFacetField("number_p_i_mv", "number_p_i_mv_dv", randomSortedInts);
+  }
 
+  @Test
+  @Nightly
+  public void testIntPointFieldMultiValuedRangeFacet() throws Exception {
+    String docValuesField = "number_p_i_mv_dv";
+    String nonDocValuesField = "number_p_i_mv";
+    int numValues = 20 * RANDOM_MULTIPLIER;
+    int numBuckets = numValues / 2;
+    List<Integer> values;
+    List<PosVal<Integer>> sortedValues;
+    int max;
+    do {
+      values = getRandomInts(numValues, false);
+      sortedValues = toAscendingPosVals(values, true);
+    } while ((max = sortedValues.get(sortedValues.size() - 1).val) >= Integer.MAX_VALUE - numValues); // leave room for rounding
+    int min = sortedValues.get(0).val;
+    int gap = (int)(((long)(max + numValues) - (long)min) / (long)numBuckets);
+    List<Set<Integer>> docIdBucket = new ArrayList<>(numBuckets);
+    for (int i = 0 ; i < numBuckets ; ++i) {
+      docIdBucket.add(new HashSet<>());
+    }
+    int bucketNum = 0;
+    int minBucketVal = min;
+    for (PosVal<Integer> value : sortedValues) {
+      while (value.val - minBucketVal >= gap) {
+        ++bucketNum;
+        minBucketVal += gap;
+      }
+      docIdBucket.get(bucketNum).add(value.pos / 2); // each doc gets two consecutive values 
+    }
+    for (int i = 0 ; i < numValues ; i += 2) {
+      assertU(adoc("id", String.valueOf(i / 2),
+          docValuesField, String.valueOf(values.get(i)),
+          docValuesField, String.valueOf(values.get(i + 1)),
+          nonDocValuesField, String.valueOf(values.get(i)),
+          nonDocValuesField, String.valueOf(values.get(i + 1))));
+    }
+    assertU(commit());
+    assertTrue(h.getCore().getLatestSchema().getField(docValuesField).hasDocValues());
+    assertTrue(h.getCore().getLatestSchema().getField(docValuesField).getType() instanceof PointField);
+    String[] testStrings = new String[numBuckets + 1];
+    minBucketVal = min;
+    testStrings[numBuckets] = "//*[@numFound='" + (numValues / 2) + "']";
+    for (int i = 0 ; i < numBuckets ; minBucketVal += gap, ++i) {
+      testStrings[i] = "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + docValuesField
+          + "']/lst[@name='counts']/int[@name='" + minBucketVal + "'][.='" + docIdBucket.get(i).size() + "']";
+    }
+
+    assertQ(req("q", "*:*", "facet", "true", "facet.range", docValuesField,
+        "facet.range.start", String.valueOf(min), "facet.range.end", String.valueOf(max),
+        "facet.range.gap", String.valueOf(gap), "indent", "on"),
+        testStrings);
+    assertQ(req("q", "*:*", "facet", "true", "facet.range", docValuesField,
+        "facet.range.start", String.valueOf(min), "facet.range.end", String.valueOf(max),
+        "facet.range.gap", String.valueOf(gap), "facet.range.method", "dv", "indent", "on"),
+        testStrings);
+
+    assertFalse(h.getCore().getLatestSchema().getField(nonDocValuesField).hasDocValues());
+    assertTrue(h.getCore().getLatestSchema().getField(nonDocValuesField).getType() instanceof PointField);
+    minBucketVal = min;
+    for (int i = 0 ; i < numBuckets ; minBucketVal += gap, ++i) {
+      testStrings[i] = "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + nonDocValuesField
+          + "']/lst[@name='counts']/int[@name='" + minBucketVal + "'][.='" + docIdBucket.get(i).size() + "']";
+    }
+    // Range Faceting with method = filter should work
+    assertQ(req("q", "*:*", "facet", "true", "facet.range", nonDocValuesField,
+        "facet.range.start", String.valueOf(min), "facet.range.end", String.valueOf(max),
+        "facet.range.gap", String.valueOf(gap), "facet.range.method", "filter", "indent", "on"),
+        testStrings);
+    // this should actually use filter method instead of dv
+    assertQ(req("q", "*:*", "facet", "true", "facet.range", nonDocValuesField,
+        "facet.range.start", String.valueOf(min), "facet.range.end", String.valueOf(max),
+        "facet.range.gap", String.valueOf(gap), "facet.range.method", "dv", "indent", "on"),
+        testStrings);
+  }
+
+  @Test
+  public void testIntPointMultiValuedFunctionQuery() throws Exception {       
+    doTestPointMultiValuedFunctionQuery("number_p_i_mv", "number_p_i_mv_dv", "int", getSequentialStringArrayWithInts(20));
+    doTestPointMultiValuedFunctionQuery("number_p_i_mv", "number_p_i_mv_dv", "int",
+        toStringArray(getRandomInts(20, false).stream().sorted().collect(Collectors.toList())));
+  }
+  
   @Test
   public void testIntPointFieldsAtomicUpdates() throws Exception {
     if (!Boolean.getBoolean("enable.update.log")) {
@@ -243,11 +521,198 @@ public class TestPointFields extends SolrTestCaseJ4 {
   }
   
   // DoublePointField
+
+  @Test
+  @Nightly
+  public void testDoublePointFieldExactQuery() throws Exception {
+    doTestFloatPointFieldExactQuery("number_p_d", true);
+    doTestFloatPointFieldExactQuery("number_p_d_mv", true);
+    doTestFloatPointFieldExactQuery("number_p_d_dv", true);
+    doTestFloatPointFieldExactQuery("number_p_d_mv_dv", true);
+    doTestFloatPointFieldExactQuery("number_p_d_ni_dv", true);
+    doTestFloatPointFieldExactQuery("number_p_d_ni_ns_dv", true);
+    doTestFloatPointFieldExactQuery("number_p_d_ni_dv_ns", true);
+    doTestFloatPointFieldExactQuery("number_p_d_ni_mv_dv", true);
+  }
+ 
+  @Test
+  public void testDoublePointFieldReturn() throws Exception {
+    int numValues = 10 * RANDOM_MULTIPLIER;
+    String[] doubles = toStringArray(getRandomDoubles(numValues, false));
+    doTestPointFieldReturn("number_p_d", "double", doubles);
+    doTestPointFieldReturn("number_p_d_dv_ns", "double", doubles);
+  }
   
   @Test
-  public void testDoublePointFieldNonSearchableExactQuery() throws Exception {
-    doTestFloatPointFieldExactQuery("number_p_d_ni", false, true);
-    doTestFloatPointFieldExactQuery("number_p_d_ni_ns", false, true);
+  public void testDoublePointFieldRangeQuery() throws Exception {
+    doTestFloatPointFieldRangeQuery("number_p_d", "double", true);
+    doTestFloatPointFieldRangeQuery("number_p_d_ni_ns_dv", "double", true);
+    doTestFloatPointFieldRangeQuery("number_p_d_dv", "double", true);
+  }
+  
+  @Test
+  public void testDoubleFieldNonSearchableRangeQuery() throws Exception {
+    doTestPointFieldNonSearchableRangeQuery("number_p_d_ni", toStringArray(getRandomDoubles(1, false)));
+    doTestPointFieldNonSearchableRangeQuery("number_p_d_ni_ns", toStringArray(getRandomDoubles(1, false)));
+    int numValues = 2 * RANDOM_MULTIPLIER;
+    doTestPointFieldNonSearchableRangeQuery("number_p_d_ni_ns_mv", toStringArray(getRandomDoubles(numValues, false)));
+  }
+  
+  
+  @Test
+  public void testDoublePointFieldSortAndFunction() throws Exception {
+    final SortedSet<String> regexToTest = dynFieldRegexesForType(DoublePointField.class);
+    final List<String> sequential = Arrays.asList("0.0", "1.0", "2.0", "3.0", "4.0", "5.0", "6.0", "7.0", "8.0", "9.0");
+    List<Double> randomDoubles = getRandomDoubles(10, false);
+    List<Double> randomDoublesMissing = getRandomDoubles(10, true);
+
+    for (String r : Arrays.asList("*_p_d", "*_p_d_dv", "*_p_d_dv_ns", "*_p_d_ni_dv",
+                                  "*_p_d_ni_dv_ns", "*_p_d_ni_ns_dv")) {
+      assertTrue(r, regexToTest.remove(r));
+      String field = r.replace("*", "number");
+      doTestPointFieldSort(field, sequential);
+      doTestPointFieldSort(field, randomDoubles);
+      doTestDoublePointFunctionQuery(field);
+    }
+
+    for (String r : Arrays.asList("*_p_d_smf", "*_p_d_dv_smf", "*_p_d_ni_dv_smf",
+                                  "*_p_d_sml", "*_p_d_dv_sml", "*_p_d_ni_dv_sml")) {
+      assertTrue(r, regexToTest.remove(r));
+      String field = r.replace("*", "number");
+      doTestPointFieldSort(field, sequential);
+      doTestPointFieldSort(field, randomDoublesMissing);
+      doTestDoublePointFunctionQuery(field);
+    }
+    
+    for (String r : Arrays.asList("*_p_d_ni", "*_p_d_ni_ns")) {
+      assertTrue(r, regexToTest.remove(r));
+      String field = r.replace("*", "number");
+      doTestPointFieldSortError(field, "w/o docValues", "42.34");
+      doTestPointFieldFunctionQueryError(field, "w/o docValues", "42.34");
+    }
+    
+    // multivalued, no docvalues
+    for (String r : Arrays.asList("*_p_d_mv", "*_p_d_ni_mv", "*_p_d_ni_ns_mv", 
+                                  "*_p_d_mv_smf", "*_p_d_mv_sml")) {
+                                  
+      assertTrue(r, regexToTest.remove(r));
+      String field = r.replace("*", "number");
+      doTestPointFieldSortError(field, "w/o docValues", "42.34");
+      doTestPointFieldSortError(field, "w/o docValues", "42.34", "66.6");
+      doTestPointFieldFunctionQueryError(field, "multivalued", "42.34");
+      doTestPointFieldFunctionQueryError(field, "multivalued", "42.34", "66.6");
+    }
+    
+    // multivalued, w/ docValues
+    for (String r : Arrays.asList("*_p_d_ni_mv_dv", "*_p_d_ni_dv_ns_mv",
+                                  "*_p_d_dv_ns_mv", "*_p_d_mv_dv",
+                                  "*_p_d_mv_dv_smf", "*_p_d_ni_mv_dv_smf",
+                                  "*_p_d_mv_dv_sml", "*_p_d_ni_mv_dv_sml")) {
+      assertTrue(r, regexToTest.remove(r));
+      String field = r.replace("*", "number");
+      
+      // NOTE: only testing one value per doc here, but TestMinMaxOnMultiValuedField
+      // covers this in more depth
+      doTestPointFieldSort(field, sequential);
+      doTestPointFieldSort(field, randomDoubles);
+      
+      // value source (w/o field(...,min|max)) usuage should still error...
+      doTestPointFieldFunctionQueryError(field, "multivalued", "42.34");
+      doTestPointFieldFunctionQueryError(field, "multivalued", "42.34", "66.6");
+    }
+    assertEquals("Missing types in the test", Collections.<String>emptySet(), regexToTest);
+  }
+  
+  @Test
+  public void testDoublePointFieldFacetField() throws Exception {
+    doTestPointFieldFacetField("number_p_d", "number_p_d_dv", getSequentialStringArrayWithDoubles(10));
+    clearIndex();
+    assertU(commit());
+    doTestPointFieldFacetField("number_p_d", "number_p_d_dv", toStringArray(getRandomDoubles(10, false)));
+  }
+
+  @Test
+  public void testDoublePointFieldRangeFacet() throws Exception {
+    String docValuesField = "number_p_d_dv";
+    String nonDocValuesField = "number_p_d";
+    int numValues = 10 * RANDOM_MULTIPLIER;
+    int numBuckets = numValues / 2;
+    List<Double> values, sortedValues;
+    double min, max, gap, buffer;
+    do {
+      values = getRandomDoubles(numValues, false);
+      sortedValues = values.stream().sorted().collect(Collectors.toList());
+      min = sortedValues.get(0);
+      max = sortedValues.get(sortedValues.size() - 1);
+      buffer = BigDecimal.valueOf(max).subtract(BigDecimal.valueOf(min))
+          .divide(BigDecimal.valueOf(numValues / 2), RoundingMode.HALF_UP).doubleValue();
+      gap = BigDecimal.valueOf(max).subtract(BigDecimal.valueOf(min)).add(BigDecimal.valueOf(buffer * 2.0D))
+          .divide(BigDecimal.valueOf(numBuckets), RoundingMode.HALF_UP).doubleValue();
+    } while (max >= Double.MAX_VALUE - buffer || min <= -Double.MAX_VALUE + buffer);
+    // System.err.println("min: " + min + "   max: " + max + "   gap: " + gap + "   buffer: " + buffer);
+    int[] bucketCount = new int[numBuckets];
+    int bucketNum = 0;
+    double minBucketVal = min - buffer;
+    // System.err.println("bucketNum: " + bucketNum + "   minBucketVal: " + minBucketVal);
+    for (double value : sortedValues) {
+      // System.err.println("value: " + value);
+      while (value - minBucketVal >= gap) {
+        ++bucketNum;
+        minBucketVal += gap;
+        // System.err.println("bucketNum: " + bucketNum + "   minBucketVal: " + minBucketVal);
+      }
+      ++bucketCount[bucketNum];
+    }
+
+    for (int i = 0 ; i < numValues ; i++) {
+      assertU(adoc("id", String.valueOf(i),
+          docValuesField, String.valueOf(values.get(i)), nonDocValuesField, String.valueOf(values.get(i))));
+    }
+    assertU(commit());
+
+    String[] testStrings = new String[numBuckets + 1];
+    testStrings[numBuckets] = "//*[@numFound='" + numValues + "']";
+    minBucketVal = min - buffer;
+    for (int i = 0 ; i < numBuckets ; minBucketVal += gap, ++i) {
+      testStrings[i] = "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + docValuesField
+          + "']/lst[@name='counts']/int[@name='" + minBucketVal + "'][.='" + bucketCount[i] + "']";
+    }
+    assertQ(req("q", "*:*", "facet", "true", "facet.range", docValuesField, "facet.range.start", String.valueOf(min - buffer),
+        "facet.range.end", String.valueOf(max + buffer), "facet.range.gap", String.valueOf(gap)),
+        testStrings);
+    assertQ(req("q", "*:*", "facet", "true", "facet.range", docValuesField, "facet.range.start", String.valueOf(min - buffer),
+        "facet.range.end", String.valueOf(max + buffer), "facet.range.gap", String.valueOf(gap), "facet.range.method", "dv"),
+        testStrings);
+
+    minBucketVal = min - buffer;
+    for (int i = 0 ; i < numBuckets ; minBucketVal += gap, ++i) {
+      testStrings[i] = "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + nonDocValuesField
+          + "']/lst[@name='counts']/int[@name='" + minBucketVal + "'][.='" + bucketCount[i] + "']";
+    }
+    // Range Faceting with method = filter should work
+    assertQ(req("q", "*:*", "facet", "true", "facet.range", nonDocValuesField, "facet.range.start", String.valueOf(min - buffer),
+        "facet.range.end", String.valueOf(max + buffer), "facet.range.gap", String.valueOf(gap), "facet.range.method", "filter"),
+        testStrings);
+    // this should actually use filter method instead of dv
+    assertQ(req("q", "*:*", "facet", "true", "facet.range", nonDocValuesField, "facet.range.start", String.valueOf(min - buffer),
+        "facet.range.end", String.valueOf(max + buffer), "facet.range.gap", String.valueOf(gap), "facet.range.method", "dv"),
+        testStrings);
+  }
+
+  @Test
+  public void testDoublePointStats() throws Exception {
+    int numValues = 10 * RANDOM_MULTIPLIER;
+    // don't produce numbers with exponents, since XPath comparison operators can't handle them: 7 digits of precision
+    List<Float> values  = getRandomInts(numValues, false, 9999999).stream()
+        .map(v -> (float)((double)v * Math.pow(10D, -1 * random().nextInt(8)))).collect(Collectors.toList());
+    // System.err.println(Arrays.toString(values.toArray(new Float[values.size()])));
+    List<Float> sortedValues = values.stream().sorted().collect(Collectors.toList());
+    double min = (double)sortedValues.get(0);
+    double max = (double)sortedValues.get(sortedValues.size() - 1);
+
+    String[] valArray = toStringArray(values);
+    doTestPointStats("number_p_d", "number_p_d_dv", valArray, min, max, numValues, 1, 1E-7D);
+    doTestPointStats("number_p_d", "number_p_d_mv_dv", valArray, min, max, numValues, 1, 1E-7D);
   }
   
   @Test
@@ -263,7 +728,123 @@ public class TestPointFields extends SolrTestCaseJ4 {
     doTestPointFieldMultiValuedExactQuery("number_p_d_ni_mv", doubles, false);
     doTestPointFieldMultiValuedExactQuery("number_p_d_ni_ns_mv", doubles, false);
   }
+  
+  @Test
+  public void testDoublePointFieldMultiValuedReturn() throws Exception {
+    String[] doubles = toStringArray(getRandomDoubles(20, false));
+    doTestPointFieldMultiValuedReturn("number_p_d_mv", "double", doubles);
+    doTestPointFieldMultiValuedReturn("number_p_d_ni_mv_dv", "double", doubles);
+    doTestPointFieldMultiValuedReturn("number_p_d_dv_ns_mv", "double", doubles);
+  }
+  
+  @Test
+  public void testDoublePointFieldMultiValuedRangeQuery() throws Exception {
+    String[] doubles = toStringArray(getRandomDoubles(20, false).stream().sorted().collect(Collectors.toList()));
+    doTestPointFieldMultiValuedRangeQuery("number_p_d_mv", "double", doubles);
+    doTestPointFieldMultiValuedRangeQuery("number_p_d_ni_mv_dv", "double", doubles);
+    doTestPointFieldMultiValuedRangeQuery("number_p_d_mv_dv", "double", doubles);
+  }
+  
+  @Test
+  public void testDoublePointFieldMultiValuedFacetField() throws Exception {
+    doTestPointFieldMultiValuedFacetField("number_p_d_mv", "number_p_d_mv_dv", getSequentialStringArrayWithDoubles(20));
+    doTestPointFieldMultiValuedFacetField("number_p_d_mv", "number_p_d_mv_dv", toStringArray(getRandomDoubles(20, false)));
+  }
 
+  @Test
+  public void testDoublePointFieldMultiValuedRangeFacet() throws Exception {
+    String docValuesField = "number_p_d_mv_dv";
+    SchemaField dvSchemaField = h.getCore().getLatestSchema().getField(docValuesField);
+    assertTrue(dvSchemaField.multiValued());
+    assertTrue(dvSchemaField.hasDocValues());
+    assertTrue(dvSchemaField.getType() instanceof PointField);
+
+    String nonDocValuesField = "number_p_d_mv";
+    SchemaField nonDvSchemaField = h.getCore().getLatestSchema().getField(nonDocValuesField);
+    assertTrue(nonDvSchemaField.multiValued());
+    assertFalse(nonDvSchemaField.hasDocValues());
+    assertTrue(nonDvSchemaField.getType() instanceof PointField);
+
+    int numValues = 20 * RANDOM_MULTIPLIER;
+    int numBuckets = numValues / 2;
+    List<Double> values;
+    List<PosVal<Double>> sortedValues;
+    double min, max, gap, buffer;
+    do {
+      values = getRandomDoubles(numValues, false);
+      sortedValues = toAscendingPosVals(values, true);
+      min = sortedValues.get(0).val;
+      max = sortedValues.get(sortedValues.size() - 1).val;
+      buffer = BigDecimal.valueOf(max).subtract(BigDecimal.valueOf(min))
+          .divide(BigDecimal.valueOf(numValues / 2), RoundingMode.HALF_UP).doubleValue();
+      gap = BigDecimal.valueOf(max).subtract(BigDecimal.valueOf(min)).add(BigDecimal.valueOf(buffer * 2.0D))
+          .divide(BigDecimal.valueOf(numBuckets), RoundingMode.HALF_UP).doubleValue();
+    } while (max >= Double.MAX_VALUE - buffer || min <= -Double.MAX_VALUE + buffer);
+    // System.err.println("min: " + min + "   max: " + max + "   gap: " + gap + "   buffer: " + buffer);
+    List<Set<Integer>> docIdBucket = new ArrayList<>(numBuckets);
+    for (int i = 0 ; i < numBuckets ; ++i) {
+      docIdBucket.add(new HashSet<>());
+    }
+    int bucketNum = 0;
+    double minBucketVal = min - buffer;
+    // System.err.println("bucketNum: " + bucketNum + "   minBucketVal: " + minBucketVal);
+    for (PosVal<Double> value : sortedValues) {
+      // System.err.println("value.val: " + value.val);
+      while (value.val - minBucketVal >= gap) {
+        ++bucketNum;
+        minBucketVal += gap;
+        // System.err.println("bucketNum: " + bucketNum + "   minBucketVal: " + minBucketVal);
+      }
+      docIdBucket.get(bucketNum).add(value.pos / 2); // each doc gets two consecutive values 
+    }
+    for (int i = 0 ; i < numValues ; i += 2) {
+      assertU(adoc("id", String.valueOf(i / 2),
+          docValuesField, String.valueOf(values.get(i)),
+          docValuesField, String.valueOf(values.get(i + 1)),
+          nonDocValuesField, String.valueOf(values.get(i)),
+          nonDocValuesField, String.valueOf(values.get(i + 1))));
+    }
+    assertU(commit());
+
+    String[] testStrings = new String[numBuckets + 1];
+    testStrings[numBuckets] = "//*[@numFound='" + (numValues / 2) + "']";
+    minBucketVal = min - buffer;
+    for (int i = 0 ; i < numBuckets ; minBucketVal += gap, ++i) {
+      testStrings[i] = "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + docValuesField
+          + "']/lst[@name='counts']/int[@name='" + minBucketVal + "'][.='" + docIdBucket.get(i).size() + "']";
+    }
+    assertQ(req("q", "*:*", "facet", "true", "facet.range", docValuesField,
+        "facet.range.start", String.valueOf(min - buffer), "facet.range.end", String.valueOf(max + buffer),
+        "facet.range.gap", String.valueOf(gap), "indent", "on"),
+        testStrings);
+    assertQ(req("q", "*:*", "facet", "true", "facet.range", docValuesField,
+        "facet.range.start", String.valueOf(min - buffer), "facet.range.end", String.valueOf(max + buffer),
+        "facet.range.gap", String.valueOf(gap), "facet.range.method", "dv", "indent", "on"),
+        testStrings);
+
+    minBucketVal = min - buffer;
+    for (int i = 0 ; i < numBuckets ; minBucketVal += gap, ++i) {
+      testStrings[i] = "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + nonDocValuesField
+          + "']/lst[@name='counts']/int[@name='" + minBucketVal + "'][.='" + docIdBucket.get(i).size() + "']";
+    }
+    // Range Faceting with method = filter should work
+    assertQ(req("q", "*:*", "facet", "true", "facet.range", nonDocValuesField,
+        "facet.range.start", String.valueOf(min - buffer), "facet.range.end", String.valueOf(max + buffer),
+        "facet.range.gap", String.valueOf(gap), "facet.range.method", "filter", "indent", "on"),
+        testStrings);
+    // this should actually use filter method instead of dv
+    assertQ(req("q", "*:*", "facet", "true", "facet.range", nonDocValuesField,
+        "facet.range.start", String.valueOf(min - buffer), "facet.range.end", String.valueOf(max + buffer),
+        "facet.range.gap", String.valueOf(gap), "facet.range.method", "dv", "indent", "on"),
+        testStrings);
+  }
+  
+  @Test
+  public void testDoublePointMultiValuedFunctionQuery() throws Exception {
+    doTestPointMultiValuedFunctionQuery("number_p_d_mv", "number_p_d_mv_dv", "double", getSequentialStringArrayWithDoubles(20));
+    doTestPointMultiValuedFunctionQuery("number_p_d_mv", "number_p_d_mv_dv", "double", toAscendingStringArray(getRandomFloats(20, false), true));
+  }
+  
   @Test
   public void testDoublePointFieldsAtomicUpdates() throws Exception {
     if (!Boolean.getBoolean("enable.update.log")) {
@@ -275,15 +856,12 @@ public class TestPointFields extends SolrTestCaseJ4 {
   }
   
   @Test
-  public void testMultiValuedDoublePointFieldsAtomicUpdates() throws Exception {
-    if (!Boolean.getBoolean("enable.update.log")) {
-      return;
-    }
-    String[] doubles = toStringArray(getRandomDoubles(3, false));
-    doTestMultiValuedPointFieldsAtomicUpdates("number_p_d_mv", "double", doubles);
-    doTestMultiValuedPointFieldsAtomicUpdates("number_p_d_ni_mv_dv", "double", doubles);
-    doTestMultiValuedPointFieldsAtomicUpdates("number_p_d_dv_ns_mv", "double", doubles);
+  public void testDoublePointFieldNotIndexed() throws Exception {
+    String[] doubles = toStringArray(getRandomDoubles(10, false));
+    doTestFieldNotIndexed("number_p_d_ni", doubles);
+    doTestFieldNotIndexed("number_p_d_ni_mv", doubles);
   }
+  
   
   private void doTestFloatPointFieldsAtomicUpdates(String field) throws Exception {
     float number1 = getRandomFloats(1, false).get(0);
@@ -351,13 +929,42 @@ public class TestPointFields extends SolrTestCaseJ4 {
   }
   
   // Float
+
+  @Test
+  @Nightly
+  public void testFloatPointFieldExactQuery() throws Exception {
+    doTestFloatPointFieldExactQuery("number_p_f", false);
+    doTestFloatPointFieldExactQuery("number_p_f_mv", false);
+    doTestFloatPointFieldExactQuery("number_p_f_dv", false);
+    doTestFloatPointFieldExactQuery("number_p_f_mv_dv", false);
+    doTestFloatPointFieldExactQuery("number_p_f_ni_dv", false);
+    doTestFloatPointFieldExactQuery("number_p_f_ni_ns_dv", false);
+    doTestFloatPointFieldExactQuery("number_p_f_ni_dv_ns", false);
+    doTestFloatPointFieldExactQuery("number_p_f_ni_mv_dv", false);
+  }
+
   @Test
   @Nightly
   public void testFloatPointFieldNonSearchableExactQuery() throws Exception {
     doTestFloatPointFieldExactQuery("number_p_f_ni", false, false);
     doTestFloatPointFieldExactQuery("number_p_f_ni_ns", false, false);
   }
-
+  
+  @Test
+  public void testFloatPointFieldReturn() throws Exception {
+    int numValues = 10 * RANDOM_MULTIPLIER;
+    String[] floats = toStringArray(getRandomFloats(numValues, false));
+    doTestPointFieldReturn("number_p_f", "float", floats);
+    doTestPointFieldReturn("number_p_f_dv_ns", "float", floats);
+  }
+  
+  @Test
+  public void testFloatPointFieldRangeQuery() throws Exception {
+    doTestFloatPointFieldRangeQuery("number_p_f", "float", false);
+    doTestFloatPointFieldRangeQuery("number_p_f_ni_ns_dv", "float", false);
+    doTestFloatPointFieldRangeQuery("number_p_f_dv", "float", false);
+  }
+  
   @Test
   public void testFloatPointFieldNonSearchableRangeQuery() throws Exception {
     doTestPointFieldNonSearchableRangeQuery("number_p_f_ni", toStringArray(getRandomFloats(1, false)));
@@ -365,7 +972,167 @@ public class TestPointFields extends SolrTestCaseJ4 {
     int numValues = 2 * RANDOM_MULTIPLIER;
     doTestPointFieldNonSearchableRangeQuery("number_p_f_ni_ns_mv", toStringArray(getRandomFloats(numValues, false)));
   }
+  
+  @Test
+  @Nightly
+  public void testFloatPointFieldSortAndFunction() throws Exception {
+    final SortedSet<String> regexToTest = dynFieldRegexesForType(FloatPointField.class);
+    final List<String> sequential = Arrays.asList("0.0", "1.0", "2.0", "3.0", "4.0", "5.0", "6.0", "7.0", "8.0", "9.0");
+    final List<Float> randomFloats = getRandomFloats(10, false);
+    final List<Float> randomFloatsMissing = getRandomFloats(10, true);
+    
+    for (String r : Arrays.asList("*_p_f", "*_p_f_dv", "*_p_f_dv_ns", "*_p_f_ni_dv", 
+                                  "*_p_f_ni_dv_ns", "*_p_f_ni_ns_dv")) {
+      assertTrue(r, regexToTest.remove(r));
+      String field = r.replace("*", "number");
+      doTestPointFieldSort(field, sequential);
+      doTestPointFieldSort(field, randomFloats);
 
+      doTestFloatPointFunctionQuery(field);
+    }
+    for (String r : Arrays.asList("*_p_f_smf", "*_p_f_dv_smf", "*_p_f_ni_dv_smf",
+                                  "*_p_f_sml", "*_p_f_dv_sml", "*_p_f_ni_dv_sml")) {
+      assertTrue(r, regexToTest.remove(r));
+      String field = r.replace("*", "number");
+      doTestPointFieldSort(field, sequential);
+      doTestPointFieldSort(field, randomFloatsMissing);
+      doTestFloatPointFunctionQuery(field);
+    }
+    
+    for (String r : Arrays.asList("*_p_f_ni", "*_p_f_ni_ns")) {
+      assertTrue(r, regexToTest.remove(r));
+      String field = r.replace("*", "number");
+      doTestPointFieldSortError(field, "w/o docValues", "42.34");
+      doTestPointFieldFunctionQueryError(field, "w/o docValues", "42.34");
+    }
+    
+    // multivalued, no docvalues
+    for (String r : Arrays.asList("*_p_f_mv", "*_p_f_ni_mv", "*_p_f_ni_ns_mv", 
+                                  "*_p_f_mv_smf", "*_p_f_mv_sml")) {
+                                  
+      assertTrue(r, regexToTest.remove(r));
+      String field = r.replace("*", "number");
+      doTestPointFieldSortError(field, "w/o docValues", "42.34");
+      doTestPointFieldSortError(field, "w/o docValues", "42.34", "66.6");
+      doTestPointFieldFunctionQueryError(field, "multivalued", "42.34");
+      doTestPointFieldFunctionQueryError(field, "multivalued", "42.34", "66.6");
+    }
+
+    // multivalued, w/ docValues
+    for (String r : Arrays.asList("*_p_f_ni_mv_dv", "*_p_f_ni_dv_ns_mv",
+                                  "*_p_f_dv_ns_mv", "*_p_f_mv_dv",  
+                                  "*_p_f_mv_dv_smf", "*_p_f_ni_mv_dv_smf",
+                                  "*_p_f_mv_dv_sml", "*_p_f_ni_mv_dv_sml")) {
+      assertTrue(r, regexToTest.remove(r));
+      String field = r.replace("*", "number");
+
+      // NOTE: only testing one value per doc here, but TestMinMaxOnMultiValuedField
+      // covers this in more depth
+      doTestPointFieldSort(field, sequential);
+      doTestPointFieldSort(field, randomFloats);
+      
+      // value source (w/o field(...,min|max)) usuage should still error...
+      doTestPointFieldFunctionQueryError(field, "multivalued", "42.34");
+      doTestPointFieldFunctionQueryError(field, "multivalued", "42.34", "66.6");
+     
+    }    
+    assertEquals("Missing types in the test", Collections.<String>emptySet(), regexToTest);
+  }
+  
+  @Test
+  public void testFloatPointFieldFacetField() throws Exception {
+    doTestPointFieldFacetField("number_p_f", "number_p_f_dv", getSequentialStringArrayWithDoubles(10));
+    clearIndex();
+    assertU(commit());
+    doTestPointFieldFacetField("number_p_f", "number_p_f_dv", toStringArray(getRandomFloats(10, false)));
+  }
+
+  @Test
+  public void testFloatPointFieldRangeFacet() throws Exception {
+    String docValuesField = "number_p_f_dv";
+    String nonDocValuesField = "number_p_f";
+    int numValues = 10 * RANDOM_MULTIPLIER;
+    int numBuckets = numValues / 2;
+    List<Float> values, sortedValues;
+    float min, max, gap, buffer;
+    do {
+      values = getRandomFloats(numValues, false);
+      sortedValues = values.stream().sorted().collect(Collectors.toList());
+      min = sortedValues.get(0);
+      max = sortedValues.get(sortedValues.size() - 1);
+      buffer = (float)(((double)max - (double)min) / (double)numValues / 2.0D);
+      gap = (float)(((double)max + (double)buffer - (double)min + (double)buffer) / (double)numBuckets);
+    } while (max >= Float.MAX_VALUE - buffer || min <= -Float.MAX_VALUE + buffer); 
+    // System.err.println("min: " + min + "   max: " + max + "   gap: " + gap + "   buffer: " + buffer);
+    int[] bucketCount = new int[numBuckets];
+    int bucketNum = 0;
+    float minBucketVal = min - buffer;
+    // System.err.println("bucketNum: " + bucketNum + "   minBucketVal: " + minBucketVal);
+    for (float value : sortedValues) {
+      // System.err.println("value: " + value);
+      while (value - minBucketVal >= gap) {
+        ++bucketNum;
+        minBucketVal += gap;
+        // System.err.println("bucketNum: " + bucketNum + "   minBucketVal: " + minBucketVal);
+      }
+      ++bucketCount[bucketNum];
+    }
+
+    for (int i = 0 ; i < numValues ; i++) {
+      assertU(adoc("id", String.valueOf(i), 
+          docValuesField, String.valueOf(values.get(i)), nonDocValuesField, String.valueOf(values.get(i))));
+    }
+    assertU(commit());
+
+    assertTrue(h.getCore().getLatestSchema().getField(docValuesField).hasDocValues());
+    assertTrue(h.getCore().getLatestSchema().getField(docValuesField).getType() instanceof PointField);
+    String[] testStrings = new String[numBuckets + 1];
+    testStrings[numBuckets] = "//*[@numFound='" + numValues + "']";
+    minBucketVal = min - buffer;
+    for (int i = 0 ; i < numBuckets ; minBucketVal += gap, ++i) {
+      testStrings[i] = "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + docValuesField
+          + "']/lst[@name='counts']/int[@name='" + minBucketVal + "'][.='" + bucketCount[i] + "']";
+    }
+    assertQ(req("q", "*:*", "facet", "true", "facet.range", docValuesField, "facet.range.start", String.valueOf(min - buffer),
+        "facet.range.end", String.valueOf(max + buffer), "facet.range.gap", String.valueOf(gap)),
+        testStrings);
+    assertQ(req("q", "*:*", "facet", "true", "facet.range", docValuesField, "facet.range.start", String.valueOf(min - buffer),
+        "facet.range.end", String.valueOf(max + buffer), "facet.range.gap", String.valueOf(gap), "facet.range.method", "dv"),
+        testStrings);
+
+    assertFalse(h.getCore().getLatestSchema().getField(nonDocValuesField).hasDocValues());
+    assertTrue(h.getCore().getLatestSchema().getField(nonDocValuesField).getType() instanceof PointField);
+    minBucketVal = min - buffer;
+    for (int i = 0 ; i < numBuckets ; minBucketVal += gap, ++i) {
+      testStrings[i] = "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + nonDocValuesField
+          + "']/lst[@name='counts']/int[@name='" + minBucketVal + "'][.='" + bucketCount[i] + "']";
+    }
+    // Range Faceting with method = filter should work
+    assertQ(req("q", "*:*", "facet", "true", "facet.range", nonDocValuesField, "facet.range.start", String.valueOf(min - buffer),
+        "facet.range.end", String.valueOf(max + buffer), "facet.range.gap", String.valueOf(gap), "facet.range.method", "filter"),
+        testStrings);
+    // this should actually use filter method instead of dv
+    assertQ(req("q", "*:*", "facet", "true", "facet.range", nonDocValuesField, "facet.range.start", String.valueOf(min - buffer),
+        "facet.range.end", String.valueOf(max + buffer), "facet.range.gap", String.valueOf(gap), "facet.range.method", "dv"),
+        testStrings);
+  }
+
+  @Test
+  public void testFloatPointStats() throws Exception {
+    int numValues = 10 * RANDOM_MULTIPLIER;
+    // don't produce numbers with exponents, since XPath comparison operators can't handle them: 7 digits of precision
+    List<Float> values  = getRandomInts(numValues, false, 9999999).stream()
+        .map(v -> (float)((double)v * Math.pow(10D, -1 * random().nextInt(8)))).collect(Collectors.toList());
+    // System.err.println(Arrays.toString(values.toArray(new Float[values.size()])));
+    List<Float> sortedValues = values.stream().sorted().collect(Collectors.toList());
+    double min = (double)sortedValues.get(0);
+    double max = (double)sortedValues.get(sortedValues.size() - 1);
+
+    String[] valArray = toStringArray(values);
+    doTestPointStats("number_p_f", "number_p_f_dv", valArray, min, max, numValues, 1, 1E-7D);
+    doTestPointStats("number_p_f", "number_p_f_mv_dv", valArray, min, max, numValues, 1, 1E-7D);
+  }
+  
   @Test
   public void testFloatPointFieldMultiValuedExactQuery() throws Exception {
     String[] floats = toStringArray(getRandomFloats(20, false));
@@ -379,7 +1146,126 @@ public class TestPointFields extends SolrTestCaseJ4 {
     doTestPointFieldMultiValuedExactQuery("number_p_f_ni_mv", floats, false);
     doTestPointFieldMultiValuedExactQuery("number_p_f_ni_ns_mv", floats, false);
   }
+  
+  @Test
+  public void testFloatPointFieldMultiValuedReturn() throws Exception {
+    String[] floats = toStringArray(getRandomFloats(20, false));
+    doTestPointFieldMultiValuedReturn("number_p_f_mv", "float", floats);
+    doTestPointFieldMultiValuedReturn("number_p_f_ni_mv_dv", "float", floats);
+    doTestPointFieldMultiValuedReturn("number_p_f_dv_ns_mv", "float", floats);
+  }
+  
+  @Test
+  public void testFloatPointFieldMultiValuedRangeQuery() throws Exception {
+    String[] floats = toStringArray(getRandomFloats(20, false).stream().sorted().collect(Collectors.toList()));
+    doTestPointFieldMultiValuedRangeQuery("number_p_f_mv", "float", floats);
+    doTestPointFieldMultiValuedRangeQuery("number_p_f_ni_mv_dv", "float", floats);
+    doTestPointFieldMultiValuedRangeQuery("number_p_f_mv_dv", "float", floats);
+  }
+  
+  @Test
+  public void testFloatPointFieldMultiValuedRangeFacet() throws Exception {
+    String docValuesField = "number_p_f_mv_dv";
+    SchemaField dvSchemaField = h.getCore().getLatestSchema().getField(docValuesField);
+    assertTrue(dvSchemaField.multiValued());
+    assertTrue(dvSchemaField.hasDocValues());
+    assertTrue(dvSchemaField.getType() instanceof PointField);
+ 
+    String nonDocValuesField = "number_p_f_mv";
+    SchemaField nonDvSchemaField = h.getCore().getLatestSchema().getField(nonDocValuesField);
+    assertTrue(nonDvSchemaField.multiValued());
+    assertFalse(nonDvSchemaField.hasDocValues());
+    assertTrue(nonDvSchemaField.getType() instanceof PointField);
+ 
+    int numValues = 20 * RANDOM_MULTIPLIER;
+    int numBuckets = numValues / 2;
+    List<Float> values;
+    List<PosVal<Float>> sortedValues;
+    float min, max, gap, buffer;
+    do {
+      values = getRandomFloats(numValues, false);
+      sortedValues = toAscendingPosVals(values, true);
+      min = sortedValues.get(0).val;
+      max = sortedValues.get(sortedValues.size() - 1).val;
+      buffer = (float)(((double)max - (double)min) / (double)numValues / 2.0D);
+      gap = (float)(((double)max + (double)buffer - (double)min + (double)buffer) / (double)numBuckets);
+    } while (max >= Float.MAX_VALUE - buffer || min <= -Float.MAX_VALUE + buffer);
+    // System.err.println("min: " + min + "   max: " + max + "   gap: " + gap + "   buffer: " + buffer);
+    List<Set<Integer>> docIdBucket = new ArrayList<>(numBuckets);
+    for (int i = 0 ; i < numBuckets ; ++i) {
+      docIdBucket.add(new HashSet<>());
+    }
+    int bucketNum = 0;
+    float minBucketVal = min - buffer;
+    // System.err.println("bucketNum: " + bucketNum + "   minBucketVal: " + minBucketVal);
+    for (PosVal<Float> value : sortedValues) {
+      // System.err.println("value.val: " + value.val);
+      while (value.val - minBucketVal >= gap) {
+        ++bucketNum;
+        minBucketVal += gap;
+        // System.err.println("bucketNum: " + bucketNum + "   minBucketVal: " + minBucketVal);
+      }
+      docIdBucket.get(bucketNum).add(value.pos / 2); // each doc gets two consecutive values 
+    }
+    for (int i = 0 ; i < numValues ; i += 2) {
+      assertU(adoc("id", String.valueOf(i / 2),
+          docValuesField, String.valueOf(values.get(i)),
+          docValuesField, String.valueOf(values.get(i + 1)),
+          nonDocValuesField, String.valueOf(values.get(i)),
+          nonDocValuesField, String.valueOf(values.get(i + 1))));
+    }
+    assertU(commit());
+    assertTrue(h.getCore().getLatestSchema().getField(docValuesField).hasDocValues());
+    assertTrue(h.getCore().getLatestSchema().getField(docValuesField).getType() instanceof PointField);
+    String[] testStrings = new String[numBuckets + 1];
+    minBucketVal = min - buffer;
+    testStrings[numBuckets] = "//*[@numFound='" + (numValues / 2) + "']";
+    for (int i = 0 ; i < numBuckets ; minBucketVal += gap, ++i) {
+      testStrings[i] = "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + docValuesField
+          + "']/lst[@name='counts']/int[@name='" + minBucketVal + "'][.='" + docIdBucket.get(i).size() + "']";
+    }
 
+    assertQ(req("q", "*:*", "facet", "true", "facet.range", docValuesField,
+        "facet.range.start", String.valueOf(min - buffer), "facet.range.end", String.valueOf(max + buffer),
+        "facet.range.gap", String.valueOf(gap), "indent", "on"),
+        testStrings);
+    assertQ(req("q", "*:*", "facet", "true", "facet.range", docValuesField,
+        "facet.range.start", String.valueOf(min - buffer), "facet.range.end", String.valueOf(max + buffer),
+        "facet.range.gap", String.valueOf(gap), "facet.range.method", "dv", "indent", "on"),
+        testStrings);
+
+    assertFalse(h.getCore().getLatestSchema().getField(nonDocValuesField).hasDocValues());
+    assertTrue(h.getCore().getLatestSchema().getField(nonDocValuesField).getType() instanceof PointField);
+    minBucketVal = min - buffer;
+    for (int i = 0 ; i < numBuckets ; minBucketVal += gap, ++i) {
+      testStrings[i] = "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + nonDocValuesField
+          + "']/lst[@name='counts']/int[@name='" + minBucketVal + "'][.='" + docIdBucket.get(i).size() + "']";
+    }
+    // Range Faceting with method = filter should work
+    assertQ(req("q", "*:*", "facet", "true", "facet.range", nonDocValuesField,
+        "facet.range.start", String.valueOf(min - buffer), "facet.range.end", String.valueOf(max + buffer),
+        "facet.range.gap", String.valueOf(gap), "facet.range.method", "filter", "indent", "on"),
+        testStrings);
+    // this should actually use filter method instead of dv
+    assertQ(req("q", "*:*", "facet", "true", "facet.range", nonDocValuesField,
+        "facet.range.start", String.valueOf(min - buffer), "facet.range.end", String.valueOf(max + buffer),
+        "facet.range.gap", String.valueOf(gap), "facet.range.method", "dv", "indent", "on"),
+        testStrings);
+  }
+  
+  @Test
+  public void testFloatPointFieldMultiValuedFacetField() throws Exception {
+    doTestPointFieldMultiValuedFacetField("number_p_f_mv", "number_p_f_mv_dv", getSequentialStringArrayWithDoubles(20));
+    doTestPointFieldMultiValuedFacetField("number_p_f_mv", "number_p_f_mv_dv", toStringArray(getRandomFloats(20, false)));
+  }
+  
+  @Test
+  public void testFloatPointMultiValuedFunctionQuery() throws Exception {
+    doTestPointMultiValuedFunctionQuery("number_p_f_mv", "number_p_f_mv_dv", "float", getSequentialStringArrayWithDoubles(20));
+    doTestPointMultiValuedFunctionQuery("number_p_f_mv", "number_p_f_mv_dv", "float", toAscendingStringArray(getRandomFloats(20, false), true));
+  }
+  
+  
   @Test
   public void testFloatPointFieldsAtomicUpdates() throws Exception {
     if (!Boolean.getBoolean("enable.update.log")) {
@@ -408,6 +1294,13 @@ public class TestPointFields extends SolrTestCaseJ4 {
     doTestSetQueries("number_p_f_ni_dv", toStringArray(getRandomFloats(20, false)), false);
   }
   
+  @Test
+  public void testFloatPointFieldNotIndexed() throws Exception {
+    String[] floats = toStringArray(getRandomFloats(10, false));
+    doTestFieldNotIndexed("number_p_f_ni", floats);
+    doTestFieldNotIndexed("number_p_f_ni_mv", floats);
+  }
+  
   // Long
   
   @Test
@@ -429,6 +1322,22 @@ public class TestPointFields extends SolrTestCaseJ4 {
   }
   
   @Test
+  public void testLongPointFieldReturn() throws Exception {
+    int numValues = 10 * RANDOM_MULTIPLIER;
+    String[] longs = toStringArray(getRandomLongs(numValues, false));
+    doTestPointFieldReturn("number_p_l", "long", longs);
+    doTestPointFieldReturn("number_p_l_dv_ns", "long", longs);
+  }
+  
+  @Test
+  @Nightly
+  public void testLongPointFieldRangeQuery() throws Exception {
+    doTestIntPointFieldRangeQuery("number_p_l", "long", true);
+    doTestIntPointFieldRangeQuery("number_p_l_ni_ns_dv", "long", true);
+    doTestIntPointFieldRangeQuery("number_p_l_dv", "long", true);
+  }
+  
+  @Test
   public void testLongPointFieldNonSearchableRangeQuery() throws Exception {
     doTestPointFieldNonSearchableRangeQuery("number_p_l_ni", toStringArray(getRandomLongs(1, false)));
     doTestPointFieldNonSearchableRangeQuery("number_p_l_ni_ns", toStringArray(getRandomLongs(1, false)));
@@ -436,6 +1345,168 @@ public class TestPointFields extends SolrTestCaseJ4 {
     doTestPointFieldNonSearchableRangeQuery("number_p_l_ni_ns_mv", toStringArray(getRandomLongs(numValues, false)));
   }
 
+  @Test
+  @Nightly
+  public void testLongPointFieldSortAndFunction() throws Exception {
+    final SortedSet<String> regexToTest = dynFieldRegexesForType(LongPointField.class);
+    final List<Long> vals = Arrays.asList((long)Integer.MIN_VALUE, 
+                                          1L, 2L, 3L, 4L, 5L, 6L, 7L, 
+                                          (long)Integer.MAX_VALUE, Long.MAX_VALUE);
+    final List<Long> randomLongs = getRandomLongs(10, false);
+    final List<Long> randomLongsMissing = getRandomLongs(10, true);
+    
+    for (String r : Arrays.asList("*_p_l", "*_p_l_dv", "*_p_l_dv_ns", "*_p_l_ni_dv",
+                                  "*_p_l_ni_dv_ns", "*_p_l_ni_ns_dv")) {
+      assertTrue(r, regexToTest.remove(r));
+      String field = r.replace("*", "number");
+      doTestPointFieldSort(field, vals);
+      doTestPointFieldSort(field, randomLongs);
+      doTestLongPointFunctionQuery(field);
+    }
+
+    for (String r : Arrays.asList("*_p_l_smf", "*_p_l_dv_smf", "*_p_l_ni_dv_smf",
+                                  "*_p_l_sml", "*_p_l_dv_sml", "*_p_l_ni_dv_sml")) {
+      assertTrue(r, regexToTest.remove(r));
+      String field = r.replace("*", "number");
+      doTestPointFieldSort(field, vals);
+      doTestPointFieldSort(field, randomLongsMissing);
+      doTestLongPointFunctionQuery(field);
+    }
+    
+    // no docvalues
+    for (String r : Arrays.asList("*_p_l_ni", "*_p_l_ni_ns")) {
+      assertTrue(r, regexToTest.remove(r));
+      String field = r.replace("*", "number");
+      doTestPointFieldSortError(field, "w/o docValues", toStringArray(getRandomLongs(1, false)));
+      doTestPointFieldFunctionQueryError(field, "w/o docValues", toStringArray(getRandomLongs(1, false)));
+    }
+    
+    // multivalued, no docvalues
+    for (String r : Arrays.asList("*_p_l_mv", "*_p_l_ni_mv", "*_p_l_ni_ns_mv", 
+                                  "*_p_l_mv_smf", "*_p_l_mv_sml")) {
+                                  
+      assertTrue(r, regexToTest.remove(r));
+      String field = r.replace("*", "number");
+      doTestPointFieldSortError(field, "w/o docValues", toStringArray(getRandomLongs(1, false)));
+      int numValues = 2 * RANDOM_MULTIPLIER;
+      doTestPointFieldSortError(field, "w/o docValues", toStringArray(getRandomLongs(numValues, false)));
+      doTestPointFieldFunctionQueryError(field, "multivalued", toStringArray(getRandomLongs(1, false)));
+      doTestPointFieldFunctionQueryError(field, "multivalued", toStringArray(getRandomLongs(numValues, false)));
+    }
+    // multivalued, w/ docValues
+    for (String r : Arrays.asList("*_p_l_ni_mv_dv", "*_p_l_ni_dv_ns_mv",
+                                  "*_p_l_dv_ns_mv", "*_p_l_mv_dv",
+                                  "*_p_l_mv_dv_smf", "*_p_l_ni_mv_dv_smf",
+                                  "*_p_l_mv_dv_sml", "*_p_l_ni_mv_dv_sml")) {
+
+      assertTrue(r, regexToTest.remove(r));
+      String field = r.replace("*", "number");
+
+      // NOTE: only testing one value per doc here, but TestMinMaxOnMultiValuedField
+      // covers this in more depth
+      doTestPointFieldSort(field, vals);
+      doTestPointFieldSort(field, randomLongs);
+
+      // value source (w/o field(...,min|max)) usuage should still error...
+      int numValues = 2 * RANDOM_MULTIPLIER;
+      doTestPointFieldFunctionQueryError(field, "multivalued", toStringArray(getRandomLongs(1, false)));
+      doTestPointFieldFunctionQueryError(field, "multivalued", toStringArray(getRandomLongs(numValues, false)));
+    }
+    assertEquals("Missing types in the test", Collections.<String>emptySet(), regexToTest);
+  }
+  
+  @Test
+  public void testLongPointFieldFacetField() throws Exception {
+    doTestPointFieldFacetField("number_p_l", "number_p_l_dv", getSequentialStringArrayWithInts(10));
+    clearIndex();
+    assertU(commit());
+    doTestPointFieldFacetField("number_p_l", "number_p_l_dv", toStringArray(getRandomLongs(10, false)));
+  }
+  
+  @Test
+  public void testLongPointFieldRangeFacet() throws Exception {
+    String docValuesField = "number_p_l_dv";
+    String nonDocValuesField = "number_p_l";
+    int numValues = 10 * RANDOM_MULTIPLIER;
+    int numBuckets = numValues / 2;
+    List<Long> values;
+    List<Long> sortedValues;
+    long max;
+    do {
+      values = getRandomLongs(numValues, false);
+      sortedValues = values.stream().sorted().collect(Collectors.toList());
+    } while ((max = sortedValues.get(sortedValues.size() - 1)) >= Long.MAX_VALUE - numValues); // leave room for rounding 
+    long min = sortedValues.get(0);
+    BigInteger bigIntGap =  BigInteger.valueOf(max + numValues).subtract(BigInteger.valueOf(min))
+        .divide(BigInteger.valueOf(numBuckets));
+    long gap = bigIntGap.longValueExact();
+    int[] bucketCount = new int[numBuckets];
+    int bucketNum = 0;
+    long minBucketVal = min;
+    // System.err.println("min:" + min + "   max: " + max + "   gap: " + gap);
+    // System.err.println("bucketNum: " + bucketNum + "   minBucketVal: " + minBucketVal);
+    for (Long value : sortedValues) {
+      // System.err.println("value: " + value);
+      while (BigInteger.valueOf(value).subtract(BigInteger.valueOf(minBucketVal)).compareTo(bigIntGap) > 0) {
+        ++bucketNum;
+        minBucketVal += gap;
+        // System.err.println("bucketNum: " + bucketNum + "   minBucketVal: " + minBucketVal);
+      }
+      ++bucketCount[bucketNum];
+    }
+
+    for (int i = 0 ; i < numValues ; i++) {
+      assertU(adoc("id", String.valueOf(i), docValuesField, String.valueOf(values.get(i)), nonDocValuesField, String.valueOf(values.get(i))));
+    }
+    assertU(commit());
+
+    assertTrue(h.getCore().getLatestSchema().getField(docValuesField).hasDocValues());
+    assertTrue(h.getCore().getLatestSchema().getField(docValuesField).getType() instanceof PointField);
+    String[] testStrings = new String[numBuckets + 1];
+    testStrings[numBuckets] = "//*[@numFound='" + numValues + "']";
+    minBucketVal = min;
+    for (int i = 0 ; i < numBuckets ; minBucketVal += gap, ++i) {
+      testStrings[i] = "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + docValuesField
+          + "']/lst[@name='counts']/int[@name='" + minBucketVal + "'][.='" + bucketCount[i] + "']";
+    }
+    assertQ(req("q", "*:*", "facet", "true", "facet.range", docValuesField, "facet.range.start", String.valueOf(min),
+        "facet.range.end", String.valueOf(max), "facet.range.gap", String.valueOf(gap)),
+        testStrings);
+    assertQ(req("q", "*:*", "facet", "true", "facet.range", docValuesField, "facet.range.start", String.valueOf(min),
+        "facet.range.end", String.valueOf(max), "facet.range.gap", String.valueOf(gap), "facet.range.method", "dv"),
+        testStrings);
+
+    assertFalse(h.getCore().getLatestSchema().getField(nonDocValuesField).hasDocValues());
+    assertTrue(h.getCore().getLatestSchema().getField(nonDocValuesField).getType() instanceof PointField);
+    minBucketVal = min;
+    for (int i = 0 ; i < numBuckets ; minBucketVal += gap, ++i) {
+      testStrings[i] = "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + nonDocValuesField
+          + "']/lst[@name='counts']/int[@name='" + minBucketVal + "'][.='" + bucketCount[i] + "']";
+    }
+    // Range Faceting with method = filter should work
+    assertQ(req("q", "*:*", "facet", "true", "facet.range", nonDocValuesField, "facet.range.start", String.valueOf(min),
+        "facet.range.end", String.valueOf(max), "facet.range.gap", String.valueOf(gap), "facet.range.method", "filter"),
+        testStrings);
+    // this should actually use filter method instead of dv
+    assertQ(req("q", "*:*", "facet", "true", "facet.range", nonDocValuesField, "facet.range.start", String.valueOf(min),
+        "facet.range.end", String.valueOf(max), "facet.range.gap", String.valueOf(gap), "facet.range.method", "dv"),
+        testStrings);
+  }
+  
+  @Test
+  public void testLongPointStats() throws Exception {
+    int numValues = 10 * RANDOM_MULTIPLIER;
+    // don't produce numbers with exponents, since XPath comparison operators can't handle them
+    List<Long> values  = getRandomLongs(numValues, false, 9999999L);
+    List<Long> sortedValues = values.stream().sorted().collect(Collectors.toList());
+    double min = (double)sortedValues.get(0);
+    double max = (double)sortedValues.get(sortedValues.size() - 1);
+
+    String[] valArray = toStringArray(values);
+    doTestPointStats("number_p_l", "number_p_l_dv", valArray, min, max, numValues, 1, 0D);
+    doTestPointStats("number_p_l", "number_p_l_mv_dv", valArray, min, max, numValues, 1, 0D);
+  }
+  
   @Test
   public void testLongPointFieldMultiValuedExactQuery() throws Exception {
     String[] ints = toStringArray(getRandomInts(20, false));
@@ -449,33 +1520,116 @@ public class TestPointFields extends SolrTestCaseJ4 {
     doTestPointFieldMultiValuedExactQuery("number_p_l_ni_mv", longs, false);
     doTestPointFieldMultiValuedExactQuery("number_p_l_ni_ns_mv", longs, false);
   }
+  
+  @Test
+  public void testLongPointFieldMultiValuedReturn() throws Exception {
+    String[] longs = toStringArray(getRandomLongs(20, false));
+    doTestPointFieldMultiValuedReturn("number_p_l_mv", "long", longs);
+    doTestPointFieldMultiValuedReturn("number_p_l_ni_mv_dv", "long", longs);
+    doTestPointFieldMultiValuedReturn("number_p_l_dv_ns_mv", "long", longs);
+  }
+  
+  @Test
+  public void testLongPointFieldMultiValuedRangeQuery() throws Exception {
+    String[] longs = toStringArray(getRandomLongs(20, false).stream().sorted().collect(Collectors.toList()));
+    doTestPointFieldMultiValuedRangeQuery("number_p_l_mv", "long", longs);
+    doTestPointFieldMultiValuedRangeQuery("number_p_l_ni_mv_dv", "long", longs);
+    doTestPointFieldMultiValuedRangeQuery("number_p_l_mv_dv", "long", longs);
+  }
+  
+  @Test
+  public void testLongPointFieldMultiValuedFacetField() throws Exception {
+    doTestPointFieldMultiValuedFacetField("number_p_l_mv", "number_p_l_mv_dv", getSequentialStringArrayWithInts(20));
+    doTestPointFieldMultiValuedFacetField("number_p_l_mv", "number_p_l_mv_dv", toStringArray(getRandomLongs(20, false)));
+  }
+  
+  @Test
+  public void testLongPointFieldMultiValuedRangeFacet() throws Exception {
+    String docValuesField = "number_p_l_mv_dv";
+    String nonDocValuesField = "number_p_l_mv";
+    int numValues = 20 * RANDOM_MULTIPLIER;
+    int numBuckets = numValues / 2;
+    List<Long> values;
+    List<PosVal<Long>> sortedValues;
+    long max;
+    do {
+      values = getRandomLongs(numValues, false);
+      sortedValues = toAscendingPosVals(values, true);
+    } while ((max = sortedValues.get(sortedValues.size() - 1).val) >= Long.MAX_VALUE - numValues); // leave room for rounding 
+    long min = sortedValues.get(0).val;
+    long gap = BigInteger.valueOf(max + numValues).subtract(BigInteger.valueOf(min))
+        .divide(BigInteger.valueOf(numBuckets)).longValueExact();
+    List<Set<Integer>> docIdBucket = new ArrayList<>(numBuckets);
+    for (int i = 0 ; i < numBuckets ; ++i) {
+      docIdBucket.add(new HashSet<>());
+    }
+    int bucketNum = 0;
+    long minBucketVal = min;
+    for (PosVal<Long> value : sortedValues) {
+      while (value.val - minBucketVal >= gap) {
+        ++bucketNum;
+        minBucketVal += gap;
+      }
+      docIdBucket.get(bucketNum).add(value.pos / 2); // each doc gets two consecutive values 
+    }
+    for (int i = 0 ; i < numValues ; i += 2) {
+      assertU(adoc("id", String.valueOf(i / 2),
+          docValuesField, String.valueOf(values.get(i)),
+          docValuesField, String.valueOf(values.get(i + 1)),
+          nonDocValuesField, String.valueOf(values.get(i)),
+          nonDocValuesField, String.valueOf(values.get(i + 1))));
+    }
+    assertU(commit());
+    assertTrue(h.getCore().getLatestSchema().getField(docValuesField).hasDocValues());
+    assertTrue(h.getCore().getLatestSchema().getField(docValuesField).getType() instanceof PointField);
+    String[] testStrings = new String[numBuckets + 1];
+    testStrings[numBuckets] = "//*[@numFound='" + (numValues / 2) + "']";
+    minBucketVal = min;
+    for (int i = 0 ; i < numBuckets ; minBucketVal += gap, ++i) {
+      testStrings[i] = "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + docValuesField
+          + "']/lst[@name='counts']/int[@name='" + minBucketVal + "'][.='" + docIdBucket.get(i).size() + "']";
+    }
 
-  @Test
-  public void testLongPointFieldsAtomicUpdates() throws Exception {
-    if (!Boolean.getBoolean("enable.update.log")) {
-      return;
+    assertQ(req("q", "*:*", "facet", "true", "facet.range", docValuesField,
+        "facet.range.start", String.valueOf(min), "facet.range.end", String.valueOf(max),
+        "facet.range.gap", String.valueOf(gap), "indent", "on"),
+        testStrings);
+    assertQ(req("q", "*:*", "facet", "true", "facet.range", docValuesField,
+        "facet.range.start", String.valueOf(min), "facet.range.end", String.valueOf(max),
+        "facet.range.gap", String.valueOf(gap), "facet.range.method", "dv", "indent", "on"),
+        testStrings);
+
+    assertFalse(h.getCore().getLatestSchema().getField(nonDocValuesField).hasDocValues());
+    assertTrue(h.getCore().getLatestSchema().getField(nonDocValuesField).getType() instanceof PointField);
+    minBucketVal = min;
+    for (int i = 0 ; i < numBuckets ; minBucketVal += gap, ++i) {
+      testStrings[i] = "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + nonDocValuesField
+          + "']/lst[@name='counts']/int[@name='" + minBucketVal + "'][.='" + docIdBucket.get(i).size() + "']";
     }
-    doTestLongPointFieldsAtomicUpdates("number_p_l");
-    doTestLongPointFieldsAtomicUpdates("number_p_l_dv");
-    doTestLongPointFieldsAtomicUpdates("number_p_l_dv_ns");
+    // Range Faceting with method = filter should work
+    assertQ(req("q", "*:*", "facet", "true", "facet.range", nonDocValuesField,
+        "facet.range.start", String.valueOf(min), "facet.range.end", String.valueOf(max),
+        "facet.range.gap", String.valueOf(gap), "facet.range.method", "filter", "indent", "on"),
+        testStrings);
+    // this should actually use filter method instead of dv
+    assertQ(req("q", "*:*", "facet", "true", "facet.range", nonDocValuesField,
+        "facet.range.start", String.valueOf(min), "facet.range.end", String.valueOf(max),
+        "facet.range.gap", String.valueOf(gap), "facet.range.method", "dv", "indent", "on"),
+        testStrings);
   }
   
   @Test
-  public void testMultiValuedLongPointFieldsAtomicUpdates() throws Exception {
-    if (!Boolean.getBoolean("enable.update.log")) {
-      return;
-    }
-    String[] longs = toStringArray(getRandomLongs(3, false));
-    doTestMultiValuedPointFieldsAtomicUpdates("number_p_l_mv", "long", longs);
-    doTestMultiValuedPointFieldsAtomicUpdates("number_p_l_ni_mv_dv", "long", longs);
-    doTestMultiValuedPointFieldsAtomicUpdates("number_p_l_dv_ns_mv", "long", longs);
+  public void testLongPointMultiValuedFunctionQuery() throws Exception {
+    doTestPointMultiValuedFunctionQuery("number_p_l_mv", "number_p_l_mv_dv", "long", getSequentialStringArrayWithInts(20));
+    doTestPointMultiValuedFunctionQuery("number_p_l_mv", "number_p_l_mv_dv", "long", 
+        toStringArray(getRandomLongs(20, false).stream().sorted().collect(Collectors.toList())));
   }
   
   @Test
-  public void testLongPointSetQuery() throws Exception {
-    doTestSetQueries("number_p_l", toStringArray(getRandomLongs(20, false)), false);
-    doTestSetQueries("number_p_l_mv", toStringArray(getRandomLongs(20, false)), true);
-    doTestSetQueries("number_p_l_ni_dv", toStringArray(getRandomLongs(20, false)), false);
+  public void testLongPointFieldNotIndexed() throws Exception {
+    String[] longs = toStringArray(getRandomLongs(10, false));
+    doTestFieldNotIndexed("number_p_l_ni", longs);
+    doTestFieldNotIndexed("number_p_l_ni_mv", longs);
   }
 
   // Date
@@ -490,28 +1644,85 @@ public class TestPointFields extends SolrTestCaseJ4 {
     }
     return date;
   }
-  
+
   @Test
-  public void testDatePointFieldExactQuery() throws Exception {
-    String baseDate = getRandomDateMaybeWithMath();
-    for (String field : Arrays.asList("number_p_dt","number_p_dt_mv","number_p_dt_dv",
-        "number_p_dt_mv_dv", "number_p_dt_ni_dv", "number_p_dt_ni_ns_dv", "number_p_dt_ni_mv_dv")) {
-      doTestDatePointFieldExactQuery(field, baseDate);
-    }
+  public void testDatePointFieldReturn() throws Exception {
+    int numValues = 10 * RANDOM_MULTIPLIER;
+    String[] dates = toStringArray(getRandomInstants(numValues, false));
+    doTestPointFieldReturn("number_p_dt", "date", dates);
+    doTestPointFieldReturn("number_p_dt_dv_ns", "date", dates);
   }
 
   @Test
-  public void testDatePointFieldRangeQuery() throws Exception {
-    doTestDatePointFieldRangeQuery("number_p_dt");
-    doTestDatePointFieldRangeQuery("number_p_dt_ni_ns_dv");
+  public void testDatePointFieldSortAndFunction() throws Exception {
+    final SortedSet<String> regexToTest = dynFieldRegexesForType(DatePointField.class);
+    final List<String> sequential = Arrays.asList(getSequentialStringArrayWithDates(10));
+    final List<Instant> randomDates = getRandomInstants(10, false);
+    final List<Instant> randomDatesMissing = getRandomInstants(10, true);
+
+    for (String r : Arrays.asList("*_p_dt", "*_p_dt_dv", "*_p_dt_dv_ns", "*_p_dt_ni_dv",
+                                  "*_p_dt_ni_dv_ns", "*_p_dt_ni_ns_dv")) {
+      assertTrue(r, regexToTest.remove(r));
+      String field = r.replace("*", "number");
+      doTestPointFieldSort(field, sequential);
+      doTestPointFieldSort(field, randomDates);
+      doTestDatePointFunctionQuery(field);
+    }
+    for (String r : Arrays.asList("*_p_dt_smf", "*_p_dt_dv_smf", "*_p_dt_ni_dv_smf",
+                                  "*_p_dt_sml", "*_p_dt_dv_sml", "*_p_dt_ni_dv_sml")) {
+      assertTrue(r, regexToTest.remove(r));
+      String field = r.replace("*", "number");
+      doTestPointFieldSort(field, sequential);
+      doTestPointFieldSort(field, randomDatesMissing);
+      doTestDatePointFunctionQuery(field);
+    }
+
+    for (String r : Arrays.asList("*_p_dt_ni", "*_p_dt_ni_ns")) {
+      assertTrue(r, regexToTest.remove(r));
+      String field = r.replace("*", "number");
+      doTestPointFieldSortError(field, "w/o docValues", "1995-12-31T23:59:59Z");
+      doTestPointFieldFunctionQueryError(field, "w/o docValues", "1995-12-31T23:59:59Z");
+    }
+
+    // multivalued, no docvalues
+    for (String r : Arrays.asList("*_p_dt_mv", "*_p_dt_ni_mv", "*_p_dt_ni_ns_mv",
+                                  "*_p_dt_mv_smf", "*_p_dt_mv_sml")) {
+
+      assertTrue(r, regexToTest.remove(r));
+      String field = r.replace("*", "number");
+      doTestPointFieldSortError(field, "w/o docValues", "1995-12-31T23:59:59Z");
+      doTestPointFieldSortError(field, "w/o docValues", "1995-12-31T23:59:59Z", "2000-12-31T23:59:59Z");
+      doTestPointFieldFunctionQueryError(field, "multivalued", "1995-12-31T23:59:59Z");
+      doTestPointFieldFunctionQueryError(field, "multivalued", "1995-12-31T23:59:59Z", "2000-12-31T23:59:59Z");
+
+    }
+
+    // multivalued, w/ docValues
+    for (String r : Arrays.asList("*_p_dt_ni_mv_dv", "*_p_dt_ni_dv_ns_mv",
+                                  "*_p_dt_dv_ns_mv", "*_p_dt_mv_dv",
+                                  "*_p_dt_mv_dv_smf", "*_p_dt_ni_mv_dv_smf",
+                                  "*_p_dt_mv_dv_sml", "*_p_dt_ni_mv_dv_sml")) {
+      assertTrue(r, regexToTest.remove(r));
+      String field = r.replace("*", "number");
+
+      // NOTE: only testing one value per doc here, but TestMinMaxOnMultiValuedField
+      // covers this in more depth
+      doTestPointFieldSort(field, sequential);
+      doTestPointFieldSort(field, randomDates);
+
+      // value source (w/o field(...,min|max)) usuage should still error...
+      doTestPointFieldFunctionQueryError(field, "multivalued", "1995-12-31T23:59:59Z");
+      doTestPointFieldFunctionQueryError(field, "multivalued", "1995-12-31T23:59:59Z", "2000-12-31T23:59:59Z");
+    }
+    assertEquals("Missing types in the test", Collections.<String>emptySet(), regexToTest);
   }
-  
+
   @Test
-  public void testDatePointFieldNonSearchableRangeQuery() throws Exception {
-    doTestPointFieldNonSearchableRangeQuery("number_p_dt_ni", toStringArray(getRandomInstants(1, false)));
-    doTestPointFieldNonSearchableRangeQuery("number_p_dt_ni_ns", toStringArray(getRandomInstants(1, false)));
-    int numValues = 2 * RANDOM_MULTIPLIER;
-    doTestPointFieldNonSearchableRangeQuery("number_p_dt_ni_ns_mv", toStringArray(getRandomInstants(numValues, false)));
+  public void testDatePointFieldFacetField() throws Exception {
+    doTestPointFieldFacetField("number_p_dt", "number_p_dt_dv", getSequentialStringArrayWithDates(10));
+    clearIndex();
+    assertU(commit());
+    doTestPointFieldFacetField("number_p_dt", "number_p_dt_dv", toStringArray(getRandomInstants(10, false)));
   }
 
   private static class DateGapCeiling {
@@ -563,6 +1774,103 @@ public class TestPointFields extends SolrTestCaseJ4 {
       return time.atZone(ZoneOffset.ofHours(0)).toInstant().toEpochMilli();
     }
   }
+  
+  @Test
+  public void testDatePointFieldRangeFacet() throws Exception {
+    String docValuesField = "number_p_dt_dv";
+    String nonDocValuesField = "number_p_dt";
+    int numValues = 10 * RANDOM_MULTIPLIER;
+    int numBuckets = numValues / 2;
+    List<Long> values, sortedValues;
+    long min, max;
+    DateGapCeiling gap;
+    do {
+      values = getRandomLongs(numValues, false, MAX_DATE_EPOCH_MILLIS);
+      sortedValues = values.stream().sorted().collect(Collectors.toList());
+      min = sortedValues.get(0);
+      max = sortedValues.get(sortedValues.size() - 1);
+    } while (max > MAX_DATE_EPOCH_MILLIS || min < MIN_DATE_EPOCH_MILLIS);
+    long initialGap = BigInteger.valueOf(max).subtract(BigInteger.valueOf(min))
+        .divide(BigInteger.valueOf(numBuckets)).longValueExact();
+    gap = new DateGapCeiling(BigInteger.valueOf(max + initialGap).subtract(BigInteger.valueOf(min)) // padding for rounding
+        .divide(BigInteger.valueOf(numBuckets)).longValueExact());
+    int[] bucketCount = new int[numBuckets];
+    int bucketNum = 0;
+    long minBucketVal = min;
+    // System.err.println("min:" + Instant.ofEpochMilli(min) + "   max: " + Instant.ofEpochMilli(max) + "   gap: " + gap);
+    // System.err.println("bucketNum: " + bucketNum + "   minBucketVal: " + Instant.ofEpochMilli(minBucketVal));
+    for (long value : sortedValues) {
+      // System.err.println("value: " + Instant.ofEpochMilli(value));
+      while (value >= gap.addTo(minBucketVal)) {
+        ++bucketNum;
+        minBucketVal = gap.addTo(minBucketVal);
+        // System.err.println("bucketNum: " + bucketNum + "   minBucketVal: " + Instant.ofEpochMilli(minBucketVal));
+      }
+      ++bucketCount[bucketNum];
+    }
+
+    for (int i = 0 ; i < numValues ; i++) {
+      assertU(adoc("id", String.valueOf(i), docValuesField, Instant.ofEpochMilli(values.get(i)).toString(),
+          nonDocValuesField, Instant.ofEpochMilli(values.get(i)).toString()));
+    }
+    assertU(commit());
+
+    assertTrue(h.getCore().getLatestSchema().getField(docValuesField).hasDocValues());
+    assertTrue(h.getCore().getLatestSchema().getField(docValuesField).getType() instanceof PointField);
+    String[] testStrings = new String[numBuckets + 1];
+    testStrings[numBuckets] = "//*[@numFound='" + numValues + "']";
+    minBucketVal = min;
+    for (int i = 0 ; i < numBuckets ; ++i) {
+      testStrings[i] = "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + docValuesField
+          + "']/lst[@name='counts']/int[@name='" + Instant.ofEpochMilli(minBucketVal) 
+          + "'][.='" + bucketCount[i] + "']";
+      minBucketVal = gap.addTo(minBucketVal);
+    }
+    long maxPlusGap = gap.addTo(max);
+    assertQ(req("q", "*:*", "facet", "true", "facet.range", docValuesField, 
+        "facet.range.start", Instant.ofEpochMilli(min).toString(),
+        "facet.range.end", Instant.ofEpochMilli(maxPlusGap).toString(),
+        "facet.range.gap", gap.toString()),
+        testStrings);
+    assertQ(req("q", "*:*", "facet", "true", "facet.range", docValuesField, 
+        "facet.range.start", Instant.ofEpochMilli(min).toString(),
+        "facet.range.end", Instant.ofEpochMilli(maxPlusGap).toString(),   
+        "facet.range.gap", gap.toString(), 
+        "facet.range.method", "dv"),
+        testStrings);
+
+    assertFalse(h.getCore().getLatestSchema().getField(nonDocValuesField).hasDocValues());
+    assertTrue(h.getCore().getLatestSchema().getField(nonDocValuesField).getType() instanceof PointField);
+    minBucketVal = min;
+    for (int i = 0 ; i < numBuckets ; ++i) {
+      testStrings[i] = "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + nonDocValuesField
+          + "']/lst[@name='counts']/int[@name='" + Instant.ofEpochMilli(minBucketVal).toString() 
+          + "'][.='" + bucketCount[i] + "']";
+      minBucketVal = gap.addTo(minBucketVal);
+    }
+    maxPlusGap = gap.addTo(max);
+    // Range Faceting with method = filter should work
+    assertQ(req("q", "*:*", "facet", "true", "facet.range", nonDocValuesField, 
+        "facet.range.start", Instant.ofEpochMilli(min).toString(),
+        "facet.range.end", Instant.ofEpochMilli(maxPlusGap).toString(), 
+        "facet.range.gap", gap.toString(), 
+        "facet.range.method", "filter"),
+        testStrings);
+    // this should actually use filter method instead of dv
+    assertQ(req("q", "*:*", "facet", "true", "facet.range", nonDocValuesField, 
+        "facet.range.start", Instant.ofEpochMilli(min).toString(),
+        "facet.range.end", Instant.ofEpochMilli(maxPlusGap).toString(), 
+        "facet.range.gap", gap.toString(), 
+        "facet.range.method", "dv"),
+        testStrings);
+  }
+
+  @Test
+  public void testDatePointStats() throws Exception {
+    String[] randomSortedDates = toAscendingStringArray(getRandomInstants(10, false), true);
+    doTestDatePointStats("number_p_dt", "number_p_dt_dv", randomSortedDates);
+    doTestDatePointStats("number_p_dt_mv", "number_p_dt_mv_dv", randomSortedDates);
+  }
 
   @Test
   public void testDatePointFieldMultiValuedExactQuery() throws Exception {
@@ -577,73 +1885,145 @@ public class TestPointFields extends SolrTestCaseJ4 {
     doTestPointFieldMultiValuedExactQuery("number_p_dt_ni_mv", dates, false);
     doTestPointFieldMultiValuedExactQuery("number_p_dt_ni_ns_mv", dates, false);
   }
+  
+  @Test
+  public void testDatePointFieldMultiValuedReturn() throws Exception {
+    String[] dates = toStringArray(getRandomInstants(20, false));
+    doTestPointFieldMultiValuedReturn("number_p_dt_mv", "date", dates);
+    doTestPointFieldMultiValuedReturn("number_p_dt_ni_mv_dv", "date", dates);
+    doTestPointFieldMultiValuedReturn("number_p_dt_dv_ns_mv", "date", dates);
+  }
 
   @Test
-  public void testDatePointFieldMultiValuedRangeQuery() throws Exception {
+  public void testDatePointFieldMultiValuedFacetField() throws Exception {
+    doTestPointFieldMultiValuedFacetField("number_p_dt_mv", "number_p_dt_mv_dv", getSequentialStringArrayWithDates(20));
+    doTestPointFieldMultiValuedFacetField("number_p_dt_mv", "number_p_dt_mv_dv", toStringArray(getRandomInstants(20, false)));
+  }
+
+  @Test
+  public void testDatePointFieldMultiValuedRangeFacet() throws Exception {
+    String docValuesField = "number_p_dt_mv_dv";
+    SchemaField dvSchemaField = h.getCore().getLatestSchema().getField(docValuesField);
+    assertTrue(dvSchemaField.multiValued());
+    assertTrue(dvSchemaField.hasDocValues());
+    assertTrue(dvSchemaField.getType() instanceof PointField);
+    
+    String nonDocValuesField = "number_p_dt_mv";
+    SchemaField nonDvSchemaField = h.getCore().getLatestSchema().getField(nonDocValuesField);
+    assertTrue(nonDvSchemaField.multiValued());
+    assertFalse(nonDvSchemaField.hasDocValues());
+    assertTrue(nonDvSchemaField.getType() instanceof PointField);
+
+    int numValues = 20 * RANDOM_MULTIPLIER;
+    int numBuckets = numValues / 2;
+    List<Long> values;
+    List<PosVal<Long>> sortedValues;
+    long min, max;
+    do {
+      values = getRandomLongs(numValues, false, MAX_DATE_EPOCH_MILLIS);
+      sortedValues = toAscendingPosVals(values, true);
+      min = sortedValues.get(0).val;
+      max = sortedValues.get(sortedValues.size() - 1).val;
+    } while (max > MAX_DATE_EPOCH_MILLIS || min < MIN_DATE_EPOCH_MILLIS);
+    long initialGap = BigInteger.valueOf(max).subtract(BigInteger.valueOf(min))
+        .divide(BigInteger.valueOf(numBuckets)).longValueExact();
+    DateGapCeiling gap = new DateGapCeiling(BigInteger.valueOf(max + initialGap).subtract(BigInteger.valueOf(min)) // padding for rounding
+        .divide(BigInteger.valueOf(numBuckets)).longValueExact());
+    List<Set<Integer>> docIdBucket = new ArrayList<>(numBuckets);
+    for (int i = 0 ; i < numBuckets ; ++i) {
+      docIdBucket.add(new HashSet<>());
+    }
+    int bucketNum = 0;
+    long minBucketVal = min;
+    // System.err.println("min:" + Instant.ofEpochMilli(min) + "   max: " + Instant.ofEpochMilli(max) + "   gap: " + gap);
+    // System.err.println("bucketNum: " + bucketNum + "   minBucketVal: " + Instant.ofEpochMilli(minBucketVal));
+    for (PosVal<Long> value : sortedValues) {
+      // System.err.println("value: " + Instant.ofEpochMilli(value.val));
+      while (value.val >= gap.addTo(minBucketVal)) {
+        ++bucketNum;
+        minBucketVal = gap.addTo(minBucketVal);
+        // System.err.println("bucketNum: " + bucketNum + "   minBucketVal: " + Instant.ofEpochMilli(minBucketVal));
+      }
+      docIdBucket.get(bucketNum).add(value.pos / 2); // each doc gets two consecutive values 
+    }
+    for (int i = 0 ; i < numValues ; i += 2) {
+      assertU(adoc("id", String.valueOf(i / 2),
+          docValuesField, Instant.ofEpochMilli(values.get(i)).toString(),
+          docValuesField, Instant.ofEpochMilli(values.get(i + 1)).toString(),
+          nonDocValuesField, Instant.ofEpochMilli(values.get(i)).toString(),
+          nonDocValuesField, Instant.ofEpochMilli(values.get(i + 1)).toString()));
+    }
+    assertU(commit());
+
+    String minDate = Instant.ofEpochMilli(min).toString();
+    String maxDate = Instant.ofEpochMilli(max).toString();
+    String[] testStrings = new String[numBuckets + 1];
+    testStrings[numBuckets] = "//*[@numFound='" + (numValues / 2) + "']";
+    minBucketVal = min;
+    for (int i = 0 ; i < numBuckets ; minBucketVal = gap.addTo(minBucketVal), ++i) {
+      testStrings[i] = "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + docValuesField
+          + "']/lst[@name='counts']/int[@name='" + Instant.ofEpochMilli(minBucketVal) 
+          + "'][.='" + docIdBucket.get(i).size() + "']";
+    }
+
+    assertQ(req("q", "*:*", "facet", "true", "facet.range", docValuesField,
+        "facet.range.start", minDate, "facet.range.end", maxDate,
+        "facet.range.gap", gap.toString(), "indent", "on"),
+        testStrings);
+    assertQ(req("q", "*:*", "facet", "true", "facet.range", docValuesField,
+        "facet.range.start", minDate, "facet.range.end", maxDate,
+        "facet.range.gap", gap.toString(), "facet.range.method", "dv", "indent", "on"),
+        testStrings);
+
+    minBucketVal = min;
+    for (int i = 0 ; i < numBuckets ; minBucketVal = gap.addTo(minBucketVal), ++i) {
+      testStrings[i] = "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + nonDocValuesField
+          + "']/lst[@name='counts']/int[@name='" + Instant.ofEpochMilli(minBucketVal)
+          + "'][.='" + docIdBucket.get(i).size() + "']";
+    }
+    // Range Faceting with method = filter should work
+    assertQ(req("q", "*:*", "facet", "true", "facet.range", nonDocValuesField,
+        "facet.range.start", minDate, "facet.range.end", maxDate,
+        "facet.range.gap", gap.toString(), "facet.range.method", "filter", "indent", "on"),
+        testStrings);
+    // this should actually use filter method instead of dv
+    assertQ(req("q", "*:*", "facet", "true", "facet.range", nonDocValuesField,
+        "facet.range.start", minDate, "facet.range.end", maxDate,
+        "facet.range.gap", gap.toString(), "facet.range.method", "dv", "indent", "on"),
+        testStrings);
+  }
+
+  @Test
+  public void testDatePointMultiValuedFunctionQuery() throws Exception {
     String[] dates = toStringArray(getRandomInstants(20, false).stream().sorted().collect(Collectors.toList()));
-    doTestPointFieldMultiValuedRangeQuery("number_p_dt_mv", "date", dates);
-    doTestPointFieldMultiValuedRangeQuery("number_p_dt_ni_mv_dv", "date", dates);
+    doTestPointMultiValuedFunctionQuery("number_p_dt_mv", "number_p_dt_mv_dv", "date", dates);
+  }
+  
+  @Test
+  public void testDatePointFieldNotIndexed() throws Exception {
+    String[] dates = toStringArray(getRandomInstants(10, false));
+    doTestFieldNotIndexed("number_p_dt_ni", dates);
+    doTestFieldNotIndexed("number_p_dt_ni_mv", dates);
   }
 
-  @Test
-  public void testDatePointFieldsAtomicUpdates() throws Exception {
-    if (!Boolean.getBoolean("enable.update.log")) {
-      return;
+  public void testInternals() throws IOException {
+    String[] types = new String[]{"i", "l", "f", "d", "dt"};
+    String[][] values = new String[][] {
+        toStringArray(getRandomInts(10, false)),
+        toStringArray(getRandomLongs(10, false)),
+        toStringArray(getRandomFloats(10, false)),
+        toStringArray(getRandomDoubles(10, false)),
+        toStringArray(getRandomInstants(10, false))
+    };
+    assertEquals(types.length, values.length);
+    Set<String> typesTested = new HashSet<>();
+    for (int i = 0 ; i < types.length ; ++i) {
+      for (String suffix:FIELD_SUFFIXES) {
+        doTestInternals("number_p_" + types[i] + suffix, values[i]);
+        typesTested.add("*_p_" + types[i] + suffix);
+      }
     }
-    doTestDatePointFieldsAtomicUpdates("number_p_dt");
-    doTestDatePointFieldsAtomicUpdates("number_p_dt_dv");
-    doTestDatePointFieldsAtomicUpdates("number_p_dt_dv_ns");
-  }
-
-  @Test
-  public void testMultiValuedDatePointFieldsAtomicUpdates() throws Exception {
-    if (!Boolean.getBoolean("enable.update.log")) {
-      return;
-    }
-    List<String> datesList = getRandomLongs(3, false, MAX_DATE_EPOCH_MILLIS)
-        .stream().map(Instant::ofEpochMilli).map(Object::toString).collect(Collectors.toList());
-    String[] dates = datesList.toArray(new String[datesList.size()]);
-    doTestMultiValuedPointFieldsAtomicUpdates("number_p_dt_mv", "date", dates);
-    doTestMultiValuedPointFieldsAtomicUpdates("number_p_dt_ni_mv_dv", "date", dates);
-    doTestMultiValuedPointFieldsAtomicUpdates("number_p_dt_dv_ns_mv", "date", dates);
-  }
-
-  @Test
-  public void testDatePointSetQuery() throws Exception {
-    doTestSetQueries("number_p_dt", toStringArray(getRandomInstants(20, false)), false);
-    doTestSetQueries("number_p_dt_mv", toStringArray(getRandomInstants(20, false)), true);
-    doTestSetQueries("number_p_dt_ni_dv", toStringArray(getRandomInstants(20, false)), false);
-  }
-
-  @Test
-  public void testIndexOrDocValuesQuery() throws Exception {
-    String[] fieldTypeNames = new String[] { "_p_i", "_p_l", "_p_d", "_p_f", "_p_dt" };
-    FieldType[] fieldTypes = new FieldType[]
-        { new IntPointField(), new LongPointField(), new DoublePointField(), new FloatPointField(), new DatePointField() };
-    String[] ints = toStringArray(getRandomInts(2, false).stream().sorted().collect(Collectors.toList()));
-    String[] longs = toStringArray(getRandomLongs(2, false).stream().sorted().collect(Collectors.toList()));
-    String[] doubles = toStringArray(getRandomDoubles(2, false).stream().sorted().collect(Collectors.toList()));
-    String[] floats = toStringArray(getRandomFloats(2, false).stream().sorted().collect(Collectors.toList()));
-    String[] dates = toStringArray(getRandomInstants(2, false).stream().sorted().collect(Collectors.toList()));
-    String[] min = new String[] { ints[0], longs[0], doubles[0], floats[0], dates[0] };
-    String[] max = new String[] { ints[1], longs[1], doubles[1], floats[1], dates[1] };
-    assert fieldTypeNames.length == fieldTypes.length
-        && fieldTypeNames.length == max.length
-        && fieldTypeNames.length == min.length;
-    for (int i = 0; i < fieldTypeNames.length; i++) {
-      SchemaField fieldIndexed = h.getCore().getLatestSchema().getField("foo_" + fieldTypeNames[i]);
-      SchemaField fieldIndexedAndDv = h.getCore().getLatestSchema().getField("foo_" + fieldTypeNames[i] + "_dv");
-      SchemaField fieldIndexedMv = h.getCore().getLatestSchema().getField("foo_" + fieldTypeNames[i] + "_mv");
-      SchemaField fieldIndexedAndDvMv = h.getCore().getLatestSchema().getField("foo_" + fieldTypeNames[i] + "_mv_dv");
-      assertTrue(fieldTypes[i].getRangeQuery(null, fieldIndexed, min[i], max[i], true, true) instanceof PointRangeQuery);
-      assertTrue(fieldTypes[i].getRangeQuery(null, fieldIndexedAndDv, min[i], max[i], true, true) instanceof IndexOrDocValuesQuery);
-      assertTrue(fieldTypes[i].getRangeQuery(null, fieldIndexedMv, min[i], max[i], true, true) instanceof PointRangeQuery);
-      assertTrue(fieldTypes[i].getRangeQuery(null, fieldIndexedAndDvMv, min[i], max[i], true, true) instanceof IndexOrDocValuesQuery);
-      assertTrue(fieldTypes[i].getFieldQuery(null, fieldIndexed, min[i]) instanceof PointRangeQuery);
-      assertTrue(fieldTypes[i].getFieldQuery(null, fieldIndexedAndDv, min[i]) instanceof IndexOrDocValuesQuery);
-      assertTrue(fieldTypes[i].getFieldQuery(null, fieldIndexedMv, min[i]) instanceof PointRangeQuery);
-      assertTrue(fieldTypes[i].getFieldQuery(null, fieldIndexedAndDvMv, min[i]) instanceof IndexOrDocValuesQuery);
-    }
+    assertEquals("Missing types in the test", dynFieldRegexesForType(PointField.class), typesTested);
   }
   
   // Helper methods
@@ -2039,97 +3419,6 @@ public class TestPointFields extends SolrTestCaseJ4 {
     clearIndex();
     assertU(commit());
   }
-  
-  private void doTestDatePointFieldRangeQuery(String fieldName) throws Exception {
-    String baseDate = "1995-12-31T10:59:59Z";
-    for (int i = 9; i >= 0; i--) {
-      assertU(adoc("id", String.valueOf(i), fieldName, String.format(Locale.ROOT, "%s+%dHOURS", baseDate, i)));
-    }
-    assertU(commit());
-    assertQ(req("q", fieldName + ":" + String.format(Locale.ROOT, "[%s+0HOURS TO %s+3HOURS]", baseDate, baseDate),
-                "fl", "id, " + fieldName, "sort", "id asc"),
-        "//*[@numFound='4']",
-        "//result/doc[1]/date[@name='" + fieldName + "'][.='1995-12-31T10:59:59Z']",
-        "//result/doc[2]/date[@name='" + fieldName + "'][.='1995-12-31T11:59:59Z']",
-        "//result/doc[3]/date[@name='" + fieldName + "'][.='1995-12-31T12:59:59Z']",
-        "//result/doc[4]/date[@name='" + fieldName + "'][.='1995-12-31T13:59:59Z']");
-
-    assertQ(req("q", fieldName + ":" + String.format(Locale.ROOT, "{%s+0HOURS TO %s+3HOURS]", baseDate, baseDate),
-                "fl", "id, " + fieldName, "sort", "id asc"),
-        "//*[@numFound='3']",
-        "//result/doc[1]/date[@name='" + fieldName + "'][.='1995-12-31T11:59:59Z']",
-        "//result/doc[2]/date[@name='" + fieldName + "'][.='1995-12-31T12:59:59Z']",
-        "//result/doc[3]/date[@name='" + fieldName + "'][.='1995-12-31T13:59:59Z']");
-
-    assertQ(req("q", fieldName + ":"+ String.format(Locale.ROOT, "[%s+0HOURS TO %s+3HOURS}",baseDate,baseDate),
-                "fl", "id, " + fieldName, "sort", "id asc"),
-        "//*[@numFound='3']",
-        "//result/doc[1]/date[@name='" + fieldName + "'][.='1995-12-31T10:59:59Z']",
-        "//result/doc[2]/date[@name='" + fieldName + "'][.='1995-12-31T11:59:59Z']",
-        "//result/doc[3]/date[@name='" + fieldName + "'][.='1995-12-31T12:59:59Z']");
-
-    assertQ(req("q", fieldName + ":"+ String.format(Locale.ROOT, "{%s+0HOURS TO %s+3HOURS}",baseDate,baseDate),
-                "fl", "id, " + fieldName, "sort", "id asc"),
-        "//*[@numFound='2']",
-        "//result/doc[1]/date[@name='" + fieldName + "'][.='1995-12-31T11:59:59Z']",
-        "//result/doc[2]/date[@name='" + fieldName + "'][.='1995-12-31T12:59:59Z']");
-
-    assertQ(req("q", fieldName + ":" + String.format(Locale.ROOT, "{%s+0HOURS TO *}",baseDate),
-                "fl", "id, " + fieldName, "sort", "id asc"),
-        "//*[@numFound='9']",
-        "//result/doc[1]/date[@name='" + fieldName + "'][.='1995-12-31T11:59:59Z']");
-
-    assertQ(req("q", fieldName + ":" + String.format(Locale.ROOT, "{* TO %s+3HOURS}",baseDate),
-                "fl", "id, " + fieldName, "sort", "id asc"),
-        "//*[@numFound='3']",
-        "//result/doc[1]/date[@name='" + fieldName + "'][.='1995-12-31T10:59:59Z']");
-
-    assertQ(req("q", fieldName + ":" + String.format(Locale.ROOT, "[* TO %s+3HOURS}",baseDate),
-                "fl", "id, " + fieldName, "sort", "id asc"),
-        "//*[@numFound='3']",
-        "//result/doc[1]/date[@name='" + fieldName + "'][.='1995-12-31T10:59:59Z']");
-
-    assertQ(req("q", fieldName + ":[* TO *}", "fl", "id, " + fieldName, "sort", "id asc"),
-        "//*[@numFound='10']",
-        "//result/doc[1]/date[@name='" + fieldName + "'][.='1995-12-31T10:59:59Z']",
-        "//result/doc[10]/date[@name='" + fieldName + "'][.='1995-12-31T19:59:59Z']");
-
-    assertQ(req("q", fieldName + ":" + String.format(Locale.ROOT, "[%s+0HOURS TO %s+1HOURS]",baseDate,baseDate)
-                + " OR " + fieldName + ":" + String.format(Locale.ROOT, "[%s+8HOURS TO %s+9HOURS]",baseDate,baseDate) ,
-                "fl", "id, " + fieldName, "sort", "id asc"),
-        "//*[@numFound='4']",
-        "//result/doc[1]/date[@name='" + fieldName + "'][.='1995-12-31T10:59:59Z']",
-        "//result/doc[2]/date[@name='" + fieldName + "'][.='1995-12-31T11:59:59Z']",
-        "//result/doc[3]/date[@name='" + fieldName + "'][.='1995-12-31T18:59:59Z']",
-        "//result/doc[4]/date[@name='" + fieldName + "'][.='1995-12-31T19:59:59Z']");
-
-    assertQ(req("q", fieldName + ":"+String.format(Locale.ROOT, "[%s+0HOURS TO %s+1HOURS]",baseDate,baseDate)
-            +" AND " + fieldName + ":"+String.format(Locale.ROOT, "[%s+1HOURS TO %s+2HOURS]",baseDate,baseDate) , "fl", "id, " + fieldName),
-        "//*[@numFound='1']",
-        "//result/doc[1]/date[@name='" + fieldName + "'][.='1995-12-31T11:59:59Z']");
-
-    assertQ(req("q", fieldName + ":"+String.format(Locale.ROOT, "[%s+0HOURS TO %s+1HOURS]",baseDate,baseDate)
-            +" AND NOT " + fieldName + ":"+String.format(Locale.ROOT, "[%s+1HOURS TO %s+2HOURS]",baseDate,baseDate) , "fl", "id, " + fieldName),
-        "//*[@numFound='1']",
-        "//result/doc[1]/date[@name='" + fieldName + "'][.='1995-12-31T10:59:59Z']");
-
-    clearIndex();
-    assertU(commit());
-    
-    String[] arr = toAscendingStringArray(getRandomInstants(100, false), true);
-    for (int i = 0 ; i < arr.length ; ++i) {
-      assertU(adoc("id", String.valueOf(i), fieldName, arr[i]));
-    }
-    assertU(commit());
-    for (int i = 0 ; i < arr.length ; ++i) {
-      assertQ(req("q", fieldName + ":[" + arr[0] + " TO " + arr[i] + "]", "fl", "id," + fieldName),
-          "//*[@numFound='" + (i + 1) + "']");
-      assertQ(req("q", fieldName + ":{" + arr[0] + " TO " + arr[i] + "}", "fl", "id, " + fieldName),
-          "//*[@numFound='" + (Math.max(0,  i-1)) + "']");
-      assertQ(req("q", fieldName + ":[" + arr[0] + " TO " + arr[i] + "] AND " + fieldName + ":\"" + arr[0] + "\"", "fl", "id, " + fieldName),
-          "//*[@numFound='1']");
-    }
-  }
 
   private void doTestDatePointFunctionQuery(String field) {
     // This method is intentionally not randomized, because sorting by function happens
@@ -2273,6 +3562,38 @@ public class TestPointFields extends SolrTestCaseJ4 {
     });
     clearIndex();
     assertU(commit());
+  }
+
+  public void testNonReturnable() throws Exception {
+    String[] ints = toStringArray(getRandomInts(2, false));
+    doTestReturnNonStored("foo_p_i_ni_ns", false, ints[0]);
+    doTestReturnNonStored("foo_p_i_ni_dv_ns", true, ints[0]);
+    doTestReturnNonStored("foo_p_i_ni_ns_mv", false, ints);
+    doTestReturnNonStored("foo_p_i_ni_dv_ns_mv", true, ints);
+
+    String[] longs = toStringArray(getRandomLongs(2, false));
+    doTestReturnNonStored("foo_p_l_ni_ns", false, longs[0]);
+    doTestReturnNonStored("foo_p_l_ni_dv_ns", true, longs[0]);
+    doTestReturnNonStored("foo_p_l_ni_ns_mv", false, longs);
+    doTestReturnNonStored("foo_p_l_ni_dv_ns_mv", true, longs);
+
+    String[] floats = toStringArray(getRandomFloats(2, false));
+    doTestReturnNonStored("foo_p_f_ni_ns", false, floats[0]);
+    doTestReturnNonStored("foo_p_f_ni_dv_ns", true, floats[0]);
+    doTestReturnNonStored("foo_p_f_ni_ns_mv", false, floats);
+    doTestReturnNonStored("foo_p_f_ni_dv_ns_mv", true, floats);
+    
+    String[] doubles = toStringArray(getRandomDoubles(2, false));
+    doTestReturnNonStored("foo_p_d_ni_ns", false, doubles[0]);
+    doTestReturnNonStored("foo_p_d_ni_dv_ns", true, doubles[0]);
+    doTestReturnNonStored("foo_p_d_ni_ns_mv", false, doubles);
+    doTestReturnNonStored("foo_p_d_ni_dv_ns_mv", true, doubles);
+
+    String[] dates = new String[] { getRandomDateMaybeWithMath(), getRandomDateMaybeWithMath() };
+    doTestReturnNonStored("foo_p_dt_ni_ns", false, dates[0]);
+    doTestReturnNonStored("foo_p_dt_ni_dv_ns", true, dates[0]);
+    doTestReturnNonStored("foo_p_dt_ni_ns_mv", false, dates);
+    doTestReturnNonStored("foo_p_dt_ni_dv_ns_mv", true, dates);
   }
 
   public void doTestReturnNonStored(final String fieldName, boolean shouldReturnFieldIfRequested, final String... values) throws Exception {

@@ -1061,6 +1061,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
   }
 
   @Test
+  @Nightly
   public void testStatsDistrib() throws Exception {
     initServers();
     Client client = servers.getClient(random().nextInt());
@@ -2533,6 +2534,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     }
   }
 
+  @Nightly
   public void testPrelimSortingSingleNode() throws Exception {
     doTestPrelimSortingSingleNode(false, false);
   }
@@ -2570,11 +2572,13 @@ public class TestJsonFacets extends SolrTestCaseHS {
   public void testPrelimSortingDistribExtraStat() throws Exception {
     doTestPrelimSortingDistrib(true, false);
   }
-  
+
+  @Nightly
   public void testPrelimSortingDistribExtraFacet() throws Exception {
     doTestPrelimSortingDistrib(false, true);
   }
-  
+
+  @Nightly
   public void testPrelimSortingDistribExtraStatAndFacet() throws Exception {
     doTestPrelimSortingDistrib(true, true);
   }
@@ -2917,6 +2921,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
   
   @Test
+  @Nightly
   public void testOverrequest() throws Exception {
     initServers();
     Client client = servers.getClient(random().nextInt());
@@ -3061,6 +3066,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     }
   }
 
+  @Nightly
   public void testTolerant() throws Exception {
     initServers();
     Client client = servers.getClient(random().nextInt());
