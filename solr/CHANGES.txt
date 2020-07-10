@@ -31,6 +31,8 @@ Optimizations
 
 * SOLR-14610: ReflectMapWriter to use MethodHandle instead of old reflection (noble)
 
+* SOLR-13132: JSON Facet perf improvements to support "sweeping" collection of "relatedness()"
+  (hossman, Michael Gibney)
 
 Bug Fixes
 ---------------------

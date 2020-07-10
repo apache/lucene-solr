@@ -919,6 +919,10 @@ NOTE: While it's very common to define the Background Set as `\*:*`, or some oth
 
 When using the extended `type:func` syntax for specifying a `relatedness()` aggregation, an optional `min_popularity` (float) option can be used to specify a lower bound on the `foreground_popularity` and `background_popularity` values, that must be met in order for the `relatedness` score to be valid -- If this `min_popularity` is not met, then the `relatedness` score will be `-Infinity`.
 
+The default implementation for calculating `relatedness()` domain correlation depends on the type of facet being calculated. Generic domain correlation is calculated per-term, by selectively retrieving a DocSet for each bucket-associated query (consulting the `filterCache`) and calculating DocSet intersections with "foreground" and "background" sets. For term facets (especially over high-cardinality fields) this approach can lead to `filterCache` thrashing; accordingly, `relatedness()` over term facets defaults where possible to an approach that collects facet counts directly over all multiple domains in a single sweep (never touching the `filterCache`). It is possible to explicitly control this "single sweep" collection by setting the extended `type:func` syntax `sweep_collection` option to `true` (the default) or `false` (to disable sweep collection).
+
+NOTE: Disabling sweep collection for `relatedness()` stats over low-cardinality fields may yield a performance benefit, provided the `filterCache` is sufficiently large to accommodate an entry for each value in the associated field without inducing thrashing for anticipated use patterns. A reasonable heuristic is that fields of cardinality less than 1,000 _may_ benefit from disabling sweep. This heuristic is _not_ used to determine default behavior, particularly because non-sweep collection can so easily induce `filterCache` thrashing, with system-wide detrimental effects.
+
 [source,json]
 ----
 { "type": "func",
