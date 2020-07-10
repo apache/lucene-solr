@@ -648,16 +648,27 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   }
 
   private MergeIterator getMergeIterator(List<LeafReaderContext> leafs, FixedBitSet[] bits, SortDoc sortDoc) {
-    
-    int sortQueueSize = Math.min(100000/bits.length, 30000);
+
+    long totalDocs = 0;
+    for(int i=0; i< leafs.size(); i++) {
+      totalDocs += leafs.get(i).reader().maxDoc();
+    }
+
+    int[] sizes = new int[leafs.size()];
+    for(int i=0; i< leafs.size(); i++) {
+      long maxDoc = leafs.get(i).reader().maxDoc();
+      int sortQueueSize = Math.min((int)((maxDoc/totalDocs) * 100000), 30000);
+      sizes[i] = sortQueueSize;
+    }
+
     SegmentIterator[] segmentIterators = new SegmentIterator[bits.length];
     for(int i=0; i<segmentIterators.length; i++) {
-      SortQueue sortQueue = new SortQueue(sortQueueSize, sortDoc);
+      SortQueue sortQueue = new SortQueue(sizes[i], sortDoc);
       segmentIterators[i] = new SegmentIterator(bits[i], leafs.get(i), sortQueue, sortDoc);
     }
+
     return new MergeIterator(segmentIterators);
   }
-
 
   private static class SegmentIterator {
 
