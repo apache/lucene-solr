@@ -61,8 +61,8 @@ interface SweepCountAware {
    * union of doc domains:
    * 
    * First, the driver passes this object as the param to {@link SweepCountAware#registerCounts(SegCounter)}, which
-   * calls {@link #map(int, int)} on "this" to map the static "allIdx" (allIdx < n) for each active backing domain to
-   * a transient "activeIdx" for counts corresponding to active domains (activeIdx < count(allIdx) <= n). (The return value
+   * calls {@link #map(int, int)} on "this" to map the static "allIdx" (allIdx &lt; n) for each active backing domain to
+   * a transient "activeIdx" for counts corresponding to active domains (activeIdx &lt; count(allIdx) &lt;= n). (The return value
    * of {@link SweepCountAware#registerCounts(SegCounter)} indicates to the "driver" the max "active counts" index (for
    * domains that contain the current doc).
    * 
