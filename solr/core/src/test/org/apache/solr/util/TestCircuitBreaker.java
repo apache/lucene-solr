@@ -130,7 +130,8 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
           } catch (SolrException e) {
             if (!e.getMessage().startsWith("Circuit Breakers tripped")) {
               if (log.isInfoEnabled()) {
-                log.info("Expected error message for testBuildingMemoryPressure was not received. Error message " + e.getMessage());
+                String logMessage = "Expected error message for testBuildingMemoryPressure was not received. Error message " + e.getMessage();
+                log.info(logMessage);
               }
               throw new RuntimeException("Expected error message was not received. Error message " + e.getMessage());
             }
@@ -225,14 +226,16 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
       if (localCount >= 4) {
         //TODO: To be removed
         if (log.isInfoEnabled()) {
-          System.out.println("Blocking query from BuildingUpMemoryPressureCircuitBreaker for count " + localCount);
+          String logMessage = "Blocking query from BuildingUpMemoryPressureCircuitBreaker for count " + localCount;
+          log.info(logMessage);
         }
         return Long.MAX_VALUE;
       }
 
       //TODO: To be removed
       if (log.isInfoEnabled()) {
-        log.info("BuildingUpMemoryPressureCircuitBreaker: Returning unblocking value for count " + localCount);
+        String logMessage = "BuildingUpMemoryPressureCircuitBreaker: Returning unblocking value for count " + localCount;
+        log.info(logMessage);
       }
       return Long.MIN_VALUE; // Random number guaranteed to not trip the circuit breaker
     }
