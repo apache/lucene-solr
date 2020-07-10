@@ -30,6 +30,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.junit.BeforeClass;
 
+/**
+ * This test is currently flawed because it only ensures the 'test-*' threads don't exit before the asserts,
+ * it doesn't adequately ensure they 'start' before the asserts.
+ * Fixing the ownershipt should be possible using latches, but fixing the '*-blocked' threads may not be possible
+ * w/o polling
+ */
+@SolrTestCaseJ4.AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-14635")
 public class ThreadDumpHandlerTest extends SolrTestCaseJ4 {
    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
  
@@ -39,7 +46,6 @@ public class ThreadDumpHandlerTest extends SolrTestCaseJ4 {
     initCore("solrconfig.xml", "schema.xml");
   }
 
-  
   public void testMonitor() throws Exception {
     assumeTrue("monitor checking not supported on this JVM",
                ManagementFactory.getThreadMXBean().isObjectMonitorUsageSupported());
