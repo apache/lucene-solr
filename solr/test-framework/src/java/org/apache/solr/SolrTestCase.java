@@ -152,6 +152,7 @@ public class SolrTestCase extends LuceneTestCase {
       System.setProperty("urlScheme", "http");
     }
 
+    System.setProperty("zookeeper.request.timeout", "100");
     System.setProperty("solr.zkclienttimeout", "30000");
     System.setProperty("solr.v2RealPath", "true");
     System.setProperty("zookeeper.forceSync", "no");

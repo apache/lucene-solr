@@ -53,6 +53,7 @@ public class SolrZooKeeper extends ZooKeeper {
   public SolrZooKeeper(String connectString, int sessionTimeout,
       Watcher watcher) throws IOException {
     super(connectString, sessionTimeout, watcher);
+
     //clients.put(this, new RuntimeException());
   }
   
@@ -78,6 +79,7 @@ public class SolrZooKeeper extends ZooKeeper {
       @SuppressForbidden(reason = "Hack for Zookeper needs access to private methods.")
       private Void closeZookeeperChannel() {
         final ClientCnxn cnxn = getConnection();
+
         synchronized (cnxn) {
           try {
             final Field sendThreadFld = cnxn.getClass().getDeclaredField("sendThread");

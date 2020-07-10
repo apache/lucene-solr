@@ -69,13 +69,13 @@ public class ActionThrottleTest extends SolrTestCaseJ4 {
   @Test
   public void testBasics() throws Exception {
 
-    ActionThrottle at = new ActionThrottle("test", 500);
+    ActionThrottle at = new ActionThrottle("test", 100);
     long start = timeSource.getTimeNs();
 
     at.minimumWaitBetweenActions();
 
     // should be no wait
-    assertTrue(TimeUnit.MILLISECONDS.convert(timeSource.getTimeNs() - start, TimeUnit.NANOSECONDS) < 1000);
+    assertTrue(TimeUnit.MILLISECONDS.convert(timeSource.getTimeNs() - start, TimeUnit.NANOSECONDS) < 100);
     at.markAttemptingAction();
 
     if (random().nextBoolean()) Thread.sleep(100);
@@ -84,18 +84,18 @@ public class ActionThrottleTest extends SolrTestCaseJ4 {
 
     long elaspsedTime = TimeUnit.MILLISECONDS.convert(timeSource.getTimeNs() - start, TimeUnit.NANOSECONDS);
 
-    assertTrue(elaspsedTime + "ms", elaspsedTime >= 495);
+    assertTrue(elaspsedTime + "ms", elaspsedTime >= 95);
 
     start = timeSource.getTimeNs();
 
     at.markAttemptingAction();
     at.minimumWaitBetweenActions();
 
-    Thread.sleep(random().nextInt(500));
+    Thread.sleep(random().nextInt(100));
 
     elaspsedTime = TimeUnit.MILLISECONDS.convert(timeSource.getTimeNs() - start, TimeUnit.NANOSECONDS);
 
-    assertTrue(elaspsedTime + "ms", elaspsedTime >= 495);
+    assertTrue(elaspsedTime + "ms", elaspsedTime >= 95);
   }
   
   @Test
