@@ -127,7 +127,7 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
   
   public void testRandomCollpaseWithSort() throws Exception {
     
-    final int numMainQueriesPerCollapseField = atLeast(TEST_NIGHTLY ? 5 : 3);
+    final int numMainQueriesPerCollapseField = atLeast(TEST_NIGHTLY ? 5 : 2);
     
     for (String collapseField : ALL_COLLAPSE_FIELD_NAMES) {
       for (int i = 0; i < numMainQueriesPerCollapseField; i++) {
@@ -140,7 +140,7 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
         final SolrParams mainP = params("q", q, "fl", "id,"+collapseField);
 
         final String csize = random().nextBoolean() ?
-          "" : " size=" + TestUtil.nextInt(random(),1,TEST_NIGHTLY ? 10000 : 1000);
+          "" : " size=" + TestUtil.nextInt(random(),1,TEST_NIGHTLY ? 10000 : 10);
 
         final String nullPolicy = randomNullPolicy();
         final String nullPs = NULL_IGNORE.equals(nullPolicy)

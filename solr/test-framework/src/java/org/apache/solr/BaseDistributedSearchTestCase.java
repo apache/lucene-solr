@@ -98,15 +98,6 @@ import junit.framework.Assert;
  */
 public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   
-  protected ExecutorService executor = new ExecutorUtil.MDCAwareThreadPoolExecutor(
-      4,
-      Integer.MAX_VALUE,
-      15, TimeUnit.SECONDS, // terminate idle threads after 15 sec
-      new SynchronousQueue<>(),  // directly hand off tasks
-      new SolrNamedThreadFactory("BaseDistributedSearchTestCase"),
-      false
-  );
-  
   // TODO: this shouldn't be static. get the random when you need it to avoid sharing.
   public static Random r;
   
@@ -337,7 +328,6 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
   private volatile boolean distribTearDownCalled = false;
   public void distribTearDown() throws Exception {
-    ExecutorUtil.shutdownAndAwaitTermination(executor);
     distribTearDownCalled = true;
   }
 
@@ -417,10 +407,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 //    if (destroyServersCalled) throw new RuntimeException("destroyServers already called");
 //    destroyServersCalled = true;
     try (ParWork closer = new ParWork(this, true)) {
-
-      closer.add("clients", controlClient, clients);
-
-      closer.add("jetties", jettys, controlJetty);
+      closer.add("jetties&clients", controlClient, clients, jettys, controlJetty);
     }
     
     clients.clear();

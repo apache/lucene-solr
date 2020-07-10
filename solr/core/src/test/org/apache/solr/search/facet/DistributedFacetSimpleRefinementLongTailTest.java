@@ -122,7 +122,7 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
     }
 
     // really long tail uncommon foo_s terms on shard2
-    for (int i = 0; i < 30; i++) {
+    for (int i = 0; i < (TEST_NIGHTLY ? 30 : 10); i++) {
       // NOTE: using "Z" here so these sort before bbb0 when they tie for '1' instance each on shard2
       shard2.add(sdoc("id", docNum.incrementAndGet(), "foo_s", "ZZZ"+i));
     }

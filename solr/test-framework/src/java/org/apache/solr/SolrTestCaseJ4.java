@@ -250,7 +250,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     resetExceptionIgnores();
     
     testExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(0, Integer.MAX_VALUE,
-        15L, TimeUnit.SECONDS,
+        5L, TimeUnit.SECONDS,
         new SynchronousQueue<>(),
         new SolrNamedThreadFactory("testExecutor"),
         true);

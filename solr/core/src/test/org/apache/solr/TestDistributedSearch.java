@@ -1183,7 +1183,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     if (stress > 0) {
       log.info("starting stress...");
       Set<Future<Object>> pending = new HashSet<>();;
-      ExecutorCompletionService<Object> cs = new ExecutorCompletionService<>(executor);
+      ExecutorCompletionService<Object> cs = new ExecutorCompletionService<>(testExecutor);
       Callable[] threads = new Callable[nThreads];
       for (int i = 0; i < threads.length; i++) {
         threads[i] = new Callable() {

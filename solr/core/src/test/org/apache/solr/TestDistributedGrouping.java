@@ -146,7 +146,7 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
         oddField, "odd eggs"
     );
 
-    for (int i = 100; i < (TEST_NIGHTLY ? 150 : 25); i++) {
+    for (int i = 100; i < (TEST_NIGHTLY ? 150 : 5); i++) {
       indexr(id, i);
     }
 
