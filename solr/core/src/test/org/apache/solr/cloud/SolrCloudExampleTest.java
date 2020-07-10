@@ -60,13 +60,14 @@ import static org.apache.solr.common.util.Utils.getObjectByPath;
  * use data driven functionality and managed schema features of the default configset
  * (configsets/_default).
  */
-public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
+public class SolrCloudExampleTest extends SolrCloudBridgeTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public SolrCloudExampleTest() {
     super();
     sliceCount = 2;
+    numJettys = 2;
   }
 
   @BeforeClass
@@ -156,11 +157,11 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     int numFound = 0;
 
     // give the update a chance to take effect.
-    for (int idx = 0; idx < 100; ++idx) {
+    for (int idx = 0; idx < 20; ++idx) {
       QueryResponse qr = cloudClient.query(new SolrQuery("*:*"));
       numFound = (int) qr.getResults().getNumFound();
       if (numFound == expectedXmlDocCount) break;
-      Thread.sleep(100);
+      Thread.sleep(50);
     }
     assertEquals("*:* found unexpected number of documents", expectedXmlDocCount, numFound);
 
@@ -250,7 +251,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     // all the cores have been done.
     boolean allGood = false;
     Map<String, Long> curSoftCommitInterval = null;
-    for (int idx = 0; idx < 600 && allGood == false; ++idx) {
+    for (int idx = 0; idx < 300 && allGood == false; ++idx) {
       curSoftCommitInterval = getSoftAutocommitInterval(testCollectionName);
       if (curSoftCommitInterval.size() > 0 && curSoftCommitInterval.size() == startTimes.size()) { // no point in even trying if they're not the same size!
         allGood = true;
@@ -261,7 +262,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
         }
       }
       if (allGood == false) {
-        Thread.sleep(100);
+        Thread.sleep(50);
       }
     }
     assertTrue("All cores should have been reloaded within 60 seconds!!!", allGood);

@@ -173,7 +173,7 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
     int i = 0;
     try {
       Set<String> names = new HashSet<>();
-      for (; i< (TEST_NIGHTLY ? 10 : 3); i++) {
+      for (; i< (TEST_NIGHTLY ? 10 : 1); i++) {
         Directory fsDir = new ByteBuffersDirectory();
         String name = getName();
         System.out.println("Working on pass [" + i  +"] contains [" + names.contains(name) + "]");
@@ -189,7 +189,7 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
   }
 
   private void assertInputsEquals(String name, Directory fsDir, HdfsDirectory hdfs) throws IOException {
-    int reads = random.nextInt(MAX_NUMBER_OF_READS);
+    int reads = random.nextInt(TEST_NIGHTLY ? MAX_NUMBER_OF_READS : 5000);
     IndexInput fsInput = fsDir.openInput(name,new IOContext());
     IndexInput hdfsInput = hdfs.openInput(name,new IOContext());
     assertEquals(fsInput.length(), hdfsInput.length());
