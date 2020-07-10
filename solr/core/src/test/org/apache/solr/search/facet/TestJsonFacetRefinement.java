@@ -1019,6 +1019,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
 
   
   @Test
+  @Nightly
   public void testBasicRefinement() throws Exception {
     ModifiableSolrParams p;
     p = params("cat_s", "cat_s", "cat_i", "cat_i", "date","cat_dt", "xy_s", "xy_s", "num_d", "num_d", "qw_s", "qw_s", "er_s", "er_s");

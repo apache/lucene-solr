@@ -43,7 +43,7 @@ public class BlockCacheTest extends SolrTestCase {
 
   @Test
   public void testBlockCache() {
-    int blocksInTest = 2000000;
+    int blocksInTest = TEST_NIGHTLY ? 2000000 : 20000;
     int blockSize = 1024;
 
     int slabSize = blockSize * 4096;
@@ -57,7 +57,7 @@ public class BlockCacheTest extends SolrTestCase {
     AtomicLong missesInCache = new AtomicLong();
     long storeTime = 0;
     long fetchTime = 0;
-    int passes = 10000;
+    int passes = TEST_NIGHTLY ?  10000 : 10;
 
     BlockCacheKey blockCacheKey = new BlockCacheKey();
 
@@ -112,7 +112,7 @@ public class BlockCacheTest extends SolrTestCase {
   public void testBlockCacheConcurrent() throws Exception {
     Random rnd = random();
 
-    final int blocksInTest = 400;  // pick something bigger than 256, since that would lead to a slab size of 64 blocks and the bitset locks would consist of a single word.
+    final int blocksInTest = TEST_NIGHTLY ? 400 : 40;  // pick something bigger than 256, since that would lead to a slab size of 64 blocks and the bitset locks would consist of a single word.
     final int blockSize = 64;
     final int slabSize = blocksInTest * blockSize / 4;
     final long totalMemory = 2 * slabSize;  // 2 slabs of memory, so only half of what is needed for all blocks
@@ -124,7 +124,7 @@ public class BlockCacheTest extends SolrTestCase {
      final long totalMemory = 2 * slabSize;  // 2 slabs of memory, so only half of what is needed for all blocks
      ***/
 
-    final int nThreads = 64;
+    final int nThreads = TEST_NIGHTLY ? Runtime.getRuntime().availableProcessors() : 5;
     final int nReads = 1000000;
     final int readsPerThread = nReads / nThreads;
     final int readLastBlockOdds = 10; // odds (1 in N) of the next block operation being on the same block as the previous operation... helps flush concurrency issues

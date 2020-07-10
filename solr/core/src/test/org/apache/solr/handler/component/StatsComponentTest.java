@@ -78,6 +78,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     assertU(commit());
   }
 
+  @Nightly
   public void testStats() throws Exception {
     for (String f : new String[] {
             "stats_i","stats_l","stats_f","stats_d",
@@ -1328,7 +1329,8 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
       ALL.put(stat, new ExpectedStat(stat, input, perShardXpaths, finalXpaths));
     }
   }
-  
+
+  @Nightly
   public void testIndividualStatLocalParams() throws Exception {
     final String kpre = ExpectedStat.KPRE;
     
