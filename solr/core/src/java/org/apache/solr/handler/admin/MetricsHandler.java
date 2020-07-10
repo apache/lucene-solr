@@ -360,6 +360,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       return new MetricFilter() {
         @Override
         public boolean matches(String name, Metric metric) {
+          if (metric == null && klass != null) return false;
           return klass == null || klass.isInstance(metric);
         }
       };
