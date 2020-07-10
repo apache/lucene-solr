@@ -196,7 +196,7 @@ public class SolrTestCase extends LuceneTestCase {
       System.setProperty("lucene.cms.override_core_count", "2");
       System.setProperty("lucene.cms.override_spins", "false");
 
-      System.setProperty("solr.maxContainerThreads", "10000");
+      System.setProperty("solr.maxContainerThreads", "300");
       System.setProperty("solr.lowContainerThreadsThreshold", "-1");
       System.setProperty("solr.minContainerThreads", "20");
 
