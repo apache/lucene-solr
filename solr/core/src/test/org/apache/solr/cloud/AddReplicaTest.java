@@ -193,11 +193,10 @@ public class AddReplicaTest extends SolrCloudTestCase {
         break;
       }
       assertNotSame(rsp.toString(), rsp.getRequestStatus(), RequestStatusState.FAILED);
-      Thread.sleep(500);
+      Thread.sleep(100);
     }
     assertTrue(success);
     // let the client watch fire
-    Thread.sleep(1000);
     clusterState = cloudClient.getZkStateReader().getClusterState();
     coll = clusterState.getCollection(collection);
     Collection<Replica> replicas3 = coll.getSlice(sliceName).getReplicas();

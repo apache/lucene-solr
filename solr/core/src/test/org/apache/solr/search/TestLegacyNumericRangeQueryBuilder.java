@@ -20,11 +20,11 @@ import org.apache.lucene.search.Query;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.legacy.LegacyNumericRangeQuery;
 import org.apache.lucene.queryparser.xml.ParserException;
+import org.apache.solr.rest.schema.FieldTypeXmlAdapter;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
 import java.io.ByteArrayInputStream;
@@ -168,9 +168,7 @@ public class TestLegacyNumericRangeQueryBuilder extends SolrTestCase {
   private static Document getDocumentFromString(String str)
       throws SAXException, IOException, ParserConfigurationException {
     InputStream is = new ByteArrayInputStream(str.getBytes(StandardCharsets.UTF_8));
-    DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-    factory.setNamespaceAware(true);
-    DocumentBuilder builder = factory.newDocumentBuilder();
+    DocumentBuilder builder = FieldTypeXmlAdapter.docBuilder;
     Document doc = builder.parse(is);
     is.close();
     return doc;

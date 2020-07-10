@@ -104,7 +104,7 @@ public class TestSimDistributedQueue extends SolrTestCaseJ4 {
     assertEquals(testData, future.get(1000, TimeUnit.MILLISECONDS));
     assertNotNull(dq.poll());
 
-    assertNull(dq.peek(100));
+    assertNull(dq.peek(10));
 
     // Rerun the earlier test make sure updates are still seen, post reconnection.
     future = executor.submit(() -> new String(dq.peek(15000), UTF8));

@@ -33,7 +33,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -63,9 +62,9 @@ public class ParWork implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected final static ThreadLocal<ExecutorService> THREAD_LOCAL_EXECUTOR = new ThreadLocal<>();
-  public static final int MAXIMUM_POOL_SIZE = (int) Math.max(2, Math.round(Runtime.getRuntime().availableProcessors() / 3.0d));
-  public static final long KEEP_ALIVE_TIME = 15L;
-  public static final int CAPACITY = 15;
+  public static final int MAXIMUM_POOL_SIZE = (int) Math.max(2, Math.round(Runtime.getRuntime().availableProcessors() / 2.0d));
+  public static final long KEEP_ALIVE_TIME = 2L;
+  public static final int CAPACITY = 60;
 
   private Set<Object> collectSet = null;
 

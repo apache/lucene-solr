@@ -63,6 +63,9 @@ dependencies {
 
   implementation 'net.sf.saxon:Saxon-HE'
 
+  implementation 'xerces:xercesImpl'
+
+
   implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-smile'
 
   implementation('com.github.ben-manes.caffeine:caffeine', {

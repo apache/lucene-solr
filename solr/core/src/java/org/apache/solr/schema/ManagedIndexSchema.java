@@ -53,6 +53,7 @@ import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
@@ -1309,35 +1310,46 @@ public final class ManagedIndexSchema extends IndexSchema {
    * are loaded (as they depend on this callback to complete initialization work)
    */
   protected void informResourceLoaderAwareObjectsInChain(TokenizerChain chain) {
-    CharFilterFactory[] charFilters = chain.getCharFilterFactories();
-    for (CharFilterFactory next : charFilters) {
-      if (next instanceof ResourceLoaderAware) {
-        try {
-          ((ResourceLoaderAware) next).inform(loader);
-        } catch (IOException e) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, e);
-        }
-        }
-    }
+    try (ParWork worker = new ParWork(this)) {
 
-    TokenizerFactory tokenizerFactory = chain.getTokenizerFactory();
-    if (tokenizerFactory instanceof ResourceLoaderAware) {
-      try {
-        ((ResourceLoaderAware) tokenizerFactory).inform(loader);
-      } catch (IOException e) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, e);
-      }
-    }
-
-    TokenFilterFactory[] filters = chain.getTokenFilterFactories();
-    for (TokenFilterFactory next : filters) {
-      if (next instanceof ResourceLoaderAware) {
-        try {
-          ((ResourceLoaderAware) next).inform(loader);
-        } catch (IOException e) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, e);
+      CharFilterFactory[] charFilters = chain.getCharFilterFactories();
+      for (CharFilterFactory next : charFilters) {
+        if (next instanceof ResourceLoaderAware) {
+          worker.collect(()->{
+            try {
+              ((ResourceLoaderAware) next).inform(loader);
+            } catch (IOException e) {
+              throw new SolrException(ErrorCode.SERVER_ERROR, e);
+            }
+          });
         }
       }
+
+      TokenizerFactory tokenizerFactory = chain.getTokenizerFactory();
+      if (tokenizerFactory instanceof ResourceLoaderAware) {
+        worker.collect(()->{
+          try {
+            ((ResourceLoaderAware) tokenizerFactory).inform(loader);
+          } catch (IOException e) {
+            throw new SolrException(ErrorCode.SERVER_ERROR, e);
+          }
+        });
+
+      }
+
+      TokenFilterFactory[] filters = chain.getTokenFilterFactories();
+      for (TokenFilterFactory next : filters) {
+        if (next instanceof ResourceLoaderAware) {
+          worker.collect(()->{
+            try {
+              ((ResourceLoaderAware) next).inform(loader);
+            } catch (IOException e) {
+              throw new SolrException(ErrorCode.SERVER_ERROR, e);
+            }
+          });
+        }
+      }
+      worker.addCollect("managedSchemaInform");
     }
   }
   

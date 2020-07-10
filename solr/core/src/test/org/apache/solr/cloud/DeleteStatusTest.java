@@ -30,7 +30,7 @@ import org.junit.Test;
 
 public class DeleteStatusTest extends SolrCloudTestCase {
 
-  public static final int MAX_WAIT_TIMEOUT = 30;
+  public static final int MAX_WAIT_TIMEOUT = 10;
 
   @BeforeClass
   public static void createCluster() throws Exception {
@@ -49,7 +49,7 @@ public class DeleteStatusTest extends SolrCloudTestCase {
       if (state == RequestStatusState.COMPLETED)
         break;
       assumeTrue("Error creating collection - skipping test", state != RequestStatusState.FAILED);
-      TimeUnit.SECONDS.sleep(1);
+      TimeUnit.MILLISECONDS.sleep(100);
     }
     assumeTrue("Timed out creating collection - skipping test", state == RequestStatusState.COMPLETED);
     return state;

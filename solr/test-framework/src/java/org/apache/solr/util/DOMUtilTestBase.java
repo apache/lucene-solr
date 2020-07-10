@@ -19,13 +19,13 @@ package org.apache.solr.util;
 
 import java.io.StringReader;
 import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
 
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.core.XmlConfigFile;
+import org.apache.solr.rest.schema.FieldTypeXmlAdapter;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
@@ -33,12 +33,11 @@ import org.xml.sax.InputSource;
 public abstract class DOMUtilTestBase extends SolrTestCase {
   
   private DocumentBuilder builder;
-  private static final XPathFactory xpathFactory = XmlConfigFile.xpathFactory;
   
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+    builder = FieldTypeXmlAdapter.docBuilder;
   }
 
   public Node getNode( String xml, String path ) throws Exception {

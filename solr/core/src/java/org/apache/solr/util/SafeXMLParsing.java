@@ -22,9 +22,7 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.io.StringReader;
 
-import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.commons.io.input.CloseShieldInputStream;
@@ -33,6 +31,8 @@ import org.apache.solr.common.EmptyEntityResolver;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.XMLErrorLogger;
+import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.rest.schema.FieldTypeXmlAdapter;
 import org.slf4j.Logger;
 import org.w3c.dom.Document;
 import org.xml.sax.InputSource;
@@ -54,22 +54,8 @@ public final class SafeXMLParsing  {
   /** Parses a config file from ResourceLoader. Xinclude and external entities are enabled, but cannot escape the resource loader. */
   public static Document parseConfigXML(Logger log, ResourceLoader loader, String file) throws SAXException, IOException {
     try (InputStream in = loader.openResource(file)) {
-      final DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-      dbf.setValidating(false);
-      dbf.setNamespaceAware(true);
-      trySetDOMFeature(dbf, XMLConstants.FEATURE_SECURE_PROCESSING, true);
-      try {
-        dbf.setXIncludeAware(true);
-      } catch (UnsupportedOperationException e) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "XML parser doesn't support XInclude option", e);
-      }
-      
-      final DocumentBuilder db = dbf.newDocumentBuilder();
-      db.setEntityResolver(new SystemIdResolver(loader));
-      db.setErrorHandler(new XMLErrorLogger(log));
+      final DocumentBuilder db =  FieldTypeXmlAdapter.docBuilder;
       return db.parse(in, SystemIdResolver.createSystemIdFromResourceName(file));
-    } catch (ParserConfigurationException pce) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "XML parser cannot be configured", pce);
     }
   }
 
@@ -95,25 +81,12 @@ public final class SafeXMLParsing  {
 
   private static DocumentBuilder getUntrustedDocumentBuilder(Logger log) {
     try {
-      final DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-      dbf.setValidating(false);
-      dbf.setNamespaceAware(true);
-      trySetDOMFeature(dbf, XMLConstants.FEATURE_SECURE_PROCESSING, true);
-      
-      final DocumentBuilder db = dbf.newDocumentBuilder();
+      final DocumentBuilder db = SolrResourceLoader.dbf.newDocumentBuilder();
       db.setEntityResolver(EmptyEntityResolver.SAX_INSTANCE);
       db.setErrorHandler(new XMLErrorLogger(log));
       return db;
     } catch (ParserConfigurationException pce) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "XML parser cannot be configured", pce);
-    }
-  }
-  
-  private static void trySetDOMFeature(DocumentBuilderFactory factory, String feature, boolean enabled) {
-    try {
-      factory.setFeature(feature, enabled);
-    } catch (Exception ex) {
-      // ignore
     }
   }
   

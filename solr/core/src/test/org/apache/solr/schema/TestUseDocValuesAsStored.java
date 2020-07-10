@@ -20,7 +20,6 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathFactory;
 import java.io.File;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -38,6 +37,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.core.AbstractBadConfigTestBase;
 import org.apache.solr.core.XmlConfigFile;
+import org.apache.solr.rest.schema.FieldTypeXmlAdapter;
 import org.apache.solr.util.DOMUtil;
 import org.junit.After;
 import org.junit.Before;
@@ -75,7 +75,7 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
     END_RANDOM_EPOCH_MILLIS = LocalDateTime.of(11000, Month.DECEMBER, 31, 23, 59, 59, 999_000_000) // AD, 5 digit year
         .toInstant(ZoneOffset.UTC).toEpochMilli();
     try {
-      DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+      DocumentBuilder builder = FieldTypeXmlAdapter.docBuilder;
       InputStream stream = TestUseDocValuesAsStored.class.getResourceAsStream("/solr/collection1/conf/enumsConfig.xml");
       Document doc = builder.parse(new InputSource(IOUtils.getDecodingReader(stream, StandardCharsets.UTF_8)));
       XPath xpath = XmlConfigFile.xpath;

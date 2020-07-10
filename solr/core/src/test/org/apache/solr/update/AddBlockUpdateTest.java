@@ -16,7 +16,6 @@
  */
 package org.apache.solr.update;
 
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
@@ -65,6 +64,7 @@ import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.handler.loader.XMLLoader;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.rest.schema.FieldTypeXmlAdapter;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.RefCounted;
@@ -129,8 +129,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
   }
 
   private Document getDocument() throws ParserConfigurationException {
-    DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
-    javax.xml.parsers.DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
+    javax.xml.parsers.DocumentBuilder docBuilder = FieldTypeXmlAdapter.docBuilder;
     return docBuilder.newDocument();
   }
 

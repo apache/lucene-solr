@@ -1087,10 +1087,7 @@ public class SolrZkClient implements Closeable {
           zkCallbackExecutor.submit(() -> watcher.process(event));
         }
       } catch (RejectedExecutionException e) {
-        // If not a graceful shutdown
-        if (!isClosed()) {
-          throw e;
-        }
+        log.info("Rejected from executor", e);
       }
     }
 

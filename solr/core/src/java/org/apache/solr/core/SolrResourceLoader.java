@@ -58,9 +58,11 @@ import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.util.SystemIdResolver;
 import org.apache.solr.util.plugin.SolrCoreAware;
+import org.apache.xerces.jaxp.DocumentBuilderFactoryImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -82,16 +84,26 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   private static final Charset UTF_8 = StandardCharsets.UTF_8;
 
 
-  private static final javax.xml.parsers.DocumentBuilderFactory dbf;
+  public static final javax.xml.parsers.DocumentBuilderFactory dbf;
   private final DocumentBuilder db;
 
   static {
-    dbf = DocumentBuilderFactory.newInstance();
+    dbf = new DocumentBuilderFactoryImpl();
     try {
       dbf.setXIncludeAware(true);
       dbf.setNamespaceAware(true);
+      dbf.setValidating(false);
+      trySetDOMFeature(dbf, XMLConstants.FEATURE_SECURE_PROCESSING, true);
     } catch(UnsupportedOperationException e) {
       log.warn("XML parser doesn't support XInclude option");
+    }
+  }
+
+  private static void trySetDOMFeature(DocumentBuilderFactory factory, String feature, boolean enabled) {
+    try {
+      factory.setFeature(feature, enabled);
+    } catch (Exception ex) {
+      // ignore
     }
   }
 

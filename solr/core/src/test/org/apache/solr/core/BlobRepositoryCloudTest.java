@@ -71,8 +71,6 @@ public class BlobRepositoryCloudTest extends SolrCloudTestCase {
     document.addField("text", "col2");
     solrClient.add("col2", document);
     solrClient.commit("col2");
-    Thread.sleep(2000);
-
   }
 
   @Test

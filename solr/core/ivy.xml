@@ -70,6 +70,7 @@
     <dependency org="com.fasterxml.woodstox" name="woodstox-core" rev="${/com.fasterxml.woodstox/woodstox-core}" conf="compile"/>
 
     <dependency org="net.sf.saxon" name="Saxon-HE" rev="${/net.sf.saxon/Saxon-HE}" conf="compile"/>
+    <dependency org="xerces" name="xercesImpl" rev="${/xerces/xercesImpl}" conf="compile"/>
 
     <dependency org="org.apache.hadoop" name="hadoop-auth" rev="${/org.apache.hadoop/hadoop-auth}" conf="compile.hadoop"/>
     <dependency org="org.apache.hadoop" name="hadoop-common" rev="${/org.apache.hadoop/hadoop-common}" conf="compile.hadoop"/>

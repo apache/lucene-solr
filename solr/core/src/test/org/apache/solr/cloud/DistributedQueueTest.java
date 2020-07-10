@@ -259,8 +259,8 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
 
     // If we filter everything out, we should block for the full time.
     long start = System.nanoTime();
-    assertEquals(0, dq.peekElements(4, 1000, alwaysFalse).size());
-    assertTrue(System.nanoTime() - start >= TimeUnit.MILLISECONDS.toNanos(500));
+    assertEquals(0, dq.peekElements(4, 200, alwaysFalse).size());
+    assertTrue(System.nanoTime() - start >= TimeUnit.MILLISECONDS.toNanos(100));
 
     // If someone adds a new matching element while we're waiting, we should return immediately.
     executor.submit(() -> {

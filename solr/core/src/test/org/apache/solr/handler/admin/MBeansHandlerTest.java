@@ -128,7 +128,7 @@ public class MBeansHandlerTest extends SolrTestCaseJ4 {
     assertTrue("external entity ignored properly", true);
   }
 
-  boolean runSnapshots;
+  volatile boolean runSnapshots;
 
   @Test
   public void testMetricsSnapshot() throws Exception {
@@ -167,7 +167,7 @@ public class MBeansHandlerTest extends SolrTestCaseJ4 {
       while (runSnapshots) {
         bean.getSolrMetricsContext().registerMetricName("name-" + i++);
         try {
-          Thread.sleep(31);
+          Thread.sleep(10);
         } catch (InterruptedException e) {
           runSnapshots = false;
           break;
@@ -184,7 +184,7 @@ public class MBeansHandlerTest extends SolrTestCaseJ4 {
           fail("Exception getting metrics snapshot: " + e.toString());
         }
         try {
-          Thread.sleep(53);
+          Thread.sleep(10);
         } catch (InterruptedException e) {
           runSnapshots = false;
           break;

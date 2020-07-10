@@ -237,7 +237,7 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
       while (!timeOut.hasTimedOut()) {
         maxTerm++;
         assertEquals(shardTerms.getTerms().get("leader"), Collections.max(shardTerms.getTerms().values()));
-        Thread.sleep(500);
+        Thread.sleep(100);
       }
       assertTrue(maxTerm >= Collections.max(shardTerms.getTerms().values()));
     }

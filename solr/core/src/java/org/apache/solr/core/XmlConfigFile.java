@@ -17,14 +17,8 @@
 package org.apache.solr.core;
 
 import javax.xml.namespace.QName;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMResult;
-import javax.xml.transform.dom.DOMSource;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
@@ -70,7 +64,7 @@ public class XmlConfigFile { // formerly simply "Config"
   public static final XPathFactory xpathFactory = new XPathFactoryImpl();
   public static final XPath xpath = xpathFactory.newXPath();
 
-  public static final  TransformerFactory tfactory = TransformerFactory.newInstance();
+ // public static final  TransformerFactory tfactory = TransformerFactory.newInstance();
 
 
   private final Document doc;

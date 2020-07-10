@@ -177,7 +177,7 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
 
       // this tests expired state
 
-      Thread.sleep(1000); // pause for reconnect
+      Thread.sleep(TEST_NIGHTLY ? 1000 : 50); // pause for reconnect
       
       for (int i = 0; i < 8; i++) {
         try {

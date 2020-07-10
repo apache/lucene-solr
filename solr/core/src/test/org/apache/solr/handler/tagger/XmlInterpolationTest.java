@@ -23,7 +23,6 @@
 package org.apache.solr.handler.tagger;
 
 import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
@@ -40,6 +39,7 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.rest.schema.FieldTypeXmlAdapter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -52,10 +52,7 @@ public class XmlInterpolationTest extends TaggerTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    DocumentBuilderFactory xmlDocBuilderFactory = DocumentBuilderFactory.newInstance();
-    xmlDocBuilderFactory.setValidating(true);
-    xmlDocBuilderFactory.setNamespaceAware(true);
-    xmlDocBuilder = xmlDocBuilderFactory.newDocumentBuilder();
+    xmlDocBuilder = FieldTypeXmlAdapter.docBuilder;
 
     initCore("solrconfig-tagger.xml", "schema-tagger.xml");
   }

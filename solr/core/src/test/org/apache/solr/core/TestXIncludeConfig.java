@@ -37,14 +37,6 @@ public class TestXIncludeConfig extends SolrTestCaseJ4 {
 
   @Override
   public void setUp() throws Exception {
-    javax.xml.parsers.DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-    try {
-      //see whether it even makes sense to run this test
-      dbf.setXIncludeAware(true);
-      dbf.setNamespaceAware(true);
-    } catch (UnsupportedOperationException e) {
-      Assume.assumeTrue(false);
-    }
     super.setUp();
   }
 

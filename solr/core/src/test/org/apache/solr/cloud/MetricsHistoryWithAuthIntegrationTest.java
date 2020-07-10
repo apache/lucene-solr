@@ -95,6 +95,7 @@ public class MetricsHistoryWithAuthIntegrationTest extends SolrCloudTestCase {
         NamedList<Object> memEntry = (NamedList<Object>) ((NamedList<Object>) data.iterator().next().getValue()).get("values");
         List<Double> heap = (List<Double>) memEntry.getAll("memory.heap.used").get(0);
         if (heap == null) return false;
+        if (heap.size() < 241) return false;
         if (heap.get(240) <= 0.01) return false;
         dataRef.set(data);
         return true;

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.util;
 
+import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPath;
@@ -99,6 +100,16 @@ public class SimplePostTool {
   static final String DATA_MODE_STDIN = "stdin";
   static final String DATA_MODE_WEB = "web";
   static final String DEFAULT_DATA_MODE = DATA_MODE_FILES;
+
+  private static DocumentBuilder DOC_BUILDER;
+
+  static {
+    try {
+      DOC_BUILDER = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+    } catch (ParserConfigurationException e) {
+      throw new RuntimeException(e);
+    }
+  }
 
   // Input args
   boolean auto = false;
@@ -1073,8 +1084,7 @@ public class SimplePostTool {
   public static Document makeDom(byte[] in) throws SAXException, IOException,
   ParserConfigurationException {
     InputStream is = new ByteArrayInputStream(in);
-    Document dom = DocumentBuilderFactory.newInstance()
-        .newDocumentBuilder().parse(is);
+    Document dom = DOC_BUILDER.parse(is);
     return dom;
   }
 

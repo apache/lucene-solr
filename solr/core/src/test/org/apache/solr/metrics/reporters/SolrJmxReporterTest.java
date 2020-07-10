@@ -221,9 +221,9 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
         }
       };
       t.start();
-      Thread.sleep(500);
+
       h.getCoreContainer().unload(h.getCore().getName());
-      Thread.sleep(2000);
+
       objects = TEST_MBEAN_SERVER.queryMBeans(new ObjectName("*:category=CORE,name=indexDir,*"), null);
       assertEquals("Unexpected number of beans after core closed: " + objects, 0, objects.size());
     } finally {

@@ -26,6 +26,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SimilarityFactory;
 import org.w3c.dom.Document;
@@ -37,14 +38,18 @@ import org.w3c.dom.Node;
  * XML format expected by the FieldTypePluginLoader.
  */
 public class FieldTypeXmlAdapter {
-  
-  public static Node toNode(Map<String,?> json) {
-    DocumentBuilder docBuilder;
+
+  public static DocumentBuilder docBuilder;
+
+  static {
     try {
-      docBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+      docBuilder = SolrResourceLoader.dbf.newDocumentBuilder();
     } catch (ParserConfigurationException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }
+  }
+
+  public static Node toNode(Map<String,?> json) {
     
     Document doc = docBuilder.newDocument();    
     Element fieldType = doc.createElement(IndexSchema.FIELD_TYPE);

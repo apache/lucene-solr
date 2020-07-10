@@ -17,7 +17,6 @@
 package org.apache.solr;
 
 import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringWriter;
@@ -48,6 +47,7 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.XMLWriter;
+import org.apache.solr.rest.schema.FieldTypeXmlAdapter;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.schema.SchemaField;
@@ -532,7 +532,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     SolrQueryRequest req = req("foo");
     XMLWriter.writeResponse(writer,req,rsp);
 
-    DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+    DocumentBuilder builder = FieldTypeXmlAdapter.docBuilder;
     builder.parse(new ByteArrayInputStream
                   (writer.toString().getBytes(StandardCharsets.UTF_8)));
     req.close();
