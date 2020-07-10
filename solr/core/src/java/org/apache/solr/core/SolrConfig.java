@@ -230,8 +230,6 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
     validateMemoryBreakerThreshold();
     
-    useRangeVersionsForPeerSync = getBool("peerSync/useRangeVersions", true);
-
     filterCacheConfig = CacheConfig.getConfig(this, "query/filterCache");
     queryResultCacheConfig = CacheConfig.getConfig(this, "query/queryResultCache");
     documentCacheConfig = CacheConfig.getConfig(this, "query/documentCache");
@@ -531,9 +529,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
   // Circuit Breaker Configuration
   public final boolean useCircuitBreakers;
   public final int memoryCircuitBreakerThresholdPct;
-  
-  public final boolean useRangeVersionsForPeerSync;
-  
+
   // IndexConfig settings
   public final SolrIndexConfig indexConfig;
 
@@ -929,10 +925,6 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
         "formUploadLimitKB", formUploadLimitKB,
         "addHttpRequestToContext", addHttpRequestToContext));
     if (indexConfig != null) result.put("indexConfig", indexConfig);
-
-    m = new LinkedHashMap();
-    result.put("peerSync", m);
-    m.put("useRangeVersions", useRangeVersionsForPeerSync);
 
     //TODO there is more to add
 
