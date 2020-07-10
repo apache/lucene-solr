@@ -310,7 +310,6 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
     // allow a custom count acc to be used
     if (countAcc == null) {
       countAcc = new SlotAcc.CountSlotArrAcc(fcontext, slotCount);
-      countAcc.key = "count";
     }
 
     for (Map.Entry<String,AggValueSource> entry : freq.getFacetStats().entrySet()) {
