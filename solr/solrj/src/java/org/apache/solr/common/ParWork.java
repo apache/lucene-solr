@@ -64,7 +64,7 @@ public class ParWork implements Closeable {
 
   protected final static ThreadLocal<ExecutorService> THREAD_LOCAL_EXECUTOR = new ThreadLocal<>();
   public static final int MAXIMUM_POOL_SIZE = (int) Math.max(2, Math.round(Runtime.getRuntime().availableProcessors() / 2.0d));
-  public static final long KEEP_ALIVE_TIME = 2L;
+  public static final long KEEP_ALIVE_TIME = 10L;
   public static final int CAPACITY = 60;
 
   private Set<Object> collectSet = null;

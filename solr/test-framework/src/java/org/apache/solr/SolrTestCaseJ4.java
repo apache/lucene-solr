@@ -3027,7 +3027,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
           qtp.setMaxThreads(Integer.getInteger("solr.maxContainerThreads", 10000));
           qtp.setLowThreadsThreshold(Integer.getInteger("solr.lowContainerThreadsThreshold", -1)); // we don't use this or connections will get cut
           qtp.setMinThreads(Integer.getInteger("solr.minContainerThreads", 20));
-          qtp.setIdleTimeout(Integer.getInteger("solr.containerThreadsIdle", 3000));
+          qtp.setIdleTimeout(Integer.getInteger("solr.containerThreadsIdle", 30000));
 
           qtp.setStopTimeout((int) TimeUnit.MINUTES.toMillis(2));
           qtp.setReservedThreads(-1); // -1 auto sizes, important to keep

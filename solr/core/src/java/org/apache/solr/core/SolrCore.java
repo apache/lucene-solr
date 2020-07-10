@@ -2273,7 +2273,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     // it may take some time to open an index.... we may need to make
     // sure that two threads aren't trying to open one at the same time
     // if it isn't necessary.
-    if (isClosed) {
+    if (isClosed || coreContainer.isShutDown()) {
       throw new AlreadyClosedException();
     }
     synchronized (searcherLock) {
