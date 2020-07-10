@@ -7,5 +7,5 @@
           input.task-list-item-checkbox type='checkbox' disabled=true checked=(item.attr? :checked)
           =<item.text
       - else
-        li
+        li: p
           =(print_item_content item)
