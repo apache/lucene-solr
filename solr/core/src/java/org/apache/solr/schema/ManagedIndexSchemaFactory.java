@@ -22,14 +22,17 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
@@ -50,16 +53,19 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
 
   public static final String DEFAULT_MANAGED_SCHEMA_RESOURCE_NAME = "managed-schema";
   public static final String MANAGED_SCHEMA_RESOURCE_NAME = "managedSchemaResourceName";
+  private volatile CoreContainer coreContainer;
 
-  private boolean isMutable = true;
+  private volatile boolean isMutable = true;
   private String managedSchemaResourceName = DEFAULT_MANAGED_SCHEMA_RESOURCE_NAME;
+  private volatile String coreName;
+
   public String getManagedSchemaResourceName() { return managedSchemaResourceName; }
   private SolrConfig config;
-  private SolrResourceLoader loader;
-  public SolrResourceLoader getResourceLoader() { return loader; }
+  private ResourceLoader loader;
+  public ResourceLoader getResourceLoader() { return loader; }
   private String resourceName;
   private ManagedIndexSchema schema;
-  private SolrCore core;
+// / private SolrCore core;
   private ZkIndexSchemaReader zkIndexSchemaReader;
 
 
@@ -219,7 +225,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
   private void warnIfNonManagedSchemaExists() {
     if ( ! resourceName.equals(managedSchemaResourceName)) {
       boolean exists = false;
-      SolrResourceLoader loader = config.getResourceLoader();
+      ResourceLoader loader = config.getResourceLoader();
       if (loader instanceof ZkSolrResourceLoader) {
         ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader)loader;
         String nonManagedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + resourceName;
@@ -260,7 +266,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
    * and no exception will be thrown.
    */
   private void upgradeToManagedSchema() {
-    SolrResourceLoader loader = config.getResourceLoader();
+    ResourceLoader loader = config.getResourceLoader();
     if (loader instanceof ZkSolrResourceLoader) {
       zkUgradeToManagedSchema();
     } else {
@@ -308,7 +314,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
    *@return the File for the named resource, or null if it can't be found
    */
   private File locateConfigFile(String resource) {
-    String location = config.getResourceLoader().resourceLocation(resource);
+    String location = ((SolrResourceLoader)config.getResourceLoader()).resourceLocation(resource);
     if (location.equals(resource) || location.startsWith("classpath:"))
       return null;
     return new File(location);
@@ -399,7 +405,8 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
 
   @Override
   public void inform(SolrCore core) {
-    this.core = core;
+    this.coreContainer = core.getCoreContainer();
+    this.coreName = core.getName();
     if (loader instanceof ZkSolrResourceLoader) {
       this.zkIndexSchemaReader = new ZkIndexSchemaReader(this, core);
       ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader)loader;
@@ -427,7 +434,13 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
 
   public void setSchema(ManagedIndexSchema schema) {
     this.schema = schema;
-    core.setLatestSchema(schema);
+    try (SolrCore core = coreContainer.getCore(coreName)) {
+      if (core == null) {
+        throw new AlreadyClosedException();
+      }
+      core.setLatestSchema(schema);
+    }
+
   }
   
   public boolean isMutable() {

@@ -1335,6 +1335,7 @@ public class CoreContainer implements Closeable {
 
       return core;
     } catch (Exception e) {
+      log.error("Unable to create SolrCore", e);
       coreInitFailures.put(dcore.getName(), new CoreLoadFailure(dcore, e));
       if (e instanceof ZkController.NotInClusterStateException && !newCollection) {
         // this mostly happen when the core is deleted when this node is down
@@ -1347,6 +1348,7 @@ public class CoreContainer implements Closeable {
         IOUtils.closeQuietly(core);
       throw solrException;
     } catch (Throwable t) {
+      log.error("Unable to create SolrCore", t);
       SolrException e = new SolrException(ErrorCode.SERVER_ERROR, "JVM Error creating core [" + dcore.getName() + "]: " + t.getMessage(), t);
       coreInitFailures.put(dcore.getName(), new CoreLoadFailure(dcore, e));
       solrCores.removeCoreDescriptor(dcore);
