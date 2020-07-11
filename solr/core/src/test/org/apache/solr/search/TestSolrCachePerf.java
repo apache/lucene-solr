@@ -29,11 +29,13 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  *
  */
+@Ignore // nocommit flakey
 public class TestSolrCachePerf extends SolrTestCaseJ4 {
 
   private static final Class<? extends SolrCache>[] IMPLS = new Class[] {
