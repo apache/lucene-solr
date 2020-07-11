@@ -249,7 +249,8 @@ public class PackageStoreAPI {
       }
       String getFrom = req.getParams().get("getFrom");
       if (getFrom != null) {
-        coreContainer.getUpdateShardHandler().getUpdateExecutor().submit(() -> {
+        // nocommit
+       // coreContainer.getUpdateShardHandler().getUpdateExecutor().submit(() -> {
           log.debug("Downloading file {}", pathCopy);
           try {
             packageStore.fetch(pathCopy, getFrom);
@@ -257,7 +258,7 @@ public class PackageStoreAPI {
             log.error("Failed to download file: {}", pathCopy, e);
           }
           log.info("downloaded file: {}", pathCopy);
-        });
+       // });
         return;
 
       }

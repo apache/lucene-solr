@@ -363,15 +363,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
 
               recoveryStrat = recoveryStrategyBuilder.create(cc, cd, DefaultSolrCoreState.this);
               recoveryStrat.setRecoveringAfterStartup(recoveringAfterStartup);
-              Future<?> future = cc.getUpdateShardHandler().getRecoveryExecutor().submit(recoveryStrat);
-              try {
-                future.get();
-              } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new SolrException(ErrorCode.SERVER_ERROR, e);
-              } catch (ExecutionException e) {
-                throw new SolrException(ErrorCode.SERVER_ERROR, e);
-              }
+              recoveryStrat.run();
             } finally {
               recoveryLock.unlock();
             }
@@ -390,7 +382,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
       // in another thread on another 'recovery' executor.
       //
       // avoid deadlock: we can't use the recovery executor here!
-      recoveryFuture = cc.getUpdateShardHandler().getUpdateExecutor().submit(recoveryTask);
+      recoveryFuture = cc.getUpdateShardHandler().getRecoveryExecutor().submit(recoveryTask);
     } catch (RejectedExecutionException e) {
       // fine, we are shutting down
     }

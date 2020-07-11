@@ -168,7 +168,6 @@ public class SimpleFacets {
     this.docsOrig = docs;
     this.global = params;
     this.rb = rb;
-    this.facetExecutor = req.getCore().getCoreContainer().getUpdateShardHandler().getUpdateExecutor();
   }
 
   public void setFacetDebugInfo(FacetDebugInfo fdebugParent) {
@@ -548,9 +547,8 @@ public class SimpleFacets {
             counts = NumericFacets.getCounts(searcher, docs, field, offset, limit, mincount, missing, sort);
           } else {
             PerSegmentSingleValuedFaceting ps = new PerSegmentSingleValuedFaceting(searcher, docs, field, offset, limit, mincount, missing, sort, prefix, termFilter);
-            Executor executor = threads == 0 ? directExecutor : facetExecutor;
             ps.setNumThreads(threads);
-            counts = ps.getFacetCounts(executor);
+            counts = ps.getFacetCounts(ParWork.getExecutor()); // ### expert usage
           }
           break;
         case UIF:
@@ -790,8 +788,6 @@ public class SimpleFacets {
       r.run();
     }
   };
-
-  private final Executor facetExecutor;
   
   /**
    * Returns a list of value constraints and the associated facet counts 

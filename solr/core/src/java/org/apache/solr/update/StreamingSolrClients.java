@@ -30,6 +30,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.QoSParams;
 import org.apache.solr.update.SolrCmdDistributor.Error;
@@ -42,7 +43,7 @@ public class StreamingSolrClients {
 
   private final int runnerCount = Integer.getInteger("solr.cloud.replication.runners", 1);
   // should be less than solr.jetty.http.idleTimeout
-  private final int pollQueueTime = Integer.getInteger("solr.cloud.client.pollQueueTime", 10000);
+  private final int pollQueueTime = Integer.getInteger("solr.cloud.client.pollQueueTime", 0);
 
   private Http2SolrClient httpClient;
 
@@ -52,7 +53,7 @@ public class StreamingSolrClients {
   private ExecutorService updateExecutor;
 
   public StreamingSolrClients(UpdateShardHandler updateShardHandler) {
-    this.updateExecutor = updateShardHandler.getUpdateExecutor();
+    this.updateExecutor = ParWork.getExecutor(); // ### expert usage
     this.httpClient = updateShardHandler.getUpdateOnlyHttpClient();
   }
 

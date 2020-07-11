@@ -43,6 +43,7 @@ import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -81,7 +82,7 @@ public class SolrCmdDistributor implements Closeable {
   
   public SolrCmdDistributor(UpdateShardHandler updateShardHandler) {
     this.clients = new StreamingSolrClients(updateShardHandler);
-    this.completionService = new ExecutorCompletionService<>(updateShardHandler.getUpdateExecutor());
+    this.completionService = new ExecutorCompletionService<>(ParWork.getExecutor()); // ### expert usage
   }
   
   /* For tests only */
@@ -308,6 +309,7 @@ public class SolrCmdDistributor implements Closeable {
         req.uReq.setBasePath(req.node.getUrl());
         clients.getHttpClient().request(req.uReq);
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         SolrException.log(log, e);
         Error error = new Error();
         error.e = e;
@@ -344,6 +346,7 @@ public class SolrCmdDistributor implements Closeable {
       SolrClient solrClient = clients.getSolrClient(req);
       solrClient.request(req.uReq);
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       SolrException.log(log, e);
       Error error = new Error();
       error.e = e;
@@ -436,6 +439,7 @@ public class SolrCmdDistributor implements Closeable {
             }
           }
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           log.warn("Failed to parse response from {} during replication factor accounting", node, e);
         }
       }
@@ -643,11 +647,11 @@ public class SolrCmdDistributor implements Closeable {
           leaderProps = new ZkCoreNodeProps(zkStateReader.getLeaderRetry(
               collection, shardId));
         } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
+          ParWork.propegateInterrupt(e);
           return false;
         } catch (Exception e) {
           // we retry with same info
-          log.warn(null, e);
+          log.warn("we retry with same info", e);
           return true;
         }
        

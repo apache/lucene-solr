@@ -677,7 +677,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
     };
 
     try {
-      core.getCoreContainer().getUpdateShardHandler().getUpdateExecutor().submit(runnable);
+      core.getCoreContainer().getUpdateShardHandler().getRecoveryExecutor().submit(runnable);
       rsp.add(RESPONSE_STATUS, "submitted");
       latch.await(10000, TimeUnit.MILLISECONDS); // put the latch for current bootstrap command
     } catch (RejectedExecutionException ree)  {

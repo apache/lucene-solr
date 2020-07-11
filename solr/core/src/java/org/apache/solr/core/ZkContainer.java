@@ -223,7 +223,7 @@ public class ZkContainer implements Closeable {
         }
       };
 
-      zkController.getCoreContainer().getUpdateShardHandler().getUpdateExecutor().submit(r);
+     ParWork.getExecutor().submit(r); // ### expert usage
 
   }
   

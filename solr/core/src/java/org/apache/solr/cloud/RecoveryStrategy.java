@@ -186,7 +186,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
     return (new HttpSolrClient.Builder(leaderUrl)
             .withConnectionTimeout(cfg.getDistributedConnectionTimeout())
             .withSocketTimeout(cfg.getDistributedSocketTimeout())
-            .withHttpClient(cc.getUpdateShardHandler().getRecoveryOnlyHttpClient())
+            .withHttpClient(cc.getUpdateShardHandler().getDefaultHttpClient())
             .markInternalRequest()
             ).build();
   }

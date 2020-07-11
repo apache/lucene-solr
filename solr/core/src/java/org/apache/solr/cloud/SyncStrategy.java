@@ -57,8 +57,6 @@ public class SyncStrategy implements Closeable {
   private volatile boolean isClosed;
   
   private final HttpClient client;
-
-  private final ExecutorService updateExecutor;
   
   private static class RecoveryRequest {
     ZkNodeProps leaderProps;
@@ -70,7 +68,6 @@ public class SyncStrategy implements Closeable {
     UpdateShardHandler updateShardHandler = cc.getUpdateShardHandler();
     client = updateShardHandler.getDefaultHttpClient();
     shardHandler = ((HttpShardHandlerFactory)cc.getShardHandlerFactory()).getShardHandler(cc.getUpdateShardHandler().getDefaultHttpClient());
-    updateExecutor = updateShardHandler.getUpdateExecutor();
   }
   
   private static class ShardCoreRequest extends ShardRequest {

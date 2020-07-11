@@ -163,7 +163,7 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
       // Check if features are requested and if the model feature store and feature-transform feature store are the same
       final boolean featuresRequestedFromSameStore = (modelFeatureStoreName.equals(fvStoreName) || fvStoreName == null) ? extractFeatures:false;
       if (threadManager != null) {
-        threadManager.setExecutor(req.getCore().getCoreContainer().getUpdateShardHandler().getUpdateExecutor());
+        threadManager.setExecutor(req.getCore().getCoreContainer().getUpdateShardHandler().getRecoveryExecutor());
       }
       final LTRScoringQuery scoringQuery = new LTRScoringQuery(ltrScoringModel,
           extractEFIParams(localParams),

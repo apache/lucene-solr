@@ -375,15 +375,15 @@ public class DistribPackageStore implements PackageStore {
         i++;
       }
     } finally {
-      coreContainer.getUpdateShardHandler().getUpdateExecutor().submit(() -> {
-        try {
-      //    Thread.sleep(10 * 1000);
-          // nocommit yikes!
-        } finally {
-          tmpFiles.remove(info.path);
-        }
-        return null;
-      });
+//      coreContainer.getUpdateShardHandler().getUpdateExecutor().submit(() -> {
+//        try {
+//      //    Thread.sleep(10 * 1000);
+//          // nocommit yikes!
+//        } finally {
+//          tmpFiles.remove(info.path);
+//        }
+//        return null;
+//      });
     }
   }
 

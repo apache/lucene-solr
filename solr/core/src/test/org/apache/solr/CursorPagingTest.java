@@ -559,8 +559,8 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
   public void testRandomSortsOnLargeIndex() throws Exception {
     final Collection<String> allFieldNames = getAllSortFieldNames();
 
-    final int initialDocs = TestUtil.nextInt(random(), 100, 200);
-    final int totalDocs = atLeast(500);
+    final int initialDocs = TestUtil.nextInt(random(), 100, TEST_NIGHTLY ? 200 : 130);
+    final int totalDocs = TEST_NIGHTLY ? atLeast(500) : 150;
 
     // start with a smallish number of documents, and test that we can do a full walk using a 
     // sort on *every* field in the schema...
@@ -574,7 +574,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     for (String f : allFieldNames) {
       for (String order : new String[] {" asc", " desc"}) {
         String sort = f + order + ("id".equals(f) ? "" : ", id" + order);
-        String rows = "" + TestUtil.nextInt(random(), 13, 50);
+        String rows = "" + TestUtil.nextInt(random(), 13, TEST_NIGHTLY ? 50 : 15);
         SentinelIntSet ids = assertFullWalkNoDups(totalDocs, 
                                                   params("q", "*:*",
                                                          "fl","id",
