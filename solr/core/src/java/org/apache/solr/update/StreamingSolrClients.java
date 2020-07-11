@@ -43,7 +43,7 @@ public class StreamingSolrClients {
 
   private final int runnerCount = Integer.getInteger("solr.cloud.replication.runners", 1);
   // should be less than solr.jetty.http.idleTimeout
-  private final int pollQueueTime = Integer.getInteger("solr.cloud.client.pollQueueTime", 0);
+  private final int pollQueueTime = Integer.getInteger("solr.cloud.client.pollQueueTime", 1);
 
   private Http2SolrClient httpClient;
 

@@ -30,6 +30,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletionService;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
 
@@ -68,13 +69,13 @@ public class SolrCmdDistributor implements Closeable {
   private StreamingSolrClients clients;
   private boolean finished = false; // see finish()
 
-  private int retryPause = 500;
+  private int retryPause = 10;
   
   private final List<Error> allErrors = new ArrayList<>();
   private final List<Error> errors = Collections.synchronizedList(new ArrayList<Error>());
   
   private final CompletionService<Object> completionService;
-  private final Set<Future<Object>> pending = new HashSet<>();
+  private final Set<Future<Object>> pending = ConcurrentHashMap.newKeySet(64);
   
   public static interface AbortCheck {
     public boolean abortCheck();
@@ -261,12 +262,6 @@ public class SolrCmdDistributor implements Closeable {
       addCommit(uReq, cmd);
       submit(new Req(cmd, node, uReq, false), true);
     }
-    
-  }
-
-  public void blockAndDoRetries() throws IOException {
-    clients.blockUntilFinished();
-    
     // wait for any async commits to complete
     while (pending != null && pending.size() > 0) {
       Future<Object> future = null;
@@ -275,12 +270,18 @@ public class SolrCmdDistributor implements Closeable {
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
         log.error("blockAndDoRetries interrupted", e);
+        return;
       }
-      if (future == null) break;
+      if (future == null) return;
       pending.remove(future);
     }
-    doRetriesIfNeeded();
+    
+  }
 
+  public void blockAndDoRetries() throws IOException {
+    clients.blockUntilFinished();
+
+    doRetriesIfNeeded();
   }
   
   void addCommit(UpdateRequest ureq, CommitUpdateCommand cmd) {

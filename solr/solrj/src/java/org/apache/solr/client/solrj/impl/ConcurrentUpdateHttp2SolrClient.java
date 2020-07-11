@@ -74,7 +74,6 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
   private int stallTime;
   private final boolean streamDeletes;
   private volatile boolean closed;
-  private volatile CountDownLatch lock = null; // used to block everything
 
   private static class CustomBlockingQueue<E> implements Iterable<E>{
     private final BlockingQueue<E> queue;
@@ -395,16 +394,10 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     }
 
     try {
-      CountDownLatch tmpLock = lock;
-      if (tmpLock != null) {
-        tmpLock.await();
-      }
 
       Update update = new Update(req, collection);
       boolean success = queue.offer(update);
 
-      long lastStallTime = -1;
-      int lastQueueSize = -1;
       for (;;) {
         synchronized (runners) {
           // see if queue is half full and we can add more runners
@@ -436,7 +429,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
         // start more runners.
         //
         if (!success) {
-          success = queue.offer(update, 100, TimeUnit.MILLISECONDS);
+          success = queue.offer(update, 5, TimeUnit.MILLISECONDS);
         }
       }
     } catch (InterruptedException e) {
@@ -452,7 +445,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
   }
 
   public synchronized void blockUntilFinished() throws IOException {
-    lock = new CountDownLatch(1);
+
     try {
 
       waitForEmptyQueue();
@@ -521,8 +514,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
         }
       }
     } finally {
-      lock.countDown();
-      lock = null;
+
     }
   }
 
@@ -531,7 +523,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
       while (!queue.isEmpty()) {
         synchronized (runners) {
           int queueSize = queue.size();
-          if (queueSize > 0 && runners.size() == 0 || noLive(runners)) {
+          if (queueSize > 0 && runners.size() == 0) {
             log.warn("No more runners, but queue still has " +
                     queueSize + " adding more runners to process remaining requests on queue");
             addRunner();
@@ -544,11 +536,6 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
           ParWork.propegateInterrupt(e);
           return;
         }
-
-        int currentQueueSize = queue.size();
-        if (currentQueueSize > 0) {
-          System.out.println("QUEUE:" + queue.size() + " runners: " + runners.size());
-        }
       }
 
     }
@@ -558,16 +545,6 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
       return;
     }
   }
-
-  private boolean noLive(Queue<Runner> runners) {
-    for (Runner runner : runners) {
-      if (runner.isRunning) {
-        return true;
-      }
-    }
-    return false;
-  }
-
 
   public void handleError(Throwable ex) {
     log.error("error", ex);
