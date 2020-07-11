@@ -237,7 +237,8 @@ public class Overseer implements SolrCloseable {
         ParWork.propegateInterrupt(e);
         return;
       } catch (Exception e) {
-       log.error("Error", e);
+        log.error("Unexpected error in Overseer state update loop", e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
 
       log.info("Starting to work on the main queue : {}", LeaderElector.getNodeName(myId));
@@ -310,9 +311,8 @@ public class Overseer implements SolrCloseable {
               ParWork.propegateInterrupt(e);
               return;
             } catch (Exception e) {
-              log.error("Exception in Overseer when process message from work queue, retrying", e);
-
-              throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+              log.error("Unexpected error in Overseer state update loop", e);
+              continue;
             }
           }
 
@@ -329,8 +329,8 @@ public class Overseer implements SolrCloseable {
             log.warn("Solr cannot talk to ZK, exiting Overseer work queue loop", e);
             return;
           } catch (Exception e) {
-            ParWork.propegateInterrupt(e);
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+            log.error("Unexpected error in Overseer state update loop", e);
+            continue;
           }
           try {
             Set<String> processedNodes = new HashSet<>();
@@ -368,7 +368,8 @@ public class Overseer implements SolrCloseable {
             log.warn("Solr cannot talk to ZK, exiting Overseer work queue loop", e);
             return;
           } catch (Exception e) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+            log.error("Unexpected error in Overseer state update loop", e);
+            continue;
           }
         }
       } finally {
