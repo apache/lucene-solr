@@ -194,7 +194,7 @@ public class SolrTestCase extends LuceneTestCase {
       System.setProperty("solr.disablePublicKeyHandler", "true");
       System.setProperty("solr.dependentupdate.timeout", "1"); // seconds
 
-      System.setProperty("lucene.cms.override_core_count", "2");
+      System.setProperty("lucene.cms.override_core_count", "6");
       System.setProperty("lucene.cms.override_spins", "false");
 
       System.setProperty("solr.maxContainerThreads", "300");
@@ -206,8 +206,8 @@ public class SolrTestCase extends LuceneTestCase {
       ScheduledTriggers.DEFAULT_TRIGGER_CORE_POOL_SIZE = 2;
 
       System.setProperty("solr.tests.maxBufferedDocs", "1000000");
-      System.setProperty("solr.tests.ramBufferSizeMB", "20");
-      System.setProperty("solr.tests.ramPerThreadHardLimitMB", "4");
+      System.setProperty("solr.tests.ramBufferSizeMB", "60");
+      System.setProperty("solr.tests.ramPerThreadHardLimitMB", "30");
 
 
       System.setProperty("distribUpdateSoTimeout", "10000");
