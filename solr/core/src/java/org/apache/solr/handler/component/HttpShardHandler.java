@@ -157,7 +157,7 @@ public class HttpShardHandler extends ShardHandler {
     }
 
     // all variables that set inside this listener must be at least volatile
-    responseCancellableMap.put(srsp, this.lbClient.asyncReq(lbReq, new AsyncListener<>() {
+    responseCancellableMap.put(srsp, this.lbClient.asyncReq(lbReq, new AsyncListener<LBSolrClient.Rsp>() {
       volatile long startTime = System.nanoTime();
 
       @Override

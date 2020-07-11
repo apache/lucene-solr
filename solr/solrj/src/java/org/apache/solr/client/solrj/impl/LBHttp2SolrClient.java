@@ -148,7 +148,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
                          boolean isZombie, RetryListener listener) {
     rsp.server = baseUrl;
     req.getRequest().setBasePath(baseUrl);
-    return ((Http2SolrClient)getClient(baseUrl)).asyncRequest(req.getRequest(), null, new AsyncListener<>() {
+    return ((Http2SolrClient)getClient(baseUrl)).asyncRequest(req.getRequest(), null, new AsyncListener<NamedList<Object>>() {
       @Override
       public void onSuccess(NamedList<Object> result) {
         rsp.rsp = result;
