@@ -67,7 +67,7 @@ Specifies which fieldType should be used to analyze the incoming text. For examp
 Path to the file that defines query elevation. This file must exist in `<instanceDir>/conf/<config-file>` or `<dataDir>/<config-file>`. If the file exists in the `conf/` directory it will be loaded once at startup. If it exists in the `data/` directory, it will be reloaded for each IndexReader.
 
 `forceElevation`::
-By default, this component respects the requested `sort` parameter: if the request asks to sort by date, it will order the results by date. If `forceElevation=true` (the default), results will first return the boosted docs, then order by date.
+By default, this component respects the requested `sort` parameter: if the request asks to sort by date, it will order the results by date. If `forceElevation=true`, results will first return the boosted docs, then order by date. This defaults to `false`.
 This is also a request parameter, which will override the config.
 
 `useConfiguredElevatedOrder`::
