@@ -28,8 +28,10 @@ import org.apache.solr.rest.ManagedResource;
 import org.apache.solr.rest.ManagedResourceStorage;
 import org.apache.solr.rest.RestManager;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore // nocommit flakey
 public class TestModelManager extends TestRerankBase {
 
   @BeforeClass
