@@ -20,10 +20,9 @@ package org.apache.solr.pkg;
 import java.lang.invoke.MethodHandles;
 import java.lang.ref.Reference;
 import java.lang.ref.SoftReference;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
+
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.logging.MDCLoggingContext;
@@ -64,21 +63,23 @@ public class PackageListeners {
 
   synchronized void packagesUpdated(List<PackageLoader.Package> pkgs) {
     MDCLoggingContext.setCore(core);
+    Listener.Ctx ctx = new Listener.Ctx();
     try {
       for (PackageLoader.Package pkgInfo : pkgs) {
-        invokeListeners(pkgInfo);
+        invokeListeners(pkgInfo, ctx);
       }
     } finally {
+      ctx.runLaterTasks();
       MDCLoggingContext.clear();
     }
   }
 
-  private synchronized void invokeListeners(PackageLoader.Package pkg) {
+  private synchronized void invokeListeners(PackageLoader.Package pkg, Listener.Ctx ctx) {
     for (Reference<Listener> ref : listeners) {
       Listener listener = ref.get();
       if(listener == null) continue;
       if (listener.packageName() == null || listener.packageName().equals(pkg.name())) {
-        listener.changed(pkg);
+        listener.changed(pkg, ctx);
       }
     }
   }
@@ -96,15 +97,32 @@ public class PackageListeners {
 
 
   public interface Listener {
-    /**Name of the package or null to loisten to all package changes
+    /**Name of the package or null to listen to all package changes
      */
     String packageName();
 
     PluginInfo pluginInfo();
 
-    void changed(PackageLoader.Package pkg);
+    void changed(PackageLoader.Package pkg, Ctx ctx);
 
     PackageLoader.Package.Version getPackageVersion();
+    class Ctx {
+      private Map<String, Runnable > runLater;
+      public void runLater(String name,  Runnable runnable  ){
+        if(runLater == null) runLater = new LinkedHashMap<>();
+        runLater.put(name, runnable);
+      }
+      private void runLaterTasks(){
+        if(runLater == null) return;
+        new Thread(() -> runLater.forEach((s, runnable) -> {
+          try {
+            runnable.run();
+          } catch (Exception e) {
+            log.error("Unknown error", e);
+          }
+        }));
+      }
+    }
 
   }
 }

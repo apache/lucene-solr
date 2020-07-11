@@ -36,12 +36,12 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.cloud.ClusterPropertiesListener;
-import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.PathTrie;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.PluginInfo;
 import org.apache.solr.handler.admin.ContainerPluginsApi;
 import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.request.SolrQueryRequest;
@@ -225,12 +225,12 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
     @SuppressWarnings({"unchecked","rawtypes"})
     public ApiInfo(PluginMeta info, List<String> errs) {
       this.info = info;
-      Pair<String, String> klassInfo = org.apache.solr.core.PluginInfo.parseClassName(info.klass);
-      pkg = klassInfo.first();
+      PluginInfo.CName klassInfo = new PluginInfo.CName(info.klass);
+      pkg = klassInfo.pkg;
       if (pkg != null) {
         PackageLoader.Package p = coreContainer.getPackageLoader().getPackage(pkg);
         if (p == null) {
-          errs.add("Invalid package " + klassInfo.first());
+          errs.add("Invalid package " + klassInfo.pkg);
           return;
         }
         this.pkgVersion = p.getVersion(info.version);
@@ -239,7 +239,7 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
           return;
         }
         try {
-          klas = pkgVersion.getLoader().findClass(klassInfo.second(), Object.class);
+          klas = pkgVersion.getLoader().findClass(klassInfo.className, Object.class);
         } catch (Exception e) {
           log.error("Error loading class", e);
           errs.add("Error loading class " + e.toString());
@@ -247,7 +247,7 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
         }
       } else {
         try {
-          klas = Class.forName(klassInfo.second());
+          klas = Class.forName(klassInfo.className);
         } catch (ClassNotFoundException e) {
           errs.add("Error loading class " + e.toString());
           return;

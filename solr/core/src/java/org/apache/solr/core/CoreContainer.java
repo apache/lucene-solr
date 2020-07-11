@@ -24,19 +24,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.spec.InvalidKeySpecException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -1588,20 +1576,28 @@ public class CoreContainer {
     return ret;
   }
 
+  public void reload(String name) {
+    reload(name, null);
+  }
   /**
    * Recreates a SolrCore.
    * While the new core is loading, requests will continue to be dispatched to
    * and processed by the old core
    *
    * @param name the name of the SolrCore to reload
+   * @param coreId The unique identifier of the core
    */
-  public void reload(String name) {
+  public void reload(String name, UUID coreId) {
     if (isShutDown) {
       throw new AlreadyClosedException();
     }
     SolrCore newCore = null;
     SolrCore core = solrCores.getCoreFromAnyList(name, false);
     if (core != null) {
+      if(coreId != null && core.uniqueId != coreId) {
+        //trying to reload an already unloaded core
+        return;
+      }
 
       // The underlying core properties files may have changed, we don't really know. So we have a (perhaps) stale
       // CoreDescriptor and we need to reload it from the disk files

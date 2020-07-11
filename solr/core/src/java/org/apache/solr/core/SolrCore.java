@@ -31,22 +31,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -97,6 +82,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.DirectoryFactory.DirContext;
+import org.apache.solr.core.PluginBag.PluginHolder;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager.SnapshotMetaData;
@@ -112,6 +98,7 @@ import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.pkg.PackageListeners;
 import org.apache.solr.pkg.PackageLoader;
+import org.apache.solr.pkg.PackagePluginHolder;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.BinaryResponseWriter;
@@ -137,10 +124,7 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.ManagedIndexSchema;
 import org.apache.solr.schema.SimilarityFactory;
-import org.apache.solr.search.QParserPlugin;
-import org.apache.solr.search.SolrFieldCacheBean;
-import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.search.ValueSourceParser;
+import org.apache.solr.search.*;
 import org.apache.solr.search.stats.LocalStatsCache;
 import org.apache.solr.search.stats.StatsCache;
 import org.apache.solr.update.DefaultSolrCoreState;
@@ -191,6 +175,11 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
   private String name;
   private String logid; // used to show what name is set
+  /**
+   * A unique id to differentiate multiple instances of the same core
+   * If we reload a core, the name remains same , but the id will be new
+   */
+  public final UUID uniqueId = UUID.randomUUID();
 
   private boolean isReloaded = false;
 
@@ -626,25 +615,26 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   }
 
 
+  @SuppressWarnings("unchecked")
   private void initListeners() {
     final Class<SolrEventListener> clazz = SolrEventListener.class;
     final String label = "Event Listener";
     for (PluginInfo info : solrConfig.getPluginInfos(SolrEventListener.class.getName())) {
       final String event = info.attributes.get("event");
       if ("firstSearcher".equals(event)) {
-        SolrEventListener obj = createInitInstance(info, clazz, label, null);
+        PluginHolder<SolrEventListener> obj = (PluginHolder<SolrEventListener>)PackagePluginHolder.createHolder(info, this, SolrEventListener.class, label);
         firstSearcherListeners.add(obj);
-        log.debug("[{}] Added SolrEventListener for firstSearcher: [{}]", logid, obj);
+        log.debug("[{}] Added SolrEventListener for firstSearcher: [{}]", logid, obj.get());
       } else if ("newSearcher".equals(event)) {
-        SolrEventListener obj = createInitInstance(info, clazz, label, null);
+        PluginHolder<SolrEventListener> obj = (PluginHolder<SolrEventListener>)PackagePluginHolder.createHolder(info, this, SolrEventListener.class, label);
         newSearcherListeners.add(obj);
-        log.debug("[{}] Added SolrEventListener for newSearcher: [{}]", logid, obj);
+        log.debug("[{}] Added SolrEventListener for newSearcher: [{}]", logid, obj.get());
       }
     }
   }
 
-  final List<SolrEventListener> firstSearcherListeners = new ArrayList<>();
-  final List<SolrEventListener> newSearcherListeners = new ArrayList<>();
+  final List<PluginHolder<SolrEventListener>> firstSearcherListeners = new ArrayList<>();
+  final List<PluginHolder<SolrEventListener>> newSearcherListeners = new ArrayList<>();
 
   /**
    * NOTE: this function is not thread safe.  However, it is safe to call within the
@@ -654,7 +644,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    * @see SolrCoreAware
    */
   public void registerFirstSearcherListener(SolrEventListener listener) {
-    firstSearcherListeners.add(listener);
+    firstSearcherListeners.add(new PluginHolder<>(listener,
+            SolrConfig.classVsSolrPluginInfo.get(SolrEventListener.class.getName())));
   }
 
   /**
@@ -665,7 +656,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    * @see SolrCoreAware
    */
   public void registerNewSearcherListener(SolrEventListener listener) {
-    newSearcherListeners.add(listener);
+    newSearcherListeners.add(
+            new PluginHolder<>(listener, SolrConfig.classVsSolrPluginInfo.get(SolrEventListener.class.getName())));
   }
 
   /**
@@ -938,6 +930,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
       this.solrConfig = configSet.getSolrConfig();
       this.resourceLoader = configSet.getSolrConfig().getResourceLoader();
+      this.resourceLoader.core = this;
       this.configSetProperties = configSet.getProperties();
       // Initialize the metrics manager
       this.coreMetricManager = initCoreMetricManager(solrConfig);
@@ -2364,8 +2357,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         if (currSearcher == null) {
           future = searcherExecutor.submit(() -> {
             try {
-              for (SolrEventListener listener : firstSearcherListeners) {
-                listener.newSearcher(newSearcher, null);
+              for (PluginHolder<SolrEventListener>  listener : firstSearcherListeners) {
+                listener.get().newSearcher(newSearcher, null);
               }
             } catch (Throwable e) {
               SolrException.log(log, null, e);
@@ -2380,8 +2373,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         if (currSearcher != null) {
           future = searcherExecutor.submit(() -> {
             try {
-              for (SolrEventListener listener : newSearcherListeners) {
-                listener.newSearcher(newSearcher, currSearcher);
+              for (PluginHolder<SolrEventListener>  listener : newSearcherListeners) {
+                listener.get().newSearcher(newSearcher, currSearcher);
               }
             } catch (Throwable e) {
               SolrException.log(log, null, e);
@@ -3252,4 +3245,5 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   public void runAsync(Runnable r) {
     coreAsyncTaskExecutor.submit(r);
   }
+
 }

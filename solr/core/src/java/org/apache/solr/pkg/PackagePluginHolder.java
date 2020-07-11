@@ -55,7 +55,7 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
       }
 
       @Override
-      public void changed(PackageLoader.Package pkg) {
+      public void changed(PackageLoader.Package pkg, Ctx ctx) {
         reload(pkg);
 
       }
@@ -68,19 +68,17 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
     });
   }
 
-  private String maxVersion() {
-    RequestParams.ParamSet p = core.getSolrConfig().getRequestParams().getParams(PackageListeners.PACKAGE_VERSIONS);
-    if (p == null) {
-      return null;
+  @SuppressWarnings({"rawtypes", "unchecked"})
+  public static PluginBag.PluginHolder createHolder(PluginInfo info, SolrCore core, Class type, String msg) {
+    if(info.cName.pkg == null) {
+      return new PluginBag.PluginHolder(info, core.createInitInstance(info, type,msg, null));
+    } else {
+      return new PackagePluginHolder(info, core, SolrConfig.classVsSolrPluginInfo.get(type.getName()));
     }
-    Object o = p.get().get(info.pkgName);
-    if (o == null || LATEST.equals(o)) return null;
-    return o.toString();
   }
 
-
   private synchronized void reload(PackageLoader.Package pkg) {
-    String lessThan = maxVersion();
+    String lessThan = core.getSolrConfig().maxPackageVersion(info.pkgName);
     PackageLoader.Package.Version newest = pkg.getLatest(lessThan);
     if (newest == null) {
       log.error("No latest version available for package : {}", pkg.name());
@@ -113,7 +111,7 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
   }
 
   @SuppressWarnings({"unchecked"})
-  protected void initNewInstance(PackageLoader.Package.Version newest) {
+  protected Object initNewInstance(PackageLoader.Package.Version newest) {
     Object instance = SolrCore.createInstance(pluginInfo.className,
         pluginMeta.clazz, pluginMeta.getCleanTag(), core, newest.getLoader());
     PluginBag.initInstance(instance, pluginInfo);
@@ -128,6 +126,7 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
         log.error("error closing plugin", e);
       }
     }
+    return inst;
   }
 
   private void handleAwareCallbacks(SolrResourceLoader loader, Object instance) {
