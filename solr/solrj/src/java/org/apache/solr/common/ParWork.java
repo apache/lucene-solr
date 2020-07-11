@@ -64,9 +64,9 @@ public class ParWork implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected final static ThreadLocal<ExecutorService> THREAD_LOCAL_EXECUTOR = new ThreadLocal<>();
-  public static final int MAXIMUM_POOL_SIZE = (int) Math.max(2, Math.round(Runtime.getRuntime().availableProcessors() / 2.0d));
+  public static volatile int MAXIMUM_POOL_SIZE;
   public static final long KEEP_ALIVE_TIME = 10L;
-  public static final int CAPACITY = 60;
+  public static volatile int CAPACITY;
 
   private Set<Object> collectSet = null;
 
@@ -598,6 +598,9 @@ public class ParWork implements Closeable {
   }
 
   public static ExecutorService getExecutorService(int corePoolSize, int maximumPoolSize, int keepAliveTime) {
+    MAXIMUM_POOL_SIZE = Integer.getInteger("solr.maxThreadExecPoolSize",
+            (int) Math.max(2, Math.round(Runtime.getRuntime().availableProcessors() / 2.0d)));
+    CAPACITY = Integer.getInteger("solr.threadExecQueueSize", 60);
     ThreadPoolExecutor exec;
     exec = new ThreadPoolExecutor(0, MAXIMUM_POOL_SIZE,
             KEEP_ALIVE_TIME, TimeUnit.SECONDS,
