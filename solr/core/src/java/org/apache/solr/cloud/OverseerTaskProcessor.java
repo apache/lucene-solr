@@ -227,11 +227,11 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
               if (!tooManyTasks) {
                 tooManyTasks = runningTasksSize() >= MAX_PARALLEL_TASKS;
               }
-
-              if (runningZKTasks.contains(head.getId())) {
-                log.warn("Task found in running ZKTasks already, contining");
-                continue;
-              }
+// nocommit
+//              if (runningZKTasks.contains(head.getId())) {
+//                log.warn("Task found in running ZKTasks already, contining");
+//                continue;
+//              }
 
               final ZkNodeProps message = ZkNodeProps.load(head.getBytes());
               final String asyncId = message.getStr(ASYNC);
