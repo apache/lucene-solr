@@ -168,7 +168,7 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
 
     int i = 0;
     try {
-      for (; i < 10; i++) {
+      for (; i < (TEST_NIGHTLY ? 10 : 2); i++) {
         Directory fsDir = FSDirectory.open(new File(file, "normal").toPath());
         String name = getName();
         createFile(name, fsDir, directory);
@@ -185,14 +185,14 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
   @Test
   public void testRandomAccessWritesLargeCache() throws IOException {
     mapperCache.map = Caffeine.newBuilder()
-        .maximumSize(10_000)
+        .maximumSize(TEST_NIGHTLY ? 10_000 : 100)
         .<String, byte[]>build()
         .asMap();
     testRandomAccessWrites();
   }
 
   private void assertInputsEquals(String name, Directory fsDir, Directory hdfs) throws IOException {
-    int reads = random.nextInt(MAX_NUMBER_OF_READS);
+    int reads = random.nextInt(TEST_NIGHTLY ? MAX_NUMBER_OF_READS : 500);
     IndexInput fsInput = fsDir.openInput(name, new IOContext());
     IndexInput hdfsInput = hdfs.openInput(name, new IOContext());
     assertEquals(fsInput.length(), hdfsInput.length());
@@ -232,7 +232,7 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
   }
 
   private void createFile(String name, Directory fsDir, Directory hdfs) throws IOException {
-    int writes = random.nextInt(MAX_NUMBER_OF_WRITES);
+    int writes = random.nextInt(TEST_NIGHTLY ? MAX_NUMBER_OF_WRITES : 100);
     int fileLength = random.nextInt(MAX_FILE_SIZE - MIN_FILE_SIZE) + MIN_FILE_SIZE;
     IndexOutput fsOutput = fsDir.createOutput(name, IOContext.DEFAULT);
     IndexOutput hdfsOutput = hdfs.createOutput(name, IOContext.DEFAULT);
