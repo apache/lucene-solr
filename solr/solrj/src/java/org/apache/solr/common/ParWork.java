@@ -18,6 +18,7 @@ package org.apache.solr.common;
 
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
+import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -54,7 +55,7 @@ import org.slf4j.LoggerFactory;
  * 
  */
 public class ParWork implements Closeable {
-
+  static final int PROC_COUNT = ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors();
   private static final String WORK_WAS_INTERRUPTED = "Work was interrupted!";
 
   private static final String RAN_INTO_AN_ERROR_WHILE_DOING_WORK =
@@ -498,7 +499,36 @@ public class ParWork implements Closeable {
             }
             if (closeCalls.size() > 0) {
               try {
-                List<Future<Object>> results = executor.invokeAll(closeCalls, 15, TimeUnit.SECONDS);
+
+                double load =  ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage();
+                if (load < 0) {
+                  log.warn("SystemLoadAverage not supported on this JVM");
+                  load = 0;
+                }
+
+                double ourLoad = sysStats.getAvarageUsagePerCPU();
+                if (ourLoad > 1) {
+                  int cMax = ((ThreadPoolExecutor)executor).getMaximumPoolSize();
+                  if (cMax > 2) {
+                    ((ThreadPoolExecutor)executor).setMaximumPoolSize(Math.max(1, (int) ((double)cMax * 0.60D)));
+                  }
+                } else {
+                  double sLoad = load / (double) PROC_COUNT;
+                  if (sLoad > 1.0D) {
+                    int cMax =  ((ThreadPoolExecutor)executor).getMaximumPoolSize();
+                    if (cMax > 2) {
+                      ((ThreadPoolExecutor)executor).setMaximumPoolSize(Math.max(1, (int) ((double) cMax * 0.60D)));
+                    }
+                  } else if (sLoad < 0.9D && MAXIMUM_POOL_SIZE !=  ((ThreadPoolExecutor)executor).getMaximumPoolSize()) {
+                    ((ThreadPoolExecutor)executor).setMaximumPoolSize(MAXIMUM_POOL_SIZE);
+                  }
+                  log.info("external request, load:" + sLoad); //nocommit: remove when testing is done
+
+                }
+
+
+                ;
+                List<Future<Object>> results = executor.invokeAll(closeCalls, 8, TimeUnit.SECONDS);
 
                 for (Future<Object> future : results) {
                   if (!future.isDone() || future.isCancelled()) {
@@ -565,7 +595,7 @@ public class ParWork implements Closeable {
   }
 
   public static ExecutorService getExecutorService(int corePoolSize, int maximumPoolSize, int keepAliveTime) {
-    ExecutorService exec;
+    ThreadPoolExecutor exec;
     exec = new ThreadPoolExecutor(0, MAXIMUM_POOL_SIZE,
             KEEP_ALIVE_TIME, TimeUnit.SECONDS,
              new ArrayBlockingQueue<>(CAPACITY), // size?
