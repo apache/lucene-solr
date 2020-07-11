@@ -55,6 +55,7 @@ import static org.apache.solr.common.util.Utils.fromJSONString;
  * 
  */
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@Ignore // nocommit debug
 public class SolrExampleJettyTest extends SolrExampleTests {
 
   @BeforeClass

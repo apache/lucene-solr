@@ -22,9 +22,10 @@ import java.util.Arrays;
 
 import org.apache.solr.util.RandomizeSSL;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 
 @RandomizeSSL(1.0)
-
+@Ignore // nocommit debug
 public class HttpSolrClientSSLAuthConPoolTest extends HttpSolrClientConPoolTest {
 
     @BeforeClass

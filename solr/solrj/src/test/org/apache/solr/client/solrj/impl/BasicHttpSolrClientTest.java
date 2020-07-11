@@ -72,6 +72,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -533,6 +534,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
   }
 
   @Test
+  @Ignore // nocommit debug
   public void testCollectionParameters() throws IOException, SolrServerException {
 
     try (HttpSolrClient client = getHttpSolrClient(jetty.getBaseUrl().toString())) {

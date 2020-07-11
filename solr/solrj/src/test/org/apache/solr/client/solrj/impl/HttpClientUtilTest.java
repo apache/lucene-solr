@@ -30,10 +30,12 @@ import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.lucene.util.TestRuleRestoreSystemProperties;
 
 import org.junit.After;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.rules.TestRule;
 import org.junit.Test;
 
+@Ignore // nocommit debug
 public class HttpClientUtilTest extends SolrTestCase {
 
   @Rule

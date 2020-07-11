@@ -33,6 +33,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
 import org.apache.solr.util.tracing.GlobalTracer;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.solr.jaeger.JaegerTracerConfigurator.AGENT_HOST;
@@ -41,6 +42,7 @@ import static org.apache.solr.jaeger.JaegerTracerConfigurator.FLUSH_INTERVAL;
 import static org.apache.solr.jaeger.JaegerTracerConfigurator.LOG_SPANS;
 import static org.apache.solr.jaeger.JaegerTracerConfigurator.MAX_QUEUE_SIZE;
 
+@Ignore // nocommit debug
 public class TestJaegerConfigurator extends SolrTestCaseJ4 {
 
   @Test

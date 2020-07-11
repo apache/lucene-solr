@@ -24,12 +24,14 @@ import java.util.List;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import junit.framework.Assert;
 import org.apache.solr.core.SolrCore;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Ignore // nocommit debug
 public class TestEmbeddedSolrServer extends AbstractEmbeddedSolrServerTestCase {
 
   @Rule

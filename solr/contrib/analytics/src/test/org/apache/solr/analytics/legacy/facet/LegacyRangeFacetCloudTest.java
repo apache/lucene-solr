@@ -22,9 +22,10 @@ import java.util.List;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
-
+@Ignore // nocommit debug
 public class LegacyRangeFacetCloudTest extends LegacyAbstractAnalyticsFacetCloudTest{
   public static final int INT = 71;
   public static final int LONG = 36;

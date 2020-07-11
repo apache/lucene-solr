@@ -25,6 +25,7 @@ import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,6 +38,7 @@ import java.util.List;
  * @since solr 1.3
  */
 @Slow
+@Ignore // nocommit - flakey
 public class SolrExampleStreamingTest extends SolrExampleTests {
 
   @BeforeClass

@@ -43,11 +43,13 @@ import org.apache.solr.search.DocList;
 import org.carrot2.clustering.lingo.LingoClusteringAlgorithm;
 import org.carrot2.core.LanguageCode;
 import org.carrot2.util.attribute.AttributeUtils;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  *
  */
+@Ignore // nocommit debug
 public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
   @Test
   public void testCarrotLingo() throws Exception {

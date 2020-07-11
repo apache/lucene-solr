@@ -28,6 +28,7 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.common.SolrInputDocument;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -39,6 +40,7 @@ import org.slf4j.LoggerFactory;
  *
  * @since solr 1.3
  */
+@Ignore // nocommit debug
 public class TestSolrProperties extends AbstractEmbeddedSolrServerTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

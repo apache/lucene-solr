@@ -19,8 +19,10 @@ package org.apache.solr.client.solrj.request;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.SolrParams;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore // nocommit debug
 public class TestLukeRequest extends SolrTestCaseJ4 {
   @Test
   public void testSkipsIncludeIndexFieldFlagsParamWhenNotSpecified() {

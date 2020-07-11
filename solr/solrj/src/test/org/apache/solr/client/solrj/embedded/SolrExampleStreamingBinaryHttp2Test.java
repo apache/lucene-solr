@@ -32,10 +32,12 @@ import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
+import org.junit.Ignore;
 import org.junit.Test;
 
 @LuceneTestCase.Slow
 @SolrTestCaseJ4.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@Ignore // nocommit debug
 public class SolrExampleStreamingBinaryHttp2Test extends SolrExampleStreamingHttp2Test {
 
   @Override

@@ -26,8 +26,10 @@ import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore // nocommit debug
 public class TestCloudSolrClientConnections extends SolrTestCaseJ4 {
 
   @Test

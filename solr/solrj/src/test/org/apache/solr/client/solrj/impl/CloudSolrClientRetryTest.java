@@ -27,8 +27,10 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.TestInjection;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore // nocommit debug
 public class CloudSolrClientRetryTest extends SolrCloudTestCase {
   private static final int NODE_COUNT = 1;
 

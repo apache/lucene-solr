@@ -25,8 +25,10 @@ import java.util.Optional;
 
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCase;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore // nocommit debug
 public class CloudHttp2SolrClientMultiConstructorTest extends SolrTestCase {
   
   /*

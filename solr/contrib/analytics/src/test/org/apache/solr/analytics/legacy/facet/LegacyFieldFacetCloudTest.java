@@ -25,8 +25,10 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore // nocommit debug
 public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloudTest {
   public static final int INT = 71;
   public static final int LONG = 36;

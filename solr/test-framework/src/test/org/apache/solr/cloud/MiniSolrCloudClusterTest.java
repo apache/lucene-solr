@@ -27,11 +27,13 @@ import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 
 @LuceneTestCase.SuppressSysoutChecks(bugUrl = "Solr logs to JUL")
+@Ignore // nocommit debug
 public class MiniSolrCloudClusterTest extends SolrTestCaseJ4 {
 
   @ClassRule

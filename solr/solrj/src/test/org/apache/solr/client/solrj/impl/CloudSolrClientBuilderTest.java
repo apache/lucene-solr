@@ -25,8 +25,10 @@ import java.util.Optional;
 
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore // nocommit debug
 public class CloudSolrClientBuilderTest extends SolrTestCase {
   private static final String ANY_CHROOT = "/ANY_CHROOT";
   private static final String ANY_ZK_HOST = "ANY_ZK_HOST";

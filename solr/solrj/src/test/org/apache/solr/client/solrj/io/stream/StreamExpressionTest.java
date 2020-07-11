@@ -61,11 +61,13 @@ import org.apache.solr.core.SolrPaths;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 @Slow
 @SolrTestCaseJ4.SuppressSSL
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40","Lucene41","Lucene42","Lucene45"})
+@Ignore // nocommit debug
 public class StreamExpressionTest extends SolrCloudTestCase {
 
   private static final String COLLECTIONORALIAS = "collection1";
@@ -2945,6 +2947,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
 
   @Test
+  @Ignore // nocommit debug
   public void testBasicTextLogitStream() throws Exception {
     Assume.assumeTrue(!useAlias);
 

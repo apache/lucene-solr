@@ -47,6 +47,7 @@ import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHas
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,6 +55,7 @@ import org.slf4j.LoggerFactory;
  * tests various streaming expressions (via the SolrJ {@link SolrStream} API) against a SolrCloud cluster
  * using both Authenticationand Role based Authorization
  */
+@Ignore // nocommit debug
 public class CloudAuthStreamTest extends SolrCloudTestCase {
     
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

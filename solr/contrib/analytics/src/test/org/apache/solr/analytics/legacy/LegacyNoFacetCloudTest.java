@@ -22,8 +22,10 @@ import java.util.List;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.util.NamedList;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore // nocommit debug
 public class LegacyNoFacetCloudTest extends LegacyAbstractAnalyticsCloudTest {
   static public final int INT = 71;
   static public final int LONG = 36;

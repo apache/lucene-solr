@@ -74,6 +74,7 @@ import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -87,6 +88,7 @@ import static org.apache.solr.client.solrj.impl.BaseCloudSolrClient.*;
  * This test would be faster if we simulated the zk state instead.
  */
 @Slow
+@Ignore // nocommit debug
 public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
