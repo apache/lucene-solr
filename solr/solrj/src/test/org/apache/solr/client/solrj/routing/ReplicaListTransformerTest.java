@@ -159,6 +159,9 @@ public class ReplicaListTransformerTest extends SolrTestCase {
     transformer.transform(actualTransformed);
 
     assertEquals(expectedTransformed, actualTransformed);
+    if (transformer instanceof  HttpShardHandlerFactory) {
+      ((HttpShardHandlerFactory) transformer).close();
+    }
   }
 
   private final List<String> createRandomUrls() throws Exception {

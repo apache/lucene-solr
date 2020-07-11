@@ -159,17 +159,18 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
     // ensure it doesn't block where there's nothing to do yet
     concurrentClient.blockUntilFinished();
     
-    int poolSize = 5;
+    int poolSize = TEST_NIGHTLY ? 5 : 2;
     ExecutorService threadPool = ExecutorUtil.newMDCAwareFixedThreadPool(poolSize, new SolrNamedThreadFactory("testCUSS"));
 
-    int numDocs = 100;
-    int numRunnables = 5;
+    int numDocs = TEST_NIGHTLY ? 100 : 10;
+    int numRunnables = TEST_NIGHTLY ? 5 : 2;
     for (int r=0; r < numRunnables; r++)
       threadPool.execute(new SendDocsRunnable(String.valueOf(r), numDocs, concurrentClient));
     
     // ensure all docs are sent
-    threadPool.awaitTermination(5, TimeUnit.SECONDS);
     threadPool.shutdown();
+    threadPool.awaitTermination(5, TimeUnit.SECONDS);
+
     
     // wait until all requests are processed by CUSS 
     concurrentClient.blockUntilFinished();
@@ -225,7 +226,7 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
 
     int cussThreadCount = 2;
     int cussQueueSize = 100;
-    int numDocs = TEST_NIGHTLY ? 100 : 10;
+    int numDocs = TEST_NIGHTLY ? 100 : 5;
     int numRunnables = TEST_NIGHTLY ? 5 : 2;
     int expected = numDocs * numRunnables;
 
@@ -240,16 +241,17 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
 
       // Delete all existing documents.
       concurrentClient.deleteByQuery("collection1", "*:*");
-
-      int poolSize = 5;
+      concurrentClient.commit("collection1");
+      int poolSize = TEST_NIGHTLY ? 5 : 2;
       ExecutorService threadPool = ExecutorUtil.newMDCAwareFixedThreadPool(poolSize, new SolrNamedThreadFactory("testCUSS"));
 
       for (int r=0; r < numRunnables; r++)
         threadPool.execute(new SendDocsRunnable(String.valueOf(r), numDocs, concurrentClient, "collection1"));
 
       // ensure all docs are sent
-      threadPool.awaitTermination(5, TimeUnit.SECONDS);
       threadPool.shutdown();
+      threadPool.awaitTermination(5, TimeUnit.SECONDS);
+
 
       concurrentClient.commit("collection1");
 
