@@ -380,6 +380,7 @@ public class SimScenario implements AutoCloseable {
         if (zkHost == null) {
           throw new IOException(SimAction.LOAD_SNAPSHOT + " must specify 'path' or 'zkHost'");
         } else {
+
           try (CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder(Collections.singletonList(zkHost), Optional.empty()).build()) {
             cloudSolrClient.connect();
             try (SolrClientCloudManager realCloudManager = new SolrClientCloudManager(NoopDistributedQueueFactory.INSTANCE, cloudSolrClient)) {

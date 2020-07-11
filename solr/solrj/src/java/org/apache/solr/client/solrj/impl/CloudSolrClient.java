@@ -307,6 +307,11 @@ public class CloudSolrClient extends BaseCloudSolrClient {
       this.stateProvider = stateProvider;
     }
 
+    public Builder(ZkStateReader zkStateReader) {
+      ZkClientClusterStateProvider stateProvider = new ZkClientClusterStateProvider(zkStateReader, false);
+      this.stateProvider = stateProvider;
+    }
+
     /**
      * Provide a ZooKeeper client endpoint to be used when configuring {@link CloudSolrClient} instances.
      * 

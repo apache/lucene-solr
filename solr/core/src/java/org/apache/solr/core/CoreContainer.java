@@ -911,8 +911,7 @@ public class CoreContainer implements Closeable {
     if (isZooKeeperAware()) {
       name = getZkController().getNodeName();
       cloudManager = getZkController().getSolrCloudManager();
-      client = new CloudSolrClient.Builder(Collections.singletonList(getZkController().getZkServerAddress()), Optional.empty())
-          .withSocketTimeout(30000).withConnectionTimeout(15000)
+      client = new CloudSolrClient.Builder(getZkController().getZkStateReader())
           .withHttpClient(updateShardHandler.getDefaultHttpClient()).build();
     } else {
       name = getNodeConfig().getNodeName();

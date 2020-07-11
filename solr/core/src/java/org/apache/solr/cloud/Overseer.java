@@ -711,9 +711,9 @@ public class Overseer implements SolrCloseable {
     } else {
       return;
     }
-    try (CloudSolrClient client = new CloudSolrClient.Builder(Collections.singletonList(getZkController().getZkServerAddress()), Optional.empty())
-          .withSocketTimeout(30000).withConnectionTimeout(15000)
-        .withHttpClient(updateShardHandler.getDefaultHttpClient()).build()) {
+
+    try (CloudSolrClient client = new CloudSolrClient.Builder(    getCoreContainer().getZkController().getZkStateReader())
+            .withHttpClient(updateShardHandler.getDefaultHttpClient()).build()) {
       CollectionAdminRequest.ColStatus req = CollectionAdminRequest.collectionStatus(CollectionAdminParams.SYSTEM_COLL)
           .setWithSegments(true)
           .setWithFieldInfo(true);
