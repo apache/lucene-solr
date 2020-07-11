@@ -262,18 +262,21 @@ public class SolrCmdDistributor implements Closeable {
       addCommit(uReq, cmd);
       submit(new Req(cmd, node, uReq, false), true);
     }
-    // wait for any async commits to complete
-    while (pending != null && pending.size() > 0) {
-      Future<Object> future = null;
-      try {
-        future = completionService.take();
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        log.error("blockAndDoRetries interrupted", e);
-        return;
+    if (cmd.waitSearcher) {
+      // only if wait for searcher?.,l
+      // wait for any async commits to complete
+      while (pending != null && pending.size() > 0) {
+        Future<Object> future = null;
+        try {
+          future = completionService.take();
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          log.error("blockAndDoRetries interrupted", e);
+          return;
+        }
+        if (future == null) return;
+        pending.remove(future);
       }
-      if (future == null) return;
-      pending.remove(future);
     }
     
   }
