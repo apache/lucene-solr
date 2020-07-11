@@ -30,6 +30,7 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.routing.ReplicaListTransformer;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
@@ -57,6 +58,7 @@ public class HttpShardHandler extends ShardHandler {
   public HttpShardHandler(HttpShardHandlerFactory httpShardHandlerFactory, Http2SolrClient httpClient) {
     this.httpClient = httpClient;
     this.httpShardHandlerFactory = httpShardHandlerFactory;
+
     completionService = httpShardHandlerFactory.newCompletionService();
     pending = new HashSet<>();
   }
@@ -67,6 +69,7 @@ public class HttpShardHandler extends ShardHandler {
     ShardRequestor shardRequestor = new ShardRequestor(sreq, shard, params, this);
     try {
       shardRequestor.init();
+      ParWork.sizePoolByLoad();
       pending.add(completionService.submit(shardRequestor));
     } finally {
       shardRequestor.end();

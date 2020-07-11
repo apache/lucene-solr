@@ -179,7 +179,8 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
         try {
           MDC.put("CoreAdminHandler.asyncId", taskId);
           MDC.put("CoreAdminHandler.action", op.action.toString());
-          ParWork.getExecutor().execute(() -> { // ### SUPER DUPER EXPERT USAGE
+          ParWork.sizePoolByLoad();
+          ParWork.getExecutor().submit(() -> { // ### SUPER DUPER EXPERT USAGE
             boolean exceptionCaught = false;
             try {
               if (!cores.isShutDown()) {

@@ -80,6 +80,10 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
     if (threadName.startsWith("ScheduledTrigger")) {
       return true;
     }
+    if (threadName.contains("worker-SendThread")) {
+      return true;
+    }
+
 
 
     return false;

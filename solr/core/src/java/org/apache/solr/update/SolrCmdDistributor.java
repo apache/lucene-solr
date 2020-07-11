@@ -298,7 +298,7 @@ public class SolrCmdDistributor implements Closeable {
     if (SolrRequestInfo.getRequestInfo() != null) {
       req.uReq.setUserPrincipal(SolrRequestInfo.getRequestInfo().getReq().getUserPrincipal());
     }
-
+    ParWork.sizePoolByLoad();
     Tracer tracer = GlobalTracer.getTracer();
     Span parentSpan = tracer.activeSpan();
     if (parentSpan != null) {

@@ -548,6 +548,7 @@ public class SimpleFacets {
           } else {
             PerSegmentSingleValuedFaceting ps = new PerSegmentSingleValuedFaceting(searcher, docs, field, offset, limit, mincount, missing, sort, prefix, termFilter);
             ps.setNumThreads(threads);
+            ParWork.sizePoolByLoad();
             counts = ps.getFacetCounts(ParWork.getExecutor()); // ### expert usage
           }
           break;

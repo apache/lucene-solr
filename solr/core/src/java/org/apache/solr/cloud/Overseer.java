@@ -416,6 +416,7 @@ public class Overseer implements SolrCloseable {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Message missing " + QUEUE_OPERATION + ":" + message);
       }
       AtomicBoolean stop = new AtomicBoolean(false);
+
       ParWork.getExecutor().invokeAll(Collections.singleton(new Callable<Object>() { // ### expert use
 
           @Override

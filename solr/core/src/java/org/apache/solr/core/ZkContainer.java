@@ -222,7 +222,7 @@ public class ZkContainer implements Closeable {
           MDCLoggingContext.clear();
         }
       };
-
+     ParWork.sizePoolByLoad();
      ParWork.getExecutor().submit(r); // ### expert usage
 
   }
