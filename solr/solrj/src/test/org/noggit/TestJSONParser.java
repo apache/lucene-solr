@@ -129,7 +129,7 @@ public class TestJSONParser extends SolrTestCaseJ4 {
       parse(p,in,expected);
     }
 
-    testCorruption(input, 100000);
+    testCorruption(input,  TEST_NIGHTLY ? 100000 : 100);
 
   }
 

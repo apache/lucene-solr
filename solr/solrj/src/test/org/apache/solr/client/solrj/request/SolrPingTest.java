@@ -25,6 +25,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import junit.framework.Assert;
@@ -32,6 +33,7 @@ import junit.framework.Assert;
 /**
  * Test SolrPing in Solrj
  */
+@Ignore // nocommit flakey
 public class SolrPingTest extends EmbeddedSolrServerTestBase {
   
   @BeforeClass

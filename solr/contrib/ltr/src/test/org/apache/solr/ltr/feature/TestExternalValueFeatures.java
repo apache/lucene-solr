@@ -21,8 +21,10 @@ import org.apache.solr.ltr.FeatureLoggerTestUtils;
 import org.apache.solr.ltr.TestRerankBase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore // nocommit flakey
 public class TestExternalValueFeatures extends TestRerankBase {
 
   @BeforeClass

@@ -35,6 +35,7 @@ import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.QoSParams;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.Utils;
 
 /**
@@ -50,6 +51,7 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
     params.set(HttpClientUtil.PROP_SO_TIMEOUT, 10000);
     httpClient = HttpClientUtil.createClient(params);
     this.serverProvider = serverProvider;
+    ObjectReleaseTracker.track(this);
   }
   
   public String getBaseURL() {
@@ -234,5 +236,6 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
   @Override
   public void close() throws IOException {
     HttpClientUtil.close(httpClient);
+    ObjectReleaseTracker.release(this);
   }
 }
