@@ -165,8 +165,9 @@ public class SolrTestCase extends LuceneTestCase {
 
 
     if (!TEST_NIGHTLY) {
-      TestInjection.randomDelayMaxInCoreCreationInSec = 2;
+      //TestInjection.randomDelayMaxInCoreCreationInSec = 2;
 
+      System.setProperty("solr.MaxConcurrentRequests", "5");
 
       System.setProperty("zookeeper.nio.numSelectorThreads", "1");
       System.setProperty("zookeeper.nio.numWorkerThreads", "3");

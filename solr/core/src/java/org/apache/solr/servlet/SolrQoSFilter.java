@@ -48,7 +48,7 @@ public class SolrQoSFilter extends QoSFilter {
   @Override
   public void init(FilterConfig filterConfig) {
     super.init(filterConfig);
-    _origMaxRequests = 10;
+    _origMaxRequests = Integer.getInteger("solr.MaxConcurrentRequests", 300);
     super.setMaxRequests(_origMaxRequests);
     super.setSuspendMs(15000);
     super.setWaitMs(500);
