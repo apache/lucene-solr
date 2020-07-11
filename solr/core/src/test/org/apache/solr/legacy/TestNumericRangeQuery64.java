@@ -54,7 +54,7 @@ public class TestNumericRangeQuery64 extends SolrTestCase {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
-    noDocs = atLeast(4096);
+    noDocs = atLeast(TEST_NIGHTLY ? 4096 : 3096);
     distance = (1L << 60) / noDocs;
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
@@ -157,7 +157,7 @@ public class TestNumericRangeQuery64 extends SolrTestCase {
   /** test for constant score + boolean query + filter, the other tests only use the constant score mode */
   private void testRange(int precisionStep) throws Exception {
     String field="field"+precisionStep;
-    int count=3000;
+    int count= TEST_NIGHTLY ? 3000 : 30;
     long lower=(distance*3/2)+startOffset, upper=lower + count*distance + (distance/3);
     LegacyNumericRangeQuery<Long> q = LegacyNumericRangeQuery.newLongRange(field, precisionStep, lower, upper, true, true);
     for (byte i=0; i<2; i++) {

@@ -113,7 +113,7 @@ public class TestNumericTerms64 extends SolrTestCase {
   public static void afterClass() throws Exception {
     searcher = null;
     if (null != reader) {
-      TestUtil.checkReader(reader);
+      if (TEST_NIGHTLY) TestUtil.checkReader(reader);
       reader.close();
       reader = null;
     }

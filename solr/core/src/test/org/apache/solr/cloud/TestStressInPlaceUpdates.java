@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -74,7 +75,7 @@ public class TestStressInPlaceUpdates extends SolrCloudBridgeTestCase {
   }
 
   protected final ConcurrentHashMap<Integer, DocInfo> model = new ConcurrentHashMap<>();
-  protected Map<Integer, DocInfo> committedModel = new HashMap<>();
+  protected Map<Integer, DocInfo> committedModel = new ConcurrentHashMap<>();
   protected long snapshotCount;
   protected long committedModelClock;
   protected int clientIndexUsedForCommit;
@@ -103,14 +104,14 @@ public class TestStressInPlaceUpdates extends SolrCloudBridgeTestCase {
     final int deletePercent = 4 + random().nextInt(25);
     final int deleteByQueryPercent = random().nextInt(8);
     final int ndocs = atLeast(5);
-    int nWriteThreads = 5 + random().nextInt(12);
+    int nWriteThreads = TEST_NIGHTLY ? (5 + random().nextInt(12)) : 1 + random().nextInt(3);
     int fullUpdatePercent = 5 + random().nextInt(50);
 
     // query variables
     final int percentRealtimeQuery = 75;
     // number of cumulative read/write operations by all threads
     final AtomicLong operations = new AtomicLong(TEST_NIGHTLY ? 5000 : 500);
-    int nReadThreads = 5 + random().nextInt(12);
+    int nReadThreads =  TEST_NIGHTLY ? (5 + random().nextInt(12)) : 1 + random().nextInt(3);
 
 
     /** // testing
@@ -141,14 +142,14 @@ public class TestStressInPlaceUpdates extends SolrCloudBridgeTestCase {
 
     initModel(ndocs);
 
-    List<Thread> threads = new ArrayList<>();
+    List<Callable<Object>> threads = new ArrayList<>();
 
     for (int i = 0; i < nWriteThreads; i++) {
-      Thread thread = new Thread("WRITER" + i) {
+      Callable<Object> thread = new Callable<>() {
         Random rand = new Random(random().nextInt());
 
         @Override
-        public void run() {
+        public Object call() {
           try {
             while (operations.decrementAndGet() > 0) {
               int oper = rand.nextInt(50);
@@ -157,10 +158,10 @@ public class TestStressInPlaceUpdates extends SolrCloudBridgeTestCase {
                 Map<Integer, DocInfo> newCommittedModel;
                 long version;
 
-                synchronized (TestStressInPlaceUpdates.this) {
+
                   // take a snapshot of the model
                   // this is safe to do w/o synchronizing on the model because it's a ConcurrentHashMap
-                  newCommittedModel = new HashMap<>(model);  
+                  newCommittedModel = new ConcurrentHashMap<>(model);
                   version = snapshotCount++;
 
                   int chosenClientIndex = rand.nextInt(clients.size());
@@ -184,7 +185,7 @@ public class TestStressInPlaceUpdates extends SolrCloudBridgeTestCase {
                     committedModel = newCommittedModel;
                     committedModelClock = version;
                   }
-                }
+
                 continue;
               }
 
@@ -238,6 +239,7 @@ public class TestStressInPlaceUpdates extends SolrCloudBridgeTestCase {
                     model.put(id, new DocInfo(returnedVersion.longValue(), 0, 0));
                   }
                 }
+
                 
               } else {
                 int val1 = info.intFieldValue;
@@ -308,6 +310,7 @@ public class TestStressInPlaceUpdates extends SolrCloudBridgeTestCase {
             log.error("", e);
             throw new RuntimeException(e);
           }
+          return null;
         }
       };
 
@@ -317,12 +320,12 @@ public class TestStressInPlaceUpdates extends SolrCloudBridgeTestCase {
 
     // Read threads
     for (int i = 0; i < nReadThreads; i++) {
-      Thread thread = new Thread("READER" + i) {
+      Callable<Object> thread = new Callable() {
         Random rand = new Random(random().nextInt());
 
         @SuppressWarnings("unchecked")
         @Override
-        public void run() {
+        public Object call() {
           try {
             while (operations.decrementAndGet() >= 0) {
               // bias toward a recently changed doc
@@ -420,19 +423,14 @@ public class TestStressInPlaceUpdates extends SolrCloudBridgeTestCase {
             log.error("", e);
             throw new RuntimeException(e);
           }
+          return null;
         }
       };
 
       threads.add(thread);
     }
-    // Start all threads
-    for (Thread thread : threads) {
-      thread.start();
-    }
 
-    for (Thread thread : threads) {
-      thread.join();
-    }
+    testExecutor.invokeAll(threads);
 
     { // final pass over uncommitted model with RTG
 
