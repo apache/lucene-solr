@@ -40,10 +40,10 @@ public class TestTimeSource extends SolrTestCaseJ4 {
     // long prevEpochTime = ts.getEpochTimeNs();
 
     long[] prevTimeAndEpoch = ts.getTimeAndEpochNs();
-    long delta = 500000000; // 500 ms
+    long delta = 100000000; // 500 ms
     long maxDiff = 1000;
     for (int i = 0; i < 10; i++) {
-      ts.sleep(500);
+      ts.sleep(100);
       long[] curTimeAndEpoch = ts.getTimeAndEpochNs();
       long diffTime = prevTimeAndEpoch[0] + delta - curTimeAndEpoch[0];
       long diffEpoch = prevTimeAndEpoch[1] + delta - curTimeAndEpoch[1];

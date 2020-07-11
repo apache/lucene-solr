@@ -225,8 +225,8 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
 
     int cussThreadCount = 2;
     int cussQueueSize = 100;
-    int numDocs = 100;
-    int numRunnables = 5;
+    int numDocs = TEST_NIGHTLY ? 100 : 10;
+    int numRunnables = TEST_NIGHTLY ? 5 : 2;
     int expected = numDocs * numRunnables;
 
     try (ConcurrentUpdateSolrClient concurrentClient
