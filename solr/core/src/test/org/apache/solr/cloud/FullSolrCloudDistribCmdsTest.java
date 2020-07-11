@@ -68,14 +68,14 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
-    System.setProperty("distribUpdateSoTimeout", "3000");
-    System.setProperty("socketTimeout", "5000");
-    System.setProperty("connTimeout", "3000");
-    System.setProperty("solr.test.socketTimeout.default", "5000");
-    System.setProperty("solr.connect_timeout.default", "3000");
-    System.setProperty("solr.so_commit_timeout.default", "5000");
-    System.setProperty("solr.httpclient.defaultConnectTimeout", "3000");
-    System.setProperty("solr.httpclient.defaultSoTimeout", "5000");
+    System.setProperty("distribUpdateSoTimeout", "10000");
+    System.setProperty("socketTimeout", "10000");
+    System.setProperty("connTimeout", "5000");
+    System.setProperty("solr.test.socketTimeout.default", "10000");
+    System.setProperty("solr.connect_timeout.default", "5000");
+    System.setProperty("solr.so_commit_timeout.default", "10000");
+    System.setProperty("solr.httpclient.defaultConnectTimeout", "5000");
+    System.setProperty("solr.httpclient.defaultSoTimeout", "10000");
 
     System.setProperty("solr.httpclient.retries", "1");
     System.setProperty("solr.retries.on.forward", "1");
@@ -88,7 +88,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
 
     // use a 5 node cluster so with a typical 2x2 collection one node isn't involved
     // helps to randomly test edge cases of hitting a node not involved in collection
-    configureCluster(TEST_NIGHTLY ? 5 : 3).configure();
+    configureCluster(TEST_NIGHTLY ? 5 : 2).configure();
   }
 
   @After
