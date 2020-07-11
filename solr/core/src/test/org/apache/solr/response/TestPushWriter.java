@@ -44,9 +44,10 @@ public class TestPushWriter extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 
+  @SuppressWarnings({"unchecked"})
   public void testStandardResponse() throws IOException {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    Map m;
+    Map<Object, Object> m;
     try (OutputStreamWriter osw = new OutputStreamWriter(baos, StandardCharsets.UTF_8)) {
       JSONWriter pw = new JSONWriter(osw,
           new LocalSolrQueryRequest(null, new ModifiableSolrParams()), new SolrQueryResponse());
@@ -55,13 +56,13 @@ public class TestPushWriter extends SolrTestCaseJ4 {
       if (log.isInfoEnabled()) {
         log.info("{}", new String(baos.toByteArray(), StandardCharsets.UTF_8));
       }
-      m = (Map) Utils.fromJSON(baos.toByteArray());
+      m = (Map<Object, Object>) Utils.fromJSON(baos.toByteArray());
       checkValues(m);
     }
 
     try (JavaBinCodec jbc = new JavaBinCodec(baos= new ByteArrayOutputStream(), null)) {
       writeData(jbc);
-      m = (Map) Utils.fromJavabin(baos.toByteArray());
+      m = (Map<Object, Object>) Utils.fromJavabin(baos.toByteArray());
     }
     checkValues(m);
   }
@@ -87,7 +88,7 @@ public class TestPushWriter extends SolrTestCaseJ4 {
     }
   }
 
-  protected void checkValues(@SuppressWarnings({"rawtypes"})Map m) {
+  protected void checkValues(Map<Object, Object> m) {
     assertEquals(0, ((Number)Utils.getObjectByPath(m, true, "responseHeader/status")).intValue());
     assertEquals(10, ((Number)Utils.getObjectByPath(m, true, "response/numFound")).intValue());
     assertEquals(1, ((Number)Utils.getObjectByPath(m, true, "response/docs[0]/id")).intValue());
