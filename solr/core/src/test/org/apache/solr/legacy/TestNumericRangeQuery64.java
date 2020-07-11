@@ -54,7 +54,7 @@ public class TestNumericRangeQuery64 extends SolrTestCase {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
-    noDocs = atLeast(TEST_NIGHTLY ? 4096 : 3096);
+    noDocs = atLeast(4096);
     distance = (1L << 60) / noDocs;
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,

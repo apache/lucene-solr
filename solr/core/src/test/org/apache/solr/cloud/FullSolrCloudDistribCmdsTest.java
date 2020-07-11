@@ -308,8 +308,8 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     
     // index
     long docId = 42;
-    int topDocsNum = atLeast(5);
-    int childsNum = 5+random().nextInt(5);
+    int topDocsNum = atLeast(TEST_NIGHTLY ? 5 : 2);
+    int childsNum = (TEST_NIGHTLY ? 5 : 2)+random().nextInt(TEST_NIGHTLY ? 5 : 2);
     for (int i = 0; i < topDocsNum; ++i) {
       UpdateRequest uReq = new UpdateRequest();
       SolrInputDocument topDocument = new SolrInputDocument();
