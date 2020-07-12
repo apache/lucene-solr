@@ -433,7 +433,6 @@ public class Overseer implements SolrCloseable {
                           }
 
                         });
-                System.out.println("return cs:" + cs);
                 state.set(cs);
                 return null;
 

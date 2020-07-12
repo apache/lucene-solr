@@ -333,7 +333,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
               removeLookupResults.add(lresult);
               if (extended) {
                 for (BytesRef context : lresult.contexts) {
-                  System.out.println("context:" + context.utf8ToString());
+                  //System.out.println("context:" + context.utf8ToString());
                 }
               }
             }

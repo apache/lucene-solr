@@ -163,7 +163,6 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
   // nocommit
     for (String shardName : shardNames) {
-      System.out.println("make shard:" + shardName);
       stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName + "/" + shardName, null, CreateMode.PERSISTENT, false);
       stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName + "/leader_elect/" + shardName + "/election", null, CreateMode.PERSISTENT, false);
     }
@@ -175,7 +174,6 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       final String async = message.getStr(ASYNC);
 
       boolean isLegacyCloud = Overseer.isLegacy(zkStateReader);
-      System.out.println("is legacycloud= " + isLegacyCloud);
 
       OverseerCollectionMessageHandler.createConfNode(stateManager, configName, collectionName, isLegacyCloud);
 
@@ -710,7 +708,6 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/"
               + ZkStateReader.SHARD_LEADERS_ZKNODE, null, CreateMode.PERSISTENT, false);
 
-      System.out.println("make state.json path:" + ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + ZkStateReader.STATE_JSON);
       stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + ZkStateReader.STATE_JSON,
               ZkStateReader.emptyJson, CreateMode.PERSISTENT, false);
 

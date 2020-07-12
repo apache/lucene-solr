@@ -2495,7 +2495,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
             if (onDeckSearchers.get() < 0) {
               // sanity check... should never happen
               log.error("{}ERROR!!! onDeckSearchers after decrement={}", logid, onDeckSearchers);
-              new RuntimeException().printStackTrace(System.out);
               onDeckSearchers.set(0); // try and recover
             }
             // if we failed, we need to wake up at least one waiter to continue the process

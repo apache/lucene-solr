@@ -858,8 +858,7 @@ public class ZkController implements Closeable {
         Op op = it.next();
         if (result.getType() == ZooDefs.OpCode.error) {
           OpResult.ErrorResult dresult = (OpResult.ErrorResult) result;
-
-          System.out.println("result:" + op.getPath());
+          // nocommit
         }
       }
       zkClient.printLayout();
@@ -1598,7 +1597,6 @@ public class ZkController implements Closeable {
       context.close();
       return;
     }
-    System.out.println("add context to map");
     prevContext = electionContexts.put(contextKey, context);
     if (prevContext != null) {
       prevContext.close();

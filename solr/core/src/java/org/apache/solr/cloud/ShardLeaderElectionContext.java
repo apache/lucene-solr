@@ -73,7 +73,6 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
                     + "/leader_elect/" + shardId,  ZkStateReader.getShardLeadersPath(
             collection, shardId), props,
             zkController.getZkClient());
-    System.out.println("MAKE SHARD LEADER ECONTEXT: " + cc.isShutDown());
     this.cc = cc;
     this.syncStrategy = new SyncStrategy(cc);
     this.shardId = shardId;
@@ -84,7 +83,6 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 
   @Override
   public void close() {
-    System.out.println("CLOSE SHARD LEADER CONTEXT");
     super.close();
     try {
       cancelElection();
