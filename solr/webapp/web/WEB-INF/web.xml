@@ -22,6 +22,11 @@
          metadata-complete="true"
 >
 
+  <filter>
+    <filter-name>SolrQosFilter</filter-name>
+    <filter-class>org.apache.solr.servlet.SolrQoSFilter</filter-class>
+  </filter>
+
   <!-- Any path (name) registered in solrconfig.xml will be sent to that filter -->
   <filter>
     <filter-name>SolrRequestFilter</filter-name>
@@ -37,6 +42,12 @@
     </init-param>
   </filter>
 
+  <filter-mapping>
+    <filter-name>SolrQosFilter</filter-name>
+    <url-pattern>/*</url-pattern>
+    <dispatcher>REQUEST</dispatcher>
+    <dispatcher>ASYNC</dispatcher>
+  </filter-mapping>
   <filter-mapping>
     <filter-name>SolrRequestFilter</filter-name>
     <url-pattern>/*</url-pattern>
