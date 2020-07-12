@@ -122,22 +122,22 @@ public class CacheConfig implements MapSerializable{
     config.args = attrs;
 
     Map<String, String> map = xpath == null ? null : solrConfig.getOverlay().getEditableSubProperties(xpath);
-    if(map != null){
+    if (map != null) {
       HashMap<String, String> mapCopy = new HashMap<>(config.args);
       for (Map.Entry<String, String> e : map.entrySet()) {
-        mapCopy.put(e.getKey(),String.valueOf(e.getValue()));
+        mapCopy.put(e.getKey(), String.valueOf(e.getValue()));
       }
       config.args = mapCopy;
     }
     String nameAttr = config.args.get(NAME);  // OPTIONAL
-    if (nameAttr==null) {
+    if (nameAttr == null) {
       config.args.put(NAME, config.nodeName);
     }
 
     SolrResourceLoader loader = solrConfig.getResourceLoader();
     config.cacheImpl = config.args.get("class");
-    if(config.cacheImpl == null) config.cacheImpl = "solr.CaffeineCache";
-    config.clazz = () -> CoreRefreshingClassLoader.loadClass(loader,
+    if (config.cacheImpl == null) config.cacheImpl = "solr.CaffeineCache";
+    config.clazz = () -> CoreRefreshingClassLoader.findClass(loader,
             new PluginInfo("cache", Collections.singletonMap("class", config.cacheImpl)),
             SolrCache.class);
     config.regenImpl = config.args.get("regenerator");

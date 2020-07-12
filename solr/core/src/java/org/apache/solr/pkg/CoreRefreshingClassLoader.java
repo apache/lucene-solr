@@ -63,10 +63,13 @@ public class CoreRefreshingClassLoader implements PackageListeners.Listener {
     return version;
   }
 
-  @SuppressWarnings({"rawtypes","unchecked"})
-  public static Class loadClass(SolrResourceLoader srl, PluginInfo info, Class type) {
+  /**
+   * Load a class using an appropriate {@link SolrResourceLoader} depending of the package of that class
+   */
+  public static <T> Class<? extends T> findClass(SolrResourceLoader srl, PluginInfo info, Class<T>  type) {
     if(info.cName.pkg == null) return srl.findClass(info.className, type);
-    return _get(srl, info, version -> version.getLoader().findClass(info.cName.className, type));
+    return _get(srl, info,
+            (Function<PackageLoader.Package.Version, Class<? extends T>>) ver -> ver.getLoader().findClass(info.cName.className, type));
 
   }
 
