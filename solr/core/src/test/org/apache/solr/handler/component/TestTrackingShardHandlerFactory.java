@@ -29,6 +29,7 @@ import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.CoreContainer;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -36,6 +37,7 @@ import org.junit.Test;
  * See SOLR-7147 for more information
  */
 @SolrTestCaseJ4.SuppressSSL
+@Ignore // nocommit flakey
 public class TestTrackingShardHandlerFactory extends AbstractFullDistribZkTestBase {
 
   public TestTrackingShardHandlerFactory() {
