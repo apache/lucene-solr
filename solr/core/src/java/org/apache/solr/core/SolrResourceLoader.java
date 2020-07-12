@@ -35,6 +35,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import org.apache.logging.log4j.core.Core;
 import org.apache.lucene.analysis.WordlistLoader;
 import org.apache.lucene.analysis.util.*;
 import org.apache.lucene.codecs.Codec;
@@ -81,6 +83,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
    * This could be null if the core is not yet initialized
    */
   SolrCore core;
+  CoreContainer coreContainer;
 
   private final List<SolrCoreAware> waitingForCore = Collections.synchronizedList(new ArrayList<SolrCoreAware>());
   private final List<SolrInfoBean> infoMBeans = Collections.synchronizedList(new ArrayList<SolrInfoBean>());
@@ -763,6 +766,9 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   }
 
 
+  public CoreContainer getCoreContainer(){
+    return coreContainer;
+  }
   public static void persistConfLocally(SolrResourceLoader loader, String resourceName, byte[] content) {
     // Persist locally
     File confFile = new File(loader.getConfigDir(), resourceName);

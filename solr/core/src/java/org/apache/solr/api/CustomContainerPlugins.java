@@ -225,7 +225,7 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
     @SuppressWarnings({"unchecked","rawtypes"})
     public ApiInfo(PluginMeta info, List<String> errs) {
       this.info = info;
-      PluginInfo.CName klassInfo = new PluginInfo.CName(info.klass);
+      PluginInfo.ClassName klassInfo = new PluginInfo.ClassName(info.klass);
       pkg = klassInfo.pkg;
       if (pkg != null) {
         PackageLoader.Package p = coreContainer.getPackageLoader().getPackage(pkg);

@@ -137,13 +137,9 @@ public class CacheConfig implements MapSerializable{
     SolrResourceLoader loader = solrConfig.getResourceLoader();
     config.cacheImpl = config.args.get("class");
     if(config.cacheImpl == null) config.cacheImpl = "solr.CaffeineCache";
-    config.clazz = () -> {
-      PluginInfo.CName cName = new PluginInfo.CName(config.cacheImpl);
-      if(cName.pkg == null) return loader.findClass(cName.className, SolrCache.class);
-      return CoreRefreshingClassLoader.loadClass(loader.getCore(),
-              new PluginInfo("cache", Collections.singletonMap("class", config.cacheImpl)),
-              SolrCache.class);
-    };
+    config.clazz = () -> CoreRefreshingClassLoader.loadClass(loader,
+            new PluginInfo("cache", Collections.singletonMap("class", config.cacheImpl)),
+            SolrCache.class);
     config.regenImpl = config.args.get("regenerator");
     if (config.regenImpl != null) {
       config.regenerator = loader.newInstance(config.regenImpl, CacheRegenerator.class);

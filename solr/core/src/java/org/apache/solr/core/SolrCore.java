@@ -96,6 +96,7 @@ import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.pkg.CoreRefreshingClassLoader;
 import org.apache.solr.pkg.PackageListeners;
 import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.pkg.PackagePluginHolder;
@@ -617,18 +618,17 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
   @SuppressWarnings("unchecked")
   private void initListeners() {
-    final Class<SolrEventListener> clazz = SolrEventListener.class;
     final String label = "Event Listener";
     for (PluginInfo info : solrConfig.getPluginInfos(SolrEventListener.class.getName())) {
       final String event = info.attributes.get("event");
       if ("firstSearcher".equals(event)) {
         PluginHolder<SolrEventListener> obj = (PluginHolder<SolrEventListener>)PackagePluginHolder.createHolder(info, this, SolrEventListener.class, label);
         firstSearcherListeners.add(obj);
-        log.debug("[{}] Added SolrEventListener for firstSearcher: [{}]", logid, obj.get());
+        log.debug("[{}] Added SolrEventListener for firstSearcher: [{}]", logid, obj);
       } else if ("newSearcher".equals(event)) {
         PluginHolder<SolrEventListener> obj = (PluginHolder<SolrEventListener>)PackagePluginHolder.createHolder(info, this, SolrEventListener.class, label);
         newSearcherListeners.add(obj);
-        log.debug("[{}] Added SolrEventListener for newSearcher: [{}]", logid, obj.get());
+        log.debug("[{}] Added SolrEventListener for newSearcher: [{}]", logid, obj);
       }
     }
   }
@@ -715,7 +715,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     final RecoveryStrategy.Builder rsBuilder;
     if (info != null && info.className != null) {
       log.info(info.className);
-      rsBuilder = getResourceLoader().newInstance(info.className, RecoveryStrategy.Builder.class);
+      rsBuilder = CoreRefreshingClassLoader.createInst(getResourceLoader(), info, RecoveryStrategy.Builder.class);
     } else {
       log.debug("solr.RecoveryStrategy.Builder");
       rsBuilder = new RecoveryStrategy.Builder();
@@ -730,7 +730,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     IndexReaderFactory indexReaderFactory;
     PluginInfo info = solrConfig.getPluginInfo(IndexReaderFactory.class.getName());
     if (info != null) {
-      indexReaderFactory = resourceLoader.newInstance(info.className, IndexReaderFactory.class);
+      indexReaderFactory = CoreRefreshingClassLoader.createInst(resourceLoader, info, IndexReaderFactory.class);
       indexReaderFactory.init(info.initArgs);
     } else {
       indexReaderFactory = new StandardIndexReaderFactory();
@@ -877,6 +877,10 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   public <T extends Object> T createInitInstance(PluginInfo info, Class<T> cast, String msg, String defClassName) {
     if (info == null) return null;
     T o = createInstance(info.className == null ? defClassName : info.className, cast, msg, this, getResourceLoader(info.pkgName));
+    return initPlugin(info, o);
+  }
+
+  public static  <T extends Object> T initPlugin(PluginInfo info, T o) {
     if (o instanceof PluginInfoInitialized) {
       ((PluginInfoInitialized) o).init(info);
     } else if (o instanceof NamedListInitializedPlugin) {
@@ -1393,7 +1397,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     final PluginInfo info = solrConfig.getPluginInfo(CodecFactory.class.getName());
     final CodecFactory factory;
     if (info != null) {
-      factory = resourceLoader.newInstance(info.className, CodecFactory.class);
+      factory = CoreRefreshingClassLoader.createInst(resourceLoader,  info, CodecFactory.class);
       factory.init(info.initArgs);
     } else {
       factory = new CodecFactory() {
@@ -1431,8 +1435,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     final StatsCache cache;
     PluginInfo pluginInfo = solrConfig.getPluginInfo(StatsCache.class.getName());
     if (pluginInfo != null && pluginInfo.className != null && pluginInfo.className.length() > 0) {
-      cache = createInitInstance(pluginInfo, StatsCache.class, null,
-          LocalStatsCache.class.getName());
+      cache = CoreRefreshingClassLoader.createInst(resourceLoader, pluginInfo, StatsCache.class);
+      initPlugin(pluginInfo ,cache);
       if (log.isDebugEnabled()) {
         log.debug("Using statsCache impl: {}", cache.getClass().getName());
       }

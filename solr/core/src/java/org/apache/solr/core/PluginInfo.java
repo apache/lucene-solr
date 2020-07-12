@@ -41,7 +41,7 @@ import static org.apache.solr.schema.FieldType.CLASS_NAME;
  */
 public class PluginInfo implements MapSerializable {
   public final String name, className, type, pkgName;
-  public final CName cName;
+  public final ClassName cName;
   @SuppressWarnings({"rawtypes"})
   public final NamedList initArgs;
   public final Map<String, String> attributes;
@@ -66,15 +66,15 @@ public class PluginInfo implements MapSerializable {
    * This checks if it is a package name prefixed classname.
    * the return value has first = package name and second = class name
    */
-  public static CName parseClassName(String name) {
-    return new CName(name);
+  public static ClassName parseClassName(String name) {
+    return new ClassName(name);
   }
 
-  public static class CName {
+  public static class ClassName {
     public final String pkg;
     public final String className;
 
-    public CName(String name) {
+    public ClassName(String name) {
       if (name == null) {
         pkg = null;
         className = null;

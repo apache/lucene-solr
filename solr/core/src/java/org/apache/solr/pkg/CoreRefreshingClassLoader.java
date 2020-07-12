@@ -64,25 +64,32 @@ public class CoreRefreshingClassLoader implements PackageListeners.Listener {
   }
 
   @SuppressWarnings({"rawtypes","unchecked"})
-  public static Class loadClass(SolrCore core, PluginInfo info, Class type) {
-    return _get(core, info, version -> version.getLoader().findClass(info.cName.className, type));
+  public static Class loadClass(SolrResourceLoader srl, PluginInfo info, Class type) {
+    if(info.cName.pkg == null) return srl.findClass(info.className, type);
+    return _get(srl, info, version -> version.getLoader().findClass(info.cName.className, type));
 
   }
 
-  private static  <T> T _get(SolrCore core, PluginInfo info, Function<PackageLoader.Package.Version, T> fun){
-    PluginInfo.CName cName = info.cName;
-    PackageLoader.Package.Version latest = core.getCoreContainer().getPackageLoader().getPackage(cName.pkg)
+  private static  <T> T _get(SolrResourceLoader srl, PluginInfo info, Function<PackageLoader.Package.Version, T> fun) {
+    PluginInfo.ClassName cName = info.cName;
+    SolrCore core = srl.getCore();
+    PackageLoader.Package.Version latest = srl.getCoreContainer().getPackageLoader().getPackage(cName.pkg)
             .getLatest(core.getSolrConfig().maxPackageVersion(cName.pkg));
     T result = fun.apply(latest);
-    core.getPackageListeners().addListener(new CoreRefreshingClassLoader(core, info, latest));
+    if(srl.getCore() !=null) {
+      srl.getCore().getPackageListeners().addListener(new CoreRefreshingClassLoader(core, info, latest));
+    }
     return result;
   }
 
-  public static <T> T createInst(SolrCore core, PluginInfo info, Class<T> type) {
+  public static <T> T createInst(SolrResourceLoader srl, PluginInfo info, Class<T> type) {
     if(info.cName.pkg == null) {
-      return core.getResourceLoader().newInstance(info.cName.className== null? type.getName(): info.cName.className , type);
+        return srl.newInstance(info.cName.className == null?
+                type.getName():
+                info.cName.className ,
+                type);
     }
-    return _get(core, info, version -> version.getLoader().newInstance(info.cName.className, type));
+    return _get(srl, info, version -> version.getLoader().newInstance(info.cName.className, type));
   }
 
 }

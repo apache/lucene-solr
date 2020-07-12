@@ -321,6 +321,7 @@ public class CoreContainer {
 
   public CoreContainer(NodeConfig config, CoresLocator locator, boolean asyncSolrCoreLoad) {
     this.loader = config.getSolrResourceLoader();
+    this.loader.coreContainer = this;
     this.solrHome = config.getSolrHome();
     this.cfg = requireNonNull(config);
     try {
@@ -1576,6 +1577,10 @@ public class CoreContainer {
     return ret;
   }
 
+  /**
+   * reloads a core
+   * refer {@link CoreContainer#reload(String, UUID)} for details
+   */
   public void reload(String name) {
     reload(name, null);
   }

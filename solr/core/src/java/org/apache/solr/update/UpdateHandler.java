@@ -76,14 +76,14 @@ public abstract class UpdateHandler implements SolrInfoBean {
    * Call the {@link SolrCoreAware#inform(SolrCore)} on all the applicable registered listeners.
    */
   public void informEventListeners(SolrCore core) {
-    for (PluginHolder<SolrEventListener>  listener: commitCallbacks) {
-      if(listener instanceof PackagePluginHolder)continue;
+    for (PluginHolder<SolrEventListener> listener : commitCallbacks) {
+      if (listener instanceof PackagePluginHolder) continue;
       if (listener.get() instanceof SolrCoreAware) {
         ((SolrCoreAware) listener.get()).inform(core);
       }
     }
-    for (PluginHolder<SolrEventListener> listener: optimizeCallbacks) {
-      if(listener instanceof PackagePluginHolder)continue;
+    for (PluginHolder<SolrEventListener> listener : optimizeCallbacks) {
+      if (listener instanceof PackagePluginHolder) continue;
       if (listener.get() instanceof SolrCoreAware) {
         ((SolrCoreAware) listener.get()).inform(core);
       }
@@ -127,7 +127,7 @@ public abstract class UpdateHandler implements SolrInfoBean {
         ulog = new HdfsUpdateLog(((HdfsDirectoryFactory)dirFactory).getConfDir());
       } else {
         ulog = ulogPluginInfo.className == null ? new UpdateLog():
-                CoreRefreshingClassLoader.createInst(core, ulogPluginInfo, UpdateLog.class);
+                CoreRefreshingClassLoader.createInst(core.getResourceLoader(), ulogPluginInfo, UpdateLog.class);
       }
 
       if (!core.isReloaded() && !dirFactory.isPersistent()) {
