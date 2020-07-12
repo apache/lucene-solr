@@ -469,21 +469,21 @@ public class TestRealTimeGet extends TestRTGBase {
 
     // req().getCore().getUpdateHandler().getIndexWriterProvider().getIndexWriter(req().getCore()).setInfoStream(System.out);
 
-    final int commitPercent = 5 + random().nextInt(20);
-    final int softCommitPercent = 30+random().nextInt(75); // what percent of the commits are soft
+    final int commitPercent = TEST_NIGHTLY ? 5 + random().nextInt(20) : 2;
+    final int softCommitPercent = TEST_NIGHTLY ? 30+random().nextInt(75) : 10; // what percent of the commits are soft
     final int deletePercent = 4+random().nextInt(25);
     final int deleteByQueryPercent = 1+random().nextInt(5);
     final int optimisticPercent = 1+random().nextInt(50);    // percent change that an update uses optimistic locking
     final int optimisticCorrectPercent = 25+random().nextInt(70);    // percent change that a version specified will be correct
     final int filteredGetPercent = random().nextInt( random().nextInt(20)+1 );   // percent of time that a get will be filtered... we normally don't want too high.
-    final int ndocs = TEST_NIGHTLY ? 5 + (random().nextBoolean() ? random().nextInt(25) : random().nextInt(200)) : 13;
+    final int ndocs = TEST_NIGHTLY ? 5 + (random().nextBoolean() ? random().nextInt(25) : random().nextInt(200)) : 7;
     int nWriteThreads = TEST_NIGHTLY ? 5 + random().nextInt(25) : 2;
 
     final int maxConcurrentCommits = nWriteThreads;   // number of committers at a time...
 
         // query variables
-    final int percentRealtimeQuery = 60;
-    final AtomicLong operations = new AtomicLong(50000);  // number of query operations to perform in total
+    final int percentRealtimeQuery = TEST_NIGHTLY ? 60 : 10;
+    final AtomicLong operations = new AtomicLong(TEST_NIGHTLY ? 50000 : 5000);  // number of query operations to perform in total
     int nReadThreads = TEST_NIGHTLY ? 5 + random().nextInt(25) : 3;
 
 
