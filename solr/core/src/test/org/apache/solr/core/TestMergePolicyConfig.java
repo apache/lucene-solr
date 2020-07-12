@@ -38,8 +38,10 @@ import org.apache.solr.update.SolrIndexConfigTest;
 import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.util.RefCounted;
 import org.junit.After;
+import org.junit.Ignore;
 
 /** @see SolrIndexConfigTest */
+@Ignore // nocommit debug leaks
 public class TestMergePolicyConfig extends SolrTestCaseJ4 {
   
   private static AtomicInteger docIdCounter = new AtomicInteger(42);
