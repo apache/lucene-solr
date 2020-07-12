@@ -74,7 +74,7 @@ public class TestLeaderElectionWithEmptyReplica extends SolrCloudTestCase {
     JettySolrRunner replicaJetty = null;
     List<JettySolrRunner> jettySolrRunners = cluster.getJettySolrRunners();
     for (JettySolrRunner jettySolrRunner : jettySolrRunners) {
-      int port = jettySolrRunner.getBaseUrl().getPort();
+      int port = jettySolrRunner.getLocalPort();
       if (replica.getStr(BASE_URL_PROP).contains(":" + port))  {
         replicaJetty = jettySolrRunner;
         break;

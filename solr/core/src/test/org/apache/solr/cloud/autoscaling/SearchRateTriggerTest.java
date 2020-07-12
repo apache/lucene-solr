@@ -112,7 +112,7 @@ public class SearchRateTriggerTest extends SolrCloudTestCase {
     CloudUtil.waitForState(cloudManager, COLL2, 60, TimeUnit.SECONDS, clusterShape(2, 2));
 
     double rate = 1.0;
-    URL baseUrl = targetNode.getBaseUrl();
+    String baseUrl = targetNode.getBaseUrl();
     long waitForSeconds = 5 + random().nextInt(5);
     Map<String, Object> props = createTriggerProps(Arrays.asList(COLL1, COLL2), waitForSeconds, rate, -1);
     final List<TriggerEvent> events = new ArrayList<>();

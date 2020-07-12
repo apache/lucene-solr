@@ -88,7 +88,7 @@ public class OverseerRolesTest extends SolrCloudTestCase {
     int hostPort = overseerUrl.getPort();
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       try {
-      if (jetty.getBaseUrl().getPort() == hostPort)
+      if (jetty.getLocalPort() == hostPort)
         return jetty;
       } catch (IllegalStateException e) {
         

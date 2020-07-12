@@ -137,9 +137,8 @@ public class ShardsWhitelistTest extends MultiSolrCloudTestCase {
     assertThat(getShardHandlerFactory(IMPLICIT_CLUSTER_KEY).getWhitelistHostChecker().hasExplicitWhitelist(), is(false));
     for (MiniSolrCloudCluster cluster : clusterId2cluster.values()) {
       for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
-        URI uri = runner.getBaseUrl().toURI();
         assertThat(getShardHandlerFactory(EXPLICIT_CLUSTER_KEY).getWhitelistHostChecker().getWhitelistHosts(),
-            hasItem(uri.getHost() + ":" + uri.getPort()));
+            hasItem(runner.getHost() + ":" + runner.getLocalPort()));
       }
     }
 

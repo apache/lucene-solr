@@ -115,7 +115,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
     NODE_CLIENTS = new ArrayList<HttpSolrClient>(numServers);
     
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      URL jettyURL = jetty.getBaseUrl();
+      String jettyURL = jetty.getBaseUrl();
       NODE_CLIENTS.add(getHttpSolrClient(jettyURL.toString() + "/" + COLLECTION_NAME + "/"));
     }
     assertEquals(numServers, NODE_CLIENTS.size());

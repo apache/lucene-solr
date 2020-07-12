@@ -849,7 +849,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     runners.add(controlJetty);
     
     for (JettySolrRunner j : runners) {
-      if (replicaBaseUrl.replaceAll("/$", "").equals(j.getProxyBaseUrl().toExternalForm().replaceAll("/$", ""))) {
+      if (replicaBaseUrl.replaceAll("/$", "").equals(j.getProxyBaseUrl().replaceAll("/$", ""))) {
         return j.getProxy();
       }
     }

@@ -263,7 +263,7 @@ public class RulesTest extends SolrCloudTestCase {
     String rulesColl = "hostFragment";
 
     JettySolrRunner jetty = cluster.getRandomJetty(random());
-    String host = jetty.getBaseUrl().getHost();
+    String host = jetty.getHost();
     String[] ipFragments = host.split("\\.");
     String ip_1 = ipFragments[ipFragments.length - 1];
     String ip_2 = ipFragments[ipFragments.length - 2];
@@ -294,7 +294,7 @@ public class RulesTest extends SolrCloudTestCase {
     String rulesColl = "ipRuleColl";
 
     JettySolrRunner jetty = cluster.getRandomJetty(random());
-    String host = jetty.getBaseUrl().getHost();
+    String host = jetty.getHost();
     String[] ipFragments = host.split("\\.");
     String ip_1 = ipFragments[ipFragments.length - 1];
     String ip_2 = ipFragments[ipFragments.length - 2];

@@ -78,7 +78,7 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
    */
   @Test
   public void monitorZookeeper() throws IOException, SolrServerException, InterruptedException, ExecutionException, TimeoutException {
-    URL baseUrl = cluster.getJettySolrRunner(0).getBaseUrl();
+    String baseUrl = cluster.getJettySolrRunner(0).getBaseUrl();
     HttpSolrClient solr = new HttpSolrClient.Builder(baseUrl.toString()).build();
     GenericSolrRequest mntrReq = new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/zookeeper/status", new ModifiableSolrParams());
     mntrReq.setResponseParser(new DelegationTokenResponse.JsonMapResponseParser());

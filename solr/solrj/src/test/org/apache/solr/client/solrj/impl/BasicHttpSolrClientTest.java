@@ -603,7 +603,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
       BasicClientCookie cookie = new BasicClientCookie(cookieName, cookieValue);
       cookie.setVersion(0);
       cookie.setPath("/");
-      cookie.setDomain(jetty.getBaseUrl().getHost());
+      cookie.setDomain(jetty.getHost());
 
       CookieStore cookieStore = new BasicCookieStore();
       CookieSpec cookieSpec = new SolrPortAwareCookieSpecFactory().create(context);

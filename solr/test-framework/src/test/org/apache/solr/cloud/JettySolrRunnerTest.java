@@ -43,18 +43,18 @@ public class JettySolrRunnerTest extends SolrTestCaseJ4 {
     try {
       jetty.start();
 
-      URL url = jetty.getBaseUrl();
-      int usedPort = url.getPort();
+      String url = jetty.getBaseUrl();
+      int usedPort = jetty.getLocalPort();
 
       jetty.stop();
       jetty.start();
 
-      assertEquals("After restart, jetty port should be the same", usedPort, jetty.getBaseUrl().getPort());
+      assertEquals("After restart, jetty port should be the same", usedPort, jetty.getLocalPort());
 
       jetty.stop();
       jetty.start(false, false);
 
-      assertThat("After restart, jetty port should be different", jetty.getBaseUrl().getPort(), not(usedPort));
+      assertThat("After restart, jetty port should be different", jetty.getLocalPort(), not(usedPort));
     }
     finally {
       if (jetty.isRunning())

@@ -65,13 +65,13 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
   }
 
-  private SolrClient buildClient(CloseableHttpClient httpClient, URL url) {
+  private SolrClient buildClient(CloseableHttpClient httpClient, String url) {
     switch (random().nextInt(3)) {
       case 0:
         // currently only testing with 1 thread
         return getConcurrentUpdateSolrClient(url.toString() + "/" + COLLECTION, httpClient, 6, 1);
       case 1:
-        return getHttpSolrClient(url.toString() + "/" + COLLECTION, httpClient);
+        return getHttpSolrClient(url + "/" + COLLECTION, httpClient);
       case 2:
         CloudSolrClient client = getCloudSolrClient(cluster.getZkServer().getZkAddress(), random().nextBoolean(), httpClient, 30000, 60000);
         client.setDefaultCollection(COLLECTION);
@@ -83,13 +83,15 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
   @Test
   public void testConnectionReuse() throws Exception {
 
-    URL url = cluster.getJettySolrRunners().get(0).getBaseUrl();
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl();
+    String host = cluster.getJettySolrRunners().get(0).getHost();
+    int port = cluster.getJettySolrRunners().get(0).getLocalPort();
     PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager();
 
     CloseableHttpClient httpClient = HttpClientUtil.createClient(null, cm);
     try (SolrClient client = buildClient(httpClient, url)) {
 
-      HttpHost target = new HttpHost(url.getHost(), url.getPort(), isSSLMode() ? "https" : "http");
+      HttpHost target = new HttpHost(host, port, isSSLMode() ? "https" : "http");
       HttpRoute route = new HttpRoute(target);
 
       ConnectionRequest mConn = getClientConnectionRequest(httpClient, route, cm);
@@ -124,7 +126,7 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
         }
       }
 
-      route = new HttpRoute(new HttpHost(url.getHost(), url.getPort(), isSSLMode() ? "https" : "http"));
+      route = new HttpRoute(new HttpHost(host, port, isSSLMode() ? "https" : "http"));
 
       mConn = cm.requestConnection(route, HttpSolrClient.cacheKey);
 

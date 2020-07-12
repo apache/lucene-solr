@@ -137,7 +137,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
     CLIENTS.clear();
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       assertNotNull("Cluster contains null jetty?", jetty);
-      final URL baseUrl = jetty.getBaseUrl();
+      final String baseUrl = jetty.getBaseUrl();
       assertNotNull("Jetty has null baseUrl: " + jetty.toString(), baseUrl);
       CLIENTS.add(getHttpSolrClient(baseUrl + "/" + COLLECTION_NAME + "/"));
     }

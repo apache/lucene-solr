@@ -522,7 +522,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
 
     Set<String> downJettyNodes = new TreeSet<>();
     for (JettySolrRunner jetty : downJettys) {
-      downJettyNodes.add(jetty.getBaseUrl().getHost() + ":" + jetty.getBaseUrl().getPort() + "_solr");
+      downJettyNodes.add(jetty.getHost() + ":" + jetty.getLocalPort() + "_solr");
     }
     while (timeout.hasTimedOut() == false) {
       forceUpdateCollectionStatus();

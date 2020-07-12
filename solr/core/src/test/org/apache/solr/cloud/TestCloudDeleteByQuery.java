@@ -137,9 +137,9 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
     // inspired by TestMiniSolrCloudCluster
     HashMap<String, String> urlMap = new HashMap<>();
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      URL jettyURL = jetty.getBaseUrl();
-      String nodeKey = jettyURL.getHost() + ":" + jettyURL.getPort() + jettyURL.getPath().replace("/","_");
-      urlMap.put(nodeKey, jettyURL.toString());
+      String jettyURL = jetty.getBaseUrl();
+      String nodeKey =  (jetty.getHost() + ":" + jetty.getLocalPort() + jetty.getContext()).replace("/","_");
+      urlMap.put(nodeKey, jettyURL);
     }
     ClusterState clusterState = zkStateReader.getClusterState();
     for (Slice slice : clusterState.getCollection(COLLECTION_NAME).getSlices()) {
@@ -148,7 +148,7 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
       assertNotNull("slice has null leader: " + slice.toString(), leader);
       assertNotNull("slice leader has null node name: " + slice.toString(), leader.getNodeName());
       String leaderUrl = urlMap.remove(leader.getNodeName());
-      assertNotNull("could not find URL for " + shardName + " leader: " + leader.getNodeName(),
+      assertNotNull("could not find URL for " + shardName + " leader: " + leader.getNodeName() + " " + urlMap.keySet(),
                     leaderUrl);
       assertEquals("expected two total replicas for: " + slice.getName(),
                    2, slice.getReplicas().size());

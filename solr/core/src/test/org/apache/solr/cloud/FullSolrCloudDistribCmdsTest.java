@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -187,7 +188,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
       cluster.waitForJettyToStop(leaderToPartition);
       leaderToPartition.setProxyPort(proxy.getListenPort());
       cluster.startJettySolrRunner(leaderToPartition);
-      proxy.open(leaderToPartition.getBaseUrl().toURI());
+      proxy.open(new URI(leaderToPartition.getBaseUrl()));
       try {
         log.info("leaderToPartition's Proxy: {}", proxy);
         

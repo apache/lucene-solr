@@ -34,7 +34,7 @@ public class TestSystemCollAutoCreate extends SolrCloudBridgeTestCase {
 
   // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
   public void testAutoCreate() throws Exception {
-    TestBlobHandler.checkBlobPost(cluster.getJettySolrRunner(0).getBaseUrl().toExternalForm(), cloudClient);
+    TestBlobHandler.checkBlobPost(cluster.getJettySolrRunner(0).getBaseUrl(), cloudClient);
     DocCollection sysColl = cloudClient.getZkStateReader().getClusterState().getCollection(".system");
   }
 }

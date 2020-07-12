@@ -140,7 +140,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
     ClusterState clusterState = zkStateReader.getClusterState();
     Map<String,JettySolrRunner> jettyMap = new HashMap<>();
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      String key = jetty.getBaseUrl().toString().substring((jetty.getBaseUrl().getProtocol() + "://").length());
+      String key = jetty.getBaseUrl().toString().substring((System.getProperty("urlScheme") + "://").length());
       jettyMap.put(key, jetty);
     }
     Collection<Slice> slices = clusterState.getCollection(collectionName).getSlices();
@@ -257,8 +257,8 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
         shardLeaderMap.put(slice.getLeader().getNodeName().replace("_solr", "/solr"), Boolean.TRUE);
       }
       for (int ii = 0; ii < jettys.size(); ++ii) {
-        final URL jettyBaseUrl = jettys.get(ii).getBaseUrl();
-        final String jettyBaseUrlString = jettyBaseUrl.toString().substring((jettyBaseUrl.getProtocol() + "://").length());
+        final String jettyBaseUrl = jettys.get(ii).getBaseUrl();
+        final String jettyBaseUrlString = jettyBaseUrl.toString().substring((System.getProperty("urlScheme")+ "://").length());
         final Boolean isLeader = shardLeaderMap.get(jettyBaseUrlString);
         if (Boolean.TRUE.equals(isLeader)) {
           leaderIndices.add(ii);

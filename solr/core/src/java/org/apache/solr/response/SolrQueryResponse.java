@@ -224,7 +224,8 @@ public class SolrQueryResponse {
 
   /** Returns a string of the form "logid name1=value1 name2=value2 ..." */
   public String getToLogAsString(String logid) {
-    StringBuilder sb = new StringBuilder(logid);
+    StringBuilder sb = new StringBuilder(logid.length() + 1024);
+    sb.append(logid);
     for (int i=0; i<toLog.size(); i++) {
       if (sb.length() > 0) {
         sb.append(' ');

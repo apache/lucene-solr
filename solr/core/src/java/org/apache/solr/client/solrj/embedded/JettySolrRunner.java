@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.BindException;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -155,6 +156,10 @@ public class JettySolrRunner implements Closeable {
 
 
   private static Scheduler scheduler = new SolrHttpClientScheduler("JettySolrRunnerScheduler", true, null, new ThreadGroup("JettySolrRunnerScheduler"), 1);
+
+  public String getContext() {
+    return config.context;
+  }
 
   public static class DebugFilter implements Filter {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -579,7 +584,7 @@ public class JettySolrRunner implements Closeable {
         if (started) {
           proxy.reopen();
         } else {
-          proxy.open(getBaseUrl().toURI());
+          proxy.open(new URI(getBaseUrl()));
         }
       }
 
@@ -850,32 +855,19 @@ public class JettySolrRunner implements Closeable {
    * Returns a base URL consisting of the protocol, host, and port for a
    * Connector in use by the Jetty Server contained in this runner.
    */
-  public URL getBaseUrl() {
-    try {
-      return new URL(protocol, host, jettyPort, config.context);
-    } catch (MalformedURLException e) {
-      throw new RuntimeException(e);
-    }
+  public String getBaseUrl() {
+      return protocol +"://" + host + ":" + jettyPort + config.context;
   }
 
-  public URL getBaseURLV2(){
-    try {
-      return new URL(protocol, host, jettyPort, "/api");
-    } catch (MalformedURLException e) {
-      throw new RuntimeException(e);
-    }
-
+  public String getBaseURLV2(){
+    return protocol +"://" + host + ":" + jettyPort + "/api";
   }
   /**
    * Returns a base URL consisting of the protocol, host, and port for a
    * Connector in use by the Jetty Server contained in this runner.
    */
-  public URL getProxyBaseUrl() {
-    try {
-      return new URL(protocol, host, getLocalPort(), config.context);
-    } catch (MalformedURLException e) {
-      throw new RuntimeException(e);
-    }
+  public String getProxyBaseUrl() {
+    return protocol +":" + host + ":" + getLocalPort() + config.context;
   }
 
   public SolrClient newClient() {
@@ -922,6 +914,10 @@ public class JettySolrRunner implements Closeable {
    */
   public String getSolrHome() {
     return solrHome;
+  }
+
+  public String getHost() {
+    return host;
   }
 
   /**

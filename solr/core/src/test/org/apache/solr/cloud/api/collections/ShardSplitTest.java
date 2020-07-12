@@ -193,7 +193,7 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
         String stoppedNodeName = null;
         boolean restarted = false;
         for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-          int port = jetty.getBaseUrl().getPort();
+          int port = jetty.getLocalPort();
           if (replica.getStr(BASE_URL_PROP).contains(":" + port))  {
             stoppedNodeName = jetty.getNodeName();
             jetty.stop();

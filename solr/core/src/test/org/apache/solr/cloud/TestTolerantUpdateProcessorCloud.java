@@ -128,8 +128,8 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
     // inspired by TestMiniSolrCloudCluster
     HashMap<String, String> urlMap = new HashMap<>();
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      URL jettyURL = jetty.getBaseUrl();
-      String nodeKey = jettyURL.getHost() + ":" + jettyURL.getPort() + jettyURL.getPath().replace("/","_");
+      String jettyURL = jetty.getBaseUrl();
+      String nodeKey = jetty.getHost() + ":" + jetty.getLocalPort() + jetty.getBaseUrl().replace("/","_");
       urlMap.put(nodeKey, jettyURL.toString());
     }
     zkStateReader.forceUpdateCollection(COLLECTION_NAME);

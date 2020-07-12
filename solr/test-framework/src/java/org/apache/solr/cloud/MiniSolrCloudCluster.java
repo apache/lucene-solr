@@ -718,7 +718,7 @@ public class MiniSolrCloudCluster {
     String replicaBaseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
 
     for (JettySolrRunner j : jettys) {
-      if (replicaBaseUrl.replaceAll("/$", "").equals(j.getProxyBaseUrl().toExternalForm().replaceAll("/$", ""))) {
+      if (replicaBaseUrl.replaceAll("/$", "").equals(j.getProxyBaseUrl().replaceAll("/$", ""))) {
         if (j.getProxy() == null) {
           throw new IllegalStateException("proxy is not enabled for " + JettySolrRunner.class.getSimpleName());
         }
