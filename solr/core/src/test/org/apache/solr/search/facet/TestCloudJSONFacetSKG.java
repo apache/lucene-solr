@@ -91,7 +91,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
 
   private static final int DEFAULT_LIMIT = FacetField.DEFAULT_FACET_LIMIT;
   private static final int MAX_FIELD_NUM = 15;
-  private static int UNIQUE_FIELD_VALS = 50;
+  private static int UNIQUE_FIELD_VALS;
 
   /** Multivalued string field suffixes that can be randomized for testing diff facet/join code paths */
   private static final String[] MULTI_STR_FIELD_SUFFIXES = new String[]
@@ -114,6 +114,12 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
 
   @BeforeClass
   private static void createMiniSolrCloudCluster() throws Exception {
+    if (TEST_NIGHTLY) {
+      UNIQUE_FIELD_VALS = 50;
+    } else {
+      UNIQUE_FIELD_VALS = 20;
+    }
+
     // sanity check constants
     assertTrue("bad test constants: some suffixes will never be tested",
                (MULTI_STR_FIELD_SUFFIXES.length < MAX_FIELD_NUM) &&
@@ -127,7 +133,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
     // multi replicas should not matter...
     final int repFactor = usually() ? 1 : 2;
     // ... but we definitely want to test multiple shards
-    final int numShards = TestUtil.nextInt(random(), 1, (usually() ? 2 :3));
+    final int numShards = TEST_NIGHTLY ? TestUtil.nextInt(random(), 1, (usually() ? 2 :3)) : 2;
     final int numNodes = (numShards * repFactor);
    
     final String configName = DEBUG_LABEL + "_config-set";
@@ -149,7 +155,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
       CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"));
     }
 
-    final int numDocs = atLeast(TEST_NIGHTLY ? 97 : 12) + 3;
+    final int numDocs = atLeast(TEST_NIGHTLY ? 97 : 7) + 3;
     for (int id = 0; id < numDocs; id++) {
       SolrInputDocument doc = sdoc("id", ""+id);
       for (int fieldNum = 0; fieldNum < MAX_FIELD_NUM; fieldNum++) {
@@ -183,7 +189,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
       if (random().nextInt(100) < 1) {
         CLOUD_CLIENT.commit();  // commit 1% of the time to create new segments
       }
-      if (random().nextInt(100) < 5) {
+      if (random().nextInt(100) < (TEST_NIGHTLY ? 5 : 1)) {
         CLOUD_CLIENT.add(doc);  // duplicate the doc 5% of the time to create deleted docs
       }
     }
@@ -312,7 +318,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
     final int maxBucketsAllowed = atLeast(TEST_NIGHTLY ? 2000 : 20);
     final AtomicInteger maxBucketsToCheck = new AtomicInteger(maxBucketsAllowed);
     
-    final int numIters = atLeast(TEST_NIGHTLY ? 9 : 1) + 1;
+    final int numIters = atLeast(TEST_NIGHTLY ? 9 : 2) + 1;
     for (int iter = 0; iter < numIters && 0 < maxBucketsToCheck.get(); iter++) {
       assertFacetSKGsAreCorrect(maxBucketsToCheck, TermFacet.buildRandomFacets(),
                                 buildRandomQuery(), buildRandomQuery(), buildRandomQuery());
