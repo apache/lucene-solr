@@ -657,8 +657,6 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     if (setDistribParams) setDistributedParams(params);
 
     QueryResponse rsp = queryServer(params);
-    System.out.println("rsp:" + rsp);
-    System.out.println("rsp:" + controlRsp);
     compareResponses(rsp, controlRsp);
 
     if (stress > 0) {

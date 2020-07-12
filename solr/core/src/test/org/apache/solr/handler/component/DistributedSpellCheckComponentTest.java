@@ -50,6 +50,9 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
     //fixShardCount=true;
     //shardCount=2;
     //stress=0;
+    if (!TEST_NIGHTLY) {
+      fixShardCount(2);
+    }
   }
 
   @BeforeClass

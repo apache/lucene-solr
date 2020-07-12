@@ -181,7 +181,7 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
       int[] arity = new int[9];
       for (int a = 0 ; a < arity.length ; ++a) {
         // Single-valued 50% of the time; other 50%: 2-10 values equally likely
-        arity[a] = random().nextBoolean() ? 1 : TestUtil.nextInt(random(), 2, 10);
+        arity[a] = random().nextBoolean() ? 1 : TestUtil.nextInt(random(), 2, TEST_NIGHTLY ? 10 : 3);
       }
       doTest("check string value is correct", dvStringFieldName(arity[0], true, false), "str", nextValues(arity[0], "str"));
       doTest("check int value is correct", "test_i" + plural(arity[1]) + "_dvo", "int", nextValues(arity[1], "int"));

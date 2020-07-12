@@ -47,6 +47,9 @@ public class DistributedSuggestComponentTest extends BaseDistributedSearchTestCa
     //stress=0;
     //deadServers=null;
     configString = "solrconfig-suggestercomponent.xml";
+    if (!TEST_NIGHTLY) {
+      fixShardCount(2);
+    }
   }
 
   @BeforeClass
