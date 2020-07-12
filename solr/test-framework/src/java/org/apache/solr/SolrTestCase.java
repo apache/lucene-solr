@@ -152,6 +152,7 @@ public class SolrTestCase extends LuceneTestCase {
       System.setProperty("urlScheme", "http");
     }
 
+
     System.setProperty("zookeeper.request.timeout", "100");
     System.setProperty("solr.zkclienttimeout", "30000");
     System.setProperty("solr.v2RealPath", "true");
@@ -168,6 +169,8 @@ public class SolrTestCase extends LuceneTestCase {
       //TestInjection.randomDelayMaxInCoreCreationInSec = 2;
 
       System.setProperty("solr.MaxConcurrentRequests", "5");
+      System.setProperty("solr.tests.infostream", "false");
+
 
       System.setProperty("zookeeper.nio.numSelectorThreads", "1");
       System.setProperty("zookeeper.nio.numWorkerThreads", "3");
