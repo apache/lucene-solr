@@ -44,11 +44,14 @@ public class ShardRoutingTest extends SolrCloudBridgeTestCase {
   @BeforeClass
   public static void beforeShardHashingTest() throws Exception {
 
+
   }
 
   public ShardRoutingTest() throws Exception {
-    //schemaString = "schema15.xml";      // we need a string id
     super.sliceCount = 4;
+    handle.clear();
+    handle.put("timestamp", SKIPVAL);
+
 
     // TODO: we use an fs based dir because something
     // like a ram dir will not recover correctly right now
@@ -100,19 +103,7 @@ public class ShardRoutingTest extends SolrCloudBridgeTestCase {
   }
 
   @Test
-  public void test() throws Exception {
-    handle.clear();
-    handle.put("timestamp", SKIPVAL);
-
-    doHashingTest();
-    doTestNumRequests();
-    doAtomicUpdate();
-  }
-
-
-
-
-  private void doHashingTest() throws Exception {
+  public void doHashingTest() throws Exception {
     log.info("### STARTING doHashingTest");
     assertEquals(4, cloudClient.getZkStateReader().getClusterState().getCollection(DEFAULT_COLLECTION).getSlices().size());
     String shardKeys = ShardParams._ROUTE_;
@@ -168,63 +159,65 @@ public class ShardRoutingTest extends SolrCloudBridgeTestCase {
     doQuery("b!doc1,f1!f2!doc5,c!doc2,d!doc3,e!doc4,f1!f2!doc5/5", "q","*:*", shardKeys,"foo/0!");
 
     // test targeting deleteByQuery at only certain shards
-    doDBQ("*:*", shardKeys,"b!");
-    commit();
-    doQuery("c!doc2,d!doc3,e!doc4,f1!f2!doc5,f1!f2!doc5/5", "q","*:*");
-    doAddDoc("b!doc1");
+    if (TEST_NIGHTLY) {
+      doDBQ("*:*", shardKeys, "b!");
+      commit();
+      doQuery("c!doc2,d!doc3,e!doc4,f1!f2!doc5,f1!f2!doc5/5", "q", "*:*");
+      doAddDoc("b!doc1");
 
-    doDBQ("*:*", shardKeys,"f1!");
-    commit();
-    doQuery("b!doc1,c!doc2,e!doc4", "q","*:*");
-    doAddDoc("f1!f2!doc5");
-    doAddDoc("d!doc3");
+      doDBQ("*:*", shardKeys, "f1!");
+      commit();
+      doQuery("b!doc1,c!doc2,e!doc4", "q", "*:*");
+      doAddDoc("f1!f2!doc5");
+      doAddDoc("d!doc3");
 
-    doDBQ("*:*", shardKeys,"c!");
-    commit();
-    doQuery("b!doc1,f1!f2!doc5,d!doc3,e!doc4", "q","*:*");
-    doAddDoc("c!doc2");
+      doDBQ("*:*", shardKeys, "c!");
+      commit();
+      doQuery("b!doc1,f1!f2!doc5,d!doc3,e!doc4", "q", "*:*");
+      doAddDoc("c!doc2");
 
-    doDBQ("*:*", shardKeys,"d!,e!");
-    commit();
-    doQuery("b!doc1,c!doc2", "q","*:*");
-    doAddDoc("d!doc3");
-    doAddDoc("e!doc4");
-    doAddDoc("f1!f2!doc5");
+      doDBQ("*:*", shardKeys, "d!,e!");
+      commit();
+      doQuery("b!doc1,c!doc2", "q", "*:*");
+      doAddDoc("d!doc3");
+      doAddDoc("e!doc4");
+      doAddDoc("f1!f2!doc5");
 
-    commit();
+      commit();
 
-    doDBQ("*:*");
-    commit();
+      doDBQ("*:*");
+      commit();
 
-    doAddDoc("b!");
-    doAddDoc("c!doc1");
-    commit();
-    doQuery("b!,c!doc1", "q","*:*");
-    UpdateRequest req = new UpdateRequest();
-    req.deleteById("b!");
-    req.process(cloudClient);
-    commit();
-    doQuery("c!doc1", "q","*:*");
+      doAddDoc("b!");
+      doAddDoc("c!doc1");
+      commit();
+      doQuery("b!,c!doc1", "q", "*:*");
+      UpdateRequest req = new UpdateRequest();
+      req.deleteById("b!");
+      req.process(cloudClient);
+      commit();
+      doQuery("c!doc1", "q", "*:*");
 
-    doDBQ("id:b!");
-    commit();
-    doQuery("c!doc1", "q","*:*");
+      doDBQ("id:b!");
+      commit();
+      doQuery("c!doc1", "q", "*:*");
 
-    doDBQ("*:*");
-    commit();
+      doDBQ("*:*");
+      commit();
 
-    doAddDoc("a!b!");
-    doAddDoc("b!doc1");
-    doAddDoc("c!doc2");
-    doAddDoc("d!doc3");
-    doAddDoc("e!doc4");
-    doAddDoc("f1!f2!doc5");
-    doAddDoc("f1!f2!doc5/5");
-    commit();
-    doQuery("a!b!,b!doc1,c!doc2,d!doc3,e!doc4,f1!f2!doc5,f1!f2!doc5/5", "q","*:*");
+      doAddDoc("a!b!");
+      doAddDoc("b!doc1");
+      doAddDoc("c!doc2");
+      doAddDoc("d!doc3");
+      doAddDoc("e!doc4");
+      doAddDoc("f1!f2!doc5");
+      doAddDoc("f1!f2!doc5/5");
+      commit();
+      doQuery("a!b!,b!doc1,c!doc2,d!doc3,e!doc4,f1!f2!doc5,f1!f2!doc5/5", "q", "*:*");
+    }
   }
 
-
+  @Test
   public void doTestNumRequests() throws Exception {
     log.info("### STARTING doTestNumRequests");
 // nocommit
@@ -277,6 +270,7 @@ public class ShardRoutingTest extends SolrCloudBridgeTestCase {
 //    assertEquals(5, nEnd - nStart);
   }
 
+  @Test
   public void doAtomicUpdate() throws Exception {
     log.info("### STARTING doAtomicUpdate");
     int nClients = clients.size();
