@@ -832,8 +832,8 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
           if (LuceneTestCase.VERBOSE) {
             System.out.println("\nNOTE: MockDirectoryWrapper: now run CheckIndex");
           } 
-
-          TestUtil.checkIndex(this, getCrossCheckTermVectorsOnClose(), true, null);
+          // nocommit - rips through heap?
+          if (LuceneTestCase.TEST_NIGHTLY) TestUtil.checkIndex(this, getCrossCheckTermVectorsOnClose(), true, null);
         }
           
         // TODO: factor this out / share w/ TestIW.assertNoUnreferencedFiles
