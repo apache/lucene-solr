@@ -700,7 +700,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
    * test faceting with deep paging
    */
   public void testFacetingWithRandomSorts() throws Exception {
-    final int numDocs = TestUtil.nextInt(random(), TEST_NIGHTLY ? 1000 : 100, TEST_NIGHTLY ? 3000 : 1500);
+    final int numDocs = TestUtil.nextInt(random(), TEST_NIGHTLY ? 1000 : 100, TEST_NIGHTLY ? 3000 : 500);
     String[] fieldsToFacetOn = { "int", "long", "str" };
     String[] facetMethods = { "enum", "fc", "fcs" };
 

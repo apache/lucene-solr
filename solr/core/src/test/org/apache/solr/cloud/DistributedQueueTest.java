@@ -82,7 +82,7 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
     assertNull(dq.poll());
 
     // should block until the background thread makes the offer
-    (new QueueChangerThread(dq, 500)).start();
+    (new QueueChangerThread(dq, 200)).start();
     assertNotNull(dq.peek(true));
     assertNotNull(dq.remove());
     assertNull(dq.poll());
@@ -90,7 +90,7 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
     // timeout scenario ... background thread won't offer until long after the peek times out
     QueueChangerThread qct = new QueueChangerThread(dq, 500);
     qct.start();
-    assertNull(dq.peek(400));
+    assertNull(dq.peek(100));
     qct.join();
   }
 

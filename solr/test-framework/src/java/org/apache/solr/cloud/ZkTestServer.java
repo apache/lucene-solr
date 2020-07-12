@@ -643,6 +643,9 @@ public class ZkTestServer implements Closeable {
       worker.add("zkClients", timer, chRootClient, () -> {
         zkServer.shutdown();
         return zkServer;
+      }, () -> {
+        zkServer.shutdown();
+        return zkServer;
       });
     }
 
@@ -652,13 +655,6 @@ public class ZkTestServer implements Closeable {
     zooThread = null;
     ObjectReleaseTracker.release(this);
 
-    // TODO: this can log an exception while trying to unregister a JMX MBean
-    try {
-      zkServer.shutdown();
-    } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Exception shutting down ZooKeeper Test Server", e);
-    }
 
 //    if (cleaupDir) {
 //      Files.walk(getZkDir())

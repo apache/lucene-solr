@@ -183,7 +183,8 @@ public class SolrTestCase extends LuceneTestCase {
       System.setProperty("solr.skipCommitOnClose", "true");
       System.setProperty("solr.skipReloadSPI", "true"); // can generate tons of URL garbage and can happen too often
 
-      System.setProperty("solr.OverseerStateUpdateDelay", "1000");
+      // nocommit - not used again yet
+      System.setProperty("solr.OverseerStateUpdateDelay", "0");
 
       System.setProperty("solr.leaderThrottle", "0");
       System.setProperty("solr.recoveryThrottle", "0");

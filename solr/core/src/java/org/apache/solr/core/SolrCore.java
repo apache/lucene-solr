@@ -1594,7 +1594,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         ParWork.propegateInterrupt(e);
       }
 
-      List<Callable<?>> closeHookCalls = new ArrayList<>();
+      List<Callable<Object>> closeHookCalls = new ArrayList<>();
 
       if (closeHooks != null) {
         for (CloseHook hook : closeHooks) {
@@ -1607,10 +1607,11 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
       assert ObjectReleaseTracker.release(searcherExecutor);
 
-      closer.add("PreCloseHooks", closeHookCalls);
+    //  closer.add("PreCloseHooks", closeHookCalls);
 
 
       List<Callable<Object>> closeCalls = new ArrayList<Callable<Object>>();
+      closeCalls.addAll(closeHookCalls);
       closeCalls.add(() -> {
         IOUtils.closeQuietly(coreMetricManager);
         return "SolrCoreMetricManager";
@@ -1718,7 +1719,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       });
 
 
-      closeHookCalls = new ArrayList<Callable<?>>();
+      closeHookCalls = new ArrayList<Callable<Object>>();
 
       if (closeHooks != null) {
         for (CloseHook hook : closeHooks) {
