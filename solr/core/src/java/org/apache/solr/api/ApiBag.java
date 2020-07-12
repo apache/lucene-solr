@@ -76,10 +76,10 @@ public class ApiBag {
     }
     return l;
   }
-  public synchronized void register(Api api) {
+  public void register(Api api) {
     register(api, Collections.EMPTY_MAP);
   }
-  public synchronized void register(Api api, Map<String, String> nameSubstitutes) {
+  public void register(Api api, Map<String, String> nameSubstitutes) {
     try {
       validateAndRegister(api, nameSubstitutes);
     } catch (Exception e) {
