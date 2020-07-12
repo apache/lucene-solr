@@ -36,7 +36,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import org.apache.logging.log4j.core.Core;
 import org.apache.lucene.analysis.WordlistLoader;
 import org.apache.lucene.analysis.util.*;
 import org.apache.lucene.codecs.Codec;
