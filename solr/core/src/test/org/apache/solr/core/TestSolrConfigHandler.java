@@ -567,7 +567,6 @@ public class TestSolrConfigHandler extends RestTestBase {
       try {
         m = testServerBaseUrl == null ? getRespMap(uri, harness) : TestSolrConfigHandlerConcurrent.getAsMap(testServerBaseUrl + uri, cloudSolrClient);
       } catch (Exception e) {
-        Thread.sleep(100);
         continue;
 
       }
@@ -586,8 +585,6 @@ public class TestSolrConfigHandler extends RestTestBase {
           break;
         }
       }
-      Thread.sleep(100);
-
     }
     assertTrue(StrUtils.formatString("Could not get expected value  ''{0}'' for path ''{1}'' full output: {2},  from server:  {3}", expected, StrUtils.join(jsonPath, '/'), m.toString(), testServerBaseUrl), success);
 

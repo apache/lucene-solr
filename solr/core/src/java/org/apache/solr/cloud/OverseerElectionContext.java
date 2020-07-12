@@ -63,38 +63,49 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
 
   @Override
   public void cancelElection() throws InterruptedException, KeeperException {
-
-    try {
-      super.cancelElection();
-    } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
-      log.error("Exception closing Overseer", e);
-    }
-    try {
-      overseer.doClose();
-    } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
-      log.error("Exception closing Overseer", e);
+    try (ParWork closer = new ParWork(this, true)) {
+      closer.collect(() -> {
+        try {
+          super.cancelElection();
+        } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
+          log.error("Exception closing Overseer", e);
+        }
+      });
+      closer.collect(() -> {
+        try {
+          overseer.doClose();
+        } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
+          log.error("Exception closing Overseer", e);
+        }
+      });
+      closer.addCollect("overseerElectionContextCancel");
     }
   }
 
   @Override
   public void close() {
-    try {
-      super.close();
-    } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
-      log.error("Exception canceling election", e);
-    }
-
-    try {
-      overseer.doClose();
-    } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
-      log.error("Exception closing Overseer", e);
-    }
     this.isClosed  = true;
-
+    try (ParWork closer = new ParWork(this, true)) {
+      closer.collect(() -> {
+        try {
+          super.close();
+        } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
+          log.error("Exception canceling election", e);
+        }
+      });
+      closer.collect(() -> {
+        try {
+          overseer.doClose();
+        } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
+          log.error("Exception closing Overseer", e);
+        }
+      });
+      closer.addCollect("overseerElectionContextClose");
+    }
   }
 
   @Override

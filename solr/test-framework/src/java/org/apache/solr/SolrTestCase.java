@@ -342,7 +342,7 @@ public class SolrTestCase extends LuceneTestCase {
 //              if (closeTime.getClazz() == SolrCore.class) {
 //                continue;
 //              }
-            if (closeTime.getElapsedMS() > 8000) {
+            if (closeTime.getElapsedMS() > 1000) {
               tooLongTime = closeTime.getElapsedMS();
               clazz = closeTime.getClazz();
             }

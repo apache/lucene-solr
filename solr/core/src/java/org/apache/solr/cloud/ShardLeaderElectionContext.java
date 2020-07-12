@@ -83,18 +83,18 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 
   @Override
   public void close() {
-    super.close();
-    try {
-      cancelElection();
-    } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
-      log.error("Exception canceling election", e);
-    }
-    try {
-      syncStrategy.close();
-    } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
-      log.error("Exception closing SyncStrategy", e);
+    try (ParWork closer = new ParWork(this, true)) {
+      closer.collect(() -> super.close());
+      closer.collect(() -> {
+        try {
+          cancelElection();
+        } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
+          log.error("Exception canceling election", e);
+        }
+      });
+      closer.collect(syncStrategy);
+      closer.addCollect("shardLeaderElectionContextClose");
     }
 
     this.isClosed = true;
