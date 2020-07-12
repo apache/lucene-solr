@@ -3032,10 +3032,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
           qtp.setStopTimeout((int) TimeUnit.MINUTES.toMillis(2));
           qtp.setReservedThreads(-1); // -1 auto sizes, important to keep
           // qtp.setStopTimeout((int) TimeUnit.MINUTES.toMillis(1));
-
-
-
-
     return qtp;
   }
 }

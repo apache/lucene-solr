@@ -332,7 +332,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     client0.commit();
     client1.commit();
     QueryResponse qacResponse;
-    qacResponse = queryAndCompare(params("q", "*:*", "rows", "10000", "sort","_version_ desc"), client0, client1);
+    qacResponse = queryAndCompare(params("q", "*:*", "rows", TEST_NIGHTLY ? "10000" : "1000", "sort","_version_ desc"), client0, client1);
     validateQACResponse(docsAdded, qacResponse);
   }
 

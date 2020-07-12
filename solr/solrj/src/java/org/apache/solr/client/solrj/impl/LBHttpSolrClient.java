@@ -154,6 +154,7 @@ public class LBHttpSolrClient extends LBSolrClient {
         httpSolrClientBuilder
             .withBaseSolrUrl(server)
             .withHttpClient(httpClient)
+            .withResponseParser(new BinaryResponseParser())
             .withHeaders(headers);
         if (connectionTimeout != null) {
           httpSolrClientBuilder.withConnectionTimeout(connectionTimeout);
