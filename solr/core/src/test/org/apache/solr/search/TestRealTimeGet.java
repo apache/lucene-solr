@@ -476,15 +476,15 @@ public class TestRealTimeGet extends TestRTGBase {
     final int optimisticPercent = 1+random().nextInt(50);    // percent change that an update uses optimistic locking
     final int optimisticCorrectPercent = 25+random().nextInt(70);    // percent change that a version specified will be correct
     final int filteredGetPercent = random().nextInt( random().nextInt(20)+1 );   // percent of time that a get will be filtered... we normally don't want too high.
-    final int ndocs = 5 + (random().nextBoolean() ? random().nextInt(25) : random().nextInt(200));
-    int nWriteThreads = 5 + random().nextInt(25);
+    final int ndocs = TEST_NIGHTLY ? 5 + (random().nextBoolean() ? random().nextInt(25) : random().nextInt(200)) : 13;
+    int nWriteThreads = TEST_NIGHTLY ? 5 + random().nextInt(25) : 2;
 
     final int maxConcurrentCommits = nWriteThreads;   // number of committers at a time...
 
         // query variables
     final int percentRealtimeQuery = 60;
     final AtomicLong operations = new AtomicLong(50000);  // number of query operations to perform in total
-    int nReadThreads = 5 + random().nextInt(25);
+    int nReadThreads = TEST_NIGHTLY ? 5 + random().nextInt(25) : 3;
 
 
     verbose("commitPercent=", commitPercent);
