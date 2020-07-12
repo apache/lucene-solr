@@ -181,7 +181,7 @@ public class SolrTestCase extends LuceneTestCase {
       // can make things quite slow
       System.setProperty("solr.disableJmxReporter", "true");
       System.setProperty("solr.skipCommitOnClose", "true");
-     // System.setProperty("solr.skipReloadSPI", "true");
+      System.setProperty("solr.skipReloadSPI", "true"); // can generate tons of URL garbage and can happen too often
 
       System.setProperty("solr.OverseerStateUpdateDelay", "1000");
 
