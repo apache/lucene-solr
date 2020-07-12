@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
@@ -32,7 +33,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
+@LuceneTestCase.AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13369")
 public class TriLevelCompositeIdRoutingTest extends ShardRoutingTest {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -61,7 +62,6 @@ public class TriLevelCompositeIdRoutingTest extends ShardRoutingTest {
     NUM_ADDS = atLeast(200);
   }
 
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13369")
   @Test
   public void test() throws Exception {
     Random r = random();
