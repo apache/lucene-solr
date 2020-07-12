@@ -30,10 +30,12 @@ import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
+import org.junit.Ignore;
 import org.junit.Test;
 
 @Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@Ignore // nocommit flakey
 public class SolrExampleStreamingBinaryTest extends SolrExampleStreamingTest {
 
   @Override

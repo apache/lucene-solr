@@ -49,6 +49,9 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
   public TestDistributedGrouping() {
     // SOLR-10844: Even with points suppressed, this test breaks if we (randomize) docvalues="true" on trie fields?!?!?!!?
     System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"false");
+    if (!TEST_NIGHTLY) {
+      fixShardCount(2);
+    }
   }
   
   String t1="a_t";
@@ -242,8 +245,8 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
 
     query("q", "*:*", "fl", "id," + i1dv, "group", "true", "group.field", i1dv, "group.limit", 10, "sort", i1 + " asc, id asc");
 
-    
-    // SOLR-4150: what if group.query has no matches, 
+
+    // SOLR-4150: what if group.query has no matches,
     // or only matches on one shard
     query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true",
           "group.query", t1 + ":kings OR " + t1 + ":eggs",
@@ -256,13 +259,13 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
 
     // SOLR-4164: main query matches nothing, or only matches on one shard
     query("q", "bogus_s:nothing", // no docs match
-          "group", "true", 
+          "group", "true",
           "group.query", t1 + ":this_will_never_match",
-          "group.field", i1, 
+          "group.field", i1,
           "fl", "id", "group.limit", "2", "group.format", "simple");
     query("q", "id:5", // one doc matches, so only one shard
-          "rows", 100, "fl", "id," + i1, "group", "true", 
-          "group.query", t1 + ":kings OR " + t1 + ":eggs", 
+          "rows", 100, "fl", "id," + i1, "group", "true",
+          "group.query", t1 + ":kings OR " + t1 + ":eggs",
           "group.field", i1,
           "group.limit", 10, "sort", i1 + " asc, id asc");
 
@@ -339,9 +342,9 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     // SOLR-3960 - include a postfilter
     for (String facet : new String[] { "false", "true"}) {
       for (String fcache : new String[] { "", " cache=false cost=200"}) {
-      query("q", "*:*", "rows", 100, "fl", "id," + i1, 
+      query("q", "*:*", "rows", 100, "fl", "id," + i1,
             "group.limit", 10, "sort", i1 + " asc, id asc",
-            "group", "true", "group.field", i1, 
+            "group", "true", "group.field", i1,
             "fq", "{!frange l=50 "+fcache+"}"+tlong,
             "facet.field", t1,
             "facet", facet
@@ -538,7 +541,7 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
         assertTrue(docs.toString(), 8 <= docs.get(4).getFieldNames().size());
       }
     }
-    
+
     // grouping on boolean non-stored docValued enabled field
     rsp = query("q", b1dv + ":*", "fl", "id," + b1dv, "group", "true", "group.field",
         b1dv, "group.limit", 10, "sort", b1dv + " asc, id asc");
@@ -550,10 +553,10 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     assertEquals(rsp.toString(), false, nl.get("groupValue"));
     SolrDocumentList docs = (SolrDocumentList) nl.get("doclist");
     assertEquals(docs.toString(), 4, docs.getNumFound());
-    
+
     // Can't validate the response, but can check if no errors occur.
     simpleQuery("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.query", t1 + ":kings OR " + t1 + ":eggs", "group.limit", 10, "sort", i1 + " asc, id asc", CommonParams.TIME_ALLOWED, 1);
-    
+
     //Debug
     simpleQuery("q", "*:*", "rows", 10, "fl", "id," + i1, "group", "true", "group.field", i1, "debug", "true");
   }

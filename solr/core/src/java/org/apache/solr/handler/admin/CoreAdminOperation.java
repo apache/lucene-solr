@@ -26,6 +26,7 @@ import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -91,6 +92,10 @@ enum CoreAdminOperation implements CoreAdminOp {
     }
 
     boolean newCollection = params.getBool(CoreAdminParams.NEW_COLLECTION, false);
+    if (coreContainer.isShutDown()) {
+      log().warn("Will not create SolrCore, CoreContainer is shutdown");
+      throw new AlreadyClosedException("Will not create SolrCore, CoreContainer is shutdown");
+    }
 
     coreContainer.create(coreName, instancePath, coreParams, newCollection);
 
@@ -286,8 +291,6 @@ enum CoreAdminOperation implements CoreAdminOp {
   static Logger log() {
     return log;
   }
-
-
 
 
   /**

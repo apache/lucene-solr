@@ -86,7 +86,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
     final String configName = "solrCloudCollectionConfig";
     final File configDir = new File(TEST_HOME() + File.separator + "collection1" + File.separator + "conf");
 
-    final int numShards = TestUtil.nextInt(random(), 2, TEST_NIGHTLY ? 5 : 3);
+    final int numShards = TEST_NIGHTLY ? TestUtil.nextInt(random(), 2, 5) : 2;
     final int repFactor = TestUtil.nextInt(random(), 2, TEST_NIGHTLY ? 5 : 3);
     // at least one server won't have any replicas
     final int numServers = 1 + (numShards * repFactor);
@@ -143,10 +143,10 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
   }
   
   public void testRandomUpdates() throws Exception {
-    final int maxDocId = atLeast(10000);
+    final int maxDocId = atLeast(TEST_NIGHTLY ? 10000 : 1000);
     final BitSet expectedDocIds = new BitSet(maxDocId+1);
     
-    final int numIters = atLeast(50);
+    final int numIters = atLeast(TEST_NIGHTLY ? 50 : 15);
     for (int i = 0; i < numIters; i++) {
 
       log.info("BEGIN ITER #{}", i);

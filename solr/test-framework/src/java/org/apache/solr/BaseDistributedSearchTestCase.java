@@ -344,30 +344,46 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   protected void createServers(int numShards) throws Exception {
 
     System.setProperty("configSetBaseDir", getSolrHome());
-
-    controlJetty = createControlJetty();
-    controlClient = createNewSolrClient(controlJetty.getLocalPort());
-
-    shardsArr = new String[numShards];
     StringBuilder sb = new StringBuilder();
-    for (int i = 0; i < numShards; i++) {
-      if (sb.length() > 0) sb.append(',');
-      final String shardname = "shard" + i;
-      Path jettyHome = testDir.toPath().resolve(shardname);
-      File jettyHomeFile = jettyHome.toFile();
-      seedSolrHome(jettyHomeFile);
-      seedCoreRootDirWithDefaultTestCore(jettyHome.resolve("cores"));
-      JettySolrRunner j = createJetty(jettyHomeFile, null, null, getSolrConfigFile(), getSchemaFile());
-      j.start();
-      jettys.add(j);
-      clients.add(createNewSolrClient(j.getLocalPort()));
-      String shardStr = buildUrl(j.getLocalPort());
+    try (ParWork worker = new ParWork(this)) {
+      worker.collect(() -> {
+        try {
+          controlJetty = createControlJetty();
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+        controlClient = createNewSolrClient(controlJetty.getLocalPort());
+      });
+      shardsArr = new String[numShards];
+      for (int i = 0; i < numShards; i++) {
+        int finalI = i;
+        worker.collect(() -> {
+          if (sb.length() > 0) sb.append(',');
+          final String shardname = "shard" + finalI;
+          Path jettyHome = testDir.toPath().resolve(shardname);
+          File jettyHomeFile = jettyHome.toFile();
+          try {
+            seedSolrHome(jettyHomeFile);
 
-      if (shardStr.endsWith("/")) shardStr += DEFAULT_TEST_CORENAME;
-      else shardStr += "/" + DEFAULT_TEST_CORENAME;
+            seedCoreRootDirWithDefaultTestCore(jettyHome.resolve("cores"));
+            JettySolrRunner j = createJetty(jettyHomeFile, null, null, getSolrConfigFile(), getSchemaFile());
+            j.start();
+            jettys.add(j);
+            clients.add(createNewSolrClient(j.getLocalPort()));
+            String shardStr = buildUrl(j.getLocalPort());
 
-      shardsArr[i] = shardStr;
-      sb.append(shardStr);
+            if (shardStr.endsWith("/")) shardStr += DEFAULT_TEST_CORENAME;
+            else shardStr += "/" + DEFAULT_TEST_CORENAME;
+
+            shardsArr[finalI] = shardStr;
+            sb.append(shardStr);
+          } catch (Exception e) {
+            throw new RuntimeException(e);
+          }
+        });
+        worker.addCollect("startJettys");
+      }
+
     }
 
     shards = sb.toString();

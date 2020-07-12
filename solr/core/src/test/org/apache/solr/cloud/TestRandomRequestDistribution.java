@@ -82,11 +82,6 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
         .setCreateNodeSet(nodeNames.get(2))
         .process(cloudClient);
 
-    waitForRecoveriesToFinish("a1x2", true);
-    waitForRecoveriesToFinish("b1x1", true);
-
-    cloudClient.getZkStateReader().forceUpdateCollection("b1x1");
-
     // get direct access to the metrics counters for each core/replica we're interested to monitor them
     final Map<String,Counter> counters = new LinkedHashMap<>();
     for (JettySolrRunner runner : jettys) {
@@ -224,7 +219,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
         if (c == 1) {
           break; // cluster state has got update locally
         } else {
-          Thread.sleep(100);
+          Thread.sleep(10);
         }
 
         if (count > 10000) {
@@ -234,7 +229,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
 
       // Now we fire a few additional queries and make sure ALL of them
       // are served by the active replica
-      int moreQueries = TestUtil.nextInt(random(), 4, 10);
+      int moreQueries = TEST_NIGHTLY ? TestUtil.nextInt(random(), 4, 10) : 2;
       count = 1; // Since 1 query has already hit the leader
       for (int i = 0; i < moreQueries; i++) {
         client.query(new SolrQuery("*:*"));

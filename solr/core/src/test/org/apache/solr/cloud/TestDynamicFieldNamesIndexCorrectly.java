@@ -56,7 +56,7 @@ public class TestDynamicFieldNamesIndexCorrectly extends AbstractFullDistribZkTe
   @BaseDistributedSearchTestCase.ShardsFixed(num = 3)
   public void test() throws Exception {
     createCollection(COLLECTION, "_default", 4, 1, 4);
-    final int numRuns = 10;
+    final int numRuns = TEST_NIGHTLY ? 10 : 2;
     populateIndex(numRuns);
   }
 

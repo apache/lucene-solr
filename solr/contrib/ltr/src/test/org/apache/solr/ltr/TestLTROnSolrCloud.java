@@ -51,15 +51,13 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     extraServlets = setupTestInit(solrconfig, schema, true);
     System.setProperty("enable.update.log", "true");
 
-    int numberOfShards = random().nextInt(TEST_NIGHTLY ? 4 : 2)+1;
-    int numberOfReplicas = random().nextInt(TEST_NIGHTLY ? 2 : 1)+1;
-    int maxShardsPerNode = random().nextInt(4)+1;
+    int numberOfShards = TEST_NIGHTLY ? random().nextInt(TEST_NIGHTLY ? 4 : 2)+1 : 2;
+    int numberOfReplicas = TEST_NIGHTLY ? random().nextInt(TEST_NIGHTLY ? 2 : 1)+1 : 2;
+    int maxShardsPerNode = TEST_NIGHTLY ? random().nextInt(4)+1 : 4;
 
     int numberOfNodes = (numberOfShards*numberOfReplicas + (maxShardsPerNode-1))/maxShardsPerNode;
 
     setupSolrCluster(numberOfShards, numberOfReplicas, numberOfNodes, maxShardsPerNode);
-
-
   }
 
 
