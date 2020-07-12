@@ -125,15 +125,13 @@ public class AutoScaling {
    * Factory to produce instances of {@link Trigger}.
    */
   public static abstract class TriggerFactory implements Closeable {
-    protected boolean isClosed = false;
+    protected volatile boolean isClosed = false;
 
     public abstract Trigger create(TriggerEventType type, String name, Map<String, Object> props) throws TriggerValidationException;
 
     @Override
     public void close() throws IOException {
-      synchronized (this) {
-        isClosed = true;
-      }
+      isClosed = true;
     }
   }
 
@@ -153,7 +151,7 @@ public class AutoScaling {
     }
 
     @Override
-    public synchronized Trigger create(TriggerEventType type, String name, Map<String, Object> props) throws TriggerValidationException {
+    public Trigger create(TriggerEventType type, String name, Map<String, Object> props) throws TriggerValidationException {
       if (type == null) {
         throw new IllegalArgumentException("Trigger type must not be null");
       }

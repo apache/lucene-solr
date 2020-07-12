@@ -98,22 +98,29 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
   @Override
   public void close() throws IOException {
     isClosed = true;
-    IOUtils.closeQuietly(triggerFactory);
-    IOUtils.closeQuietly(scheduledTriggers);
+
+    try (ParWork closer = new ParWork(this)) {
+      closer.collect(triggerFactory);
+      closer.collect(scheduledTriggers);
+      closer.collect(() -> {
+
+        try {
+          try {
+            updateLock.lockInterruptibly();
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return;
+          }
+          updated.signalAll();
+        } finally {
+          updateLock.unlock();
+        }
+      });
+    }
 
     activeTriggers.clear();
 
-    try {
-      updateLock.lockInterruptibly();
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-    }
-    try {
-      updated.signalAll();
-    } finally {
-      updateLock.unlock();
-    }
-    log.debug("OverseerTriggerThread has been closed explicitly");
+    if (log.isDebugEnabled()) log.debug("OverseerTriggerThread has been closed explicitly");
   }
 
   /**
@@ -246,26 +253,21 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
       }
       // nodeLost / nodeAdded markers are checked by triggers during their init() call
       // which is invoked in scheduledTriggers.add(), so once this is done we can remove them
-      try {
-        // add new triggers and/or replace and close the replaced triggers
-        for (Map.Entry<String, AutoScaling.Trigger> entry : copy.entrySet()) {
-          try {
-            scheduledTriggers.add(entry.getValue());
-          } catch (AlreadyClosedException e) {
-            log.info("already closed");
+      // add new triggers and/or replace and close the replaced triggers
+      for (Map.Entry<String, AutoScaling.Trigger> entry : copy.entrySet()) {
+        try {
+          scheduledTriggers.add(entry.getValue());
+        } catch (AlreadyClosedException e) {
+          log.info("already closed");
+          return;
+        } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
+          if (e instanceof KeeperException.SessionExpiredException || e instanceof InterruptedException) {
+            log.error("", e);
             return;
-          } catch (Exception e) {
-            ParWork.propegateInterrupt(e);
-            if (e instanceof KeeperException.SessionExpiredException || e instanceof InterruptedException) {
-              log.error("", e);
-              return;
-            }
-            log.error("Exception initializing trigger {}, configuration ignored", entry.getKey(), e);
           }
+          log.error("Exception initializing trigger {}, configuration ignored", entry.getKey(), e);
         }
-      } catch (AlreadyClosedException e) {
-        log.info("already closed");
-        return;
       }
       log.debug("-- deactivating old nodeLost / nodeAdded markers");
       try {
@@ -276,7 +278,9 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
         return;
       } catch (KeeperException e) {
         log.error("", e);
-        return;
+        if (e instanceof KeeperException.SessionExpiredException) {
+          return;
+        }
       } catch (Exception e) {
         log.error("Exception deactivating markers", e);
       }

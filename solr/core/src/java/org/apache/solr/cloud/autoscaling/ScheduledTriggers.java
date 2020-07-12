@@ -51,6 +51,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest.RequestStatus
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.cloud.Stats;
 import org.apache.solr.common.AlreadyClosedException;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -114,7 +115,7 @@ public class ScheduledTriggers implements Closeable {
    */
   private final ExecutorService actionExecutor;
 
-  private boolean isClosed = false;
+  private volatile boolean isClosed = false;
 
   private final AtomicBoolean hasPendingActions = new AtomicBoolean(false);
 
@@ -525,31 +526,26 @@ public class ScheduledTriggers implements Closeable {
   
   @Override
   public void close() throws IOException {
-    synchronized (this) {
-      // mark that we are closed
-      isClosed = true;
-      for (TriggerWrapper triggerWrapper : scheduledTriggerWrappers.values()) {
-        IOUtils.closeQuietly(triggerWrapper);
-      }
-      scheduledTriggerWrappers.clear();
-    }
-    // shutdown and interrupt all running tasks because there's no longer any
-    // guarantee about cluster state
-    log.debug("Shutting down scheduled thread pool executor now");
+    if (log.isDebugEnabled()) log.debug("Shutting down scheduled thread pool executor now");
     scheduledThreadPoolExecutor.shutdownNow();
-
-    log.debug("Shutting down action executor now");
     actionExecutor.shutdownNow();
+    try (ParWork closer = new ParWork(this)) {
+      for (TriggerWrapper triggerWrapper : scheduledTriggerWrappers.values()) {
+        closer.collect(triggerWrapper);
+      }
+      closer.collect(listeners);
 
-    listeners.close();
+      closer.collect(() -> {
+        awaitTermination(actionExecutor);
+        awaitTermination(scheduledThreadPoolExecutor);
 
-    log.debug("Awaiting termination for action executor");
-    awaitTermination(actionExecutor);
+      });
+      closer.addCollect("ScheduledTriggers");
+    }
 
-    log.debug("Awaiting termination for scheduled thread pool executor");
-    awaitTermination(scheduledThreadPoolExecutor);
+    scheduledTriggerWrappers.clear();
 
-    log.debug("ScheduledTriggers closed completely");
+    if (log.isDebugEnabled()) log.debug("ScheduledTriggers closed completely");
   }
 
   /**
@@ -661,7 +657,7 @@ public class ScheduledTriggers implements Closeable {
     }
   }
 
-  private class TriggerListeners {
+  private class TriggerListeners implements Closeable {
     final Map<String, Map<TriggerEventProcessorStage, List<TriggerListener>>> listenersPerStage = new ConcurrentHashMap<>();
     final Map<String, TriggerListener> listenersPerName = new ConcurrentHashMap<>();
     final Set<TriggerListener> additionalListeners = ConcurrentHashMap.newKeySet();
@@ -830,7 +826,7 @@ public class ScheduledTriggers implements Closeable {
       }
     }
 
-    void close() {
+    public void close() {
       reset();
     }
 
