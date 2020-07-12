@@ -475,7 +475,9 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder(super.toString());
+    String superString = super.toString();
+    StringBuilder sb = new StringBuilder(superString.length() + 512);
+    sb.append(superString);
     sb.append("writer=").append(writer.get()).append("\n");
     return sb.toString();
   }
