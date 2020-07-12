@@ -1592,14 +1592,14 @@ public class CoreContainer {
    * @param name the name of the SolrCore to reload
    * @param coreId The unique identifier of the core
    */
-  public void reload(String name, UUID coreId) {
+  public void reload(String name, Long coreId) {
     if (isShutDown) {
       throw new AlreadyClosedException();
     }
     SolrCore newCore = null;
     SolrCore core = solrCores.getCoreFromAnyList(name, false);
     if (core != null) {
-      if(coreId != null && core.uniqueId != coreId) {
+      if(coreId != null && core.uniqueId.longValue() != coreId) {
         //trying to reload an already unloaded core
         return;
       }

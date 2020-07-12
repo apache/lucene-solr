@@ -180,7 +180,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    * A unique id to differentiate multiple instances of the same core
    * If we reload a core, the name remains same , but the id will be new
    */
-  public final UUID uniqueId = UUID.randomUUID();
+  public final Long uniqueId = System.nanoTime();
 
   private boolean isReloaded = false;
 
