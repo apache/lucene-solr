@@ -814,9 +814,9 @@ public class IndexSchema {
    * @param fields The sequence of {@link org.apache.solr.schema.SchemaField}
    */
   public void registerDynamicFields(SchemaField... fields) {
-    List<DynamicField> dynFields = new ArrayList<>(asList(dynamicFields));
+    List<DynamicField> dynFields = Collections.synchronizedList(new ArrayList<>(asList(dynamicFields)));
     for (SchemaField field : fields) {
-      if (isDuplicateDynField(dynFields, field)) {
+      if (isDuplicateDynField(dynFields, field)) { Collections.synchronizedList(new ArrayList<>(asList(dynamicFields)));
         if (log.isDebugEnabled()) {
           log.debug("dynamic field already exists: dynamic field: [{}]", field.getName());
         }
