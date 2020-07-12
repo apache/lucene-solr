@@ -157,6 +157,7 @@ public class CoreContainer implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   final SolrCores solrCores = new SolrCores(this);
+  private final boolean isZkAware;
 
   public static class CoreLoadFailure {
 
@@ -184,7 +185,7 @@ public class CoreContainer implements Closeable {
 
   private volatile ConfigSetService coreConfigService;
 
-  protected final ZkContainer zkSys = new ZkContainer();
+  protected volatile ZkContainer zkSys = null;
   protected volatile ShardHandlerFactory shardHandlerFactory;
 
   protected volatile UpdateShardHandler updateShardHandler;
@@ -315,7 +316,19 @@ public class CoreContainer implements Closeable {
   }
 
   public CoreContainer(NodeConfig config, CoresLocator locator, boolean asyncSolrCoreLoad) {
+    this(null, config, locator, asyncSolrCoreLoad);
+  }
+  public CoreContainer(SolrZkClient zkClient, NodeConfig config, CoresLocator locator, boolean asyncSolrCoreLoad) {
     ObjectReleaseTracker.track(this);
+    this.containerProperties = new Properties(config.getSolrProperties());
+    String zkHost = System.getProperty("zkHost");
+    if (!StringUtils.isEmpty(zkHost)) {
+      zkSys = new ZkContainer(zkClient);
+      isZkAware = true;
+    } else {
+      isZkAware = false;
+    }
+
     this.loader = config.getSolrResourceLoader();
     this.solrHome = config.getSolrHome();
     this.cfg = requireNonNull(config);
@@ -324,7 +337,7 @@ public class CoreContainer implements Closeable {
       IndexSearcher.setMaxClauseCount(this.cfg.getBooleanQueryMaxClauseCount());
     }
     this.coresLocator = locator;
-    this.containerProperties = new Properties(config.getSolrProperties());
+
     this.asyncSolrCoreLoad = asyncSolrCoreLoad;
     this.replayUpdatesExecutor = new OrderedExecutor(10, ParWork.getExecutorService(10, 10, 3));
     metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig());
@@ -354,9 +367,24 @@ public class CoreContainer implements Closeable {
         updateShardHandler = new UpdateShardHandler(cfg.getUpdateShardHandlerConfig());
         updateShardHandler.initializeMetrics(solrMetricsContext, "updateShardHandler");
       });
-
       work.addCollect("shard-handlers");
+      work.collect(() -> {
+//        if (zkClient != null) {
+//          zkSys.initZooKeeper(this, cfg.getCloudConfig());
+//        }
+//        coreConfigService = ConfigSetService.createConfigSetService(cfg, loader, zkSys == null ? null : zkSys.zkController);
+//
+//        containerProperties.putAll(cfg.getSolrProperties());
+      });
+
+      work.addCollect("init");
     }
+            if (zkClient != null) {
+          zkSys.initZooKeeper(this, cfg.getCloudConfig());
+        }
+        coreConfigService = ConfigSetService.createConfigSetService(cfg, loader, zkSys == null ? null : zkSys.zkController);
+
+        containerProperties.putAll(cfg.getSolrProperties());
   }
 
   @SuppressWarnings({"unchecked"})
@@ -551,12 +579,16 @@ public class CoreContainer implements Closeable {
     cfg = null;
     containerProperties = null;
     replayUpdatesExecutor = null;
+    isZkAware = false;
   }
 
   public static CoreContainer createAndLoad(Path solrHome) {
     return createAndLoad(solrHome, solrHome.resolve(SolrXmlConfig.SOLR_XML_FILE));
   }
 
+  public static CoreContainer createAndLoad(Path solrHome, Path configFile) {
+    return createAndLoad(solrHome, configFile, null);
+  }
   /**
    * Create a new CoreContainer and load its cores
    *
@@ -564,8 +596,9 @@ public class CoreContainer implements Closeable {
    * @param configFile the file containing this container's configuration
    * @return a loaded CoreContainer
    */
-  public static CoreContainer createAndLoad(Path solrHome, Path configFile) {
-    CoreContainer cc = new CoreContainer(SolrXmlConfig.fromFile(solrHome, configFile, new Properties()));
+  public static CoreContainer createAndLoad(Path solrHome, Path configFile, SolrZkClient zkClient) {
+    NodeConfig config = SolrXmlConfig.fromFile(solrHome, configFile, new Properties());
+    CoreContainer cc = new CoreContainer(zkClient, config, new CorePropertiesLocator(config.getCoreRootDirectory()), true);
     try {
       cc.load();
     } catch (Exception e) {
@@ -658,12 +691,6 @@ public class CoreContainer implements Closeable {
     containerHandlers.getApiBag().registerObject(packageStoreAPI.writeAPI);
 
     try (ParWork work = new ParWork(this)) {
-
-      work.collect(() -> {
-         zkSys.initZooKeeper(this, cfg.getCloudConfig());
-      });
-
-
       work.collect(() -> {
         solrClientCache = new SolrClientCache(updateShardHandler.getDefaultHttpClient());
 
@@ -671,7 +698,6 @@ public class CoreContainer implements Closeable {
         CalciteSolrDriver.INSTANCE.setSolrClientCache(solrClientCache);
 
       });
-
       work.addCollect("zksys");
 
       work.collect(() -> {
@@ -754,12 +780,6 @@ public class CoreContainer implements Closeable {
         metricManager.loadReporters(metricReporters, loader, this, null, null, SolrInfoBean.Group.jetty);
       });
 
-      work.collect(() -> {
-        coreConfigService = ConfigSetService.createConfigSetService(cfg, loader, zkSys.zkController);
-
-        containerProperties.putAll(cfg.getSolrProperties());
-      });
-
       work.addCollect("ccload2");
     }
 
@@ -827,7 +847,7 @@ public class CoreContainer implements Closeable {
         List<CoreDescriptor> cds = coresLocator.discover(this);
         if (isZooKeeperAware()) {
           // sort the cores if it is in SolrCloud. In standalone node the order does not matter
-          CoreSorter coreComparator = new CoreSorter().init(this, cds);
+          CoreSorter coreComparator = new CoreSorter().init(zkSys.zkController, cds);
           cds = new ArrayList<>(cds);// make a copy
           Collections.sort(cds, coreComparator::compare);
         }
@@ -845,7 +865,7 @@ public class CoreContainer implements Closeable {
               futures.add(ParWork.getExecutor().submit(() -> {
                 SolrCore core;
                 try {
-                  if (zkSys.getZkController() != null) {
+                  if (isZooKeeperAware()) {
                     zkSys.getZkController().throwErrorIfReplicaReplaced(cd);
                   }
                   solrCores.waitAddPendingCoreOps(cd.getName());
@@ -1016,8 +1036,8 @@ public class CoreContainer implements Closeable {
       }
       log.info("Shutting down CoreContainer instance=" + System.identityHashCode(this));
 
-      if (isZooKeeperAware()) {
-        zkController.disconnect();
+      if (isZooKeeperAware() && zkSys != null && zkSys.getZkController() != null) {
+        zkSys.zkController.disconnect();
       }
 
       if (solrCores != null) {
@@ -1311,7 +1331,7 @@ public class CoreContainer implements Closeable {
     try {
       MDCLoggingContext.setCoreDescriptor(this, dcore);
       SolrIdentifierValidator.validateCoreName(dcore.getName());
-      if (zkSys.getZkController() != null) {
+      if (isZooKeeperAware()) {
         zkSys.getZkController().preRegister(dcore, publishState);
       }
 
@@ -1721,7 +1741,7 @@ public class CoreContainer implements Closeable {
     // delete metrics specific to this core
     metricManager.removeRegistry(core.getCoreMetricManager().getRegistryName());
 
-    if (zkSys.getZkController() != null) {
+    if (isZooKeeperAware()) {
       // cancel recovery in cloud mode
       core.getSolrCoreState().cancelRecovery();
       if (cd.getCloudDescriptor().getReplicaType() == Replica.Type.PULL
@@ -1735,7 +1755,7 @@ public class CoreContainer implements Closeable {
     if (close)
       core.closeAndWait();
 
-    if (zkSys.getZkController() != null) {
+    if (isZooKeeperAware()) {
       try {
         zkSys.getZkController().unregister(name, cd);
       } catch (InterruptedException e) {
@@ -1820,7 +1840,7 @@ public class CoreContainer implements Closeable {
     // But for TestConfigSetsAPI.testUploadWithScriptUpdateProcessor, this needs to _not_ try to load the core if
     // the core is null and there was an error. If you change this, be sure to run both TestConfiSetsAPI and
     // TestLazyCores
-    if (desc == null || zkSys.getZkController() != null) return null;
+    if (desc == null || isZooKeeperAware()) return null;
 
     // This will put an entry in pending core ops if the core isn't loaded. Here's where moving the
     // waitAddPendingCoreOps to createFromDescriptor would introduce a race condition.
@@ -1828,7 +1848,7 @@ public class CoreContainer implements Closeable {
 
     try {
       if (core == null) {
-        if (zkSys.getZkController() != null) {
+        if (isZooKeeperAware()) {
           zkSys.getZkController().throwErrorIfReplicaReplaced(desc);
         }
         core = createFromDescriptor(desc, true, false); // This should throw an error if it fails.
@@ -1947,11 +1967,11 @@ public class CoreContainer implements Closeable {
   }
 
   public boolean isZooKeeperAware() {
-    return zkSys.getZkController() != null;
+    return isZkAware && zkSys != null && zkSys.zkController != null;
   }
 
   public ZkController getZkController() {
-    return zkSys.getZkController();
+    return zkSys == null ? null : zkSys.getZkController();
   }
 
   public NodeConfig getConfig() {

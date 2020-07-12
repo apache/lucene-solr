@@ -30,6 +30,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore // nocommit
 public class TestZkChroot extends SolrTestCaseJ4 {
   protected CoreContainer cores = null;
   private Path home;

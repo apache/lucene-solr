@@ -494,20 +494,39 @@ public class ZkStateReader implements SolrCloseable {
       public void process(WatchedEvent event) {
         if (EventType.None.equals(event.getType())) {
           return;
-        }
-        System.out.println("EVENT:" + event.getType() + " " + event.getPath());
-        if (event.getPath().equals(ZkStateReader.COLLECTIONS_ZKNODE)) {
+        }   log.info("Got event on live node watcher {}", event.toString());
+        if (event.getType() == EventType.NodeCreated) {
           latch.countDown();
+        } else {
+          try {
+            Stat stat = zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE, this, true);
+            if (stat != null) {
+              latch.countDown();
+            }
+          } catch (KeeperException e) {
+            SolrException.log(log, e);
+          } catch (InterruptedException e) {
+            ParWork.propegateInterrupt(e);
+          }
         }
+
       }
     };
     try {
-      if (zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE, null, true) == null) {
-        List<String> nodes = zkClient.getChildren("/", watcher, true);
-        if (!nodes.contains("collections")) {
-          latch.await(10, TimeUnit.SECONDS);
+      Stat stat = zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE, watcher, true);
+      if (stat == null) {
+        log.info("Collections znode not found, waiting on latch");
+        try {
+          boolean success = latch.await(10000, TimeUnit.MILLISECONDS);
+          if (!success) {
+            log.warn("Timedout waiting to see {} node in zk", ZkStateReader.COLLECTIONS_ZKNODE);
+          }
+          log.info("Done waiting on latch");
+        } catch (InterruptedException e) {
+          ParWork.propegateInterrupt(e);
         }
       }
+
     } catch (KeeperException e) {
       throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, e);
     } catch (InterruptedException e) {

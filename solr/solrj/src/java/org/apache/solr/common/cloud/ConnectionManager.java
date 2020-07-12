@@ -47,10 +47,18 @@ public class ConnectionManager implements Watcher, Closeable {
 
   private final SolrZkClient client;
 
-  private final OnReconnect onReconnect;
-  private final BeforeReconnect beforeReconnect;
+  private volatile OnReconnect onReconnect;
+  private volatile BeforeReconnect beforeReconnect;
 
   private volatile boolean isClosed = false;
+
+  public void setOnReconnect(OnReconnect onReconnect) {
+    this.onReconnect = onReconnect;
+  }
+
+  public void setBeforeReconnect(BeforeReconnect beforeReconnect) {
+    this.beforeReconnect = beforeReconnect;
+  }
 
   // Track the likely expired state
   private static class LikelyExpiredState {

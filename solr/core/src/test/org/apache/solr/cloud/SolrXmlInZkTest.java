@@ -79,8 +79,6 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
       zkClient.makePath("solr.xml", XML_FOR_ZK.getBytes(StandardCharsets.UTF_8), true);
     }
 
-    zkClient.close();
-
     if (log.isInfoEnabled()) {
       log.info("####SETUP_START {}", getTestName());
     }
@@ -90,7 +88,7 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
     props.setProperty("solr.test.sys.prop1", "propone");
     props.setProperty("solr.test.sys.prop2", "proptwo");
 
-    cfg = SolrDispatchFilter.loadNodeConfig(solrHome, props);
+    cfg = SolrDispatchFilter.loadNodeConfig(zkClient, solrHome, props);
     if (log.isInfoEnabled()) {
       log.info("####SETUP_END {}", getTestName());
     }
@@ -147,7 +145,7 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
         System.setProperty("hostPort", "8787");
         setUpZkAndDiskXml(false, false); // solr.xml not on disk either
       });
-      assertTrue("Should be failing to create default solr.xml in code",
+      assertTrue("Should be failing to create default solr.xml in code:" + e.getMessage(),
           e.getMessage().contains("solr.xml does not exist"));
     } finally {
       closeZK();

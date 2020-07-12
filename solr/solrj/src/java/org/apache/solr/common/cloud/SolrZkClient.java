@@ -98,6 +98,9 @@ public class SolrZkClient implements Closeable {
   static final int DEFAULT_CLIENT_CONNECT_TIMEOUT = 30000;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private final int zkClientConnectTimeout;
+
+  private final ZkClientConnectionStrategy strat;
 
   private ConnectionManager connManager;
 
@@ -143,7 +146,7 @@ public class SolrZkClient implements Closeable {
   private volatile boolean isClosed = false;
   private ZkClientConnectionStrategy zkClientConnectionStrategy;
   private int zkClientTimeout;
-  private ZkACLProvider zkACLProvider;
+  private volatile ZkACLProvider zkACLProvider;
   private String zkServerAddress;
 
   private IsClosed higherLevelIsClosed;
@@ -152,9 +155,14 @@ public class SolrZkClient implements Closeable {
     return zkClientTimeout;
   }
 
+  public int getZkClientConnectTimeout() {
+    return zkClientConnectTimeout;
+  }
+
   // expert: for tests
   public SolrZkClient() {
-
+    zkClientConnectTimeout = 0;
+    strat = null;
   }
 
   public SolrZkClient(String zkServerAddress, int zkClientTimeout) {
@@ -193,7 +201,7 @@ public class SolrZkClient implements Closeable {
       strat = new DefaultConnectionStrategy();
     }
     this.zkClientConnectionStrategy = strat;
-
+    this.zkClientConnectTimeout = clientConnectTimeout;
     if (!strat.hasZkCredentialsToAddAutomatically()) {
       ZkCredentialsProvider zkCredentialsToAddAutomatically = createZkCredentialsToAddAutomatically();
       strat.setZkCredentialsToAddAutomatically(zkCredentialsToAddAutomatically);
@@ -253,7 +261,12 @@ public class SolrZkClient implements Closeable {
       this.zkACLProvider = zkACLProvider;
     }
 
+    this.strat = strat;
     assert ObjectReleaseTracker.track(this);
+  }
+
+  public void setOnReconnect(OnReconnect onReconnect) {
+    this.connManager.setOnReconnect(onReconnect);
   }
 
   public ConnectionManager getConnectionManager() {
@@ -262,6 +275,10 @@ public class SolrZkClient implements Closeable {
 
   public ZkClientConnectionStrategy getZkClientConnectionStrategy() {
     return zkClientConnectionStrategy;
+  }
+
+  public ZkClientConnectionStrategy getStrat() {
+    return strat;
   }
 
   public static final String ZK_CRED_PROVIDER_CLASS_NAME_VM_PARAM_NAME = "zkCredentialsProvider";
@@ -1061,6 +1078,14 @@ public class SolrZkClient implements Closeable {
 
   public Op createPathOp(String path, byte[] data) {
     return Op.create(path, data, getZkACLProvider().getACLsToAdd(path), CreateMode.PERSISTENT);
+  }
+
+  public void setAclProvider(ZkACLProvider zkACLProvider) {
+    this.zkACLProvider = zkACLProvider;
+  }
+
+  public void setIsClosed(IsClosed isClosed) {
+    this.higherLevelIsClosed = isClosed;
   }
 
   /**

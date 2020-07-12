@@ -164,10 +164,10 @@ public class ZkController implements Closeable {
   public final int WAIT_FOR_STATE = Integer.getInteger("solr.waitForState", 10);
 
   private final boolean SKIP_AUTO_RECOVERY = Boolean.getBoolean("solrcloud.skip.autorecovery");
-  private final DefaultConnectionStrategy strat;
   private final int zkClientConnectTimeout;
   private final Supplier<List<CoreDescriptor>> descriptorsSupplier;
   private final ZkACLProvider zkACLProvider;
+  private boolean closeZkClient = false;
 
   private volatile ZkDistributedQueue overseerJobQueue;
   private volatile OverseerTaskQueue overseerCollectionQueue;
@@ -197,9 +197,9 @@ public class ZkController implements Closeable {
       final int prime = 31;
       int result = 1;
       result = prime * result
-          + ((collection == null) ? 0 : collection.hashCode());
+              + ((collection == null) ? 0 : collection.hashCode());
       result = prime * result
-          + ((coreNodeName == null) ? 0 : coreNodeName.hashCode());
+              + ((coreNodeName == null) ? 0 : coreNodeName.hashCode());
       return result;
     }
 
@@ -329,14 +329,18 @@ public class ZkController implements Closeable {
     }
   }
 
+
+  public ZkController(final CoreContainer cc, String zkServerAddress, int zkClientConnectTimeout, CloudConfig cloudConfig, final Supplier<List<CoreDescriptor>> descriptorsSupplier) throws InterruptedException, IOException, TimeoutException {
+    this(cc, new SolrZkClient(), cloudConfig, descriptorsSupplier);
+    this.closeZkClient = true;
+  }
+
   /**
    * @param cc Core container associated with this controller. cannot be null.
-   * @param zkServerAddress where to connect to the zk server
-   * @param zkClientConnectTimeout timeout in ms
    * @param cloudConfig configuration for this controller. TODO: possibly redundant with CoreContainer
    * @param descriptorsSupplier a supplier of the current core descriptors. used to know which cores to re-register on reconnect
    */
-  public ZkController(final CoreContainer cc, String zkServerAddress, int zkClientConnectTimeout, CloudConfig cloudConfig, final Supplier<List<CoreDescriptor>> descriptorsSupplier)
+  public ZkController(final CoreContainer cc, SolrZkClient zkClient, CloudConfig cloudConfig, final Supplier<List<CoreDescriptor>> descriptorsSupplier)
       throws InterruptedException, TimeoutException, IOException {
     if (cc == null) log.error("null corecontainer");
     if (cc == null) throw new IllegalArgumentException("CoreContainer cannot be null.");
@@ -344,16 +348,16 @@ public class ZkController implements Closeable {
       this.cc = cc;
       this.descriptorsSupplier = descriptorsSupplier;
       this.cloudConfig = cloudConfig;
-      this.zkClientConnectTimeout = zkClientConnectTimeout;
+      this.zkClientConnectTimeout = zkClient.getZkClientTimeout();
       this.genericCoreNodeNames = cloudConfig.getGenericCoreNodeNames();
-
+      this.zkClient = zkClient;
       // be forgiving and strip this off leading/trailing slashes
       // this allows us to support users specifying hostContext="/" in
       // solr.xml to indicate the root context, instead of hostContext=""
       // which means the default of "solr"
       String localHostContext = trimLeadingAndTrailingSlashes(cloudConfig.getSolrHostContext());
 
-      this.zkServerAddress = zkServerAddress;
+      this.zkServerAddress = zkClient.getZkServerAddress();
       this.localHostPort = cloudConfig.getSolrHostPort();
       log.info("normalize hostname {}", cloudConfig.getHost());
       this.hostName = normalizeHostName(cloudConfig.getHost());
@@ -370,7 +374,11 @@ public class ZkController implements Closeable {
       log.info("clientTimeout get");
       this.clientTimeout = cloudConfig.getZkClientTimeout();
       log.info("create connection strat");
-      this.strat = new DefaultConnectionStrategy();
+      if (zkClient == null) {
+        zkClient = new SolrZkClient(zkServerAddress, clientTimeout, zkClientConnectTimeout);
+      }
+
+
       String zkACLProviderClass = cloudConfig.getZkACLProviderClass();
 
       if (zkACLProviderClass != null && zkACLProviderClass.trim().length() > 0) {
@@ -390,16 +398,30 @@ public class ZkController implements Closeable {
 
     String zkCredentialsProviderClass = cloudConfig.getZkCredentialsProviderClass();
     if (zkCredentialsProviderClass != null && zkCredentialsProviderClass.trim().length() > 0) {
-      strat.setZkCredentialsToAddAutomatically(cc.getResourceLoader().newInstance(zkCredentialsProviderClass, ZkCredentialsProvider.class));
+      zkClient.getStrat().setZkCredentialsToAddAutomatically(cc.getResourceLoader().newInstance(zkCredentialsProviderClass, ZkCredentialsProvider.class));
     } else {
-      strat.setZkCredentialsToAddAutomatically(new DefaultZkCredentialsProvider());
+      zkClient.getStrat().setZkCredentialsToAddAutomatically(new DefaultZkCredentialsProvider());
     }
     addOnReconnectListener(getConfigDirListener());
+    zkClient.getConnectionManager().setBeforeReconnect(new BeforeReconnect() {
 
-
-    zkClient = new SolrZkClient(zkServerAddress, clientTimeout, zkClientConnectTimeout, strat,
-            // on reconnect, reload cloud info
-            new OnReconnect() {
+      @Override
+      public void command() {
+        try {
+          ZkController.this.overseer.close();
+        } catch (Exception e) {
+          log.error("Error trying to stop any Overseer threads", e);
+        }
+        cc.cancelCoreRecoveries();
+        clearZkCollectionTerms();
+        try (ParWork closer = new ParWork(electionContexts)) {
+          closer.add("election_contexts", electionContexts.values());
+        }
+        markAllAsNotLeader(descriptorsSupplier);
+      }
+    });
+    zkClient.setAclProvider(zkACLProvider);
+    zkClient.getConnectionManager().setOnReconnect(new OnReconnect() {
 
               @Override
               public void command() throws SessionExpiredException {
@@ -498,23 +520,8 @@ public class ZkController implements Closeable {
                 }
               }
 
-            }, new BeforeReconnect() {
-
-      @Override
-      public void command() {
-        try {
-          ZkController.this.overseer.close();
-        } catch (Exception e) {
-          log.error("Error trying to stop any Overseer threads", e);
-        }
-        cc.cancelCoreRecoveries();
-        clearZkCollectionTerms();
-        try (ParWork closer = new ParWork(electionContexts)) {
-          closer.add("election_contexts", electionContexts.values());
-        }
-        markAllAsNotLeader(descriptorsSupplier);
-      }
-    }, zkACLProvider, new ConnectionManager.IsClosed() {
+            });
+    zkClient.setIsClosed(new ConnectionManager.IsClosed() {
 
       @Override
       public boolean isClosed() {
@@ -600,7 +607,7 @@ public class ZkController implements Closeable {
       // nocommit
       closer.add("Cleanup&Terms", collectionToTerms.values());
       closer.add("ZkController Internals",
-              electionContexts.values(), cloudManager, sysPropsCacher, cloudSolrClient, zkStateReader, zkClient);
+              electionContexts.values(), cloudManager, sysPropsCacher, cloudSolrClient, zkStateReader, closeZkClient ? zkClient : null);
       ElectionContext context = null;
       if (overseerElector != null) {
         context = overseerElector.getContext();
@@ -925,7 +932,7 @@ public class ZkController implements Closeable {
     try {
       zkClient.mkDirs("/cluster_lock");
     } catch (KeeperException.NodeExistsException e) {
-      e.printStackTrace();
+      // okay
     } catch (KeeperException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }

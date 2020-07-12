@@ -93,8 +93,8 @@ public abstract class ZkClientConnectionStrategy {
   }
 
   public void setZkCredentialsToAddAutomatically(ZkCredentialsProvider zkCredentialsToAddAutomatically) {
-    if (zkCredentialsToAddAutomaticallyUsed || (zkCredentialsToAddAutomatically == null))
-      throw new RuntimeException("Cannot change zkCredentialsToAddAutomatically after it has been (connect or reconnect was called) used or to null");
+//    if (zkCredentialsToAddAutomaticallyUsed || (zkCredentialsToAddAutomatically == null))
+//      throw new RuntimeException("Cannot change zkCredentialsToAddAutomatically after it has been (connect or reconnect was called) used or to null");
     this.zkCredentialsToAddAutomatically = zkCredentialsToAddAutomatically;
   }
 

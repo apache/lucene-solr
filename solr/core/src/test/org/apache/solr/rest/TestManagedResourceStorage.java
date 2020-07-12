@@ -45,9 +45,7 @@ public class TestManagedResourceStorage extends AbstractZkTestCase {
    */
   @Test
   public void testZkBasedJsonStorage() throws Exception {
-    
-    // test using ZooKeeper
-    assertTrue("Not using ZooKeeper", h.getCoreContainer().isZooKeeperAware());
+
     SolrResourceLoader loader = new SolrResourceLoader(Paths.get("./"));
     // Solr unit tests can only write to their working directory due to
     // a custom Java Security Manager installed in the test environment

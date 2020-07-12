@@ -39,6 +39,7 @@ import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
@@ -60,15 +61,16 @@ public class ZkContainer implements Closeable {
   //  ZKC is huge though.
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
+  private final SolrZkClient zkClient;
+
   protected volatile ZkController zkController;
   private volatile SolrZkServer zkServer;
   
   // see ZkController.zkRunOnly
   private boolean zkRunOnly = Boolean.getBoolean("zkRunOnly"); // expert
   
-  public ZkContainer() {
-    
+  public ZkContainer(SolrZkClient zkClient) {
+    this.zkClient = zkClient;
   }
 
   public void initZooKeeper(final CoreContainer cc, CloudConfig config) {
@@ -80,7 +82,10 @@ public class ZkContainer implements Closeable {
     if (config == null)
         return;  // not in zk mode
 
-    String zookeeperHost = config.getZkHost();
+    String zookeeperHost = System.getProperty("zkHost");
+    if (zookeeperHost == null) {
+      zookeeperHost = config.getZkHost();
+    }
 
     // zookeeper in quorum mode currently causes a failure when trying to
     // register log4j mbeans.  See SOLR-2369
@@ -146,7 +151,7 @@ public class ZkContainer implements Closeable {
           }
         }
         log.info("init zkController");
-        zkController = new ZkController(cc, zookeeperHost, zkClientConnectTimeout, config, descriptorsSupplier);
+        zkController = new ZkController(cc, zkClient, config, descriptorsSupplier);
         log.info("start zkController");
         zkController.start();
         if(confDir != null) {
@@ -233,8 +238,7 @@ public class ZkContainer implements Closeable {
 
   public void close() {
     try (ParWork closer = new ParWork(this, true)) {
-      closer.add(zkController);
-      closer.add(zkServer);
+      closer.add("zkContainer", zkController, zkClient, zkServer);
     }
   }
 }

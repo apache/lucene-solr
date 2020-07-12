@@ -50,8 +50,8 @@ public class TestEmbeddedSolrServerSchemaAPI extends SolrTestCaseJ4 {
   @BeforeClass
   public static void initClass() throws Exception {
     assertNull("no system props clash please", System.getProperty("managed.schema.mutable"));
-    System.setProperty("managed.schema.mutable", ""+//true
-    random().nextBoolean()
+    System.setProperty("managed.schema.mutable", ""+
+      random().nextBoolean()
     );
     Path tmpHome = createTempDir("tmp-home");
     Path coreDir = tmpHome.resolve(DEFAULT_TEST_CORENAME);
@@ -93,7 +93,7 @@ public class TestEmbeddedSolrServerSchemaAPI extends SolrTestCaseJ4 {
   }
 
   @Test 
-  public void testSchemaAddFieldAndFailOnImmutable() {
+  public void  testSchemaAddFieldAndFailOnImmutable() {
     assumeFalse("it needs a readonly schema", Boolean.getBoolean("managed.schema.mutable"));
 
     SchemaRequest.AddField addFieldUpdateSchemaRequest = new SchemaRequest.AddField(fieldAttributes);

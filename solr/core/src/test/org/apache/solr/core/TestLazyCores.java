@@ -26,7 +26,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.regex.Pattern;
 
 import com.google.common.collect.ImmutableList;
@@ -95,7 +94,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       copyMinConf(new File(solrHomeDirectory, "collection" + idx));
     }
 
-    NodeConfig cfg = SolrDispatchFilter.loadNodeConfig(solrHomeDirectory.toPath(), null);
+    NodeConfig cfg = SolrDispatchFilter.loadNodeConfig(null, solrHomeDirectory.toPath(), null);
     return createCoreContainer(cfg, testCores);
   }
   

@@ -73,6 +73,7 @@ import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.data.Stat;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.http2.HTTP2Cipher;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
@@ -586,45 +587,52 @@ public class JettySolrRunner implements Closeable {
         waitForLoadingCoresToFinish(config.waitForLoadingCoresToFinishMs);
       }
 
-      if (getCoreContainer() != null && getCoreContainer().isZooKeeperAware()) {
-        SolrZkClient solrZkClient = getCoreContainer().getZkController().getZkStateReader().getZkClient();
-        if (solrZkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE, null, true) == null) {
-          CountDownLatch latch = new CountDownLatch(1);
-          Watcher watcher = new Watcher() {
+      if (getCoreContainer() != null && System.getProperty("zkHost") != null) {
+        SolrZkClient zkClient = getCoreContainer().getZkController().getZkStateReader().getZkClient();
+        CountDownLatch latch = new CountDownLatch(1);
 
-            @Override
-            public void process(WatchedEvent event) {
-              if (Event.EventType.None.equals(event.getType())) {
-                return;
-              }
+        Watcher watcher = new Watcher() {
+
+          @Override
+          public void process(WatchedEvent event) {
+            if (Event.EventType.None.equals(event.getType())) {
+              return;
+            }   log.info("Got event on live node watcher {}", event.toString());
+            if (event.getType() == Event.EventType.NodeCreated) {
+              latch.countDown();
+            } else {
               try {
-                if (event.getType() == Event.EventType.NodeChildrenChanged) {
-
-                  if (solrZkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE, null, true) == null) {
-                    solrZkClient.getChildren("/", this, true);
-                    return;
-                  } else {
-                    latch.countDown();
-                  }
+                Stat stat = zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE, this, true);
+                if (stat != null) {
+                  latch.countDown();
                 }
-                solrZkClient.getChildren("/", this, true);
               } catch (KeeperException e) {
-                throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+                SolrException.log(log, e);
               } catch (InterruptedException e) {
                 ParWork.propegateInterrupt(e);
-                throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
               }
             }
-          };
-          List<String> rootNodes = solrZkClient.getChildren("/", watcher, true);
-          if (!rootNodes.contains(ZkStateReader.COLLECTIONS_ZKNODE)) {
-            boolean success = latch.await(30, TimeUnit.SECONDS);
-            if (!success) {
-              throw new TimeoutException();
-            }
-          } else {
-            solrZkClient.getSolrZooKeeper().removeWatches("/", watcher,  Watcher.WatcherType.Children, true);
+
           }
+        };
+        try {
+          Stat stat = zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE, watcher, true);
+          if (stat == null) {
+            log.info("Collections znode not found, waiting on latch");
+            try {
+              boolean success = latch.await(1000, TimeUnit.MILLISECONDS);
+              if (!success) {
+                log.warn("Timedout waiting to see {} node in zk", ZkStateReader.COLLECTIONS_ZKNODE);
+              }
+              log.info("Done waiting on latch");
+            } catch (InterruptedException e) {
+              ParWork.propegateInterrupt(e);
+            }
+          }
+        } catch (KeeperException e) {
+          throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, e);
+        } catch (InterruptedException e) {
+          ParWork.propegateInterrupt(e);
         }
 
         if (wait) {

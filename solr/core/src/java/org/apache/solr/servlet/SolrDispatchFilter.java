@@ -70,6 +70,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CorePropertiesLocator;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
@@ -278,8 +279,15 @@ public class SolrDispatchFilter extends BaseSolrFilter {
    * @return a CoreContainer to hold this server's cores
    */
   protected CoreContainer createCoreContainer(Path solrHome, Properties extraProperties) {
-    NodeConfig nodeConfig = loadNodeConfig(solrHome, extraProperties);
-    this.cores = new CoreContainer(nodeConfig, true);
+    String zkHost = System.getProperty("zkHost");
+    SolrZkClient zkClient = null;
+    if (!StringUtils.isEmpty(zkHost)) {
+      int startUpZkTimeOut = Integer.getInteger("waitForZk", 10); // nocommit - zk settings
+      zkClient = new SolrZkClient(zkHost, (int) TimeUnit.SECONDS.toMillis(startUpZkTimeOut));
+    }
+
+    NodeConfig nodeConfig = loadNodeConfig(zkClient, solrHome, extraProperties);
+    this.cores = new CoreContainer(zkClient, nodeConfig,  new CorePropertiesLocator(nodeConfig.getCoreRootDirectory()), true);
     cores.load();
     return cores;
   }
@@ -289,31 +297,26 @@ public class SolrDispatchFilter extends BaseSolrFilter {
    * This may also be used by custom filters to load relevant configuration.
    * @return the NodeConfig
    */
-  public static NodeConfig loadNodeConfig(Path solrHome, Properties nodeProperties) {
+  public static NodeConfig loadNodeConfig(SolrZkClient zkClient, Path solrHome, Properties nodeProperties) {
     if (!StringUtils.isEmpty(System.getProperty("solr.solrxml.location"))) {
       log.warn("Solr property solr.solrxml.location is no longer supported. Will automatically load solr.xml from ZooKeeper if it exists");
     }
-
-    String zkHost = System.getProperty("zkHost");
-    if (!StringUtils.isEmpty(zkHost)) {
-      int startUpZkTimeOut = Integer.getInteger("waitForZk", 10);
-      SolrZkClient zkClient = new SolrZkClient(zkHost, (int) TimeUnit.SECONDS.toMillis(startUpZkTimeOut));
+    if (zkClient != null) {
       try {
 
         log.info("Trying solr.xml in ZooKeeper...");
 
-          byte[] data = zkClient.getData("/solr.xml", null, null, true);
-          return SolrXmlConfig.fromInputStream(solrHome, new ByteArrayInputStream(data), nodeProperties, true);
-        } catch (KeeperException.NoNodeException e) {
-          // okay
-       } catch (Exception e) {
+        byte[] data = zkClient.getData("/solr.xml", null, null, true);
+        return SolrXmlConfig.fromInputStream(solrHome, new ByteArrayInputStream(data), nodeProperties, true);
+      } catch (KeeperException.NoNodeException e) {
+        // okay
+      } catch (Exception e) {
         SolrZkClient.checkInterrupted(e);
         throw new SolrException(ErrorCode.SERVER_ERROR, "Error occurred while loading solr.xml from zookeeper", e);
-      } finally {
-        ParWork.getExecutor().submit(() -> IOUtils.closeQuietly(zkClient));
       }
-      log.info("Loading solr.xml from SolrHome (not found in ZooKeeper)");
     }
+    log.info("Loading solr.xml from SolrHome (not found in ZooKeeper)");
+
 
     return SolrXmlConfig.fromSolrHome(solrHome, nodeProperties);
   }

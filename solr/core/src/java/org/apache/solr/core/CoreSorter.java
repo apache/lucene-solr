@@ -26,6 +26,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -84,7 +85,7 @@ public final class CoreSorter implements Comparator<CoreDescriptor> {
     //sort the cores if it is in SolrCloud. In standalone mode the order does not matter
     if (coreContainer.isZooKeeperAware()) {
       return descriptors.stream()
-          .sorted(new CoreSorter().init(coreContainer, descriptors))
+          .sorted(new CoreSorter().init(coreContainer.getZkController(), descriptors))
           .collect(toList()); // new list
     }
     return descriptors;
@@ -92,9 +93,9 @@ public final class CoreSorter implements Comparator<CoreDescriptor> {
 
   private final Map<String, CountsForEachShard> shardsVsReplicaCounts = new HashMap<>();
 
-  CoreSorter init(CoreContainer cc, Collection<CoreDescriptor> coreDescriptors) {
-    String myNodeName = cc.getNodeConfig().getNodeName();
-    ClusterState state = cc.getZkController().getClusterState();
+  CoreSorter init(ZkController zkController, Collection<CoreDescriptor> coreDescriptors) {
+    String myNodeName = zkController.getCoreContainer().getNodeConfig().getNodeName();
+    ClusterState state = zkController.getCoreContainer().getZkController().getClusterState();
     for (CoreDescriptor coreDescriptor : coreDescriptors) {
       CloudDescriptor cloudDescriptor = coreDescriptor.getCloudDescriptor();
       String coll = cloudDescriptor.getCollectionName();
