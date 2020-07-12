@@ -313,7 +313,7 @@ public class SolrTestCase extends LuceneTestCase {
   }
   
   @AfterClass
-  public static void shutdownLogger() throws Exception {
+  public static void afterSolrTestCase() throws Exception {
 
     try {
       HttpClientUtil.resetHttpClientBuilder();
@@ -332,8 +332,34 @@ public class SolrTestCase extends LuceneTestCase {
 //                  + testTime);
       }
     } finally {
-      // nocommit - this should not be necessary, check
-      TimeTracker.CLOSE_TIMES.clear();
+      System.out.println("Show Close Times");
+      Class<? extends Object> clazz = null;
+      Long tooLongTime = 0L;
+      try {
+        synchronized (TimeTracker.CLOSE_TIMES) {
+          Map<String,TimeTracker> closeTimes = TimeTracker.CLOSE_TIMES;
+          for (TimeTracker closeTime : closeTimes.values()) {
+//              if (closeTime.getClazz() == SolrCore.class) {
+//                continue;
+//              }
+            if (closeTime.getElapsedMS() > 8000) {
+              tooLongTime = closeTime.getElapsedMS();
+              clazz = closeTime.getClazz();
+            }
+            closeTime.printCloseTimes();
+            System.out.println("\n");
+          }
+        }
+
+      } finally {
+        TimeTracker.CLOSE_TIMES.clear();
+      }
+
+      if (clazz != null) {
+        // nocommit - leave this on
+        fail("A " + clazz.getName() + " took too long to close: " + tooLongTime);
+      }
+
     }
   }
 

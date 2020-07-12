@@ -150,7 +150,7 @@ public class TimeTracker {
 
     String times = getCloseTimes();
     if (times.trim().length()>0) {
-      System.out.println("\n------\n" +  times + "\n------\n");
+      System.out.println("\n------" +  times + "------\n");
     }
 
     if (log.isDebugEnabled()) {
