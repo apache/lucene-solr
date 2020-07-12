@@ -63,10 +63,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHeaders;
 import org.apache.lucene.util.Version;
 import org.apache.solr.api.V2HttpCall;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
@@ -295,19 +297,20 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     String zkHost = System.getProperty("zkHost");
     if (!StringUtils.isEmpty(zkHost)) {
       int startUpZkTimeOut = Integer.getInteger("waitForZk", 10);
-      try (SolrZkClient zkClient = new SolrZkClient(zkHost, (int) TimeUnit.SECONDS.toMillis(startUpZkTimeOut))) {
+      SolrZkClient zkClient = new SolrZkClient(zkHost, (int) TimeUnit.SECONDS.toMillis(startUpZkTimeOut));
+      try {
 
         log.info("Trying solr.xml in ZooKeeper...");
-        try {
+
           byte[] data = zkClient.getData("/solr.xml", null, null, true);
           return SolrXmlConfig.fromInputStream(solrHome, new ByteArrayInputStream(data), nodeProperties, true);
         } catch (KeeperException.NoNodeException e) {
           // okay
-        }
-
-      } catch (Exception e) {
+       } catch (Exception e) {
         SolrZkClient.checkInterrupted(e);
         throw new SolrException(ErrorCode.SERVER_ERROR, "Error occurred while loading solr.xml from zookeeper", e);
+      } finally {
+        ParWork.getExecutor().submit(() -> IOUtils.closeQuietly(zkClient));
       }
       log.info("Loading solr.xml from SolrHome (not found in ZooKeeper)");
     }
