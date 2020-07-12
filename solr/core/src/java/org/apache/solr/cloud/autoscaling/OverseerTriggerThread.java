@@ -42,6 +42,7 @@ import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.zookeeper.KeeperException;
@@ -93,6 +94,7 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
     this.cloudManager = cloudManager;
     scheduledTriggers = new ScheduledTriggers(loader, cloudManager);
     triggerFactory = new AutoScaling.TriggerFactoryImpl(loader, cloudManager);
+    ObjectReleaseTracker.track(this);
   }
 
   @Override
@@ -116,11 +118,13 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
           updateLock.unlock();
         }
       });
+      closer.addCollect("close");
     }
 
     activeTriggers.clear();
 
     if (log.isDebugEnabled()) log.debug("OverseerTriggerThread has been closed explicitly");
+    ObjectReleaseTracker.release(this);
   }
 
   /**

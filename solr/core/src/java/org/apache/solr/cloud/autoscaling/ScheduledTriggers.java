@@ -56,6 +56,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -152,6 +153,7 @@ public class ScheduledTriggers implements Closeable {
     listeners = new TriggerListeners();
     // initialize cooldown timer
     cooldownStart.set(cloudManager.getTimeSource().getTimeNs() - cooldownPeriod.get());
+    ObjectReleaseTracker.track(this);
   }
 
   /**
@@ -534,18 +536,17 @@ public class ScheduledTriggers implements Closeable {
         closer.collect(triggerWrapper);
       }
       closer.collect(listeners);
+      closer.collect(actionExecutor);
+      closer.collect(scheduledThreadPoolExecutor);
 
-      closer.collect(() -> {
-        awaitTermination(actionExecutor);
-        awaitTermination(scheduledThreadPoolExecutor);
-
-      });
       closer.addCollect("ScheduledTriggers");
     }
 
     scheduledTriggerWrappers.clear();
 
     if (log.isDebugEnabled()) log.debug("ScheduledTriggers closed completely");
+
+    ObjectReleaseTracker.release(this);
   }
 
   /**

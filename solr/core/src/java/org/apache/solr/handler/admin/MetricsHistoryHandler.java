@@ -66,6 +66,7 @@ import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.cloud.LeaderElector;
 import org.apache.solr.cloud.Overseer;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -80,6 +81,7 @@ import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.TimeSource;
@@ -240,6 +242,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
           TimeUnit.MILLISECONDS);
       checkSystemCollection();
     }
+    ObjectReleaseTracker.track(this);
   }
 
   // check that .system exists
@@ -655,23 +658,15 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
     if (log.isDebugEnabled()) {
       log.debug("Closing {}", hashCode());
     }
-    if (collectService != null) {
-      boolean shutdown = false;
-      while (!shutdown) {
-        try {
-          // Wait a while for existing tasks to terminate
-          collectService.shutdownNow();
-          shutdown = collectService.awaitTermination(5, TimeUnit.SECONDS);
-        } catch (InterruptedException ie) {
-          // Preserve interrupt status
-          Thread.currentThread().interrupt();
-        }
-      }
+    collectService.shutdownNow();
+    try (ParWork closer = new ParWork(this)) {
+      closer.collect(collectService);
+      closer.collect(factory);
+      closer.addCollect("metricsHistoryHandlerClose");
     }
-    if (factory != null) {
-      factory.close();
-    }
+
     knownDbs.clear();
+    ObjectReleaseTracker.release(this);
   }
 
   public enum Cmd {

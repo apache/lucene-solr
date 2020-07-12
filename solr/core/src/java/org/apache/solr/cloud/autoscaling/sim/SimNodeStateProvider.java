@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud.autoscaling.sim;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
@@ -46,7 +47,7 @@ import org.slf4j.LoggerFactory;
  * Note: in order to setup node-level metrics use {@link #simSetNodeValues(String, Map)}. However, in order
  * to setup core-level metrics use {@link SimClusterStateProvider#simSetCollectionValue(String, String, Object, boolean, boolean)}.
  */
-public class SimNodeStateProvider implements NodeStateProvider {
+public class SimNodeStateProvider implements NodeStateProvider, Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final Map<String, Map<String, Object>> nodeValues = new ConcurrentHashMap<>();

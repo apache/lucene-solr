@@ -273,6 +273,8 @@ public class SimCloudManager implements SolrCloudManager {
     OverseerTriggerThread trigger = new OverseerTriggerThread(loader, this);
     triggerThread = new Overseer.OverseerThread(triggerThreadGroup, trigger, "Simulated OverseerAutoScalingTriggerThread");
     triggerThread.start();
+
+    ObjectReleaseTracker.track(this);
   }
 
   // ---------- simulator setup methods -----------
@@ -987,23 +989,21 @@ public class SimCloudManager implements SolrCloudManager {
   public void close() throws IOException {
     // make sure we shutdown the pool first, so any in active background tasks get interupted
     // before we start closing resources they may be using.
-    simCloudManagerPool.shutdown();
-    
-    if (metricsHistoryHandler != null) {
-      IOUtils.closeQuietly(metricsHistoryHandler);
+    simCloudManagerPool.shutdownNow();
+
+    try (ParWork closer = new ParWork(this)) {
+      closer.collect(metricsHandler);
+      closer.collect(clusterStateProvider);
+      closer.collect(metricsHistoryHandler);
+      closer.collect(clusterStateProvider);
+      closer.collect(nodeStateProvider);
+      closer.collect(stateManager);
+      closer.collect(triggerThread);
+      closer.collect(objectCache);
+      closer.collect(simCloudManagerPool);
+      closer.addCollect("simCloudManagerClose");
     }
-    IOUtils.closeQuietly(clusterStateProvider);
-    IOUtils.closeQuietly(nodeStateProvider);
-    IOUtils.closeQuietly(stateManager);
-    IOUtils.closeQuietly(triggerThread);
-    triggerThread.interrupt();
-    try {
-      triggerThread.join();
-    } catch (InterruptedException e) {
-      ParWork.propegateInterrupt(e);
-    }
-    IOUtils.closeQuietly(objectCache);
-    ExecutorUtil.awaitTermination(simCloudManagerPool);
+
     ObjectReleaseTracker.release(this);
   }
 

@@ -793,7 +793,6 @@ public class SolrZkClient implements Closeable {
     Iterator<Op> it = ops.iterator();
     for (OpResult result : results) {
       Op reqOp = it.next();
-      System.out.println("result:" + result.getClass().getSimpleName());
       if (result instanceof OpResult.ErrorResult) {
         OpResult.ErrorResult dresult = (OpResult.ErrorResult) result;
         if (dresult.getErr() != 0) {
