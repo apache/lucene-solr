@@ -660,6 +660,16 @@ public class CoreContainer implements Closeable {
       log.debug("Loading cores into CoreContainer [instanceDir={}]", getSolrHome());
     }
 
+    if (isZooKeeperAware()) {
+      try {
+        zkSys.start(this);
+      } catch (IOException e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, e);
+      } catch (KeeperException e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, e);
+      }
+    }
+
     // Always add $SOLR_HOME/lib to the shared resource loader
     Set<String> libDirs = new LinkedHashSet<>();
     libDirs.add("lib");

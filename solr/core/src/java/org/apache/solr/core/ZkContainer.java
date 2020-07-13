@@ -68,7 +68,9 @@ public class ZkContainer implements Closeable {
   
   // see ZkController.zkRunOnly
   private boolean zkRunOnly = Boolean.getBoolean("zkRunOnly"); // expert
-  
+  private volatile String confDir;
+  private boolean boostrapConf;
+
   public ZkContainer(SolrZkClient zkClient) {
     this.zkClient = zkClient;
   }
@@ -119,8 +121,8 @@ public class ZkContainer implements Closeable {
         } else {
           log.info("Zookeeper client={}", zookeeperHost);
         }
-        String confDir = System.getProperty("bootstrap_confdir");
-        boolean boostrapConf = Boolean.getBoolean("bootstrap_conf");  
+        confDir = System.getProperty("bootstrap_confdir");
+        boostrapConf = Boolean.getBoolean("bootstrap_conf");  
 
         // We may have already loaded NodeConfig from zookeeper with same connect string, so no need to recheck chroot
         boolean alreadyUsedChroot = cc.getConfig().isFromZookeeper() && zookeeperHost.equals(System.getProperty("zkHost"));
@@ -153,24 +155,8 @@ public class ZkContainer implements Closeable {
         log.info("init zkController");
         zkController = new ZkController(cc, zkClient, config, descriptorsSupplier);
         log.info("start zkController");
-        zkController.start();
-        if(confDir != null) {
-          log.info("none null conf dir");
-          Path configPath = Paths.get(confDir);
-          if (!Files.isDirectory(configPath))
-            throw new IllegalArgumentException("bootstrap_confdir must be a directory of configuration files");
 
-          String confName = System.getProperty(ZkController.COLLECTION_PARAM_PREFIX+ZkController.CONFIGNAME_PROP, "configuration1");
-          ZkConfigManager configManager = new ZkConfigManager(zkController.getZkClient());
-          log.info("upload conf");
-          configManager.uploadConfigDir(configPath, confName);
-        }
-
-        if (boostrapConf) {
-          log.info("bootstrap conf");
-          ZkController.bootstrapConf(zkController.getZkClient(), cc);
-        }
-        log.info("done zkController init and start");
+        log.info("done zkController init");
       } catch (InterruptedException e) {
         // Restore the interrupted status
         Thread.currentThread().interrupt();
@@ -186,6 +172,26 @@ public class ZkContainer implements Closeable {
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
             "", e);
       }
+    }
+  }
+
+  public void start(CoreContainer cc) throws IOException, KeeperException {
+    zkController.start();
+    if(confDir != null) {
+      log.info("none null conf dir");
+      Path configPath = Paths.get(confDir);
+      if (!Files.isDirectory(configPath))
+        throw new IllegalArgumentException("bootstrap_confdir must be a directory of configuration files");
+
+      String confName = System.getProperty(ZkController.COLLECTION_PARAM_PREFIX+ZkController.CONFIGNAME_PROP, "configuration1");
+      ZkConfigManager configManager = new ZkConfigManager(zkController.getZkClient());
+      log.info("upload conf");
+      configManager.uploadConfigDir(configPath, confName);
+    }
+
+    if (boostrapConf) {
+      log.info("bootstrap conf");
+      ZkController.bootstrapConf(zkController.getZkClient(), cc);
     }
   }
   
