@@ -552,7 +552,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
           }
         }
 
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, name +" Error loading class '" + cname + "'", e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, name +" Error loading class '" + cname + "'" + " subpackages=" + Arrays.asList(subpackages), e);
       }
 
     } finally {

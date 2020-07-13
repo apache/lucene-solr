@@ -185,7 +185,7 @@
       </lst>
       <str name="dest">people_s</str>
     </processor>
-    <processor class="solr.processor.OpenNLPExtractNamedEntitiesUpdateProcessorFactory">
+    <processor class="solr.OpenNLPExtractNamedEntitiesUpdateProcessorFactory">
       <str name="modelFile">en-test-ner.bin</str>
       <str name="analyzerFieldType">opennlp-en-tokenization</str>
       <lst name="source">

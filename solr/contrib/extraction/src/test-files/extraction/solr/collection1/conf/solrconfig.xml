@@ -75,19 +75,19 @@
          that match a particular query.
       -->
     <filterCache
-      class="solr.search.CaffeineCache"
+      class="solr.CaffeineCache"
       size="512"
       initialSize="512"
       autowarmCount="256"/>
 
     <queryResultCache
-      class="solr.search.CaffeineCache"
+      class="solr.CaffeineCache"
       size="512"
       initialSize="512"
       autowarmCount="1024"/>
 
     <documentCache
-      class="solr.search.CaffeineCache"
+      class="solr.CaffeineCache"
       size="512"
       initialSize="512"
       autowarmCount="0"/>
@@ -99,7 +99,7 @@
     <!--
 
     <cache name="myUserCache"
-      class="solr.search.CaffeineCache"
+      class="solr.CaffeineCache"
       size="4096"
       initialSize="1024"
       autowarmCount="1024"

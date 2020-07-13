@@ -180,7 +180,7 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
     return processors.stream().map(it -> {
       if(it.pkgName == null){
         return solrCore.createInitInstance(it, UpdateRequestProcessorFactory.class,
-            UpdateRequestProcessorFactory.class.getSimpleName(), null);
+            UpdateRequestProcessorFactory.class.getSimpleName(), null, "update.processor.");
 
       } else {
         return new LazyUpdateRequestProcessorFactory(new PackagePluginHolder(

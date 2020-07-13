@@ -257,7 +257,7 @@ to clients if necessary.
 implementations are deprecated and likely to be removed in 9.0.
 +
 Users are encouraged to transition their cache configurations to use
-`org.apache.solr.search.CaffeineCache` as soon as feasible.
+`org.apache.solr.CaffeineCache` as soon as feasible.
 
 === Solr 8.3
 

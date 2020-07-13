@@ -54,7 +54,7 @@
 
   <requestHandler name="/select" class="solr.SearchHandler"></requestHandler>
 
-  <requestHandler name="/tag" class="solr.TaggerRequestHandler">
+  <requestHandler name="/tag" class="org.apache.solr.handler.tagger.TaggerRequestHandler">
     <lst name="defaults">
       <str name="field">name_tag</str>
     </lst>

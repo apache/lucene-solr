@@ -71,7 +71,7 @@
                    autowarmCount="0"/>
 
     <cache name="perSegFilter"
-           class="solr.search.CaffeineCache"
+           class="solr.CaffeineCache"
            size="10"
            initialSize="0"
            autowarmCount="10"

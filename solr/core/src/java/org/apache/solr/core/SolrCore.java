@@ -219,7 +219,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private final SolrSnapshotMetaDataManager snapshotMgr;
   private final DirectoryFactory directoryFactory;
   private final RecoveryStrategy.Builder recoveryStrategyBuilder;
-  private IndexReaderFactory indexReaderFactory;
+  private volatile IndexReaderFactory indexReaderFactory;
   private final Codec codec;
   private final MemClassLoader memClassLoader;
 
@@ -228,14 +228,14 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private final ReentrantLock ruleExpiryLock;
   private final ReentrantLock snapshotDelLock; // A lock instance to guard against concurrent deletions.
 
-  private Timer newSearcherTimer;
-  private Timer newSearcherWarmupTimer;
-  private Counter newSearcherCounter;
-  private Counter newSearcherMaxReachedCounter;
-  private Counter newSearcherOtherErrorsCounter;
+  private volatile Timer newSearcherTimer;
+  private volatile Timer newSearcherWarmupTimer;
+  private volatile Counter newSearcherCounter;
+  private volatile Counter newSearcherMaxReachedCounter;
+  private volatile Counter newSearcherOtherErrorsCounter;
   private final CoreContainer coreContainer;
 
-  private Set<String> metricNames = ConcurrentHashMap.newKeySet();
+  private final Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private final String metricTag = SolrMetricProducer.getUniqueMetricTag(this, null);
   private final SolrMetricsContext solrMetricsContext;
 
@@ -246,7 +246,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private volatile boolean isClosed = false;
 
   private final PackageListeners packageListeners = new PackageListeners(this);
-  private volatile boolean closeUpdateHandler = true;
 
   public Set<String> getMetricNames() {
     return metricNames;
@@ -413,9 +412,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       if (dir != null) {
         try {
           getDirectoryFactory().release(dir);
-        } catch (IOException e) {
-          SolrException.log(log, "", e);
-          throw new SolrException(ErrorCode.SERVER_ERROR, e);
+        } catch (Exception e) {
+          ParWork.propegateInterrupt( "Error releasing directory", e);
         }
       }
     }
@@ -439,8 +437,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       // All other exceptions are will propagate to caller.
       return dataDir + "index/";
     }
-    final InputStream is = new PropertiesInputStream(input); // c'tor just assigns a variable here, no exception thrown.
-    try {
+    try (InputStream is = new PropertiesInputStream(input)) { // c'tor just assigns a variable here, no exception
+                                                              // thrown.
       Properties p = new Properties();
       p.load(new InputStreamReader(is, StandardCharsets.UTF_8));
 
@@ -452,8 +450,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       // We'll return dataDir/index/ if the properties file has an "index" property with
       // no associated value or does not have an index property at all.
       return dataDir + "index/";
-    } finally {
-      IOUtils.closeQuietly(is);
     }
   }
 
@@ -648,11 +644,11 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     for (PluginInfo info : solrConfig.getPluginInfos(SolrEventListener.class.getName())) {
       final String event = info.attributes.get("event");
       if ("firstSearcher".equals(event)) {
-        SolrEventListener obj = createInitInstance(info, clazz, label, null);
+        SolrEventListener obj = createInitInstance(info, clazz, label, null,  Utils.getSolrSubPackage(clazz.getPackageName()));
         firstSearcherListeners.add(obj);
         log.debug("[{}] Added SolrEventListener for firstSearcher: [{}]", logid, obj);
       } else if ("newSearcher".equals(event)) {
-        SolrEventListener obj = createInitInstance(info, clazz, label, null);
+        SolrEventListener obj = createInitInstance(info, clazz, label, null, Utils.getSolrSubPackage(clazz.getPackageName()));
         newSearcherListeners.add(obj);
         log.debug("[{}] Added SolrEventListener for newSearcher: [{}]", logid, obj);
       }
@@ -696,9 +692,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   }
 
   public SolrCore reload(ConfigSet coreConfig) throws IOException {
-    if (this.isClosed) {
-      throw new AlreadyClosedException();
-    }
 
     // only one reload at a time
     synchronized (getUpdateHandler().getSolrCoreState().getReloadLock()) {
@@ -831,6 +824,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     cleanupOldIndexDirectories(reload);
   }
 
+  public static <T> T createInstance(String className, Class<T> cast, String msg, SolrCore core, ResourceLoader resourceLoader) {
+    return createInstance(className, cast, msg, core, resourceLoader, null);
+  }
 
   /**
    * Creates an instance by trying a constructor that accepts a SolrCore before
@@ -843,11 +839,15 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    * @return the desired instance
    * @throws SolrException if the object could not be instantiated
    */
-  public static <T> T createInstance(String className, Class<T> cast, String msg, SolrCore core, ResourceLoader resourceLoader) {
+  public static <T> T createInstance(String className, Class<T> cast, String msg, SolrCore core, ResourceLoader resourceLoader,  String... subpackages) {
     Class<? extends T> clazz = null;
     if (msg == null) msg = "SolrCore Object";
     try {
-      clazz = resourceLoader.findClass(className, cast);
+      if (resourceLoader instanceof  SolrResourceLoader) {
+        clazz = ((SolrResourceLoader)resourceLoader).findClass(className, cast, subpackages);
+      } else {
+        clazz = resourceLoader.findClass(className, cast);
+      }
       //most of the classes do not have constructors which takes SolrCore argument. It is recommended to obtain SolrCore by implementing SolrCoreAware.
       // So invariably always it will cause a  NoSuchMethodException. So iterate though the list of available constructors
       Constructor<?>[] cons = clazz.getConstructors();
@@ -857,7 +857,13 @@ public final class SolrCore implements SolrInfoBean, Closeable {
           return cast.cast(con.newInstance(core));
         }
       }
-      return resourceLoader.newInstance(className, cast);//use the empty constructor
+
+      if (resourceLoader instanceof  SolrResourceLoader) {
+        return ((SolrResourceLoader)resourceLoader).newInstance(className, cast, subpackages);//use the empty constructor
+      } else {
+        return resourceLoader.newInstance(className, cast);//use the empty constructor
+      }
+
     } catch (SolrException e) {
       throw e;
     } catch (Exception e) {
@@ -878,7 +884,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     Class<? extends UpdateHandler> clazz = null;
     if (msg == null) msg = "SolrCore Object";
     try {
-      clazz = getResourceLoader().findClass(className, UpdateHandler.class);
+      clazz = getResourceLoader().findClass(className, UpdateHandler.class, Utils.getSolrSubPackage(UpdateHandler.class.getPackageName()));
       //most of the classes do not have constructors which takes SolrCore argument. It is recommended to obtain SolrCore by implementing SolrCoreAware.
       // So invariably always it will cause a  NoSuchMethodException. So iterate though the list of available constructors
       Constructor<?>[] cons = clazz.getConstructors();
@@ -904,9 +910,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     }
   }
 
-  public <T extends Object> T createInitInstance(PluginInfo info, Class<T> cast, String msg, String defClassName) {
+  public <T extends Object> T createInitInstance(PluginInfo info, Class<T> cast, String msg, String defClassName, String... subpackages) {
     if (info == null) return null;
-    T o = createInstance(info.className == null ? defClassName : info.className, cast, msg, this, getResourceLoader(info.pkgName));
+    T o = createInstance(info.className == null ? defClassName : info.className, cast, msg, this, getResourceLoader(info.pkgName), subpackages);
     if (o instanceof PluginInfoInitialized) {
       ((PluginInfoInitialized) o).init(info);
     } else if (o instanceof NamedListInitializedPlugin) {
@@ -919,7 +925,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   }
 
   private UpdateHandler createUpdateHandler(String className) {
-    return createInstance(className, UpdateHandler.class, "Update Handler", this, getResourceLoader());
+    return createInstance(className, UpdateHandler.class, "Update Handler", this, getResourceLoader(), "update.");
   }
 
   private UpdateHandler createUpdateHandler(String className, UpdateHandler updateHandler) {
@@ -1362,7 +1368,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       try {
         p.load(new InputStreamReader(is, StandardCharsets.UTF_8));
       } catch (Exception e) {
-        log.error("Unable to load {}", IndexFetcher.INDEX_PROPERTIES, e);
+        ParWork.propegateInterrupt("Unable to load " + IndexFetcher.INDEX_PROPERTIES, e);
       } finally {
         IOUtils.closeQuietly(is);
       }
@@ -1380,6 +1386,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       p.store(os, IndexFetcher.INDEX_PROPERTIES);
       dir.sync(Collections.singleton(tmpFileName));
     } catch (Exception e) {
+      ParWork.propegateInterrupt("Unable to write " + IndexFetcher.INDEX_PROPERTIES, e);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to write " + IndexFetcher.INDEX_PROPERTIES, e);
     } finally {
       IOUtils.closeQuietly(os);
@@ -1422,7 +1429,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     final PluginInfo info = solrConfig.getPluginInfo(CodecFactory.class.getName());
     final CodecFactory factory;
     if (info != null) {
-      factory = resourceLoader.newInstance(info.className, CodecFactory.class);
+      factory = resourceLoader.newInstance(info.className, CodecFactory.class, Utils.getSolrSubPackage(CodecFactory.class.getPackageName()));
       factory.init(info.initArgs);
     } else {
       factory = new CodecFactory() {
@@ -2924,10 +2931,10 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     return initPlugins(solrConfig.getPluginInfos(type.getName()), registry, type, defClassName);
   }
 
-  public <T> T initPlugins(List<PluginInfo> pluginInfos, Map<String, T> registry, Class<T> type, String defClassName) {
+  public <T> T initPlugins(List<PluginInfo> pluginInfos, Map<String, T> registry, Class<T> type, String defClassName, String... subpackages) {
     T def = null;
     for (PluginInfo info : pluginInfos) {
-      T o = createInitInstance(info, type, type.getSimpleName(), defClassName);
+      T o = createInitInstance(info, type, type.getSimpleName(), defClassName, subpackages);
       registry.put(info.name, o);
       if (o instanceof SolrMetricProducer) {
         coreMetricManager.registerMetricProducer(type.getSimpleName() + "." + info.name, (SolrMetricProducer) o);
@@ -3185,15 +3192,20 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         return;
       }
       //some files in conf directory may have  other than managedschema, overlay, params
-      try (SolrCore solrCore = cc.solrCores.getCoreFromAnyList(coreName, true)) {
-        if (solrCore == null || solrCore.isClosed() || cc.isShutDown()) return;
-        for (Runnable listener : solrCore.confListeners) {
-          try {
-            listener.run();
-          } catch (Exception e) {
-            ParWork.propegateInterrupt("Error in listener ", e);
+      try (ParWork worker = new ParWork("ConfListeners")) {
+        try (SolrCore solrCore = cc.solrCores.getCoreFromAnyList(coreName, true)) {
+          if (solrCore == null || solrCore.isClosed() || cc.isShutDown()) return;
+          for (Runnable listener : solrCore.confListeners) {
+            worker.collect(() -> {
+              try {
+                listener.run();
+              } catch (Exception e) {
+                ParWork.propegateInterrupt("Error in listener ", e);
+              }
+            });
           }
         }
+        worker.addCollect("ConfListeners");
       }
 
     };

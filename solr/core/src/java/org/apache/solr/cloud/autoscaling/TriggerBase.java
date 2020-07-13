@@ -120,7 +120,7 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
       for (Map<String, Object> map : o) {
         TriggerAction action = null;
         try {
-          action = loader.newInstance((String)map.get("class"), TriggerAction.class);
+          action = loader.newInstance((String)map.get("class"), TriggerAction.class, "cloud.autoscaling.");
         } catch (Exception e) {
           log.error("", e);
           throw new TriggerValidationException("action", "exception creating action " + map + ": " + e.toString());

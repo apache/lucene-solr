@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.Locale;
 
 import com.google.common.collect.ImmutableMap;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +51,8 @@ public abstract class TransientSolrCoreCacheFactory {
 
     try {
       // According to the docs, this returns a TransientSolrCoreCacheFactory with the default c'tor
-      TransientSolrCoreCacheFactory tccf = loader.findClass(info.className, TransientSolrCoreCacheFactory.class).getConstructor().newInstance(); 
+      TransientSolrCoreCacheFactory tccf = loader.findClass(info.className, TransientSolrCoreCacheFactory.class,
+              Utils.getSolrSubPackage(TransientSolrCoreCache.class.getPackageName())).getConstructor().newInstance();
       
       // OK, now we call it's init method.
       if (PluginInfoInitialized.class.isAssignableFrom(tccf.getClass()))

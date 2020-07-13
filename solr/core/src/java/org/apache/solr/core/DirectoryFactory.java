@@ -35,6 +35,7 @@ import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.LockFactory;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CachingDirectoryFactory.CloseListener;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.slf4j.Logger;
@@ -419,7 +420,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
     final DirectoryFactory dirFactory;
     if (info != null) {
       log.debug(info.className);
-      dirFactory = config.getResourceLoader().newInstance(info.className, DirectoryFactory.class);
+      dirFactory = config.getResourceLoader().newInstance(info.className, DirectoryFactory.class, Utils.getSolrSubPackage(DirectoryFactory.class.getPackageName()));
       // allow DirectoryFactory instances to access the CoreContainer
       dirFactory.initCoreContainer(cc);
       dirFactory.init(info.initArgs);

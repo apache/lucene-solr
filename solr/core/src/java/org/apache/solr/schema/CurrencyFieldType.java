@@ -121,7 +121,7 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
     }
     try {
       Class<? extends ExchangeRateProvider> c
-          = schema.getResourceLoader().findClass(exchangeRateProviderClass, ExchangeRateProvider.class);
+          = schema.getResourceLoader().findClass(exchangeRateProviderClass, ExchangeRateProvider.class, "schema.");
       provider = c.getConstructor().newInstance();
       provider.init(args);
     } catch (Exception e) {

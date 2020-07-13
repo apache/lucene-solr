@@ -140,7 +140,7 @@ UpdateHandler implements SolrInfoBean, Closeable {
           ulog = new HdfsUpdateLog(((HdfsDirectoryFactory) dirFactory).getConfDir());
         } else {
           String className = ulogPluginInfo.className == null ? UpdateLog.class.getName() : ulogPluginInfo.className;
-          ulog = core.getResourceLoader().newInstance(className, UpdateLog.class);
+          ulog = core.getResourceLoader().newInstance(className, UpdateLog.class, "update.");
         }
 
         if (!core.isReloaded() && !dirFactory.isPersistent()) {

@@ -420,7 +420,7 @@
 
     <!-- custom cache currently used by block join -->
     <cache name="perSegFilter"
-      class="solr.search.CaffeineCache"
+      class="solr.CaffeineCache"
       size="10"
       initialSize="0"
       autowarmCount="10"
@@ -1070,7 +1070,7 @@
       <!-- This could most likely be commented out in the "default" case -->
       <fragmenter name="gap"
                   default="true"
-                  class="solr.highlight.GapFragmenter">
+                  class="org.apache.solr.highlight.GapFragmenter">
         <lst name="defaults">
           <int name="hl.fragsize">100</int>
         </lst>
@@ -1080,7 +1080,7 @@
            (for sentence extraction)
         -->
       <fragmenter name="regex"
-                  class="solr.highlight.RegexFragmenter">
+                  class="org.apache.solr.highlight.RegexFragmenter">
         <lst name="defaults">
           <!-- slightly smaller fragsizes work better because of slop -->
           <int name="hl.fragsize">70</int>
@@ -1094,7 +1094,7 @@
       <!-- Configure the standard formatter -->
       <formatter name="html"
                  default="true"
-                 class="solr.highlight.HtmlFormatter">
+                 class="org.apache.solr.highlight.HtmlFormatter">
         <lst name="defaults">
           <str name="hl.simple.pre"><![CDATA[<em>]]></str>
           <str name="hl.simple.post"><![CDATA[</em>]]></str>
@@ -1103,7 +1103,7 @@
 
       <!-- Configure the standard encoder -->
       <encoder name="html"
-               class="solr.highlight.HtmlEncoder" />
+               class="org.apache.solr.highlight.HtmlEncoder" />
 
       <!-- Configure the standard fragListBuilder -->
       <fragListBuilder name="simple"
@@ -1121,7 +1121,7 @@
       <!-- default tag FragmentsBuilder -->
       <fragmentsBuilder name="default"
                         default="true"
-                        class="solr.highlight.ScoreOrderFragmentsBuilder">
+                        class="org.apache.solr.highlight.ScoreOrderFragmentsBuilder">
         <!--
         <lst name="defaults">
           <str name="hl.multiValuedSeparatorChar">/</str>
@@ -1131,7 +1131,7 @@
 
       <!-- multi-colored tag FragmentsBuilder -->
       <fragmentsBuilder name="colored"
-                        class="solr.highlight.ScoreOrderFragmentsBuilder">
+                        class="org.apache.solr.highlight.ScoreOrderFragmentsBuilder">
         <lst name="defaults">
           <str name="hl.tag.pre"><![CDATA[
                <b style="background:yellow">,<b style="background:lawgreen">,
@@ -1145,7 +1145,7 @@
 
       <boundaryScanner name="default"
                        default="true"
-                       class="solr.highlight.SimpleBoundaryScanner">
+                       class="org.apache.solr.highlight.SimpleBoundaryScanner">
         <lst name="defaults">
           <str name="hl.bs.maxScan">10</str>
           <str name="hl.bs.chars">.,!? &#9;&#10;&#13;</str>
@@ -1153,7 +1153,7 @@
       </boundaryScanner>
 
       <boundaryScanner name="breakIterator"
-                       class="solr.highlight.BreakIteratorBoundaryScanner">
+                       class="org.apache.solr.highlight.BreakIteratorBoundaryScanner">
         <lst name="defaults">
           <!-- type should be one of CHARACTER, WORD(default), LINE and SENTENCE -->
           <str name="hl.bs.type">WORD</str>

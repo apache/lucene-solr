@@ -402,11 +402,11 @@ Learning-To-Rank is a contrib module and therefore its plugins must be configure
 [source,xml]
 ----
 <cache name="QUERY_DOC_FV"
-       class="solr.search.CaffeineCache"
+       class="solr.CaffeineCache"
        size="4096"
        initialSize="2048"
        autowarmCount="4096"
-       regenerator="solr.search.NoOpRegenerator" />
+       regenerator="solr.NoOpRegenerator" />
 ----
 
 * Declaration of the `[features]` transformer.

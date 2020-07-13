@@ -1883,7 +1883,7 @@ public class CoreContainer implements Closeable {
 
   @SuppressWarnings({"rawtypes"})
   protected <T> T createHandler(String path, String handlerClass, Class<T> clazz) {
-    T handler = loader.newInstance(handlerClass, clazz, null, new Class[]{CoreContainer.class}, new Object[]{this});
+    T handler = loader.newInstance(handlerClass, clazz, new String[]{"handler.admin."}, new Class[]{CoreContainer.class}, new Object[]{this});
     if (handler instanceof SolrRequestHandler) {
       containerHandlers.put(path, (SolrRequestHandler) handler);
     }

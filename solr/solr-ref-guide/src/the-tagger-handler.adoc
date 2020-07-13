@@ -198,7 +198,7 @@ Configure a custom Solr Request Handler:
 curl -X POST -H 'Content-type:application/json' http://localhost:8983/solr/geonames/config -d '{
   "add-requesthandler" : {
     "name": "/tag",
-    "class":"solr.TaggerRequestHandler",
+    "class":"org.apache.solr.handler.tagger.TaggerRequestHandler",
     "defaults":{"field":"name_tag"}
   }
 }'

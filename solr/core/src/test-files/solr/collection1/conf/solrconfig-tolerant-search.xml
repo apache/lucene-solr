@@ -48,6 +48,6 @@
   </requestHandler>
   
   <queryResponseWriter name="javabin"
-                       class="solr.TestTolerantSearch$BadResponseWriter" />
+                       class="org.apache.solr.TestTolerantSearch$BadResponseWriter" />
 </config>
 

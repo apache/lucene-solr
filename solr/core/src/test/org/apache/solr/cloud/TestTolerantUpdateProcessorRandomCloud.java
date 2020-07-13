@@ -87,7 +87,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
     final File configDir = new File(TEST_HOME() + File.separator + "collection1" + File.separator + "conf");
 
     final int numShards = TEST_NIGHTLY ? TestUtil.nextInt(random(), 2, 5) : 2;
-    final int repFactor = TestUtil.nextInt(random(), 2, TEST_NIGHTLY ? 5 : 3);
+    final int repFactor = TEST_NIGHTLY ? TestUtil.nextInt(random(), 2, 5) : 2;
     // at least one server won't have any replicas
     final int numServers = 1 + (numShards * repFactor);
 

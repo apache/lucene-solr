@@ -110,7 +110,7 @@
     <!--
 
     <cache name="myUserCache"
-      class="solr.search.CaffeineCache"
+      class="solr.CaffeineCache"
       size="4096"
       initialSize="1024"
       autowarmCount="1024"

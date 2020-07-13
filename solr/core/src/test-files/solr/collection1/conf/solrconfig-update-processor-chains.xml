@@ -473,7 +473,7 @@
       </lst>
       <str name="dest">all_prices</str>
     </processor>
-    <processor class="solr.processor.CloneFieldUpdateProcessorFactory">
+    <processor class="solr.CloneFieldUpdateProcessorFactory">
       <lst name="source">
         <str name="fieldRegex">^feat(.*)s$</str>
       </lst>
@@ -483,7 +483,7 @@
       </lst>
     </processor>
     <!-- equivalent sugar syntax to above, with slightly diff destination name -->
-    <processor class="solr.processor.CloneFieldUpdateProcessorFactory">
+    <processor class="solr.CloneFieldUpdateProcessorFactory">
       <str name="pattern">^feat(.*)s$</str>
       <str name="replacement">best_feat$1</str>
     </processor>

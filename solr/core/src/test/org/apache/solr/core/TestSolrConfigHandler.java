@@ -492,7 +492,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         TIMEOUT_S);
 
     payload = "{\n" +
-        "'add-cache' : {name:'lfuCacheDecayFalse', class:'solr.search.CaffeineCache', size:10 ,initialSize:9 , timeDecay:false }," +
+        "'add-cache' : {name:'lfuCacheDecayFalse', class:'solr.CaffeineCache', size:10 ,initialSize:9 , timeDecay:false }," +
         "'add-cache' : {name: 'perSegFilter', class: 'solr.search.CaffeineCache', size:10, initialSize:0 , autowarmCount:10}}";
     runConfigCommand(writeHarness, "/config", payload);
 
@@ -501,9 +501,9 @@ public class TestSolrConfigHandler extends RestTestBase {
         "/config/overlay",
         cloudSolrClient,
         asList("overlay", "cache", "lfuCacheDecayFalse", "class"),
-        "solr.search.CaffeineCache",
+        "solr.CaffeineCache",
         TIMEOUT_S);
-    assertEquals("solr.search.CaffeineCache",getObjectByPath(map, true, ImmutableList.of("overlay", "cache", "perSegFilter", "class")));
+    assertEquals("solr.CaffeineCache",getObjectByPath(map, true, ImmutableList.of("overlay", "cache", "perSegFilter", "class")));
 
     map = getRespMap("/dump101?cacheNames=lfuCacheDecayFalse&cacheNames=perSegFilter", writeHarness);
     assertEquals("Actual output "+ Utils.toJSONString(map), "org.apache.solr.search.CaffeineCache",getObjectByPath(map, true, ImmutableList.of( "caches", "perSegFilter")));

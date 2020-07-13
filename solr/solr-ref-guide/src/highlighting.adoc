@@ -409,7 +409,7 @@ The `simple` boundary scanner scans term boundaries for a specified maximum char
 
 [source,xml]
 ----
-<boundaryScanner name="simple" class="solr.highlight.SimpleBoundaryScanner" default="true">
+<boundaryScanner name="simple" class="org.apache.lucene.search.vectorhighlight.SimpleBoundaryScanner" default="true">
    <lst name="defaults">
      <str name="hl.bs.maxScan">10</str>
      <str name="hl.bs.chars">.,!?\t\n</str>

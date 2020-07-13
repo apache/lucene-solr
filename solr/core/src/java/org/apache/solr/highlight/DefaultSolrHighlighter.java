@@ -69,6 +69,7 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.HighlightComponent;
@@ -140,7 +141,8 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     boundaryScanners.clear();
 
     // Load the fragmenters
-    SolrFragmenter frag = solrCore.initPlugins(info.getChildren("fragmenter") , fragmenters,SolrFragmenter.class,null);
+    SolrFragmenter frag = solrCore.initPlugins(info.getChildren("fragmenter"),
+            fragmenters,SolrFragmenter.class,null, Utils.getSolrSubPackage(SolrFragmenter.class.getPackageName()));
     if (frag == null) {
       frag = new GapFragmenter();
       solrCore.initDefaultPlugin(frag, SolrFragmenter.class);
@@ -149,7 +151,8 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     fragmenters.put(null, frag);
 
     // Load the formatters
-    SolrFormatter fmt = solrCore.initPlugins(info.getChildren("formatter"), formatters,SolrFormatter.class,null);
+    SolrFormatter fmt = solrCore.initPlugins(info.getChildren("formatter"),
+            formatters,SolrFormatter.class,null, Utils.getSolrSubPackage(SolrFormatter.class.getPackageName()));
     if (fmt == null) {
       fmt = new HtmlFormatter();
       solrCore.initDefaultPlugin(fmt, SolrFormatter.class);
@@ -158,7 +161,8 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     formatters.put(null, fmt);
 
     // Load the encoders
-    SolrEncoder enc = solrCore.initPlugins(info.getChildren("encoder"), encoders,SolrEncoder.class,null);
+    SolrEncoder enc = solrCore.initPlugins(info.getChildren("encoder"),
+            encoders, SolrEncoder.class,null, Utils.getSolrSubPackage(SolrEncoder.class.getPackageName()));
     if (enc == null) {
       enc = new DefaultEncoder();
       solrCore.initDefaultPlugin(enc, SolrEncoder.class);
@@ -168,7 +172,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
 
     // Load the FragListBuilders
     SolrFragListBuilder fragListBuilder = solrCore.initPlugins(info.getChildren("fragListBuilder"),
-        fragListBuilders, SolrFragListBuilder.class, null );
+        fragListBuilders, SolrFragListBuilder.class, null, Utils.getSolrSubPackage(SolrFragListBuilder.class.getPackageName()) );
     if( fragListBuilder == null ) {
       fragListBuilder = new SimpleFragListBuilder();
       solrCore.initDefaultPlugin(fragListBuilder, SolrFragListBuilder.class);
@@ -178,7 +182,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
 
     // Load the FragmentsBuilders
     SolrFragmentsBuilder fragsBuilder = solrCore.initPlugins(info.getChildren("fragmentsBuilder"),
-        fragmentsBuilders, SolrFragmentsBuilder.class, null);
+        fragmentsBuilders, SolrFragmentsBuilder.class, null, Utils.getSolrSubPackage(SolrFragmentsBuilder.class.getPackageName()));
     if( fragsBuilder == null ) {
       fragsBuilder = new ScoreOrderFragmentsBuilder();
       solrCore.initDefaultPlugin(fragsBuilder, SolrFragmentsBuilder.class);

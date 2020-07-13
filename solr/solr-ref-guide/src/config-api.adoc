@@ -784,7 +784,7 @@ A simple highlighter looks like this in `solrconfig.xml` (example has been trunc
         </lst>
       </formatter>
 
-      <encoder name="html" class="solr.highlight.HtmlEncoder" />
+      <encoder name="html" class="org.apache.solr.highlight.HtmlEncoder" />
 ...
     </highlighting>
 ----
@@ -810,14 +810,14 @@ The same highlighter with the Config API:
         "html": [{
             "default": "true",
             "name": "html",
-            "class": "solr.highlight.HtmlFormatter",
+            "class": "org.apache.solr.highlight.HtmlFormatter",
             "defaults": {
                 "hl.simple.pre": "before-",
                 "hl.simple.post": "-after"
             }
         }, {
             "name": "html",
-            "class": "solr.highlight.HtmlEncoder"
+            "class": "org.apache.solr.highlight.HtmlEncoder"
         }]
     }
 }

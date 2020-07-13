@@ -153,7 +153,7 @@ import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
  *     &lt;/lst&gt;
  *     &lt;str name="dest"&gt;people_s&lt;/str&gt;
  *   &lt;/processor&gt;
- *   &lt;processor class="solr.processor.OpenNLPExtractNamedEntitiesUpdateProcessorFactory"&gt;
+ *   &lt;processor class="solr.OpenNLPExtractNamedEntitiesUpdateProcessorFactory"&gt;
  *     &lt;str name="modelFile"&gt;en-test-ner-person.bin&lt;/str&gt;
  *     &lt;str name="analyzerFieldType"&gt;opennlp-en-tokenization&lt;/str&gt;
  *     &lt;lst name="source"&gt;

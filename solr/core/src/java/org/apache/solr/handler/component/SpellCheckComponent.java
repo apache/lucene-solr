@@ -52,6 +52,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.core.SolrResourceLoader;
@@ -769,7 +770,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     if (className == null)
       className = IndexBasedSpellChecker.class.getName();
     SolrResourceLoader loader = core.getResourceLoader();
-    SolrSpellChecker checker = loader.newInstance(className, SolrSpellChecker.class);
+    SolrSpellChecker checker = loader.newInstance(className, SolrSpellChecker.class, Utils.getSolrSubPackage(SolrSpellChecker.class.getPackageName()));
     if (checker != null) {
       String dictionary = checker.init(spellchecker, core);
       if (dictionary != null) {

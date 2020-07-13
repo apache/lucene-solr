@@ -142,7 +142,7 @@ import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
  * </p>
  *
  * <pre class="prettyprint">
- * &lt;processor class="solr.processor.DocExpirationUpdateProcessorFactory"&gt;
+ * &lt;processor class="solr.DocExpirationUpdateProcessorFactory"&gt;
  *   &lt;null name="ttlFieldName"/&gt;
  *   &lt;null name="ttlParamName"/&gt;
  *   &lt;int name="autoDeletePeriodSeconds"&gt;300&lt;/int&gt;
@@ -158,7 +158,7 @@ import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
  * </p>
  *
  * <pre class="prettyprint">
- * &lt;processor class="solr.processor.DocExpirationUpdateProcessorFactory"&gt;
+ * &lt;processor class="solr.DocExpirationUpdateProcessorFactory"&gt;
  *   &lt;int name="autoDeletePeriodSeconds"&gt;300&lt;/int&gt;
  *   &lt;str name="ttlFieldName"&gt;my_ttl&lt;/str&gt;
  *   &lt;null name="ttlParamName"/&gt;

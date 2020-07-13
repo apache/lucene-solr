@@ -43,6 +43,7 @@ import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.pkg.PackagePluginHolder;
@@ -152,11 +153,17 @@ public class PluginBag<T> implements AutoCloseable {
         PackagePluginHolder<T> holder = new PackagePluginHolder<>(info, core, meta);
         return holder;
       } else {
-        T inst = SolrCore.createInstance(info.className, (Class<T>) meta.clazz, meta.getCleanTag(), null, core.getResourceLoader(info.pkgName));
+        String packageName =  meta.clazz.getPackage().getName();
+        T inst = SolrCore.createInstance(info.className, (Class<T>) meta.clazz, meta.getCleanTag(),
+                null, core.getResourceLoader(info.pkgName), Utils.getSolrSubPackage(packageName));
         initInstance(inst, info);
         return new PluginHolder<>(info, inst);
       }
     }
+  }
+
+  private String getSolrSubPackage(String substring, String s) {
+    return substring + s;
   }
 
   /**
@@ -494,7 +501,7 @@ public class PluginBag<T> implements AutoCloseable {
       Class<T> clazz = (Class<T>) pluginMeta.clazz;
       T localInst = null;
       try {
-        localInst = SolrCore.createInstance(pluginInfo.className, clazz, pluginMeta.getCleanTag(), null, resourceLoader);
+        localInst = SolrCore.createInstance(pluginInfo.className, clazz, pluginMeta.getCleanTag(), null, resourceLoader, Utils.getSolrSubPackage(clazz.getPackageName()));
       } catch (SolrException e) {
         if (isRuntimeLib && !(resourceLoader instanceof MemClassLoader)) {
           throw new SolrException(SolrException.ErrorCode.getErrorCode(e.code()),
