@@ -120,7 +120,7 @@ public class PackageListeners {
           } catch (Exception e) {
             log.error("Unknown error", e);
           }
-        }));
+        })).start();
       }
     }
 
