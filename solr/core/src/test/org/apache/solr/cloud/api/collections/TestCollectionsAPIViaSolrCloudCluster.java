@@ -36,6 +36,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -270,19 +271,57 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
     final List<Integer> leaderIndicesList = new ArrayList<>(leaderIndices);
     final List<Integer> followerIndicesList = new ArrayList<>(followerIndices);
 
-    // first stop the followers (in no particular order)
-    Collections.shuffle(followerIndicesList, random());
-    for (Integer ii : followerIndicesList) {
-      if (!leaderIndices.contains(ii)) {
-        cluster.stopJettySolrRunner(jettys.get(ii));
+    if (TEST_NIGHTLY) {
+      // first stop the followers (in no particular order)
+      Collections.shuffle(followerIndicesList, random());
+      for (Integer ii : followerIndicesList) {
+        if (!leaderIndices.contains(ii)) {
+          cluster.stopJettySolrRunner(jettys.get(ii));
+        }
+      }
+    } else {
+      try (ParWork worker = new ParWork(this)) {
+
+        // first stop the followers (in no particular order)
+        Collections.shuffle(followerIndicesList, random());
+        for (Integer ii : followerIndicesList) {
+          if (!leaderIndices.contains(ii)) {
+            worker.collect(() -> {
+              try {
+                cluster.stopJettySolrRunner(jettys.get(ii));
+              } catch (Exception e) {
+                throw new RuntimeException(e);
+              }
+            });
+          }
+        }
+        worker.addCollect("stopJettysFollowers");
       }
     }
+    if (TEST_NIGHTLY) {
+      // then stop the leaders (again in no particular order)
+      Collections.shuffle(leaderIndicesList, random());
+      for (Integer ii : leaderIndicesList) {
+        cluster.stopJettySolrRunner(jettys.get(ii));
+      }
+    } else {
+      try (ParWork worker = new ParWork(this)) {
+        // first stop the followers (in no particular order)
+        Collections.shuffle(leaderIndicesList, random());
+        for (Integer ii : leaderIndicesList) {
+          worker.collect(() -> {
+            try {
+              cluster.stopJettySolrRunner(jettys.get(ii));
+            } catch (Exception e) {
+              throw new RuntimeException(e);
+            }
+          });
+        }
+        worker.addCollect("stopJettysFollowers");
+      }
 
-    // then stop the leaders (again in no particular order)
-    Collections.shuffle(leaderIndicesList, random());
-    for (Integer ii : leaderIndicesList) {
-      cluster.stopJettySolrRunner(jettys.get(ii));
     }
+
 
     // calculate restart order
     final List<Integer> restartIndicesList = new ArrayList<>();
@@ -292,18 +331,35 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
     restartIndicesList.addAll(followerIndicesList);
     if (random().nextBoolean()) Collections.shuffle(restartIndicesList, random());
 
-    // and then restart jettys in that order
-    for (Integer ii : restartIndicesList) {
-      final JettySolrRunner jetty = jettys.get(ii);
-      if (!jetty.isRunning()) {
-        cluster.startJettySolrRunner(jetty);
-        assertTrue(jetty.isRunning());
+    if (TEST_NIGHTLY) {
+      // and then restart jettys in that order
+      for (Integer ii : restartIndicesList) {
+        final JettySolrRunner jetty = jettys.get(ii);
+        if (!jetty.isRunning()) {
+          cluster.startJettySolrRunner(jetty);
+          assertTrue(jetty.isRunning());
+        }
+      }
+    } else {
+      try (ParWork worker = new ParWork(this)) {
+        for (Integer ii : restartIndicesList) {
+          final JettySolrRunner jetty = jettys.get(ii);
+          if (!jetty.isRunning()) {
+            worker.collect(() -> {
+              try {
+                cluster.startJettySolrRunner(jetty);
+              } catch (Exception e) {
+                throw new RuntimeException(e);
+              }
+              assertTrue(jetty.isRunning());
+            });
+
+          }
+        }
+        worker.addCollect("startJettys");
       }
     }
-    cluster.waitForAllNodes(30);
     cluster.waitForActiveCollection(collectionName, numShards, numShards * numReplicas);
-
-    zkStateReader.forceUpdateCollection(collectionName);
 
     // re-query collection
     assertEquals(numDocs, client.query(collectionName, query).getResults().getNumFound());

@@ -65,7 +65,7 @@ public class ParWork implements Closeable {
 
   protected final static ThreadLocal<ExecutorService> THREAD_LOCAL_EXECUTOR = new ThreadLocal<>();
   public static volatile int MAXIMUM_POOL_SIZE;
-  public static final long KEEP_ALIVE_TIME = 10L;
+  public static final long KEEP_ALIVE_TIME = 3;
   public static volatile int CAPACITY;
 
   private Set<Object> collectSet = null;
