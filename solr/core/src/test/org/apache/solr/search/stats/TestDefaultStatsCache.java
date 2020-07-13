@@ -29,6 +29,7 @@ public class TestDefaultStatsCache extends BaseDistributedSearchTestCase {
   
   @Override
   public void distribSetUp() throws Exception {
+    if (!TEST_NIGHTLY) fixShardCount(2);
     super.distribSetUp();
     System.setProperty("solr.statsCache", LocalStatsCache.class.getName());
   }
