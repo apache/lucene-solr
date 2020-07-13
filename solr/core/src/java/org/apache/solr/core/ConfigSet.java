@@ -16,7 +16,6 @@
  */
 package org.apache.solr.core;
 
-import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.IndexSchema;
 
