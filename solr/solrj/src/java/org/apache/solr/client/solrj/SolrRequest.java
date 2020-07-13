@@ -26,6 +26,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.lang.builder.EqualsBuilder;
+import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
@@ -90,6 +92,7 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
 
   private String basicAuthUser, basicAuthPwd;
 
+  // Can be used as an alternative to the base-url generally specified at the client-level.  Ignored by most clients.
   private String basePath;
 
   @SuppressWarnings({"rawtypes"})
@@ -244,6 +247,8 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
   public void addHeader(String key, String value) {
     if (headers == null) {
       headers = new HashMap<>();
+      final HashMap<String, String> asdf = new HashMap<>();
+      asdf.equals(null);
     }
     headers.put(key, value);
   }
@@ -251,5 +256,50 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
   public Map<String, String> getHeaders() {
     if (headers == null) return null;
     return Collections.unmodifiableMap(headers);
+  }
+
+  @Override
+  public int hashCode() {
+    return new HashCodeBuilder()
+        .append(userPrincipal)
+        .append(method)
+        .append(basePath)
+        .append(path)
+        .append(headers)
+        .append(responseParser)
+        .append(queryParams)
+        .append(usev2) // How is this related to useBinaryV2?
+        .append(useBinaryV2)
+        .append(basicAuthUser)
+        .append(basicAuthPwd)
+        .append(callback)
+        .toHashCode();
+  }
+
+  @Override
+  public boolean equals(Object rhs) {
+    if (rhs == null || getClass() != rhs.getClass()) {
+      return false;
+    } else if (this == rhs) {
+      return true;
+    } else if (hashCode() != rhs.hashCode()){
+      return false;
+    }
+
+    final SolrRequest rhsCast = (SolrRequest) rhs;
+    return new EqualsBuilder()
+        .append(userPrincipal, rhsCast.userPrincipal)
+        .append(method, rhsCast.method)
+        .append(basePath, rhsCast.basePath)
+        .append(path, rhsCast.path)
+        .append(headers, rhsCast.headers)
+        .append(responseParser, rhsCast.responseParser)
+        .append(queryParams, rhsCast.queryParams)
+        .append(usev2, rhsCast.usev2)
+        .append(useBinaryV2, rhsCast.useBinaryV2)
+        .append(basicAuthUser, rhsCast.basicAuthUser)
+        .append(basicAuthPwd, rhsCast.basicAuthPwd)
+        .append(callback, rhsCast.callback)
+        .isEquals();
   }
 }

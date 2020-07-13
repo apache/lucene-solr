@@ -18,6 +18,9 @@ package org.apache.solr.client.solrj;
 
 import java.io.Reader;
 import java.io.InputStream;
+
+import org.apache.commons.lang.builder.EqualsBuilder;
+import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.solr.common.util.NamedList;
 
 /**
@@ -48,5 +51,32 @@ public abstract class ResponseParser
   public String getVersion()
   {
     return "2.2";
+  }
+
+  @Override
+  public int hashCode() {
+    return new HashCodeBuilder()
+        .append(getWriterType())
+        .append(getContentType())
+        .append(getVersion())
+        .toHashCode();
+  }
+
+  @Override
+  public boolean equals(Object rhs) {
+    if (rhs == null || getClass() != rhs.getClass()) {
+      return false;
+    } else if (this == rhs) {
+      return true;
+    } else if (hashCode() != rhs.hashCode()) {
+      return false;
+    }
+
+    final ResponseParser rhsCast = (ResponseParser) rhs;
+    return new EqualsBuilder()
+        .append(getWriterType(), rhsCast.getWriterType())
+        .append(getContentType(), rhsCast.getContentType())
+        .append(getVersion(), rhsCast.getVersion())
+        .isEquals();
   }
 }
