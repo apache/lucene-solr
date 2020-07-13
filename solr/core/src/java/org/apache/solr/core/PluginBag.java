@@ -417,6 +417,10 @@ public class PluginBag<T> implements AutoCloseable {
     public PluginInfo getPluginInfo() {
       return pluginInfo;
     }
+
+    public String toString() {
+      return String.valueOf(inst);
+    }
   }
 
   /**

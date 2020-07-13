@@ -635,11 +635,11 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     for (PluginInfo info : solrConfig.getPluginInfos(SolrEventListener.class.getName())) {
       final String event = info.attributes.get("event");
       if ("firstSearcher".equals(event)) {
-        PluginHolder<SolrEventListener> obj = (PluginHolder<SolrEventListener>)PackagePluginHolder.createHolder(info, this, SolrEventListener.class, label);
+        PluginHolder<SolrEventListener> obj = PackagePluginHolder.createHolder(info, this, SolrEventListener.class, label);
         firstSearcherListeners.add(obj);
         log.debug("[{}] Added SolrEventListener for firstSearcher: [{}]", logid, obj);
       } else if ("newSearcher".equals(event)) {
-        PluginHolder<SolrEventListener> obj = (PluginHolder<SolrEventListener>)PackagePluginHolder.createHolder(info, this, SolrEventListener.class, label);
+        PluginHolder<SolrEventListener> obj = PackagePluginHolder.createHolder(info, this, SolrEventListener.class, label);
         newSearcherListeners.add(obj);
         log.debug("[{}] Added SolrEventListener for newSearcher: [{}]", logid, obj);
       }

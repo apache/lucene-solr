@@ -19,9 +19,15 @@ package org.apache.solr.pkg;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.core.*;
+import org.apache.solr.core.PluginBag;
+import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.SolrConfig;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,12 +74,11 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
     });
   }
 
-  @SuppressWarnings({"rawtypes", "unchecked"})
-  public static PluginBag.PluginHolder createHolder(PluginInfo info, SolrCore core, Class type, String msg) {
+  public static <T> PluginBag.PluginHolder<T> createHolder(PluginInfo info, SolrCore core, Class<T> type, String msg) {
     if(info.cName.pkg == null) {
-      return new PluginBag.PluginHolder(info, core.createInitInstance(info, type,msg, null));
+      return new PluginBag.PluginHolder<T>(info, core.createInitInstance(info, type,msg, null));
     } else {
-      return new PackagePluginHolder(info, core, SolrConfig.classVsSolrPluginInfo.get(type.getName()));
+      return new PackagePluginHolder<T>(info, core, SolrConfig.classVsSolrPluginInfo.get(type.getName()));
     }
   }
 
