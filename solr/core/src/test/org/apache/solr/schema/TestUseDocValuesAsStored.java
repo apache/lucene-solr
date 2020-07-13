@@ -176,9 +176,9 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
 
   @Test
   public void testRandomSingleAndMultiValued() throws Exception {
-    for (int c = 0 ; c < (TEST_NIGHTLY ? 10 : 3) * RANDOM_MULTIPLIER ; ++c) {
+    for (int c = 0 ; c < (TEST_NIGHTLY ? 10 : 2) * RANDOM_MULTIPLIER ; ++c) {
       clearIndex();
-      int[] arity = new int[9];
+      int[] arity = new int[TEST_NIGHTLY ? 9 : 4];
       for (int a = 0 ; a < arity.length ; ++a) {
         // Single-valued 50% of the time; other 50%: 2-10 values equally likely
         arity[a] = random().nextBoolean() ? 1 : TestUtil.nextInt(random(), 2, TEST_NIGHTLY ? 10 : 3);
@@ -187,11 +187,13 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
       doTest("check int value is correct", "test_i" + plural(arity[1]) + "_dvo", "int", nextValues(arity[1], "int"));
       doTest("check double value is correct", "test_d" + plural(arity[2]) + "_dvo", "double", nextValues(arity[2], "double"));
       doTest("check long value is correct", "test_l" + plural(arity[3]) + "_dvo", "long", nextValues(arity[3], "long"));
-      doTest("check float value is correct", "test_f" + plural(arity[4]) + "_dvo", "float", nextValues(arity[4], "float"));
-      doTest("check date value is correct", "test_dt" + plural(arity[5]) + "_dvo", "date", nextValues(arity[5], "date"));
-      doTest("check stored and docValues value is correct", dvStringFieldName(arity[6], true, true), "str", nextValues(arity[6], "str"));
-      doTest("check non-stored and non-indexed is accessible", dvStringFieldName(arity[7], false, false), "str", nextValues(arity[7], "str"));
-      doTest("enumField", "enum" + plural(arity[8]) + "_dvo", "str", nextValues(arity[8], "enum"));
+      if (TEST_NIGHTLY) {
+        doTest("check float value is correct", "test_f" + plural(arity[4]) + "_dvo", "float", nextValues(arity[4], "float"));
+        doTest("check date value is correct", "test_dt" + plural(arity[5]) + "_dvo", "date", nextValues(arity[5], "date"));
+        doTest("check stored and docValues value is correct", dvStringFieldName(arity[6], true, true), "str", nextValues(arity[6], "str"));
+        doTest("check non-stored and non-indexed is accessible", dvStringFieldName(arity[7], false, false), "str", nextValues(arity[7], "str"));
+        doTest("enumField", "enum" + plural(arity[8]) + "_dvo", "str", nextValues(arity[8], "enum"));
+      }
     }
   }
 
