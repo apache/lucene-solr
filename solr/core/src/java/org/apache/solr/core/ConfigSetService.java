@@ -22,7 +22,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import com.github.benmanes.caffeine.cache.Cache;
