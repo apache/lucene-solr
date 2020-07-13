@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Supplier;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
