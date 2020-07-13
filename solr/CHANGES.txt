@@ -25,6 +25,7 @@ Improvements
 
 * SOLR-14635: ThreadDumpHandler has been enhanced to show lock ownership (hossman)
 
+* SOLR-11262: Implement writeMap and writeIterator in XMLWriter (yonik, Munendra S N)
 
 Optimizations
 ---------------------
