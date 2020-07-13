@@ -127,6 +127,8 @@ public class JettySolrRunner implements Closeable {
   volatile FilterHolder debugFilter;
   volatile FilterHolder qosFilter;
 
+  private final CountDownLatch startLatch = new CountDownLatch(1);
+
   private int jettyPort = -1;
 
   private final JettyConfig config;
@@ -446,6 +448,7 @@ public class JettySolrRunner implements Closeable {
         root.addFilter(dispatchFilter, "*", EnumSet.of(DispatcherType.REQUEST));
 
         log.info("Jetty loaded and ready to go");
+        startLatch.countDown();
 
       }
 
@@ -562,6 +565,10 @@ public class JettySolrRunner implements Closeable {
           retryOnPortBindFailure(config.portRetryTime, port);
         } else {
           server.start();
+        }
+        boolean success = startLatch.await(5, TimeUnit.SECONDS);
+        if (!success) {
+          throw new RuntimeException("Timeout waiting for Jetty to start");
         }
       }
 
