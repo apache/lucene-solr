@@ -114,6 +114,10 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   private String registryName;
   private volatile boolean closeOnDestroy = true;
 
+  private RateLimitManager rateLimitManager;
+  String _suspended = "SolrDispatchFilter@" + Integer.toHexString(hashCode()) + ".SUSPENDED";
+  String _resumed = "SolrDispatchFilter@" + Integer.toHexString(hashCode()) + ".RESUMED";
+
   /**
    * Enum to define action that needs to be processed.
    * PASSTHROUGH: Pass through to Restlet via webapp.
@@ -184,6 +188,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       coresInit = createCoreContainer(solrHomePath, extraProperties);
       this.httpClient = coresInit.getUpdateShardHandler().getDefaultHttpClient();
       setupJvmMetrics(coresInit);
+      this.rateLimitManager = RateLimitManager.buildRateLimitManager(config, _suspended, _resumed);
       if (log.isDebugEnabled()) {
         log.debug("user.dir={}", System.getProperty("user.dir"));
       }
@@ -351,6 +356,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     HttpServletResponse response = closeShield((HttpServletResponse)_response, retry);
     Scope scope = null;
     Span span = null;
+    boolean accepted = false;
     try {
 
       if (cores == null || cores.isShutDown()) {
@@ -375,6 +381,16 @@ public class SolrDispatchFilter extends BaseSolrFilter {
             return;
           }
         }
+      }
+
+      try {
+        accepted = rateLimitManager.handleRequest(request);
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e.getMessage());
+      }
+
+      if (!accepted) {
+        return;
       }
 
       SpanContext parentSpan = GlobalTracer.get().extract(request);
@@ -441,6 +457,13 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       consumeInputFully(request, response);
       SolrRequestInfo.reset();
       SolrRequestParsers.cleanupMultipartFiles(request);
+
+      if (accepted) {
+        rateLimitManager.decrementActiveRequests(request);
+
+        // Try to get work from existing pending state
+        rateLimitManager.resumePendingRequest();
+      }
     }
   }
   
