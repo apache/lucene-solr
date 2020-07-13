@@ -17,18 +17,20 @@
 package org.apache.solr.handler.dataimport;
 
 import java.io.File;
-import java.io.FilenameFilter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import org.apache.solr.util.DateMathParser;
 
@@ -206,11 +208,11 @@ public class FileListEntityProcessor extends EntityProcessorBase {
   }
 
   @Override
-  public Map<String, Object> nextRow() {
+  public Map<String,Object> nextRow() {
     if (rowIterator != null)
       return getNext();
-    List<Map<String, Object>> fileDetails = new ArrayList<>();
-    File dir = new File(baseDir);
+
+    final Path dir = Paths.get(baseDir);
 
     String dateStr = context.getEntityAttribute(NEWER_THAN);
     newerThan = getDate(dateStr);
@@ -223,54 +225,69 @@ public class FileListEntityProcessor extends EntityProcessorBase {
     if (smallerThanStr != null)
       smallerThan = getSize(smallerThanStr);
 
-    getFolderFiles(dir, fileDetails);
+    final Stream<Map<String,Object>> fileDetails = getFilesStream(dir);
     rowIterator = fileDetails.iterator();
+
     return getNext();
   }
 
-  private void getFolderFiles(File dir, final List<Map<String, Object>> fileDetails) {
-    // Fetch an array of file objects that pass the filter, however the
-    // returned array is never populated; accept() always returns false.
-    // Rather we make use of the fileDetails array which is populated as
-    // a side affect of the accept method.
-    dir.list(new FilenameFilter() {
-      @Override
-      public boolean accept(File dir, String name) {
-        File fileObj = new File(dir, name);
-        if (fileObj.isDirectory()) {
-          if (recursive) getFolderFiles(fileObj, fileDetails);
-        } else if (fileNamePattern == null) {
-          addDetails(fileDetails, dir, name);
-        } else if (fileNamePattern.matcher(name).find()) {
-          if (excludesPattern != null && excludesPattern.matcher(name).find())
-            return false;
-          addDetails(fileDetails, dir, name);
+  private Stream<Path> getFolderFiles(final Path dir) {
+    try {
+      return Files.list(dir).flatMap(path -> {
+        if (Files.isDirectory(path)) {
+          if (recursive)
+            return getFolderFiles(path);
+          return Stream.empty();
         }
-        return false;
+        return Stream.of(path);
+      }).filter(this::matchesFilename);
+
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private boolean matchesFilename(final Path path) {
+    final String name = path.getFileName().toString();
+    return fileNamePattern == null || fileNamePattern.matcher(name).find()
+        && (excludesPattern == null || excludesPattern.matcher(name).find());
+  }
+
+  private Stream<Map<String,Object>> getFilesStream(final Path dir) {
+    return getFolderFiles(dir).flatMap(path -> {
+      try {
+        final long size = Files.size(path);
+        if (!matchesSize(size))
+          return Stream.empty();
+
+        final Date lastModified = new Date(Files.getLastModifiedTime(path).toMillis());
+        if (!matchesDate(lastModified))
+          return Stream.empty();
+
+        final Map<String,Object> details = new HashMap<>();
+
+        details.put(DIR, path.getParent().toAbsolutePath().toString());
+        details.put(FILE, path.getFileName().toString());
+        details.put(ABSOLUTE_FILE, path.toAbsolutePath().toString());
+        details.put(SIZE, size);
+        details.put(LAST_MODIFIED, lastModified);
+
+        return Stream.of(details);
+
+      } catch (IOException e) {
+        throw new RuntimeException(e);
       }
+
     });
   }
 
-  private void addDetails(List<Map<String, Object>> files, File dir, String name) {
-    Map<String, Object> details = new HashMap<>();
-    File aFile = new File(dir, name);
-    if (aFile.isDirectory()) return;
-    long sz = aFile.length();
-    Date lastModified = new Date(aFile.lastModified());
-    if (biggerThan != -1 && sz <= biggerThan)
-      return;
-    if (smallerThan != -1 && sz >= smallerThan)
-      return;
-    if (olderThan != null && lastModified.after(olderThan))
-      return;
-    if (newerThan != null && lastModified.before(newerThan))
-      return;
-    details.put(DIR, dir.getAbsolutePath());
-    details.put(FILE, name);
-    details.put(ABSOLUTE_FILE, aFile.getAbsolutePath());
-    details.put(SIZE, sz);
-    details.put(LAST_MODIFIED, lastModified);
-    files.add(details);
+  private boolean matchesSize(final long size) {
+    return (biggerThan == -1 || size > biggerThan) && (smallerThan == -1 || size < smallerThan);
+  }
+
+  private boolean matchesDate(final Date lastModified) {
+    return (olderThan == null || lastModified.before(olderThan))
+        && (newerThan == null || lastModified.after(newerThan));
   }
 
   public static final Pattern PLACE_HOLDER_PATTERN = Pattern
