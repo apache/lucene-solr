@@ -1651,8 +1651,8 @@ public class CoreContainer implements Closeable {
         coreInitFailures.put(cd.getName(), new CoreLoadFailure(cd, e));
         throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to reload core [" + cd.getName() + "]", e);
       } finally {
-        if (!success && newCore != null && newCore.getOpenCount() > 0) {
-          IOUtils.closeQuietly(newCore);
+        if (!success && newCore != null) {
+          ParWork.close(newCore);
         }
         solrCores.removeFromPendingOps(cd.getName());
       }

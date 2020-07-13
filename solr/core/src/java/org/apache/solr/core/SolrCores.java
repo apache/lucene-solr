@@ -127,7 +127,7 @@ class SolrCores implements Closeable {
     if (transientSolrCoreCache != null) {
       coreList.addAll(transientSolrCoreCache.prepareForShutdown());
     }
-
+    cores.clear();
     coreList.addAll(pendingCloses);
     pendingCloses.forEach((c) -> coreList.add(c));
 
@@ -159,6 +159,9 @@ class SolrCores implements Closeable {
   // Returns the old core if there was a core of the same name.
   //WARNING! This should be the _only_ place you put anything into the list of transient cores!
   protected SolrCore putCore(CoreDescriptor cd, SolrCore core) {
+    if (isClosed()) {
+      throw new AlreadyClosedException();
+    }
     if (cd.isTransient()) {
       if (getTransientCacheHandler() != null) {
         return getTransientCacheHandler().addCore(cd.getName(), core);
@@ -246,7 +249,7 @@ class SolrCores implements Closeable {
   }
 
   protected void swap(String n0, String n1) {
-    if (closed) {
+    if (isClosed()) {
       throw new AlreadyClosedException();
     }
     synchronized (cores) {
@@ -279,6 +282,10 @@ class SolrCores implements Closeable {
           c1.getCoreMetricManager().getRegistryName());
     }
 
+  }
+
+  private boolean isClosed() {
+    return closed || container.isShutDown();
   }
 
   protected SolrCore remove(String name) {
