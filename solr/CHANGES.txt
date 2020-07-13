@@ -145,6 +145,9 @@ Other Changes
 * SOLR-10742: SolrCores.getNamesForCore is quite inefficient and blocks other core operations. 
   NOTE: this experimental method has been removed (Erick Erickson)
 
+* SOLR-13939: Extract any non-gradle related patches (deprecations, URL fixes, etc.) from gradle effort. NOTE:
+  this will be in several separate commits/pushes. (Erick Erickson)
+
 ==================  8.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
