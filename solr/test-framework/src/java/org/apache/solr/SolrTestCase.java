@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
 import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAsBoolean;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 
 /**
  * All Solr test cases should derive from this class eventually. This is originally a result of async logging, see:
@@ -49,7 +50,7 @@ import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAs
  * Other changes that should affect every Solr test case may go here if they don't require the added capabilities in
  * SolrTestCaseJ4.
  */
-
+@ThreadLeakFilters(defaultFilters = true, filters = { SolrIgnoredThreadsFilter.class })
 public class SolrTestCase extends LuceneTestCase {
 
   /**
