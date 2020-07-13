@@ -752,9 +752,11 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       }
 
       if(sortDoc != null) {
-        //Load the global ordinals which will be used
+        //Clear the bit so it's not loaded again.
         bits.clear(sortDoc.docId);
+        //Load the global ordinal (only matters for strings)
         sortDoc.setGlobalValues(lastDoc);
+        //Save this doc so we don't have to lookup the global ordinal for the next doc if they have the same segment ordinal.
         lastDoc.setValues(sortDoc);
       }
 

@@ -103,6 +103,7 @@ class StringValue implements SortValue {
     this.currentOrd = v.currentOrd;
     this.present = v.present;
     this.leafOrd = v.leafOrd;
+    this.lastOrd = v.lastOrd;
   }
 
   public Object getCurrentValue() throws IOException {
