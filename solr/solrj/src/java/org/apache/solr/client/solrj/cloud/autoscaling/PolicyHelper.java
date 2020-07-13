@@ -268,8 +268,7 @@ public class PolicyHelper {
     ctx.max = max;
     ctx.session = policy.createSession(cloudManager);
     String[] t = params == null ? null : params.getParams("type");
-    @SuppressWarnings({"unchecked"})
-    List<String> types = t == null? Collections.EMPTY_LIST: Arrays.asList(t);
+    List<String> types = t == null? Collections.emptyList(): Arrays.asList(t);
 
     if(types.isEmpty() || types.contains(violation.name())) {
       List<Violation> violations = ctx.session.getViolations();

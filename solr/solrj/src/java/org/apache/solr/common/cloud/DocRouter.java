@@ -170,7 +170,6 @@ public abstract class DocRouter {
    *        of variation in resulting ranges - odd ranges will be larger and even ranges will be smaller
    *        by up to that percentage.
    */
-  @SuppressWarnings({"unchecked"})
   public List<Range> partitionRange(int partitions, Range range, float fuzz) {
     int min = range.min;
     int max = range.max;
@@ -181,7 +180,7 @@ public abstract class DocRouter {
     } else if (fuzz < 0.0f) {
       fuzz = 0.0f;
     }
-    if (partitions == 0) return Collections.EMPTY_LIST;
+    if (partitions == 0) return Collections.emptyList();
     long rangeSize = (long)max - (long)min;
     long rangeStep = Math.max(1, rangeSize / partitions);
     long fuzzStep = Math.round(rangeStep * (double)fuzz / 2.0);
