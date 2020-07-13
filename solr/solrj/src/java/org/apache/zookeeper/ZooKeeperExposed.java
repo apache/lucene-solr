@@ -20,6 +20,10 @@ public class ZooKeeperExposed {
         clientCnxn.eventThread.queueEventOfDeath();
     }
 
+    public void intteruptSendThread() {
+        clientCnxn.sendThread.interrupt();
+        clientCnxn.eventThread.interrupt();
+    }
 //    @Override
 //    public void injectSessionExpiration() {
 //        LOG.info("injectSessionExpiration() called");

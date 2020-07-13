@@ -130,7 +130,16 @@ public class SolrZooKeeper extends ZooKeeper {
 //     /   zkcall(cnxn, "sendThread", "close", null);
         // zkcall(cnxn, "sendThread", "close", null);
       }); // we don't wait for close because we wait below
-
+      worker.collect( () -> {
+        ZooKeeperExposed exposed = new ZooKeeperExposed(this, cnxn);
+        exposed.intteruptSendThread();
+        exposed.intteruptSendThread();
+      });
+      worker.collect( () -> {
+        ZooKeeperExposed exposed = new ZooKeeperExposed(this, cnxn);
+        exposed.intteruptSendThread();
+        exposed.intteruptSendThread();
+      });// we don't wait for close because we wait below
       worker.addCollect("zkServer");
 
       worker.collect(() -> {
@@ -138,20 +147,21 @@ public class SolrZooKeeper extends ZooKeeper {
           t.interrupt();
         }
       });
-      worker.collect(() -> {
-        zkcall(cnxn, "sendThread", "interrupt", null);
-        zkcall(cnxn, "eventThread", "interrupt", null);
-//
-//      //  zkcall(cnxn, "sendThread", "join", 10l);
-//      //  zkcall(cnxn, "eventThread", "join", 10l);
-//
+      worker.addCollect("spawnedThreads");
+//      worker.collect(() -> {
 //        zkcall(cnxn, "sendThread", "interrupt", null);
 //        zkcall(cnxn, "eventThread", "interrupt", null);
-//
-//        zkcall(cnxn, "sendThread", "join", 10l);
-//        zkcall(cnxn, "eventThread", "join", 10l);
-      });
-      worker.addCollect("zkClientClose");
+////
+////      //  zkcall(cnxn, "sendThread", "join", 10l);
+////      //  zkcall(cnxn, "eventThread", "join", 10l);
+////
+////        zkcall(cnxn, "sendThread", "interrupt", null);
+////        zkcall(cnxn, "eventThread", "interrupt", null);
+////
+////        zkcall(cnxn, "sendThread", "join", 10l);
+////        zkcall(cnxn, "eventThread", "join", 10l);
+//      });
+//      worker.addCollect("zkClientClose");
     }
   }
 
