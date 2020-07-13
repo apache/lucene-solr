@@ -47,6 +47,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -194,6 +195,11 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
   private String name;
   private String logid; // used to show what name is set
+  /**
+   * A unique id to differentiate multiple instances of the same core
+   * If we reload a core, the name remains same , but the id will be new
+   */
+  public final UUID uniqueId = UUID.randomUUID();
 
   private boolean isReloaded = false;
 
@@ -208,7 +214,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private final SolrCoreState solrCoreState;
 
   private final Date startTime = new Date();
-  public final Long startNanoTime = System.nanoTime();
+  private final long startNanoTime = System.nanoTime();
   private final RequestHandlers reqHandlers;
   private final PluginBag<SearchComponent> searchComponents = new PluginBag<>(SearchComponent.class, this);
   private final PluginBag<UpdateRequestProcessorFactory> updateProcessors = new PluginBag<>(UpdateRequestProcessorFactory.class, this, true);

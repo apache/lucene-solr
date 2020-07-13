@@ -54,7 +54,7 @@ public class CoreRefreshingClassLoader implements PackageListeners.Listener {
   public void changed(PackageLoader.Package pkg, Ctx ctx) {
     PackageLoader.Package.Version version = pkg.getLatest(solrCore.getSolrConfig().maxPackageVersion(info.cName.pkg));
     if(version != this.version) {
-      ctx.runLater(SolrCore.class.getName(), () -> solrCore.getCoreContainer().reload(CoreRefreshingClassLoader.class.getName() , solrCore.startNanoTime));
+      ctx.runLater(SolrCore.class.getName(), () -> solrCore.getCoreContainer().reload(CoreRefreshingClassLoader.class.getName() , solrCore.uniqueId));
     }
   }
 

@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -1591,7 +1592,7 @@ public class CoreContainer {
 
   /**
    * reloads a core
-   * refer {@link CoreContainer#reload(String, Long)} for details
+   * refer {@link CoreContainer#reload(String, UUID)} for details
    */
   public void reload(String name) {
     reload(name, null);
@@ -1602,16 +1603,16 @@ public class CoreContainer {
    * and processed by the old core
    *
    * @param name the name of the SolrCore to reload
-   * @param coreStartTime The start time of the core
+   * @param coreId The unique Id of the core
    */
-  public void reload(String name, Long coreStartTime) {
+  public void reload(String name, UUID coreId) {
     if (isShutDown) {
       throw new AlreadyClosedException();
     }
     SolrCore newCore = null;
     SolrCore core = solrCores.getCoreFromAnyList(name, false);
     if (core != null) {
-      if(coreStartTime != null && core.startNanoTime.longValue() != coreStartTime) {
+      if(coreId != null && core.uniqueId != coreId) {
         //trying to reload an already unloaded core
         return;
       }
