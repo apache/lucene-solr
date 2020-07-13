@@ -44,6 +44,10 @@ class FloatValue implements SortValue {
     return currentValue;
   }
 
+  public void toGlobalValue(SortValue previousValue) {
+
+  }
+
   public String getField() {
     return field;
   }
@@ -56,6 +60,8 @@ class FloatValue implements SortValue {
     this.vals = DocValues.getNumeric(context.reader(), field);
     lastDocID = 0;
   }
+
+
 
   public void setCurrentValue(int docId) throws IOException {
     if (docId < lastDocID) {

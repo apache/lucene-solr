@@ -96,13 +96,13 @@ class ExportBuffers {
     filler = () -> {
       try {
         // log.debug("--- filler start {}", Thread.currentThread());
+        SortDoc[] outDocs = new SortDoc[30000];
         SortDoc sortDoc = exportWriter.getSortDoc(searcher, sort.getSort());
         Buffer buffer = getFillBuffer();
-        SortQueue queue = new SortQueue(queueSize, sortDoc);
         long lastOutputCounter = 0;
         for (int count = 0; count < totalHits; ) {
           // log.debug("--- filler fillOutDocs in {}", fillBuffer);
-          exportWriter.fillOutDocs(leaves, sortDoc, queue, buffer);
+          exportWriter.fillOutDocs(leaves, sortDoc, outDocs, buffer);
           count += (buffer.outDocsIndex + 1);
           // log.debug("--- filler count={}, exchange buffer from {}", count, buffer);
           Timer.Context timerContext = getFillerWaitTimer().time();

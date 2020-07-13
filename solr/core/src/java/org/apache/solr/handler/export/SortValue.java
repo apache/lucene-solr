@@ -25,6 +25,7 @@ public interface SortValue extends Comparable<SortValue> {
   public void setCurrentValue(int docId) throws IOException;
   public void setNextReader(LeafReaderContext context) throws IOException;
   public void setCurrentValue(SortValue value);
+  public void toGlobalValue(SortValue previousValue);
   public void reset();
   public SortValue copy();
   public Object getCurrentValue() throws IOException;

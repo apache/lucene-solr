@@ -34,6 +34,7 @@ class SortDoc {
   }
 
   public SortDoc() {
+
   }
 
   public SortValue getSortValue(String field) {
@@ -66,6 +67,13 @@ class SortDoc {
     this.docId = docId;
     for (SortValue sortValue : sortValues) {
       sortValue.setCurrentValue(docId);
+    }
+  }
+
+  public void setGlobalValues(SortDoc previous) {
+    SortValue[] previousValues = previous.sortValues;
+    for(int i=0; i<sortValues.length; i++) {
+      sortValues[i].toGlobalValue(previousValues[i]);
     }
   }
 

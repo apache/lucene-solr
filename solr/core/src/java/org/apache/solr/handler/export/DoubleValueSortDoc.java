@@ -55,6 +55,13 @@ class DoubleValueSortDoc extends SingleValueSortDoc {
     value2.setCurrentValue(docId);
   }
 
+  @Override
+  public void setGlobalValues(SortDoc previous) {
+    DoubleValueSortDoc doubleValueSortDoc = (DoubleValueSortDoc)previous;
+    value1.toGlobalValue(doubleValueSortDoc.value1);
+    value2.toGlobalValue(doubleValueSortDoc.value2);
+  }
+
   public void setValues(SortDoc sortDoc) {
     this.docId = sortDoc.docId;
     this.ord = sortDoc.ord;

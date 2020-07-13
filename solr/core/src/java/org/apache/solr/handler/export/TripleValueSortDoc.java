@@ -60,6 +60,14 @@ class TripleValueSortDoc extends DoubleValueSortDoc {
     value3.setCurrentValue(docId);
   }
 
+  @Override
+  public void setGlobalValues(SortDoc previous) {
+    TripleValueSortDoc tripleValueSortDoc = (TripleValueSortDoc) previous;
+    value1.toGlobalValue(tripleValueSortDoc.value1);
+    value2.toGlobalValue(tripleValueSortDoc.value2);
+    value3.toGlobalValue(tripleValueSortDoc.value3);
+  }
+
   public void setValues(SortDoc sortDoc) {
     this.docId = sortDoc.docId;
     this.ord = sortDoc.ord;
@@ -111,7 +119,12 @@ class TripleValueSortDoc extends DoubleValueSortDoc {
     if (comp == 0) {
       comp = value2.compareTo(sd.value2);
       if (comp == 0) {
-        return value3.compareTo(sd.value3);
+        comp = value3.compareTo(sd.value3);
+        if(comp == 0) {
+          return docId+docBase - sd.docId+sd.docBase;
+        } else {
+          return comp;
+        }
       } else {
         return comp;
       }

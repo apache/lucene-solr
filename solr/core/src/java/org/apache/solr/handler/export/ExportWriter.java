@@ -303,8 +303,27 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     return tupleStream;
   }
 
+  private void identifyLowestSortingUnexportedDocs(List<LeafReaderContext> leaves, SortDoc sortDoc, SortDoc[] outDocs) throws IOException {
+    Timer.Context timerContext = identifyLowestSortingDocTimer.time();
+    try {
+      MergeIterator mergeIterator = getMergeIterator(leaves, sets, sortDoc);
+      for(int i=0; i<outDocs.length; i++) {
+        SortDoc sdoc = mergeIterator.next();
+        if(sdoc == null) {
+          //Null out the rest of the outDocs
+          outDocs[i] = null;
+        } else {
+          outDocs[i].setValues(sdoc);
+        }
+      }
+    } finally {
+      timerContext.stop();
+    }
+  }
+
   private void identifyLowestSortingUnexportedDocs(List<LeafReaderContext> leaves, SortDoc sortDoc, SortQueue queue) throws IOException {
     Timer.Context timerContext = identifyLowestSortingDocTimer.time();
+
     try {
       queue.reset();
       SortDoc top = queue.top();
@@ -324,6 +343,33 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       timerContext.stop();
     }
   }
+
+
+  private void transferBatchToBufferForOutput(SortDoc[] outDocs,
+                                              ExportBuffers.Buffer destination) throws IOException {
+    Timer.Context timerContext = transferBatchToBufferTimer.time();
+    try {
+      int outDocsIndex = -1;
+      for (int i = 0; i < outDocs.length; i++) {
+        if(outDocs[i] != null) {
+          destination.outDocs[++outDocsIndex].setValues(outDocs[i]);
+        } else {
+          break;
+        }
+      }
+      destination.outDocsIndex = outDocsIndex;
+    } catch (Throwable t) {
+      log.error("transfer", t);
+      if (t instanceof InterruptedException) {
+        Thread.currentThread().interrupt();
+      }
+      throw t;
+    } finally {
+      timerContext.stop();
+    }
+  }
+
+
 
   private void transferBatchToBufferForOutput(SortQueue queue,
                                                 List<LeafReaderContext> leaves,
@@ -436,10 +482,20 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     }
   }
 
+
   void fillOutDocs(List<LeafReaderContext> leaves, SortDoc sortDoc,
                           SortQueue sortQueue, ExportBuffers.Buffer buffer) throws IOException {
     identifyLowestSortingUnexportedDocs(leaves, sortDoc, sortQueue);
     transferBatchToBufferForOutput(sortQueue, leaves, buffer);
+  }
+
+  void fillOutDocs(List<LeafReaderContext> leaves,
+                   SortDoc sortDoc,
+                   SortDoc[] outDocs,
+                   ExportBuffers.Buffer buffer) throws IOException {
+
+    identifyLowestSortingUnexportedDocs(leaves, sortDoc, outDocs);
+    transferBatchToBufferForOutput(outDocs, buffer);
   }
 
   void writeDoc(SortDoc sortDoc,
@@ -613,8 +669,6 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     return new SortDoc(sortValues);
   }
 
-
-
   private static class MergeIterator {
 
     private TreeSet<SortDoc> set = new TreeSet();
@@ -636,8 +690,14 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     */
 
     public SortDoc next() {
-      //This method is free
+
       SortDoc sortDoc = set.pollFirst();
+
+      //We've exhausted all documents
+      if(sortDoc == null) {
+        return null;
+      }
+
       SortDoc nextDoc = segmentIterators[sortDoc.ord].next();
       if(nextDoc != null) {
         //The entire expense of the operation is here
@@ -647,7 +707,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     }
   }
 
-  private MergeIterator getMergeIterator(List<LeafReaderContext> leafs, FixedBitSet[] bits, SortDoc sortDoc) {
+  private MergeIterator getMergeIterator(List<LeafReaderContext> leafs, FixedBitSet[] bits, SortDoc sortDoc) throws IOException {
 
     long totalDocs = 0;
     for(int i=0; i< leafs.size(); i++) {
@@ -664,7 +724,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     SegmentIterator[] segmentIterators = new SegmentIterator[bits.length];
     for(int i=0; i<segmentIterators.length; i++) {
       SortQueue sortQueue = new SortQueue(sizes[i], sortDoc);
-      segmentIterators[i] = new SegmentIterator(bits[i], leafs.get(i), sortQueue, sortDoc);
+      segmentIterators[i] = new SegmentIterator(bits[i], leafs.get(i), sortQueue, sortDoc.copy());
     }
 
     return new MergeIterator(segmentIterators);
@@ -673,15 +733,16 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   private static class SegmentIterator {
 
     private FixedBitSet bits;
-    private LeafReaderContext context;
     private SortQueue queue;
     private SortDoc sortDoc;
+    private SortDoc lastDoc;
 
-    public SegmentIterator(FixedBitSet bits, LeafReaderContext context, SortQueue sortQueue, SortDoc sortDoc) {
+    public SegmentIterator(FixedBitSet bits, LeafReaderContext context, SortQueue sortQueue, SortDoc sortDoc) throws IOException {
       this.bits = bits;
-      this.context = context;
       this.queue = sortQueue;
       this.sortDoc = sortDoc;
+      this.sortDoc.setNextReader(context);
+      this.lastDoc = sortDoc.copy();
       topDocs();
     }
 
@@ -690,10 +751,16 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       if(sortDoc == null) {
         topDocs();
         sortDoc = queue.pop();
-        return sortDoc;
-      } else {
-        return sortDoc;
       }
+
+      if(sortDoc != null) {
+        //Load the global ordinals which will be used
+        bits.clear(sortDoc.docId);
+        sortDoc.setGlobalValues(lastDoc);
+        lastDoc.setValues(sortDoc);
+      }
+
+      return sortDoc;
     }
 
     private void topDocs()  {

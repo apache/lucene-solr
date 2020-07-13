@@ -75,7 +75,11 @@ public class IntValue implements SortValue {
     }
   }
 
-  @Override
+  public void toGlobalValue(SortValue previousValue) {
+
+  }
+
+    @Override
   public boolean isPresent() {
     return this.present;
   }

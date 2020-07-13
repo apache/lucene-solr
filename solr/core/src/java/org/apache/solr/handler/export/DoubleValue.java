@@ -78,7 +78,12 @@ class DoubleValue implements SortValue {
     }
   }
 
-  @Override
+  public void toGlobalValue(SortValue previousValue) {
+
+  }
+
+
+    @Override
   public boolean isPresent() {
     return present;
   }

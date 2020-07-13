@@ -47,6 +47,16 @@ class QuadValueSortDoc extends TripleValueSortDoc {
     value4.setNextReader(context);
   }
 
+
+  @Override
+  public void setGlobalValues(SortDoc previous) {
+    QuadValueSortDoc quadValueSortDoc = (QuadValueSortDoc) previous;
+    value1.toGlobalValue(quadValueSortDoc.value1);
+    value2.toGlobalValue(quadValueSortDoc.value2);
+    value3.toGlobalValue(quadValueSortDoc.value3);
+    value4.toGlobalValue(quadValueSortDoc.value4);
+  }
+
   public void reset() {
     this.docId = -1;
     this.docBase = -1;
@@ -126,7 +136,12 @@ class QuadValueSortDoc extends TripleValueSortDoc {
       if(comp == 0) {
         comp = value3.compareTo(sd.value3);
         if(comp == 0) {
-          return value4.compareTo(sd.value4);
+          comp = value4.compareTo(sd.value4);
+          if(comp == 0) {
+            return docId+docBase - sd.docId+sd.docBase;
+          } else {
+            return comp;
+          }
         } else {
           return comp;
         }
