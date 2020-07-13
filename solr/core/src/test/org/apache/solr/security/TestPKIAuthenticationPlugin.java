@@ -40,6 +40,7 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+// nocommit flakey
 public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
 
   static class MockPKIAuthenticationPlugin extends PKIAuthenticationPlugin {

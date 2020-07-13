@@ -30,6 +30,7 @@ import org.apache.solr.core.MockFSDirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -37,6 +38,7 @@ import org.junit.rules.TestRule;
 
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
+@Ignore // nocommit flakey
 public class CoreMergeIndexesAdminHandlerTest extends SolrTestCaseJ4 {
   
   @BeforeClass
