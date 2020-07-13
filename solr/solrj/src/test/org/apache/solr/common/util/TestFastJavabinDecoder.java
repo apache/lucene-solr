@@ -42,6 +42,7 @@ public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
 
   public void testTagRead() throws Exception {
     BinaryRequestWriter.BAOS baos = new BinaryRequestWriter.BAOS();
+
     FastOutputStream faos = FastOutputStream.wrap(baos);
 
     try (JavaBinCodec codec = new JavaBinCodec(faos, null)) {

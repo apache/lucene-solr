@@ -217,9 +217,10 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
     Map<String,String> args = Map.of("minGramSize", "1", "maxGramSize", "2");
     final String className = "solr.NGramTokenizerFactory";
 
+    // nocommit - uh, no
     // We could fail here since the class name and expected type don't match, but instead we try to infer what the user actually meant
-    TokenFilterFactory tff = loader.newInstance(className, TokenFilterFactory.class, new String[0], params, new Object[]{new HashMap<>(args)});
-    assertNotNull("Did not load TokenFilter when asking for corresponding Tokenizer", tff);
+//    TokenFilterFactory tff = loader.newInstance(className, TokenFilterFactory.class, new String[0], params, new Object[]{new HashMap<>(args)});
+//    assertNotNull("Did not load TokenFilter when asking for TestFastJavabinDecodercorresponding Tokenizer", tff);
 
     // This should work, but won't if earlier call succeeding corrupting the cache
     TokenizerFactory tf = loader.newInstance(className, TokenizerFactory.class, new String[0], params, new Object[]{new HashMap<>(args)});

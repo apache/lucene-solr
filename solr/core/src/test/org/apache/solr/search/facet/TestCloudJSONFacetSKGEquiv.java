@@ -400,10 +400,15 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
    */
   public void testBespokeStructures() throws Exception {
     // we don't need to test every field, just make sure we test enough fields to hit every suffix..
-    final int maxFacetFieldNum = Collections.max(Arrays.asList(MULTI_STR_FIELD_SUFFIXES.length,
-                                                               MULTI_INT_FIELD_SUFFIXES.length,
-                                                               SOLO_STR_FIELD_SUFFIXES.length,
-                                                               SOLO_INT_FIELD_SUFFIXES.length));
+    final int maxFacetFieldNum;
+    if (TEST_NIGHTLY) {
+      maxFacetFieldNum = Collections.max(Arrays.asList(MULTI_STR_FIELD_SUFFIXES.length,
+              MULTI_INT_FIELD_SUFFIXES.length,
+              SOLO_STR_FIELD_SUFFIXES.length,
+              SOLO_INT_FIELD_SUFFIXES.length));
+    } else {
+      maxFacetFieldNum = 1;
+    }
     
     for (int facetFieldNum = 0; facetFieldNum < maxFacetFieldNum; facetFieldNum++) {
       for (String facetFieldName : Arrays.asList(soloStrField(facetFieldNum), multiStrField(facetFieldNum))) {

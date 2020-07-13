@@ -477,6 +477,69 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
     return findClass(cname, expectedType, empty);
   }
 
+  private static final Map<String,String> TRANS_MAP;
+  static {
+    Map<String,String> map = new HashMap<>(64);
+    map.put("solr.WordDelimiterGraphFilterFactory","org.apache.lucene.analysis.miscellaneous.WordDelimiterGraphFilterFactory");
+    map.put("solr.LowerCaseFilterFactory", "org.apache.lucene.analysis.core.LowerCaseFilterFactory");
+    map.put("solr.FlattenGraphFilterFactory", "org.apache.lucene.analysis.core.FlattenGraphFilterFactory");
+    map.put("solr.StopFilterFactory", "org.apache.lucene.analysis.core.StopFilterFactory");
+    map.put("solr.SynonymGraphFilterFactory", "org.apache.lucene.analysis.synonym.SynonymGraphFilterFactory");
+    map.put("solr.KeywordMarkerFilterFactory", "org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilterFactory");
+    map.put("solr.PorterStemFilterFactory", "org.apache.lucene.analysis.en.PorterStemFilterFactory");
+    map.put("solr.DelimitedBoostTokenFilterFactory", "org.apache.lucene.analysis.boost.DelimitedBoostTokenFilterFactory");
+    map.put("solr.LetterTokenizerFactory", "org.apache.lucene.analysis.core.LetterTokenizerFactory");
+    map.put("solr.StandardTokenizerFactory", "org.apache.lucene.analysis.standard.StandardTokenizerFactory");
+    map.put("solr.HTMLStripCharFilterFactory", "org.apache.lucene.analysis.charfilter.HTMLStripCharFilterFactory");
+    map.put("solr.MappingCharFilterFactory", "org.apache.lucene.analysis.charfilter.MappingCharFilterFactory");
+    map.put("solr.PatternReplaceFilterFactory", "org.apache.lucene.analysis.pattern.PatternReplaceFilterFactory");
+    map.put("solr.LengthFilterFactory", "org.apache.lucene.analysis.miscellaneous.LengthFilterFactory");
+    map.put("solr.RemoveDuplicatesTokenFilterFactory", "org.apache.lucene.analysis.miscellaneous.RemoveDuplicatesTokenFilterFactory");
+    map.put("solr.WhitespaceTokenizerFactory", "org.apache.lucene.analysis.core.WhitespaceTokenizerFactory");
+    map.put("solr.ShingleFilterFactory", "org.apache.lucene.analysis.shingle.ShingleFilterFactory");
+    map.put("solr.WordDelimiterFilterFactory", "org.apache.lucene.analysis.miscellaneous.WordDelimiterFilterFactory");
+    map.put("solr.PatternTokenizerFactory", "org.apache.lucene.analysis.pattern.PatternTokenizerFactory");
+    map.put("solr.KeywordTokenizerFactory", "org.apache.lucene.analysis.core.KeywordTokenizerFactory");
+    map.put("solr.PathHierarchyTokenizerFactory", "org.apache.lucene.analysis.path.PathHierarchyTokenizerFactory");
+    map.put("solr.DelimitedPayloadTokenFilterFactory", "org.apache.lucene.analysis.payloads.DelimitedPayloadTokenFilterFactory");
+    map.put("solr.EnglishMinimalStemFilterFactory", "org.apache.lucene.analysis.en.EnglishMinimalStemFilterFactory");
+    map.put("solr.TrimFilterFactory", "org.apache.lucene.analysis.miscellaneous.TrimFilterFactory");
+    map.put("solr.LimitTokenCountFilterFactory", "org.apache.lucene.analysis.miscellaneous.LimitTokenCountFilterFactory");
+    map.put("solr.ICUTokenizerFactory", "org.apache.lucene.analysis.icu.segmentation.ICUTokenizerFactory");
+    map.put("solr.ICUFoldingFilterFactory", "org.apache.lucene.analysis.icu.ICUFoldingFilterFactory");
+    map.put("solr.ProtectedTermFilterFactory", "org.apache.lucene.analysis.miscellaneous.ProtectedTermFilterFactory");
+    map.put("solr.ReversedWildcardFilterFactory", "org.apache.solr.analysis.ReversedWildcardFilterFactory");
+    map.put("solr.ASCIIFoldingFilterFactory", "org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilterFactory");
+    map.put("solr.EnglishPossessiveFilterFactory", "org.apache.lucene.analysis.en.EnglishPossessiveFilterFactory");
+    map.put("solr.NGramTokenizerFactory", "org.apache.lucene.analysis.ngram.NGramTokenizerFactory");
+    map.put("solr.ManagedStopFilterFactory", "org.apache.solr.rest.schema.analysis.ManagedStopFilterFactory");
+    map.put("solr.ManagedSynonymFilterFactory", "org.apache.solr.rest.schema.analysis.ManagedSynonymFilterFactory");
+    map.put("solr.ManagedSynonymGraphFilterFactory", "org.apache.solr.rest.schema.analysis.ManagedSynonymGraphFilterFactory");
+    map.put("solr.OpenNLPTokenizerFactory", "org.apache.lucene.analysis.opennlp.OpenNLPTokenizerFactory");
+    map.put("solr.ICUNormalizer2FilterFactory", "org.apache.lucene.analysis.icu.ICUNormalizer2FilterFactory");
+    map.put("solr.DoubleMetaphoneFilterFactory", "org.apache.lucene.analysis.phonetic.DoubleMetaphoneFilterFactory");
+    map.put("solr.ClassicTokenizerFactory", "org.apache.lucene.analysis.standard.ClassicTokenizerFactory");
+    map.put("solr.GreekLowerCaseFilterFactory", "org.apache.lucene.analysis.el.GreekLowerCaseFilterFactory");
+    map.put("solr.ConcatenateGraphFilterFactory", "org.apache.lucene.analysis.miscellaneous.ConcatenateGraphFilterFactory");
+    map.put("solr.JapaneseTokenizerFactory", "org.apache.lucene.analysis.ja.JapaneseTokenizerFactory");
+    map.put("solr.CJKWidthFilterFactory", "org.apache.lucene.analysis.cjk.CJKWidthFilterFactory");
+    map.put("solr.JapaneseReadingFormFilterFactory", "org.apache.lucene.analysis.ja.JapaneseReadingFormFilterFactory");
+    map.put("solr.TurkishLowerCaseFilterFactory", "org.apache.lucene.analysis.tr.TurkishLowerCaseFilterFactory");
+    map.put("solr.PersianNormalizationFilterFactory", "org.apache.lucene.analysis.fa.PersianNormalizationFilterFactory");
+    map.put("solr.ArabicNormalizationFilterFactory", "org.apache.lucene.analysis.ar.ArabicNormalizationFilterFactory");
+    map.put("solr.IndicNormalizationFilterFactory", "org.apache.lucene.analysis.in.IndicNormalizationFilterFactory");
+    map.put("solr.HindiNormalizationFilterFactory", "org.apache.lucene.analysis.hi.HindiNormalizationFilterFactory");
+    map.put("solr.GermanNormalizationFilterFactory", "org.apache.lucene.analysis.de.GermanNormalizationFilterFactory");
+    map.put("solr.ElisionFilterFactory", "org.apache.lucene.analysis.util.ElisionFilterFactory");
+    map.put("solr.FrenchLightStemFilterFactory", "org.apache.lucene.analysis.fr.FrenchLightStemFilterFactory");
+    map.put("solr.ICUTransformFilterFactory", "org.apache.lucene.analysis.icu.ICUTransformFilterFactory");
+    map.put("solr.PatternReplaceCharFilterFactory", "org.apache.lucene.analysis.pattern.PatternReplaceCharFilterFactory");
+    map.put("solr.ClassicFilterFactory", "org.apache.lucene.analysis.standard.ClassicFilterFactory");
+    map.put("solr.KStemFilterFactory", "org.apache.lucene.analysis.en.KStemFilterFactory");
+
+    TRANS_MAP = Collections.unmodifiableMap(map);
+  }
+
   /**
    * This method loads a class either with its FQN or a short-name (solr.class-simplename or class-simplename).
    * It tries to load the class with the name that is given first and if it fails, it tries all the known
@@ -492,6 +555,16 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
     if (!cname.startsWith("solr.") && cname.contains(".")) {
       try {
         return Class.forName(cname, true, classLoader).asSubclass(expectedType);
+      } catch (ClassNotFoundException e) {
+
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, name +" Error loading class '" + cname + "'", e);
+      }
+    }
+
+    String trans = TRANS_MAP.get(cname);
+    if (trans != null) {
+      try {
+        return Class.forName(trans, true, classLoader).asSubclass(expectedType);
       } catch (ClassNotFoundException e) {
 
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, name +" Error loading class '" + cname + "'", e);
@@ -531,26 +604,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
             // ignore... assume first exception is best.
           }
         }
-        // first try legacy analysis patterns, now replaced by Lucene's Analysis package:
-        final Matcher m = legacyAnalysisPattern.matcher(cname);
-        if (m.matches()) {
-          final String name = m.group(4);
-          log.trace("Trying to load class from analysis SPI using name='{}'", name);
-          try {
-            if (CharFilterFactory.class.isAssignableFrom(expectedType)) {
-              return clazz = CharFilterFactory.lookupClass(name).asSubclass(expectedType);
-            } else if (TokenizerFactory.class.isAssignableFrom(expectedType)) {
-              return clazz = TokenizerFactory.lookupClass(name).asSubclass(expectedType);
-            } else if (TokenFilterFactory.class.isAssignableFrom(expectedType)) {
-              return clazz = TokenFilterFactory.lookupClass(name).asSubclass(expectedType);
-            } else {
-              log.warn("'{}' looks like an analysis factory, but caller requested different class type: {}", cname, expectedType.getName());
-            }
-          } catch (IllegalArgumentException ex) {
-            // ok, we fall back to legacy loading
-            log.info("IllegalArgumentException trying to load analysis class", ex);
-          }
-        }
+
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, name +" Error loading class '" + cname + "'" + " subpackages=" + Arrays.asList(subpackages), e);
       }
 
