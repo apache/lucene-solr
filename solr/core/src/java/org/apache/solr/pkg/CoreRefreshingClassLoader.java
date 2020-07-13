@@ -17,11 +17,11 @@
 
 package org.apache.solr.pkg;
 
+import java.util.function.Function;
+
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
-
-import java.util.function.Function;
 
 /**A utility class that loads classes from packages and reloads core if any of those packages are updated
  *
@@ -54,7 +54,7 @@ public class CoreRefreshingClassLoader implements PackageListeners.Listener {
   public void changed(PackageLoader.Package pkg, Ctx ctx) {
     PackageLoader.Package.Version version = pkg.getLatest(solrCore.getSolrConfig().maxPackageVersion(info.cName.pkg));
     if(version != this.version) {
-      ctx.runLater(SolrCore.class.getName(), () -> solrCore.getCoreContainer().reload(CoreRefreshingClassLoader.class.getName() , solrCore.uniqueId));
+      ctx.runLater(SolrCore.class.getName(), () -> solrCore.getCoreContainer().reload(CoreRefreshingClassLoader.class.getName() , solrCore.startNanoTime));
     }
   }
 

@@ -24,7 +24,19 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.spec.InvalidKeySpecException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -1579,7 +1591,7 @@ public class CoreContainer {
 
   /**
    * reloads a core
-   * refer {@link CoreContainer#reload(String, UUID)} for details
+   * refer {@link CoreContainer#reload(String, Long)} for details
    */
   public void reload(String name) {
     reload(name, null);
@@ -1590,16 +1602,16 @@ public class CoreContainer {
    * and processed by the old core
    *
    * @param name the name of the SolrCore to reload
-   * @param coreId The unique identifier of the core
+   * @param coreStartTime The start time of the core
    */
-  public void reload(String name, Long coreId) {
+  public void reload(String name, Long coreStartTime) {
     if (isShutDown) {
       throw new AlreadyClosedException();
     }
     SolrCore newCore = null;
     SolrCore core = solrCores.getCoreFromAnyList(name, false);
     if (core != null) {
-      if(coreId != null && core.uniqueId.longValue() != coreId) {
+      if(coreStartTime != null && core.startNanoTime.longValue() != coreStartTime) {
         //trying to reload an already unloaded core
         return;
       }

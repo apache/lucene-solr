@@ -31,7 +31,22 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -125,7 +140,10 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.ManagedIndexSchema;
 import org.apache.solr.schema.SimilarityFactory;
-import org.apache.solr.search.*;
+import org.apache.solr.search.QParserPlugin;
+import org.apache.solr.search.SolrFieldCacheBean;
+import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.ValueSourceParser;
 import org.apache.solr.search.stats.LocalStatsCache;
 import org.apache.solr.search.stats.StatsCache;
 import org.apache.solr.update.DefaultSolrCoreState;
@@ -176,11 +194,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
   private String name;
   private String logid; // used to show what name is set
-  /**
-   * A unique id to differentiate multiple instances of the same core
-   * If we reload a core, the name remains same , but the id will be new
-   */
-  public final Long uniqueId = System.nanoTime();
 
   private boolean isReloaded = false;
 
@@ -195,7 +208,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private final SolrCoreState solrCoreState;
 
   private final Date startTime = new Date();
-  private final long startNanoTime = System.nanoTime();
+  public final Long startNanoTime = System.nanoTime();
   private final RequestHandlers reqHandlers;
   private final PluginBag<SearchComponent> searchComponents = new PluginBag<>(SearchComponent.class, this);
   private final PluginBag<UpdateRequestProcessorFactory> updateProcessors = new PluginBag<>(UpdateRequestProcessorFactory.class, this, true);
