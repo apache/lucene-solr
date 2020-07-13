@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.UUID;
 
@@ -31,6 +32,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.beans.Field;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -244,6 +246,44 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
         .withSocketTimeout(60000)
         .build();
     // end::solrj-solrclient-timeouts[]
+  }
+
+  private SolrClient getBaseURLCloudSolrClient() {
+    // tag::solrj-cloudsolrclient-baseurl[]
+    final List<String> solrUrls = new ArrayList<>();
+    solrUrls.add("http://solr1:8983/solr");
+    solrUrls.add("http://solr2:8983/solr");
+    return new CloudSolrClient.Builder(solrUrls)
+            .withConnectionTimeout(10000)
+            .withSocketTimeout(60000)
+            .build();
+    // end::solrj-cloudsolrclient-baseurl[]
+  }
+
+  private SolrClient getZookeeperNoRootCloudSolrClient() {
+    // tag::solrj-cloudsolrclient-zookeepernoroot[]
+    final List<String> zkServers = new ArrayList<>();
+    zkServers.add("zookeeper1:2181");
+    zkServers.add("zookeeper2:2181");
+    zkServers.add("zookeeper3:2181");
+    return new CloudSolrClient.Builder(zkServers, Optional.empty())
+            .withConnectionTimeout(10000)
+            .withSocketTimeout(60000)
+            .build();
+    // end::solrj-cloudsolrclient-zookeepernoroot[]
+  }
+
+  private SolrClient getZookeeperRootCloudSolrClient() {
+    // tag::solrj-cloudsolrclient-zookeeperroot[]
+    final List<String> zkServers = new ArrayList<>();
+    zkServers.add("zookeeper1:2181");
+    zkServers.add("zookeeper2:2181");
+    zkServers.add("zookeeper3:2181");
+    return new CloudSolrClient.Builder(zkServers, Optional.of("/solr"))
+            .withConnectionTimeout(10000)
+            .withSocketTimeout(60000)
+            .build();
+    // end::solrj-cloudsolrclient-zookeeperroot[]
   }
 
   private void assertNumDocuments(int expectedNumResults) throws Exception {

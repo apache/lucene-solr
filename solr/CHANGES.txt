@@ -115,7 +115,7 @@ Improvements
 
 * SOLR-14537: Improve performance of ExportWriter. (ab, Joel Bernstein)
 
-* SOLR-14566: Request ID's ('rid') are now added by default to distributed search requests, and can be used to correlate 
+* SOLR-14566: Request ID's ('rid') are now added by default to distributed search requests, and can be used to correlate
   logs from the receiving coordinator node with those from downstream shard requests.  This can be disabled by providing a
   disableRequestId=true request parameter. (Jason Gerlowski)
 
@@ -142,11 +142,13 @@ Other Changes
 
 * SOLR-14592: Upgrade Zookeeper to 3.6.1. NOTE: this required upgrading netty to 4.1.50 (Erick Erickson)
 
-* SOLR-10742: SolrCores.getNamesForCore is quite inefficient and blocks other core operations. 
+* SOLR-10742: SolrCores.getNamesForCore is quite inefficient and blocks other core operations.
   NOTE: this experimental method has been removed (Erick Erickson)
 
 * SOLR-13939: Extract any non-gradle related patches (deprecations, URL fixes, etc.) from gradle effort. NOTE:
   this will be in several separate commits/pushes. (Erick Erickson)
+
+* SOLR-14637: Update CloudSolrClient examples to remove deprecated method. (Andras Salaman via Eric Pugh)
 
 ==================  8.6.0 ==================
 
