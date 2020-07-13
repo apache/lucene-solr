@@ -37,6 +37,7 @@ import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.github.benmanes.caffeine.cache.RemovalListener;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -87,7 +88,6 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
   private int maxIdleTimeSec;
   private boolean cleanupThread;
 
-  private Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private MetricsMap cacheMap;
   private SolrMetricsContext solrMetricsContext;
 
@@ -232,13 +232,23 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
 
   @Override
   public void close() throws IOException {
-    SolrCache.super.close();
-    cache.invalidateAll();
-    cache.cleanUp();
-    if (executor instanceof ExecutorService) {
-      ((ExecutorService)executor).shutdownNow();
+    try (ParWork closer = new ParWork(this)) {
+      closer.collect(() -> {
+        try {
+          SolrCache.super.close();
+        } catch (IOException e) {
+          log.warn("IOException on close", e);
+        }
+      });
+      closer.collect(() -> {
+        cache.invalidateAll();
+        cache.cleanUp();
+      });
+      closer.collect(() -> {
+        ramBytes.reset();
+      });
+      closer.addCollect("CaffeineCacheClose");
     }
-    ramBytes.reset();
   }
 
   @Override

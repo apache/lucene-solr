@@ -153,7 +153,6 @@ public class SolrTestCase extends LuceneTestCase {
     }
 
 
-    System.setProperty("zookeeper.request.timeout", "100");
     System.setProperty("solr.zkclienttimeout", "30000");
     System.setProperty("solr.v2RealPath", "true");
     System.setProperty("zookeeper.forceSync", "no");
@@ -167,6 +166,14 @@ public class SolrTestCase extends LuceneTestCase {
 
     if (!TEST_NIGHTLY) {
       //TestInjection.randomDelayMaxInCoreCreationInSec = 2;
+      System.setProperty("zookeeper.request.timeout", "300");
+      System.setProperty(SolrTestCaseJ4.USE_NUMERIC_POINTS_SYSPROP, "true");
+      System.setProperty("solr.tests.IntegerFieldType", "org.apache.solr.schema.IntPointField");
+      System.setProperty("solr.tests.FloatFieldType", "org.apache.solr.schema.FloatPointField");
+      System.setProperty("solr.tests.LongFieldType", "org.apache.solr.schema.LongPointField");
+      System.setProperty("solr.tests.DoubleFieldType", "org.apache.solr.schema.DoublePointField");
+      System.setProperty("solr.tests.DateFieldType", "org.apache.solr.schema.DatePointField");
+      System.setProperty("solr.tests.EnumFieldType", "org.apache.solr.schema.EnumFieldType");
 
       System.setProperty("solr.MaxConcurrentRequests", "5");
       System.setProperty("solr.tests.infostream", "false");

@@ -19,6 +19,7 @@ import java.io.File;
 import java.util.SortedMap;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -37,6 +38,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.AfterClass;
 import org.junit.Test;
 
+@LuceneTestCase.Nightly
 public class TestLTROnSolrCloud extends TestRerankBase {
 
   private MiniSolrCloudCluster solrCluster;
