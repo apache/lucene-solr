@@ -66,6 +66,7 @@ import static java.util.Collections.singletonList;
  */
 @Slow
 @Ignore // nocommit debug, flakey
+@LuceneTestCase.Nightly
 public class PeerSyncReplicationTest extends SolrCloudBridgeTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

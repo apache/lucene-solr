@@ -112,6 +112,10 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
   }
 
   public TestDistributedSearch() {
+    if (!TEST_NIGHTLY) {
+      fixShardCount(2);
+    }
+
     // we need DVs on point fields to compute stats & facets
     if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
   }
