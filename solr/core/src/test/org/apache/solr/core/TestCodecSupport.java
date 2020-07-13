@@ -18,6 +18,7 @@ package org.apache.solr.core;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.lucene50.Lucene50StoredFieldsFormat;
@@ -210,7 +211,7 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
     try {
       CoreDescriptor cd = new CoreDescriptor(newCoreName, testSolrHome.resolve(newCoreName), coreContainer);
       c = new SolrCore(coreContainer, cd,
-          new ConfigSet("fakeConfigset", config, schema, null, true));
+          new ConfigSet("fakeConfigset", config, forceFetch -> schema, null, true));
       assertNull(coreContainer.registerCore(cd, c, false, false));
       h.coreName = newCoreName;
       assertEquals("We are not using the correct core", "solrconfig_codec2.xml", h.getCore().getConfigResource());

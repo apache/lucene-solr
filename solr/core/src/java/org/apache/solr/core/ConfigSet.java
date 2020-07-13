@@ -16,8 +16,11 @@
  */
 package org.apache.solr.core;
 
+import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.IndexSchema;
+
+import java.util.function.Function;
 
 /**
  * Stores a core's configuration in the form of a SolrConfig and IndexSchema.
@@ -30,7 +33,7 @@ public class ConfigSet {
 
   private final SolrConfig solrconfig;
 
-  private final IndexSchema indexSchema;
+  private final Function<Boolean, IndexSchema> indexSchema;
 
   @SuppressWarnings({"rawtypes"})
   private final NamedList properties;
@@ -38,7 +41,7 @@ public class ConfigSet {
   private final boolean trusted;
 
   @SuppressWarnings({"rawtypes"})
-  public ConfigSet(String name, SolrConfig solrConfig, IndexSchema indexSchema,
+  public ConfigSet(String name, SolrConfig solrConfig, Function<Boolean, IndexSchema> indexSchema,
       NamedList properties, boolean trusted) {
     this.name = name;
     this.solrconfig = solrConfig;
@@ -55,8 +58,11 @@ public class ConfigSet {
     return solrconfig;
   }
 
+  public IndexSchema getIndexSchema(boolean forceFetch) {
+    return indexSchema.apply(forceFetch);
+  }
   public IndexSchema getIndexSchema() {
-    return indexSchema;
+    return indexSchema.apply(Boolean.FALSE);
   }
 
   @SuppressWarnings({"rawtypes"})

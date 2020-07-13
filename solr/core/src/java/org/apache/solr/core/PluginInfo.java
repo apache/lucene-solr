@@ -73,8 +73,10 @@ public class PluginInfo implements MapSerializable {
   public static class ClassName {
     public final String pkg;
     public final String className;
+    public final String original;
 
     public ClassName(String name) {
+      this.original = name;
       if (name == null) {
         pkg = null;
         className = null;
@@ -90,6 +92,10 @@ public class PluginInfo implements MapSerializable {
       }
     }
 
+    @Override
+    public String toString() {
+      return original;
+    }
   }
 
 

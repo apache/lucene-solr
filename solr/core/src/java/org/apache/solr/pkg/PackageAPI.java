@@ -17,16 +17,6 @@
 
 package org.apache.solr.pkg;
 
-import java.io.IOException;
-import java.io.StringWriter;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
@@ -51,6 +41,11 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.io.StringWriter;
+import java.lang.invoke.MethodHandles;
+import java.util.*;
 
 import static org.apache.solr.common.cloud.ZkStateReader.SOLR_PKGS_PATH;
 import static org.apache.solr.security.PermissionNameProvider.Name.PACKAGE_EDIT_PERM;
@@ -192,7 +187,7 @@ public class PackageAPI {
 
     public PkgVersion(Package.AddVersion addVersion) {
       this.version = addVersion.version;
-      this.files = addVersion.files;
+      this.files = addVersion.files == null? null : Collections.unmodifiableList(addVersion.files);
       this.manifest = addVersion.manifest;
       this.manifestSHA512 = addVersion.manifestSHA512;
     }
@@ -220,6 +215,15 @@ public class PackageAPI {
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
+    }
+
+    public PkgVersion copy() {
+      PkgVersion result = new PkgVersion();
+      result.version = this.version;
+      result.files =  this.files;
+      result.manifest =  this.manifest;
+      result.manifestSHA512 =  this.manifestSHA512;
+      return result;
     }
   }
 

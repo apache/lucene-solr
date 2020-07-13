@@ -57,6 +57,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
@@ -112,10 +113,7 @@ import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
-import org.apache.solr.pkg.CoreRefreshingClassLoader;
-import org.apache.solr.pkg.PackageListeners;
-import org.apache.solr.pkg.PackageLoader;
-import org.apache.solr.pkg.PackagePluginHolder;
+import org.apache.solr.pkg.*;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.BinaryResponseWriter;
@@ -228,6 +226,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private IndexReaderFactory indexReaderFactory;
   private final Codec codec;
   private final MemClassLoader memClassLoader;
+  private final SchemaPluginsLoader schemaPluginsLoader;
 
   private final CircuitBreakerManager circuitBreakerManager;
 
@@ -279,6 +278,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
   public PackageListeners getPackageListeners() {
     return packageListeners;
+  }
+  public SchemaPluginsLoader getSchemaPluginsLoader() {
+    return schemaPluginsLoader;
   }
 
   static int boolean_query_max_clause_count = Integer.MIN_VALUE;
@@ -944,16 +946,20 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     final CountDownLatch latch = new CountDownLatch(1);
 
     try {
-      IndexSchema schema = configSet.getIndexSchema();
 
       CoreDescriptor cd = Objects.requireNonNull(coreDescriptor, "coreDescriptor cannot be null");
       coreContainer.solrCores.addCoreDescriptor(cd);
 
       setName(name);
-
       this.solrConfig = configSet.getSolrConfig();
       this.resourceLoader = configSet.getSolrConfig().getResourceLoader();
       this.resourceLoader.core = this;
+      schemaPluginsLoader = new SchemaPluginsLoader(coreContainer, resourceLoader,
+              solrConfig::maxPackageVersion,
+              () -> setLatestSchema(configSet.getIndexSchema(true)));
+      this.packageListeners.addListener(schemaPluginsLoader.listener);
+      IndexSchema schema = configSet.getIndexSchema();
+
       this.configSetProperties = configSet.getProperties();
       // Initialize the metrics manager
       this.coreMetricManager = initCoreMetricManager(solrConfig);
