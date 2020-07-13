@@ -307,7 +307,8 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
       }
     }
   }
-  
+
+  @Ignore // nocommit flakey
   public void testRandom() throws Exception {
 
     // since the "cost" of verifying the stats for each bucket is so high (see TODO in verifySKGResults())
@@ -317,10 +318,10 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
     // we get a really big one early on, we can test as much as possible, skip other iterations.
     //
     // (deeply nested facets may contain more buckets then the max, but we won't *check* all of them)
-    final int maxBucketsAllowed = atLeast(TEST_NIGHTLY ? 2000 : 100);
+    final int maxBucketsAllowed = atLeast(TEST_NIGHTLY ? 2000 : 200);
     final AtomicInteger maxBucketsToCheck = new AtomicInteger(maxBucketsAllowed);
     
-    final int numIters = atLeast(TEST_NIGHTLY ? 9 : 2) + 1;
+    final int numIters = atLeast(TEST_NIGHTLY ? 9 : 4) + 1;
     for (int iter = 0; iter < numIters && 0 < maxBucketsToCheck.get(); iter++) {
       assertFacetSKGsAreCorrect(maxBucketsToCheck, TermFacet.buildRandomFacets(),
                                 buildRandomQuery(), buildRandomQuery(), buildRandomQuery());
