@@ -108,7 +108,7 @@ public class PackageListeners {
     PackageLoader.Package.Version getPackageVersion();
     class Ctx {
       private Map<String, Runnable > runLater;
-      public void runLater(String name,  Runnable runnable  ){
+      public void runLater(String name,  Runnable runnable  ) {
         if(runLater == null) runLater = new LinkedHashMap<>();
         runLater.put(name, runnable);
       }
