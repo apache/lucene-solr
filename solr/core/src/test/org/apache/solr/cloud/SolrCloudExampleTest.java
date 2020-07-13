@@ -46,6 +46,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrCLI;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,6 +78,7 @@ public class SolrCloudExampleTest extends SolrCloudBridgeTestCase {
 
   @Test
   // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 04-May-2018
+  @Ignore // nocommit flakey
   public void testLoadDocsIntoGettingStartedCollection() throws Exception {
 
     log.info("testLoadDocsIntoGettingStartedCollection initialized OK ... running test logic");
