@@ -924,7 +924,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
 
   @SuppressWarnings({"unchecked"})
   static <T> List<T> asList(Object list) {
-    return list != null ? (List<T>)list : Collections.EMPTY_LIST;
+    return list != null ? (List<T>)list : Collections.emptyList();
   }
 
   @SuppressWarnings({"rawtypes", "unchecked"})

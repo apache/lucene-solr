@@ -196,7 +196,7 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
                  "OK", response._getStr("status", null));
     
     assertEquals("threads encountered failures (see logs for when)",
-                 Collections.EMPTY_LIST, threadFailures);
+                 Collections.emptyList(), threadFailures);
 
     response = slaveClient.query(new SolrQuery().setQuery("*:*").setRows(0));
     assertEquals("docs in slave", docsInMaster, response.getResults().getNumFound());

@@ -621,7 +621,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     rsp.add(STATUS, OK_STATUS);
   }
 
-  @SuppressWarnings("unchecked")
   private void getFileList(SolrParams solrParams, SolrQueryResponse rsp) {
     final IndexDeletionPolicyWrapper delPol = core.getDeletionPolicy();
     final long gen = Long.parseLong(solrParams.required().get(GENERATION));
@@ -631,7 +630,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       if (gen == -1) {
         commit = delPol.getAndSaveLatestCommit();
         if (null == commit) {
-          rsp.add(CMD_GET_FILE_LIST, Collections.EMPTY_LIST);
+          rsp.add(CMD_GET_FILE_LIST, Collections.emptyList());
           return;
         }
       } else {
