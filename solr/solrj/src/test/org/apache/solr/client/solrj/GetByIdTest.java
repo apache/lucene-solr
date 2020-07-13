@@ -25,8 +25,10 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore // nocommit flakey leaks
 public class GetByIdTest extends EmbeddedSolrServerTestBase {
 
   @BeforeClass
