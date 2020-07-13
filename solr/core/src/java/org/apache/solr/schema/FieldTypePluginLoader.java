@@ -36,7 +36,6 @@ import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrClassLoader;
 import org.apache.solr.core.SolrConfig;
-import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.DOMUtil;
 import org.apache.solr.util.plugin.AbstractPluginLoader;
 import org.slf4j.Logger;
