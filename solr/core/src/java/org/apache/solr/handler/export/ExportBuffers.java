@@ -30,10 +30,12 @@ import java.util.concurrent.atomic.LongAdder;
 import com.codahale.metrics.Timer;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Sort;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.handler.export.ExportWriter.MergeIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,7 +70,7 @@ class ExportBuffers {
 
   ExportBuffers(ExportWriter exportWriter, List<LeafReaderContext> leaves, SolrIndexSearcher searcher,
                 OutputStream os, IteratorWriter.ItemWriter rawWriter, Sort sort, int queueSize, int totalHits,
-                Timer writeOutputBufferTimer, Timer fillerWaitTimer, Timer writerWaitTimer) throws IOException {
+                Timer writeOutputBufferTimer, Timer fillerWaitTimer, Timer writerWaitTimer, FixedBitSet[] sets) throws IOException {
     this.exportWriter = exportWriter;
     this.leaves = leaves;
     this.os = os;
@@ -84,25 +86,24 @@ class ExportBuffers {
     this.writeOutputBufferTimer = writeOutputBufferTimer;
     this.fillerWaitTimer = fillerWaitTimer;
     this.writerWaitTimer = writerWaitTimer;
-    this.bufferOne = new Buffer(queueSize);
-    this.bufferTwo = new Buffer(queueSize);
+    this.bufferOne = new Buffer(30000);
+    this.bufferTwo = new Buffer(30000);
     this.totalHits = totalHits;
     fillBuffer = bufferOne;
     outputBuffer = bufferTwo;
     SortDoc writerSortDoc = exportWriter.getSortDoc(searcher, sort.getSort());
+    MergeIterator mergeIterator = exportWriter.getMergeIterator(leaves, sets, writerSortDoc);
     bufferOne.initialize(writerSortDoc);
     bufferTwo.initialize(writerSortDoc);
     barrier = new CyclicBarrier(2, () -> swapBuffers());
     filler = () -> {
       try {
         // log.debug("--- filler start {}", Thread.currentThread());
-        SortDoc[] outDocs = new SortDoc[30000];
-        SortDoc sortDoc = exportWriter.getSortDoc(searcher, sort.getSort());
         Buffer buffer = getFillBuffer();
         long lastOutputCounter = 0;
         for (int count = 0; count < totalHits; ) {
           // log.debug("--- filler fillOutDocs in {}", fillBuffer);
-          exportWriter.fillOutDocs(leaves, sortDoc, outDocs, buffer);
+          exportWriter.fillOutDocs(mergeIterator, buffer);
           count += (buffer.outDocsIndex + 1);
           // log.debug("--- filler count={}, exchange buffer from {}", count, buffer);
           Timer.Context timerContext = getFillerWaitTimer().time();
@@ -255,10 +256,12 @@ class ExportBuffers {
     }
 
     public void initialize(SortDoc proto) {
+
       outDocsIndex = EMPTY;
       for (int i = 0; i < outDocs.length; i++) {
         outDocs[i] = proto.copy();
       }
+
     }
 
     @Override
