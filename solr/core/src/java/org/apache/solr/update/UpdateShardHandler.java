@@ -36,6 +36,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricManager;
@@ -80,6 +81,7 @@ public class UpdateShardHandler implements SolrInfoBean {
   private int connectionTimeout = HttpClientUtil.DEFAULT_CONNECT_TIMEOUT;
 
   public UpdateShardHandler(UpdateShardHandlerConfig cfg) {
+    ObjectReleaseTracker.track(this);
     updateOnlyConnectionManager = new InstrumentedPoolingHttpClientConnectionManager(HttpClientUtil.getSocketFactoryRegistryProvider().getSocketFactoryRegistry());
     defaultConnectionManager = new InstrumentedPoolingHttpClientConnectionManager(HttpClientUtil.getSocketFactoryRegistryProvider().getSocketFactoryRegistry());
     ModifiableSolrParams clientParams = new ModifiableSolrParams();
@@ -212,15 +214,17 @@ public class UpdateShardHandler implements SolrInfoBean {
   }
 
   public void close() {
-    recoveryExecutor.shutdown();
+    if (recoveryExecutor != null) {
+      recoveryExecutor.shutdown();
+    }
 
-    try (ParWork closer = new ParWork(this)) {
-      closer.collect(recoveryExecutor);
-      closer.collect(updateOnlyClient);
+    try (ParWork closer = new ParWork(this, true)) {
       closer.collect(() -> {
         HttpClientUtil.close(defaultClient);
         return defaultClient;
       });
+      closer.collect(recoveryExecutor);
+      closer.collect(updateOnlyClient);
       closer.collect(defaultConnectionManager);
       closer.collect(() -> {
         SolrInfoBean.super.close();
@@ -228,6 +232,7 @@ public class UpdateShardHandler implements SolrInfoBean {
       });
       closer.addCollect("updateshardhandler");
     }
+    ObjectReleaseTracker.release(this);
   }
 
   @VisibleForTesting

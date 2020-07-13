@@ -14,17 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.embedded;
+package org.apache.solr.common.util;
 
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ThreadFactory;
 
-import org.apache.solr.common.ParWork;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

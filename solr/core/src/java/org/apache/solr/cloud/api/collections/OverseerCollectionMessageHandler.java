@@ -837,7 +837,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   }
 
   private NamedList<Object> waitForCoreAdminAsyncCallToComplete(String nodeName, String requestId) {
-    ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
+    ShardHandler shardHandler = shardHandlerFactory.getShardHandler(overseer.getCoreContainer().getUpdateShardHandler().getUpdateOnlyHttpClient());
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(CoreAdminParams.ACTION, CoreAdminAction.REQUESTSTATUS.toString());
     params.set(CoreAdminParams.REQUESTID, requestId);

@@ -249,7 +249,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
     }
     
     if (rb.isDistrib) {
-      shardHandler = shardHandlerFactory.getShardHandler();
+      shardHandler = ((HttpShardHandlerFactory)shardHandlerFactory).getShardHandler(req.getCore().getCoreContainer().getUpdateShardHandler().getUpdateOnlyHttpClient());
       shardHandler.prepDistributed(rb);
       if (!rb.isDistrib) {
         shardHandler = null; // request is not distributed after all and so the shard handler is not needed

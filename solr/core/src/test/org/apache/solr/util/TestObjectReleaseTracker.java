@@ -29,12 +29,13 @@ public class TestObjectReleaseTracker extends SolrTestCaseJ4 {
   public void testObjectReleaseTracker() {
     ObjectReleaseTracker.track(new Object());
     ObjectReleaseTracker.release(new Object());
-    assertNotNull(SolrTestCaseJ4.clearObjectTrackerAndCheckEmpty(1));
-    assertNull(SolrTestCaseJ4.clearObjectTrackerAndCheckEmpty(1));
+    assertNotNull(ObjectReleaseTracker.checkEmpty());
+    ObjectReleaseTracker.clear();
     Object obj = new Object();
     ObjectReleaseTracker.track(obj);
     ObjectReleaseTracker.release(obj);
-    assertNull(SolrTestCaseJ4.clearObjectTrackerAndCheckEmpty(1));
+    assertNull(ObjectReleaseTracker.checkEmpty());
+    ObjectReleaseTracker.clear();
     
     Object obj1 = new Object();
     ObjectReleaseTracker.track(obj1);
@@ -46,7 +47,8 @@ public class TestObjectReleaseTracker extends SolrTestCaseJ4 {
     ObjectReleaseTracker.release(obj1);
     ObjectReleaseTracker.release(obj2);
     ObjectReleaseTracker.release(obj3);
-    assertNull(SolrTestCaseJ4.clearObjectTrackerAndCheckEmpty(1));
+    assertNull(ObjectReleaseTracker.checkEmpty());
+    ObjectReleaseTracker.clear();
     
     ObjectReleaseTracker.track(obj1);
     ObjectReleaseTracker.track(obj2);
@@ -55,7 +57,9 @@ public class TestObjectReleaseTracker extends SolrTestCaseJ4 {
     ObjectReleaseTracker.release(obj1);
     ObjectReleaseTracker.release(obj2);
     // ObjectReleaseTracker.release(obj3);
-    assertNotNull(SolrTestCaseJ4.clearObjectTrackerAndCheckEmpty(1));
-    assertNull(SolrTestCaseJ4.clearObjectTrackerAndCheckEmpty(1));
+    assertNotNull(ObjectReleaseTracker.checkEmpty());
+    ObjectReleaseTracker.clear();
+    assertNull(ObjectReleaseTracker.checkEmpty());
+    ObjectReleaseTracker.clear();
   }
 }

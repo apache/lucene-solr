@@ -76,28 +76,6 @@ public class ObjectReleaseTracker {
     return error;
   }
   
-  public static void tryClose() {
-//    Set<Entry<Object,String>> entries = OBJECTS.entrySet();
-//
-//    if (entries.size() > 0) {
-//      for (Entry<Object,String> entry : entries) {
-//        if (entry.getKey() instanceof Closeable) {
-//          try {
-//            ((Closeable)entry.getKey()).close();
-//          } catch (Throwable t) {
-//            log.warn("", t);
-//          }
-//        } else if (entry.getKey() instanceof ExecutorService) {
-//          try {
-//            ExecutorUtil.shutdownAndAwaitTermination((ExecutorService)entry.getKey());
-//          } catch (Throwable t) {
-//            log.error("", t);
-//          }
-//        }
-//      }
-//    }
-  }
-  
   public static class ObjectTrackerException extends RuntimeException {
     public ObjectTrackerException(String msg) {
       super(msg);

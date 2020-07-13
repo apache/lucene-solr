@@ -514,26 +514,6 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
 
     Class<? extends T> clazz = null;
     try {
-      // first try legacy analysis patterns, now replaced by Lucene's Analysis package:
-      final Matcher m = legacyAnalysisPattern.matcher(cname);
-      if (m.matches()) {
-        final String name = m.group(4);
-        log.trace("Trying to load class from analysis SPI using name='{}'", name);
-        try {
-          if (CharFilterFactory.class.isAssignableFrom(expectedType)) {
-            return clazz = CharFilterFactory.lookupClass(name).asSubclass(expectedType);
-          } else if (TokenizerFactory.class.isAssignableFrom(expectedType)) {
-            return clazz = TokenizerFactory.lookupClass(name).asSubclass(expectedType);
-          } else if (TokenFilterFactory.class.isAssignableFrom(expectedType)) {
-            return clazz = TokenFilterFactory.lookupClass(name).asSubclass(expectedType);
-          } else {
-            log.warn("'{}' looks like an analysis factory, but caller requested different class type: {}", cname, expectedType.getName());
-          }
-        } catch (IllegalArgumentException ex) {
-          // ok, we fall back to legacy loading
-        }
-      }
-
       // first try cname == full name
       try {
         return clazz = Class.forName(cname, true, classLoader).asSubclass(expectedType);
@@ -551,7 +531,26 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
             // ignore... assume first exception is best.
           }
         }
-
+        // first try legacy analysis patterns, now replaced by Lucene's Analysis package:
+        final Matcher m = legacyAnalysisPattern.matcher(cname);
+        if (m.matches()) {
+          final String name = m.group(4);
+          log.trace("Trying to load class from analysis SPI using name='{}'", name);
+          try {
+            if (CharFilterFactory.class.isAssignableFrom(expectedType)) {
+              return clazz = CharFilterFactory.lookupClass(name).asSubclass(expectedType);
+            } else if (TokenizerFactory.class.isAssignableFrom(expectedType)) {
+              return clazz = TokenizerFactory.lookupClass(name).asSubclass(expectedType);
+            } else if (TokenFilterFactory.class.isAssignableFrom(expectedType)) {
+              return clazz = TokenFilterFactory.lookupClass(name).asSubclass(expectedType);
+            } else {
+              log.warn("'{}' looks like an analysis factory, but caller requested different class type: {}", cname, expectedType.getName());
+            }
+          } catch (IllegalArgumentException ex) {
+            // ok, we fall back to legacy loading
+            log.info("IllegalArgumentException trying to load analysis class", ex);
+          }
+        }
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, name +" Error loading class '" + cname + "'" + " subpackages=" + Arrays.asList(subpackages), e);
       }
 

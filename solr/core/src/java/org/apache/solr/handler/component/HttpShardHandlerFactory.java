@@ -75,6 +75,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.security.HttpClientBuilderPlugin;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.util.plugin.SolrCoreAware;
 import org.apache.solr.util.stats.InstrumentedHttpListenerFactory;
 import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
@@ -82,7 +83,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.util.stats.InstrumentedHttpListenerFactory.KNOWN_METRIC_NAME_STRATEGIES;
 
-public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.apache.solr.util.plugin.PluginInfoInitialized, SolrMetricProducer {
+public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.apache.solr.util.plugin.PluginInfoInitialized, SolrMetricProducer, SolrCoreAware {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String DEFAULT_SCHEME = "http";
 
@@ -459,6 +460,11 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
 //    commExecutor = MetricUtils.instrumentedExecutorService(commExecutor, null,
 //        solrMetricsContext.getMetricRegistry(),
 //        SolrMetricManager.mkName("httpShardExecutor", expandedScope, "threadPool"));
+  }
+
+  @Override
+  public void inform(SolrCore core) {
+    this.defaultClient = core.getCoreContainer().getUpdateShardHandler().getUpdateOnlyHttpClient();
   }
 
   /**

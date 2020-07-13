@@ -67,10 +67,6 @@ import java.util.stream.Collectors;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
 import com.carrotsearch.randomizedtesting.RandomizedTest;
-import com.carrotsearch.randomizedtesting.TraceFormatting;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.http.client.HttpClient;
@@ -78,15 +74,10 @@ import org.apache.logging.log4j.Level;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.util.Constants;
-import org.apache.lucene.util.LuceneTestCase.SuppressFileSystems;
-import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
-import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.embedded.SolrQueuedThreadPool;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
@@ -113,6 +104,7 @@ import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.SolrQueuedThreadPool;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.XML;
@@ -137,22 +129,15 @@ import org.apache.solr.update.processor.DistributedZkUpdateProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.LogLevel;
-import org.apache.solr.util.RandomizeSSL;
-import org.apache.solr.util.RandomizeSSL.SSLRandomizer;
 import org.apache.solr.util.RefCounted;
-import org.apache.solr.util.SSLTestConfig;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.TestHarness;
 import org.apache.solr.util.TestInjection;
 import org.apache.zookeeper.KeeperException;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
 import org.noggit.CharArr;
 import org.noggit.JSONUtil;
 import org.noggit.ObjectBuilder;
@@ -292,10 +277,9 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
       if (suiteFailureMarker.wasSuccessful()) {
         // if the tests passed, make sure everything was closed / released
-        String orr = clearObjectTrackerAndCheckEmpty(0, false);
+        String orr = ObjectReleaseTracker.checkEmpty();
+        ObjectReleaseTracker.clear();
         assertNull(orr, orr);
-      } else {
-        ObjectReleaseTracker.tryClose();
       }
       resetFactory();
       coreName = DEFAULT_TEST_CORENAME;
@@ -355,51 +339,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     } catch (ReflectiveOperationException e) {
       fail("ByteBuddy and Mockito are not available on classpath: " + e.toString());
     }
-  }
-  
-  /**
-   * @return null if ok else error message
-   */
-  public static String clearObjectTrackerAndCheckEmpty(int waitSeconds) {
-    return clearObjectTrackerAndCheckEmpty(waitSeconds, false);
-  }
-  
-  /**
-   * @return null if ok else error message
-   */
-  public static String clearObjectTrackerAndCheckEmpty(int waitSeconds, boolean tryClose) {
-    int retries = 0;
-    String result;
-    do {
-      result = ObjectReleaseTracker.checkEmpty();
-      if (result == null)
-        break;
-      try {
-        if (retries % 10 == 0) {
-          log.info("Waiting for all tracked resources to be released");
-          if (retries > 10) {
-            TraceFormatting tf = new TraceFormatting(DEFAULT_STACK_FILTERS);
-            Map<Thread,StackTraceElement[]> stacksMap = Thread.getAllStackTraces();
-            Set<Entry<Thread,StackTraceElement[]>> entries = stacksMap.entrySet();
-            for (Entry<Thread,StackTraceElement[]> entry : entries) {
-              String stack = tf.formatStackTrace(entry.getValue());
-              System.err.println(entry.getKey().getName() + ":\n" + stack);
-            }
-          }
-        }
-        if (waitSeconds > 0) {
-          TimeUnit.SECONDS.sleep(1);
-        }
-      } catch (InterruptedException e) { break; }
-    }
-    while (retries++ < waitSeconds);
-    
-    
-    log.info("------------------------------------------------------- Done waiting for tracked resources to be released");
-    
-    ObjectReleaseTracker.clear();
-    
-    return result;
   }
 
   @SuppressForbidden(reason = "Using the Level class from log4j2 directly")

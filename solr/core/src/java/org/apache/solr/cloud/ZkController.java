@@ -119,6 +119,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrCoreInitializationException;
 import org.apache.solr.handler.admin.ConfigSetsHandlerApi;
 import org.apache.solr.handler.component.HttpShardHandler;
+import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.servlet.SolrDispatchFilter;
@@ -455,7 +456,7 @@ public class ZkController implements Closeable {
                       ParWork.close(overseerElector.getContext());
                     }
                     LeaderElector overseerElector = new LeaderElector(zkClient, new ContextKey("overseer", "overseer"), overseerContexts);
-                    ZkController.this.overseer = new Overseer((HttpShardHandler) cc.getShardHandlerFactory().getShardHandler(), cc.getUpdateShardHandler(),
+                    ZkController.this.overseer = new Overseer((HttpShardHandler) ((HttpShardHandlerFactory)cc.getShardHandlerFactory()).getShardHandler(cc.getUpdateShardHandler().getUpdateOnlyHttpClient()), cc.getUpdateShardHandler(),
                             CommonParams.CORES_HANDLER_PATH, zkStateReader,  ZkController.this, cloudConfig);
                     overseerElector.setup(context);
                     overseerElector.joinElection(context, true);
@@ -1033,7 +1034,7 @@ public class ZkController implements Closeable {
       // start the overseer first as following code may need it's processing
       if (!zkRunOnly) {
         LeaderElector overseerElector = new LeaderElector(zkClient, new ContextKey("overseer", "overseer"), electionContexts);
-        this.overseer = new Overseer((HttpShardHandler) cc.getShardHandlerFactory().getShardHandler(), cc.getUpdateShardHandler(),
+        this.overseer = new Overseer((HttpShardHandler) ((HttpShardHandlerFactory)cc.getShardHandlerFactory()).getShardHandler(cc.getUpdateShardHandler().getUpdateOnlyHttpClient()), cc.getUpdateShardHandler(),
             CommonParams.CORES_HANDLER_PATH, zkStateReader, this, cloudConfig);
         ElectionContext context = new OverseerElectionContext(getNodeName(), zkClient, overseer);
         ElectionContext prevContext = electionContexts.put(new ContextKey("overseer", "overser"), context);

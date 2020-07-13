@@ -317,7 +317,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
     // we get a really big one early on, we can test as much as possible, skip other iterations.
     //
     // (deeply nested facets may contain more buckets then the max, but we won't *check* all of them)
-    final int maxBucketsAllowed = atLeast(TEST_NIGHTLY ? 2000 : 30);
+    final int maxBucketsAllowed = atLeast(TEST_NIGHTLY ? 2000 : 100);
     final AtomicInteger maxBucketsToCheck = new AtomicInteger(maxBucketsAllowed);
     
     final int numIters = atLeast(TEST_NIGHTLY ? 9 : 2) + 1;

@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.Semaphore;
@@ -59,6 +60,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.client.solrj.util.Constants;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.params.CommonParams;
@@ -72,6 +74,7 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.SolrQueuedThreadPool;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.ProtocolHandlers;
@@ -138,6 +141,7 @@ public class Http2SolrClient extends SolrClient {
    */
   private String serverBaseUrl;
   private boolean closeClient;
+  private SolrQueuedThreadPool httpClientExecutor;
 
   protected Http2SolrClient(String serverBaseUrl, Builder builder) {
     if (serverBaseUrl != null)  {
@@ -187,9 +191,10 @@ public class Http2SolrClient extends SolrClient {
     HttpClient httpClient;
 
     BlockingArrayQueue<Runnable> queue = new BlockingArrayQueue<>(256, 256);
-    ThreadPoolExecutor httpClientExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(Integer.getInteger("solr.http2solrclient.corepool.size", 4),
-            Integer.getInteger("solr.http2solrclient.maxpool.size", 10), Integer.getInteger("solr.http2solrclient.pool.keepalive", 10000),
-            TimeUnit.MILLISECONDS, queue, new SolrNamedThreadFactory("h2sc"));
+//    httpClientExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(Integer.getInteger("solr.http2solrclient.corepool.size", 2),
+//            Integer.getInteger("solr.http2solrclient.maxpool.size", 10), Integer.getInteger("solr.http2solrclient.pool.keepalive", 3000),
+//            TimeUnit.MILLISECONDS, queue, new SolrNamedThreadFactory("h2sc"));
+    httpClientExecutor = new SolrQueuedThreadPool("httpClient", false);
 
     SslContextFactory.Client sslContextFactory;
     boolean ssl;
@@ -239,15 +244,29 @@ public class Http2SolrClient extends SolrClient {
   public void close() {
     // we wait for async requests, so far devs don't want to give sugar for this
     asyncTracker.waitForComplete();
-    if (closeClient) {
-      try {
-        ExecutorService executor = (ExecutorService) httpClient.getExecutor();
-        httpClient.setStopTimeout(1000);
-        httpClient.stop();
-        ExecutorUtil.shutdownAndAwaitTermination(executor);
-      } catch (Exception e) {
-        throw new RuntimeException("Exception on closing client", e);
+    try (ParWork closer = new ParWork(this, true)) {
+
+      if (closeClient) {
+        closer.collect(() -> {
+            try {
+              httpClient.setStopTimeout(10);
+              httpClient.stop();
+            } catch (InterruptedException e) {
+              ParWork.propegateInterrupt(e);
+            } catch (Exception e) {
+              ParWork.propegateInterrupt(e);
+            }
+        });
       }
+      closer.addCollect("http2SolrClientClose");
+      closer.collect(() -> {
+        try {
+          httpClientExecutor.stop();
+        } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
+        }
+      });
+      closer.addCollect("http2SolrClientExecClose");
     }
 
     assert ObjectReleaseTracker.release(this);

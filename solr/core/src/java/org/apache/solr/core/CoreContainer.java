@@ -1126,9 +1126,9 @@ public class CoreContainer implements Closeable {
       closer.add("loader", loader);
 
 
-    } finally {
-      assert ObjectReleaseTracker.release(this);
     }
+
+    assert ObjectReleaseTracker.release(this);
   }
 
   public void shutdown() {
@@ -1589,7 +1589,12 @@ public class CoreContainer implements Closeable {
 
       // The underlying core properties files may have changed, we don't really know. So we have a (perhaps) stale
       // CoreDescriptor and we need to reload it from the disk files
-      CoreDescriptor cd = reloadCoreDescriptor(core.getCoreDescriptor());
+      CoreDescriptor cd;
+      if (core.getDirectoryFactory().isPersistent()) {
+         cd = reloadCoreDescriptor(core.getCoreDescriptor());
+      }  else {
+         cd = core.getCoreDescriptor();
+      }
       solrCores.addCoreDescriptor(cd);
       Closeable oldCore = null;
       boolean success = false;

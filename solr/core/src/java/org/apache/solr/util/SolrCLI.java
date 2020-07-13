@@ -677,10 +677,10 @@ public class SolrCLI implements CLIO {
         }
         if (--attempts > 0 && checkCommunicationError(exc)) {
           if (!isFirstAttempt) // only show the log warning after the second attempt fails
-            log.warn("Request to {} failed due to: {}, sleeping for 250 ms before re-trying the request ..."
+            log.warn("Request to {} failed due to: {}, sleeping for 10 ms before re-trying the request ..."
                 , getUrl, exc.getMessage());
           try {
-            Thread.sleep(250);
+            Thread.sleep(10);
           } catch (InterruptedException ie) { Thread.interrupted(); }
 
           // retry using recursion with one-less attempt available
