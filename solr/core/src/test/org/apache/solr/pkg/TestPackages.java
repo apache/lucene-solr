@@ -60,7 +60,6 @@ import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.plugin.SolrCoreAware;
-import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.Stat;
 import org.junit.After;
 import org.junit.Before;

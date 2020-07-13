@@ -18,7 +18,6 @@ package org.apache.solr.core;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.function.Function;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.lucene50.Lucene50StoredFieldsFormat;
