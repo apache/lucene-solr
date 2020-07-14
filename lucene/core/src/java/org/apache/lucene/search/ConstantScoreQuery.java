@@ -31,11 +31,17 @@ import org.apache.lucene.util.Bits;
  */
 public final class ConstantScoreQuery extends Query {
   private final Query query;
+  private final boolean explainable;
 
   /** Strips off scores from the passed in Query. The hits will get a constant score
    * of 1. */
   public ConstantScoreQuery(Query query) {
+    this(query, false);
+  }
+
+  public ConstantScoreQuery(Query query, boolean explainable) {
     this.query = Objects.requireNonNull(query, "Query must not be null");
+    this.explainable = explainable;
   }
 
   /** Returns the encapsulated query. */
@@ -43,12 +49,16 @@ public final class ConstantScoreQuery extends Query {
     return query;
   }
 
+  public boolean isExplainable() {
+    return explainable;
+  }
+
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
     Query rewritten = query.rewrite(reader);
 
     if (rewritten != query) {
-      return new ConstantScoreQuery(rewritten);
+      return new ConstantScoreQuery(rewritten, explainable);
     }
 
     if (rewritten.getClass() == ConstantScoreQuery.class) {
@@ -56,7 +66,7 @@ public final class ConstantScoreQuery extends Query {
     }
 
     if (rewritten.getClass() == BoostQuery.class) {
-      return new ConstantScoreQuery(((BoostQuery) rewritten).getQuery());
+      return new ConstantScoreQuery(((BoostQuery) rewritten).getQuery(), explainable);
     }
 
     return super.rewrite(reader);
@@ -169,6 +179,15 @@ public final class ConstantScoreQuery extends Query {
           return innerWeight.isCacheable(ctx);
         }
 
+        @Override
+        public Explanation explain(LeafReaderContext context, int doc) throws IOException {
+          if (explainable) {
+            String description = getQuery().toString() + (score() == 1f ? "" : "^" + score());
+            Explanation explanation = getQuery().createWeight(searcher, scoreMode, boost).explain(context, doc);
+            return Explanation.match(score(), description, explanation);
+          }
+          return super.explain(context, doc);
+        }
       };
     } else {
       return innerWeight;
