@@ -83,6 +83,10 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
     if (threadName.contains("-SendThread")) {
       return true;
     }
+    if (threadName.startsWith("ConnnectionExpirer")) {
+      return true;
+    }
+
 
 
 

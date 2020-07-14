@@ -58,6 +58,10 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.RejectedExecutionHandler;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
@@ -89,6 +93,7 @@ import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.IpTables;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -232,11 +237,41 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     initClassLogLevels();
     resetExceptionIgnores();
     
-    testExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(0, Integer.MAX_VALUE,
-        5L, TimeUnit.SECONDS,
-        new SynchronousQueue<>(),
-        new SolrNamedThreadFactory("testExecutor"),
-        true);
+    testExecutor = new ThreadPoolExecutor(0, Math.max(1, Runtime.getRuntime().availableProcessors()),
+            3000, TimeUnit.SECONDS,
+            new ArrayBlockingQueue<>(30), // size?
+            new ThreadFactory() {
+              AtomicInteger threadNumber = new AtomicInteger(1);
+              ThreadGroup group;
+
+              {
+                SecurityManager s = System.getSecurityManager();
+                group = (s != null) ? s.getThreadGroup() : Thread.currentThread().getThreadGroup();
+              }
+
+              @Override
+              public Thread newThread(Runnable r) {
+                Thread t = new Thread(group, r, "testExecutor" + threadNumber.getAndIncrement(), 0);
+                t.setDaemon(false);
+                return t;
+              }
+            }, new RejectedExecutionHandler() {
+
+      @Override
+      public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
+        log.warn("Task was rejected, running in caller thread");
+        if (executor.isShutdown() || executor.isTerminated() || executor.isTerminating()) {
+          throw new AlreadyClosedException();
+        }
+//          try {
+//            Thread.sleep(1000);
+//          } catch (InterruptedException e) {
+//            Thread.currentThread().interrupt();
+//          }
+//          executor.execute(r);
+        r.run();
+      }
+    });
 
     // set solr.install.dir needed by some test configs outside of the test sandbox (!)
     System.setProperty("solr.install.dir", ExternalPaths.SOURCE_HOME);

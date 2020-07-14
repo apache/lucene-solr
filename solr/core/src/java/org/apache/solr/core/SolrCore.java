@@ -403,8 +403,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       }
       lastNewIndexDir = result;
       return result;
-    } catch (IOException e) {
-      SolrException.log(log, "getNewIndexDir", e);
+    } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       // See SOLR-11687. It is inadvisable to assume we can do the right thing for any but a small
       // number of exceptions that ware caught and swallowed in getIndexProperty.
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error in getNewIndexDir, exception: ", e);
@@ -414,6 +414,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
           getDirectoryFactory().release(dir);
         } catch (Exception e) {
           ParWork.propegateInterrupt( "Error releasing directory", e);
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Error releasing directory: ", e);
         }
       }
     }

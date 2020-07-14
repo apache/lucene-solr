@@ -84,7 +84,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   volatile CountDownLatch lock = null; // used to block everything
   final int threadCount;
   boolean shutdownExecutor = false;
-  int pollQueueTime = 250;
+  int pollQueueTime = 5;
   int stallTime;
   private final boolean streamDeletes;
   private boolean internalHttpClient;

@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.http.HttpEntity;
@@ -59,7 +60,7 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
     Map caches = (Map) editable_prop_map.get("query");
 
     setupRestTestHarnesses();
-    List<Thread> threads = new ArrayList<>(caches.size());
+    List<Callable<Object>> threads = new ArrayList<>(caches.size());
     final List<List> collectErrors = new ArrayList<>();
 
     for (Object o : caches.entrySet()) {
@@ -68,25 +69,33 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
         List<String> errs = new ArrayList<>();
         collectErrors.add(errs);
         Map value = (Map) e.getValue();
-        Thread t = new Thread(() -> {
-          try {
-            invokeBulkCall((String)e.getKey() , errs, value);
-          } catch (Exception e1) {
-            e1.printStackTrace();
+        Callable t = new Callable() {
+          @Override
+          public Object call() {
+            try {
+              invokeBulkCall((String) e.getKey(), errs, value);
+            } catch (Exception e1) {
+              e1.printStackTrace();
+            }
+            return null;
           }
-        });
+        };
         threads.add(t);
-        t.start();
+        if (!TEST_NIGHTLY) {
+          if (threads.size() > 10) {
+            break;
+          }
+        }
       }
     }
 
 
-    for (Thread thread : threads) thread.join();
+    testExecutor.invokeAll(threads);
 
     boolean success = true;
 
     for (List e : collectErrors) {
-      if(!e.isEmpty()){
+      if (!e.isEmpty()) {
         success = false;
         log.error("{}", e);
       }
