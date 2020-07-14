@@ -20,7 +20,9 @@ package org.apache.solr;
 import java.lang.invoke.MethodHandles;
 import java.io.File;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
@@ -50,7 +52,14 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
  * Other changes that should affect every Solr test case may go here if they don't require the added capabilities in
  * SolrTestCaseJ4.
  */
-@ThreadLeakFilters(defaultFilters = true, filters = { SolrIgnoredThreadsFilter.class })
+
+  // ThreadLeakFilters are not additive. Any subclass that requires filters
+  // other than these must redefine these as well.
+@ThreadLeakFilters(defaultFilters = true, filters = {
+        SolrIgnoredThreadsFilter.class,
+        QuickPatchThreadsFilter.class
+})
+@ThreadLeakLingering(linger = 10000)
 public class SolrTestCase extends LuceneTestCase {
 
   /**
