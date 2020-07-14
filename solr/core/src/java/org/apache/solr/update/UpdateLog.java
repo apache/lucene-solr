@@ -51,6 +51,7 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.lucene.util.BytesRef;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrDocumentBase;
 import org.apache.solr.common.SolrException;
@@ -100,6 +101,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   public static String LOG_FILENAME_PATTERN = "%s.%019d";
   public static String TLOG_NAME="tlog";
   public static String BUFFER_TLOG_NAME="buffer.tlog";
+
+  private volatile boolean isClosed = false;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private boolean debug = log.isDebugEnabled();
@@ -485,6 +488,9 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
    * change the implementation of the transaction log.
    */
   public TransactionLog newTransactionLog(File tlogFile, Collection<String> globalStrings, boolean openExisting, byte[] buffer) {
+    if (isClosed) {
+      throw new AlreadyClosedException();
+    }
     return new TransactionLog(tlogFile, globalStrings, openExisting);
   }
 
@@ -1380,6 +1386,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   }
 
   public void close(boolean committed, boolean deleteOnClose) {
+    this.isClosed = true;
     recoveryExecutor.shutdown(); // no new tasks
 
     synchronized (this) {
