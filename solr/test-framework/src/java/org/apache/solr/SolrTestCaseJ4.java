@@ -310,17 +310,9 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
       resetExceptionIgnores();
 
-      if (suiteFailureMarker.wasSuccessful()) {
-        // if the tests passed, make sure everything was closed / released
-        String orr = ObjectReleaseTracker.checkEmpty();
-        ObjectReleaseTracker.clear();
-        assertNull(orr, orr);
-      }
       resetFactory();
       coreName = DEFAULT_TEST_CORENAME;
     } finally {
-      ObjectReleaseTracker.clear();
-      TestInjection.reset();
       initCoreDataDir = null;
       System.clearProperty("solr.v2RealPath");
       System.clearProperty("zookeeper.forceSync");

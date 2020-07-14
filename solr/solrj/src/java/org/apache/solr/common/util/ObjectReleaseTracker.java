@@ -35,10 +35,10 @@ import org.slf4j.LoggerFactory;
 
 public class ObjectReleaseTracker {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  public static Map<Object,String> OBJECTS = new ConcurrentHashMap<>();
+  public static Map<Object,String> OBJECTS = new ConcurrentHashMap<>(128, 0.75f, 2048);
   
   public static boolean track(Object object) {
-    StringBuilderWriter sw = new StringBuilderWriter(1000);
+    StringBuilderWriter sw = new StringBuilderWriter(4096);
     PrintWriter pw = new PrintWriter(sw);
     new ObjectTrackerException(object.getClass().getName()).printStackTrace(pw);
     OBJECTS.put(object, sw.toString());
@@ -62,7 +62,7 @@ public class ObjectReleaseTracker {
     Set<Entry<Object,String>> entries = OBJECTS.entrySet();
 
     if (entries.size() > 0) {
-      List<String> objects = new ArrayList<>();
+      List<String> objects = new ArrayList<>(entries.size());
       for (Entry<Object,String> entry : entries) {
         objects.add(entry.getKey().getClass().getSimpleName());
       }

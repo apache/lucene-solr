@@ -34,6 +34,7 @@ import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.cloud.autoscaling.ScheduledTriggers;
 import org.apache.solr.common.TimeTracker;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.RandomizeSSL;
@@ -318,7 +319,16 @@ public class SolrTestCase extends LuceneTestCase {
   
   @AfterClass
   public static void afterSolrTestCase() throws Exception {
-
+    try {
+    if (suiteFailureMarker.wasSuccessful()) {
+      // if the tests passed, make sure everything was closed / released
+      String orr = ObjectReleaseTracker.checkEmpty();
+      ObjectReleaseTracker.clear();
+      assertNull(orr, orr);
+    }} finally {
+      ObjectReleaseTracker.OBJECTS.clear();
+      TestInjection.reset();
+    }
     try {
       HttpClientUtil.resetHttpClientBuilder();
       Http2SolrClient.resetSslContextFactory();
