@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.cloud.Replica;
@@ -106,16 +107,20 @@ public class ReplicaListTransformerTest extends SolrTestCase {
 
     final String regex = ".*" + random().nextInt(10) + ".*";
 
-    ReplicaListTransformer transformer = null;
+    AtomicReference<ReplicaListTransformer> transformer = new AtomicReference<>();
     try {
       if (random().nextBoolean()) {
         log.info("Using ToyMatching Transfomer");
-        transformer = new ToyMatchingReplicaListTransformer(regex);
+        transformer.set(new ToyMatchingReplicaListTransformer(regex));
 
       } else {
         log.info("Using conditional Transfomer");
-        transformer = new HttpShardHandlerFactory() {
-
+        try (HttpShardHandlerFactory hsh = new HttpShardHandlerFactory() {
+          {
+            transformer.set(getReplicaListTransformer(
+                    new LocalSolrQueryRequest(null,
+                            new ModifiableSolrParams().add("toyRegEx", regex))));
+          }
           @Override
           protected ReplicaListTransformer getReplicaListTransformer(final SolrQueryRequest req) {
             final SolrParams params = req.getParams();
@@ -132,9 +137,10 @@ public class ReplicaListTransformerTest extends SolrTestCase {
             return super.getReplicaListTransformer(req);
           }
 
-        }.getReplicaListTransformer(
-                new LocalSolrQueryRequest(null,
-                        new ModifiableSolrParams().add("toyRegEx", regex)));
+        };) {
+
+        }
+
       }
 
       final List<Replica> inputs = new ArrayList<>();
@@ -167,12 +173,12 @@ public class ReplicaListTransformerTest extends SolrTestCase {
       }
 
       final List<Replica> actualTransformed = new ArrayList<>(inputs);
-      transformer.transform(actualTransformed);
+      transformer.get().transform(actualTransformed);
 
       assertEquals(expectedTransformed, actualTransformed);
     } finally {
       if (transformer != null) {
-        transformer.close();
+        transformer.get().close();
       }
     }
   }
