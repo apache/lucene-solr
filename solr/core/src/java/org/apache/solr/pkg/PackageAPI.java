@@ -17,6 +17,16 @@
 
 package org.apache.solr.pkg;
 
+import java.io.IOException;
+import java.io.StringWriter;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
@@ -41,11 +51,6 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.io.StringWriter;
-import java.lang.invoke.MethodHandles;
-import java.util.*;
 
 import static org.apache.solr.common.cloud.ZkStateReader.SOLR_PKGS_PATH;
 import static org.apache.solr.security.PermissionNameProvider.Name.PACKAGE_EDIT_PERM;

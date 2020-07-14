@@ -207,8 +207,8 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
    *
    */
   @SuppressWarnings("rawtypes")
-  private  void insertPackageInfo(Object o, SolrQueryRequest req) {
-    if(!req.getParams().getBool("meta",false)) return;
+  private void insertPackageInfo(Object o, SolrQueryRequest req) {
+    if (!req.getParams().getBool("meta", false)) return;
     if (o instanceof List) {
       List l = (List) o;
       for (Object o1 : l) {
@@ -225,8 +225,8 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
         String klas = (String) v;
         PluginInfo.ClassName parsedClassName = new PluginInfo.ClassName(klas);
         if (parsedClassName.pkg != null) {
-          MapWriter mw =  req.getCore().getSchemaPluginsLoader().getVersionInfo(klas) ;
-          if(mw != null) nl.add("_packageinfo_", mw);
+          MapWriter mw = req.getCore().getSchemaPluginsLoader().getVersionInfo(klas);
+          if (mw != null) nl.add("_packageinfo_", mw);
         }
       }
 

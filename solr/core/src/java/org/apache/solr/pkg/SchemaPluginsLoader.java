@@ -36,9 +36,9 @@ import java.util.function.Function;
  * if any of those packages are updated
  * */
 public class SchemaPluginsLoader implements SolrClassLoader {
-    final CoreContainer coreContainer;
-    final SolrResourceLoader loader;
-    final Function<String, String> pkgVersionSupplier;
+    private final CoreContainer coreContainer;
+    private final SolrResourceLoader loader;
+    private final Function<String, String> pkgVersionSupplier;
     private Map<String ,PackageAPI.PkgVersion> packageVersions =  new HashMap<>(1);
     private Map<String, String> classNameVsPkg = new HashMap<>(1);
     private final Runnable onReload;

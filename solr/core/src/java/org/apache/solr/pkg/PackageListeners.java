@@ -107,23 +107,24 @@ public class PackageListeners {
 
     PackageLoader.Package.Version getPackageVersion();
     class Ctx {
-      private Map<String, Runnable > runLater;
+      private Map<String, Runnable> runLater;
 
-      /** If there are multiple packages to be updated and there are multiple listeners,
+      /**
+       * If there are multiple packages to be updated and there are multiple listeners,
        * This is executed after all of the {@link Listener#changed(PackageLoader.Package, Ctx)}
        * calls are invoked. The name is a unique identifier that can be used by consumers to avoid duplicate
-       * If no deduplication is required, use null
-       * runnable objects
+       * If no deduplication is required, use null as the name
        */
-      public void runLater(String name,  Runnable runnable  ) {
-        if(runLater == null) runLater = new LinkedHashMap<>();
-        if(name == null) {
+      public void runLater(String name, Runnable runnable) {
+        if (runLater == null) runLater = new LinkedHashMap<>();
+        if (name == null) {
           name = runnable.getClass().getSimpleName() + "@" + runnable.hashCode();
         }
         runLater.put(name, runnable);
       }
-      private void runLaterTasks(){
-        if(runLater == null) return;
+
+      private void runLaterTasks() {
+        if (runLater == null) return;
         new Thread(() -> runLater.forEach((s, runnable) -> {
           try {
             runnable.run();
