@@ -2100,9 +2100,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     boolean success = false;
     openSearcherLock.lock();
     try {
-      if (isClosed() || (getCoreContainer() != null && getCoreContainer().isShutDown())) {
-        throw new AlreadyClosedException();
-      }
+
       String newIndexDir = getNewIndexDir();
       String indexDirFile = null;
       String newIndexDirFile = null;
@@ -2114,7 +2112,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       }
 
       synchronized (searcherLock) {
-        if (isClosed()) { // if we start new searchers after close we won't close them
+        if (isClosed() || (getCoreContainer() != null && getCoreContainer().isShutDown())) { // if we start new searchers after close we won't close them
           throw new SolrCoreState.CoreIsClosedException();
         }
 
