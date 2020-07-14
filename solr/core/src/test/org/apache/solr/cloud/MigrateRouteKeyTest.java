@@ -67,7 +67,6 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
     boolean ruleRemoved = false;
     long expiryTime = finishTime + TimeUnit.NANOSECONDS.convert(60, TimeUnit.SECONDS);
     while (System.nanoTime() < expiryTime) {
-      cluster.getSolrClient().getZkStateReader().forceUpdateCollection(collection);
       state = getCollectionState(collection);
       slice = state.getSlice(shard);
       Map<String,RoutingRule> routingRules = slice.getRoutingRules();

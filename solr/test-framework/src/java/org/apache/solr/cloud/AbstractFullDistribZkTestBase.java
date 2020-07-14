@@ -885,7 +885,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   
   protected void updateMappingsFromZk(List<JettySolrRunner> jettys, List<SolrClient> clients, boolean allowOverSharding) throws Exception {
     ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-    zkStateReader.forceUpdateCollection(DEFAULT_COLLECTION);
+
     cloudJettys.clear();
     shardToJetty.clear();
 
@@ -2141,7 +2141,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     log.info("## Collecting extra Replica.Type information of the cluster");
     zkStateReader.updateLiveNodes();
     StringBuilder builder = new StringBuilder();
-    zkStateReader.forceUpdateCollection(collectionName);
     DocCollection collection = zkStateReader.getClusterState().getCollection(collectionName);
     for(Slice s:collection.getSlices()) {
       Replica leader = s.getLeader();
@@ -2161,7 +2160,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
   protected void waitForReplicationFromReplicas(String collectionName, ZkStateReader zkStateReader, TimeOut timeout) throws KeeperException, InterruptedException, IOException {
     log.info("waitForReplicationFromReplicas: {}", collectionName);
-    zkStateReader.forceUpdateCollection(collectionName);
     DocCollection collection = zkStateReader.getClusterState().getCollection(collectionName);
     Map<String, CoreContainer> containers = new HashMap<>();
     for (JettySolrRunner runner:jettys) {

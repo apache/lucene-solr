@@ -31,6 +31,7 @@ import java.util.function.Supplier;
 
 import com.google.common.collect.ImmutableSet;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.SolrThreadSafe;
 import org.apache.solr.common.cloud.DocCollection;
@@ -50,6 +51,7 @@ import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.servlet.HttpSolrCall;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.servlet.SolrRequestParsers;
+import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -212,9 +214,11 @@ public class V2HttpCall extends HttpSolrCall {
     // ensure our view is up to date before trying again
     try {
       zkStateReader.aliasesManager.update();
-      zkStateReader.forceUpdateCollection(collectionsList.get(0));
     } catch (Exception e) {
-      log.error("Error trying to update state while resolving collection.", e);
+      ParWork.propegateInterrupt("Error trying to update state while resolving collection.", e);
+      if (e instanceof KeeperException.SessionExpiredException) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      }
       //don't propagate exception on purpose
     }
     return logic.get();

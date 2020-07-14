@@ -132,7 +132,6 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
       String nodeKey = jetty.getHost() + ":" + jetty.getLocalPort() + jetty.getBaseUrl().replace("/","_");
       urlMap.put(nodeKey, jettyURL.toString());
     }
-    zkStateReader.forceUpdateCollection(COLLECTION_NAME);
     ClusterState clusterState = zkStateReader.getClusterState();
     for (Slice slice : clusterState.getCollection(COLLECTION_NAME).getSlices()) {
       String shardName = slice.getName();

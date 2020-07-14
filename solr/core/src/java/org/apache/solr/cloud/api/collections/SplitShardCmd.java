@@ -127,7 +127,6 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
     log.debug("Split shard invoked: {}", message);
     ZkStateReader zkStateReader = ocmh.zkStateReader;
-    zkStateReader.forceUpdateCollection(collectionName);
     AtomicReference<String> slice = new AtomicReference<>();
     slice.set(message.getStr(ZkStateReader.SHARD_ID_PROP));
     Set<String> offlineSlices = new HashSet<>();
@@ -680,12 +679,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
                                    List<String> subSlices, Set<String> offlineSlices) {
     log.info("Cleaning up after a failed split of {}/{}", collectionName, parentShard);
     // get the latest state
-    try {
-      zkStateReader.forceUpdateCollection(collectionName);
-    } catch (KeeperException | InterruptedException e) {
-      log.warn("Cleanup failed after failed split of {}/{} : (force update collection)", collectionName, parentShard, e);
-      return;
-    }
+
     ClusterState clusterState = zkStateReader.getClusterState();
     DocCollection coll = clusterState.getCollectionOrNull(collectionName);
 

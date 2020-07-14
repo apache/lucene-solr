@@ -268,7 +268,6 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       // Now try deleting the configset and doing a clusterstatus.
       String parent = ZkConfigManager.CONFIGS_ZKNODE + "/" + configSet;
       deleteThemAll(client.getZkStateReader().getZkClient(), parent);
-      client.getZkStateReader().forciblyRefreshAllClusterStateSlow();
 
       final CollectionAdminRequest.ClusterStatus req = CollectionAdminRequest.getClusterStatus();
       NamedList<Object> rsp = client.request(req);
@@ -923,7 +922,6 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
 
       CollectionAdminRequest.migrateCollectionFormat("testClusterStateMigration").process(client);
 
-      client.getZkStateReader().forceUpdateCollection("testClusterStateMigration");
 
       assertEquals(2, client.getZkStateReader().getClusterState().getCollection("testClusterStateMigration").getStateFormat());
 
@@ -1033,7 +1031,6 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   private Map<String, String> getProps(CloudSolrClient client, String collectionName, String replicaName, String... props)
       throws KeeperException, InterruptedException {
 
-    client.getZkStateReader().forceUpdateCollection(collectionName);
     ClusterState clusterState = client.getZkStateReader().getClusterState();
     final DocCollection docCollection = clusterState.getCollectionOrNull(collectionName);
     if (docCollection == null || docCollection.getReplica(replicaName) == null) {

@@ -69,7 +69,7 @@ public class LeaderElectionContextKeyTest extends SolrCloudTestCase {
   @Test
   public void test() throws KeeperException, InterruptedException, IOException, SolrServerException {
     ZkStateReader stateReader = cluster.getSolrClient().getZkStateReader();
-    stateReader.forceUpdateCollection(TEST_COLLECTION_1);
+
     ClusterState clusterState = stateReader.getClusterState();
     // The test assume that TEST_COLLECTION_1 and TEST_COLLECTION_2 will have identical layout
     // ( same replica's name on every shard )

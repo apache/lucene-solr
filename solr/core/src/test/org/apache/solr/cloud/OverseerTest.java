@@ -701,7 +701,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
       reader.waitForState(COLLECTION, 5000,
             TimeUnit.MILLISECONDS, (liveNodes, collectionState) -> collectionState != null && collectionState.getReplica(core_node) == null);
 
-      reader.forceUpdateCollection(COLLECTION);
       // as of SOLR-5209 core removal does not cascade to remove the slice and collection
       assertTrue(COLLECTION +" should remain after removal of the last core", 
           reader.getClusterState().hasCollection(COLLECTION));
@@ -1059,7 +1058,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
       mockController.publishState(COLLECTION, "core1", "core_node1","shard1", Replica.State.RECOVERING, 1, true, overseers.get(0));
 
-      reader.forceUpdateCollection(COLLECTION);
       ClusterState state = reader.getClusterState();
 
       int numFound = 0;

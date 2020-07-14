@@ -481,7 +481,6 @@ public class TestPullReplica extends SolrCloudTestCase {
     unIgnoreException("No registered leader was found"); // Should have a leader from now on
 
     // Validate that the new nrt replica is the leader now
-    cluster.getSolrClient().getZkStateReader().forceUpdateCollection(collectionName);
     docCollection = getCollectionState(collectionName);
     leader = docCollection.getSlice("shard1").getLeader();
     assertTrue(leader != null && leader.isActive(cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes()));
@@ -575,7 +574,6 @@ public class TestPullReplica extends SolrCloudTestCase {
         if (t.hasTimedOut()) {
           fail("Timed out waiting for collection " + collection + " to be deleted.");
         }
-        cluster.getSolrClient().getZkStateReader().forceUpdateCollection(collection);
       } catch(SolrException e) {
         return;
       }
@@ -584,9 +582,7 @@ public class TestPullReplica extends SolrCloudTestCase {
   }
 
   private DocCollection assertNumberOfReplicas(int numNrtReplicas, int numTlogReplicas, int numPullReplicas, boolean updateCollection, boolean activeOnly) throws KeeperException, InterruptedException {
-    if (updateCollection) {
-      cluster.getSolrClient().getZkStateReader().forceUpdateCollection(collectionName);
-    }
+
     DocCollection docCollection = getCollectionState(collectionName);
     assertNotNull(docCollection);
     assertEquals("Unexpected number of writer replicas: " + docCollection, numNrtReplicas,

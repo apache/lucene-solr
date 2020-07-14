@@ -305,8 +305,6 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
         propMap.put(ZkStateReader.STATE_PROP, "down");
         zkController.getOverseerJobQueue().offer(Utils.toJSON(propMap));
 
-        zkController.getZkStateReader().forciblyRefreshAllClusterStateSlow();
-
         long now = System.nanoTime();
         long timeout = now + TimeUnit.NANOSECONDS.convert(5, TimeUnit.SECONDS);
         zkController.publishAndWaitForDownStates(5);

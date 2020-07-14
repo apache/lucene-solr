@@ -2338,7 +2338,7 @@ public void testParallelRankStream() throws Exception {
     ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
     List<String> strings = zkStateReader.aliasesManager.getAliases().resolveAliases(COLLECTIONORALIAS);
     String collName = strings.size() > 0 ? strings.get(0) : COLLECTIONORALIAS;
-      zkStateReader.forceUpdateCollection(collName);
+
     DocCollection collection = zkStateReader.getClusterState().getCollectionOrNull(collName);
     List<Replica> replicas = collection.getReplicas();
     streamContext.getEntries().put("core",replicas.get(random().nextInt(replicas.size())).getCoreName());

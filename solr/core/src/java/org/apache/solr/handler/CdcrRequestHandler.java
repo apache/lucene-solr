@@ -400,11 +400,6 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
   private void handleCollectionCheckpointAction(SolrQueryRequest req, SolrQueryResponse rsp)
       throws IOException, SolrServerException {
     ZkController zkController = core.getCoreContainer().getZkController();
-    try {
-      zkController.getZkStateReader().forceUpdateCollection(collection);
-    } catch (Exception e) {
-      log.warn("Error when updating cluster state", e);
-    }
     ClusterState cstate = zkController.getClusterState();
     DocCollection docCollection = cstate.getCollectionOrNull(collection);
     Collection<Slice> shards = docCollection == null? null : docCollection.getActiveSlices();

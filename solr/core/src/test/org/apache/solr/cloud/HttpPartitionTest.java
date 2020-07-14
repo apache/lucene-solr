@@ -647,7 +647,6 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     final RTimer timer = new RTimer();
 
     ZkStateReader zkr = cloudClient.getZkStateReader();
-    zkr.forceUpdateCollection(testCollectionName);
     ClusterState cs = zkr.getClusterState();
     boolean allReplicasUp = false;
     long waitMs = 0L;

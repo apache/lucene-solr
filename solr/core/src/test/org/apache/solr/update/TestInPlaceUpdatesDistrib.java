@@ -195,7 +195,6 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
   
   private void mapReplicasToClients() throws KeeperException, InterruptedException {
     ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-    cloudClient.getZkStateReader().forceUpdateCollection(DEFAULT_COLLECTION);
     ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
     Replica leader = null;
     Slice shard1 = clusterState.getCollection(DEFAULT_COLLECTION).getSlice(SHARD1);
@@ -1006,7 +1005,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     // Check every 10ms, 100 times, for a replica to go down (& assert that it doesn't)
     for (int i=0; i<100; i++) {
       Thread.sleep(10);
-      cloudClient.getZkStateReader().forceUpdateCollection(DEFAULT_COLLECTION);
+
       ClusterState state = cloudClient.getZkStateReader().getClusterState();
 
       int numActiveReplicas = 0;
@@ -1079,7 +1078,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
       try (ZkShardTerms zkShardTerms = new ZkShardTerms(DEFAULT_COLLECTION, SHARD1, cloudClient.getZkStateReader().getZkClient())) {
         for (int i=0; i<100; i++) {
           Thread.sleep(10);
-          cloudClient.getZkStateReader().forceUpdateCollection(DEFAULT_COLLECTION);
+
           ClusterState state = cloudClient.getZkStateReader().getClusterState();
 
           int numActiveReplicas = 0;
@@ -1333,7 +1332,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     // Check every 10ms, 100 times, for a replica to go down (& assert that it doesn't)
     for (int i=0; i<100; i++) {
       Thread.sleep(10);
-      cloudClient.getZkStateReader().forceUpdateCollection(DEFAULT_COLLECTION);
+
       ClusterState state = cloudClient.getZkStateReader().getClusterState();
 
       int numActiveReplicas = 0;

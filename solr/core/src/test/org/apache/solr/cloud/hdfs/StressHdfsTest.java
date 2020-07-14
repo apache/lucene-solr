@@ -172,7 +172,6 @@ public class StressHdfsTest extends BasicDistributedZkTest {
     }
     
     cloudClient.setDefaultCollection(DELETE_DATA_DIR_COLLECTION);
-    cloudClient.getZkStateReader().forceUpdateCollection(DELETE_DATA_DIR_COLLECTION);
     
     for (int i = 1; i < nShards + 1; i++) {
       cloudClient.getZkStateReader().getLeaderRetry(DELETE_DATA_DIR_COLLECTION, "shard" + i, 30000);

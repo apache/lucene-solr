@@ -739,7 +739,6 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     printLayout();
 
     cloudJettys.get(0).jetty.start();
-    cloudClient.getZkStateReader().forceUpdateCollection("multiunload2");
     try {
       cloudClient.getZkStateReader().getLeaderRetry("multiunload2", "shard1", 30000);
     } catch (SolrException e) {
@@ -1030,7 +1029,6 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     
     // we added a role of none on these creates - check for it
     ZkStateReader zkStateReader = getCommonCloudSolrClient().getZkStateReader();
-    zkStateReader.forceUpdateCollection(oneInstanceCollection2);
     Map<String,Slice> slices = zkStateReader.getClusterState().getCollection(oneInstanceCollection2).getSlicesMap();
     assertNotNull(slices);
     

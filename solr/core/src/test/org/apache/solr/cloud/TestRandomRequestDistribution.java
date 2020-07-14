@@ -148,7 +148,6 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
 
     waitForRecoveriesToFinish("football", true);
 
-    cloudClient.getZkStateReader().forceUpdateCollection("football");
 
     Replica leader = null;
     Replica notLeader = null;

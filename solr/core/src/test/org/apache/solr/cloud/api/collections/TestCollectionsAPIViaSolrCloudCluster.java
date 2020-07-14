@@ -137,7 +137,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
 
     // remove a server not hosting any replicas
     ZkStateReader zkStateReader = client.getZkStateReader();
-    zkStateReader.forceUpdateCollection(collectionName);
+
     ClusterState clusterState = zkStateReader.getClusterState();
     Map<String,JettySolrRunner> jettyMap = new HashMap<>();
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
@@ -244,7 +244,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
     assertEquals(numDocs, client.query(collectionName, query).getResults().getNumFound());
 
     // the test itself
-    zkStateReader.forceUpdateCollection(collectionName);
+
     final ClusterState clusterState = zkStateReader.getClusterState();
 
     final Set<Integer> leaderIndices = new HashSet<>();

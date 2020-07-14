@@ -108,10 +108,9 @@ public class ForceLeaderTest extends HttpPartitionTest {
       putNonLeadersIntoLowerTerm(testCollectionName, SHARD1, zkController, leader, notLeaders, cloudClient);
 
       for (Replica replica : notLeaders) {
-        waitForState(testCollectionName, replica.getName(), State.DOWN, 60000);
+        waitForState(testCollectionName, replica.getName(), State.DOWN, 10000);
       }
-      waitForState(testCollectionName, leader.getName(), State.DOWN, 60000);
-      cloudClient.getZkStateReader().forceUpdateCollection(testCollectionName);
+      waitForState(testCollectionName, leader.getName(), State.DOWN, 10000);
       ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
       int numActiveReplicas = getNumberOfActiveReplicas(clusterState, testCollectionName, SHARD1);
       assertEquals("Expected only 0 active replica but found " + numActiveReplicas +
@@ -139,7 +138,6 @@ public class ForceLeaderTest extends HttpPartitionTest {
       // By now we have an active leader. Wait for recoveries to begin
       waitForRecoveriesToFinish(testCollectionName, cloudClient.getZkStateReader(), true);
 
-      cloudClient.getZkStateReader().forceUpdateCollection(testCollectionName);
       clusterState = cloudClient.getZkStateReader().getClusterState();
       if (log.isInfoEnabled()) {
         log.info("After forcing leader: {}", clusterState.getCollection(testCollectionName).getSlice(SHARD1));
@@ -262,7 +260,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
     getProxyForReplica(leader).reopen();
     leaderJetty.start();
     waitForRecoveriesToFinish(collection, cloudClient.getZkStateReader(), true);
-    cloudClient.getZkStateReader().forceUpdateCollection(collection);
+
     ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
     if (log.isInfoEnabled()) {
       log.info("After bringing back leader: {}", clusterState.getCollection(collection).getSlice(SHARD1));

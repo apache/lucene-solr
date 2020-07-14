@@ -99,11 +99,11 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
         boolean exists = zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", true);
         assertFalse(exists);
 
-        if (explicitRefresh) {
-          reader.forceUpdateCollection("c1");
-        } else {
+       // if (explicitRefresh) {
+          //reader.forceUpdateCollection("c1");
+       // } else {
           reader.waitForState("c1", TIMEOUT, TimeUnit.SECONDS, (n, c) -> c != null);
-        }
+       // }
 
         DocCollection collection = reader.getClusterState().getCollection("c1");
         assertEquals(1, collection.getStateFormat());
@@ -122,12 +122,12 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
         boolean exists = zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", true);
         assertTrue(exists);
 
-        if (explicitRefresh) {
-          reader.forceUpdateCollection("c1");
-        } else {
+     //   if (explicitRefresh) {
+    //      reader.forceUpdateCollection("c1");
+      //  } else {
           reader.waitForState("c1", TIMEOUT, TimeUnit.SECONDS,
               (n, c) -> c != null && c.getStateFormat() == 2);
-        }
+    //    }
 
         DocCollection collection = reader.getClusterState().getCollection("c1");
         assertEquals(2, collection.getStateFormat());
@@ -163,7 +163,6 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
           new DocCollection("c1", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0, ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json"));
       writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(c1), null);
       writer.writePendingUpdates(reader.getClusterState());
-      reader.forceUpdateCollection("c1");
 
       assertTrue(reader.getClusterState().getCollectionRef("c1").isLazilyLoaded());
       reader.registerCore("c1");
@@ -247,7 +246,6 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
       assertNull(reader.getClusterState().getCollectionRef("c1"));
 
       zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
-      reader.forceUpdateCollection("c1");
 
       // Still no c1 collection, despite a collection path.
       assertNull(reader.getClusterState().getCollectionRef("c1"));
