@@ -148,7 +148,7 @@ Other Changes
 * SOLR-13939: Extract any non-gradle related patches (deprecations, URL fixes, etc.) from gradle effort. NOTE:
   this will be in several separate commits/pushes. (Erick Erickson)
 
-* SOLR-14637: Update CloudSolrClient examples to remove deprecated method. (Andras Salaman via Eric Pugh)
+* SOLR-14637: Update CloudSolrClient examples to remove deprecated method. (Andras Salamon via Eric Pugh)
 
 ==================  8.6.0 ==================
 

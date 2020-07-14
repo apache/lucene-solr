@@ -59,7 +59,7 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
 
   private static final int NUM_INDEXED_DOCUMENTS = 3;
   private static final int NUM_LIVE_NODES = 1;
-  
+
   private Queue<String> expectedLines = new ArrayDeque<>();
 
   @BeforeClass
@@ -106,7 +106,7 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
     expectLine("id: 1; name: Fitbit Alta");
     expectLine("id: 2; name: Sony Walkman");
     expectLine("id: 3; name: Garmin GPS");
-    
+
     // tag::solrj-query-with-raw-solrparams[]
     final SolrClient client = getSolrClient();
 
@@ -123,7 +123,7 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
     for(SolrDocument document : documents) {
       final String id = (String) document.getFirstValue("id");
       final String name = (String) document.getFirstValue("name");
-      
+
       print("id: " + id + "; name: " + name);
     }
     // end::solrj-query-with-raw-solrparams[]
@@ -154,7 +154,7 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
     for(SolrDocument document : documents) {
       final String id = (String) document.getFirstValue("id");
       final String name = (String) document.getFirstValue("name");
-      
+
       print("id: "+ id + "; name: " + name);
     }
   }
@@ -196,7 +196,7 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
     expectLine("id: 1; name: Fitbit Alta");
     expectLine("id: 2; name: Sony Walkman");
     expectLine("id: 3; name: Garmin GPS");
-    
+
     // tag::solrj-query-bean-value-type[]
     final SolrClient client = getSolrClient();
 
@@ -254,8 +254,6 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
     solrUrls.add("http://solr1:8983/solr");
     solrUrls.add("http://solr2:8983/solr");
     return new CloudSolrClient.Builder(solrUrls)
-            .withConnectionTimeout(10000)
-            .withSocketTimeout(60000)
             .build();
     // end::solrj-cloudsolrclient-baseurl[]
   }
@@ -267,8 +265,6 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
     zkServers.add("zookeeper2:2181");
     zkServers.add("zookeeper3:2181");
     return new CloudSolrClient.Builder(zkServers, Optional.empty())
-            .withConnectionTimeout(10000)
-            .withSocketTimeout(60000)
             .build();
     // end::solrj-cloudsolrclient-zookeepernoroot[]
   }
@@ -280,8 +276,6 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
     zkServers.add("zookeeper2:2181");
     zkServers.add("zookeeper3:2181");
     return new CloudSolrClient.Builder(zkServers, Optional.of("/solr"))
-            .withConnectionTimeout(10000)
-            .withSocketTimeout(60000)
             .build();
     // end::solrj-cloudsolrclient-zookeeperroot[]
   }
@@ -303,23 +297,23 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
     public TechProduct() {}
   }
   // end::solrj-techproduct-value-type[]
-  
+
   private void expectLine(String expectedLine) {
     expectedLines.add(expectedLine);
   }
-  
+
   private void print(String actualOutput) {
     final String nextExpectedLine = expectedLines.poll();
     assertNotNull("No more output expected, but was asked to print: " + actualOutput, nextExpectedLine);
-    
+
     final String unexpectedOutputMessage = "Expected line containing " + nextExpectedLine + ", but printed line was: "
         + actualOutput;
     assertTrue(unexpectedOutputMessage, actualOutput.contains(nextExpectedLine));
   }
-  
+
   private void ensureNoLeftoverOutputExpectations() {
     if (expectedLines.isEmpty()) return;
-    
+
     final StringBuilder builder = new StringBuilder();
     builder.append("Leftover output was expected but not printed:");
     for (String expectedLine : expectedLines) {
