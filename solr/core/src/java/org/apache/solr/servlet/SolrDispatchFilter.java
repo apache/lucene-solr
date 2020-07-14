@@ -307,6 +307,10 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         log.info("Trying solr.xml in ZooKeeper...");
 
         byte[] data = zkClient.getData("/solr.xml", null, null, true);
+        if (data == null) {
+          log.error("Found solr.xml in ZooKeeper with no data in it");
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Found solr.xml in ZooKeeper with no data in it");
+        }
         return SolrXmlConfig.fromInputStream(solrHome, new ByteArrayInputStream(data), nodeProperties, true);
       } catch (KeeperException.NoNodeException e) {
         // okay

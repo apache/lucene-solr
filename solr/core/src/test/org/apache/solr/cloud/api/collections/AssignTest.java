@@ -104,7 +104,7 @@ public class AssignTest extends SolrTestCaseJ4 {
     }
 
     try {
-      server.run();
+      server.run(true);
 
       try (SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), 10000)) {
         assertTrue(zkClient.isConnected());
@@ -141,7 +141,7 @@ public class AssignTest extends SolrTestCaseJ4 {
   public void testBuildCoreName() throws Exception {
     Path zkDir = createTempDir("zkData");
     ZkTestServer server = new ZkTestServer(zkDir);
-    server.run();
+    server.run(true);
     try (SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), 10000)) {
       // TODO: fix this to be independent of ZK
       ZkDistribStateManager stateManager = new ZkDistribStateManager(zkClient);

@@ -96,7 +96,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
 
     ZkTestServer server = new ZkTestServer(zkDir);
     try {
-      server.run();
+      server.run(true);
 
       try (SolrZkClient client = new SolrZkClient(server.getZkAddress(), TIMEOUT)) {
 

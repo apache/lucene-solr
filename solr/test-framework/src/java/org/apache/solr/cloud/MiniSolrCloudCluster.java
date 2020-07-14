@@ -257,7 +257,7 @@ public class MiniSolrCloudCluster {
    MiniSolrCloudCluster(int numServers, Path baseDir, String solrXml, JettyConfig jettyConfig,
       ZkTestServer zkTestServer, Optional<String> securityJson) throws Exception {
      this(numServers, baseDir, solrXml, jettyConfig,
-         zkTestServer,securityJson, false);
+         zkTestServer,securityJson, false, false);
    }
   /**
    * Create a MiniSolrCloudCluster.
@@ -276,7 +276,7 @@ public class MiniSolrCloudCluster {
    * @throws Exception if there was an error starting the cluster
    */
    MiniSolrCloudCluster(int numServers, Path baseDir, String solrXml, JettyConfig jettyConfig,
-      ZkTestServer zkTestServer, Optional<String> securityJson, boolean trackJettyMetrics) throws Exception {
+      ZkTestServer zkTestServer, Optional<String> securityJson, boolean trackJettyMetrics, boolean formatZk) throws Exception {
     try {
       Objects.requireNonNull(securityJson);
       this.baseDir = Objects.requireNonNull(baseDir);
@@ -292,21 +292,21 @@ public class MiniSolrCloudCluster {
         Path zkDir = baseDir.resolve(ZOOKEEPER_SERVER1_DATA);
         this.zkServer = new ZkTestServer(zkDir);
 
-        this.zkServer.run();
+        this.zkServer.run(formatZk);
         SolrZkClient zkClient = this.zkServer.getZkClient();
         log.info("Using zkClient host={} to create solr.xml", zkClient.getZkServerAddress());
-        zkClient.mkDirs(SOLR_XML, solrXml.getBytes(Charset.defaultCharset()));
+        zkClient.mkDirs("/solr" + SOLR_XML, solrXml.getBytes(Charset.defaultCharset()));
 
         if (jettyConfig.sslConfig != null && jettyConfig.sslConfig.isSSLMode()) {
-          zkClient.mkDirs(ZkStateReader.CLUSTER_PROPS,
+          zkClient.mkDirs("/solr" + ZkStateReader.CLUSTER_PROPS,
                   URL_SCHEME_HTTPS.getBytes(StandardCharsets.UTF_8));
         }
         if (securityJson.isPresent()) { // configure Solr security
-          zkClient.makePath(SOLR_SECURITY_JSON, securityJson.get().getBytes(Charset.defaultCharset()), true);
+          zkClient.makePath("/solr" + SOLR_SECURITY_JSON, securityJson.get().getBytes(Charset.defaultCharset()), true);
         }
       } else {
         zkServer = zkTestServer;
-        this.zkServer.getZkClient().mkDirs(SOLR_XML, solrXml.getBytes(Charset.defaultCharset()));
+        this.zkServer.getZkClient().mkDirs("/solr" + SOLR_XML, solrXml.getBytes(Charset.defaultCharset()));
       }
 
       // tell solr to look in zookeeper for solr.xml
@@ -593,7 +593,7 @@ public class MiniSolrCloudCluster {
    */
   public void uploadConfigSet(Path configDir, String configName)
       throws IOException, KeeperException, InterruptedException {
-    ZkConfigManager manager = new ZkConfigManager(zkServer.getZkClient());
+    ZkConfigManager manager = new ZkConfigManager(zkServer.getZkClient(), "/solr");
     manager.uploadConfigDir(configDir, configName);
   }
 
@@ -672,7 +672,7 @@ public class MiniSolrCloudCluster {
   }
   
   protected CloudSolrClient buildSolrClient() {
-    return new Builder(zkServer.getZkClient())
+    return new Builder(Collections.singletonList(zkServer.getZkHost()), Optional.of("/solr"))
             .withSocketTimeout(Integer.getInteger("socketTimeout", Integer.getInteger("solr.test.socketTimeout.default", 30000))).withConnectionTimeout(Integer.getInteger("solr.connect_timeout.default", 15000)).build();
   }
 

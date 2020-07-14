@@ -45,12 +45,20 @@ public class ZkConfigManager {
   public static final Pattern UPLOAD_FILENAME_EXCLUDE_PATTERN = Pattern.compile(UPLOAD_FILENAME_EXCLUDE_REGEX);
 
   private final SolrZkClient zkClient;
-  
+  private final String root;
+
+  public ZkConfigManager(SolrZkClient zkClient) {
+    this(zkClient, "");
+  }
+
   /**
    * Creates a new ZkConfigManager
    * @param zkClient the {@link SolrZkClient} to use
    */
-  public ZkConfigManager(SolrZkClient zkClient) { this.zkClient = zkClient; }
+  public ZkConfigManager(SolrZkClient zkClient, String root) {
+    this.zkClient = zkClient;
+    this.root = root;
+  }
 
 
 
@@ -62,7 +70,7 @@ public class ZkConfigManager {
    *                    if an I/O error occurs or the path does not exist
    */
   public void uploadConfigDir(Path dir, String configName) throws IOException, KeeperException {
-    zkClient.uploadToZK(dir, CONFIGS_ZKNODE + "/" + configName, UPLOAD_FILENAME_EXCLUDE_PATTERN);
+    zkClient.uploadToZK(dir, root + CONFIGS_ZKNODE + "/" + configName, UPLOAD_FILENAME_EXCLUDE_PATTERN);
   }
 
   /**
@@ -75,7 +83,7 @@ public class ZkConfigManager {
    */
   public void uploadConfigDir(Path dir, String configName,
       Pattern filenameExclusions) throws IOException, KeeperException {
-    zkClient.uploadToZK(dir, CONFIGS_ZKNODE + "/" + configName, filenameExclusions);
+    zkClient.uploadToZK(dir, root + CONFIGS_ZKNODE + "/" + configName, filenameExclusions);
   }
 
   /**
@@ -86,12 +94,12 @@ public class ZkConfigManager {
    *                    if an I/O error occurs or the config does not exist
    */
   public void downloadConfigDir(String configName, Path dir) throws IOException {
-    zkClient.downloadFromZK(CONFIGS_ZKNODE + "/" + configName, dir);
+    zkClient.downloadFromZK(root + CONFIGS_ZKNODE + "/" + configName, dir);
   }
 
   public List<String> listConfigs() throws IOException {
     try {
-      return zkClient.getChildren(ZkConfigManager.CONFIGS_ZKNODE, null, true);
+      return zkClient.getChildren(root + ZkConfigManager.CONFIGS_ZKNODE, null, true);
     }
     catch (KeeperException.NoNodeException e) {
       return Collections.emptyList();
@@ -110,7 +118,7 @@ public class ZkConfigManager {
    */
   public Boolean configExists(String configName) throws IOException {
     try {
-      return zkClient.exists(ZkConfigManager.CONFIGS_ZKNODE + "/" + configName, true);
+      return zkClient.exists(root + ZkConfigManager.CONFIGS_ZKNODE + "/" + configName, true);
     } catch (KeeperException | InterruptedException e) {
       throw new IOException("Error checking whether config exists",
           SolrZkClient.checkInterrupted(e));
@@ -125,7 +133,7 @@ public class ZkConfigManager {
    */
   public void deleteConfigDir(String configName) throws IOException {
     try {
-      zkClient.clean(ZkConfigManager.CONFIGS_ZKNODE + "/" + configName);
+      zkClient.clean(root + ZkConfigManager.CONFIGS_ZKNODE + "/" + configName);
     } catch (KeeperException | InterruptedException e) {
       throw new IOException("Error checking whether config exists",
           SolrZkClient.checkInterrupted(e));
@@ -134,17 +142,17 @@ public class ZkConfigManager {
 
   private void copyConfigDirFromZk(String fromZkPath, String toZkPath, Set<String> copiedToZkPaths) throws IOException {
     try {
-      List<String> files = zkClient.getChildren(fromZkPath, null, true);
+      List<String> files = zkClient.getChildren(root + fromZkPath, null, true);
       for (String file : files) {
-        List<String> children = zkClient.getChildren(fromZkPath + "/" + file, null, true);
+        List<String> children = zkClient.getChildren(root + fromZkPath + "/" + file, null, true);
         if (children.size() == 0) {
           final String toZkFilePath = toZkPath + "/" + file;
           log.info("Copying zk node {}/{} to {}", fromZkPath, file, toZkFilePath);
-          byte[] data = zkClient.getData(fromZkPath + "/" + file, null, null, true);
+          byte[] data = zkClient.getData(root + fromZkPath + "/" + file, null, null, true);
           zkClient.makePath(toZkFilePath, data, true);
           if (copiedToZkPaths != null) copiedToZkPaths.add(toZkFilePath);
         } else {
-          copyConfigDirFromZk(fromZkPath + "/" + file, toZkPath + "/" + file, copiedToZkPaths);
+          copyConfigDirFromZk(root + fromZkPath + "/" + file, toZkPath + "/" + file, copiedToZkPaths);
         }
       }
     } catch (KeeperException | InterruptedException e) {

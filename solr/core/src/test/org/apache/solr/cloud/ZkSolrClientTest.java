@@ -54,7 +54,7 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
     ZkConnection(boolean makeRoot) throws Exception {
       Path zkDir = createTempDir("zkData");
       server = new ZkTestServer(zkDir);
-      server.run();
+      server.run(true);
 
       zkClient = new SolrZkClient(server.getZkAddress(), AbstractZkTestCase.TIMEOUT);
     }

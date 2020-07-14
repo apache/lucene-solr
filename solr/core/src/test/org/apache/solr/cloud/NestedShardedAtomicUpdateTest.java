@@ -30,43 +30,26 @@ import org.apache.solr.common.params.SolrParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class NestedShardedAtomicUpdateTest extends AbstractFullDistribZkTestBase {
+public class NestedShardedAtomicUpdateTest extends SolrCloudBridgeTestCase {
 
   @BeforeClass
   public static void beforeLeaderFailureAfterFreshStartTest() {
-    System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
+
   }
 
   public NestedShardedAtomicUpdateTest() {
-    stress = 0;
+    solrconfigString = "solrconfig-tlog.xml";
     sliceCount = 4;
+    numJettys = 4;
     schemaString = "schema-nest.xml";
   }
 
-  @Override
-  protected String getCloudSolrConfig() {
-    return "solrconfig-tlog.xml";
-  }
-
-  @Override
-  protected String getCloudSchemaFile() {
-    return "schema-nest.xml";
-  }
-
   @Test
-  @ShardsFixed(num = 4)
+
   public void test() throws Exception {
-    boolean testFinished = false;
-    try {
-      sendWrongRouteParam();
-      doNestedInplaceUpdateTest();
-      doRootShardRoutingTest();
-      testFinished = true;
-    } finally {
-      if (!testFinished) {
-        printLayoutOnTearDown = true;
-      }
-    }
+    sendWrongRouteParam();
+    doNestedInplaceUpdateTest();
+    doRootShardRoutingTest();
   }
 
   public void doRootShardRoutingTest() throws Exception {

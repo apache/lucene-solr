@@ -57,7 +57,7 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     TestInjection.failUpdateRequests = "true:100";
-    configureCluster(1)
+    configureCluster(1).formatZk(true)
         .addConfig("config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
 

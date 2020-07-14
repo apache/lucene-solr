@@ -123,6 +123,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     private Map<String, Object> clusterProperties = new HashMap<>();
 
     private boolean trackJettyMetrics;
+    private boolean formatZk;
 
     /**
      * Create a builder
@@ -216,6 +217,11 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
       return this;
     }
 
+    public Builder formatZk(boolean formatZk) {
+      this.formatZk = formatZk;
+      return this;
+    }
+
     /**
      * Configure and run the {@link MiniSolrCloudCluster}
      *
@@ -233,7 +239,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     public MiniSolrCloudCluster build() throws Exception {
       JettyConfig jettyConfig = jettyConfigBuilder.withExecutor(qtp).build();
       MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(nodeCount, baseDir, solrxml, jettyConfig,
-          null, securityJson, trackJettyMetrics);
+          null, securityJson, trackJettyMetrics, formatZk);
       CloudSolrClient client = cluster.getSolrClient();
       for (Config config : configs) {
         ((ZkClientClusterStateProvider)client.getClusterStateProvider()).uploadConfig(config.path, config.name);

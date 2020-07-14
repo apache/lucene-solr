@@ -438,7 +438,8 @@ public class ZkStateReader implements SolrCloseable {
         try {
           boolean success = latch.await(10000, TimeUnit.MILLISECONDS);
           if (!success) {
-            log.warn("Timedout waiting to see {} node in zk", ZkStateReader.COLLECTIONS_ZKNODE);
+            zkClient.printLayout();
+            log.warn("Timed waiting to see {} node in zk", ZkStateReader.COLLECTIONS_ZKNODE);
           }
           log.info("Done waiting on latch");
         } catch (InterruptedException e) {

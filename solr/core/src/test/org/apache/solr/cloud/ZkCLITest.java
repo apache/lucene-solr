@@ -90,7 +90,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     zkDir = tmpDir.resolve("zookeeper/server1/data");
     log.info("ZooKeeper dataDir:{}", zkDir);
     zkServer = new ZkTestServer(zkDir);
-    zkServer.run();
+    zkServer.run(true);
     System.setProperty("zkHost", zkServer.getZkAddress());
     SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT);
     zkClient.makePath("/solr", false, true);

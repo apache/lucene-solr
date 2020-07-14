@@ -187,7 +187,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
     this.sysIdResolver = new SystemIdResolver(this);
   }
 
-  public DocumentBuilder getDocumentBuilder() {
+  public synchronized DocumentBuilder getDocumentBuilder() {
     DocumentBuilder db = THREAD_LOCAL_DB.get();
     if (db == null) {
       try {

@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -126,6 +127,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
   protected volatile static MiniSolrCloudCluster controlCluster;
   protected volatile static String schemaString;
   protected volatile static String solrconfigString;
+  protected volatile static boolean formatZk = false;
 
   protected volatile static SortedMap<ServletHolder, String> extraServlets = Collections.emptySortedMap();
 
@@ -142,12 +144,12 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
     
     System.out.println("Make cluster with shard count:" + numJettys);
     
-    cluster = configureCluster(numJettys).withJettyConfig(jettyCfg -> jettyCfg.withServlets(extraServlets).enableProxy(enableProxy)).build();
+    cluster = configureCluster(numJettys).formatZk(formatZk).withJettyConfig(jettyCfg -> jettyCfg.withServlets(extraServlets).enableProxy(enableProxy)).build();
     
     SolrZkClient zkClient = cluster.getZkClient();
 
     if (!zkClient.exists("/configs/_default", true)) {
-      zkClient.uploadToZK(TEST_PATH().resolve("collection1").resolve("conf"), "configs" + "/" + "_default", filenameExclusions);
+      zkClient.uploadToZK(Paths.get(TEST_HOME()).resolve("collection1").resolve("conf"), "configs" + "/" + "_default", filenameExclusions);
     }
     
     zkClient.printLayoutToStream(System.out);
@@ -184,7 +186,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
     }
     
     if (createControl) {
-      controlCluster = configureCluster(1).build();
+      controlCluster = configureCluster(1).formatZk(formatZk).build();
       
       SolrZkClient zkClientControl = controlCluster.getZkClient();
       

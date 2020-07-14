@@ -463,13 +463,12 @@ public class ZkTestServer implements Closeable {
 
 
 
-
+    chRootClient = new SolrZkClient(getZkHost(), AbstractZkTestCase.TIMEOUT, 30000);
     if (solrFormat) {
-     // tryCleanSolrZkNode();
       makeSolrZkNode();
     }
 
-    chRootClient = new SolrZkClient(getZkAddress(), AbstractZkTestCase.TIMEOUT, 30000);
+
   }
 
   public String getZkHost() {
@@ -544,7 +543,7 @@ public class ZkTestServer implements Closeable {
   }
 
   public void run() throws InterruptedException, IOException {
-    run(true);
+    run(false);
   }
 
   public void run(boolean solrFormat) throws InterruptedException, IOException {
@@ -623,7 +622,6 @@ public class ZkTestServer implements Closeable {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     } catch (InterruptedException e) {
       ParWork.propegateInterrupt(e);
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
   }
 
@@ -631,20 +629,23 @@ public class ZkTestServer implements Closeable {
     log.info("Shutting down ZkTestServer.");
 
     try {
-      chRootClient.printLayout();
+      if (chRootClient != null) {
+        chRootClient.printLayout();
+      }
     } catch (Exception e) {
       log.warn("Exception trying to print zk layout to log on shutdown", e);
     }
-
-    writeZkMonitorFile();
+    if (chRootClient != null && zkServer != null) {
+      writeZkMonitorFile();
+    }
 
 
     try (ParWork worker = new ParWork(this, true)) {
       worker.add("zkClients", timer, chRootClient, () -> {
-        zkServer.shutdown();
+        if (zkServer != null) zkServer.shutdown();
         return zkServer;
       }, () -> {
-        zkServer.shutdown();
+        if (zkServer != null) zkServer.shutdown();
         return zkServer;
       });
     }
@@ -853,14 +854,12 @@ public class ZkTestServer implements Closeable {
   public void buildZooKeeper(File solrhome, String config, String schema) throws Exception {
     // this workaround is acceptable until we remove legacyCloud because we just init a single core here
     String defaultClusterProps = "{\"" + ZkStateReader.LEGACY_CLOUD + "\":\"false\"}";
-    chRootClient.makePath(ZkStateReader.CLUSTER_PROPS, defaultClusterProps.getBytes(StandardCharsets.UTF_8),
+    chRootClient.makePath("/solr" + ZkStateReader.CLUSTER_PROPS, defaultClusterProps.getBytes(StandardCharsets.UTF_8),
             CreateMode.PERSISTENT, true);
   }
 
   public void makeSolrZkNode() throws Exception {
-   try (SolrZkClient rootClient = new SolrZkClient(getZkHost(), TIMEOUT, 30000)) {
-     rootClient.mkDirs("/solr");
-   }
+     chRootClient.mkDirs("/solr");
   }
 
   public void tryCleanSolrZkNode(SolrZkClient zkClient) throws Exception {
