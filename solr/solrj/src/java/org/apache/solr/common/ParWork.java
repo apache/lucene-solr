@@ -564,16 +564,16 @@ public class ParWork implements Closeable {
     if (ourLoad > 1) {
       int cMax = executor.getMaximumPoolSize();
       if (cMax > 2) {
-        executor.setMaximumPoolSize(Math.max(1, (int) ((double)cMax * 0.60D)));
+        executor.setMaximumPoolSize(Math.max(2, (int) ((double)cMax * 0.60D)));
       }
     } else {
       double sLoad = load / (double) PROC_COUNT;
       if (sLoad > 1.0D) {
         int cMax =  executor.getMaximumPoolSize();
         if (cMax > 2) {
-          executor.setMaximumPoolSize(Math.max(1, (int) ((double) cMax * 0.60D)));
+          executor.setMaximumPoolSize(Math.max(2, (int) ((double) cMax * 0.60D)));
         }
-      } else if (sLoad < 0.9D && MAXIMUM_POOL_SIZE !=  executor.getMaximumPoolSize()) {
+      } else if (sLoad < 0.9D && MAXIMUM_POOL_SIZE != executor.getMaximumPoolSize()) {
         executor.setMaximumPoolSize(MAXIMUM_POOL_SIZE);
       }
       log.info("external request, load:" + sLoad); //nocommit: remove when testing is done
