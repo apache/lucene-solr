@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.embedded;
 import org.apache.solr.client.solrj.MergeIndexesExampleTestBase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.core.SolrCore;
+import org.junit.Ignore;
 
 /**
  * Test for merge indexes command
@@ -26,6 +27,7 @@ import org.apache.solr.core.SolrCore;
  * @since solr 1.4
  *
  */
+@Ignore // nocommit flakey
 public class MergeIndexesEmbeddedTest extends MergeIndexesExampleTestBase {
 
   @Override
