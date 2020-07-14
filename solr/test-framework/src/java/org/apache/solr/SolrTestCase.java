@@ -323,7 +323,8 @@ public class SolrTestCase extends LuceneTestCase {
       HttpClientUtil.resetHttpClientBuilder();
       Http2SolrClient.resetSslContextFactory();
       TestInjection.reset();
-      StartupLoggingUtils.shutdown();
+      // I think  we can avoid this
+      //StartupLoggingUtils.shutdown();
 
       checkForInterruptRequest();
 
