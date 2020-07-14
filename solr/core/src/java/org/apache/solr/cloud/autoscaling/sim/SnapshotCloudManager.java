@@ -42,11 +42,11 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
-import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ObjectCache;
@@ -193,7 +193,7 @@ public class SnapshotCloudManager implements SolrCloudManager {
           if (s.getOperation() instanceof V2Request) {
             params = SimUtils.v2AdminRequestToV1Params((V2Request)s.getOperation());
           }
-          ReplicaInfo info = nodeStateProvider.getReplicaInfo(
+          Replica info = nodeStateProvider.getReplicaInfo(
               params.get(CollectionAdminParams.COLLECTION), params.get("replica"));
           if (info == null) {
             log.warn("Can't find ReplicaInfo for suggested operation: {}", s);

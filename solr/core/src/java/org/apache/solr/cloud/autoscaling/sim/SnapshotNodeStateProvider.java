@@ -30,15 +30,15 @@ import java.util.Set;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
-import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.Variable;
+import org.apache.solr.common.cloud.Replica;
 
 /**
  * Read-only snapshot of another {@link NodeStateProvider}.
  */
 public class SnapshotNodeStateProvider implements NodeStateProvider {
   private Map<String, Map<String, Object>> nodeValues = new LinkedHashMap<>();
-  private Map<String, Map<String, Map<String, List<ReplicaInfo>>>> replicaInfos = new LinkedHashMap<>();
+  private Map<String, Map<String, Map<String, List<Replica>>>> replicaInfos = new LinkedHashMap<>();
 
   private static double GB = 1024.0d * 1024.0d * 1024.0d;
 
@@ -59,29 +59,29 @@ public class SnapshotNodeStateProvider implements NodeStateProvider {
     replicaTags.addAll(config.getPolicy().getPerReplicaAttributes());
     for (String node : other.getClusterStateProvider().getLiveNodes()) {
       nodeValues.put(node, new LinkedHashMap<>(other.getNodeStateProvider().getNodeValues(node, nodeTags)));
-      Map<String, Map<String, List<ReplicaInfo>>> infos = other.getNodeStateProvider().getReplicaInfo(node, replicaTags);
+      Map<String, Map<String, List<Replica>>> infos = other.getNodeStateProvider().getReplicaInfo(node, replicaTags);
       infos.forEach((collection, shards) -> {
         shards.forEach((shard, replicas) -> {
           replicas.forEach(r -> {
-            List<ReplicaInfo> myReplicas = replicaInfos
+            List<Replica> myReplicas = replicaInfos
                 .computeIfAbsent(node, n -> new LinkedHashMap<>())
                 .computeIfAbsent(collection, c -> new LinkedHashMap<>())
                 .computeIfAbsent(shard, s -> new ArrayList<>());
             Map<String, Object> rMap = new LinkedHashMap<>();
             r.toMap(rMap);
-            if (r.isLeader) { // ReplicaInfo.toMap doesn't write this!!!
+            if (r.isLeader()) { // ReplicaInfo.toMap doesn't write this!!!
               ((Map<String, Object>)rMap.values().iterator().next()).put("leader", "true");
             }
-            ReplicaInfo ri = new ReplicaInfo(rMap);
+            Replica ri = new Replica(rMap);
             // put in "leader" again if present
-            if (r.isLeader) {
-              ri.getVariables().put("leader", "true");
+            if (r.isLeader()) {
+              ri.getProperties().put("leader", "true");
             }
             // externally produced snapshots may not include the right units
-            if (ri.getVariable(Variable.Type.CORE_IDX.metricsAttribute) == null) {
-              if (ri.getVariable(Variable.Type.CORE_IDX.tagName) != null) {
-                Number indexSizeGB = (Number) ri.getVariable(Variable.Type.CORE_IDX.tagName);
-                ri.getVariables().put(Variable.Type.CORE_IDX.metricsAttribute, indexSizeGB.doubleValue() * GB);
+            if (ri.get(Variable.Type.CORE_IDX.metricsAttribute) == null) {
+              if (ri.get(Variable.Type.CORE_IDX.tagName) != null) {
+                Number indexSizeGB = (Number) ri.get(Variable.Type.CORE_IDX.tagName);
+                ri.getProperties().put(Variable.Type.CORE_IDX.metricsAttribute, indexSizeGB.doubleValue() * GB);
               } else {
                 throw new RuntimeException("Missing size information for replica: " + ri);
               }
@@ -102,21 +102,21 @@ public class SnapshotNodeStateProvider implements NodeStateProvider {
     Objects.requireNonNull(snapshot);
     nodeValues = (Map<String, Map<String, Object>>)snapshot.getOrDefault("nodeValues", Collections.emptyMap());
     ((Map<String, Object>)snapshot.getOrDefault("replicaInfos", Collections.emptyMap())).forEach((node, v) -> {
-      Map<String, Map<String, List<ReplicaInfo>>> perNode = replicaInfos.computeIfAbsent(node, n -> new LinkedHashMap<>());
+      Map<String, Map<String, List<Replica>>> perNode = replicaInfos.computeIfAbsent(node, n -> new LinkedHashMap<>());
       ((Map<String, Object>)v).forEach((collection, shards) -> {
-        Map<String, List<ReplicaInfo>> perColl = perNode.computeIfAbsent(collection, c -> new LinkedHashMap<>());
+        Map<String, List<Replica>> perColl = perNode.computeIfAbsent(collection, c -> new LinkedHashMap<>());
         ((Map<String, Object>)shards).forEach((shard, replicas) -> {
-          List<ReplicaInfo> infos = perColl.computeIfAbsent(shard, s -> new ArrayList<>());
+          List<Replica> infos = perColl.computeIfAbsent(shard, s -> new ArrayList<>());
           ((List<Map<String, Object>>)replicas).forEach(replicaMap -> {
-            ReplicaInfo ri = new ReplicaInfo(new LinkedHashMap<>(replicaMap)); // constructor modifies this map
-            if (ri.isLeader) {
-              ri.getVariables().put("leader", "true");
+            Replica ri = new Replica(new LinkedHashMap<>(replicaMap)); // constructor modifies this map
+            if (ri.isLeader()) {
+              ri.getProperties().put("leader", "true");
             }
             // externally produced snapshots may not include the right units
-            if (ri.getVariable(Variable.Type.CORE_IDX.metricsAttribute) == null) {
-                if (ri.getVariable(Variable.Type.CORE_IDX.tagName) != null) {
-                  Number indexSizeGB = (Number) ri.getVariable(Variable.Type.CORE_IDX.tagName);
-                  ri.getVariables().put(Variable.Type.CORE_IDX.metricsAttribute, indexSizeGB.doubleValue() * GB);
+            if (ri.get(Variable.Type.CORE_IDX.metricsAttribute) == null) {
+                if (ri.get(Variable.Type.CORE_IDX.tagName) != null) {
+                  Number indexSizeGB = (Number) ri.get(Variable.Type.CORE_IDX.tagName);
+                  ri.getProperties().put(Variable.Type.CORE_IDX.metricsAttribute, indexSizeGB.doubleValue() * GB);
                 } else {
                   throw new RuntimeException("Missing size information for replica: " + ri);
               }
@@ -148,7 +148,7 @@ public class SnapshotNodeStateProvider implements NodeStateProvider {
                 .computeIfAbsent(shard, s -> new ArrayList<>());
             Map<String, Object> rMap = new LinkedHashMap<>();
             r.toMap(rMap);
-            if (r.isLeader) { // ReplicaInfo.toMap doesn't write this!!!
+            if (r.isLeader()) { // ReplicaInfo.toMap doesn't write this!!!
               ((Map<String, Object>)rMap.values().iterator().next()).put("leader", "true");
             }
             myReplicas.add(rMap);
@@ -165,17 +165,17 @@ public class SnapshotNodeStateProvider implements NodeStateProvider {
   }
 
   @Override
-  public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
-    Map<String, Map<String, List<ReplicaInfo>>> result = new LinkedHashMap<>();
-    Map<String, Map<String, List<ReplicaInfo>>> infos = replicaInfos.getOrDefault(node, Collections.emptyMap());
+  public Map<String, Map<String, List<Replica>>> getReplicaInfo(String node, Collection<String> keys) {
+    Map<String, Map<String, List<Replica>>> result = new LinkedHashMap<>();
+    Map<String, Map<String, List<Replica>>> infos = replicaInfos.getOrDefault(node, Collections.emptyMap());
     // deep copy
     infos.forEach((coll, shards) -> {
       shards.forEach((shard, replicas) -> {
         replicas.forEach(ri -> {
-          List<ReplicaInfo> myReplicas = result
+          List<Replica> myReplicas = result
               .computeIfAbsent(coll, c -> new LinkedHashMap<>())
               .computeIfAbsent(shard, s -> new ArrayList<>());
-          ReplicaInfo myReplica = (ReplicaInfo)ri.clone();
+          Replica myReplica = (Replica)ri.clone();
           myReplicas.add(myReplica);
         });
       });
@@ -183,12 +183,12 @@ public class SnapshotNodeStateProvider implements NodeStateProvider {
     return result;
   }
 
-  public ReplicaInfo getReplicaInfo(String collection, String coreNode) {
-    for (Map<String, Map<String, List<ReplicaInfo>>> perNode : replicaInfos.values()) {
-      for (List<ReplicaInfo> perShard : perNode.getOrDefault(collection, Collections.emptyMap()).values()) {
-        for (ReplicaInfo ri : perShard) {
+  public Replica getReplicaInfo(String collection, String coreNode) {
+    for (Map<String, Map<String, List<Replica>>> perNode : replicaInfos.values()) {
+      for (List<Replica> perShard : perNode.getOrDefault(collection, Collections.emptyMap()).values()) {
+        for (Replica ri : perShard) {
           if (ri.getName().equals(coreNode)) {
-            return (ReplicaInfo)ri.clone();
+            return (Replica)ri.clone();
           }
         }
       }

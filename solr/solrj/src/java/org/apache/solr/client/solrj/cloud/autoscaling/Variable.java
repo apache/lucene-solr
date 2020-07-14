@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 
 import static java.util.Collections.emptySet;
@@ -48,7 +49,7 @@ public interface Variable {
     return val;
   }
 
-  default void projectAddReplica(Cell cell, ReplicaInfo ri, Consumer<Row.OperationInfo> opCollector, boolean strictMode) {
+  default void projectAddReplica(Cell cell, Replica ri, Consumer<Row.OperationInfo> opCollector, boolean strictMode) {
   }
 
   default boolean addViolatingReplicas(Violation.Ctx ctx) {
@@ -77,7 +78,7 @@ public interface Variable {
 
   int compareViolation(Violation v1, Violation v2);
 
-  default void projectRemoveReplica(Cell cell, ReplicaInfo ri, Consumer<Row.OperationInfo> opCollector) {
+  default void projectRemoveReplica(Cell cell, Replica ri, Consumer<Row.OperationInfo> opCollector) {
   }
 
   default String postValidate(Condition condition) {
@@ -329,11 +330,11 @@ public interface Variable {
     /**
      * Simulate a replica addition to a node in the cluster
      */
-    public void projectAddReplica(Cell cell, ReplicaInfo ri, Consumer<Row.OperationInfo> opCollector, boolean strictMode) {
+    public void projectAddReplica(Cell cell, Replica ri, Consumer<Row.OperationInfo> opCollector, boolean strictMode) {
       impl.projectAddReplica(cell, ri, opCollector, strictMode);
     }
 
-    public void projectRemoveReplica(Cell cell, ReplicaInfo ri, Consumer<Row.OperationInfo> opCollector) {
+    public void projectRemoveReplica(Cell cell, Replica ri, Consumer<Row.OperationInfo> opCollector) {
       impl.projectRemoveReplica(cell, ri, opCollector);
     }
 

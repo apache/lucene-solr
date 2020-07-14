@@ -72,7 +72,7 @@ public class ReplicaMutator {
 
     Map<String, Object> replicaProps = new LinkedHashMap<>(replica.getProperties());
     replicaProps.put(key, value);
-    return new Replica(replica.getName(), replicaProps, replica.getCollection(), replica.getSlice());
+    return new Replica(replica.getName(), replicaProps, replica.getCollection(), replica.getShard());
   }
 
   protected Replica unsetProperty(Replica replica, String key) {
@@ -81,7 +81,7 @@ public class ReplicaMutator {
     if (!replica.containsKey(key)) return replica;
     Map<String, Object> replicaProps = new LinkedHashMap<>(replica.getProperties());
     replicaProps.remove(key);
-    return new Replica(replica.getName(), replicaProps, replica.getCollection(), replica.getSlice());
+    return new Replica(replica.getName(), replicaProps, replica.getCollection(), replica.getShard());
   }
 
   protected Replica setLeader(Replica replica) {

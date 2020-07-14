@@ -26,6 +26,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester.Hint;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.Pair;
 
 import static org.apache.solr.client.solrj.cloud.autoscaling.Suggestion.suggestNegativeViolations;
@@ -90,31 +91,31 @@ public class FreeDiskVariable extends VariableBase {
       List<Row> matchingNodes = ctx.session.matrix.stream().filter(
           row -> ctx.violation.getViolatingReplicas()
               .stream()
-              .anyMatch(p -> row.node.equals(p.replicaInfo.getNode())))
+              .anyMatch(p -> row.node.equals(p.replicaInfo.getNodeName())))
           .sorted(Comparator.comparing(r -> ((Double) r.getVal(DISK, 0d))))
           .collect(Collectors.toList());
 
 
       for (Row node : matchingNodes) {
         //lets try to start moving the smallest cores off of the node
-        ArrayList<ReplicaInfo> replicas = new ArrayList<>();
+        ArrayList<Replica> replicas = new ArrayList<>();
         node.forEachReplica(replicas::add);
         replicas.sort((r1, r2) -> {
-          Long s1 = Clause.parseLong(CORE_IDX.tagName, r1.getVariables().get(CORE_IDX.tagName));
-          Long s2 = Clause.parseLong(CORE_IDX.tagName, r2.getVariables().get(CORE_IDX.tagName));
+          Long s1 = Clause.parseLong(CORE_IDX.tagName, r1.getProperties().get(CORE_IDX.tagName));
+          Long s2 = Clause.parseLong(CORE_IDX.tagName, r2.getProperties().get(CORE_IDX.tagName));
           if (s1 != null && s2 != null) return s1.compareTo(s2);
           return 0;
         });
         double currentDelta = ctx.violation.getClause().tag.delta(node.getVal(DISK));
-        for (ReplicaInfo replica : replicas) {
+        for (Replica replica : replicas) {
           if (currentDelta < 1) break;
-          if (replica.getVariables().get(CORE_IDX.tagName) == null) continue;
+          if (replica.getProperties().get(CORE_IDX.tagName) == null) continue;
           Suggester suggester = ctx.session.getSuggester(MOVEREPLICA)
               .hint(Hint.COLL_SHARD, new Pair<>(replica.getCollection(), replica.getShard()))
               .hint(Hint.SRC_NODE, node.node)
               .forceOperation(true);
           ctx.addSuggestion(suggester);
-          currentDelta -= Clause.parseLong(CORE_IDX.tagName, replica.getVariable(CORE_IDX.tagName));
+          currentDelta -= Clause.parseLong(CORE_IDX.tagName, replica.get(CORE_IDX.tagName));
         }
       }
     } else if (ctx.violation.replicaCountDelta < 0) {
@@ -131,7 +132,7 @@ public class FreeDiskVariable extends VariableBase {
             node.forEachShard(coll, (s, ri) -> {
               if (result.get() != null) return;
               if (s.equals(shard1) && ri.size() > 0) {
-                Number sz = ((Number) ri.get(0).getVariable(CORE_IDX.tagName));
+                Number sz = ((Number) ri.get(0).get(CORE_IDX.tagName));
                 if (sz != null) result.set(new Pair<>(shard1, sz.longValue()));
               }
             });
@@ -146,28 +147,28 @@ public class FreeDiskVariable extends VariableBase {
 
   //When a replica is added, freedisk should be incremented
   @Override
-  public void projectAddReplica(Cell cell, ReplicaInfo ri, Consumer<Row.OperationInfo> ops, boolean strictMode) {
+  public void projectAddReplica(Cell cell, Replica ri, Consumer<Row.OperationInfo> ops, boolean strictMode) {
     //go through other replicas of this shard and copy the index size value into this
     for (Row row : cell.getRow().session.matrix) {
       row.forEachReplica(replicaInfo -> {
         if (ri != replicaInfo &&
             ri.getCollection().equals(replicaInfo.getCollection()) &&
             ri.getShard().equals(replicaInfo.getShard()) &&
-            ri.getVariable(CORE_IDX.tagName) == null &&
-            replicaInfo.getVariable(CORE_IDX.tagName) != null) {
-          ri.getVariables().put(CORE_IDX.tagName, validate(CORE_IDX.tagName, replicaInfo.getVariable(CORE_IDX.tagName), false));
+            ri.get(CORE_IDX.tagName) == null &&
+            replicaInfo.get(CORE_IDX.tagName) != null) {
+          ri.getProperties().put(CORE_IDX.tagName, validate(CORE_IDX.tagName, replicaInfo.get(CORE_IDX.tagName), false));
         }
       });
     }
-    Double idxSize = (Double) validate(CORE_IDX.tagName, ri.getVariable(CORE_IDX.tagName), false);
+    Double idxSize = (Double) validate(CORE_IDX.tagName, ri.get(CORE_IDX.tagName), false);
     if (idxSize == null) return;
     Double currFreeDisk = cell.val == null ? 0.0d : (Double) cell.val;
     cell.val = currFreeDisk - idxSize;
   }
 
   @Override
-  public void projectRemoveReplica(Cell cell, ReplicaInfo ri, Consumer<Row.OperationInfo> opCollector) {
-    Double idxSize = (Double) validate(CORE_IDX.tagName, ri.getVariable(CORE_IDX.tagName), false);
+  public void projectRemoveReplica(Cell cell, Replica ri, Consumer<Row.OperationInfo> opCollector) {
+    Double idxSize = (Double) validate(CORE_IDX.tagName, ri.get(CORE_IDX.tagName), false);
     if (idxSize == null) return;
     Double currFreeDisk = cell.val == null ? 0.0d : (Double) cell.val;
     cell.val = currFreeDisk + idxSize;

@@ -145,11 +145,11 @@ public class PolicyHelper {
           for (String shardName : shardNames) {
             Replica ldr = coll.getLeader(shardName);
             if (ldr != null && cloudManager.getClusterStateProvider().getLiveNodes().contains(ldr.getNodeName())) {
-              Map<String, Map<String, List<ReplicaInfo>>> details = cloudManager.getNodeStateProvider().getReplicaInfo(ldr.getNodeName(),
+              Map<String, Map<String, List<Replica>>> details = cloudManager.getNodeStateProvider().getReplicaInfo(ldr.getNodeName(),
                   Collections.singleton(FREEDISK.perReplicaValue));
-              ReplicaInfo replicaInfo = details.getOrDefault(collName, emptyMap()).getOrDefault(shardName, singletonList(null)).get(0);
+              Replica replicaInfo = details.getOrDefault(collName, emptyMap()).getOrDefault(shardName, singletonList(null)).get(0);
               if (replicaInfo != null) {
-                Object idxSz = replicaInfo.getVariables().get(FREEDISK.perReplicaValue);
+                Object idxSz = replicaInfo.getProperties().get(FREEDISK.perReplicaValue);
                 if (idxSz != null) {
                   diskSpaceReqd.put(shardName, 1.5 * (Double) Variable.Type.FREEDISK.validate(null, idxSz, false));
                 }

@@ -23,6 +23,7 @@ import java.util.List;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.Pair;
 import org.slf4j.Logger;
@@ -47,14 +48,14 @@ public class MoveReplicaSuggester extends Suggester {
     List<Violation> leastSeriousViolation = null;
     Row bestSrcRow = null;
     Row bestTargetRow = null;
-    ReplicaInfo sourceReplicaInfo = null;
-    List<Pair<ReplicaInfo, Row>> validReplicas = getValidReplicas(true, true, -1);
+    Replica sourceReplicaInfo = null;
+    List<Pair<Replica, Row>> validReplicas = getValidReplicas(true, true, -1);
     validReplicas.sort(leaderLast);
     for (int i1 = 0; i1 < validReplicas.size(); i1++) {
       lastBestDeviation = null;
-      Pair<ReplicaInfo, Row> fromReplica = validReplicas.get(i1);
+      Pair<Replica, Row> fromReplica = validReplicas.get(i1);
       Row fromRow = fromReplica.second();
-      ReplicaInfo ri = fromReplica.first();
+      Replica ri = fromReplica.first();
       if (ri == null) continue;
       final int i = session.indexOf(fromRow.node);
       int stopAt = force ? 0 : i;
@@ -97,8 +98,8 @@ public class MoveReplicaSuggester extends Suggester {
     return null;
   }
 
-  static Comparator<Pair<ReplicaInfo, Row>> leaderLast = (r1, r2) -> {
-    int leaderCompare = Boolean.compare(r1.first().isLeader, r2.first().isLeader);
+  static Comparator<Pair<Replica, Row>> leaderLast = (r1, r2) -> {
+    int leaderCompare = Boolean.compare(r1.first().isLeader(), r2.first().isLeader());
     if ( leaderCompare != 0 ) {
       return leaderCompare;
     } else {

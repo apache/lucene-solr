@@ -21,7 +21,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -540,7 +539,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     NodeStateProvider stateProvider = cloudManager.getNodeStateProvider();
     List<String> nodes = new ArrayList<>();
     cloudManager.getClusterStateProvider().getLiveNodes().forEach(n -> {
-      Map<String, Map<String, List<ReplicaInfo>>> map = stateProvider.getReplicaInfo(n, ImplicitSnitch.tags);
+      Map<String, Map<String, List<Replica>>> map = stateProvider.getReplicaInfo(n, ImplicitSnitch.tags);
       if (map.containsKey("testSelected3") && map.containsKey("testSelected2") && map.containsKey("testSelected1")) {
         nodes.add(n);
       }

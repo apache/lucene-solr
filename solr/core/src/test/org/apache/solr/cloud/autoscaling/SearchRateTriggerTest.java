@@ -30,7 +30,6 @@ import com.codahale.metrics.MetricRegistry;
 import com.google.common.util.concurrent.AtomicDouble;
 
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
-import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -42,6 +41,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cloud.ZkDistributedQueueFactory;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.params.CollectionParams;
@@ -145,11 +145,11 @@ public class SearchRateTriggerTest extends SolrCloudTestCase {
         assertEquals(1, events.size());
         TriggerEvent event = events.get(0);
         assertEquals(TriggerEventType.SEARCHRATE, event.eventType);
-        List<ReplicaInfo> infos = (List<ReplicaInfo>)event.getProperty(SearchRateTrigger.HOT_REPLICAS);
+        List<Replica> infos = (List<Replica>)event.getProperty(SearchRateTrigger.HOT_REPLICAS);
         assertEquals(1, infos.size());
-        ReplicaInfo info = infos.get(0);
-        assertEquals(coreName, info.getCore());
-        assertTrue((Double)info.getVariable(AutoScalingParams.RATE) > rate);
+        Replica info = infos.get(0);
+        assertEquals(coreName, info.getCoreName());
+        assertTrue((Double)info.get(AutoScalingParams.RATE) > rate);
       }
       // close that jetty to remove the violation - alternatively wait for 1 min...
       JettySolrRunner j = cluster.stopJettySolrRunner(1);
@@ -263,11 +263,11 @@ public class SearchRateTriggerTest extends SolrCloudTestCase {
       TriggerEvent event = events.get(0);
       assertEquals(event.toString(), TriggerEventType.SEARCHRATE, event.eventType);
       Map<String, Object> hotNodes, hotCollections, hotShards;
-      List<ReplicaInfo> hotReplicas;
+      List<Replica> hotReplicas;
       hotNodes = (Map<String, Object>)event.properties.get(SearchRateTrigger.HOT_NODES);
       hotCollections = (Map<String, Object>)event.properties.get(SearchRateTrigger.HOT_COLLECTIONS);
       hotShards = (Map<String, Object>)event.properties.get(SearchRateTrigger.HOT_SHARDS);
-      hotReplicas = (List<ReplicaInfo>)event.properties.get(SearchRateTrigger.HOT_REPLICAS);
+      hotReplicas = (List<Replica>)event.properties.get(SearchRateTrigger.HOT_REPLICAS);
       assertTrue("no hot nodes?", hotNodes.isEmpty());
       assertFalse("no hot collections?", hotCollections.isEmpty());
       assertFalse("no hot shards?", hotShards.isEmpty());

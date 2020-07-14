@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
+import org.apache.solr.common.cloud.Replica;
 
 /**
  * Base class for overriding some behavior of {@link NodeStateProvider}.
@@ -40,7 +41,7 @@ public class DelegatingNodeStateProvider implements NodeStateProvider {
   }
 
   @Override
-  public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
+  public Map<String, Map<String, List<Replica>>> getReplicaInfo(String node, Collection<String> keys) {
     return delegate.getReplicaInfo(node, keys);
   }
 

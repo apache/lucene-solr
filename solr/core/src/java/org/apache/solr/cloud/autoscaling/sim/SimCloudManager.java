@@ -53,7 +53,6 @@ import org.apache.solr.client.solrj.cloud.DistributedQueueFactory;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
-import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.Variable;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
@@ -320,7 +319,7 @@ public class SimCloudManager implements SolrCloudManager {
     for (String node : other.getClusterStateProvider().getLiveNodes()) {
       SimClusterStateProvider simClusterStateProvider = cloudManager.getSimClusterStateProvider();
       cloudManager.getSimNodeStateProvider().simSetNodeValues(node, other.getNodeStateProvider().getNodeValues(node, nodeTags));
-      Map<String, Map<String, List<ReplicaInfo>>> infos = other.getNodeStateProvider().getReplicaInfo(node, replicaTags);
+      Map<String, Map<String, List<Replica>>> infos = other.getNodeStateProvider().getReplicaInfo(node, replicaTags);
       simClusterStateProvider.simSetReplicaValues(node, infos, true);
     }
     SimUtils.checkConsistency(cloudManager, config);
@@ -397,7 +396,7 @@ public class SimCloudManager implements SolrCloudManager {
     Map<String, Map<Replica.State, AtomicInteger>> replicaStates = new TreeMap<>();
     int numReplicas = 0;
     for (String node : getLiveNodesSet().get()) {
-      List<ReplicaInfo> replicas = getSimClusterStateProvider().simGetReplicaInfos(node);
+      List<Replica> replicas = getSimClusterStateProvider().simGetReplicaInfos(node);
       numReplicas += replicas.size();
       if (replicas.size() > maxReplicas) {
         maxReplicas = replicas.size();
@@ -405,7 +404,7 @@ public class SimCloudManager implements SolrCloudManager {
       if (minReplicas > replicas.size()) {
         minReplicas = replicas.size();
       }
-      for (ReplicaInfo ri : replicas) {
+      for (Replica ri : replicas) {
         replicaStates.computeIfAbsent(ri.getCollection(), c -> new TreeMap<>())
             .computeIfAbsent(ri.getState(), s -> new AtomicInteger())
             .incrementAndGet();

@@ -700,7 +700,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
   }
 
 
-  public boolean isMatch(ReplicaInfo r, String collection, String shard) {
+  public boolean isMatch(Replica r, String collection, String shard) {
     if (type != null && r.getType() != type) return false;
     if (r.getCollection().equals(collection)) {
       if (this.shard == null || this.shard.val.equals(Policy.ANY)) return true;

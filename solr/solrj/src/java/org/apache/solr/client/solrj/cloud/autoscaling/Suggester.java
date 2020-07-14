@@ -296,8 +296,8 @@ public abstract class Suggester implements MapWriter {
     return false;
   }
 
-  List<Pair<ReplicaInfo, Row>> getValidReplicas(boolean sortDesc, boolean isSource, int until) {
-    List<Pair<ReplicaInfo, Row>> allPossibleReplicas = new ArrayList<>();
+  List<Pair<Replica, Row>> getValidReplicas(boolean sortDesc, boolean isSource, int until) {
+    List<Pair<Replica, Row>> allPossibleReplicas = new ArrayList<>();
 
     if (sortDesc) {
       if (until == -1) until = getMatrix().size();
@@ -310,14 +310,14 @@ public abstract class Suggester implements MapWriter {
     return allPossibleReplicas;
   }
 
-  void addReplicaToList(Row r, boolean isSource, List<Pair<ReplicaInfo, Row>> replicaList) {
+  void addReplicaToList(Row r, boolean isSource, List<Pair<Replica, Row>> replicaList) {
     if (!isAllowed(r.node, isSource ? Hint.SRC_NODE : Hint.TARGET_NODE)) return;
-    for (Map.Entry<String, Map<String, List<ReplicaInfo>>> e : r.collectionVsShardVsReplicas.entrySet()) {
+    for (Map.Entry<String, Map<String, List<Replica>>> e : r.collectionVsShardVsReplicas.entrySet()) {
       if (!isAllowed(e.getKey(), Hint.COLL)) continue;
-      for (Map.Entry<String, List<ReplicaInfo>> shard : e.getValue().entrySet()) {
+      for (Map.Entry<String, List<Replica>> shard : e.getValue().entrySet()) {
         if (!isAllowed(new Pair<>(e.getKey(), shard.getKey()), Hint.COLL_SHARD)) continue;//todo fix
         if (shard.getValue() == null || shard.getValue().isEmpty()) continue;
-        for (ReplicaInfo replicaInfo : shard.getValue()) {
+        for (Replica replicaInfo : shard.getValue()) {
           if (replicaInfo.getName().startsWith("SYNTHETIC.")) continue;
           replicaList.add(new Pair<>(shard.getValue().get(0), r));
           break;
@@ -481,7 +481,7 @@ public abstract class Suggester implements MapWriter {
         row.forEachReplica(r -> {
           if (withCollection.equals(r.getCollection()) &&
               "shard1".equals(r.getShard())) {
-            withCollectionNodes.add(r.getNode());
+            withCollectionNodes.add(r.getNodeName());
           }
         });
       }

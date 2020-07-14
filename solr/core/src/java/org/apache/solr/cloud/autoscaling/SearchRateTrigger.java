@@ -33,7 +33,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.AtomicDouble;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
-import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
@@ -331,7 +330,7 @@ public class SearchRateTrigger extends TriggerBase {
     }
 
     // collection, shard, list(replica + rate)
-    Map<String, Map<String, List<ReplicaInfo>>> collectionRates = new HashMap<>();
+    Map<String, Map<String, List<Replica>>> collectionRates = new HashMap<>();
     // node, rate
     Map<String, AtomicDouble> nodeRates = new HashMap<>();
     // this replication factor only considers replica types that are searchable
@@ -346,9 +345,9 @@ public class SearchRateTrigger extends TriggerBase {
       return;
     }
     for (String node : cloudManager.getClusterStateProvider().getLiveNodes()) {
-      Map<String, ReplicaInfo> metricTags = new HashMap<>();
+      Map<String, Replica> metricTags = new HashMap<>();
       // coll, shard, replica
-      Map<String, Map<String, List<ReplicaInfo>>> infos = cloudManager.getNodeStateProvider().getReplicaInfo(node, Collections.emptyList());
+      Map<String, Map<String, List<Replica>>> infos = cloudManager.getNodeStateProvider().getReplicaInfo(node, Collections.emptyList());
       infos.forEach((coll, shards) -> {
         Map<String, AtomicInteger> replPerShard = searchableReplicationFactors.computeIfAbsent(coll, c -> new HashMap<>());
         shards.forEach((sh, replicas) -> {
@@ -360,7 +359,7 @@ public class SearchRateTrigger extends TriggerBase {
             }
             repl.incrementAndGet();
             // we have to translate to the metrics registry name, which uses "_replica_nN" as suffix
-            String replicaName = Utils.parseMetricsReplicaName(coll, replica.getCore());
+            String replicaName = Utils.parseMetricsReplicaName(coll, replica.getCoreName());
             if (replicaName == null) { // should never happen???
               replicaName = replica.getName(); // which is actually coreNode name...
             }
@@ -379,14 +378,14 @@ public class SearchRateTrigger extends TriggerBase {
         rates.forEach((tag, rate) -> log.debug("###  " + tag + "\t" + rate)); // logOk
       }
       rates.forEach((tag, rate) -> {
-        ReplicaInfo info = metricTags.get(tag);
+        Replica info = metricTags.get(tag);
         if (info == null) {
           log.warn("Missing replica info for response tag {}", tag);
         } else {
-          Map<String, List<ReplicaInfo>> perCollection = collectionRates.computeIfAbsent(info.getCollection(), s -> new HashMap<>());
-          List<ReplicaInfo> perShard = perCollection.computeIfAbsent(info.getShard(), s -> new ArrayList<>());
-          info = (ReplicaInfo)info.clone();
-          info.getVariables().put(AutoScalingParams.RATE, ((Number)rate).doubleValue());
+          Map<String, List<Replica>> perCollection = collectionRates.computeIfAbsent(info.getCollection(), s -> new HashMap<>());
+          List<Replica> perShard = perCollection.computeIfAbsent(info.getShard(), s -> new ArrayList<>());
+          info = (Replica)info.clone();
+          info.getProperties().put(AutoScalingParams.RATE, ((Number)rate).doubleValue());
           perShard.add(info);
           AtomicDouble perNode = nodeRates.computeIfAbsent(node, s -> new AtomicDouble());
           perNode.addAndGet(((Number)rate).doubleValue());
@@ -399,7 +398,7 @@ public class SearchRateTrigger extends TriggerBase {
         log.debug("## Collection: {}", coll);
         collRates.forEach((s, replicas) -> {
           log.debug("##  - {}", s);
-          replicas.forEach(ri -> log.debug("##     {}  {}", ri.getCore(), ri.getVariable(AutoScalingParams.RATE))); //logOk
+          replicas.forEach(ri -> log.debug("##     {}  {}", ri.getCoreName(), ri.get(AutoScalingParams.RATE))); //logOk
         });
       });
     }
@@ -428,18 +427,18 @@ public class SearchRateTrigger extends TriggerBase {
 
     Map<String, Map<String, Double>> hotShards = new HashMap<>();
     Map<String, Map<String, Double>> coldShards = new HashMap<>();
-    List<ReplicaInfo> hotReplicas = new ArrayList<>();
-    List<ReplicaInfo> coldReplicas = new ArrayList<>();
+    List<Replica> hotReplicas = new ArrayList<>();
+    List<Replica> coldReplicas = new ArrayList<>();
     collectionRates.forEach((coll, shardRates) -> {
       shardRates.forEach((sh, replicaRates) -> {
         double totalShardRate = replicaRates.stream()
             .map(r -> {
-              String elapsedKey = r.getCollection() + "." + r.getCore();
-              if ((Double)r.getVariable(AutoScalingParams.RATE) > aboveRate) {
+              String elapsedKey = r.getCollection() + "." + r.getCoreName();
+              if ((Double)r.get(AutoScalingParams.RATE) > aboveRate) {
                 if (waitForElapsed(elapsedKey, now, lastReplicaEvent)) {
                   hotReplicas.add(r);
                 }
-              } else if ((Double)r.getVariable(AutoScalingParams.RATE) < belowRate) {
+              } else if ((Double)r.get(AutoScalingParams.RATE) < belowRate) {
                 if (waitForElapsed(elapsedKey, now, lastReplicaEvent)) {
                   coldReplicas.add(r);
                 }
@@ -449,7 +448,7 @@ public class SearchRateTrigger extends TriggerBase {
               }
               return r;
             })
-            .mapToDouble(r -> (Double)r.getVariable(AutoScalingParams.RATE)).sum();
+            .mapToDouble(r -> (Double)r.get(AutoScalingParams.RATE)).sum();
         // calculate average shard rate over all searchable replicas (see SOLR-12470)
         double shardRate = totalShardRate / searchableReplicationFactors.get(coll).get(sh).doubleValue();
         String elapsedKey = coll + "." + sh;
@@ -486,7 +485,7 @@ public class SearchRateTrigger extends TriggerBase {
     collectionRates.forEach((coll, shardRates) -> {
       double total = shardRates.entrySet().stream()
           .mapToDouble(e -> e.getValue().stream()
-              .mapToDouble(r -> (Double)r.getVariable(AutoScalingParams.RATE)).sum()).sum();
+              .mapToDouble(r -> (Double)r.get(AutoScalingParams.RATE)).sum()).sum();
       if (collections.isEmpty() || collections.contains(coll)) {
         if (total > aboveRate) {
           if (waitForElapsed(coll, now, lastCollectionEvent)) {
@@ -547,13 +546,13 @@ public class SearchRateTrigger extends TriggerBase {
       });
     });
     hotReplicas.forEach(r -> {
-      long time = lastReplicaEvent.get(r.getCollection() + "." + r.getCore());
+      long time = lastReplicaEvent.get(r.getCollection() + "." + r.getCoreName());
       if (eventTime.get() > time) {
         eventTime.set(time);
       }
     });
     coldReplicas.forEach(r -> {
-      long time = lastReplicaEvent.get(r.getCollection() + "." + r.getCore());
+      long time = lastReplicaEvent.get(r.getCollection() + "." + r.getCoreName());
       if (eventTime.get() > time) {
         eventTime.set(time);
       }
@@ -593,8 +592,8 @@ public class SearchRateTrigger extends TriggerBase {
           .forEach((sh, rate) -> lastShardEvent.put(e.getKey() + "." + sh, now)));
       coldShards.entrySet().forEach(e -> e.getValue()
           .forEach((sh, rate) -> lastShardEvent.put(e.getKey() + "." + sh, now)));
-      hotReplicas.forEach(r -> lastReplicaEvent.put(r.getCollection() + "." + r.getCore(), now));
-      coldReplicas.forEach(r -> lastReplicaEvent.put(r.getCollection() + "." + r.getCore(), now));
+      hotReplicas.forEach(r -> lastReplicaEvent.put(r.getCollection() + "." + r.getCoreName(), now));
+      coldReplicas.forEach(r -> lastReplicaEvent.put(r.getCollection() + "." + r.getCoreName(), now));
     }
   }
 
@@ -604,7 +603,7 @@ public class SearchRateTrigger extends TriggerBase {
                                Map<String, Double> hotNodes,
                                Map<String, Double> hotCollections,
                                Map<String, Map<String, Double>> hotShards,
-                               List<ReplicaInfo> hotReplicas) {
+                               List<Replica> hotReplicas) {
     // calculate the number of replicas to add to each hot shard, based on how much the rate was
     // exceeded - but within limits.
 
@@ -678,7 +677,7 @@ public class SearchRateTrigger extends TriggerBase {
                                 Map<String, Double> coldNodes,
                                 Map<String, Double> coldCollections,
                                 Map<String, Map<String, Double>> coldShards,
-                                List<ReplicaInfo> coldReplicas) {
+                                List<Replica> coldReplicas) {
     // COLD COLLECTIONS
     // Probably can't do anything reasonable about whole cold collections
     // because they may be needed even if not used.
@@ -694,7 +693,7 @@ public class SearchRateTrigger extends TriggerBase {
     // replicas still available (additional non-searchable replicas may exist, too)
     // NOTE: do this before adding ops for DELETENODE because we don't want to attempt
     // deleting replicas that have been already moved elsewhere
-    Map<String, Map<String, List<ReplicaInfo>>> byCollectionByShard = new HashMap<>();
+    Map<String, Map<String, List<Replica>>> byCollectionByShard = new HashMap<>();
     coldReplicas.forEach(ri -> {
       byCollectionByShard.computeIfAbsent(ri.getCollection(), c -> new HashMap<>())
           .computeIfAbsent(ri.getShard(), s -> new ArrayList<>())
@@ -702,7 +701,7 @@ public class SearchRateTrigger extends TriggerBase {
     });
     coldShards.forEach((coll, perShard) -> {
       perShard.forEach((shard, rate) -> {
-        List<ReplicaInfo> replicas = byCollectionByShard
+        List<Replica> replicas = byCollectionByShard
             .getOrDefault(coll, Collections.emptyMap())
             .getOrDefault(shard, Collections.emptyList());
         if (replicas.isEmpty()) {
@@ -784,11 +783,11 @@ public class SearchRateTrigger extends TriggerBase {
                            Map<String, Double> hotNodes,
                            Map<String, Double> hotCollections,
                            Map<String, Map<String, Double>> hotShards,
-                           List<ReplicaInfo> hotReplicas,
+                           List<Replica> hotReplicas,
                            Map<String, Double> coldNodes,
                            Map<String, Double> coldCollections,
                            Map<String, Map<String, Double>> coldShards,
-                           List<ReplicaInfo> coldReplicas,
+                           List<Replica> coldReplicas,
                            Set<String> violations) {
       super(TriggerEventType.SEARCHRATE, source, eventTime, null);
       properties.put(TriggerEvent.REQUESTED_OPS, ops);

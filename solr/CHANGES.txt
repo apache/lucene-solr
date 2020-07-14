@@ -93,7 +93,9 @@ Other Changes
 * LUCENE-9411: Fail complation on warnings, 9x gradle-only (Erick Erickson, Dawid Weiss)
   Deserves mention here as well as Lucene CHANGES.txt since it affects both.
 
-* SOLR-12847: Remove support for maxShardsPerNode.
+* SOLR-12847: Remove support for maxShardsPerNode. (ab)
+
+* SOLR-14244: Remove ReplicaInfo. (ab)
 
 Bug Fixes
 ---------------------

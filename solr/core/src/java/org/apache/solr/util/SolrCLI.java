@@ -100,7 +100,6 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
-import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
 import org.apache.solr.client.solrj.cloud.autoscaling.Variable;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -1171,14 +1170,14 @@ public class SolrCLI implements CLIO {
           }
           Map<String, Object> paramsMap = new LinkedHashMap<>();
           params.toMap(paramsMap);
-          ReplicaInfo info = simCloudManager.getSimClusterStateProvider().simGetReplicaInfo(
+          Replica info = simCloudManager.getSimClusterStateProvider().simGetReplicaInfo(
               params.get(CollectionAdminParams.COLLECTION), params.get("replica"));
           if (info == null) {
             CLIO.err("Could not find ReplicaInfo for params: " + params);
           } else if (verbose) {
             paramsMap.put("replicaInfo", info);
-          } else if (info.getVariable(Variable.Type.CORE_IDX.tagName) != null) {
-            paramsMap.put(Variable.Type.CORE_IDX.tagName, info.getVariable(Variable.Type.CORE_IDX.tagName));
+          } else if (info.get(Variable.Type.CORE_IDX.tagName) != null) {
+            paramsMap.put(Variable.Type.CORE_IDX.tagName, info.get(Variable.Type.CORE_IDX.tagName));
           }
           if (withSuggestions) {
             perStepOps.add(paramsMap);

@@ -35,7 +35,6 @@ import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
-import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
@@ -638,17 +637,17 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
     NodeStateProvider nodeStateProvider = cloudManager.getNodeStateProvider();
     Map<String, Object> nodeValues = nodeStateProvider.getNodeValues(parentShardLeader.getNodeName(),
         Collections.singletonList(ImplicitSnitch.DISK));
-    Map<String, Map<String, List<ReplicaInfo>>> infos = nodeStateProvider.getReplicaInfo(parentShardLeader.getNodeName(),
+    Map<String, Map<String, List<Replica>>> infos = nodeStateProvider.getReplicaInfo(parentShardLeader.getNodeName(),
         Collections.singletonList(Type.CORE_IDX.metricsAttribute));
     if (infos.get(collection) == null || infos.get(collection).get(shard) == null) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "missing replica information for parent shard leader");
     }
     // find the leader
-    List<ReplicaInfo> lst = infos.get(collection).get(shard);
+    List<Replica> lst = infos.get(collection).get(shard);
     Double indexSize = null;
-    for (ReplicaInfo info : lst) {
-      if (info.getCore().equals(parentShardLeader.getCoreName())) {
-        Number size = (Number)info.getVariable(Type.CORE_IDX.metricsAttribute);
+    for (Replica info : lst) {
+      if (info.getCoreName().equals(parentShardLeader.getCoreName())) {
+        Number size = (Number)info.get(Type.CORE_IDX.metricsAttribute);
         if (size == null) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "missing index size information for parent shard leader");
         }

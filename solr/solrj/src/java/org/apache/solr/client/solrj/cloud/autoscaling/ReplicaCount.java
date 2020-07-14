@@ -63,14 +63,14 @@ class ReplicaCount  implements MapWriter {
     return total();
   }
 
-  public void increment(List<ReplicaInfo> infos) {
+  public void increment(List<Replica> infos) {
     if (infos == null) return;
-    for (ReplicaInfo info : infos) {
+    for (Replica info : infos) {
       increment(info);
     }
   }
 
-  void increment(ReplicaInfo info) {
+  void increment(Replica info) {
     increment(info.getType());
   }
 
