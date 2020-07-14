@@ -193,10 +193,7 @@ public class CoreContainer implements Closeable {
 
   private volatile UpdateShardHandler updateShardHandler;
 
-  private final static ThreadPoolExecutor solrCoreLoadExecutor =  new ExecutorUtil.MDCAwareThreadPoolExecutor(0, Integer.MAX_VALUE,
-          3, TimeUnit.SECONDS,
-          new SynchronousQueue<>(),
-          new SolrNamedThreadFactory("SolrCoreLoader"));
+  private volatile static ThreadPoolExecutor solrCoreLoadExecutor;
 
   private final OrderedExecutor replayUpdatesExecutor;
 
@@ -387,12 +384,24 @@ public class CoreContainer implements Closeable {
 
       work.addCollect("init");
     }
-            if (zkClient != null) {
-          zkSys.initZooKeeper(this, cfg.getCloudConfig());
-        }
-        coreConfigService = ConfigSetService.createConfigSetService(cfg, loader, zkSys == null ? null : zkSys.zkController);
+    if (zkClient != null) {
+      zkSys.initZooKeeper(this, cfg.getCloudConfig());
+    }
+    coreConfigService = ConfigSetService.createConfigSetService(cfg, loader, zkSys == null ? null : zkSys.zkController);
 
-        containerProperties.putAll(cfg.getSolrProperties());
+    containerProperties.putAll(cfg.getSolrProperties());
+
+    if (solrCoreLoadExecutor == null) {
+      synchronized (CoreContainer.class) {
+        if (solrCoreLoadExecutor == null) {
+          solrCoreLoadExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(0, Integer.MAX_VALUE,
+                  3, TimeUnit.SECONDS,
+                  new SynchronousQueue<>(),
+                  new SolrNamedThreadFactory("SolrCoreLoader"));
+        }
+      }
+    }
+
   }
 
   @SuppressWarnings({"unchecked"})

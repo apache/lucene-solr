@@ -39,7 +39,7 @@ public class CustomAnalyzerStrField extends StrField {
   private final Analyzer queryAnalyzer;
 
   public CustomAnalyzerStrField() {
-    Random r = LuceneTestCase.random();
+    Random r = new Random();
 
     // two arg constructor
     Analyzer a2 = new TokenizerChain
