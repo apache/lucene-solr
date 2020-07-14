@@ -16,11 +16,12 @@
  */
 package org.apache.solr.client.solrj.routing;
 
+import java.io.Closeable;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
-public class ShufflingReplicaListTransformer implements ReplicaListTransformer {
+public class ShufflingReplicaListTransformer implements ReplicaListTransformer, Closeable {
 
   private final Random r;
 
@@ -34,6 +35,11 @@ public class ShufflingReplicaListTransformer implements ReplicaListTransformer {
     if (choices.size() > 1) {
       Collections.shuffle(choices, r);
     }
+  }
+
+  @Override
+  public void close() {
+
   }
 
 }

@@ -32,4 +32,7 @@ public interface ReplicaListTransformer {
    */
   public void transform(List<?> choices);
 
+  default void close() {
+
+  }
 }

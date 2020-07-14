@@ -16,6 +16,7 @@
  */
 package org.apache.solr.client.solrj.routing;
 
+import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 
 import java.util.ArrayList;
@@ -41,7 +42,7 @@ public class ReplicaListTransformerTest extends SolrTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   // A transformer that keeps only matching choices
-  private static class ToyMatchingReplicaListTransformer implements ReplicaListTransformer {
+  private static class ToyMatchingReplicaListTransformer implements ReplicaListTransformer, Closeable {
 
     private final String regex;
 
@@ -73,10 +74,15 @@ public class ReplicaListTransformerTest extends SolrTestCase {
       }
     }
 
+    @Override
+    public void close() {
+
+    }
+
   }
 
   // A transformer that makes no transformation
-  private static class ToyNoOpReplicaListTransformer implements ReplicaListTransformer {
+  private static class ToyNoOpReplicaListTransformer implements ReplicaListTransformer, Closeable {
 
     public ToyNoOpReplicaListTransformer()
     {
@@ -88,6 +94,11 @@ public class ReplicaListTransformerTest extends SolrTestCase {
       log.info("No-Op transform ignoring input: {}", choices);
     }
 
+    @Override
+    public void close() {
+
+    }
+
   }
 
   @Test
@@ -95,72 +106,74 @@ public class ReplicaListTransformerTest extends SolrTestCase {
 
     final String regex = ".*" + random().nextInt(10) + ".*";
 
-    final ReplicaListTransformer transformer;
-    if (random().nextBoolean()) {
-      log.info("Using ToyMatching Transfomer");
-      transformer = new ToyMatchingReplicaListTransformer(regex);
+    ReplicaListTransformer transformer = null;
+    try {
+      if (random().nextBoolean()) {
+        log.info("Using ToyMatching Transfomer");
+        transformer = new ToyMatchingReplicaListTransformer(regex);
 
-    } else {
-      log.info("Using conditional Transfomer");
-      transformer = new HttpShardHandlerFactory() {
+      } else {
+        log.info("Using conditional Transfomer");
+        transformer = new HttpShardHandlerFactory() {
 
-        @Override
-        protected ReplicaListTransformer getReplicaListTransformer(final SolrQueryRequest req)
-        {
-          final SolrParams params = req.getParams();
+          @Override
+          protected ReplicaListTransformer getReplicaListTransformer(final SolrQueryRequest req) {
+            final SolrParams params = req.getParams();
 
-          if (params.getBool("toyNoTransform", false)) {
-            return new ToyNoOpReplicaListTransformer();
+            if (params.getBool("toyNoTransform", false)) {
+              return new ToyNoOpReplicaListTransformer();
+            }
+
+            final String regex = params.get("toyRegEx");
+            if (regex != null) {
+              return new ToyMatchingReplicaListTransformer(regex);
+            }
+
+            return super.getReplicaListTransformer(req);
           }
 
-          final String regex = params.get("toyRegEx");
-          if (regex != null) {
-            return new ToyMatchingReplicaListTransformer(regex);
-          }
+        }.getReplicaListTransformer(
+                new LocalSolrQueryRequest(null,
+                        new ModifiableSolrParams().add("toyRegEx", regex)));
+      }
 
-          return super.getReplicaListTransformer(req);
+      final List<Replica> inputs = new ArrayList<>();
+      final List<Replica> expectedTransformed = new ArrayList<>();
+
+      final List<String> urls = createRandomUrls();
+      for (int ii = 0; ii < urls.size(); ++ii) {
+
+        final String name = "replica" + (ii + 1);
+        final String url = urls.get(ii);
+        final Map<String, Object> propMap = new HashMap<String, Object>();
+        propMap.put("base_url", url);
+        propMap.put("core", "test_core");
+        propMap.put("node_name", "test_node");
+        propMap.put("type", "NRT");
+        // a skeleton replica, good enough for this test's purposes
+        final Replica replica = new Replica(name, propMap, "c1", "s1");
+
+        inputs.add(replica);
+        final String coreUrl = replica.getCoreUrl();
+        if (coreUrl.matches(regex)) {
+          log.info("adding replica=[{}] to expected due to core url ({}) regex match on {} ",
+                  replica, coreUrl, regex);
+          expectedTransformed.add(replica);
+        } else {
+          log.info("NOT expecting replica=[{}] due to core url ({}) regex mismatch ({})",
+                  replica, coreUrl, regex);
         }
 
-      }.getReplicaListTransformer(
-          new LocalSolrQueryRequest(null,
-              new ModifiableSolrParams().add("toyRegEx", regex)));
-    }
-
-    final List<Replica> inputs = new ArrayList<>();
-    final List<Replica> expectedTransformed = new ArrayList<>();
-
-    final List<String> urls = createRandomUrls();
-    for (int ii=0; ii<urls.size(); ++ii) {
-
-      final String name = "replica"+(ii+1);
-      final String url = urls.get(ii);
-      final Map<String,Object> propMap = new HashMap<String,Object>();
-      propMap.put("base_url", url);
-      propMap.put("core", "test_core");
-      propMap.put("node_name", "test_node");
-      propMap.put("type", "NRT");
-      // a skeleton replica, good enough for this test's purposes
-      final Replica replica = new Replica(name, propMap,"c1","s1");
-
-      inputs.add(replica);
-      final String coreUrl = replica.getCoreUrl();
-      if (coreUrl.matches(regex)) {
-        log.info("adding replica=[{}] to expected due to core url ({}) regex match on {} ",
-                 replica, coreUrl, regex);
-        expectedTransformed.add(replica);
-      } else {
-        log.info("NOT expecting replica=[{}] due to core url ({}) regex mismatch ({})",
-                 replica, coreUrl, regex);
       }
-      
-    }
 
-    final List<Replica> actualTransformed = new ArrayList<>(inputs);
-    transformer.transform(actualTransformed);
+      final List<Replica> actualTransformed = new ArrayList<>(inputs);
+      transformer.transform(actualTransformed);
 
-    assertEquals(expectedTransformed, actualTransformed);
-    if (transformer instanceof  HttpShardHandlerFactory) {
-      ((HttpShardHandlerFactory) transformer).close();
+      assertEquals(expectedTransformed, actualTransformed);
+    } finally {
+      if (transformer != null) {
+        transformer.close();
+      }
     }
   }
 

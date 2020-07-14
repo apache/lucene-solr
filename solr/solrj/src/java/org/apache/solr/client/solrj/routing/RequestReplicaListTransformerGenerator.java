@@ -16,6 +16,7 @@
  */
 package org.apache.solr.client.solrj.routing;
 
+import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -124,7 +125,7 @@ public class RequestReplicaListTransformerGenerator {
    * and subsequently reordering any equivalent replica sets according to behavior specified
    * by the baseReplicaListTransformer.
    */
-  private static final class TopLevelReplicaListTransformer implements ReplicaListTransformer {
+  private static final class TopLevelReplicaListTransformer implements ReplicaListTransformer, Closeable {
 
     private final NodePreferenceRulesComparator replicaComp;
     private final ReplicaListTransformer baseReplicaListTransformer;
@@ -184,6 +185,11 @@ public class RequestReplicaListTransformerGenerator {
           log.debug("Applied sorting preferences to replica list: {}", Arrays.toString(choices.toArray()));
         }
       }
+    }
+
+    @Override
+    public void close() {
+
     }
   }
   
