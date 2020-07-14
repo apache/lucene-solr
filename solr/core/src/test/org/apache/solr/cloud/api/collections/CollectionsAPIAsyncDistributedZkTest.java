@@ -232,15 +232,14 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
         .setShards("shard1")
         .processAndWait(cluster.getSolrClient(), MAX_TIMEOUT_SECONDS);
     assertSame("CreateCollection task did not complete!", RequestStatusState.COMPLETED, state);
-    
-    int numThreads = 10;
+
     final AtomicInteger numSuccess = new AtomicInteger(0);
     final AtomicInteger numFailure = new AtomicInteger(0);
-    final CountDownLatch latch = new CountDownLatch(numThreads);
+    final CountDownLatch latch = new CountDownLatch((TEST_NIGHTLY ? 10 : 3));
     
-    ExecutorService es = ExecutorUtil.newMDCAwareFixedThreadPool(numThreads, new SolrNamedThreadFactory("testAsyncIdRaceCondition"));
+    ExecutorService es = testExecutor;
     try {
-      for (int i = 0; i < numThreads; i++) {
+      for (int i = 0; i < (TEST_NIGHTLY ? 10 : 3); i++) {
         es.submit(new Runnable() {
           
           @Override
@@ -274,7 +273,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
       es.shutdown();
       assertTrue(es.awaitTermination(10, TimeUnit.SECONDS));
       assertEquals(1, numSuccess.get());
-      assertEquals(numThreads - 1, numFailure.get());
+      assertEquals((TEST_NIGHTLY ? 10 : 3) - 1, numFailure.get());
     } finally {
       for (int i = 0; i < clients.length; i++) {
         clients[i].close();

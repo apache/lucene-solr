@@ -32,7 +32,6 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
@@ -115,7 +114,7 @@ public class TestManagedSchemaThreadSafety extends SolrTestCaseJ4 {
       client.upConfig(configset("cloud-managed-upgrade"), configsetName);
     }
 
-    ExecutorService executor = ExecutorUtil.newMDCAwareCachedThreadPool("threadpool");
+    ExecutorService executor = testExecutor;
     
     try (SolrZkClient raceJudge = new SuspendingZkClient(zkServer.getZkHost(), 30000)) {
 
@@ -129,9 +128,6 @@ public class TestManagedSchemaThreadSafety extends SolrTestCaseJ4 {
       for (Future<?> future : futures) {
         future.get();
       }
-    }
-    finally {
-      ExecutorUtil.shutdownAndAwaitTermination(executor);
     }
   }
 

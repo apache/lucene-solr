@@ -50,7 +50,6 @@ public class TestCustomStream extends AbstractFullDistribZkTestBase {
     baseURL = baseURL.substring(0, baseURL.lastIndexOf('/'));
 
     TestBlobHandler.createSystemCollection(getHttpSolrClient(baseURL, randomClient.getHttpClient()));
-    waitForRecoveriesToFinish(".system", true);
 
     String payload = "{\n" +
         "'create-expressible' : { 'name' : 'hello', 'class': 'org.apache.solr.core.HelloStream' }\n" +

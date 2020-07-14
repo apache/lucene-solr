@@ -148,7 +148,7 @@ public class TestCaffeineCache extends SolrTestCase {
 
   @Test
   public void testMaxIdleTime() throws Exception {
-    int IDLE_TIME_SEC = TEST_NIGHTLY ? 5 : 1;
+    int IDLE_TIME_SEC = 1;
     CountDownLatch removed = new CountDownLatch(1);
     AtomicReference<RemovalCause> removalCause = new AtomicReference<>();
     CaffeineCache<String, String> cache = new CaffeineCache<>() {

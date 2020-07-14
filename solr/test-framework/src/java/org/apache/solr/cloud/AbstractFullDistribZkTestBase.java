@@ -1109,18 +1109,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
      ***/
   }// serial commit...
 
-  protected void waitForRecoveriesToFinish(boolean verbose)
-      throws Exception {
-    ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-    super.waitForRecoveriesToFinish(DEFAULT_COLLECTION, zkStateReader, verbose);
-  }
-
-  protected void waitForRecoveriesToFinish(String collection, boolean verbose)
-      throws Exception {
-    ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-    super.waitForRecoveriesToFinish(collection, zkStateReader, verbose);
-  }
-
   protected void checkQueries() throws Exception {
 
     handle.put("_version_", SKIPVAL);

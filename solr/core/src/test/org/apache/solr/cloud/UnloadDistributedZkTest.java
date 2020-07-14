@@ -17,11 +17,12 @@
 package org.apache.solr.cloud;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Random;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
@@ -39,7 +40,6 @@ import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeOut;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrCore;
@@ -333,36 +333,27 @@ public class UnloadDistributedZkTest extends SolrCloudBridgeTestCase {
     JettySolrRunner jetty = cluster.getJettySolrRunner(0);
     try (final HttpSolrClient adminClient = (HttpSolrClient) jetty.newClient(15000, 60000)) {
       int numReplicas = atLeast(3);
-      ThreadPoolExecutor executor = new ExecutorUtil.MDCAwareThreadPoolExecutor(0, Integer.MAX_VALUE,
-              5, TimeUnit.SECONDS, new SynchronousQueue<>(),
-              new SolrNamedThreadFactory("testExecutor"));
-      try {
-        // create the cores
-        createCollectionInOneInstance(adminClient, jetty.getNodeName(), executor, "multiunload", 2, numReplicas);
-      } finally {
-        ExecutorUtil.shutdownAndAwaitTermination(executor);
-      }
 
-      executor = new ExecutorUtil.MDCAwareThreadPoolExecutor(0, Integer.MAX_VALUE, 5,
-              TimeUnit.SECONDS, new SynchronousQueue<>(),
-              new SolrNamedThreadFactory("testExecutor"));
-      try {
-        for (int j = 0; j < numReplicas; j++) {
-          final int freezeJ = j;
-          executor.execute(() -> {
-            Unload unloadCmd = new Unload(true);
-            unloadCmd.setCoreName("multiunload" + freezeJ);
-            try {
-              adminClient.request(unloadCmd);
-            } catch (SolrServerException | IOException e) {
-              throw new RuntimeException(e);
-            }
-          });
-          Thread.sleep(random().nextInt(50));
-        }
-      } finally {
-        ExecutorUtil.shutdownAndAwaitTermination(executor);
+
+      // create the cores
+      createCollectionInOneInstance(adminClient, jetty.getNodeName(), testExecutor, "multiunload", 2, numReplicas);
+      List<Callable<Object>> calls = new ArrayList<>();
+
+      for (int j = 0; j < numReplicas; j++) {
+        final int freezeJ = j;
+        calls.add(() -> {
+          Unload unloadCmd = new Unload(true);
+          unloadCmd.setCoreName("multiunload" + freezeJ);
+          try {
+            adminClient.request(unloadCmd);
+          } catch (SolrServerException | IOException e) {
+            throw new RuntimeException(e);
+          }
+          return null;
+        });
+        Thread.sleep(random().nextInt(50));
       }
+      testExecutor.invokeAll(calls);
     }
   }
 }

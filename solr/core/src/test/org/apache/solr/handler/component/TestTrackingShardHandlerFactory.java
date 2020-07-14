@@ -77,8 +77,6 @@ public class TestTrackingShardHandlerFactory extends AbstractFullDistribZkTestBa
 
     createCollection(collectionName, "_default", 2, 1, 1);
 
-    waitForRecoveriesToFinish(collectionName, true);
-
     List<TrackingShardHandlerFactory.ShardRequestAndParams> coreAdminRequests = trackingQueue.getCoreAdminRequests();
     assertNotNull(coreAdminRequests);
     assertEquals("Unexpected number of core admin requests were found", 2, coreAdminRequests.size());

@@ -62,9 +62,6 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
       createCollection(null, COLLECTION_NAME, shards, rFactor, shards * rFactor + 1, client, null, "_default");
     }
 
-    waitForCollection(cloudClient.getZkStateReader(), COLLECTION_NAME, 2);
-    waitForRecoveriesToFinish(COLLECTION_NAME, false);
-
     listCollection();
 
     clusterAssignPropertyTest();

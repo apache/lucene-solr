@@ -426,7 +426,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
   @Test
   public void testStressElection() throws Exception {
     final ScheduledExecutorService scheduler = Executors
-        .newScheduledThreadPool(15, new SolrNamedThreadFactory("stressElection"));
+        .newScheduledThreadPool(3, new SolrNamedThreadFactory("stressElection"));
     final List<ClientThread> threads = Collections
         .synchronizedList(new ArrayList<ClientThread>());
 

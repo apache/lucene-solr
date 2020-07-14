@@ -152,9 +152,6 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
       assertEquals(0, indexThread.getFailCount());
     }
 
-
-    waitForRecoveriesToFinish(false);
-
     commit();
 
     checkShardConsistency(batchSize == 1, true);

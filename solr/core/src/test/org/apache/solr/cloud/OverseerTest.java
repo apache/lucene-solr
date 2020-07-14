@@ -39,7 +39,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -59,6 +58,7 @@ import org.apache.solr.cloud.overseer.NodeMutator;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.cloud.overseer.ZkWriteCommand;
 import org.apache.solr.common.AlreadyClosedException;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -69,9 +69,6 @@ import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.IOUtils;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CloudConfig;
@@ -328,42 +325,39 @@ public class OverseerTest extends SolrTestCaseJ4 {
   public void tearDown() throws Exception {
     testDone = true;
 
-    ExecutorService customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("testCloseThreadPool"));
+    try (ParWork work = new ParWork(this)) {
 
-    for (ZkController zkController : zkControllers) {
-      customThreadPool.submit( () -> zkController.close());
+      for (ZkController zkController : zkControllers) {
+        work.collect(zkController);
+      }
+
+      for (HttpShardHandlerFactory httpShardHandlerFactory : httpShardHandlerFactorys) {
+        work.collect(httpShardHandlerFactory);
+      }
+
+      for (UpdateShardHandler updateShardHandler : updateShardHandlers) {
+        work.collect(updateShardHandler);
+      }
+
+      for (SolrClient solrClient : solrClients) {
+        work.collect(solrClient);
+      }
+
+      for (ZkStateReader reader : readers) {
+        work.collect(reader);
+      }
+
+      for (SolrZkClient solrZkClient : zkClients) {
+        work.collect(solrZkClient);
+      }
+
+
+      for (Overseer overseer : overseers) {
+        work.collect(overseer);
+      }
+
     }
 
-    for (HttpShardHandlerFactory httpShardHandlerFactory : httpShardHandlerFactorys) {
-      customThreadPool.submit( () -> httpShardHandlerFactory.close());
-    }
-
-    for (UpdateShardHandler updateShardHandler : updateShardHandlers) {
-      customThreadPool.submit( () -> updateShardHandler.close());
-    }
-
-    for (SolrClient solrClient : solrClients) {
-      customThreadPool.submit( () -> IOUtils.closeQuietly(solrClient));
-    }
-
-    for (ZkStateReader reader : readers) {
-      customThreadPool.submit( () -> reader.close());
-    }
-
-    for (SolrZkClient solrZkClient : zkClients) {
-      customThreadPool.submit( () -> IOUtils.closeQuietly(solrZkClient));
-    }
-
-    ExecutorUtil.shutdownAndAwaitTermination(customThreadPool);
-
-    customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("testCloseThreadPool"));
-
-
-    for (Overseer overseer : overseers) {
-      customThreadPool.submit( () -> overseer.close());
-    }
-
-    ExecutorUtil.shutdownAndAwaitTermination(customThreadPool);
 
     overseers.clear();
     zkControllers.clear();

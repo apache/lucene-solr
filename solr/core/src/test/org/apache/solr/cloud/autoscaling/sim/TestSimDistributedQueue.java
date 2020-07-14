@@ -38,7 +38,6 @@ import org.junit.Test;
 @Ignore // nocommit fix silly slow
 public class TestSimDistributedQueue extends SolrTestCaseJ4 {
   private static final Charset UTF8 = Charset.forName("UTF-8");
-  protected ExecutorService executor = ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrNamedThreadFactory("sdqtest-"));
 
   @Test
 // commented 20-July-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 05-Jul-2018
@@ -93,7 +92,7 @@ public class TestSimDistributedQueue extends SolrTestCaseJ4 {
     DistributedQueue dq = makeDistributedQueue(dqZNode);
 
     assertNull(dq.peek());
-    Future<String> future = executor.submit(() -> new String(dq.peek(15000), UTF8));
+    Future<String> future = testExecutor.submit(() -> new String(dq.peek(15000), UTF8));
     try {
       future.get(1000, TimeUnit.MILLISECONDS);
       fail("TimeoutException expected");
@@ -108,7 +107,7 @@ public class TestSimDistributedQueue extends SolrTestCaseJ4 {
     assertNull(dq.peek(10));
 
     // Rerun the earlier test make sure updates are still seen, post reconnection.
-    future = executor.submit(() -> new String(dq.peek(5000), UTF8));
+    future = testExecutor.submit(() -> new String(dq.peek(5000), UTF8));
     try {
       future.get(1000, TimeUnit.MILLISECONDS);
       fail("TimeoutException expected");
@@ -166,7 +165,7 @@ public class TestSimDistributedQueue extends SolrTestCaseJ4 {
     assertTrue(System.nanoTime() - start >= TimeUnit.MILLISECONDS.toNanos(500));
 
     // If someone adds a new matching element while we're waiting, we should return immediately.
-    executor.submit(() -> {
+    testExecutor.submit(() -> {
       try {
         Thread.sleep(50);
         dq.offer(data);
@@ -218,7 +217,6 @@ public class TestSimDistributedQueue extends SolrTestCaseJ4 {
       super.tearDown();
     } catch (Exception exc) {
     }
-    ExecutorUtil.shutdownAndAwaitTermination(executor);
   }
 
 }

@@ -103,9 +103,7 @@ public class HdfsWriteToMultipleCollectionsTest extends BasicDistributedZkTest {
     for (int i = 0; i < cnt; i++) {
       createCollection(ACOLLECTION + i, "_default", 2, 2, 9);
     }
-    for (int i = 0; i < cnt; i++) {
-      waitForRecoveriesToFinish(ACOLLECTION + i, false);
-    }
+
     List<CloudSolrClient> cloudClients = new ArrayList<>();
     List<StoppableIndexingThread> threads = new ArrayList<>();
     for (int i = 0; i < cnt; i++) {

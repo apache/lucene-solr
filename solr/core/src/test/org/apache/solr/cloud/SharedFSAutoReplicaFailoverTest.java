@@ -27,8 +27,6 @@ import java.util.Set;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -56,10 +54,8 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreDescriptor;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TestInjection;
@@ -88,10 +84,6 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
 
   private static final boolean DEBUG = true;
   private static MiniDFSCluster dfsCluster;
-
-  ThreadPoolExecutor executor = new ExecutorUtil.MDCAwareThreadPoolExecutor(0,
-      Integer.MAX_VALUE, 5, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
-      new SolrNamedThreadFactory("testExecutor"));
   
   CompletionService<Object> completionService;
   Set<Future<Object>> pending;
@@ -139,7 +131,7 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
 
   
   public SharedFSAutoReplicaFailoverTest() {
-    completionService = new ExecutorCompletionService<>(executor);
+    completionService = new ExecutorCompletionService<>(testExecutor);
     pending = new HashSet<>();
   }
 
@@ -172,7 +164,6 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
 
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
-    waitForRecoveriesToFinish(collection1, false);
     
     String collection2 = "solrj_collection2";
     createCollectionRequest = CollectionAdminRequest.createCollection(collection2,"conf1",2,2)
@@ -184,8 +175,6 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
     assertEquals(0, response2.getStatus());
     assertTrue(response2.isSuccess());
     
-    waitForRecoveriesToFinish(collection2, false);
-    
     String collection3 = "solrj_collection3";
     createCollectionRequest = CollectionAdminRequest.createCollection(collection3,"conf1",5,1)
             .setMaxShardsPerNode(1)
@@ -195,8 +184,6 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
 
     assertEquals(0, response3.getStatus());
     assertTrue(response3.isSuccess());
-    
-    waitForRecoveriesToFinish(collection3, false);
 
     // a collection has only 1 replica per a shard
     String collection4 = "solrj_collection4";
@@ -208,8 +195,6 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
 
     assertEquals(0, response4.getStatus());
     assertTrue(response4.isSuccess());
-
-    waitForRecoveriesToFinish(collection4, false);
 
     // all collections
     String[] collections = {collection1, collection2, collection3, collection4};

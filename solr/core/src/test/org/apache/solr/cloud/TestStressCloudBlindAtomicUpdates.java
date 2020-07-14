@@ -51,9 +51,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.TestInjection;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -113,8 +111,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
     DOC_ID_INCR = TestUtil.nextInt(random(), 1, 7);
     
     NUM_THREADS = atLeast(3);
-    EXEC_SERVICE = ExecutorUtil.newMDCAwareFixedThreadPool
-      (NUM_THREADS, new SolrNamedThreadFactory(DEBUG_LABEL));
+    EXEC_SERVICE = testExecutor;
     
     // at least 2, but don't go crazy on nightly/test.multiplier with "atLeast()"
     final int numShards = TEST_NIGHTLY ? 5 : 2; 
@@ -156,10 +153,6 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
   @AfterClass
   private static void afterClass() throws Exception {
     TestInjection.reset();
-    if (null != EXEC_SERVICE) {
-      ExecutorUtil.shutdownAndAwaitTermination(EXEC_SERVICE);
-      EXEC_SERVICE = null;
-    }
     if (null != CLOUD_CLIENT) {
       IOUtils.closeQuietly(CLOUD_CLIENT);
       CLOUD_CLIENT = null;

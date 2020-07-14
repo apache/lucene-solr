@@ -241,8 +241,6 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
         }
       }
 
-      waitForRecoveriesToFinish(false);
-      
       commit();
       
       Set<String> addFails = getAddFails(indexTreads);

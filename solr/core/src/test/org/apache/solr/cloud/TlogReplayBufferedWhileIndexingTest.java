@@ -67,9 +67,7 @@ public class TlogReplayBufferedWhileIndexingTest extends AbstractFullDistribZkTe
   public void test() throws Exception {
     handle.clear();
     handle.put("timestamp", SKIPVAL);
-    
-    waitForRecoveriesToFinish(false);
-    
+
     int numThreads = 3;
     
     threads = new ArrayList<>(numThreads);

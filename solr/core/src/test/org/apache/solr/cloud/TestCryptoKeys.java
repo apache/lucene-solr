@@ -103,7 +103,6 @@ public class TestCryptoKeys extends AbstractFullDistribZkTestBase {
     baseURL = baseURL.substring(0, baseURL.lastIndexOf('/'));
 
     TestBlobHandler.createSystemCollection(getHttpSolrClient(baseURL, randomClient.getHttpClient()));
-    waitForRecoveriesToFinish(".system", true);
 
     ByteBuffer jar = TestDynamicLoading.getFileContent("runtimecode/runtimelibs.jar.bin");
     String blobName = "signedjar";

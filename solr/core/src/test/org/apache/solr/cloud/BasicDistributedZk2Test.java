@@ -82,16 +82,10 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
           "foo_d", 1.414d);
       
       commit();
-      
-      // make sure we are in a steady state...
-      waitForRecoveriesToFinish(false);
 
       assertDocCounts(false);
       
       indexAbunchOfDocs();
-      
-      // check again 
-      waitForRecoveriesToFinish(false);
       
       commit();
       
@@ -133,8 +127,6 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
       chaosMonkey.expireSession(cloudJetty.jetty);
       
       indexr("id", docId + 1, t1, "slip this doc in");
-      
-      waitForRecoveriesToFinish(false);
       
       checkShardConsistency(SHARD1);
       checkShardConsistency(SHARD2);
@@ -357,12 +349,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     
     // this should trigger a recovery phase on deadShard
     deadShard.jetty.start();
-    
-    // make sure we have published we are recovering
-    Thread.sleep(1500);
-    
-    waitForRecoveriesToFinish(false);
-    
+
     deadShardCount = shardToJetty.get(SHARD1).get(0).client.solrClient
         .query(query).getResults().getNumFound();
     // if we properly recovered, we should now have the couple missing docs that
@@ -385,8 +372,6 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     commit();
     
     deadShard.jetty.start();
-
-    waitForRecoveriesToFinish(false);
     
     checkShardConsistency(true, false);
     
@@ -415,9 +400,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
   }
 
   private void addNewReplica() throws Exception {
-    
-    waitForRecoveriesToFinish(false);
-    
+
     // new server should be part of first shard
     // how many docs are on the new shard?
     for (CloudJettyRunner cjetty : shardToJetty.get(SHARD1)) {

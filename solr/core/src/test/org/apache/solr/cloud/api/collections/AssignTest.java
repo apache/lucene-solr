@@ -103,7 +103,6 @@ public class AssignTest extends SolrTestCaseJ4 {
       collectionUniqueIds.put(c, new ConcurrentHashMap<>());
     }
 
-    ExecutorService executor = ExecutorUtil.newMDCAwareCachedThreadPool("threadpool");
     try {
       server.run();
 
@@ -116,7 +115,7 @@ public class AssignTest extends SolrTestCaseJ4 {
         ZkDistribStateManager stateManager = new ZkDistribStateManager(zkClient);
         List<Future<?>> futures = new ArrayList<>();
         for (int i = 0; i < 73; i++) {
-          futures.add(executor.submit(() -> {
+          futures.add(testExecutor.submit(() -> {
             String collection = collections[LuceneTestCase.random().nextInt(collections.length)];
             int id = Assign.incAndGetId(stateManager, collection, 0);
             Object val = collectionUniqueIds.get(collection).put(id, fixedValue);
@@ -134,7 +133,6 @@ public class AssignTest extends SolrTestCaseJ4 {
           .reduce((m1, m2) -> m1 + m2).get());
     } finally {
       server.shutdown();
-      ExecutorUtil.shutdownAndAwaitTermination(executor);
     }
   }
 

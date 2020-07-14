@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -86,9 +87,7 @@ public class TestUnInvertedFieldException extends SolrTestCaseJ4 {
       initCallables.add(()-> UnInvertedField.getUnInvertedField(proto.field(), searcher));
     }
 
-    final ThreadPoolExecutor pool  = new MDCAwareThreadPoolExecutor(3, 
-        TestUtil.nextInt(random(), 3, 6), 10, TimeUnit.MILLISECONDS,
-        new LinkedBlockingQueue<Runnable>(), new NamedThreadFactory(getClass().getSimpleName()));
+    final ExecutorService pool  = testExecutor;
 
     try {
       TestInjection.uifOutOfMemoryError = true;

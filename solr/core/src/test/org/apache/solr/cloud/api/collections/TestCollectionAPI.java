@@ -83,11 +83,6 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       createCollection(null, COLLECTION_NAME1, 1, 1, 1, client, null, "_default");
     }
 
-    waitForCollection(cloudClient.getZkStateReader(), COLLECTION_NAME, 2);
-    waitForCollection(cloudClient.getZkStateReader(), COLLECTION_NAME1, 1);
-    waitForRecoveriesToFinish(COLLECTION_NAME, false);
-    waitForRecoveriesToFinish(COLLECTION_NAME1, false);
-
     listCollection();
     clusterStatusNoCollection();
     clusterStatusWithCollection();
@@ -225,9 +220,6 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       CollectionAdminRequest.Create req = CollectionAdminRequest.createCollection("test_repFactorColl", "_default", 1, 3, 0, 0);
       client.request(req);
 
-      waitForCollection(cloudClient.getZkStateReader(), "test_repFactorColl", 1);
-      waitForRecoveriesToFinish("test_repFactorColl", false);
-
       //Assert that replicationFactor has also been set to 3
       assertCountsForRepFactorAndNrtReplicas(client, "test_repFactorColl");
 
@@ -261,9 +253,6 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       request.setPath("/admin/collections");
 
       client.request(request);
-
-      waitForCollection(cloudClient.getZkStateReader(), collection, 1);
-      waitForRecoveriesToFinish(collection, false);
 
       // Now try deleting the configset and doing a clusterstatus.
       String parent = ZkConfigManager.CONFIGS_ZKNODE + "/" + configSet;
@@ -421,7 +410,6 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     try (CloudSolrClient client = createCloudClient(null)) {
       setV2(CollectionAdminRequest.createCollection(cname, "_default", 1, 1).setMaxShardsPerNode(1)).process(client);
       assertV2CallsCount();
-      waitForRecoveriesToFinish(cname, true);
 
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
@@ -445,7 +433,6 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       setV2(addReplica);
       addReplica.process(client);
       assertV2CallsCount();
-      waitForRecoveriesToFinish(cname, true);
 
       rsp = client.request(request);
       cluster = (NamedList<Object>) rsp.get("cluster");
@@ -908,8 +895,6 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       client.connect();
 
       CollectionAdminRequest.createCollection("testClusterStateMigration","_default",1,1).setStateFormat(1).process(client);
-
-      waitForRecoveriesToFinish("testClusterStateMigration", true);
 
       assertEquals(1, client.getZkStateReader().getClusterState().getCollection("testClusterStateMigration").getStateFormat());
 

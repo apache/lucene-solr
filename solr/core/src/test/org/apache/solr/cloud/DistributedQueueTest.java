@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
 
 import java.nio.charset.Charset;
 import java.util.NoSuchElementException;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -27,8 +26,6 @@ import java.util.function.Predicate;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.cloud.DistributedQueue;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
@@ -42,7 +39,6 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
 
   protected ZkTestServer zkServer;
   protected SolrZkClient zkClient;
-  protected ExecutorService executor = ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrNamedThreadFactory("dqtest-"));
 
   @Before
   @Override
@@ -132,7 +128,7 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
     ZkDistributedQueue dq = makeDistributedQueue(dqZNode);
 
     assertNull(dq.peek());
-    Future<String> future = executor.submit(() -> new String(dq.peek(true), UTF8));
+    Future<String> future = testExecutor.submit(() -> new String(dq.peek(true), UTF8));
     try {
       future.get(1000, TimeUnit.MILLISECONDS);
       fail("TimeoutException expected");
@@ -168,7 +164,7 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
     assertEquals(0, dq.watcherCount());
 
     // Rerun the earlier test make sure updates are still seen, post reconnection.
-    future = executor.submit(() -> new String(dq.peek(true), UTF8));
+    future = testExecutor.submit(() -> new String(dq.peek(true), UTF8));
     try {
       future.get(1000, TimeUnit.MILLISECONDS);
       fail("TimeoutException expected");
@@ -263,7 +259,7 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
     assertTrue(System.nanoTime() - start >= TimeUnit.MILLISECONDS.toNanos(100));
 
     // If someone adds a new matching element while we're waiting, we should return immediately.
-    executor.submit(() -> {
+    testExecutor.submit(() -> {
       try {
         Thread.sleep(250);
         dq.offer(data);
@@ -333,7 +329,6 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
     } catch (Exception exc) {
     }
     closeZk();
-    executor.shutdown();
   }
 
   protected void setupZk() throws Exception {

@@ -113,9 +113,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     }
     inputFactory = XMLInputFactory.newInstance();
 
-    exe = // Executors.newSingleThreadExecutor();
-    rarely() ? ExecutorUtil.newMDCAwareFixedThreadPool(atLeast(2), new SolrNamedThreadFactory("AddBlockUpdateTest")) : ExecutorUtil
-        .newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("AddBlockUpdateTest"));
+    exe = testExecutor;
 
     counter.set(0);
     initCore("solrconfig.xml", "schema15.xml");
@@ -152,10 +150,6 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
 
   @AfterClass
   public static void afterClass() throws Exception {
-    if (null != exe) {
-      exe.shutdownNow();
-      exe = null;
-    }
     inputFactory = null;
   }
 

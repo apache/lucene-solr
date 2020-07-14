@@ -25,7 +25,6 @@ import java.util.concurrent.Future;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.spelling.suggest.RandomTestDictionaryFactory;
 import org.apache.solr.spelling.suggest.SuggesterParams;
 import org.apache.solr.update.SolrCoreState;
@@ -98,27 +97,23 @@ public class InfixSuggestersTest extends SolrTestCaseJ4 {
 
   @Test
   public void testReloadDuringBuild() throws Exception {
-    ExecutorService executor = ExecutorUtil.newMDCAwareCachedThreadPool("InfixSuggesterTest");
-    try {
-      // Build the suggester in the background with a long dictionary
-      Future job = executor.submit(() ->
-          expectThrows(RuntimeException.class, SolrCoreState.CoreIsClosedException.class,
-              () -> assertQ(req("qt", rh_analyzing_long,
-                  SuggesterParams.SUGGEST_BUILD_ALL, "true"),
-                  "//str[@name='command'][.='buildAll']")));
-      h.reload();
-      // Stop the dictionary's input iterator
-      System.clearProperty(RandomTestDictionaryFactory.RandomTestDictionary
-          .getEnabledSysProp("longRandomAnalyzingInfixSuggester"));
-      job.get();
-    } finally {
-      ExecutorUtil.shutdownAndAwaitTermination(executor);
-    }
+    ExecutorService executor = testExecutor;
+    // Build the suggester in the background with a long dictionary
+    Future job = executor.submit(() ->
+            expectThrows(RuntimeException.class, SolrCoreState.CoreIsClosedException.class,
+                    () -> assertQ(req("qt", rh_analyzing_long,
+                            SuggesterParams.SUGGEST_BUILD_ALL, "true"),
+                            "//str[@name='command'][.='buildAll']")));
+    h.reload();
+    // Stop the dictionary's input iterator
+    System.clearProperty(RandomTestDictionaryFactory.RandomTestDictionary
+            .getEnabledSysProp("longRandomAnalyzingInfixSuggester"));
+    job.get();
   }
 
   @Test
   public void testShutdownDuringBuild() throws Exception {
-    ExecutorService executor = ExecutorUtil.newMDCAwareCachedThreadPool("InfixSuggesterTest");
+    ExecutorService executor = testExecutor;
     try {
       LinkedHashMap<Class<? extends Throwable>, List<Class<? extends Throwable>>> expected = new LinkedHashMap<>();
       expected.put(RuntimeException.class, Arrays.asList
@@ -148,7 +143,6 @@ public class InfixSuggestersTest extends SolrTestCaseJ4 {
             wrappedException.getMessage().contains(expectedMessage));
       }
     } finally {
-      ExecutorUtil.shutdownAndAwaitTermination(executor);
       initCore("solrconfig-infixsuggesters.xml","schema.xml"); // put the core back for other tests
     }
   }

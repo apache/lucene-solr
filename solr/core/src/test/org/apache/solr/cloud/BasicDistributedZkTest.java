@@ -33,7 +33,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -123,15 +122,6 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   private String oneInstanceCollection2 = "oneInstanceCollection2";
   
   private AtomicInteger nodeCounter = new AtomicInteger();
-  
-  protected ExecutorService executor = new ExecutorUtil.MDCAwareThreadPoolExecutor(
-      4,
-      Integer.MAX_VALUE,
-      15, TimeUnit.SECONDS, // terminate idle threads after 15 sec
-      new SynchronousQueue<>(),  // directly hand off tasks
-      new SolrNamedThreadFactory("BaseDistributedSearchTestCase"),
-      false
-  );
 
   CompletionService<Object> completionService;
   Set<Future<Object>> pending;
@@ -175,7 +165,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
     
     sliceCount = 2;
-    completionService = new ExecutorCompletionService<>(executor);
+    completionService = new ExecutorCompletionService<>(testExecutor);
     pending = new HashSet<>();
     
   }
@@ -719,22 +709,12 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   private void testStopAndStartCoresInOneInstance() throws Exception {
     JettySolrRunner jetty = jettys.get(0);
     try (final HttpSolrClient httpSolrClient = (HttpSolrClient) jetty.newClient(15000, 60000)) {
-      ThreadPoolExecutor executor = null;
-      try {
-        executor = new ExecutorUtil.MDCAwareThreadPoolExecutor(0, Integer.MAX_VALUE,
-            5, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
-            new SolrNamedThreadFactory("testExecutor"));
-        int cnt = 3;
+      int cnt = 3;
 
-        // create the cores
-        createCollectionInOneInstance(httpSolrClient, jetty.getNodeName(), executor, "multiunload2", 1, cnt);
-      } finally {
-        if (executor != null) {
-          ExecutorUtil.shutdownAndAwaitTermination(executor);
-        }
-      }
+      // create the cores
+      createCollectionInOneInstance(httpSolrClient, jetty.getNodeName(), testExecutor, "multiunload2", 1, cnt);
     }
-    
+
     cloudJettys.get(0).jetty.stop();
     printLayout();
 
@@ -745,7 +725,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
       printLayout();
       throw e;
     }
-    
+
     printLayout();
 
   }
@@ -754,7 +734,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
    * Create a collection in single node
    */
   protected void createCollectionInOneInstance(final SolrClient client, String nodeName,
-                                               ThreadPoolExecutor executor, final String collection,
+                                               ExecutorService executor, final String collection,
                                                final int numShards, int numReplicas) {
     assertNotNull(nodeName);
     try {
@@ -1362,9 +1342,6 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
         IOUtils.close(clientList);
       }
     }
-    otherCollectionClients = null;
-    List<Runnable> tasks = executor.shutdownNow();
-    assertTrue(tasks.isEmpty());
-    ExecutorUtil.awaitTermination(executor);
+    otherCollectionClients = null;;
   }
 }

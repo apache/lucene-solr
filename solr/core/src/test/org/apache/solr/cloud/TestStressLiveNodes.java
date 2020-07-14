@@ -21,8 +21,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
@@ -30,8 +28,6 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 
 import org.apache.zookeeper.CreateMode;
 
@@ -171,18 +167,8 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
         thrashers.add(new LiveNodeTrasher("T"+iter+"_"+i, numNodesPerThrasher));
       }
       try {
-        final ExecutorService executorService = ExecutorUtil.newMDCAwareFixedThreadPool
-          (thrashers.size()+1, new SolrNamedThreadFactory("test_live_nodes_thrasher_iter"+iter));
-        
-        executorService.invokeAll(thrashers);
-        executorService.shutdown();
-        if (! executorService.awaitTermination(WAIT_TIME, TimeUnit.SECONDS)) {
-          for (LiveNodeTrasher thrasher : thrashers) {
-            thrasher.stop();
-          }
-        }
-        assertTrue("iter"+iter+": thrashers didn't finish even after explicitly stopping",
-                   executorService.awaitTermination(WAIT_TIME, TimeUnit.SECONDS));
+
+        testExecutor.invokeAll(thrashers);
 
         // sanity check the *real* live_nodes entries from ZK match what the thrashers added
         int totalAdded = 1; // 1 real live node when we started

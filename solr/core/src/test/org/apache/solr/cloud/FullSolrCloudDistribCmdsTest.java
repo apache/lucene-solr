@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -49,7 +48,6 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -436,16 +434,17 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
         }
       }
     };
-    final ExecutorService executor = ExecutorUtil.newMDCAwareCachedThreadPool("batchIndexing");
+
     final int numThreads = random().nextInt(TEST_NIGHTLY ? 4 : 2) + 1;
     final List<Future<?>> futures = new ArrayList<>(numThreads);
     for (int i = 0; i < numThreads; i++) {
-      futures.add(executor.submit(new BatchIndexer(i)));
+      futures.add(testExecutor.submit(new BatchIndexer(i)));
     }
     final int totalDocsExpected = numThreads * numBatchesPerThread * numDocsPerBatch;
-    ExecutorUtil.shutdownAndAwaitTermination(executor);
+
 
     for (Future result : futures) {
+      result.get();
       assertFalse(result.isCancelled());
       assertTrue(result.isDone());
       // all we care about is propogating any possibile execution exception...

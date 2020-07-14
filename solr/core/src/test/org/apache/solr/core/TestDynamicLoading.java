@@ -93,7 +93,6 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
 
 
     TestBlobHandler.createSystemCollection(getHttpSolrClient(baseURL, randomClient.getHttpClient()));
-    waitForRecoveriesToFinish(".system", true);
 
     map = TestSolrConfigHandler.getRespMap("/test1", client);
 

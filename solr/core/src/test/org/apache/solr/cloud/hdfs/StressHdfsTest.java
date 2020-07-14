@@ -112,8 +112,6 @@ public class StressHdfsTest extends BasicDistributedZkTest {
       
       try {
         createCollection(DELETE_DATA_DIR_COLLECTION, "_default", 1, 1, 1);
-        
-        waitForRecoveriesToFinish(DELETE_DATA_DIR_COLLECTION, false);
 
         jettys.get(0).stop();
         
@@ -131,8 +129,6 @@ public class StressHdfsTest extends BasicDistributedZkTest {
         }, rnd);
         
         jettys.get(0).start();
-        
-        waitForRecoveriesToFinish(DELETE_DATA_DIR_COLLECTION, false);
       } finally {
         timer.cancel();
       }
@@ -157,8 +153,6 @@ public class StressHdfsTest extends BasicDistributedZkTest {
     
     createCollection(DELETE_DATA_DIR_COLLECTION, "_default", nShards, rep, maxReplicasPerNode);
 
-    waitForRecoveriesToFinish(DELETE_DATA_DIR_COLLECTION, false);
-    
     // data dirs should be in zk, SOLR-8913
     ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
     final DocCollection docCollection = clusterState.getCollectionOrNull(DELETE_DATA_DIR_COLLECTION);

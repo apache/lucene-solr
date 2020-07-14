@@ -242,8 +242,7 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
       // try and wait for any replications and what not to finish...
       
       ChaosMonkey.wait(2000, DEFAULT_COLLECTION, zkStateReader);
-      
-      waitForRecoveriesToFinish(false);
+
       
       // make sure we again have leaders for each shard
       for (int j = 1; j < sliceCount; j++) {

@@ -30,6 +30,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -549,7 +550,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
    * Create a collection in single node
    */
   protected void createCollectionInOneInstance(final SolrClient client, String nodeName,
-                                               ThreadPoolExecutor executor, final String collection,
+                                               ExecutorService executor, final String collection,
                                                final int numShards, int numReplicas) {
     assertNotNull(nodeName);
     try {

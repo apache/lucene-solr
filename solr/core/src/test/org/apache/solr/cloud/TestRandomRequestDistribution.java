@@ -146,9 +146,6 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
         .setCreateNodeSet(nodeNames.get(0) + ',' + nodeNames.get(1))
         .process(cloudClient);
 
-    waitForRecoveriesToFinish("football", true);
-
-
     Replica leader = null;
     Replica notLeader = null;
 

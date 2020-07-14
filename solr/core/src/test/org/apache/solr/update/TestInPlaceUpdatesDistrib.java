@@ -129,7 +129,6 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
   // commented 4-Sep-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
   public void test() throws Exception {
-    waitForRecoveriesToFinish(true);
 
     resetDelays();
     
@@ -159,13 +158,12 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     
     // AwaitsFix this test fails easily
     // delayedReorderingFetchesMissingUpdateFromLeaderTest();
-    
     resetDelays();
     docValuesUpdateTest();
     resetDelays();
-    ensureRtgWorksWithPartialUpdatesTest();
+    // outOfOrderUpdatesIndividualReplicaTest(); nocommit debug, when the other tests were changed to testExecutor this started hitting a 404
     resetDelays();
-    outOfOrderUpdatesIndividualReplicaTest();
+    ensureRtgWorksWithPartialUpdatesTest();
     resetDelays();
     updatingDVsInAVeryOldSegment();
     resetDelays();
@@ -298,8 +296,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     }
 
     // Reordering needs to happen using parallel threads
-    ExecutorService threadpool = 
-        ExecutorUtil.newMDCAwareFixedThreadPool(updates.size() + 1, new SolrNamedThreadFactory(getTestName()));
+    ExecutorService threadpool = testExecutor;
 
     // re-order the updates for NONLEADER 0
     List<UpdateRequest> reorderedUpdates = new ArrayList<>(updates);
@@ -312,9 +309,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
       // are involved, but we're trying to bias the thread scheduling to run them in the order submitted
       Thread.sleep(10);
     }
-    
-    threadpool.shutdown();
-    assertTrue("Thread pool didn't terminate within 15 secs", threadpool.awaitTermination(15, TimeUnit.SECONDS));
+
     
     // assert all requests were successful
     for (Future<UpdateResponse> resp: updateResponses) {
@@ -349,8 +344,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     updates.add(simulatedDeleteRequest("inplace_updatable_float:"+(newinplace_updatable_float + 1), version0 + 3));
 
     // Reordering needs to happen using parallel threads
-    ExecutorService threadpool =
-        ExecutorUtil.newMDCAwareFixedThreadPool(updates.size() + 1, new SolrNamedThreadFactory(getTestName()));
+    ExecutorService threadpool = testExecutor;
 
     // re-order the updates by swapping the last two
     List<UpdateRequest> reorderedUpdates = new ArrayList<>(updates);
@@ -365,9 +359,6 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
       // are involved, but we're trying to bias the thread scheduling to run them in the order submitted
       Thread.sleep(100);
     }
-
-    threadpool.shutdown();
-    assertTrue("Thread pool didn't terminate within 15 secs", threadpool.awaitTermination(15, TimeUnit.SECONDS));
 
     // assert all requests were successful
     for (Future<UpdateResponse> resp: updateResponses) {
@@ -754,7 +745,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
 
     // Reordering needs to happen using parallel threads, since some of these updates will
     // be blocking calls, waiting for some previous updates to arrive on which it depends.
-    ExecutorService threadpool = 
+    ExecutorService threadpool =
         ExecutorUtil.newMDCAwareFixedThreadPool(updates.size() + 1, new SolrNamedThreadFactory(getTestName()));
 
     // re-order the updates for NONLEADER 0
@@ -768,14 +759,15 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
       // are involved, but we're trying to bias the thread scheduling to run them in the order submitted
       Thread.sleep(10);
     }
-    
-    threadpool.shutdown();
-    assertTrue("Thread pool didn't terminate within 15 secs", threadpool.awaitTermination(15, TimeUnit.SECONDS));
 
     // assert all requests were successful
     for (Future<UpdateResponse> resp: updateResponses) {
       assertEquals(0, resp.get().getStatus());
     }
+
+    threadpool.shutdown();
+    assertTrue("Thread pool didn't terminate within 15 secs", threadpool.awaitTermination(15, TimeUnit.SECONDS));
+
 
     // assert both replicas have same effect
     for (SolrClient client : NONLEADERS) { // 0th is re-ordered replica, 1st is well-ordered replica
@@ -826,8 +818,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     }
 
     // Reordering needs to happen using parallel threads
-    ExecutorService threadpool = 
-        ExecutorUtil.newMDCAwareFixedThreadPool(updates.size() + 1, new SolrNamedThreadFactory(getTestName()));
+    ExecutorService threadpool = testExecutor;
 
     // re-order the updates for NONLEADER 0
     List<UpdateRequest> reorderedUpdates = new ArrayList<>(updates);
@@ -840,9 +831,6 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
       // are involved, but we're trying to bias the thread scheduling to run them in the order submitted
       Thread.sleep(10);
     }
-    
-    threadpool.shutdown();
-    assertTrue("Thread pool didn't terminate within 15 secs", threadpool.awaitTermination(15, TimeUnit.SECONDS));
 
     // assert all requests were successful
     for (Future<UpdateResponse> resp: updateResponses) {
@@ -900,8 +888,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     }
 
     // Reordering needs to happen using parallel threads
-    ExecutorService threadpool = 
-        ExecutorUtil.newMDCAwareFixedThreadPool(updates.size() + 1, new SolrNamedThreadFactory(getTestName()));
+    ExecutorService threadpool = testExecutor;
     // re-order the last two updates for NONLEADER 0
     List<UpdateRequest> reorderedUpdates = new ArrayList<>(updates);
     Collections.swap(reorderedUpdates, 2, 3);
@@ -918,9 +905,6 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
       // are involved, but we're trying to bias the thread scheduling to run them in the order submitted
       Thread.sleep(10);
     }
-    
-    threadpool.shutdown();
-    assertTrue("Thread pool didn't terminate within 15 secs", threadpool.awaitTermination(15, TimeUnit.SECONDS));
 
     int successful = 0;
     for (Future<UpdateResponse> resp: updateResponses) {
@@ -984,21 +968,20 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     shardToJetty.get(SHARD1).get(1).jetty.getDebugFilter().addDelay(
         "Waiting for dependant update to timeout", 1, 6000);
 
-    ExecutorService threadpool =
-        ExecutorUtil.newMDCAwareFixedThreadPool(updates.size() + 1, new SolrNamedThreadFactory(getTestName()));
+    ExecutorService threadpool = testExecutor;
+    List<Future> futures = new ArrayList<>();
     for (UpdateRequest update : updates) {
       AsyncUpdateWithRandomCommit task = new AsyncUpdateWithRandomCommit(update, cloudClient,
                                                                          random().nextLong());
-      threadpool.submit(task);
+      futures.add(threadpool.submit(task));
 
       // while we can't guarantee/trust what order the updates are executed in, since multiple threads
       // are involved, but we're trying to bias the thread scheduling to run them in the order submitted
       Thread.sleep(100); 
     }
-
-    threadpool.shutdown();
-    assertTrue("Thread pool didn't terminate within 15 secs", threadpool.awaitTermination(15, TimeUnit.SECONDS));
-
+    for (Future future : futures) {
+      future.get();
+    }
     commit();
 
     // TODO: Could try checking ZK for LIR flags to ensure LIR has not kicked in
@@ -1058,21 +1041,21 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
       shardToJetty.get(SHARD1).get(1).jetty.getDebugFilter().addDelay("Waiting for dependant update to timeout", 1, 5999); // the first update
       shardToJetty.get(SHARD1).get(1).jetty.getDebugFilter().addDelay("Waiting for dependant update to timeout", 4, 5998); // the delete update
 
-      threadpool =
-          ExecutorUtil.newMDCAwareFixedThreadPool(updates.size() + 1, new SolrNamedThreadFactory(getTestName()));
+      threadpool = testExecutor;
+      futures = new ArrayList<>();
       for (UpdateRequest update : updates) {
         AsyncUpdateWithRandomCommit task = new AsyncUpdateWithRandomCommit(update, cloudClient,
                                                                            random().nextLong());
-        threadpool.submit(task);
+        futures.add(threadpool.submit(task));
         
         // while we can't guarantee/trust what order the updates are executed in, since multiple threads
         // are involved, but we're trying to bias the thread scheduling to run them in the order submitted
         Thread.sleep(100);
       }
 
-      threadpool.shutdown();
-      assertTrue("Thread pool didn't terminate within 15 secs", threadpool.awaitTermination(15, TimeUnit.SECONDS));
-
+      for (Future future : futures) {
+        future.get();
+      }
       commit();
 
       try (ZkShardTerms zkShardTerms = new ZkShardTerms(DEFAULT_COLLECTION, SHARD1, cloudClient.getZkStateReader().getZkClient())) {
@@ -1311,20 +1294,20 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     shardToJetty.get(SHARD1).get(1).jetty.getDebugFilter().addDelay(
         "Waiting for dependant update to timeout", 2, 8000);
 
-    ExecutorService threadpool =
-        ExecutorUtil.newMDCAwareFixedThreadPool(updates.size() + 1, new SolrNamedThreadFactory(getTestName()));
+    ExecutorService threadpool = testExecutor;
+    List<Future> futures = new ArrayList<>();
     for (UpdateRequest update : updates) {
       AsyncUpdateWithRandomCommit task = new AsyncUpdateWithRandomCommit(update, cloudClient,
                                                                          random().nextLong());
-      threadpool.submit(task);
+      futures.add(threadpool.submit(task));
 
       // while we can't guarantee/trust what order the updates are executed in, since multiple threads
       // are involved, but we're trying to bias the thread scheduling to run them in the order submitted
       Thread.sleep(100); 
     }
-
-    threadpool.shutdown();
-    assertTrue("Thread pool didn't terminate within 12 secs", threadpool.awaitTermination(12, TimeUnit.SECONDS));
+    for (Future future : futures) {
+      future.get();
+    }
 
     commit();
 

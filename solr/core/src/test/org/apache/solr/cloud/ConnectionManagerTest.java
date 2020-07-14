@@ -113,8 +113,7 @@ public class ConnectionManagerTest extends SolrTestCaseJ4 {
   
   @Test
   public void testReconnectWhenZkDisappeared() throws Exception {
-    ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(new SolrNamedThreadFactory("connectionManagerTest"));
-    
+
     // setup a SolrZkClient to do some getBaseUrlForNodeName testing
     Path zkDir = createTempDir("zkData");
     ZkTestServer server = new ZkTestServer(zkDir);
@@ -137,7 +136,6 @@ public class ConnectionManagerTest extends SolrTestCaseJ4 {
       } finally {
         cm.close();
         zkClient.close();
-        executor.shutdown();
       }
     } finally {
       server.shutdown();
