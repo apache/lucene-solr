@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.solr.common.SolrException;
 import org.jose4j.jwk.HttpsJwks;
@@ -56,9 +57,9 @@ import org.slf4j.LoggerFactory;
 public class JWTVerificationkeyResolver implements VerificationKeyResolver {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private VerificationJwkSelector verificationJwkSelector = new VerificationJwkSelector();
+  private final VerificationJwkSelector verificationJwkSelector = new VerificationJwkSelector();
 
-  private Map<String, JWTIssuerConfig> issuerConfigs = new HashMap<>();
+  private Map<String, JWTIssuerConfig> issuerConfigs = new ConcurrentHashMap<>();
   private final boolean requireIssuer;
 
   /**
