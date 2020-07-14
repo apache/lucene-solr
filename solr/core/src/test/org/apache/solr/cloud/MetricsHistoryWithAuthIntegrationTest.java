@@ -61,6 +61,7 @@ public class MetricsHistoryWithAuthIntegrationTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    System.setProperty("solr.disableMetricsHistoryHandler", "false");
     System.setProperty("solr.disableJmxReporter", "false");
     String solrXml = MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML.replace("<metrics>\n",
         "<metrics>\n" + SOLR_XML_HISTORY_CONFIG);

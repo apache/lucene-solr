@@ -1549,11 +1549,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     MDCLoggingContext.setCore(this);
   }
 
-  @Override
-  public void close() {
-    close(false);
-  }
-
   /**
    * Close all resources allocated by the core if it is no longer in use...
    * <ul>
@@ -1579,8 +1574,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    *
    * @see #isClosed()
    */
-
-  public void close(boolean failedInConstructor) {
+  @Override
+  public void close() {
     int count = refCount.decrementAndGet();
     if (count > 0) return; // close is called often, and only actually closes if nothing is using it.
     if (count < 0) {
@@ -1600,9 +1595,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         }
       }
 
-
-
-
       List<Callable<Object>> closeHookCalls = new ArrayList<>();
 
       if (closeHooks != null) {
@@ -1615,9 +1607,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       }
 
       assert ObjectReleaseTracker.release(searcherExecutor);
-
-    //  closer.add("PreCloseHooks", closeHookCalls);
-
 
       List<Callable<Object>> closeCalls = new ArrayList<Callable<Object>>();
       closeCalls.addAll(closeHookCalls);
@@ -1658,34 +1647,18 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
       AtomicBoolean coreStateClosed = new AtomicBoolean(false);
 
-      if (!failedInConstructor) {
-        closer.add("SolrCoreState", () -> {
-          boolean closed = false;
-          if (updateHandler != null && updateHandler instanceof IndexWriterCloser) {
-            closed = solrCoreState.decrefSolrCoreState((IndexWriterCloser) updateHandler);
-          } else {
-            closed = solrCoreState.decrefSolrCoreState(null);
-          }
-          coreStateClosed.set(closed);
-          return solrCoreState;
-        });
-      }
+      closer.add("SolrCoreState", () -> {
+        boolean closed = false;
+        if (updateHandler != null && updateHandler instanceof IndexWriterCloser) {
+          closed = solrCoreState.decrefSolrCoreState((IndexWriterCloser) updateHandler);
+        } else {
+          closed = solrCoreState.decrefSolrCoreState(null);
+        }
+        coreStateClosed.set(closed);
+        return solrCoreState;
+      });
 
       closer.add("coreAsyncTaskExecutor", coreAsyncTaskExecutor, () -> {
-        // Since we waited for the searcherExecutor to shut down,
-        // there should be no more searchers warming in the background
-        // that we need to take care of.
-        //
-        // For the case that a searcher was registered *before* warming
-        // then the searchExecutor will throw an exception when getSearcher()
-        // tries to use it, and the exception handling code should close it.
-// nocommit
-//        synchronized (searcherLock) {
-//          for (RefCounted<SolrIndexSearcher> searcher :  _searchers) {
-//            searcher.decref();
-//          }
-//        }
-
 
         return "Searcher";
       });
@@ -1705,11 +1678,11 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
       });
 
-      closer.add("closeSearcher", ()->{
+      closer.add("closeSearcher", () -> {
         closeSearcher();
       });
 
-      closer.add("ClearInfoReg&ReleaseSnapShotsDir", ()->{
+      closer.add("ClearInfoReg&ReleaseSnapShotsDir", () -> {
         closeSearcher();
         return "searcher";
       }, () -> {

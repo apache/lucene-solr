@@ -781,9 +781,11 @@ public class CoreContainer implements Closeable {
         metricsHandler.initializeMetrics(solrMetricsContext, METRICS_PATH);
       });
 
-      work.collect(() -> {
-        createMetricsHistoryHandler();
-      });
+      if (!Boolean.getBoolean("solr.disableMetricsHistoryHandler")) {
+        work.collect(() -> {
+          createMetricsHistoryHandler();
+        });
+      }
 
       work.collect(() -> {
         autoscalingHistoryHandler = createHandler(AUTOSCALING_HISTORY_PATH, AutoscalingHistoryHandler.class.getName(), AutoscalingHistoryHandler.class);

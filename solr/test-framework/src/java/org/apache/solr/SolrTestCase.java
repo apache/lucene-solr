@@ -194,6 +194,8 @@ public class SolrTestCase extends LuceneTestCase {
       // nocommit - not used again yet
       System.setProperty("solr.OverseerStateUpdateDelay", "0");
 
+      System.setProperty("solr.disableMetricsHistoryHandler", "true");
+
       System.setProperty("solr.leaderThrottle", "0");
       System.setProperty("solr.recoveryThrottle", "0");
 

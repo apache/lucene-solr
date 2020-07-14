@@ -665,11 +665,12 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
     if (log.isDebugEnabled()) {
       log.debug("Closing {}", hashCode());
     }
-    collectService.shutdownNow();
+
     try (ParWork closer = new ParWork(this)) {
-      closer.collect(collectService);
       closer.collect(factory);
-      closer.addCollect("metricsHistoryHandlerClose");
+      closer.addCollect("factory");
+      closer.collect(collectService);
+      closer.addCollect("collectService");
     }
 
     knownDbs.clear();
