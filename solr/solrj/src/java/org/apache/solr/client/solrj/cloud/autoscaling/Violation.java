@@ -27,6 +27,7 @@ import java.util.function.Function;
 
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.Utils;
 
 public class Violation implements MapWriter {
@@ -109,10 +110,10 @@ public class Violation implements MapWriter {
   }
 
   static class ReplicaInfoAndErr implements MapWriter{
-    final ReplicaInfo replicaInfo;
+    final Replica replicaInfo;
     Double delta;
 
-    ReplicaInfoAndErr(ReplicaInfo replicaInfo) {
+    ReplicaInfoAndErr(Replica replicaInfo) {
       this.replicaInfo = replicaInfo;
     }
 

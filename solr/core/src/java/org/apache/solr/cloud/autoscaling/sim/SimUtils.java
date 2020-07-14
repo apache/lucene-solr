@@ -36,7 +36,6 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.Cell;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
-import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.Row;
 import org.apache.solr.client.solrj.cloud.autoscaling.Variable;
 import org.apache.solr.client.solrj.request.CollectionApiMapping;
@@ -110,9 +109,9 @@ public class SimUtils {
         }
       });
     });
-    Map<String, Map<String, ReplicaInfo>> allReplicaInfos = new HashMap<>();
+    Map<String, Map<String, Replica>> allReplicaInfos = new HashMap<>();
     solrCloudManager.getClusterStateProvider().getLiveNodes().forEach(n -> {
-      Map<String, Map<String, List<ReplicaInfo>>> infos = solrCloudManager.getNodeStateProvider().getReplicaInfo(n, replicaTags);
+      Map<String, Map<String, List<Replica>>> infos = solrCloudManager.getNodeStateProvider().getReplicaInfo(n, replicaTags);
       infos.forEach((coll, shards) -> shards.forEach((shard, replicas) -> replicas.forEach(r -> {
         if (allReplicaInfos.containsKey(r.getName())) {
           throw new RuntimeException("duplicate core_node name in NodeStateProvider: " + allReplicaInfos.get(r.getName()) + " versus " + r);
@@ -152,9 +151,9 @@ public class SimUtils {
     });
     // verify all replicas have size info
     allReplicaInfos.forEach((coll, replicas) -> replicas.forEach((core, ri) -> {
-          Number size = (Number) ri.getVariable(Variable.Type.CORE_IDX.metricsAttribute);
+          Number size = (Number) ri.get(Variable.Type.CORE_IDX.metricsAttribute);
           if (size == null) {
-            size = (Number) ri.getVariable(Variable.Type.CORE_IDX.tagName);
+            size = (Number) ri.get(Variable.Type.CORE_IDX.tagName);
             if (size == null) {
 //              for (String node : solrCloudManager.getClusterStateProvider().getLiveNodes()) {
 //                log.error("Check for missing values: {}: {}", node, solrCloudManager.getNodeStateProvider().getReplicaInfo(node, SnapshotNodeStateProvider.REPLICA_TAGS));
@@ -261,25 +260,25 @@ public class SimUtils {
       }
       row.forEachReplica(ri -> {
         Map<String, Object> perReplica = collReplicas.computeIfAbsent(ri.getCollection(), c -> new TreeMap<>())
-            .computeIfAbsent(ri.getCore().substring(ri.getCollection().length() + 1), core -> new LinkedHashMap<>());
+            .computeIfAbsent(ri.getCoreName().substring(ri.getCollection().length() + 1), core -> new LinkedHashMap<>());
 //            if (ri.getVariable(Variable.Type.CORE_IDX.tagName) != null) {
 //              perReplica.put(Variable.Type.CORE_IDX.tagName, ri.getVariable(Variable.Type.CORE_IDX.tagName));
 //            }
-        if (ri.getVariable(Variable.Type.CORE_IDX.metricsAttribute) != null) {
-          perReplica.put(Variable.Type.CORE_IDX.metricsAttribute, ri.getVariable(Variable.Type.CORE_IDX.metricsAttribute));
-          if (ri.getVariable(Variable.Type.CORE_IDX.tagName) != null) {
-            perReplica.put(Variable.Type.CORE_IDX.tagName, ri.getVariable(Variable.Type.CORE_IDX.tagName));
+        if (ri.get(Variable.Type.CORE_IDX.metricsAttribute) != null) {
+          perReplica.put(Variable.Type.CORE_IDX.metricsAttribute, ri.get(Variable.Type.CORE_IDX.metricsAttribute));
+          if (ri.get(Variable.Type.CORE_IDX.tagName) != null) {
+            perReplica.put(Variable.Type.CORE_IDX.tagName, ri.get(Variable.Type.CORE_IDX.tagName));
           } else {
             perReplica.put(Variable.Type.CORE_IDX.tagName,
-                Variable.Type.CORE_IDX.convertVal(ri.getVariable(Variable.Type.CORE_IDX.metricsAttribute)));
+                Variable.Type.CORE_IDX.convertVal(ri.get(Variable.Type.CORE_IDX.metricsAttribute)));
           }
         }
         perReplica.put("coreNode", ri.getName());
-        if (ri.isLeader || ri.getBool("leader", false)) {
+        if (ri.isLeader() || ri.getBool("leader", false)) {
           perReplica.put("leader", true);
           Double totalSize = (Double)collStats.computeIfAbsent(ri.getCollection(), c -> new HashMap<>())
               .computeIfAbsent("avgShardSize", size -> 0.0);
-          Number riSize = (Number)ri.getVariable(Variable.Type.CORE_IDX.metricsAttribute);
+          Number riSize = (Number)ri.get(Variable.Type.CORE_IDX.metricsAttribute);
           if (riSize != null) {
             totalSize += riSize.doubleValue();
             collStats.get(ri.getCollection()).put("avgShardSize", totalSize);

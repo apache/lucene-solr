@@ -123,7 +123,7 @@ public class Suggestion {
       Suggester suggester = ctx.session.getSuggester(MOVEREPLICA)
           .forceOperation(true)
           .hint(Suggester.Hint.COLL_SHARD, new Pair<>(e.replicaInfo.getCollection(), e.replicaInfo.getShard()))
-          .hint(Suggester.Hint.SRC_NODE, e.replicaInfo.getNode());
+          .hint(Suggester.Hint.SRC_NODE, e.replicaInfo.getNodeName());
       if (ctx.addSuggestion(suggester) != null) {
         currentDelta--;
       }

@@ -119,11 +119,11 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
   public static String clusterState = Utils.toJSONString(loadFromResource("testPolicy.json"));
 
-  public static Map<String, Map<String, List<ReplicaInfo>>> getReplicaDetails(String node,
+  public static Map<String, Map<String, List<Replica>>> getReplicaDetails(String node,
                                                                               @SuppressWarnings({"rawtypes"})Map clusterState) {
     ValidatingJsonMap m = ValidatingJsonMap
         .getDeepCopy(clusterState, 6, true);
-    Map<String, Map<String, List<ReplicaInfo>>> result = new LinkedHashMap<>();
+    Map<String, Map<String, List<Replica>>> result = new LinkedHashMap<>();
 
     m.forEach((collName, o) -> {
       ValidatingJsonMap coll = (ValidatingJsonMap) o;
@@ -133,10 +133,10 @@ public class TestPolicy extends SolrTestCaseJ4 {
           ValidatingJsonMap r = (ValidatingJsonMap) o2;
           String node_name = (String) r.get("node_name");
           if (!node_name.equals(node)) return;
-          Map<String, List<ReplicaInfo>> shardVsReplicaStats = result.computeIfAbsent(collName, k -> new HashMap<>());
-          List<ReplicaInfo> replicaInfos = shardVsReplicaStats.computeIfAbsent(shard, k -> new ArrayList<>());
-          replicaInfos.add(new ReplicaInfo(replicaName, (String) r.get("core"), collName, shard,
-              Replica.Type.get((String) r.get(ZkStateReader.REPLICA_TYPE)), node, r));
+          Map<String, List<Replica>> shardVsReplicaStats = result.computeIfAbsent(collName, k -> new HashMap<>());
+          List<Replica> replicaInfos = shardVsReplicaStats.computeIfAbsent(shard, k -> new ArrayList<>());
+          replicaInfos.add(new Replica(replicaName, node, collName, shard, (String) r.get("core"),
+              Replica.State.ACTIVE, Replica.Type.get((String) r.get(ZkStateReader.REPLICA_TYPE)), r));
         });
       });
     });
@@ -173,7 +173,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
       }
 
       @Override
-      protected Map<String, Object> fetchReplicaMetrics(String solrNode, Map<String, Pair<String, ReplicaInfo>> metricsKeyVsTagReplica) {
+      protected Map<String, Object> fetchReplicaMetrics(String solrNode, Map<String, Pair<String, Replica>> metricsKeyVsTagReplica) {
         //e.g: solr.core.perReplicaDataColl.shard1.replica_n4:INDEX.sizeInBytes
         Map<String, Object> result = new HashMap<>();
         metricsKeyVsTagReplica.forEach((k, v) -> {
@@ -270,7 +270,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
       }
 
       @Override
-      protected Map<String, Object> fetchReplicaMetrics(String solrNode, Map<String, Pair<String, ReplicaInfo>> metricsKeyVsTagReplica) {
+      protected Map<String, Object> fetchReplicaMetrics(String solrNode, Map<String, Pair<String, Replica>> metricsKeyVsTagReplica) {
         //e.g: solr.core.perReplicaDataColl.shard1.replica_n4:INDEX.sizeInBytes
         Map<String, Object> result = new HashMap<>();
         metricsKeyVsTagReplica.forEach((k, v) -> {
@@ -365,7 +365,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
       }
 
       @Override
-      protected Map<String, Object> fetchReplicaMetrics(String solrNode, Map<String, Pair<String, ReplicaInfo>> metricsKeyVsTagReplica) {
+      protected Map<String, Object> fetchReplicaMetrics(String solrNode, Map<String, Pair<String, Replica>> metricsKeyVsTagReplica) {
         //e.g: solr.core.perReplicaDataColl.shard1.replica_n4:INDEX.sizeInBytes
         Map<String, Object> result = new HashMap<>();
         metricsKeyVsTagReplica.forEach((k, v) -> {
@@ -475,7 +475,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
       }
 
       @Override
-      protected Map<String, Object> fetchReplicaMetrics(String solrNode, Map<String, Pair<String, ReplicaInfo>> metricsKeyVsTagReplica) {
+      protected Map<String, Object> fetchReplicaMetrics(String solrNode, Map<String, Pair<String, Replica>> metricsKeyVsTagReplica) {
         //e.g: solr.core.perReplicaDataColl.shard1.replica_n4:INDEX.sizeInBytes
         Map<String, Object> result = new HashMap<>();
         metricsKeyVsTagReplica.forEach((k, v) -> {
@@ -854,7 +854,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
       }
 
       @Override
-      protected Map<String, Object> fetchReplicaMetrics(String node, Map<String, Pair<String, ReplicaInfo>> metricsKeyVsTagReplica) {
+      protected Map<String, Object> fetchReplicaMetrics(String node, Map<String, Pair<String, Replica>> metricsKeyVsTagReplica) {
         //e.g: solr.core.perReplicaDataColl.shard1.replica_n4:INDEX.sizeInBytes
         Map<String, Object> result = new HashMap<>();
         metricsKeyVsTagReplica.forEach((k, v) -> {
@@ -905,7 +905,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         assertEquals(3, violation.getViolatingReplicas().size());
         Set<String> expected = ImmutableSet.of("r1", "r3", "r5");
         for (Violation.ReplicaInfoAndErr replicaInfoAndErr : violation.getViolatingReplicas()) {
-          assertTrue(expected.contains(replicaInfoAndErr.replicaInfo.getCore()));
+          assertTrue(expected.contains(replicaInfoAndErr.replicaInfo.getCoreName()));
         }
       } else if (violation.node.equals("node5")) {
         assertEquals(-1, violation.replicaCountDelta.doubleValue(), 0.01);
@@ -1191,8 +1191,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
             String name = m3.keySet().iterator().next().toString();
             m3 = (Map) m3.get(name);
             Replica.Type type = Replica.Type.get((String) m3.get("type"));
-            l3.set(i, new ReplicaInfo(name, name
-                , coll.toString(), shard.toString(), type, (String) node, m3));
+            l3.set(i, new Replica(name, (String) node, coll.toString(), shard.toString(), name, Replica.State.ACTIVE, type, m3));
           }
         });
 
@@ -1239,9 +1238,9 @@ public class TestPolicy extends SolrTestCaseJ4 {
           }
 
           @Override
-          public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
+          public Map<String, Map<String, List<Replica>>> getReplicaInfo(String node, Collection<String> keys) {
             @SuppressWarnings({"unchecked"})
-            Map<String, Map<String, List<ReplicaInfo>>> result = (Map<String, Map<String, List<ReplicaInfo>>>) Utils.getObjectByPath(m, false, Arrays.asList("replicaInfo", node));
+            Map<String, Map<String, List<Replica>>> result = (Map<String, Map<String, List<Replica>>>) Utils.getObjectByPath(m, false, Arrays.asList("replicaInfo", node));
             return result == null ? new HashMap<>() : result;
           }
         };
@@ -1481,10 +1480,10 @@ public class TestPolicy extends SolrTestCaseJ4 {
       public NodeStateProvider getNodeStateProvider() {
         return new DelegatingNodeStateProvider(null) {
           @Override
-          public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
+          public Map<String, Map<String, List<Replica>>> getReplicaInfo(String node, Collection<String> keys) {
             @SuppressWarnings({"unchecked"})
-            Map<String, Map<String, List<ReplicaInfo>>> o = (Map<String, Map<String, List<ReplicaInfo>>>) Utils.fromJSONString("{c1: {s0:[{}]}}");
-            Utils.setObjectByPath(o, "c1/s0[0]", new ReplicaInfo("r0", "c1.s0", "c1", "s0", Replica.Type.NRT, "nodex", new HashMap<>()));
+            Map<String, Map<String, List<Replica>>> o = (Map<String, Map<String, List<Replica>>>) Utils.fromJSONString("{c1: {s0:[{}]}}");
+            Utils.setObjectByPath(o, "c1/s0[0]", new Replica("r0", "nodex", "c1", "s0", "c1.s0", Replica.State.ACTIVE, Replica.Type.NRT, new HashMap<>()));
             return o;
           }
 
@@ -1516,8 +1515,8 @@ public class TestPolicy extends SolrTestCaseJ4 {
     Row r2 = r1.addReplica("c1", "s1", Replica.Type.NRT);
     assertEquals(1, r1.collectionVsShardVsReplicas.get("c1").get("s1").size());
     assertEquals(2, r2.collectionVsShardVsReplicas.get("c1").get("s1").size());
-    assertTrue(r2.collectionVsShardVsReplicas.get("c1").get("s1").get(0) instanceof ReplicaInfo);
-    assertTrue(r2.collectionVsShardVsReplicas.get("c1").get("s1").get(1) instanceof ReplicaInfo);
+    assertTrue(r2.collectionVsShardVsReplicas.get("c1").get("s1").get(0) instanceof Replica);
+    assertTrue(r2.collectionVsShardVsReplicas.get("c1").get("s1").get(1) instanceof Replica);
   }
 
   public void testMerge() {
@@ -2019,8 +2018,10 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "      {'core_node2':{}}]}}}");
     Map m = (Map) Utils.getObjectByPath(replicaInfoMap, false, "127.0.0.1:60089_solr/compute_plan_action_test");
     m.put("shard1", Arrays.asList(
-        new ReplicaInfo("core_node1", "core_node1", "compute_plan_action_test", "shard1", Replica.Type.NRT, "127.0.0.1:60089_solr", Collections.emptyMap()),
-        new ReplicaInfo("core_node2", "core_node2", "compute_plan_action_test", "shard1", Replica.Type.NRT, "127.0.0.1:60089_solr", Collections.emptyMap())));
+        new Replica("core_node1", "127.0.0.1:60089_solr", "compute_plan_action_test", "shard1", "core_node1",
+            Replica.State.ACTIVE, Replica.Type.NRT, Collections.emptyMap()),
+        new Replica("core_node2", "127.0.0.1:60089_solr", "compute_plan_action_test", "shard1", "core_node2",
+            Replica.State.ACTIVE, Replica.Type.NRT, Collections.emptyMap())));
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     Map<String, Map<String, Object>> tagsMap = (Map) Utils.fromJSONString("{" +
@@ -2056,8 +2057,8 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
           @Override
           @SuppressWarnings({"unchecked"})
-          public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
-            return (Map<String, Map<String, List<ReplicaInfo>>>) replicaInfoMap.get(node);
+          public Map<String, Map<String, List<Replica>>> getReplicaInfo(String node, Collection<String> keys) {
+            return (Map<String, Map<String, List<Replica>>>) replicaInfoMap.get(node);
           }
         };
       }
@@ -2136,7 +2137,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
           }
 
           @Override
-          public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
+          public Map<String, Map<String, List<Replica>>> getReplicaInfo(String node, Collection<String> keys) {
             return cloudManager.getNodeStateProvider().getReplicaInfo(node, keys);
           }
         };
@@ -2214,7 +2215,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
           }
 
           @Override
-          public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
+          public Map<String, Map<String, List<Replica>>> getReplicaInfo(String node, Collection<String> keys) {
             return getReplicaDetails(node, clusterS);
           }
         };
@@ -2277,7 +2278,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
           }
 
           @Override
-          public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
+          public Map<String, Map<String, List<Replica>>> getReplicaInfo(String node, Collection<String> keys) {
             return getReplicaDetails(node, (Map)Utils.fromJSONString(clusterState));
           }
         };
@@ -2351,7 +2352,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
           }
 
           @Override
-          public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
+          public Map<String, Map<String, List<Replica>>> getReplicaInfo(String node, Collection<String> keys) {
             return getReplicaDetails(node, (Map)Utils.fromJSONString(clusterState));
           }
         };
@@ -2805,18 +2806,16 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
           @Override
           @SuppressWarnings({"unchecked", "rawtypes"})
-          public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
+          public Map<String, Map<String, List<Replica>>> getReplicaInfo(String node, Collection<String> keys) {
             if (node.equals("node1")) {
               Map m = Utils.makeMap("newColl",
-                  Utils.makeMap("shard1", Collections.singletonList(new ReplicaInfo("r1", "shard1",
-                      new Replica("r1", Utils.makeMap(ZkStateReader.NODE_NAME_PROP, "node1", ZkStateReader.CORE_NAME_PROP, "core1"), "newColl", "shard1"),
-                      Utils.makeMap(FREEDISK.perReplicaValue, 200)))));
+                  Utils.makeMap("shard1", Collections.singletonList(new Replica("r1", "node1", "newColl", "shard1", "core1",
+                      Replica.State.ACTIVE, Replica.Type.NRT, Utils.makeMap(FREEDISK.perReplicaValue, 200)))));
               return m;
             } else if (node.equals("node2")) {
               Map m = Utils.makeMap("newColl",
-                  Utils.makeMap("shard2", Collections.singletonList(new ReplicaInfo("r1", "shard2",
-                      new Replica("r1", Utils.makeMap(ZkStateReader.NODE_NAME_PROP, "node2", ZkStateReader.CORE_NAME_PROP, "core2"),"newColl", "shard2"),
-                      Utils.makeMap(FREEDISK.perReplicaValue, 200)))));
+                  Utils.makeMap("shard2", Collections.singletonList(new Replica("r1", "node2", "newColl", "shard2", "core2",
+                      Replica.State.ACTIVE, Replica.Type.NRT, Utils.makeMap(FREEDISK.perReplicaValue, 200)))));
               return m;
             }
             return new HashMap<>();
@@ -2857,27 +2856,34 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
   public void testMoveReplicaLeaderlast() {
 
-    List<Pair<ReplicaInfo, Row>> validReplicas = new ArrayList<>();
+    List<Pair<Replica, Row>> validReplicas = new ArrayList<>();
     Map<String, Object> propMap = Utils.makeMap(
         "leader", "true",
         ZkStateReader.NODE_NAME_PROP, "node1",
         ZkStateReader.REPLICA_TYPE, Replica.Type.NRT.toString(),
         ZkStateReader.CORE_NAME_PROP, "core1");
     Replica replica = new Replica("r1", propMap, "c1", "s1");
-    ReplicaInfo replicaInfo = new ReplicaInfo(replica.collection, replica.slice ,replica, new HashMap<>());
+    Replica replicaInfo = new Replica(replica.name, replica.node, replica.collection, replica.shard, replica.core,
+        replica.getState(), replica.type, replica.getProperties());
     validReplicas.add(new Pair<>(replicaInfo, null));
 
-    replicaInfo = new ReplicaInfo("r4", "c1_s2_r1", "c1", "s2", Replica.Type.NRT, "n1", Collections.singletonMap("leader", "true"));
+    replicaInfo = new Replica("r4", "n1", "c1_s2_r1", "c1", "s2", Replica.State.ACTIVE, Replica.Type.NRT,
+        Utils.makeMap(ZkStateReader.LEADER_PROP, "true"));
     validReplicas.add(new Pair<>(replicaInfo, null));
 
 
     propMap.put("leader", false);
+    propMap.put("core", "r2");
+    propMap.put("node_name", "n1");
     replica = new Replica("r2", propMap,"c1","s1");
-    replicaInfo = new ReplicaInfo(replica.collection, replica.slice, replica, new HashMap<>());
+    replicaInfo = new Replica(replica.name, replica.node, replica.collection, replica.shard, replica.core,
+        replica.getState(), replica.type, new HashMap<>());
     validReplicas.add(new Pair<>(replicaInfo, null));
 
+    propMap.put("core", "r2");
     replica = new Replica("r3", propMap,"c1","s1");
-    replicaInfo = new ReplicaInfo(replica.collection,replica.slice, replica, new HashMap<>());
+    replicaInfo = new Replica(replica.name, replica.node, replica.collection, replica.shard, replica.core,
+        replica.getState(), replica.type, new HashMap<>());
     validReplicas.add(new Pair<>(replicaInfo, null));
 
 
@@ -3128,8 +3134,8 @@ public class TestPolicy extends SolrTestCaseJ4 {
             String name = m3.keySet().iterator().next().toString();
             m3 = (Map) m3.get(name);
             Replica.Type type = Replica.Type.get((String) m3.get("type"));
-            l3.set(i, new ReplicaInfo(name, name
-                , coll.toString(), shard.toString(), type, (String) node, m3));
+            l3.set(i, new Replica(name, (String) node, coll.toString(), shard.toString(),
+                name, Replica.State.ACTIVE, type, m3));
           }
         });
 
@@ -3181,9 +3187,9 @@ public class TestPolicy extends SolrTestCaseJ4 {
           }
 
           @Override
-          public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
+          public Map<String, Map<String, List<Replica>>> getReplicaInfo(String node, Collection<String> keys) {
             @SuppressWarnings({"unchecked"})
-            Map<String, Map<String, List<ReplicaInfo>>> result = (Map<String, Map<String, List<ReplicaInfo>>>) Utils.getObjectByPath(m, false, Arrays.asList("replicaInfo", node));
+            Map<String, Map<String, List<Replica>>> result = (Map<String, Map<String, List<Replica>>>) Utils.getObjectByPath(m, false, Arrays.asList("replicaInfo", node));
             return result == null ? new HashMap<>() : result;
           }
         };
@@ -3262,7 +3268,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
           @Override
           @SuppressWarnings({"unchecked"})
-          public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
+          public Map<String, Map<String, List<Replica>>> getReplicaInfo(String node, Collection<String> keys) {
             //return Collections.EMPTY_MAP;
             return replicaInfoMap;
           }

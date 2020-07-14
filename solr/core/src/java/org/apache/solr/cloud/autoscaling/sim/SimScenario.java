@@ -49,7 +49,6 @@ import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.Clause;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
-import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
 import org.apache.solr.client.solrj.cloud.autoscaling.Variable;
@@ -66,6 +65,7 @@ import org.apache.solr.cloud.autoscaling.AutoScalingHandler;
 import org.apache.solr.cloud.autoscaling.TriggerEvent;
 import org.apache.solr.cloud.autoscaling.TriggerListener;
 import org.apache.solr.cloud.autoscaling.TriggerListenerBase;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
@@ -561,14 +561,14 @@ public class SimScenario implements AutoCloseable {
         }
         Map<String, Object> paramsMap = new LinkedHashMap<>();
         params.toMap(paramsMap);
-        ReplicaInfo info = scenario.cluster.getSimClusterStateProvider().simGetReplicaInfo(
+        Replica info = scenario.cluster.getSimClusterStateProvider().simGetReplicaInfo(
             params.get(CollectionAdminParams.COLLECTION), params.get("replica"));
         if (info == null) {
           log.error("Could not find ReplicaInfo for params: {}", params);
         } else if (scenario.verbose) {
           paramsMap.put("replicaInfo", info);
-        } else if (info.getVariable(Variable.Type.CORE_IDX.tagName) != null) {
-          paramsMap.put(Variable.Type.CORE_IDX.tagName, info.getVariable(Variable.Type.CORE_IDX.tagName));
+        } else if (info.get(Variable.Type.CORE_IDX.tagName) != null) {
+          paramsMap.put(Variable.Type.CORE_IDX.tagName, info.get(Variable.Type.CORE_IDX.tagName));
         }
         try {
           scenario.cluster.request(operation);

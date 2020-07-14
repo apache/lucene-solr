@@ -33,7 +33,6 @@ import java.util.stream.Collectors;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
-import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.cloud.CloudTestUtils;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -226,15 +225,15 @@ public class SimSolrCloudTestCase extends SolrTestCaseJ4 {
   }
 
   @SuppressWarnings({"unchecked"})
-  public static void assertReplicaInfoEquals(ReplicaInfo one, ReplicaInfo two) {
+  public static void assertReplicaInfoEquals(Replica one, Replica two) {
     assertEquals(one.getName(), two.getName());
-    assertEquals(one.getNode(), two.getNode());
+    assertEquals(one.getNodeName(), two.getNodeName());
     assertEquals(one.getState(), two.getState());
     assertEquals(one.getType(), two.getType());
-    assertEquals(one.getCore(), two.getCore());
+    assertEquals(one.getCoreName(), two.getCoreName());
     assertEquals(one.getCollection(), two.getCollection());
     assertEquals(one.getShard(), two.getShard());
-    assertEquals(one.isLeader, two.isLeader);
+    assertEquals(one.isLeader(), two.isLeader());
     Map<String, Object> oneMap = new HashMap<>();
     Map<String, Object> twoMap = new HashMap<>();
     one.toMap(oneMap);

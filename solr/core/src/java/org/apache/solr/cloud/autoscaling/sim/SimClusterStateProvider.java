@@ -53,7 +53,6 @@ import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
-import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.client.solrj.cloud.autoscaling.Variable;
 import org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type;
@@ -139,8 +138,8 @@ public class SimClusterStateProvider implements ClusterStateProvider {
   private final SimDistribStateManager stateManager;
   private final SimCloudManager cloudManager;
 
-  private final Map<String, List<ReplicaInfo>> nodeReplicaMap = new ConcurrentHashMap<>();
-  private final Map<String, Map<String, List<ReplicaInfo>>> colShardReplicaMap = new ConcurrentHashMap<>();
+  private final Map<String, List<Replica>> nodeReplicaMap = new ConcurrentHashMap<>();
+  private final Map<String, Map<String, List<Replica>>> colShardReplicaMap = new ConcurrentHashMap<>();
   private final Map<String, Object> clusterProperties = new ConcurrentHashMap<>();
   private final Map<String, Map<String, Object>> collProperties = new ConcurrentHashMap<>();
   private final Map<String, Map<String, Map<String, Object>>> sliceProperties = new ConcurrentHashMap<>();
@@ -190,10 +189,10 @@ public class SimClusterStateProvider implements ClusterStateProvider {
                 }
                 Map<String, Object> props;
                 synchronized (ri) {
-                  props = new HashMap<>(ri.getVariables());
+                  props = new HashMap<>(ri.getProperties());
                 }
                 props.put(ZkStateReader.NODE_NAME_PROP, n);
-                props.put(ZkStateReader.CORE_NAME_PROP, ri.getCore());
+                props.put(ZkStateReader.CORE_NAME_PROP, ri.getCoreName());
                 props.put(ZkStateReader.REPLICA_TYPE, ri.getType().toString());
                 props.put(ZkStateReader.STATE_PROP, ri.getState().toString());
                 Replica r = new Replica(ri.getName(), props, ri.getCollection(), ri.getShard());
@@ -360,9 +359,10 @@ public class SimClusterStateProvider implements ClusterStateProvider {
             if (leader != null && r.getName().equals(leader.getName())) {
               props.put("leader", "true");
             }
-            ReplicaInfo ri = new ReplicaInfo(r.getName(), r.getCoreName(), dc.getName(), s.getName(), r.getType(), r.getNodeName(), props);
+            Replica ri = new Replica(r.getName(), r.getNodeName(), dc.getName(), s.getName(), r.getCoreName(),
+                r.getState(), r.getType(), props);
             if (leader != null && r.getName().equals(leader.getName())) {
-              ri.getVariables().put("leader", "true");
+              ri.getProperties().put("leader", "true");
             }
             if (liveNodes.get().contains(r.getNodeName())) {
               nodeReplicaMap.computeIfAbsent(r.getNodeName(), Utils.NEW_SYNCHRONIZED_ARRAYLIST_FUN).add(ri);
@@ -412,13 +412,13 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     return nodes.get(random.nextInt(nodes.size()));
   }
 
-  private ReplicaInfo getReplicaInfo(Replica r) {
+  private Replica getReplicaInfo(Replica r) {
     @SuppressWarnings({"unchecked"})
-    final List<ReplicaInfo> list = nodeReplicaMap.computeIfAbsent
+    final List<Replica> list = nodeReplicaMap.computeIfAbsent
       (r.getNodeName(), Utils.NEW_SYNCHRONIZED_ARRAYLIST_FUN);
     synchronized (list) {
-      for (ReplicaInfo ri : list) {
-        if (r.getCoreName().equals(ri.getCore()) && r.getName().equals(ri.getName())) {
+      for (Replica ri : list) {
+        if (r.getCoreName().equals(ri.getCoreName()) && r.getName().equals(ri.getName())) {
           return ri;
         }
       }
@@ -529,12 +529,13 @@ public class SimClusterStateProvider implements ClusterStateProvider {
   // this method needs to be called under a lock
   private void setReplicaStates(String nodeId, Replica.State state, Set<String> changedCollections) {
     @SuppressWarnings({"unchecked"})
-    List<ReplicaInfo> replicas = nodeReplicaMap.computeIfAbsent(nodeId, Utils.NEW_SYNCHRONIZED_ARRAYLIST_FUN);
+    List<Replica> replicas = nodeReplicaMap.computeIfAbsent(nodeId, Utils.NEW_SYNCHRONIZED_ARRAYLIST_FUN);
     synchronized (replicas) {
       replicas.forEach(r -> {
-        r.getVariables().put(ZkStateReader.STATE_PROP, state.toString());
+        r.setState(state);
+        //r.getProperties().put(ZkStateReader.STATE_PROP, state.toString());
         if (state != Replica.State.ACTIVE) {
-          r.getVariables().remove(ZkStateReader.LEADER_PROP);
+          r.getProperties().remove(ZkStateReader.LEADER_PROP);
         }
         changedCollections.add(r.getCollection());
       });
@@ -628,16 +629,17 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       if (message.getStr(CoreAdminParams.CORE_NODE_NAME) == null) {
         createReplica.coreNodeName = Assign.assignCoreNodeName(stateManager, coll);
       }
-      ReplicaInfo ri = new ReplicaInfo(
+      Replica ri = new Replica(
           createReplica.coreNodeName,
-          createReplica.coreName,
+          createReplica.node,
           createReplica.collectionName,
           createReplica.sliceName,
+          createReplica.coreName,
+          Replica.State.DOWN,
           createReplica.replicaType,
-          createReplica.node,
           message.getProperties()
       );
-      simAddReplica(ri.getNode(), ri, true);
+      simAddReplica(ri.getNodeName(), ri, true);
     }
     if (sessionWrapper.get() != null) {
       sessionWrapper.get().release();
@@ -653,17 +655,17 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @param runLeaderElection if true then run a leader election after adding the replica.
    */
   @SuppressWarnings({"unchecked"})
-  public void simAddReplica(String nodeId, ReplicaInfo replicaInfo, boolean runLeaderElection) throws Exception {
+  public void simAddReplica(String nodeId, Replica replicaInfo, boolean runLeaderElection) throws Exception {
     ensureNotClosed();
     lock.lockInterruptibly();
     try {
 
       // make sure SolrCore name is unique across cluster and coreNodeName within collection
-      for (Map.Entry<String, List<ReplicaInfo>> e : nodeReplicaMap.entrySet()) {
-        final List<ReplicaInfo> replicas = e.getValue();
+      for (Map.Entry<String, List<Replica>> e : nodeReplicaMap.entrySet()) {
+        final List<Replica> replicas = e.getValue();
         synchronized (replicas) {
-          for (ReplicaInfo ri : replicas) {
-            if (ri.getCore().equals(replicaInfo.getCore())) {
+          for (Replica ri : replicas) {
+            if (ri.getCoreName().equals(replicaInfo.getCoreName())) {
               throw new Exception("Duplicate SolrCore name for existing=" + ri + " on node " + e.getKey() + " and new=" + replicaInfo);
             }
             if (ri.getName().equals(replicaInfo.getName()) && ri.getCollection().equals(replicaInfo.getCollection())) {
@@ -676,29 +678,29 @@ public class SimClusterStateProvider implements ClusterStateProvider {
         throw new Exception("Target node " + nodeId + " is not live: " + liveNodes);
       }
       // verify info
-      if (replicaInfo.getCore() == null) {
+      if (replicaInfo.getCoreName() == null) {
         throw new Exception("Missing core: " + replicaInfo);
       }
       // XXX replica info is not supposed to have this as a variable
-      replicaInfo.getVariables().remove(ZkStateReader.SHARD_ID_PROP);
+      replicaInfo.getProperties().remove(ZkStateReader.SHARD_ID_PROP);
       if (replicaInfo.getName() == null) {
         throw new Exception("Missing name: " + replicaInfo);
       }
-      if (replicaInfo.getNode() == null) {
+      if (replicaInfo.getNodeName() == null) {
         throw new Exception("Missing node: " + replicaInfo);
       }
-      if (!replicaInfo.getNode().equals(nodeId)) {
+      if (!replicaInfo.getNodeName().equals(nodeId)) {
         throw new Exception("Wrong node (not " + nodeId + "): " + replicaInfo);
       }
       
       opDelay(replicaInfo.getCollection(), CollectionParams.CollectionAction.ADDREPLICA.name());
 
       // mark replica as active
-      replicaInfo.getVariables().put(ZkStateReader.STATE_PROP, Replica.State.ACTIVE.toString());
+      replicaInfo.setState(Replica.State.ACTIVE);
       // add a property expected in Policy calculations, if missing
-      if (replicaInfo.getVariable(Type.CORE_IDX.metricsAttribute) == null) {
-        replicaInfo.getVariables().put(Type.CORE_IDX.metricsAttribute, new AtomicLong(SimCloudManager.DEFAULT_IDX_SIZE_BYTES));
-        replicaInfo.getVariables().put(Variable.coreidxsize,
+      if (replicaInfo.get(Type.CORE_IDX.metricsAttribute) == null) {
+        replicaInfo.getProperties().put(Type.CORE_IDX.metricsAttribute, new AtomicLong(SimCloudManager.DEFAULT_IDX_SIZE_BYTES));
+        replicaInfo.getProperties().put(Variable.coreidxsize,
             new AtomicDouble((Double)Type.CORE_IDX.convertVal(SimCloudManager.DEFAULT_IDX_SIZE_BYTES)));
       }
       nodeReplicaMap.computeIfAbsent(nodeId, Utils.NEW_SYNCHRONIZED_ARRAYLIST_FUN).add(replicaInfo);
@@ -719,13 +721,13 @@ public class SimClusterStateProvider implements ClusterStateProvider {
         throw new Exception("Missing '" + ImplicitSnitch.DISK + "' in node metrics for node " + nodeId);
         //disk = SimCloudManager.DEFAULT_FREE_DISK;
       }
-      long replicaSize = ((Number)replicaInfo.getVariable(Type.CORE_IDX.metricsAttribute)).longValue();
+      long replicaSize = ((Number)replicaInfo.get(Type.CORE_IDX.metricsAttribute)).longValue();
       Number replicaSizeGB = (Number)Type.CORE_IDX.convertVal(replicaSize);
       cloudManager.getSimNodeStateProvider().simSetNodeValue(nodeId, ImplicitSnitch.DISK, disk.doubleValue() - replicaSizeGB.doubleValue());
       // fake metrics
       String registry = SolrMetricManager.getRegistryName(SolrInfoBean.Group.core, replicaInfo.getCollection(),
           replicaInfo.getShard(),
-          Utils.parseMetricsReplicaName(replicaInfo.getCollection(), replicaInfo.getCore()));
+          Utils.parseMetricsReplicaName(replicaInfo.getCollection(), replicaInfo.getCoreName()));
       cloudManager.getMetricManager().registry(registry).counter("UPDATE./update.requests");
       cloudManager.getMetricManager().registry(registry).counter("QUERY./select.requests");
       cloudManager.getMetricManager().registerGauge(null, registry,
@@ -752,12 +754,12 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     lock.lockInterruptibly();
     try {
       @SuppressWarnings({"unchecked"})
-      final List<ReplicaInfo> replicas = nodeReplicaMap.computeIfAbsent
+      final List<Replica> replicas = nodeReplicaMap.computeIfAbsent
         (nodeId, Utils.NEW_SYNCHRONIZED_ARRAYLIST_FUN);
       synchronized (replicas) {
         for (int i = 0; i < replicas.size(); i++) {
           if (collection.equals(replicas.get(i).getCollection()) && coreNodeName.equals(replicas.get(i).getName())) {
-            ReplicaInfo ri = replicas.remove(i);
+            Replica ri = replicas.remove(i);
             colShardReplicaMap.computeIfAbsent(ri.getCollection(), c -> new ConcurrentHashMap<>())
               .computeIfAbsent(ri.getShard(), s -> new ArrayList<>())
               .remove(ri);
@@ -776,10 +778,10 @@ public class SimClusterStateProvider implements ClusterStateProvider {
               if (disk == null || disk.doubleValue() == 0.0) {
                 throw new Exception("Unexpected value of 'freedisk' (" + disk + ") on node: " + nodeId);
               }
-              if (ri.getVariable(Type.CORE_IDX.metricsAttribute) == null) {
+              if (ri.get(Type.CORE_IDX.metricsAttribute) == null) {
                 throw new RuntimeException("Missing replica size: " + ri);
               }
-              long replicaSize = ((Number)ri.getVariable(Type.CORE_IDX.metricsAttribute)).longValue();
+              long replicaSize = ((Number)ri.get(Type.CORE_IDX.metricsAttribute)).longValue();
               Number replicaSizeGB = (Number)Type.CORE_IDX.convertVal(replicaSize);
               cloudManager.getSimNodeStateProvider().simSetNodeValue(nodeId, ImplicitSnitch.DISK, disk.doubleValue() + replicaSizeGB.doubleValue());
             }
@@ -907,17 +909,17 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       ActionThrottle lt = getThrottle(collection, s.getName());
       synchronized (lt) {
         // collect all active and live
-        List<ReplicaInfo> active = new ArrayList<>();
+        List<Replica> active = new ArrayList<>();
         AtomicBoolean alreadyHasLeader = new AtomicBoolean(false);
         s.getReplicas().forEach(r -> {
             // find our ReplicaInfo for this replica
-            ReplicaInfo ri = getReplicaInfo(r);
+            Replica ri = getReplicaInfo(r);
             if (ri == null) {
               throw new IllegalStateException("-- could not find ReplicaInfo for replica " + r);
             }
             synchronized (ri) {
               if (r.isActive(liveNodes.get())) {
-                if (ri.getVariables().get(ZkStateReader.LEADER_PROP) != null) {
+                if (ri.getProperties().get(ZkStateReader.LEADER_PROP) != null) {
                   if (log.isTraceEnabled()) {
                     log.trace("-- found existing leader {} / {}: {}, {}", collection, s.getName(), ri, r);
                   }
@@ -931,8 +933,8 @@ public class SimClusterStateProvider implements ClusterStateProvider {
                   log.trace("-- replica not active on live nodes: {}, {}", liveNodes.get(), r);
                 }
                 if (!liveNodes.contains(r.getNodeName())) {
-                  ri.getVariables().put(ZkStateReader.STATE_PROP, Replica.State.DOWN.toString());
-                  ri.getVariables().remove(ZkStateReader.LEADER_PROP);
+                  ri.getProperties().put(ZkStateReader.STATE_PROP, Replica.State.DOWN.toString());
+                  ri.getProperties().remove(ZkStateReader.LEADER_PROP);
                   stateChanged.set(true);
                 }
               }
@@ -954,8 +956,8 @@ public class SimClusterStateProvider implements ClusterStateProvider {
           return;
         }
         // pick first active one
-        ReplicaInfo ri = null;
-        for (ReplicaInfo a : active) {
+        Replica ri = null;
+        for (Replica a : active) {
           if (!a.getType().equals(Replica.Type.PULL)) {
             ri = a;
             break;
@@ -969,7 +971,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
         lt.minimumWaitBetweenActions();
         lt.markAttemptingAction();
         synchronized (ri) {
-          ri.getVariables().put(ZkStateReader.LEADER_PROP, "true");
+          ri.getProperties().put(ZkStateReader.LEADER_PROP, "true");
         }
         if (log.isDebugEnabled()) {
           log.debug("-- elected new leader for {} / {} (currentVersion={}): {}", collection,
@@ -1106,8 +1108,9 @@ public class SimClusterStateProvider implements ClusterStateProvider {
             replicaProps.put("SEARCHER.searcher.deletedDocs", new AtomicLong(0));
             replicaProps.put("SEARCHER.searcher.numDocs", new AtomicLong(0));
             replicaProps.put("SEARCHER.searcher.maxDoc", new AtomicLong(0));
-            ReplicaInfo ri = new ReplicaInfo("core_node" + Assign.incAndGetId(stateManager, withCollection, 0),
-                coreName, withCollection, withCollectionShard, pos.type, pos.node, replicaProps);
+            Replica ri = new Replica("core_node" + Assign.incAndGetId(stateManager, withCollection, 0),
+                pos.node, withCollection, withCollectionShard, coreName, Replica.State.DOWN,
+                pos.type, replicaProps);
             cloudManager.submit(() -> {
               simAddReplica(pos.node, ri, false);
               // do not count down the latch here
@@ -1129,8 +1132,9 @@ public class SimClusterStateProvider implements ClusterStateProvider {
         replicaProps.put("SEARCHER.searcher.deletedDocs", new AtomicLong(0));
         replicaProps.put("SEARCHER.searcher.numDocs", new AtomicLong(0));
         replicaProps.put("SEARCHER.searcher.maxDoc", new AtomicLong(0));
-        ReplicaInfo ri = new ReplicaInfo("core_node" + Assign.incAndGetId(stateManager, collectionName, 0),
-            coreName, collectionName, pos.shard, pos.type, pos.node, replicaProps);
+        Replica ri = new Replica("core_node" + Assign.incAndGetId(stateManager, collectionName, 0),
+            pos.node, collectionName, pos.shard, coreName, Replica.State.DOWN,
+            pos.type, replicaProps);
         cloudManager.submit(() -> {
           simAddReplica(pos.node, ri, true);
           finalStateLatch.countDown();
@@ -1187,8 +1191,8 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       opDelays.remove(collection);
       nodeReplicaMap.forEach((n, replicas) -> {
           synchronized (replicas) {  
-            for (Iterator<ReplicaInfo> it = replicas.iterator(); it.hasNext(); ) {
-              ReplicaInfo ri = it.next();
+            for (Iterator<Replica> it = replicas.iterator(); it.hasNext(); ) {
+              Replica ri = it.next();
               if (ri.getCollection().equals(collection)) {
                 it.remove();
                 // update the number of cores in node values
@@ -1292,11 +1296,11 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     }
 
     opDelay(collection, CollectionParams.CollectionAction.MOVEREPLICA.name());
-    ReplicaInfo ri = getReplicaInfo(replica);
+    Replica ri = getReplicaInfo(replica);
     if (ri != null) {
-      if (ri.getVariable(Type.CORE_IDX.tagName) != null) {
+      if (ri.get(Type.CORE_IDX.tagName) != null) {
         // simulate very large replicas - add additional delay of 5s / GB
-        long sizeInGB = ((Number)ri.getVariable(Type.CORE_IDX.tagName)).longValue();
+        long sizeInGB = ((Number)ri.get(Type.CORE_IDX.tagName)).longValue();
         long opDelay = opDelays.getOrDefault(ri.getCollection(), Collections.emptyMap())
             .getOrDefault(CollectionParams.CollectionAction.MOVEREPLICA.name(), defaultOpDelays.get(CollectionParams.CollectionAction.MOVEREPLICA.name()));
         opDelay = TimeUnit.MILLISECONDS.toSeconds(opDelay);
@@ -1315,7 +1319,8 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     Map<String, Object> props = replica.getProperties().entrySet().stream()
         .filter(e -> !NO_COPY_PROPS.contains(e.getKey()))
         .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
-    ReplicaInfo newReplica = new ReplicaInfo(coreNodeName, newSolrCoreName, collection, slice.getName(), replica.getType(), targetNode, props);
+    Replica newReplica = new Replica(coreNodeName, targetNode, collection, slice.getName(), newSolrCoreName,
+        Replica.State.DOWN, replica.getType(), props);
     log.debug("-- new replica: {}", newReplica);
     // xxx should run leader election here already?
     simAddReplica(targetNode, newReplica, false);
@@ -1458,7 +1463,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     if (sessionWrapper != null) sessionWrapper.release();
 
     // adjust numDocs / deletedDocs / maxDoc
-    String numDocsStr = String.valueOf(getReplicaInfo(leader).getVariable("SEARCHER.searcher.numDocs", "0"));
+    String numDocsStr = String.valueOf(getReplicaInfo(leader).get("SEARCHER.searcher.numDocs", "0"));
     long numDocs = Long.parseLong(numDocsStr);
     long newNumDocs = numDocs / subSlices.size();
     long remainderDocs = numDocs % subSlices.size();
@@ -1504,8 +1509,9 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       replicaProps.put(Type.CORE_IDX.metricsAttribute, new AtomicLong(replicasIndexSize));
       replicaProps.put(Variable.coreidxsize, new AtomicDouble((Double)Type.CORE_IDX.convertVal(replicasIndexSize)));
 
-      ReplicaInfo ri = new ReplicaInfo("core_node" + Assign.incAndGetId(stateManager, collectionName, 0),
-          solrCoreName, collectionName, replicaPosition.shard, replicaPosition.type, subShardNodeName, replicaProps);
+      Replica ri = new Replica("core_node" + Assign.incAndGetId(stateManager, collectionName, 0),
+          subShardNodeName, collectionName, replicaPosition.shard, solrCoreName,
+          Replica.State.DOWN, replicaPosition.type, replicaProps);
       simAddReplica(replicaPosition.node, ri, false);
     }
     simRunLeaderElection(Collections.singleton(collectionName), true);
@@ -1620,9 +1626,9 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       colShardReplicaMap.computeIfAbsent(collectionName, c -> new ConcurrentHashMap<>()).remove(sliceName);
       nodeReplicaMap.forEach((n, replicas) -> {
           synchronized (replicas) {
-            Iterator<ReplicaInfo> it = replicas.iterator();
+            Iterator<Replica> it = replicas.iterator();
             while (it.hasNext()) {
-              ReplicaInfo ri = it.next();
+              Replica ri = it.next();
               if (ri.getCollection().equals(collectionName) && ri.getShard().equals(sliceName)) {
                 it.remove();
               }
@@ -1700,8 +1706,8 @@ public class SimClusterStateProvider implements ClusterStateProvider {
           throw new IOException("-- no leader in " + s);
         }
         cloudManager.getMetricManager().registry(createRegistryName(collection, s.getName(), leader)).counter("UPDATE./update.requests").inc();
-        ReplicaInfo ri = getReplicaInfo(leader);
-        Number numDocs = (Number)ri.getVariable("SEARCHER.searcher.numDocs");
+        Replica ri = getReplicaInfo(leader);
+        Number numDocs = (Number)ri.get("SEARCHER.searcher.numDocs");
         if (numDocs == null || numDocs.intValue() <= 0) {
           if (log.isDebugEnabled()) {
             log.debug("-- attempting to delete nonexistent doc {} from {}", id, s.getLeader());
@@ -1727,7 +1733,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
           continue;
         }
         deletesPerShard.computeIfAbsent(s.getName(), slice -> new AtomicLong(0)).incrementAndGet();
-        Number indexSize = (Number)ri.getVariable(Type.CORE_IDX.metricsAttribute);
+        Number indexSize = (Number)ri.get(Type.CORE_IDX.metricsAttribute);
         if (indexSize != null) {
           indexSizePerShard.put(s.getName(), indexSize);
         }
@@ -1775,14 +1781,14 @@ public class SimClusterStateProvider implements ClusterStateProvider {
           }
 
           cloudManager.getMetricManager().registry(createRegistryName(collection, s.getName(), leader)).counter("UPDATE./update.requests").inc();
-          ReplicaInfo ri = getReplicaInfo(leader);
-          Number numDocs = (Number)ri.getVariable("SEARCHER.searcher.numDocs");
+          Replica ri = getReplicaInfo(leader);
+          Number numDocs = (Number)ri.get("SEARCHER.searcher.numDocs");
           if (numDocs == null || numDocs.intValue() == 0) {
             continue;
           }
           lock.lockInterruptibly();
           try {
-            Number indexSize = (Number)ri.getVariable(Type.CORE_IDX.metricsAttribute);
+            Number indexSize = (Number)ri.get(Type.CORE_IDX.metricsAttribute);
             if (indexSize != null) {
               long delta = indexSize.longValue() < SimCloudManager.DEFAULT_IDX_SIZE_BYTES ? 0 :
                   indexSize.longValue() - SimCloudManager.DEFAULT_IDX_SIZE_BYTES;
@@ -1974,8 +1980,8 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       try {
         coll.getSlices().forEach(s -> {
           Replica leader = s.getLeader();
-          ReplicaInfo ri = getReplicaInfo(leader);
-          Number numDocs = (Number)ri.getVariable("SEARCHER.searcher.numDocs");
+          Replica ri = getReplicaInfo(leader);
+          Number numDocs = (Number)ri.get("SEARCHER.searcher.numDocs");
           if (numDocs == null || numDocs.intValue() == 0) {
             numDocs = 0;
           }
@@ -2015,8 +2021,8 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       if (r == null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, collection + "/" + s.getName() + " has no leader");
       }
-      ReplicaInfo ri = getReplicaInfo(r);
-      Number numDocs = (Number)ri.getVariable("SEARCHER.searcher.numDocs", 0L);
+      Replica ri = getReplicaInfo(r);
+      Number numDocs = (Number)ri.get("SEARCHER.searcher.numDocs", 0L);
       count.addAndGet(numDocs.longValue());
       AtomicLong bufferedUpdates = (AtomicLong)sliceProperties.get(collection).get(s.getName()).get(BUFFERED_UPDATES);
       if (bufferedUpdates != null) {
@@ -2212,7 +2218,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    *               divided by the number of replicas.
    */
   public void simSetShardValue(String collection, String shard, String key, Object value, boolean delta, boolean divide) throws Exception {
-    final List<ReplicaInfo> infos;
+    final List<Replica> infos;
     if (shard == null) {
       infos = new ArrayList<>();
       colShardReplicaMap.computeIfAbsent(collection, c -> new ConcurrentHashMap<>())
@@ -2231,13 +2237,13 @@ public class SimClusterStateProvider implements ClusterStateProvider {
         value = ((Number) value).doubleValue() / infos.size();
       }
     }
-    for (ReplicaInfo r : infos) {
+    for (Replica r : infos) {
       synchronized (r) {
         if (value == null) {
-          r.getVariables().remove(key);
+          r.getProperties().remove(key);
         } else {
           if (delta) {
-            Object prevValue = r.getVariables().get(key);
+            Object prevValue = r.getProperties().get(key);
             if (prevValue != null) {
               if ((prevValue instanceof Number) && (value instanceof Number)) {
                 if (((prevValue instanceof Long) || (prevValue instanceof Integer) ||
@@ -2250,14 +2256,14 @@ public class SimClusterStateProvider implements ClusterStateProvider {
                   } else if (prevValue instanceof AtomicInteger) {
                     ((AtomicInteger)prevValue).set(((Number)prevValue).intValue() + ((Number)value).intValue());
                   } else {
-                    r.getVariables().put(key, newValue);
+                    r.getProperties().put(key, newValue);
                   }
                 } else {
                   double newValue = ((Number)prevValue).doubleValue() + ((Number)value).doubleValue();
                   if (prevValue instanceof AtomicDouble) {
                     ((AtomicDouble)prevValue).set(newValue);
                   } else {
-                    r.getVariables().put(key, newValue);
+                    r.getProperties().put(key, newValue);
                   }
                 }
               } else {
@@ -2265,24 +2271,24 @@ public class SimClusterStateProvider implements ClusterStateProvider {
               }
             } else {
               if (value instanceof Integer) {
-                r.getVariables().put(key, new AtomicInteger((Integer)value));
+                r.getProperties().put(key, new AtomicInteger((Integer)value));
               } else if (value instanceof Long) {
-                r.getVariables().put(key, new AtomicLong((Long)value));
+                r.getProperties().put(key, new AtomicLong((Long)value));
               } else if (value instanceof Double) {
-                r.getVariables().put(key, new AtomicDouble((Double)value));
+                r.getProperties().put(key, new AtomicDouble((Double)value));
               } else {
-                r.getVariables().put(key, value);
+                r.getProperties().put(key, value);
               }
             }
           } else {
             if (value instanceof Integer) {
-              r.getVariables().put(key, new AtomicInteger((Integer)value));
+              r.getProperties().put(key, new AtomicInteger((Integer)value));
             } else if (value instanceof Long) {
-              r.getVariables().put(key, new AtomicLong((Long)value));
+              r.getProperties().put(key, new AtomicLong((Long)value));
             } else if (value instanceof Double) {
-              r.getVariables().put(key, new AtomicDouble((Double)value));
+              r.getProperties().put(key, new AtomicDouble((Double)value));
             } else {
-              r.getVariables().put(key, value);
+              r.getProperties().put(key, value);
             }
           }
         }
@@ -2291,26 +2297,26 @@ public class SimClusterStateProvider implements ClusterStateProvider {
   }
 
   @SuppressWarnings({"unchecked"})
-  public void simSetReplicaValues(String node, Map<String, Map<String, List<ReplicaInfo>>> source, boolean overwrite) {
-    List<ReplicaInfo> infos = nodeReplicaMap.get(node);
+  public void simSetReplicaValues(String node, Map<String, Map<String, List<Replica>>> source, boolean overwrite) {
+    List<Replica> infos = nodeReplicaMap.get(node);
     if (infos == null) {
       throw new RuntimeException("Node not present: " + node);
     }
     // core_node_name is not unique across collections
-    Map<String, Map<String, ReplicaInfo>> infoMap = new HashMap<>();
+    Map<String, Map<String, Replica>> infoMap = new HashMap<>();
     infos.forEach(ri -> infoMap.computeIfAbsent(ri.getCollection(), Utils.NEW_HASHMAP_FUN).put(ri.getName(), ri));
     source.forEach((coll, shards) -> shards.forEach((shard, replicas) -> replicas.forEach(r -> {
-      ReplicaInfo target = infoMap.getOrDefault(coll, Collections.emptyMap()).get(r.getName());
+      Replica target = infoMap.getOrDefault(coll, Collections.emptyMap()).get(r.getName());
       if (target == null) {
         throw new RuntimeException("Unable to find simulated replica of " + r);
       }
-      r.getVariables().forEach((k, v) -> {
-        if (target.getVariables().containsKey(k)) {
+      r.getProperties().forEach((k, v) -> {
+        if (target.getProperties().containsKey(k)) {
           if (overwrite) {
-            target.getVariables().put(k, v);
+            target.getProperties().put(k, v);
           }
         } else {
-          target.getVariables().put(k, v);
+          target.getProperties().put(k, v);
         }
       });
     })));
@@ -2321,29 +2327,29 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @param node node id
    * @return copy of the list of replicas on that node, or empty list if none
    */
-  public List<ReplicaInfo> simGetReplicaInfos(String node) {
+  public List<Replica> simGetReplicaInfos(String node) {
     @SuppressWarnings({"unchecked"})
-    final List<ReplicaInfo> replicas = nodeReplicaMap.computeIfAbsent
+    final List<Replica> replicas = nodeReplicaMap.computeIfAbsent
       (node, Utils.NEW_SYNCHRONIZED_ARRAYLIST_FUN);
     // make a defensive copy to avoid ConcurrentModificationException
-    return Arrays.asList(replicas.toArray(new ReplicaInfo[replicas.size()]));
+    return Arrays.asList(replicas.toArray(new Replica[replicas.size()]));
   }
 
-  public List<ReplicaInfo> simGetReplicaInfos(String collection, String shard) {
-    List<ReplicaInfo> replicas = colShardReplicaMap.computeIfAbsent(collection, c -> new ConcurrentHashMap<>())
+  public List<Replica> simGetReplicaInfos(String collection, String shard) {
+    List<Replica> replicas = colShardReplicaMap.computeIfAbsent(collection, c -> new ConcurrentHashMap<>())
         .computeIfAbsent(shard, s -> new ArrayList<>());
     if (replicas == null) {
       return Collections.emptyList();
     } else {
       // make a defensive copy to avoid ConcurrentModificationException
-      return Arrays.asList(replicas.toArray(new ReplicaInfo[replicas.size()]));
+      return Arrays.asList(replicas.toArray(new Replica[replicas.size()]));
     }
   }
 
-  public ReplicaInfo simGetReplicaInfo(String collection, String coreNode) {
-    Map<String, List<ReplicaInfo>> shardsReplicas = colShardReplicaMap.computeIfAbsent(collection, c -> new ConcurrentHashMap<>());
-    for (List<ReplicaInfo> replicas : shardsReplicas.values()) {
-      for (ReplicaInfo ri : replicas) {
+  public Replica simGetReplicaInfo(String collection, String coreNode) {
+    Map<String, List<Replica>> shardsReplicas = colShardReplicaMap.computeIfAbsent(collection, c -> new ConcurrentHashMap<>());
+    for (List<Replica> replicas : shardsReplicas.values()) {
+      for (Replica ri : replicas) {
         if (ri.getName().equals(coreNode)) {
           return ri;
         }
@@ -2388,10 +2394,10 @@ public class SimClusterStateProvider implements ClusterStateProvider {
           totalReplicas += s.getReplicas().size();
           if (s.getState() != Slice.State.ACTIVE) {
             if (!s.getReplicas().isEmpty()) {
-              ReplicaInfo ri = getReplicaInfo(s.getReplicas().iterator().next());
+              Replica ri = getReplicaInfo(s.getReplicas().iterator().next());
               if (ri != null) {
-                Number numDocs = (Number)ri.getVariable("SEARCHER.searcher.numDocs");
-                Number numBytes = (Number)ri.getVariable(Type.CORE_IDX.metricsAttribute);
+                Number numDocs = (Number)ri.get("SEARCHER.searcher.numDocs");
+                Number numBytes = (Number)ri.get(Type.CORE_IDX.metricsAttribute);
                 if (numDocs != null) {
                   inactiveDocs.addValue(numDocs.doubleValue());
                 }
@@ -2421,7 +2427,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
               leader = s.getReplicas().iterator().next();
             }
           }
-          ReplicaInfo ri = null;
+          Replica ri = null;
           if (leader != null) {
             ri = getReplicaInfo(leader);
             if (ri == null) {
@@ -2429,9 +2435,9 @@ public class SimClusterStateProvider implements ClusterStateProvider {
             }
           }
           if (ri != null) {
-            Number numDocs = (Number)ri.getVariable("SEARCHER.searcher.numDocs");
-            Number delDocs = (Number)ri.getVariable("SEARCHER.searcher.deleteDocs");
-            Number numBytes = (Number)ri.getVariable(Type.CORE_IDX.metricsAttribute);
+            Number numDocs = (Number)ri.get("SEARCHER.searcher.numDocs");
+            Number delDocs = (Number)ri.get("SEARCHER.searcher.deleteDocs");
+            Number numBytes = (Number)ri.get(Type.CORE_IDX.metricsAttribute);
             if (numDocs != null) {
               docs.addValue(numDocs.doubleValue());
             }

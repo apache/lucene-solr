@@ -33,7 +33,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.Locale;
 
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.common.SolrException;
@@ -263,14 +262,14 @@ public class IndexSizeTrigger extends TriggerBase {
     }
 
     // replica name / info + size, retrieved from leaders only
-    Map<String, ReplicaInfo> currentSizes = new HashMap<>();
+    Map<String, Replica> currentSizes = new HashMap<>();
 
     try {
       ClusterState clusterState = cloudManager.getClusterStateProvider().getClusterState();
       for (String node : clusterState.getLiveNodes()) {
-        Map<String, ReplicaInfo> metricTags = new HashMap<>();
+        Map<String, Replica> metricTags = new HashMap<>();
         // coll, shard, replica
-        Map<String, Map<String, List<ReplicaInfo>>> infos = cloudManager.getNodeStateProvider().getReplicaInfo(node, Collections.emptyList());
+        Map<String, Map<String, List<Replica>>> infos = cloudManager.getNodeStateProvider().getReplicaInfo(node, Collections.emptyList());
         infos.forEach((coll, shards) -> {
           if (!collections.isEmpty() && !collections.contains(coll)) {
             return;
@@ -293,9 +292,9 @@ public class IndexSizeTrigger extends TriggerBase {
               return;
             }
             // find ReplicaInfo
-            ReplicaInfo info = null;
-            for (ReplicaInfo ri : replicas) {
-              if (r.getCoreName().equals(ri.getCore())) {
+            Replica info = null;
+            for (Replica ri : replicas) {
+              if (r.getCoreName().equals(ri.getCoreName())) {
                 info = ri;
                 break;
               }
@@ -305,7 +304,7 @@ public class IndexSizeTrigger extends TriggerBase {
               return;
             }
             // we have to translate to the metrics registry name, which uses "_replica_nN" as suffix
-            String replicaName = Utils.parseMetricsReplicaName(coll, info.getCore());
+            String replicaName = Utils.parseMetricsReplicaName(coll, info.getCoreName());
             if (replicaName == null) { // should never happen???
               replicaName = info.getName(); // which is actually coreNode name...
             }
@@ -325,7 +324,7 @@ public class IndexSizeTrigger extends TriggerBase {
         }
         Map<String, Object> sizes = cloudManager.getNodeStateProvider().getNodeValues(node, metricTags.keySet());
         sizes.forEach((tag, size) -> {
-          final ReplicaInfo info = metricTags.get(tag);
+          final Replica info = metricTags.get(tag);
           if (info == null) {
             log.warn("Missing replica info for response tag {}", tag);
           } else {
@@ -335,15 +334,15 @@ public class IndexSizeTrigger extends TriggerBase {
               return;
             }
 
-            ReplicaInfo currentInfo = currentSizes.computeIfAbsent(info.getCore(), k -> (ReplicaInfo)info.clone());
+            Replica currentInfo = currentSizes.computeIfAbsent(info.getCoreName(), k -> (Replica) info.clone());
             if (tag.contains("INDEX")) {
-              currentInfo.getVariables().put(TOTAL_BYTES_SIZE_KEY, ((Number) size).longValue());
+              currentInfo.getProperties().put(TOTAL_BYTES_SIZE_KEY, ((Number) size).longValue());
             } else if (tag.endsWith("SEARCHER.searcher.numDocs")) {
-              currentInfo.getVariables().put(DOCS_SIZE_KEY, ((Number) size).longValue());
+              currentInfo.getProperties().put(DOCS_SIZE_KEY, ((Number) size).longValue());
             } else if (tag.endsWith("SEARCHER.searcher.maxDoc")) {
-              currentInfo.getVariables().put(MAX_DOC_KEY, ((Number) size).longValue());
+              currentInfo.getProperties().put(MAX_DOC_KEY, ((Number) size).longValue());
             } else if (tag.endsWith("SEARCHER.searcher.indexCommitSize")) {
-              currentInfo.getVariables().put(COMMIT_SIZE_KEY, ((Number) size).longValue());
+              currentInfo.getProperties().put(COMMIT_SIZE_KEY, ((Number) size).longValue());
             }
           }
         });
@@ -358,31 +357,31 @@ public class IndexSizeTrigger extends TriggerBase {
     // now check thresholds
 
     // collection / list(info)
-    Map<String, List<ReplicaInfo>> aboveSize = new HashMap<>();
+    Map<String, List<Replica>> aboveSize = new HashMap<>();
 
     Set<String> splittable = new HashSet<>();
 
     currentSizes.forEach((coreName, info) -> {
       // calculate estimated bytes
-      long maxDoc = (Long)info.getVariable(MAX_DOC_KEY);
-      long numDocs = (Long)info.getVariable(DOCS_SIZE_KEY);
-      long commitSize = (Long)info.getVariable(COMMIT_SIZE_KEY, 0L);
+      long maxDoc = (Long)info.get(MAX_DOC_KEY);
+      long numDocs = (Long)info.get(DOCS_SIZE_KEY);
+      long commitSize = (Long)info.get(COMMIT_SIZE_KEY, 0L);
       if (commitSize <= 0) {
-        commitSize = (Long)info.getVariable(TOTAL_BYTES_SIZE_KEY);
+        commitSize = (Long)info.get(TOTAL_BYTES_SIZE_KEY);
       }
       // calculate estimated size as a side-effect
       commitSize = estimatedSize(maxDoc, numDocs, commitSize);
-      info.getVariables().put(BYTES_SIZE_KEY, commitSize);
+      info.getProperties().put(BYTES_SIZE_KEY, commitSize);
 
-      if ((Long)info.getVariable(BYTES_SIZE_KEY) > aboveBytes ||
-          (Long)info.getVariable(DOCS_SIZE_KEY) > aboveDocs) {
+      if ((Long)info.get(BYTES_SIZE_KEY) > aboveBytes ||
+          (Long)info.get(DOCS_SIZE_KEY) > aboveDocs) {
         if (waitForElapsed(coreName, now, lastAboveEventMap)) {
-          List<ReplicaInfo> infos = aboveSize.computeIfAbsent(info.getCollection(), c -> new ArrayList<>());
+          List<Replica> infos = aboveSize.computeIfAbsent(info.getCollection(), c -> new ArrayList<>());
           if (!infos.contains(info)) {
-            if ((Long)info.getVariable(BYTES_SIZE_KEY) > aboveBytes) {
-              info.getVariables().put(VIOLATION_KEY, ABOVE_BYTES_PROP);
+            if ((Long)info.get(BYTES_SIZE_KEY) > aboveBytes) {
+              info.getProperties().put(VIOLATION_KEY, ABOVE_BYTES_PROP);
             } else {
-              info.getVariables().put(VIOLATION_KEY, ABOVE_DOCS_PROP);
+              info.getProperties().put(VIOLATION_KEY, ABOVE_DOCS_PROP);
             }
             infos.add(info);
             splittable.add(info.getName());
@@ -395,20 +394,20 @@ public class IndexSizeTrigger extends TriggerBase {
     });
 
     // collection / list(info)
-    Map<String, List<ReplicaInfo>> belowSize = new HashMap<>();
+    Map<String, List<Replica>> belowSize = new HashMap<>();
 
     currentSizes.forEach((coreName, info) -> {
-      if (((Long)info.getVariable(BYTES_SIZE_KEY) < belowBytes ||
-          (Long)info.getVariable(DOCS_SIZE_KEY) < belowDocs) &&
+      if (((Long)info.get(BYTES_SIZE_KEY) < belowBytes ||
+          (Long)info.get(DOCS_SIZE_KEY) < belowDocs) &&
           // make sure we don't produce conflicting ops
           !splittable.contains(info.getName())) {
         if (waitForElapsed(coreName, now, lastBelowEventMap)) {
-          List<ReplicaInfo> infos = belowSize.computeIfAbsent(info.getCollection(), c -> new ArrayList<>());
+          List<Replica> infos = belowSize.computeIfAbsent(info.getCollection(), c -> new ArrayList<>());
           if (!infos.contains(info)) {
-            if ((Long)info.getVariable(BYTES_SIZE_KEY) < belowBytes) {
-              info.getVariables().put(VIOLATION_KEY, BELOW_BYTES_PROP);
+            if ((Long)info.get(BYTES_SIZE_KEY) < belowBytes) {
+              info.getProperties().put(VIOLATION_KEY, BELOW_BYTES_PROP);
             } else {
-              info.getVariables().put(VIOLATION_KEY, BELOW_DOCS_PROP);
+              info.getProperties().put(VIOLATION_KEY, BELOW_DOCS_PROP);
             }
             infos.add(info);
           }
@@ -435,7 +434,7 @@ public class IndexSizeTrigger extends TriggerBase {
       // sort by decreasing size to first split the largest ones
       // XXX see the comment below about using DOCS_SIZE_PROP in lieu of BYTES_SIZE_PROP
       replicas.sort((r1, r2) -> {
-        long delta = (Long) r1.getVariable(DOCS_SIZE_KEY) - (Long) r2.getVariable(DOCS_SIZE_KEY);
+        long delta = (Long) r1.get(DOCS_SIZE_KEY) - (Long) r2.get(DOCS_SIZE_KEY);
         if (delta > 0) {
           return -1;
         } else if (delta < 0) {
@@ -458,7 +457,7 @@ public class IndexSizeTrigger extends TriggerBase {
         params.put(SPLIT_BY_PREFIX, splitByPrefix);
         op.addHint(Suggester.Hint.PARAMS, params);
         ops.add(op);
-        Long time = lastAboveEventMap.get(r.getCore());
+        Long time = lastAboveEventMap.get(r.getCoreName());
         if (time != null && eventTime.get() > time) {
           eventTime.set(time);
         }
@@ -477,7 +476,7 @@ public class IndexSizeTrigger extends TriggerBase {
         // then we should be sorting by BYTES_SIZE_PROP. However, since DOCS and BYTES are
         // loosely correlated it's simpler to sort just by docs (which better reflects the "too small"
         // condition than index size, due to possibly existing deleted docs that still occupy space)
-        long delta = (Long) r1.getVariable(DOCS_SIZE_KEY) - (Long) r2.getVariable(DOCS_SIZE_KEY);
+        long delta = (Long) r1.get(DOCS_SIZE_KEY) - (Long) r2.get(DOCS_SIZE_KEY);
         if (delta > 0) {
           return 1;
         } else if (delta < 0) {
@@ -495,11 +494,11 @@ public class IndexSizeTrigger extends TriggerBase {
       op.addHint(Suggester.Hint.COLL_SHARD, new Pair(coll, replicas.get(0).getShard()));
       op.addHint(Suggester.Hint.COLL_SHARD, new Pair(coll, replicas.get(1).getShard()));
       ops.add(op);
-      Long time = lastBelowEventMap.get(replicas.get(0).getCore());
+      Long time = lastBelowEventMap.get(replicas.get(0).getCoreName());
       if (time != null && eventTime.get() > time) {
         eventTime.set(time);
       }
-      time = lastBelowEventMap.get(replicas.get(1).getCore());
+      time = lastBelowEventMap.get(replicas.get(1).getCoreName());
       if (time != null && eventTime.get() > time) {
         eventTime.set(time);
       }
@@ -511,14 +510,14 @@ public class IndexSizeTrigger extends TriggerBase {
     if (processor.process(new IndexSizeEvent(getName(), eventTime.get(), ops, aboveSize, belowSize))) {
       // update last event times
       aboveSize.forEach((coll, replicas) -> {
-        replicas.forEach(r -> lastAboveEventMap.put(r.getCore(), now));
+        replicas.forEach(r -> lastAboveEventMap.put(r.getCoreName(), now));
       });
       belowSize.forEach((coll, replicas) -> {
         if (replicas.size() < 2) {
           return;
         }
-        lastBelowEventMap.put(replicas.get(0).getCore(), now);
-        lastBelowEventMap.put(replicas.get(1).getCore(), now);
+        lastBelowEventMap.put(replicas.get(0).getCoreName(), now);
+        lastBelowEventMap.put(replicas.get(1).getCoreName(), now);
       });
     }
   }
@@ -544,18 +543,18 @@ public class IndexSizeTrigger extends TriggerBase {
   }
 
   public static class IndexSizeEvent extends TriggerEvent {
-    public IndexSizeEvent(String source, long eventTime, List<Op> ops, Map<String, List<ReplicaInfo>> aboveSize,
-                          Map<String, List<ReplicaInfo>> belowSize) {
+    public IndexSizeEvent(String source, long eventTime, List<Op> ops, Map<String, List<Replica>> aboveSize,
+                          Map<String, List<Replica>> belowSize) {
       super(TriggerEventType.INDEXSIZE, source, eventTime, null);
       properties.put(TriggerEvent.REQUESTED_OPS, ops);
       // avoid passing very large amounts of data here - just use replica names
       TreeMap<String, String> above = new TreeMap<>();
       aboveSize.forEach((coll, replicas) ->
-          replicas.forEach(r -> above.put(r.getCore(), "docs=" + r.getVariable(DOCS_SIZE_KEY) + ", bytes=" + r.getVariable(BYTES_SIZE_KEY))));
+          replicas.forEach(r -> above.put(r.getCoreName(), "docs=" + r.get(DOCS_SIZE_KEY) + ", bytes=" + r.get(BYTES_SIZE_KEY))));
       properties.put(ABOVE_SIZE_KEY, above);
       TreeMap<String, String> below = new TreeMap<>();
       belowSize.forEach((coll, replicas) ->
-          replicas.forEach(r -> below.put(r.getCore(), "docs=" + r.getVariable(DOCS_SIZE_KEY) + ", bytes=" + r.getVariable(BYTES_SIZE_KEY))));
+          replicas.forEach(r -> below.put(r.getCoreName(), "docs=" + r.get(DOCS_SIZE_KEY) + ", bytes=" + r.get(BYTES_SIZE_KEY))));
       properties.put(BELOW_SIZE_KEY, below);
     }
   }

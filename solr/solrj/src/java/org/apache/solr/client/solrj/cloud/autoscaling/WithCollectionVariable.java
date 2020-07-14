@@ -56,7 +56,7 @@ public class WithCollectionVariable extends VariableBase {
     return true;
   }
 
-  public void projectAddReplica(Cell cell, ReplicaInfo ri, Consumer<Row.OperationInfo> opCollector, boolean strictMode) {
+  public void projectAddReplica(Cell cell, Replica ri, Consumer<Row.OperationInfo> opCollector, boolean strictMode) {
     if (strictMode) {
       // we do not want to add a replica of the 'withCollection' in strict mode
       return;
@@ -138,14 +138,14 @@ public class WithCollectionVariable extends VariableBase {
 
         if (hostedCollections.contains(withCollection) && !hostedCollections.contains(collection))  {
           // find the candidate replicas that we can move
-          List<ReplicaInfo> movableReplicas = new ArrayList<>();
+          List<Replica> movableReplicas = new ArrayList<>();
           row.forEachReplica(replicaInfo -> {
             if (replicaInfo.getCollection().equals(withCollection)) {
               movableReplicas.add(replicaInfo);
             }
           });
 
-          for (ReplicaInfo toMove : movableReplicas) {
+          for (Replica toMove : movableReplicas) {
             // candidate source node for a move replica operation
             Suggester suggester = ctx.session.getSuggester(MOVEREPLICA)
                 .forceOperation(true)

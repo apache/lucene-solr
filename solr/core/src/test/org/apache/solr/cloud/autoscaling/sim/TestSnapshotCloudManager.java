@@ -40,7 +40,6 @@ import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
-import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggestion;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
@@ -202,22 +201,22 @@ public class TestSnapshotCloudManager extends SolrCloudTestCase {
         }
       }
       assertEquals(Utils.toJSONString(oneVals), Utils.toJSONString(twoVals));
-      Map<String, Map<String, List<ReplicaInfo>>> oneInfos = one.getReplicaInfo(node, SimUtils.COMMON_REPLICA_TAGS);
-      Map<String, Map<String, List<ReplicaInfo>>> twoInfos = two.getReplicaInfo(node, SimUtils.COMMON_REPLICA_TAGS);
+      Map<String, Map<String, List<Replica>>> oneInfos = one.getReplicaInfo(node, SimUtils.COMMON_REPLICA_TAGS);
+      Map<String, Map<String, List<Replica>>> twoInfos = two.getReplicaInfo(node, SimUtils.COMMON_REPLICA_TAGS);
       assertEquals("collections on node" + node, oneInfos.keySet(), twoInfos.keySet());
       oneInfos.forEach((coll, oneShards) -> {
-        Map<String, List<ReplicaInfo>> twoShards = twoInfos.get(coll);
+        Map<String, List<Replica>> twoShards = twoInfos.get(coll);
         assertEquals("shards on node " + node, oneShards.keySet(), twoShards.keySet());
         oneShards.forEach((shard, oneReplicas) -> {
-          List<ReplicaInfo> twoReplicas = twoShards.get(shard);
+          List<Replica> twoReplicas = twoShards.get(shard);
           assertEquals("num replicas on node " + node, oneReplicas.size(), twoReplicas.size());
-          Map<String, ReplicaInfo> oneMap = oneReplicas.stream()
-              .collect(Collectors.toMap(ReplicaInfo::getName, Function.identity()));
-          Map<String, ReplicaInfo> twoMap = twoReplicas.stream()
-              .collect(Collectors.toMap(ReplicaInfo::getName, Function.identity()));
+          Map<String, Replica> oneMap = oneReplicas.stream()
+              .collect(Collectors.toMap(Replica::getName, Function.identity()));
+          Map<String, Replica> twoMap = twoReplicas.stream()
+              .collect(Collectors.toMap(Replica::getName, Function.identity()));
           assertEquals("replica coreNodeNames on node " + node, oneMap.keySet(), twoMap.keySet());
           oneMap.forEach((coreNode, oneReplica) -> {
-            ReplicaInfo twoReplica = twoMap.get(coreNode);
+            Replica twoReplica = twoMap.get(coreNode);
             SimSolrCloudTestCase.assertReplicaInfoEquals(oneReplica, twoReplica);
           });
         });

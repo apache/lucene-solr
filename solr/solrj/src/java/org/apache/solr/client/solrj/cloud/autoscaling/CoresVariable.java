@@ -21,6 +21,8 @@ import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
+import org.apache.solr.common.cloud.Replica;
+
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOVEREPLICA;
 
 public class CoresVariable extends VariableBase {
@@ -59,12 +61,12 @@ public class CoresVariable extends VariableBase {
   }
 
   @Override
-  public void projectAddReplica(Cell cell, ReplicaInfo ri, Consumer<Row.OperationInfo> ops, boolean strictMode) {
+  public void projectAddReplica(Cell cell, Replica ri, Consumer<Row.OperationInfo> ops, boolean strictMode) {
     cell.val = cell.val == null ? 0 : ((Number) cell.val).doubleValue() + 1;
   }
 
   @Override
-  public void projectRemoveReplica(Cell cell, ReplicaInfo ri, Consumer<Row.OperationInfo> opCollector) {
+  public void projectRemoveReplica(Cell cell, Replica ri, Consumer<Row.OperationInfo> opCollector) {
     cell.val = cell.val == null ? 0 : ((Number) cell.val).doubleValue() - 1;
   }
 

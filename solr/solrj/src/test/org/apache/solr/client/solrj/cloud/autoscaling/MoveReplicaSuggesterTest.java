@@ -39,27 +39,27 @@ public class MoveReplicaSuggesterTest extends SolrTestCaseJ4 {
   private Replica.Type REPLICA_TYPE = Replica.Type.NRT;
   private Row ROW = null;
 
-  private ReplicaInfo REPLICA_INFO_ONE = new ReplicaInfo("core_node1", CORE, COLLECTION, SHARD, REPLICA_TYPE, NODE, IS_LEADER);
-  private ReplicaInfo REPLICA_INFO_TWO = new ReplicaInfo("core_node2", CORE, COLLECTION, SHARD, REPLICA_TYPE, NODE, null);
-  private ReplicaInfo REPLICA_INFO_THREE = new ReplicaInfo("core_node3", CORE, COLLECTION, SHARD, REPLICA_TYPE, NODE, IS_LEADER);
-  private ReplicaInfo REPLICA_INFO_FOUR = new ReplicaInfo("core_node4", CORE, COLLECTION, SHARD, REPLICA_TYPE, NODE, null);
+  private Replica REPLICA_INFO_ONE = new Replica("core_node1", NODE, COLLECTION, SHARD, CORE, Replica.State.ACTIVE, REPLICA_TYPE, IS_LEADER);
+  private Replica REPLICA_INFO_TWO = new Replica("core_node2", NODE, COLLECTION, SHARD, CORE, Replica.State.ACTIVE, REPLICA_TYPE, null);
+  private Replica REPLICA_INFO_THREE = new Replica("core_node3", NODE, COLLECTION, SHARD, CORE, Replica.State.ACTIVE, REPLICA_TYPE, IS_LEADER);
+  private Replica REPLICA_INFO_FOUR = new Replica("core_node4", NODE, COLLECTION, SHARD, CORE, Replica.State.ACTIVE, REPLICA_TYPE, null);
 
-  private Pair<ReplicaInfo, Row> PAIR_ONE = new Pair<>(REPLICA_INFO_ONE, ROW);
-  private Pair<ReplicaInfo, Row> PAIR_TWO = new Pair<>(REPLICA_INFO_TWO, ROW);
-  private Pair<ReplicaInfo, Row> PAIR_THREE = new Pair<>(REPLICA_INFO_THREE, ROW);
-  private Pair<ReplicaInfo, Row> PAIR_FOUR = new Pair<>(REPLICA_INFO_FOUR, ROW);
+  private Pair<Replica, Row> PAIR_ONE = new Pair<>(REPLICA_INFO_ONE, ROW);
+  private Pair<Replica, Row> PAIR_TWO = new Pair<>(REPLICA_INFO_TWO, ROW);
+  private Pair<Replica, Row> PAIR_THREE = new Pair<>(REPLICA_INFO_THREE, ROW);
+  private Pair<Replica, Row> PAIR_FOUR = new Pair<>(REPLICA_INFO_FOUR, ROW);
 
   @Test
   public void assertLeaderProperties() {
-    assertTrue(REPLICA_INFO_ONE.isLeader);
-    assertFalse(REPLICA_INFO_TWO.isLeader);
-    assertTrue(REPLICA_INFO_THREE.isLeader);
-    assertFalse(REPLICA_INFO_FOUR.isLeader);
+    assertTrue(REPLICA_INFO_ONE.isLeader());
+    assertFalse(REPLICA_INFO_TWO.isLeader());
+    assertTrue(REPLICA_INFO_THREE.isLeader());
+    assertFalse(REPLICA_INFO_FOUR.isLeader());
   }
 
   @Test
   public void sortReplicasValidate() {
-    List<Pair<ReplicaInfo, Row>> validReplicas = new ArrayList<Pair<ReplicaInfo, Row>>() {
+    List<Pair<Replica, Row>> validReplicas = new ArrayList<Pair<Replica, Row>>() {
       {
         add(PAIR_ONE);
         add(PAIR_FOUR);
@@ -78,7 +78,7 @@ public class MoveReplicaSuggesterTest extends SolrTestCaseJ4 {
 
   @Test
   public void sortReplicasValidateLeadersMultipleLeadersComeLast() {
-    List<Pair<ReplicaInfo, Row>> validReplicas = new ArrayList<Pair<ReplicaInfo, Row>>() {
+    List<Pair<Replica, Row>> validReplicas = new ArrayList<Pair<Replica, Row>>() {
       {
         add(PAIR_THREE);
         add(PAIR_ONE);
@@ -97,8 +97,8 @@ public class MoveReplicaSuggesterTest extends SolrTestCaseJ4 {
     assertTrue(isReplicaLeader(validReplicas, 3));
   }
 
-  private boolean isReplicaLeader(List<Pair<ReplicaInfo, Row>> replicas, int index) {
-    return replicas.get(index).first().isLeader;
+  private boolean isReplicaLeader(List<Pair<Replica, Row>> replicas, int index) {
+    return replicas.get(index).first().isLeader();
   }
 
 }
