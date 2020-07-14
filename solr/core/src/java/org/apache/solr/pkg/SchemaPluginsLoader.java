@@ -40,7 +40,6 @@ public class SchemaPluginsLoader implements SolrClassLoader {
     private final SolrResourceLoader loader;
     private final Function<String, String> pkgVersionSupplier;
     private Map<String ,PackageAPI.PkgVersion> packageVersions =  new HashMap<>(1);
-    private Map<String, String> classNameVsPkg = new HashMap<>(1);
     private final Runnable onReload;
 
     public SchemaPluginsLoader(CoreContainer coreContainer,
@@ -52,7 +51,6 @@ public class SchemaPluginsLoader implements SolrClassLoader {
         this.pkgVersionSupplier = pkgVersionSupplier;
         this.onReload = () -> {
             SchemaPluginsLoader.this.packageVersions = new HashMap<>();
-            classNameVsPkg = new HashMap<>();
             onReload.run();
         };
     }
@@ -73,12 +71,14 @@ public class SchemaPluginsLoader implements SolrClassLoader {
     private PackageLoader.Package.Version findPkgVersion(PluginInfo.ClassName cName) {
         PackageLoader.Package.Version theVersion = coreContainer.getPackageLoader().getPackage(cName.pkg).getLatest(pkgVersionSupplier.apply(cName.pkg));
         packageVersions.put(cName.pkg, theVersion.getPkgVersion());
-        classNameVsPkg.put(cName.toString(),cName.pkg);
         return theVersion;
     }
+
     public MapWriter getVersionInfo(String className) {
-        PackageAPI.PkgVersion p = packageVersions.get(classNameVsPkg.get(className));
-        return p == null? null: p::writeMap;
+        PluginInfo.ClassName cName = new PluginInfo.ClassName(className);
+        if (cName.pkg == null) return null;
+        PackageAPI.PkgVersion p = packageVersions.get(cName.pkg);
+        return p == null ? null : p::writeMap;
     }
 
 
@@ -90,7 +90,6 @@ public class SchemaPluginsLoader implements SolrClassLoader {
                 return obj;
             } catch (IOException e) {
                 throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-                //TODO handle exception
             }
         }
         return obj;
