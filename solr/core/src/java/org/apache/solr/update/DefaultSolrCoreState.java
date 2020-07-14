@@ -187,17 +187,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
 
   // acquires the lock or throws an exception if the CoreState has been closed.
   private void lock(Lock lock) {
-    boolean acquired = false;
-    do {
-      try {
-        acquired = lock.tryLock(250, TimeUnit.MILLISECONDS);
-      } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
-        log.warn("WARNING - Dangerous interrupt", e);
-        throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Interrupted");
-      }
-
-    } while (!acquired);
+    lock.lock();
   }
 
   // closes and opens index writers without any locking
