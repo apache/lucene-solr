@@ -165,18 +165,18 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
   private final SolrCloudManager cloudManager;
   private final TimeSource timeSource;
   private final int collectPeriod;
-  private final Map<String, List<String>> counters = new ConcurrentHashMap<>();
-  private final Map<String, List<String>> gauges = new ConcurrentHashMap<>();
+  private final Map<String, List<String>> counters = new ConcurrentHashMap<>(512, 0.75f, 2048);
+  private final Map<String, List<String>> gauges = new ConcurrentHashMap<>(512, 0.75f, 2048);
   private final String overseerUrlScheme;
 
-  private final Map<String, RrdDb> knownDbs = new ConcurrentHashMap<>();
+  private final Map<String, RrdDb> knownDbs = new ConcurrentHashMap<>(512, 0.75f, 2048);
 
   private ScheduledThreadPoolExecutor collectService;
   private boolean logMissingCollection = true;
   private boolean enable;
   private boolean enableReplicas;
   private boolean enableNodes;
-  private String versionString;
+  private volatile String versionString;
 
   public MetricsHistoryHandler(String nodeName, MetricsHandler metricsHandler,
         SolrClient solrClient, SolrCloudManager cloudManager, Map<String, Object> pluginArgs) {
@@ -354,17 +354,6 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
     return nodeName;
   }
 
-  private boolean amIOverseerLeader(String leader) {
-    if (leader == null) {
-      leader = getOverseerLeader();
-    }
-    if (leader == null) {
-      return false;
-    } else {
-      return nodeName.equals(leader);
-    }
-  }
-
   private void collectMetrics() {
     log.debug("-- collectMetrics");
     // Make sure we are a solr server thread, so we can use PKI auth, SOLR-12860
@@ -411,37 +400,55 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
         });
         NamedList nl = (NamedList)result.get();
         if (nl != null) {
-          for (Iterator<Map.Entry<String, Object>> it = nl.iterator(); it.hasNext(); ) {
-            Map.Entry<String, Object> entry = it.next();
-            String registry = entry.getKey();
-            if (group != Group.core) { // add nodeName suffix
-              registry = registry + "." + nodeName;
-            }
+          try (ParWork worker = new ParWork(this)) {
+            for (Iterator<Map.Entry<String, Object>> it = nl.iterator(); it.hasNext(); ) {
+              Map.Entry<String, Object> entry = it.next();
+              String key = entry.getKey();
 
-            RrdDb db = getOrCreateDb(registry, group);
-            if (db == null) {
-              continue;
-            }
-            // set the timestamp
-            Sample s = db.createSample(TimeUnit.SECONDS.convert(timeSource.getEpochTimeNs(), TimeUnit.NANOSECONDS));
-            NamedList<Object> values = (NamedList<Object>)entry.getValue();
-            AtomicBoolean dirty = new AtomicBoolean(false);
-            counters.get(group.toString()).forEach(c -> {
-              Number val = (Number)values.get(c);
-              if (val != null) {
-                dirty.set(true);
-                s.setValue(c, val.doubleValue());
-              }
-            });
-            gauges.get(group.toString()).forEach(c -> {
-              Number val = (Number)values.get(c);
-              if (val != null) {
-                dirty.set(true);
-                s.setValue(c, val.doubleValue());
-              }
-            });
-            if (dirty.get()) {
-              s.update();
+              worker.collect(() -> {
+                String registry = key;
+                if (group != Group.core) { // add nodeName suffix
+                  registry = registry + "." + nodeName;
+                }
+                RrdDb db = getOrCreateDb(registry, group);
+                if (db == null) {
+                  return;
+                }
+                // set the timestamp
+                Sample s = null;
+                try {
+                  s = db.createSample(TimeUnit.SECONDS.convert(timeSource.getEpochTimeNs(), TimeUnit.NANOSECONDS));
+                } catch (IOException e) {
+                  log.warn("Exception retrieving local metrics for group {}: {}", group, e);
+                  return;
+                }
+                NamedList<Object> values = (NamedList<Object>) entry.getValue();
+                AtomicBoolean dirty = new AtomicBoolean(false);
+                Sample finalS = s;
+                counters.get(group.toString()).forEach(c -> {
+                  Number val = (Number) values.get(c);
+                  if (val != null) {
+                    dirty.set(true);
+                    finalS.setValue(c, val.doubleValue());
+                  }
+                });
+                Sample finalS1 = s;
+                gauges.get(group.toString()).forEach(c -> {
+                  Number val = (Number) values.get(c);
+                  if (val != null) {
+                    dirty.set(true);
+                    finalS1.setValue(c, val.doubleValue());
+                  }
+                });
+                if (dirty.get()) {
+                  try {
+                    s.update();
+                  } catch (IOException e) {
+                    log.warn("Exception retrieving local metrics for group {}: {}", group, e);
+                  }
+                }
+              });
+
             }
           }
         }
@@ -645,7 +652,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
       try {
         RrdDb newDb = RrdDb.getBuilder().setRrdDef(def).setBackendFactory(factory).setUsePool(true).build();
         return newDb;
-      } catch (IOException e) {
+      } catch (Exception e) {
         log.warn("Can't create RrdDb for registry {}, group {}: {}", registry, group, e);
         return null;
       }
