@@ -70,7 +70,9 @@ public class JWTVerificationkeyResolver implements VerificationKeyResolver {
   public JWTVerificationkeyResolver(Collection<JWTIssuerConfig> issuerConfigs, boolean requireIssuer) {
     this.requireIssuer = requireIssuer;
     issuerConfigs.forEach(ic -> {
-      this.issuerConfigs.put(ic.getIss(), ic);
+      if (ic.getIss() != null && ic != null) {
+        this.issuerConfigs.put(ic.getIss(), ic);
+      }
     });
   }
 
