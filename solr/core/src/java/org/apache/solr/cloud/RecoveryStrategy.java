@@ -108,10 +108,10 @@ public class RecoveryStrategy implements Runnable, Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private volatile int waitForUpdatesWithStaleStatePauseMilliSeconds = Integer
-      .getInteger("solr.cloud.wait-for-updates-with-stale-state-pause", 2500);
+      .getInteger("solr.cloud.wait-for-updates-with-stale-state-pause", 0);
   private volatile int maxRetries = 500;
   private volatile int startingRecoveryDelayMilliSeconds = Integer
-          .getInteger("solr.cloud.starting-recovery-delay-milli-seconds", 2000);
+          .getInteger("solr.cloud.starting-recovery-delay-milli-seconds", 0);
 
   public static interface RecoveryListener {
     public void recovered();
@@ -935,8 +935,8 @@ public class RecoveryStrategy implements Runnable, Closeable {
     }
 
     int conflictWaitMs = zkController.getLeaderConflictResolveWait();
-    // timeout after 5 seconds more than the max timeout (conflictWait + 3 seconds) on the server side
-    int readTimeout = conflictWaitMs + Integer.parseInt(System.getProperty("prepRecoveryReadTimeoutExtraWait", "8000"));
+
+    int readTimeout = conflictWaitMs + Integer.parseInt(System.getProperty("prepRecoveryReadTimeoutExtraWait", "100"));
     try (HttpSolrClient client = buildRecoverySolrClient(leaderBaseUrl)) {
       client.setSoTimeout(readTimeout);
       HttpUriRequestResponse mrr = client.httpUriRequest(prepCmd);

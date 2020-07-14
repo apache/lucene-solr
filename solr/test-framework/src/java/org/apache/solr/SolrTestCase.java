@@ -232,7 +232,7 @@ public class SolrTestCase extends LuceneTestCase {
       System.setProperty("solr.indexfetcher.sotimeout", "15000");
       System.setProperty("solr.indexfetch.so_timeout.default", "15000");
 
-      System.setProperty("prepRecoveryReadTimeoutExtraWait", "0");
+      System.setProperty("prepRecoveryReadTimeoutExtraWait", "100");
       System.setProperty("validateAfterInactivity", "-1");
       System.setProperty("leaderVoteWait", "5000"); // this is also apparently controlling how long we wait for a leader on register nocommit
       System.setProperty("leaderConflictResolveWait", "10000");

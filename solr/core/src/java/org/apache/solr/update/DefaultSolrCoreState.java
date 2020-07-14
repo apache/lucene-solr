@@ -58,9 +58,9 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
 
   private final ReentrantLock recoveryLock = new ReentrantLock();
 
-  private final ActionThrottle recoveryThrottle = new ActionThrottle("recovery", Integer.getInteger("solr.recoveryThrottle", 5000));
+  private final ActionThrottle recoveryThrottle = new ActionThrottle("recovery", Integer.getInteger("solr.recoveryThrottle", 100));
 
-  private final ActionThrottle leaderThrottle = new ActionThrottle("leader", Integer.getInteger("solr.leaderThrottle", 3000));
+  private final ActionThrottle leaderThrottle = new ActionThrottle("leader", Integer.getInteger("solr.leaderThrottle", 100));
 
   private final AtomicInteger recoveryWaiting = new AtomicInteger();
 
