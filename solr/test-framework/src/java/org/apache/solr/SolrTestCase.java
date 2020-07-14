@@ -34,7 +34,9 @@ import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.cloud.autoscaling.ScheduledTriggers;
 import org.apache.solr.common.TimeTracker;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.RandomizeSSL;
@@ -320,12 +322,16 @@ public class SolrTestCase extends LuceneTestCase {
   @AfterClass
   public static void afterSolrTestCase() throws Exception {
     try {
-    if (suiteFailureMarker.wasSuccessful()) {
-      // if the tests passed, make sure everything was closed / released
-      String orr = ObjectReleaseTracker.checkEmpty();
-      ObjectReleaseTracker.clear();
-      assertNull(orr, orr);
-    }} finally {
+      ExecutorUtil.shutdownAndAwaitTermination(CoreContainer.solrCoreLoadExecutor);
+      CoreContainer.solrCoreLoadExecutor = null;
+
+      if (suiteFailureMarker.wasSuccessful()) {
+        // if the tests passed, make sure everything was closed / released
+        String orr = ObjectReleaseTracker.checkEmpty();
+        ObjectReleaseTracker.clear();
+        assertNull(orr, orr);
+      }
+    } finally {
       ObjectReleaseTracker.OBJECTS.clear();
       TestInjection.reset();
     }
@@ -352,7 +358,7 @@ public class SolrTestCase extends LuceneTestCase {
       Long tooLongTime = 0L;
       try {
         synchronized (TimeTracker.CLOSE_TIMES) {
-          Map<String,TimeTracker> closeTimes = TimeTracker.CLOSE_TIMES;
+          Map<String, TimeTracker> closeTimes = TimeTracker.CLOSE_TIMES;
           for (TimeTracker closeTime : closeTimes.values()) {
 //              if (closeTime.getClazz() == SolrCore.class) {
 //                continue;

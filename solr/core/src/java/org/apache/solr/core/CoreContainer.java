@@ -193,7 +193,7 @@ public class CoreContainer implements Closeable {
 
   private volatile UpdateShardHandler updateShardHandler;
 
-  private volatile static ThreadPoolExecutor solrCoreLoadExecutor;
+  public volatile static ThreadPoolExecutor solrCoreLoadExecutor;
 
   private final OrderedExecutor replayUpdatesExecutor;
 
