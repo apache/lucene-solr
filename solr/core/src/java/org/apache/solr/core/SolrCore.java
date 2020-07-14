@@ -1593,14 +1593,15 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       synchronized (searcherLock) {
         this.isClosed = true;
         searcherExecutor.shutdown();
+        try {
+          coreAsyncTaskExecutor.shutdown();
+        } catch (Throwable e) {
+          ParWork.propegateInterrupt(e);
+        }
       }
 
 
-      try {
-        coreAsyncTaskExecutor.shutdown();
-      } catch (Throwable e) {
-        ParWork.propegateInterrupt(e);
-      }
+
 
       List<Callable<Object>> closeHookCalls = new ArrayList<>();
 
@@ -1670,7 +1671,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         });
       }
 
-      closer.add("CloseUpdateHandler&Searcher", coreAsyncTaskExecutor, () -> {
+      closer.add("coreAsyncTaskExecutor", coreAsyncTaskExecutor, () -> {
         // Since we waited for the searcherExecutor to shut down,
         // there should be no more searchers warming in the background
         // that we need to take care of.
@@ -1678,7 +1679,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         // For the case that a searcher was registered *before* warming
         // then the searchExecutor will throw an exception when getSearcher()
         // tries to use it, and the exception handling code should close it.
-        closeSearcher();
 // nocommit
 //        synchronized (searcherLock) {
 //          for (RefCounted<SolrIndexSearcher> searcher :  _searchers) {
@@ -1705,7 +1705,14 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
       });
 
-      closer.add("ClearInfoReg&ReleaseSnapShotsDir", () -> {
+      closer.add("closeSearcher", ()->{
+        closeSearcher();
+      });
+
+      closer.add("ClearInfoReg&ReleaseSnapShotsDir", ()->{
+        closeSearcher();
+        return "searcher";
+      }, () -> {
         infoRegistry.clear();
         return infoRegistry;
       }, () -> {
@@ -1899,13 +1906,13 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       new SolrNamedThreadFactory("searcherExecutor"));
   private AtomicInteger onDeckSearchers = new AtomicInteger();  // number of searchers preparing
   // Lock ordering: one can acquire the openSearcherLock and then the searcherLock, but not vice-versa.
-  private Object searcherLock = new Object();  // the sync object for the searcher
-  private ReentrantLock openSearcherLock = new ReentrantLock(true);     // used to serialize opens/reopens for absolute ordering
+  private final Object searcherLock = new Object();  // the sync object for the searcher
+  private final ReentrantLock openSearcherLock = new ReentrantLock(true);     // used to serialize opens/reopens for absolute ordering
   private final int maxWarmingSearchers;  // max number of on-deck searchers allowed
   private final int slowQueryThresholdMillis;  // threshold above which a query is considered slow
 
-  private RefCounted<SolrIndexSearcher> realtimeSearcher;
-  private Callable<DirectoryReader> newReaderCreator;
+  private volatile RefCounted<SolrIndexSearcher> realtimeSearcher;
+  private volatile Callable<DirectoryReader> newReaderCreator;
 
   // For testing
   boolean areAllSearcherReferencesEmpty() {
@@ -2172,6 +2179,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         // (caches take a little while to instantiate)
         final boolean useCaches = !realtime;
         final String newName = realtime ? "realtime" : "main";
+        if (isClosed() || (getCoreContainer() != null && getCoreContainer().isShutDown())) { // if we start new searchers after close we won't close them
+          throw new SolrCoreState.CoreIsClosedException();
+        }
         tmp = new SolrIndexSearcher(this, newIndexDir, getLatestSchema(), newName,
             newReader, true, useCaches, true, directoryFactory);
 
