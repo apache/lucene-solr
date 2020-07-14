@@ -19,6 +19,7 @@ package org.apache.solr.pkg;
 
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrClassLoader;
@@ -29,13 +30,17 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
-
+/**
+ * A {@link SolrClassLoader} that is specifically designed to load schema plugins from packages.
+ * This class would register a listener for any package that is used in a schema and reload the schema
+ * if any of those packages are updated
+ * */
 public class SchemaPluginsLoader implements SolrClassLoader {
     final CoreContainer coreContainer;
     final SolrResourceLoader loader;
     final Function<String, String> pkgVersionSupplier;
-    private Map<String ,PackageAPI.PkgVersion> packageVersions;
-    private Map<String, String> classNameVsPkg;
+    private Map<String ,PackageAPI.PkgVersion> packageVersions =  new HashMap<>(1);
+    private Map<String, String> classNameVsPkg = new HashMap<>(1);
     private final Runnable onReload;
 
     public SchemaPluginsLoader(CoreContainer coreContainer,
@@ -67,31 +72,28 @@ public class SchemaPluginsLoader implements SolrClassLoader {
 
     private PackageLoader.Package.Version findPkgVersion(PluginInfo.ClassName cName) {
         PackageLoader.Package.Version theVersion = coreContainer.getPackageLoader().getPackage(cName.pkg).getLatest(pkgVersionSupplier.apply(cName.pkg));
-        if(packageVersions == null) packageVersions = new HashMap<>();
         packageVersions.put(cName.pkg, theVersion.getPkgVersion());
-        if(classNameVsPkg == null) classNameVsPkg = new HashMap<>();
         classNameVsPkg.put(cName.toString(),cName.pkg);
         return theVersion;
     }
     public MapWriter getVersionInfo(String className) {
-        if(packageVersions == null || classNameVsPkg == null) return null;
         PackageAPI.PkgVersion p = packageVersions.get(classNameVsPkg.get(className));
         return p == null? null: p::writeMap;
     }
 
 
-    private <T> T applyResourceLoaderAware(PackageLoader.Package.Version version, T t) {
-        if (t instanceof ResourceLoaderAware) {
+    private <T> T applyResourceLoaderAware(PackageLoader.Package.Version version, T obj) {
+        if (obj instanceof ResourceLoaderAware) {
+            SolrResourceLoader.assertAwareCompatibility(ResourceLoaderAware.class, obj);
             try {
-                ((ResourceLoaderAware) t).inform(version.getLoader());
-                return t;
+                ((ResourceLoaderAware) obj).inform(version.getLoader());
+                return obj;
             } catch (IOException e) {
-                throw new RuntimeException(e);
-                //RODO handle exception
-
+                throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+                //TODO handle exception
             }
         }
-        return t;
+        return obj;
     }
 
     @Override
@@ -131,7 +133,6 @@ public class SchemaPluginsLoader implements SolrClassLoader {
 
         @Override
         public void changed(PackageLoader.Package pkg, Ctx ctx) {
-            if(packageVersions == null) return;
             PackageAPI.PkgVersion  currVer = packageVersions.get(pkg.name);
             if(currVer == null) {
                 //not watching this
@@ -146,7 +147,7 @@ public class SchemaPluginsLoader implements SolrClassLoader {
                 //no need to update
                 return;
             }
-            ctx.runLater(SchemaPluginsLoader.class.getName(), onReload);
+            ctx.runLater(null, onReload);
         }
 
         @Override

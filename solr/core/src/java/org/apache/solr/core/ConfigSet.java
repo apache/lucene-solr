@@ -32,6 +32,9 @@ public class ConfigSet {
 
   private final SolrConfig solrconfig;
 
+  /**Provide a Schema object on demand
+   * The first Boolean is to signify a a forcefetch
+   */
   private final Function<Boolean, IndexSchema> indexSchema;
 
   @SuppressWarnings({"rawtypes"})
@@ -57,6 +60,10 @@ public class ConfigSet {
     return solrconfig;
   }
 
+  /**
+   *
+   * @param forceFetch get a fresh value and not cached valiue
+   */
   public IndexSchema getIndexSchema(boolean forceFetch) {
     return indexSchema.apply(forceFetch);
   }

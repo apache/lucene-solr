@@ -98,7 +98,6 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.DirectoryFactory.DirContext;
-import org.apache.solr.core.PluginBag.PluginHolder;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager.SnapshotMetaData;
@@ -636,25 +635,25 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   }
 
 
-  @SuppressWarnings("unchecked")
   private void initListeners() {
+    final Class<SolrEventListener> clazz = SolrEventListener.class;
     final String label = "Event Listener";
     for (PluginInfo info : solrConfig.getPluginInfos(SolrEventListener.class.getName())) {
       final String event = info.attributes.get("event");
       if ("firstSearcher".equals(event)) {
-        PluginHolder<SolrEventListener> obj = PackagePluginHolder.createHolder(info, this, SolrEventListener.class, label);
+        SolrEventListener obj = createInitInstance(info, clazz, label, null);
         firstSearcherListeners.add(obj);
         log.debug("[{}] Added SolrEventListener for firstSearcher: [{}]", logid, obj);
       } else if ("newSearcher".equals(event)) {
-        PluginHolder<SolrEventListener> obj = PackagePluginHolder.createHolder(info, this, SolrEventListener.class, label);
+        SolrEventListener obj = createInitInstance(info, clazz, label, null);
         newSearcherListeners.add(obj);
         log.debug("[{}] Added SolrEventListener for newSearcher: [{}]", logid, obj);
       }
     }
   }
 
-  final List<PluginHolder<SolrEventListener>> firstSearcherListeners = new ArrayList<>();
-  final List<PluginHolder<SolrEventListener>> newSearcherListeners = new ArrayList<>();
+  final List<SolrEventListener> firstSearcherListeners = new ArrayList<>();
+  final List<SolrEventListener> newSearcherListeners = new ArrayList<>();
 
   /**
    * NOTE: this function is not thread safe.  However, it is safe to call within the
@@ -664,8 +663,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    * @see SolrCoreAware
    */
   public void registerFirstSearcherListener(SolrEventListener listener) {
-    firstSearcherListeners.add(new PluginHolder<>(listener,
-            SolrConfig.classVsSolrPluginInfo.get(SolrEventListener.class.getName())));
+    firstSearcherListeners.add(listener);
   }
 
   /**
@@ -676,8 +674,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    * @see SolrCoreAware
    */
   public void registerNewSearcherListener(SolrEventListener listener) {
-    newSearcherListeners.add(
-            new PluginHolder<>(listener, SolrConfig.classVsSolrPluginInfo.get(SolrEventListener.class.getName())));
+    newSearcherListeners.add(listener);
   }
 
   /**
@@ -735,7 +732,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     final RecoveryStrategy.Builder rsBuilder;
     if (info != null && info.className != null) {
       log.info(info.className);
-      rsBuilder = CoreRefreshingClassLoader.createInst(getResourceLoader(), info, RecoveryStrategy.Builder.class);
+      rsBuilder = getResourceLoader().newInstance(info.className, RecoveryStrategy.Builder.class);
     } else {
       log.debug("solr.RecoveryStrategy.Builder");
       rsBuilder = new RecoveryStrategy.Builder();
@@ -750,7 +747,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     IndexReaderFactory indexReaderFactory;
     PluginInfo info = solrConfig.getPluginInfo(IndexReaderFactory.class.getName());
     if (info != null) {
-      indexReaderFactory = CoreRefreshingClassLoader.createInst(resourceLoader, info, IndexReaderFactory.class);
+      indexReaderFactory = resourceLoader.newInstance(info.className, IndexReaderFactory.class);
       indexReaderFactory.init(info.initArgs);
     } else {
       indexReaderFactory = new StandardIndexReaderFactory();
@@ -1421,7 +1418,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     final PluginInfo info = solrConfig.getPluginInfo(CodecFactory.class.getName());
     final CodecFactory factory;
     if (info != null) {
-      factory = CoreRefreshingClassLoader.createInst(resourceLoader,  info, CodecFactory.class);
+      factory = resourceLoader.newInstance(info.className, CodecFactory.class);
       factory.init(info.initArgs);
     } else {
       factory = new CodecFactory() {
@@ -1459,8 +1456,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     final StatsCache cache;
     PluginInfo pluginInfo = solrConfig.getPluginInfo(StatsCache.class.getName());
     if (pluginInfo != null && pluginInfo.className != null && pluginInfo.className.length() > 0) {
-      cache = CoreRefreshingClassLoader.createInst(resourceLoader, pluginInfo, StatsCache.class);
-      initPlugin(pluginInfo ,cache);
+      cache = createInitInstance(pluginInfo, StatsCache.class, null,
+          LocalStatsCache.class.getName());
       if (log.isDebugEnabled()) {
         log.debug("Using statsCache impl: {}", cache.getClass().getName());
       }
@@ -2385,8 +2382,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         if (currSearcher == null) {
           future = searcherExecutor.submit(() -> {
             try {
-              for (PluginHolder<SolrEventListener>  listener : firstSearcherListeners) {
-                listener.get().newSearcher(newSearcher, null);
+              for (SolrEventListener listener : firstSearcherListeners) {
+                listener.newSearcher(newSearcher, null);
               }
             } catch (Throwable e) {
               SolrException.log(log, null, e);
@@ -2401,8 +2398,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         if (currSearcher != null) {
           future = searcherExecutor.submit(() -> {
             try {
-              for (PluginHolder<SolrEventListener>  listener : newSearcherListeners) {
-                listener.get().newSearcher(newSearcher, currSearcher);
+              for (SolrEventListener listener : newSearcherListeners) {
+                listener.newSearcher(newSearcher, currSearcher);
               }
             } catch (Throwable e) {
               SolrException.log(log, null, e);
@@ -3273,5 +3270,4 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   public void runAsync(Runnable r) {
     coreAsyncTaskExecutor.submit(r);
   }
-
 }
