@@ -79,8 +79,7 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
 
   public void testWaitForStateBeforeShutDown() throws Exception {
     final String col_name = "test_col";
-    final ExecutorService executor = ExecutorUtil.newMDCAwareFixedThreadPool
-      (1, new SolrNamedThreadFactory("background_executor"));
+    final ExecutorService executor = testExecutor;
     final MiniSolrCloudCluster cluster = new MiniSolrCloudCluster
       (1, createTempDir(), buildJettyConfig("/solr"));
     try {
@@ -116,7 +115,7 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
         }, null);
       
       log.info("Awaiting latch...");
-      if (! latch.await(120, TimeUnit.SECONDS)) {
+      if (! latch.await(15, TimeUnit.SECONDS)) {
         fail("timed out Waiting a ridiculous amount of time for the waitForState latch -- did impl change?");
       }
 

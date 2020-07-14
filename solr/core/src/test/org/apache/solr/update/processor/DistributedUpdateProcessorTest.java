@@ -29,7 +29,6 @@ import java.util.function.Function;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.update.AddUpdateCommand;
@@ -60,7 +59,7 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     assumeWorkingMockito();
-    executor = ExecutorUtil.newMDCAwareCachedThreadPool(getClassName());
+    executor = testExecutor;
     System.setProperty("enable.update.log", "true");
     initCore("solr/collection1/conf/solrconfig.xml","solr/collection1/conf/schema-minimal-with-another-uniqkey.xml");
   }

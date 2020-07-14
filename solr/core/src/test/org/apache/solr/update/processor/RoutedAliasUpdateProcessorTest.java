@@ -272,8 +272,7 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
       ExecutorService exec = null;
       try (CloudSolrClient solrClient = getCloudSolrClient(cluster)) {
         try {
-          exec = ExecutorUtil.newMDCAwareFixedThreadPool(1 + random().nextInt(2),
-              new SolrNamedThreadFactory(getSaferTestName()));
+          exec = testExecutor;
           List<Future<UpdateResponse>> futures = new ArrayList<>(solrInputDocuments.length);
           for (SolrInputDocument solrInputDocument : solrInputDocuments) {
             String col = collections.get(random().nextInt(collections.size()));

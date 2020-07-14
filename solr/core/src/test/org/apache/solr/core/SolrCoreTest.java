@@ -288,9 +288,6 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     // and close it when we call reload.
     h.reload();
 
-    executor.shutdown();
-    executor.awaitTermination(1, TimeUnit.MINUTES);
-
     // Check that all cores are closed and no searcher references are leaked.
     assertTrue("SolrCore " + core + " is not closed", core.isClosed());
   }

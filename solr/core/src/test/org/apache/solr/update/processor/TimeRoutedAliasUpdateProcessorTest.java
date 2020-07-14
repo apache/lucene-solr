@@ -306,38 +306,34 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
 
     // Using threads to ensure that two TRA's  are simultaneously preemptively creating and don't
     // interfere with each other
-    ExecutorService executorService = ExecutorUtil.newMDCAwareCachedThreadPool("TimeRoutedAliasProcessorTestx-testPreemptiveCreation");
+    ExecutorService executorService = testExecutor;
 
     Exception[] threadExceptions = new Exception[2];
     boolean[] threadStarted = new boolean[2];
     boolean[] threadFinished = new boolean[2];
-    try {
-      CountDownLatch starter = new CountDownLatch(1);
-      executorService.submit(() -> {
-        threadStarted[0] = true;
-        try {
-          starter.await();
-          concurrentUpdates(params, alias);
-        } catch (Exception e) {
-          threadExceptions[0] = e;
-        }
-        threadFinished[0] = true;
-      });
+    CountDownLatch starter = new CountDownLatch(1);
+    executorService.submit(() -> {
+      threadStarted[0] = true;
+      try {
+        starter.await();
+        concurrentUpdates(params, alias);
+      } catch (Exception e) {
+        threadExceptions[0] = e;
+      }
+      threadFinished[0] = true;
+    });
 
-      executorService.submit(() -> {
-        threadStarted[1] = true;
-        try {
-          starter.await();
-          concurrentUpdates(params, alias2);
-        } catch (Exception e) {
-          threadExceptions[1] = e;
-        }
-        threadFinished[1] = true;
-      });
-      starter.countDown();
-    } finally {
-      ExecutorUtil.shutdownAndAwaitTermination(executorService);
-    }
+    executorService.submit(() -> {
+      threadStarted[1] = true;
+      try {
+        starter.await();
+        concurrentUpdates(params, alias2);
+      } catch (Exception e) {
+        threadExceptions[1] = e;
+      }
+      threadFinished[1] = true;
+    });
+    starter.countDown();
 
     // threads are known to be terminated by now, check for exceptions
     for (Exception threadException : threadExceptions) {
