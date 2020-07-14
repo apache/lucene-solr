@@ -99,7 +99,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
     cluster.getSolrClient().setDefaultCollection(COLLECTION);
 
     final int numDocs = atLeast(TEST_NIGHTLY ? 1000 : 100);
-    final int maxTermId = atLeast(TERM_VALUES_RANDOMIZER);
+    final int maxTermId = atLeast(TEST_NIGHTLY ? TERM_VALUES_RANDOMIZER : 10);
 
     // clear the RANGE_MODEL
     Arrays.fill(RANGE_MODEL, 0);

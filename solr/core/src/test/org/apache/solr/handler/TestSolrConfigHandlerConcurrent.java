@@ -30,9 +30,11 @@ import java.util.concurrent.TimeUnit;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
+import org.apache.solr.cloud.SolrCloudBridgeTestCase;
 import org.apache.solr.common.LinkedHashMapWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.DocCollection;
@@ -50,7 +52,7 @@ import org.slf4j.LoggerFactory;
 import static java.util.Arrays.asList;
 
 
-public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBase {
+public class TestSolrConfigHandlerConcurrent extends SolrCloudBridgeTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -73,6 +75,7 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
           @Override
           public Object call() {
             try {
+              Thread.sleep(LuceneTestCase.random().nextInt(1000));
               invokeBulkCall((String) e.getKey(), errs, value);
             } catch (Exception e1) {
               e1.printStackTrace();
@@ -82,7 +85,7 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
         };
         threads.add(t);
         if (!TEST_NIGHTLY) {
-          if (threads.size() > 10) {
+          if (threads.size() > 5) {
             break;
           }
         }
@@ -118,7 +121,7 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
 
     Set<String> errmessages = new HashSet<>();
     for(int i =1;i<2;i++){//make it  ahigher number
-      RestTestHarness publisher = randomRestTestHarness(r);
+      RestTestHarness publisher = randomRestTestHarness(random());
       String response;
       String val1;
       String val2;
