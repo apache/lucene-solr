@@ -27,14 +27,21 @@ public class SolrNamedThreadFactory implements ThreadFactory {
     private final ThreadGroup group;
     private final AtomicInteger threadNumber = new AtomicInteger(1);
     private final String prefix;
+    private final boolean daemon;
+
 
     public SolrNamedThreadFactory(String namePrefix) {
+        this(namePrefix, false);
+    }
+
+    public SolrNamedThreadFactory(String namePrefix, boolean daemon) {
         SecurityManager s = System.getSecurityManager();
         group = (s != null)? s.getThreadGroup() :
                 Thread.currentThread().getThreadGroup();
         prefix = namePrefix + "-" +
                 poolNumber.getAndIncrement() +
                 "-thread-";
+        this.daemon = daemon;
     }
 
     @Override
@@ -43,7 +50,7 @@ public class SolrNamedThreadFactory implements ThreadFactory {
                 prefix + threadNumber.getAndIncrement(),
                 0);
 
-        t.setDaemon(false);
+        t.setDaemon(daemon);
 
         if (t.getPriority() != Thread.NORM_PRIORITY)
             t.setPriority(Thread.NORM_PRIORITY);

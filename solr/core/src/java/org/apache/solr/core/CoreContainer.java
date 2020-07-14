@@ -193,21 +193,10 @@ public class CoreContainer implements Closeable {
 
   private volatile UpdateShardHandler updateShardHandler;
 
-  private final static ThreadPoolExecutor solrCoreLoadExecutor =  new ThreadPoolExecutor(0, Integer.MAX_VALUE,
+  private final static ThreadPoolExecutor solrCoreLoadExecutor =  new ExecutorUtil.MDCAwareThreadPoolExecutor(0, Integer.MAX_VALUE,
           3, TimeUnit.SECONDS,
           new SynchronousQueue<>(),
           new SolrNamedThreadFactory("SolrCoreLoader"));
-  static {
-    solrCoreLoadExecutor.setThreadFactory(new ThreadFactory() {
-      @Override
-      public Thread newThread(Runnable runnable) {
-        Thread t = new Thread(runnable);
-        t.setDaemon(true);
-        t.setName("SolrCoreLoader");
-        return t;
-      }
-    });
-  }
 
   private final OrderedExecutor replayUpdatesExecutor;
 
