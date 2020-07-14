@@ -82,7 +82,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
   
   @BeforeClass
   public static void setupCluster() throws Exception {
-    final int numShards = TestUtil.nextInt(random(),1,5);
+    final int numShards = TEST_NIGHTLY ? TestUtil.nextInt(random(),1,5) : TestUtil.nextInt(random(),1,2);
     final int numReplicas = 1;
     final int maxShardsPerNode = 1;
     final int nodeCount = numShards * numReplicas;
@@ -98,7 +98,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
     
     cluster.getSolrClient().setDefaultCollection(COLLECTION);
 
-    final int numDocs = atLeast(1000);
+    final int numDocs = atLeast(TEST_NIGHTLY ? 1000 : 100);
     final int maxTermId = atLeast(TERM_VALUES_RANDOMIZER);
 
     // clear the RANGE_MODEL
