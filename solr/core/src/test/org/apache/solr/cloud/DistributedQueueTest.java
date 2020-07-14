@@ -265,19 +265,19 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
     // If someone adds a new matching element while we're waiting, we should return immediately.
     executor.submit(() -> {
       try {
-        Thread.sleep(500);
+        Thread.sleep(250);
         dq.offer(data);
       } catch (Exception e) {
         // ignore
       }
     });
     start = System.nanoTime();
-    assertEquals(1, dq.peekElements(4, 2000, child -> {
+    assertEquals(1, dq.peekElements(4, 600, child -> {
       // The 4th element in the queue will end with a "3".
       return child.endsWith("3");
     }).size());
     long timeTaken = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
-    assertTrue("Time was " + timeTaken + "ms, expected 250-1500ms", timeTaken > 250 && timeTaken < 1500);
+    assertTrue("Time was " + timeTaken + "ms, expected 250-1500ms", timeTaken > 250 && timeTaken < 600);
   }
 
   private void forceSessionExpire() throws InterruptedException, TimeoutException {
