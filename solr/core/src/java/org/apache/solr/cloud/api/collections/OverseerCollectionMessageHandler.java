@@ -537,7 +537,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     AtomicReference<String> errorMessage = new AtomicReference<>();
     AtomicReference<String> coreNodeName = new AtomicReference<>();
     try {
-      zkStateReader.waitForState(collectionName, 320, TimeUnit.SECONDS, (n, c) -> {
+      zkStateReader.waitForState(collectionName, 15, TimeUnit.SECONDS, (n, c) -> {
         if (c == null)
           return false;
         final Map<String,Slice> slicesMap = c.getSlicesMap();

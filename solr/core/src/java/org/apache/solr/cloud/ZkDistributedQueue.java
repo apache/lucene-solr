@@ -103,9 +103,9 @@ public class ZkDistributedQueue implements DistributedQueue {
    */
   private final Condition changed = updateLock.newCondition();
 
-  private boolean isDirty = true;
+  private volatile  boolean isDirty = true;
 
-  private int watcherCount = 0;
+  private AtomicInteger watcherCount = new AtomicInteger();
 
   private final int maxQueueSize;
 
@@ -397,10 +397,10 @@ public class ZkDistributedQueue implements DistributedQueue {
 
       // Dirty, try to fetch an updated list of children from ZK.
       // Only set a new watcher if there isn't already a watcher.
-      ChildWatcher newWatcher = (watcherCount == 0) ? new ChildWatcher() : null;
+      ChildWatcher newWatcher = (watcherCount.get() == 0) ? new ChildWatcher() : null;
       knownChildren = fetchZkChildren(newWatcher);
       if (newWatcher != null) {
-        watcherCount++; // watcher was successfully set
+        watcherCount.incrementAndGet(); // watcher was successfully set
       }
       isDirty = false;
       if (knownChildren.isEmpty()) {
@@ -564,7 +564,7 @@ public class ZkDistributedQueue implements DistributedQueue {
   @VisibleForTesting int watcherCount() throws InterruptedException {
     updateLock.lockInterruptibly();
     try {
-      return watcherCount;
+      return watcherCount.get();
     } finally {
       updateLock.unlock();
     }
@@ -590,7 +590,7 @@ public class ZkDistributedQueue implements DistributedQueue {
       updateLock.lock();
       try {
         isDirty = true;
-        watcherCount--;
+        watcherCount.decrementAndGet();
         // optimistically signal any waiters that the queue may not be empty now, so they can wake up and retry
         changed.signalAll();
       } finally {

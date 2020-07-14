@@ -162,14 +162,14 @@ public class SolrTestCase extends LuceneTestCase {
 
     if (!TEST_NIGHTLY) {
       //TestInjection.randomDelayMaxInCoreCreationInSec = 2;
-      System.setProperty("zookeeper.request.timeout", "300");
-      System.setProperty(SolrTestCaseJ4.USE_NUMERIC_POINTS_SYSPROP, "true");
-      System.setProperty("solr.tests.IntegerFieldType", "org.apache.solr.schema.IntPointField");
-      System.setProperty("solr.tests.FloatFieldType", "org.apache.solr.schema.FloatPointField");
-      System.setProperty("solr.tests.LongFieldType", "org.apache.solr.schema.LongPointField");
-      System.setProperty("solr.tests.DoubleFieldType", "org.apache.solr.schema.DoublePointField");
-      System.setProperty("solr.tests.DateFieldType", "org.apache.solr.schema.DatePointField");
-      System.setProperty("solr.tests.EnumFieldType", "org.apache.solr.schema.EnumFieldType");
+      System.setProperty("zookeeper.request.timeout", "500");
+      System.setProperty(SolrTestCaseJ4.USE_NUMERIC_POINTS_SYSPROP, "false");
+//      System.setProperty("solr.tests.IntegerFieldType", "org.apache.solr.schema.IntPointField");
+//      System.setProperty("solr.tests.FloatFieldType", "org.apache.solr.schema.FloatPointField");
+//      System.setProperty("solr.tests.LongFieldType", "org.apache.solr.schema.LongPointField");
+//      System.setProperty("solr.tests.DoubleFieldType", "org.apache.solr.schema.DoublePointField");
+//      System.setProperty("solr.tests.DateFieldType", "org.apache.solr.schema.DatePointField");
+//      System.setProperty("solr.tests.EnumFieldType", "org.apache.solr.schema.EnumFieldType");
 
       System.setProperty("solr.MaxConcurrentRequests", "5");
       System.setProperty("solr.tests.infostream", "false");
@@ -202,8 +202,8 @@ public class SolrTestCase extends LuceneTestCase {
       System.setProperty("solr.disablePublicKeyHandler", "true");
       System.setProperty("solr.dependentupdate.timeout", "1"); // seconds
 
-      System.setProperty("lucene.cms.override_core_count", "6");
-      System.setProperty("lucene.cms.override_spins", "false");
+      System.setProperty("lucene.cms.override_core_count", "3");
+      System.setProperty("lucene.cms.override_spins", "true");
 
       System.setProperty("solr.maxContainerThreads", "300");
       System.setProperty("solr.lowContainerThreadsThreshold", "-1");
