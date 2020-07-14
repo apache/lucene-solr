@@ -484,7 +484,7 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
 
   @Test
   public void testPointField() throws Exception {
-    int nvals = 10000; int maxval = 1000000;
+    int nvals = TEST_NIGHTLY ? 10000 : 1000; int maxval = TEST_NIGHTLY ? 1000000 : 10000;
     // int nvals = 5; int maxval = 2;
     final int vals[] = new int[nvals];
     for (int i=0; i<nvals; i++) {
