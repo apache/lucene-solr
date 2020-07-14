@@ -86,6 +86,10 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
     if (threadName.startsWith("ConnnectionExpirer")) {
       return true;
     }
+    
+    if (threadName.startsWith("SolrCoreLoader")) {
+      return true;
+    }
 
 
 

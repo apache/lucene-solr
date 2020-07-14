@@ -42,6 +42,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -188,7 +191,23 @@ public class CoreContainer implements Closeable {
   protected volatile ZkContainer zkSys = null;
   protected volatile ShardHandlerFactory shardHandlerFactory;
 
-  protected volatile UpdateShardHandler updateShardHandler;
+  private volatile UpdateShardHandler updateShardHandler;
+
+  private final static ThreadPoolExecutor solrCoreLoadExecutor =  new ExecutorUtil.MDCAwareThreadPoolExecutor(0, Integer.MAX_VALUE,
+          3, TimeUnit.SECONDS,
+          new SynchronousQueue<>(),
+          new SolrNamedThreadFactory("SolrCoreLoader"));
+  static {
+    solrCoreLoadExecutor.setThreadFactory(new ThreadFactory() {
+      @Override
+      public Thread newThread(Runnable runnable) {
+        Thread t = new Thread(runnable);
+        t.setDaemon(true);
+        t.setName("SolrCoreLoader");
+        return t;
+      }
+    });
+  }
 
   private final OrderedExecutor replayUpdatesExecutor;
 
@@ -872,7 +891,7 @@ public class CoreContainer implements Closeable {
             }
             if (cd.isLoadOnStartup()) {
               ParWork.sizePoolByLoad();
-              futures.add(ParWork.getExecutor().submit(() -> {
+              futures.add(solrCoreLoadExecutor.submit(() -> {
                 SolrCore core;
                 try {
                   if (isZooKeeperAware()) {
