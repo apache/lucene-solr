@@ -238,7 +238,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
    * and before using this ResourceLoader.
    */
   synchronized void reloadLuceneSPI() {
-    if (Boolean.getBoolean("solr.skipReloadSPI")) {
+    if (!Boolean.getBoolean("solr.reloadSPI")) {
       return;
     }
 
