@@ -110,6 +110,29 @@ The `Http2SolrClient` manages connections to different nodes efficiently. `Http2
 does not require a `baseUrl`. In case a `baseUrl` is not provided, then `SolrRequest.basePath` must be set, so
 `Http2SolrClient` knows which nodes to send requests to. If not an `IllegalArgumentException` will be thrown.
 
+==== Base URLs of CloudSolrClient
+
+It is also possible to specify base URLs for `CloudSolrClient`, but URLs are expected to point to the root Solr path (e.g., `\http://hostname:8983/solr`). They should not include any collections, cores, or other path components.
+
+[source,java,indent=0]
+----
+include::{example-source-dir}UsingSolrJRefGuideExamplesTest.java[tag=solrj-cloudsolrclient-baseurl]
+----
+
+In case a `baseUrl` is not provided, then a list of ZooKeeper hosts (with ports) and ZooKeeper root must be provided.
+If no ZooKeeper root is used then `java.util.Optional.empty()` has to be provided as part of the method.
+
+[source,java,indent=0]
+----
+include::{example-source-dir}UsingSolrJRefGuideExamplesTest.java[tag=solrj-cloudsolrclient-zookeepernoroot]
+----
+
+[source,java,indent=0]
+----
+include::{example-source-dir}UsingSolrJRefGuideExamplesTest.java[tag=solrj-cloudsolrclient-zookeeperroot]
+----
+
+
 ==== Timeouts
 All `SolrClient` implementations allow users to specify the connection and read timeouts for communicating with Solr.  These are provided at client creation time, as in the example below:
 
