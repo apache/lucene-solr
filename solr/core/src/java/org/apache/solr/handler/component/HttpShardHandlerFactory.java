@@ -354,8 +354,8 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
 
   @Override
   public void close() {
-    try (ParWork closer = new ParWork(this)) {
-      closer.add("", loadbalancer, defaultClient, () -> {
+    try (ParWork closer = new ParWork(this, true)) {
+      closer.add("closeHttpShardHandlerFactory", loadbalancer, defaultClient, () -> {
         try {
           SolrMetricProducer.super.close();
         } catch (Exception e) {
