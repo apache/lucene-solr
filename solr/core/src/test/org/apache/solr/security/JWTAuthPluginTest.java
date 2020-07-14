@@ -80,6 +80,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeAll() throws Exception {
+    System.setProperty("solr.disablePublicKeyHandler", "false");
     JwtClaims claims = generateClaims();
     JsonWebSignature jws = new JsonWebSignature();
     jws.setPayload(claims.toJson());

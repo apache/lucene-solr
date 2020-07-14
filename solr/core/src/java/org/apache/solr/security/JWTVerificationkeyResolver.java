@@ -21,6 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.security.Key;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -59,7 +60,7 @@ public class JWTVerificationkeyResolver implements VerificationKeyResolver {
 
   private final VerificationJwkSelector verificationJwkSelector = new VerificationJwkSelector();
 
-  private Map<String, JWTIssuerConfig> issuerConfigs = new ConcurrentHashMap<>();
+  private Map<String, JWTIssuerConfig> issuerConfigs = Collections.synchronizedMap(new HashMap<>());
   private final boolean requireIssuer;
 
   /**
@@ -70,9 +71,7 @@ public class JWTVerificationkeyResolver implements VerificationKeyResolver {
   public JWTVerificationkeyResolver(Collection<JWTIssuerConfig> issuerConfigs, boolean requireIssuer) {
     this.requireIssuer = requireIssuer;
     issuerConfigs.forEach(ic -> {
-      if (ic.getIss() != null && ic != null) {
-        this.issuerConfigs.put(ic.getIss(), ic);
-      }
+      this.issuerConfigs.put(ic.getIss(), ic);
     });
   }
 

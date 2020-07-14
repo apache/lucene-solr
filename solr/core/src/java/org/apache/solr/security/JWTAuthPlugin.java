@@ -163,7 +163,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     long jwkCacheDuration = Long.parseLong((String) pluginConfig.getOrDefault(PARAM_JWK_CACHE_DURATION, "3600"));
     JWTIssuerConfig.setHttpsJwksFactory(new JWTIssuerConfig.HttpsJwksFactory(jwkCacheDuration, DEFAULT_REFRESH_REPRIEVE_THRESHOLD));
 
-    issuerConfigs = new ArrayList<>();
+    issuerConfigs = Collections.synchronizedList(new ArrayList<>());
 
     // Try to parse an issuer from top level config, and add first (primary issuer)
     Optional<JWTIssuerConfig> topLevelIssuer = parseIssuerFromTopLevelConfig(pluginConfig);
