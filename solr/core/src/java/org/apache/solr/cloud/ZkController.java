@@ -395,6 +395,15 @@ public class ZkController implements Closeable {
     assert ObjectReleaseTracker.track(this);
   }
 
+  public void closeLeaderContext(CoreDescriptor cd) {
+    String collection = cd.getCloudDescriptor().getCollectionName();
+    final String coreNodeName = cd.getCloudDescriptor().getCoreNodeName();
+
+    ContextKey contextKey = new ContextKey(collection, coreNodeName);
+    ElectionContext context = electionContexts.get(contextKey);
+    context.close();
+  }
+
   public void start() {
 
     String zkCredentialsProviderClass = cloudConfig.getZkCredentialsProviderClass();
@@ -811,7 +820,7 @@ public class ZkController implements Closeable {
   }
 
   boolean isClosed() {
-    return isClosed;
+    return isClosed || getCoreContainer().isShutDown();
   }
 
   /**
@@ -2742,7 +2751,7 @@ public class ZkController implements Closeable {
     @Override
     // synchronized due to SOLR-11535
     public synchronized boolean onStateChanged(DocCollection collectionState) {
-      if (isClosed) { // don't accidentally delete cores on shutdown due to unreliable state
+      if (isClosed()) { // don't accidentally delete cores on shutdown due to unreliable state
         return true;
       }
 

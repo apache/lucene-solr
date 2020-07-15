@@ -73,9 +73,9 @@ public class DeleteReplicaCmd implements Cmd {
   @SuppressWarnings("unchecked")
   void deleteReplica(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results, Runnable onComplete)
           throws KeeperException, InterruptedException {
-    if (log.isDebugEnabled()) {
-      log.debug("deleteReplica() : {}", Utils.toJSONString(message));
-    }
+
+    log.info("deleteReplica() : {}", Utils.toJSONString(message));
+
     boolean parallel = message.getBool("parallel", false);
 
     //If a count is specified the strategy needs be different
@@ -83,7 +83,6 @@ public class DeleteReplicaCmd implements Cmd {
       deleteReplicaBasedOnCount(clusterState, message, results, onComplete, parallel);
       return;
     }
-
 
     ocmh.checkRequired(message, COLLECTION_PROP, SHARD_ID_PROP, REPLICA_PROP);
     String extCollectionName = message.getStr(COLLECTION_PROP);
@@ -106,7 +105,6 @@ public class DeleteReplicaCmd implements Cmd {
     }
 
     deleteCore(slice, collectionName, replicaName, message, shard, results, onComplete,  parallel);
-
   }
 
 
@@ -221,7 +219,7 @@ public class DeleteReplicaCmd implements Cmd {
 
   @SuppressWarnings({"unchecked"})
   void deleteCore(Slice slice, String collectionName, String replicaName,ZkNodeProps message, String shard, @SuppressWarnings({"rawtypes"})NamedList results, Runnable onComplete, boolean parallel) throws KeeperException, InterruptedException {
-
+    log.info("delete core {}", replicaName);
     Replica replica = slice.getReplica(replicaName);
     if (replica == null) {
       ArrayList<String> l = new ArrayList<>();
@@ -262,10 +260,10 @@ public class DeleteReplicaCmd implements Cmd {
       try {
         if (isLive) {
           shardRequestTracker.processResponses(results, shardHandler, false, null);
+          // try and ensure core info is removed from cluster state
+
         }
-        // try and ensure core info is removed from cluster state
         ocmh.deleteCoreNode(collectionName, replicaName, replica, core);
-        ocmh.waitForCoreNodeGone(collectionName, shard, replicaName, 5000);
       } catch (Exception e) {
         SolrZkClient.checkInterrupted(e);
         results.add("failure", "Could not complete delete " + e.getMessage());

@@ -311,6 +311,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           }
           log.info("I am the new leader: " + ZkCoreNodeProps.getCoreUrl(leaderProps) + " " + shardId);
 
+        } catch (AlreadyClosedException | InterruptedException e) {
+          log.info("Already closed or interrupted, bailing..");
         } catch (Exception e) {
           SolrException.log(log, "There was a problem trying to register as the leader", e);
           ParWork.propegateInterrupt(e);

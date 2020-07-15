@@ -58,6 +58,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.IndexFetcher;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -272,7 +273,17 @@ public class RecoveryStrategy implements Runnable, Closeable {
     }
 
     if (isClosed()) return; // we check closed on return
-    boolean success = replicationHandler.doFetch(solrParams, false).getSuccessful();
+    boolean success = false;
+    IndexFetcher.IndexFetchResult result = replicationHandler.doFetch(solrParams, false);
+
+    if (result.getMessage().equals(IndexFetcher.IndexFetchResult.FAILED_BY_INTERRUPT_MESSAGE)) {
+      log.info("Interrupted, stopping recovery");
+      return;
+    }
+
+    if (result.getSuccessful()) {
+      success= true;
+    }
 
     if (!success) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Replication for recovery failed.");
@@ -326,7 +337,9 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
   @Override
   final public void run() {
-
+    if (cc.isShutDown()) {
+      return;
+    }
     // set request info for logging
     try (SolrCore core = cc.getCore(coreName)) {
 

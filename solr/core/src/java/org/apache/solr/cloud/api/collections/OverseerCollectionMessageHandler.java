@@ -432,7 +432,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       throw new SolrException(ErrorCode.SERVER_ERROR, "Timed out waiting for nodes to go away");
     }
 
-    return true;
+    return false;
   }
 
   void deleteCoreNode(String collectionName, String replicaName, Replica replica, String core) throws Exception {

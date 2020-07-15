@@ -377,6 +377,7 @@ public class SolrTestCase extends LuceneTestCase {
       System.out.println("Show Close Times");
       Class<? extends Object> clazz = null;
       Long tooLongTime = 0L;
+      String times = null;
       try {
         synchronized (TimeTracker.CLOSE_TIMES) {
           Map<String, TimeTracker> closeTimes = TimeTracker.CLOSE_TIMES;
@@ -385,6 +386,7 @@ public class SolrTestCase extends LuceneTestCase {
             if (closeTime.getElapsedMS() > closeTimeout) {
               tooLongTime = closeTime.getElapsedMS();
               clazz = closeTime.getClazz();
+              times = closeTime.getCloseTimes();
             }
             // turn off until layout is fixed again
             // closeTime.printCloseTimes();
@@ -397,7 +399,7 @@ public class SolrTestCase extends LuceneTestCase {
 
       if (clazz != null) {
         // nocommit - leave this on
-        fail("A " + clazz.getName() + " took too long to close: " + tooLongTime);
+        fail("A " + clazz.getName() + " took too long to close: " + tooLongTime + "\n" + times);
       }
 
     }

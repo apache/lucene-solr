@@ -100,7 +100,6 @@ public class DeleteNodeCmd implements OverseerCollectionMessageHandler.Cmd {
                               OverseerCollectionMessageHandler ocmh,
                               String node,
                               String async) throws InterruptedException {
-    CountDownLatch cleanupLatch = new CountDownLatch(sourceReplicas.size());
     try (ParWork worker = new ParWork("cleanupReplicas")) {
       for (ZkNodeProps sReplica : sourceReplicas) {
         worker.collect(() -> {
@@ -114,7 +113,6 @@ public class DeleteNodeCmd implements OverseerCollectionMessageHandler.Cmd {
           try {
             if (async != null) sourceReplica = sourceReplica.plus(ASYNC, async);
             ((DeleteReplicaCmd) ocmh.commandMap.get(DELETEREPLICA)).deleteReplica(clusterState, sourceReplica.plus("parallel", "true"), deleteResult, () -> {
-              cleanupLatch.countDown();
               if (deleteResult.get("failure") != null) {
                 synchronized (results) {
 
@@ -125,21 +123,16 @@ public class DeleteNodeCmd implements OverseerCollectionMessageHandler.Cmd {
             });
           } catch (KeeperException e) {
             log.warn("Error deleting ", e);
-            cleanupLatch.countDown();
           } catch (InterruptedException e) {
             ParWork.propegateInterrupt(e);
-            cleanupLatch.countDown();
           }catch (Exception e) {
             log.warn("Error deleting ", e);
-            cleanupLatch.countDown();
             throw e;
           }
         });
       }
       worker.addCollect("deleteNodeReplicas");
     }
-    if (log.isDebugEnabled()) log.debug("Waiting for delete node action to complete");
-    cleanupLatch.await(5, TimeUnit.MINUTES);
   }
 
 

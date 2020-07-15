@@ -170,7 +170,7 @@ public class IndexFetcher {
 
   private boolean downloadTlogFiles = false;
 
-  private boolean skipCommitOnMasterVersionZero = true;
+  private boolean skipCommitOnMasterVersionZero = false;
 
   private boolean clearLocalIndexFirst = false;
 
@@ -456,13 +456,14 @@ public class IndexFetcher {
         }
       }
 
+      long slaveVersion = IndexDeletionPolicyWrapper.getCommitTimestamp(commit);
       if (log.isInfoEnabled()) {
         log.info("Slave's generation: {}", commit.getGeneration());
-        log.info("Slave's version: {}", IndexDeletionPolicyWrapper.getCommitTimestamp(commit)); // logOK
+        log.info("Slave's version: {}", slaveVersion); // logOK
       }
 
       if (latestVersion == 0L) {
-        if (commit.getGeneration() != 0) {
+        if (commit.getGeneration() > 1 || slaveVersion > 0) {
           // since we won't get the files for an empty index,
           // we just clear ours and commit
           log.info("New index in Master. Deleting mine...");
@@ -563,8 +564,8 @@ public class IndexFetcher {
             indexWriter.deleteUnusedFiles();
             while (hasUnusedFiles(indexDir, commit)) {
               indexWriter.deleteUnusedFiles();
-              log.info("Sleeping for 1000ms to wait for unused lucene index files to be delete-able");
-              Thread.sleep(1000);
+              log.info("Sleeping for 250ms to wait for unused lucene index files to be delete-able");
+              Thread.sleep(250);
               c++;
               if (c >= 30)  {
                 log.warn("IndexFetcher unable to cleanup unused lucene index files so we must do a full copy instead");
@@ -573,7 +574,7 @@ public class IndexFetcher {
               }
             }
             if (c > 0)  {
-              log.info("IndexFetcher slept for {}ms for unused lucene index files to be delete-able", c * 1000);
+              log.info("IndexFetcher slept for {}ms for unused lucene index files to be delete-able", c * 250);
             }
           } finally {
             writer.decref();

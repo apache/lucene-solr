@@ -1097,14 +1097,13 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     } else if (action != null && request.getParams().get(CoreAdminParams.ACTION).equals(CollectionParams.CollectionAction.DELETENODE.toString())) {
       // TODO: make efficient, timeout
       String node = request.getParams().get("node");
-      try {
+
         boolean wait = true;
         while (wait) {
           ClusterState clusterState = getZkStateReader().getClusterState();
           for (DocCollection docCollection : clusterState.getCollectionsMap().values()) {
             for (Replica replica : docCollection.getReplicas()) {
               if (replica.getNodeName().equals(node)) {
-                Thread.sleep(100);
                 continue;
               }
             }
@@ -1112,10 +1111,6 @@ public abstract class BaseCloudSolrClient extends SolrClient {
           break;
         }
 
-      } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
-        throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, e);
-      }
     }
   }
 
