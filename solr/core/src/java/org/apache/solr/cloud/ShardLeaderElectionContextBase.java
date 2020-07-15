@@ -123,8 +123,11 @@ class ShardLeaderElectionContextBase extends ElectionContext {
     String parent = Paths.get(leaderPath).getParent().toString();
     List<String> errors = new ArrayList<>();
     try {
+      if (isClosed() || zkClient.isClosed()) {
+        log.info("Bailing on becoming leader, we are closed");
+        return;
+      }
       log.info("Creating leader registration node {} after winning as {}", leaderPath, leaderSeqPath);
-      //zkClient.printLayout();
       List<Op> ops = new ArrayList<>(3);
 
       // We use a multi operation to get the parent nodes version, which will
