@@ -58,6 +58,7 @@ public class ConnectionManager implements Watcher, Closeable {
 
   private CountDownLatch connectedLatch = new CountDownLatch(1);
   private CountDownLatch disconnectedLatch = new CountDownLatch(1);
+  private volatile DisconnectListener disconnectListener;
 
   public void setOnReconnect(OnReconnect onReconnect) {
     this.onReconnect = onReconnect;
@@ -123,8 +124,16 @@ public class ConnectionManager implements Watcher, Closeable {
     if (!likelyExpiredState.isLikelyExpired(0)) {
       likelyExpiredState = new LikelyExpiredState(LikelyExpiredState.StateType.TRACKING_TIME, System.nanoTime());
     }
-    disconnectedLatch.countDown();;
+    disconnectedLatch.countDown();
     connectedLatch = new CountDownLatch(1);
+
+    try {
+      disconnectListener.disconnected();
+    } catch (NullPointerException e) {
+      // okay
+    } catch (Exception e) {
+      log.warn("Exception firing disonnectListener");
+    }
   }
 
   @Override
@@ -293,7 +302,17 @@ public class ConnectionManager implements Watcher, Closeable {
 
   }
 
+  public interface DisconnectListener {
+    void disconnected();
+  }
+
+  public void setDisconnectListener(DisconnectListener dl) {
+    this.disconnectListener = dl;
+
+  }
+
   private void closeKeeper(SolrZooKeeper keeper) {
     keeper.close();
   }
+
 }

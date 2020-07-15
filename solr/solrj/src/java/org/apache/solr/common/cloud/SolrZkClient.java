@@ -1100,6 +1100,11 @@ public class SolrZkClient implements Closeable {
     this.higherLevelIsClosed = isClosed;
   }
 
+  public void setDisconnectListener(ConnectionManager.DisconnectListener dl) {
+    this.connManager.setDisconnectListener(dl);
+
+  }
+
   /**
    * Watcher wrapper that ensures that heavy implementations of process do not interfere with our ability
    * to react to other watches, but also ensures that two wrappers containing equal watches are considered

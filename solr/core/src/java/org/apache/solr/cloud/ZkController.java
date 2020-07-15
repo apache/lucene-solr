@@ -528,7 +528,13 @@ public class ZkController implements Closeable {
       public boolean isClosed() {
         return cc.isShutDown();
       }});
-
+    zkClient.setDisconnectListener(() -> {
+      try {
+        ZkController.this.overseer.close();
+      } catch (NullPointerException e) {
+        // okay
+      }
+    });
     init();
 
     this.overseerRunningMap = Overseer.getRunningMap(zkClient);

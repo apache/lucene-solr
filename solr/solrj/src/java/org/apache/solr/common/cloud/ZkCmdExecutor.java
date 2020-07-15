@@ -35,7 +35,7 @@ import java.util.concurrent.TimeoutException;
 public class ZkCmdExecutor {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private long retryDelay = 500L; // 1 second would match timeout, so 500 ms over for padding
+  private long retryDelay = 50L;
   private int retryCount;
   private long timeoutms;
   private IsClosed isClosed;
