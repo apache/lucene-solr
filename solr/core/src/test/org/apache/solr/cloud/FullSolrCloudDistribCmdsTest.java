@@ -68,21 +68,21 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
   public static void setupCluster() throws Exception {
     System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
     System.setProperty("distribUpdateSoTimeout", "10000");
-    System.setProperty("socketTimeout", "10000");
+    System.setProperty("socketTimeout", "15000");
     System.setProperty("connTimeout", "5000");
-    System.setProperty("solr.test.socketTimeout.default", "10000");
+    System.setProperty("solr.test.socketTimeout.default", "15000");
     System.setProperty("solr.connect_timeout.default", "5000");
-    System.setProperty("solr.so_commit_timeout.default", "10000");
+    System.setProperty("solr.so_commit_timeout.default", "15000");
     System.setProperty("solr.httpclient.defaultConnectTimeout", "5000");
-    System.setProperty("solr.httpclient.defaultSoTimeout", "10000");
+    System.setProperty("solr.httpclient.defaultSoTimeout", "15000");
 
-    System.setProperty("solr.httpclient.retries", "1");
-    System.setProperty("solr.retries.on.forward", "1");
-    System.setProperty("solr.retries.to.followers", "1");
+    System.setProperty("solr.httpclient.retries", "0");
+    System.setProperty("solr.retries.on.forward", "0");
+    System.setProperty("solr.retries.to.followers", "0");
 
     System.setProperty("solr.waitForState", "10"); // secs
 
-    System.setProperty("solr.default.collection_op_timeout", "30000");
+    System.setProperty("solr.default.collection_op_timeout", "15000");
 
 
     // use a 5 node cluster so with a typical 2x2 collection one node isn't involved
@@ -92,8 +92,6 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
 
   @After
   public void purgeAllCollections() throws Exception {
-    zkClient().printLayout();
-    cluster.deleteAllCollections();
     cluster.getSolrClient().setDefaultCollection(null);
   }
 
@@ -385,7 +383,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     final CloudSolrClient cloudClient = cluster.getSolrClient();
     final String collectionName = createAndSetNewDefaultCollection();
     
-    final int numDocs = atLeast(50);
+    final int numDocs = atLeast(TEST_NIGHTLY ? 50 : 15);
     for (int i = 0; i < numDocs; i++) {
       UpdateRequest uReq;
       uReq = new UpdateRequest();
