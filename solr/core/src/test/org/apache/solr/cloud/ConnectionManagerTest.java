@@ -89,7 +89,7 @@ public class ConnectionManagerTest extends SolrTestCaseJ4 {
         assertFalse(cm.isLikelyExpired());
 
         // but it should after the timeout
-        Thread.sleep((long)(zkClient.getZkClientTimeout() * 1.5));
+        Thread.sleep((long)(zkClient.getZkClientTimeout() * 2));
         assertFalse(cm.isConnectedAndNotClosed());
         assertTrue(cm.isLikelyExpired());
 
