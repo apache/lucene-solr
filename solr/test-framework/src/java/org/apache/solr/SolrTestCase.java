@@ -364,16 +364,13 @@ public class SolrTestCase extends LuceneTestCase {
         synchronized (TimeTracker.CLOSE_TIMES) {
           Map<String, TimeTracker> closeTimes = TimeTracker.CLOSE_TIMES;
           for (TimeTracker closeTime : closeTimes.values()) {
-//              if (closeTime.getClazz() == SolrCore.class) {
-//                continue;
-//              }
             int closeTimeout = Integer.getInteger("solr.parWorkTestTimeout", 10000);
             if (closeTime.getElapsedMS() > closeTimeout) {
               tooLongTime = closeTime.getElapsedMS();
               clazz = closeTime.getClazz();
             }
-            closeTime.printCloseTimes();
-            System.out.println("\n");
+            // turn off until layout is fixed again
+            // closeTime.printCloseTimes();
           }
         }
 

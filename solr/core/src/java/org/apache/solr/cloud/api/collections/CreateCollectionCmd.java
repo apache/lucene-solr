@@ -290,7 +290,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
                       "shards", message.getStr("shards"),
                   CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.toString(waitForFinalState));
           props.getProperties().putAll(addReplicaProps.getProperties());
-          log.info("Sending state update to populate clusterstate with new replica {}", props);
+          if (log.isDebugEnabled()) log.debug("Sending state update to populate clusterstate with new replica {}", props);
           ocmh.overseer.offerStateUpdate(Utils.toJSON(props));
         }
 
@@ -422,9 +422,9 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
                                                             ZkNodeProps message,
                                                             List<String> shardNames,
                                                             AtomicReference<PolicyHelper.SessionWrapper> sessionWrapper) throws IOException, InterruptedException, Assign.AssignmentException {
-  //  if (log.isDebugEnabled()) {
-      log.info("buildReplicaPositions(SolrCloudManager cloudManager={}, ClusterState clusterState={}, DocCollection docCollection={}, ZkNodeProps message={}, List<String> shardNames={}, AtomicReference<PolicyHelper.SessionWrapper> sessionWrapper={}) - start", cloudManager, clusterState, docCollection, message, shardNames, sessionWrapper);
-   // }
+    if (log.isDebugEnabled()) {
+      log.debug("buildReplicaPositions(SolrCloudManager cloudManager={}, ClusterState clusterState={}, DocCollection docCollection={}, ZkNodeProps message={}, List<String> shardNames={}, AtomicReference<PolicyHelper.SessionWrapper> sessionWrapper={}) - start", cloudManager, clusterState, docCollection, message, shardNames, sessionWrapper);
+    }
 
     final String collectionName = message.getStr(NAME);
     // look at the replication factor and see if it matches reality

@@ -698,12 +698,12 @@ public class SolrZkClient implements Closeable {
       }
 
       if (!madePaths.add(makePath)) {
-        log.info("skipping already made {}", makePath + " data: " + (data == null ? "none" : data.length + "b"));
+        if (log.isDebugEnabled()) log.debug("skipping already made {}", makePath + " data: " + (data == null ? "none" : data.length + "b"));
         // already made
         latch.countDown();
         continue;
       }
-      log.info("makepath {}", makePath + " data: " + (data == null ? "none" : data.length + "b"));
+      if (log.isDebugEnabled()) log.debug("makepath {}", makePath + " data: " + (data == null ? "none" : data.length + "b"));
 
       assert getZkACLProvider() != null;
       assert keeper != null;
@@ -735,7 +735,6 @@ public class SolrZkClient implements Closeable {
 
     // nocommit, still haackey, do fails right
     if (code[0] != 0) {
-      System.out.println("fail code: "+ code[0]);
       KeeperException e = KeeperException.create(KeeperException.Code.get(code[0]), path[0]);
       if (e instanceof NodeExistsException && (nodata[0])) {
         // okay

@@ -458,7 +458,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
         }
       } else {
         cacheValue.refCnt++;
-        log.info("Reusing cached directory: {}", cacheValue, DEBUG_GET_RELEASE && cacheValue.path.equals("data/index") ? new RuntimeException() : null );
+        if (log.isDebugEnabled()) log.debug("Reusing cached directory: {}", cacheValue, DEBUG_GET_RELEASE && cacheValue.path.equals("data/index") ? new RuntimeException() : null );
       }
       //  if (cacheValue.path.equals("data/index")) {
       //    log.info("getDir " + path, new RuntimeException("track get " + fullPath)); // nocommit
@@ -553,7 +553,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
 //            "Releasing directory: " + cacheValue.path + " " + (cacheValue.refCnt - 1) + " " + cacheValue.doneWithDir,
 //            new RuntimeException("Fake to find stack trace")); // nocommit
 //      } else {
-      log.info(
+      if (log.isDebugEnabled()) log.debug(
               "Releasing directory: " + cacheValue.path + " " + (cacheValue.refCnt - 1) + " " + cacheValue.doneWithDir,  DEBUG_GET_RELEASE && cacheValue.path.equals("data/index") ? new RuntimeException() : null ); // nocommit
 
       //    }

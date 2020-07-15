@@ -354,7 +354,6 @@ public  class LeaderElector {
 
       ZkCmdExecutor zkCmdExecutor = new ZkCmdExecutor(zkClient.getZkClientTimeout());
       zkCmdExecutor.ensureExists(electZKPath, (byte[])null, CreateMode.PERSISTENT, zkClient, 2);
-      System.out.println("CreateNODE:" + ZkStateReader.getShardLeadersPath(slec.collection, slec.shardId));
       zkCmdExecutor.ensureExists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + slec.collection + "/"
               + ZkStateReader.SHARD_LEADERS_ZKNODE + (slec.shardId != null ? ("/" + slec.shardId)
               : ""), (byte[])null, CreateMode.PERSISTENT, zkClient, 2);

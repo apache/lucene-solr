@@ -226,7 +226,7 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
             // are we closed?
             if (isClosed) {
               log.info("OverseerTriggerThread woken up but we are closed, exiting.");
-              break;
+              return;
             }
             
             // spurious wakeup?

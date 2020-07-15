@@ -1294,7 +1294,6 @@ public abstract class BaseCloudSolrClient extends SolrClient {
         if (fetchedCol.getStateFormat() > 1)
           collectionStateCache.put(collection, new ExpiringCachedDocCollection(fetchedCol));
       }
-      System.out.println("found doc collection:" + fetchedCol);
       return fetchedCol;
     }
   }

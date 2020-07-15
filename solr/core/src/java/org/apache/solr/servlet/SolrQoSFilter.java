@@ -83,14 +83,14 @@ public class SolrQoSFilter extends QoSFilter {
         } else if (sLoad < 0.9D && _origMaxRequests != getMaxRequests()) {
           setMaxRequests(_origMaxRequests);
         }
-        log.info("external request, load:" + sLoad); //nocommit: remove when testing is done
+        if (log.isDebugEnabled()) log.debug("external request, load:" + sLoad); //nocommit: remove when testing is done
 
       }
 
       super.doFilter(req, response, chain);
 
     } else {
-      log.info("internal request"); //nocommit: remove when testing is done
+      if (log.isDebugEnabled()) log.debug("internal request"); //nocommit: remove when testing is done
       chain.doFilter(req, response);
     }
   }

@@ -438,8 +438,7 @@ public class ZkStateReader implements SolrCloseable {
         try {
           boolean success = latch.await(10000, TimeUnit.MILLISECONDS);
           if (!success) {
-            zkClient.printLayout();
-            log.warn("Timed waiting to see {} node in zk", ZkStateReader.COLLECTIONS_ZKNODE);
+            log.warn("Timed waiting to see {} node in zk \n{}", ZkStateReader.COLLECTIONS_ZKNODE, clusterState);
           }
           log.info("Done waiting on latch");
         } catch (InterruptedException e) {
@@ -451,6 +450,7 @@ public class ZkStateReader implements SolrCloseable {
       throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, e);
     } catch (InterruptedException e) {
       ParWork.propegateInterrupt(e);
+      return;
     }
 
     try {
@@ -588,7 +588,6 @@ public class ZkStateReader implements SolrCloseable {
    * Refresh legacy (shared) clusterstate.json
    */
   private void refreshLegacyClusterState(Watcher watcher) throws KeeperException, InterruptedException {
-    System.out.println("refresh legacy state");
     try {
       final Stat stat = new Stat();
       final byte[] data = zkClient.getData(CLUSTER_STATE, watcher, stat, true);
@@ -657,7 +656,6 @@ public class ZkStateReader implements SolrCloseable {
       List<String> children = null;
       try {
         children = zkClient.getChildren(COLLECTIONS_ZKNODE, watcher, true);
-        System.out.println("found collections in zk:" + children);
       } catch (KeeperException.NoNodeException e) {
         log.warn("Error fetching collection names: [{}]", e.getMessage());
         // fall through
@@ -714,7 +712,7 @@ public class ZkStateReader implements SolrCloseable {
   }
 
   private void notifyCloudCollectionsListeners(boolean notifyIfSame) {
-    log.info("Notify cloud collection listeners");
+    if (log.isDebugEnabled()) log.debug("Notify cloud collection listeners");
     Set<String> newCollections;
     Set<String> oldCollections;
     boolean fire = false;
@@ -731,7 +729,6 @@ public class ZkStateReader implements SolrCloseable {
         cloudCollectionsListeners.forEach(listener -> {
 
           listener.onChange(oldCollections, newCollections);
-          System.out.println("new collections: "  + newCollections);
           worker.collect(() -> {
 
             listener.onChange(oldCollections, newCollections);
@@ -841,7 +838,7 @@ public class ZkStateReader implements SolrCloseable {
       log.debug("Updated live nodes from ZooKeeper... {} -> {}", oldLiveNodes, newLiveNodes);
     }
     if (!oldLiveNodes.equals(newLiveNodes)) { // fire listeners
-      log.info("Fire live node listeners");
+      if (log.isDebugEnabled()) log.debug("Fire live node listeners");
       liveNodesListeners.forEach(listener -> {
         if (listener.onChange(new TreeSet<>(oldLiveNodes), new TreeSet<>(newLiveNodes))) {
           removeLiveNodesListener(listener);

@@ -40,6 +40,7 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    System.setProperty("solr.logUpdateProcOnInfo", "true");
     System.setProperty("enable.runtime.lib", "true");
     initCore("solrconfig-transformers.xml", "schema.xml");
   }

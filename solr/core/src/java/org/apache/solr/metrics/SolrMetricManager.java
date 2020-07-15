@@ -1112,7 +1112,7 @@ public class SolrMetricManager {
 
       reportersLock.lock();
 
-      log.info("Closing metric reporters for registry=" + registry + ", tag=" + tag);
+      if (log.isDebugEnabled()) log.debug("Closing metric reporters for registry=" + registry + ", tag=" + tag);
       // nocommit
       Map<String,SolrMetricReporter> perRegistry = reporters.get(registry);
       if (perRegistry != null) {

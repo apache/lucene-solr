@@ -58,7 +58,7 @@ public class SliceMutator {
   }
 
   public ZkWriteCommand addReplica(ClusterState clusterState, ZkNodeProps message) {
-    log.info("createReplica() {} ", message);
+    if (log.isDebugEnabled()) log.debug("createReplica() {} ", message);
     String coll = message.getStr(ZkStateReader.COLLECTION_PROP);
     // if (!checkCollectionKeyExistence(message)) return ZkStateWriter.NO_OP;
     String slice = message.getStr(ZkStateReader.SHARD_ID_PROP);
@@ -164,13 +164,13 @@ public class SliceMutator {
     final Map<String, Replica> newReplicas = new LinkedHashMap<>();
     for (Replica replica : slice.getReplicas()) {
       // TODO: this should only be calculated once and cached somewhere?
-      log.info("examine for setting or unsetting as leader replica={}", replica);
+      if (log.isDebugEnabled()) log.debug("examine for setting or unsetting as leader replica={}", replica);
 
       if (replica == oldLeader && !coreNodeName.equals(replica.getName())) {
-        log.info("Unset leader");
+        if (log.isDebugEnabled()) log.debug("Unset leader");
         replica = new ReplicaMutator(cloudManager).unsetLeader(replica);
       } else if (coreNodeName.equals(replica.getName())) {
-        log.info("Set leader");
+        if (log.isDebugEnabled()) log.debug("Set leader");
         replica = new ReplicaMutator(cloudManager).setLeader(replica);
       }
 

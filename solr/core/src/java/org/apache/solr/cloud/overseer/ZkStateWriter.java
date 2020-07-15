@@ -116,7 +116,6 @@ public class ZkStateWriter {
       try {
         state = writePendingUpdates(reader.getClusterState());
       } catch (KeeperException.BadVersionException e) {
-        e.printStackTrace();
         prevState = reader.getClusterState();
         stats = new Stats();
         numUpdates = 0;
@@ -254,9 +253,9 @@ public class ZkStateWriter {
 
             byte[] data = Utils.toJSON(singletonMap(c.getName(), newCollection));
 
-            //if (log.isDebugEnabled()) {
-              log.info("Write state.json bytes={} cs={}", data.length, newClusterState);
-           // }
+            if (log.isDebugEnabled()) {
+              log.debug("Write state.json bytes={} cs={}", data.length, newClusterState);
+            }
            // stat = reader.getZkClient().getCurator().setData().withVersion(prevVersion).forPath(path, data);
             stat =  reader.getZkClient().setData(path, data, prevVersion, true);
           } else {
@@ -288,7 +287,7 @@ public class ZkStateWriter {
         } catch (Exception e) {
           if (e instanceof KeeperException.BadVersionException) {
             // nocommit invalidState = true;
-            log.info("Tried to update the cluster state using version={} but we where rejected, currently at {}", prevVersion, ((KeeperException.BadVersionException) e).getMessage(), e);
+            if (log.isDebugEnabled()) log.debug("Tried to update the cluster state using version={} but we where rejected, currently at {}", prevVersion, ((KeeperException.BadVersionException) e).getMessage(), e);
             throw (KeeperException.BadVersionException) e;
           }
           ParWork.propegateInterrupt(e);
@@ -303,7 +302,7 @@ public class ZkStateWriter {
           reader.waitForState(c.getName(), 5, TimeUnit.SECONDS,
                   (l, col) -> {
                     if (col != null && col.getZNodeVersion() > prevState.getZNodeVersion()) {
-                      log.error("Waited for ver: {}", col.getZNodeVersion());
+                      if (log.isDebugEnabled()) log.debug("Waited for ver: {}", col.getZNodeVersion());
                       return true;
                     }
                     return false;

@@ -237,7 +237,7 @@ public class ParWork implements Closeable {
 
   public void addCollect(String label) {
     if (collectSet == null) {
-      log.info("Nothing collected to submit");
+      log.info("No work collected to submit");
       return;
     }
     add(label, collectSet);
@@ -512,7 +512,7 @@ public class ParWork implements Closeable {
                 }
 
               } catch (InterruptedException e1) {
-                log.warn(WORK_WAS_INTERRUPTED, e1);
+                log.warn(WORK_WAS_INTERRUPTED);
                 Thread.currentThread().interrupt();
               }
             }
@@ -576,7 +576,7 @@ public class ParWork implements Closeable {
       } else if (sLoad < 0.9D && MAXIMUM_POOL_SIZE != executor.getMaximumPoolSize()) {
         executor.setMaximumPoolSize(MAXIMUM_POOL_SIZE);
       }
-      log.info("external request, load:" + sLoad); //nocommit: remove when testing is done
+      if (log.isDebugEnabled()) log.debug("ParWork, load:" + sLoad); //nocommit: remove when testing is done
 
     }
   }
@@ -767,7 +767,7 @@ public class ParWork implements Closeable {
 
   public static void propegateInterrupt(Throwable t, boolean infoLogMsg) {
     if (t instanceof InterruptedException) {
-      log.info("Interrupted", t);
+      log.info("Interrupted", t.getMessage());
       Thread.currentThread().interrupt();
     } else {
       if (infoLogMsg) {
@@ -818,7 +818,7 @@ public class ParWork implements Closeable {
     while (!shutdown) {
       try {
         // Wait a while for existing tasks to terminate
-        shutdown = pool.awaitTermination(60, TimeUnit.SECONDS);
+        shutdown = pool.awaitTermination(30, TimeUnit.SECONDS);
       } catch (InterruptedException ie) {
         // Preserve interrupt status
         Thread.currentThread().interrupt();

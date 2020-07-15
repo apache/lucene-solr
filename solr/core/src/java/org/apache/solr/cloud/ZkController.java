@@ -367,14 +367,14 @@ public class ZkController implements Closeable {
       log.info("node name={}", nodeName);
       MDCLoggingContext.setNode(nodeName);
 
-      log.info("leaderVoteWait get");
+      if (log.isDebugEnabled()) log.debug("leaderVoteWait get");
       this.leaderVoteWait = cloudConfig.getLeaderVoteWait();
-      log.info("leaderConflictWait get");
+      if (log.isDebugEnabled()) log.debug("leaderConflictWait get");
       this.leaderConflictResolveWait = cloudConfig.getLeaderConflictResolveWait();
 
-      log.info("clientTimeout get");
+      if (log.isDebugEnabled()) log.debug("clientTimeout get");
       this.clientTimeout = cloudConfig.getZkClientTimeout();
-      log.info("create connection strat");
+      if (log.isDebugEnabled()) log.debug("create connection strat");
       if (zkClient == null) {
         zkClient = new SolrZkClient(zkServerAddress, clientTimeout, zkClientConnectTimeout);
       }
@@ -388,6 +388,7 @@ public class ZkController implements Closeable {
         zkACLProvider = new DefaultZkACLProvider();
       }
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       log.error("Exception during ZkController init", e);
       throw e;
     }
@@ -939,20 +940,19 @@ public class ZkController implements Closeable {
     boolean createdClusterNodes = false;
     try {
       DistributedLock lock = new DistributedLock(zkClient, "/cluster_lock", zkClient.getZkACLProvider().getACLsToAdd("/cluster_lock"));
-      log.info("get cluster lock");
+      if (log.isDebugEnabled()) log.debug("get cluster lock");
       while (!lock.lock()) {
         Thread.sleep(250);
       }
       try {
 
-        log.info("got cluster lock");
+        if (log.isDebugEnabled()) log.debug("got cluster lock");
         CountDownLatch latch = new CountDownLatch(1);
         zkClient.getSolrZooKeeper().sync(COLLECTIONS_ZKNODE, (rc, path, ctx) -> {latch.countDown();}, new Object());
         boolean success = latch.await(10, TimeUnit.SECONDS);
         if (!success) {
           throw new SolrException(ErrorCode.SERVER_ERROR, "Timeout calling sync on collection zknode");
         }
-        zkClient.printLayout();
         if (!zkClient.exists(COLLECTIONS_ZKNODE, true)) {
           try {
             createClusterZkNodes(zkClient);
@@ -962,9 +962,9 @@ public class ZkController implements Closeable {
           }
           createdClusterNodes = true;
         } else {
-          log.info("Cluster zk nodes already exist");
+          if (log.isDebugEnabled()) log.debug("Cluster zk nodes already exist");
           int currentLiveNodes = zkClient.getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null, true).size();
-          log.info("Current live nodes {}", currentLiveNodes);
+          if (log.isDebugEnabled()) log.debug("Current live nodes {}", currentLiveNodes);
 //          if (currentLiveNodes == 0) {
 //            log.info("Delete Overseer queues");
 //            // cluster is in a startup state, clear zk queues
@@ -1017,7 +1017,7 @@ public class ZkController implements Closeable {
         }
 
       } finally {
-        log.info("release cluster lock");
+        if (log.isDebugEnabled())  log.debug("release cluster lock");
         lock.unlock();
       }
       if (!createdClusterNodes) {

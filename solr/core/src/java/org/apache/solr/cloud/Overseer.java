@@ -262,7 +262,7 @@ public class Overseer implements SolrCloseable {
               byte[] data = fallbackQueue.peek();
               while (fallbackQueueSize > 0 && data != null) {
                 final ZkNodeProps message = ZkNodeProps.load(data);
-                log.debug("processMessage: fallbackQueueSize: {}, message = {}", fallbackQueue.getZkStats().getQueueLength(), message);
+                if (log.isDebugEnabled()) log.debug("processMessage: fallbackQueueSize: {}, message = {}", fallbackQueue.getZkStats().getQueueLength(), message);
                 // force flush to ZK after each message because there is no fallback if workQueue items
                 // are removed from workQueue but fail to be written to ZK
                 try {
@@ -272,8 +272,6 @@ public class Overseer implements SolrCloseable {
                   ParWork.propegateInterrupt(e);
                   return;
                 } catch (KeeperException.SessionExpiredException e) {
-                  log.error("run()", e);
-
                   log.warn("Solr cannot talk to ZK, exiting Overseer work queue loop", e);
                   return;
                 } catch (Exception e) {
@@ -407,7 +405,7 @@ public class Overseer implements SolrCloseable {
     }
 
     private ClusterState processQueueItem(ZkNodeProps message, final ClusterState clusterState, ZkStateWriter zkStateWriter, boolean enableBatching, ZkStateWriter.ZkWriteCallback callback) throws Exception {
-      log.info("Consume state update from queue {}", message);
+      if (log.isDebugEnabled()) log.debug("Consume state update from queue {}", message);
       assert clusterState != null;
       AtomicReference<ClusterState> state = new AtomicReference<>();
 
@@ -444,9 +442,9 @@ public class Overseer implements SolrCloseable {
 
     private List<ZkWriteCommand> processMessage(ClusterState clusterState,
                                                 final ZkNodeProps message, final String operation) {
-      //if (log.isDebugEnabled()) {
-        log.info("processMessage(ClusterState clusterState={}, ZkNodeProps message={}, String operation={}) - start", clusterState, message, operation);
-     // }
+      if (log.isDebugEnabled()) {
+        log.debug("processMessage(ClusterState clusterState={}, ZkNodeProps message={}, String operation={}) - start", clusterState, message, operation);
+      }
 
       CollectionParams.CollectionAction collectionAction = CollectionParams.CollectionAction.get(operation);
       if (collectionAction != null) {

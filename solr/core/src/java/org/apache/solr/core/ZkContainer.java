@@ -156,7 +156,7 @@ public class ZkContainer implements Closeable {
         zkController = new ZkController(cc, zkClient, config, descriptorsSupplier);
         log.info("start zkController");
 
-        log.info("done zkController init");
+        if (log.isDebugEnabled()) log.debug("done zkController init");
       } catch (InterruptedException e) {
         // Restore the interrupted status
         Thread.currentThread().interrupt();
