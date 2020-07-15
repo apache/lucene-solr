@@ -18,12 +18,15 @@ package org.apache.solr.common.cloud;
 
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.TimeOut;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.KeeperState;
@@ -51,6 +54,9 @@ public class ConnectionManager implements Watcher, Closeable {
   private volatile BeforeReconnect beforeReconnect;
 
   private volatile boolean isClosed = false;
+
+  private CountDownLatch connectedLatch = new CountDownLatch(1);
+  private CountDownLatch disconnectedLatch = new CountDownLatch(1);
 
   public void setOnReconnect(OnReconnect onReconnect) {
     this.onReconnect = onReconnect;
@@ -105,6 +111,8 @@ public class ConnectionManager implements Watcher, Closeable {
   private synchronized void connected() {
     connected = true;
     likelyExpiredState = LikelyExpiredState.NOT_EXPIRED;
+    connectedLatch.countDown();
+    disconnectedLatch = new CountDownLatch(1);
     notifyAll();
   }
 
@@ -114,6 +122,8 @@ public class ConnectionManager implements Watcher, Closeable {
     if (!likelyExpiredState.isLikelyExpired(0)) {
       likelyExpiredState = new LikelyExpiredState(LikelyExpiredState.StateType.TRACKING_TIME, System.nanoTime());
     }
+    disconnectedLatch.countDown();;
+    connectedLatch = new CountDownLatch(1);
     notifyAll();
   }
 
@@ -267,15 +277,6 @@ public class ConnectionManager implements Watcher, Closeable {
   public void close() {
     this.isClosed = true;
     this.likelyExpiredState = LikelyExpiredState.EXPIRED;
-
-//    try {
-//      waitForDisconnected(10000);
-//    } catch (InterruptedException e) {
-//      ParWork.propegateInterrupt(e);
-//      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-//    } catch (TimeoutException e) {
-//      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-//    }
   }
 
   private boolean isClosed() {
@@ -295,40 +296,37 @@ public class ConnectionManager implements Watcher, Closeable {
   }
 
   public synchronized void waitForConnected(long waitForConnection)
-      throws TimeoutException {
+          throws TimeoutException, InterruptedException {
     log.info("Waiting for client to connect to ZooKeeper");
-    long expire = System.nanoTime() + TimeUnit.NANOSECONDS.convert(waitForConnection, TimeUnit.MILLISECONDS);
-    long left = 1;
-    while (!connected && left > 0) {
-      if (isClosed()) {
-        throw new AlreadyClosedException();
+    TimeOut timeout = new TimeOut(waitForConnection, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
+    boolean success = false;
+    while (!success) {
+      if (client.isConnected()) {
+        connected();
+        break;
       }
-      try {
-        wait(250);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-      }
-      left = expire - System.nanoTime();
-    }
-    synchronized (this) {
-      if (!connected) {
+      if (timeout.hasTimedOut()) {
         throw new TimeoutException("Could not connect to ZooKeeper " + zkServerAddress + " within " + waitForConnection + " ms");
       }
+      success = connectedLatch.await(250, TimeUnit.MILLISECONDS);
     }
+
     log.info("Client is connected to ZooKeeper");
   }
 
-  public synchronized void waitForDisconnected(long timeout)
+  public synchronized void waitForDisconnected(long waitForDisconnected)
       throws InterruptedException, TimeoutException {
-    long expire = System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS);
-    long left = timeout;
-    while (connected && left > 0) {
-      wait(250);
-      left = expire - System.nanoTime();
-    }
-    if (connected) {
-      throw new TimeoutException("Did not disconnect");
+    TimeOut timeout = new TimeOut(waitForDisconnected, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
+    boolean success = false;
+    while (!success) {
+      if (client.isConnected()) {
+        connected();
+        break;
+      }
+      if (timeout.hasTimedOut()) {
+        throw new TimeoutException("Timeout waiting to disconnect from ZooKeeper " + zkServerAddress + " within " + waitForDisconnected + " ms");
+      }
+      success = disconnectedLatch.await(250, TimeUnit.MILLISECONDS);
     }
   }
 

@@ -102,11 +102,11 @@ public class SolrZkClient implements Closeable {
 
   private final ZkClientConnectionStrategy strat;
 
-  private ConnectionManager connManager;
+  private volatile ConnectionManager connManager;
 
   private volatile SolrZooKeeper keeper;
 
-  private ZkCmdExecutor zkCmdExecutor;
+  private volatile ZkCmdExecutor zkCmdExecutor;
 
   private final ExecutorService zkCallbackExecutor =
           new ThreadPoolExecutor(1, 1,
@@ -144,12 +144,11 @@ public class SolrZkClient implements Closeable {
       ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrNamedThreadFactory("zkConnectionManagerCallback"));
 
   private volatile boolean isClosed = false;
-  private ZkClientConnectionStrategy zkClientConnectionStrategy;
-  private int zkClientTimeout;
+  private volatile ZkClientConnectionStrategy zkClientConnectionStrategy;
+  private volatile int zkClientTimeout;
   private volatile ZkACLProvider zkACLProvider;
-  private String zkServerAddress;
-
-  private IsClosed higherLevelIsClosed;
+  private volatile String zkServerAddress;
+  private volatile IsClosed higherLevelIsClosed;
 
   public int getZkClientTimeout() {
     return zkClientTimeout;
