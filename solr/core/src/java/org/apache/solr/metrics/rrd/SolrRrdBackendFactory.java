@@ -44,6 +44,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.TimeSource;
@@ -459,9 +460,9 @@ public class SolrRrdBackendFactory extends RrdBackendFactory implements SolrClos
       log.debug("Closing {}", hashCode());
     }
     closed = true;
-    backends.forEach((p, b) -> IOUtils.closeQuietly(b));
+    backends.values().forEach(IOUtils::closeQuietly);
     backends.clear();
-    syncService.shutdownNow();
+    ExecutorUtil.shutdownNowAndAwaitTermination(syncService);
     syncService = null;
   }
 }

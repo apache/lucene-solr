@@ -207,8 +207,6 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
     this.metricsHandler = metricsHandler;
     this.cloudManager = cloudManager;
     this.timeSource = cloudManager != null ? cloudManager.getTimeSource() : TimeSource.NANO_TIME;
-    factory = new SolrRrdBackendFactory(solrClient, CollectionAdminParams.SYSTEM_COLL,
-            syncPeriod, this.timeSource);
 
     counters.put(Group.core.toString(), DEFAULT_CORE_COUNTERS);
     counters.put(Group.node.toString(), Collections.emptyList());
@@ -228,6 +226,9 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
     }
 
     if (enable) {
+      factory = new SolrRrdBackendFactory(solrClient, CollectionAdminParams.SYSTEM_COLL,
+              syncPeriod, this.timeSource);
+
       collectService = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(1,
           new SolrNamedThreadFactory("MetricsHistoryHandler"));
       collectService.setRemoveOnCancelPolicy(true);
@@ -237,6 +238,8 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
           timeSource.convertDelay(TimeUnit.SECONDS, collectPeriod, TimeUnit.MILLISECONDS),
           TimeUnit.MILLISECONDS);
       checkSystemCollection();
+    } else {
+      factory = null;
     }
   }
 
@@ -654,19 +657,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
     if (log.isDebugEnabled()) {
       log.debug("Closing {}", hashCode());
     }
-    if (collectService != null) {
-      boolean shutdown = false;
-      while (!shutdown) {
-        try {
-          // Wait a while for existing tasks to terminate
-          collectService.shutdownNow();
-          shutdown = collectService.awaitTermination(5, TimeUnit.SECONDS);
-        } catch (InterruptedException ie) {
-          // Preserve interrupt status
-          Thread.currentThread().interrupt();
-        }
-      }
-    }
+    ExecutorUtil.shutdownNowAndAwaitTermination(collectService);
     if (factory != null) {
       factory.close();
     }
