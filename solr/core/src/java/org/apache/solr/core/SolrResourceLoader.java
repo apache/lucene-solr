@@ -32,6 +32,7 @@ import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -45,6 +46,8 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.ShardHandlerFactory;
+import org.apache.solr.pkg.CoreRefreshingPackageListener;
+import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.rest.RestManager;
@@ -763,7 +766,45 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   public List<SolrInfoBean> getInfoMBeans() {
     return Collections.unmodifiableList(infoMBeans);
   }
+  /**
+   * Load a class using an appropriate {@link SolrResourceLoader} depending of the package on that class
+   * @param registerCoreReloadListener register a listener for the package and reload the core if the package is changed.
+   *                                   Use this sparingly. This will result in core reloads across all the cores in
+   *                                   all collections using this configset
+   */
+  public  <T> Class<? extends T> findClass( PluginInfo info, Class<T>  type, boolean registerCoreReloadListener) {
+    if(info.cName.pkg == null) return findClass(info.className, type);
+    return _classLookup(info,
+            (Function<PackageLoader.Package.Version, Class<? extends T>>) ver -> ver.getLoader().findClass(info.cName.className, type), registerCoreReloadListener);
 
+  }
+
+  private  <T> T _classLookup(PluginInfo info, Function<PackageLoader.Package.Version, T> fun, boolean registerCoreReloadListener ) {
+    PluginInfo.ClassName cName = info.cName;
+    PackageLoader.Package.Version latest = getCoreContainer().getPackageLoader().getPackage(cName.pkg)
+            .getLatest(core.getSolrConfig().maxPackageVersion(cName.pkg));
+    T result = fun.apply(latest);
+    if (registerCoreReloadListener && getCore() != null) {
+      getCore().getPackageListeners().addListener(new CoreRefreshingPackageListener(core, info, latest));
+    }
+    return result;
+  }
+
+  /**
+   *Create a n instance of a class using an appropriate {@link SolrResourceLoader} depending on the package of that class
+   * @param registerCoreReloadListener register a listener for the package and reload the core if the package is changed.
+   *                                   Use this sparingly. This will result in core reloads across all the cores in
+   *                                   all collections using this configset
+   */
+  public <T> T newInstance(PluginInfo info, Class<T> type, boolean registerCoreReloadListener) {
+    if(info.cName.pkg == null) {
+      return newInstance(info.cName.className == null?
+                      type.getName():
+                      info.cName.className ,
+              type);
+    }
+    return _classLookup( info, version -> version.getLoader().newInstance(info.cName.className, type), registerCoreReloadListener);
+  }
 
   public CoreContainer getCoreContainer(){
     return coreContainer;

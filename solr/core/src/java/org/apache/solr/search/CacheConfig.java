@@ -31,7 +31,6 @@ import org.apache.solr.common.MapSerializable;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.pkg.CoreRefreshingClassLoader;
 import org.apache.solr.util.DOMUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,6 +51,12 @@ public class CacheConfig implements MapSerializable{
   
   private String nodeName;
 
+
+  /**
+   * When this object is created, the core is not yet available . So, if the class is to be
+   * loaded from a package we should have  acorresponding core
+   *
+   */
   @SuppressWarnings({"rawtypes"})
   private Supplier<Class<? extends SolrCache>> clazz;
   private Map<String,String> args;
@@ -137,9 +142,19 @@ public class CacheConfig implements MapSerializable{
     SolrResourceLoader loader = solrConfig.getResourceLoader();
     config.cacheImpl = config.args.get("class");
     if (config.cacheImpl == null) config.cacheImpl = "solr.CaffeineCache";
-    config.clazz = () -> CoreRefreshingClassLoader.findClass(loader,
-            new PluginInfo("cache", Collections.singletonMap("class", config.cacheImpl)),
-            SolrCache.class);
+    config.clazz = new Supplier<>() {
+      @SuppressWarnings("rawtypes")
+      Class<SolrCache> loadedClass;
+
+      @Override
+      @SuppressWarnings("rawtypes")
+      public Class<? extends SolrCache> get() {
+        if (loadedClass != null) return loadedClass;
+        return loadedClass = (Class<SolrCache>) loader.findClass(
+                new PluginInfo("cache", Collections.singletonMap("class", config.cacheImpl)),
+                SolrCache.class, true);
+      }
+    };
     config.regenImpl = config.args.get("regenerator");
     if (config.regenImpl != null) {
       config.regenerator = loader.newInstance(config.regenImpl, CacheRegenerator.class);

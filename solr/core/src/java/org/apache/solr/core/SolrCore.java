@@ -112,7 +112,6 @@ import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
-import org.apache.solr.pkg.CoreRefreshingClassLoader;
 import org.apache.solr.pkg.PackageListeners;
 import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.pkg.PackagePluginHolder;
@@ -734,7 +733,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     final RecoveryStrategy.Builder rsBuilder;
     if (info != null && info.className != null) {
       log.info(info.className);
-      rsBuilder = CoreRefreshingClassLoader.createInst(getResourceLoader(), info, RecoveryStrategy.Builder.class);
+      rsBuilder = getResourceLoader().newInstance( info, RecoveryStrategy.Builder.class, true);
     } else {
       log.debug("solr.RecoveryStrategy.Builder");
       rsBuilder = new RecoveryStrategy.Builder();
@@ -749,7 +748,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     IndexReaderFactory indexReaderFactory;
     PluginInfo info = solrConfig.getPluginInfo(IndexReaderFactory.class.getName());
     if (info != null) {
-      indexReaderFactory = CoreRefreshingClassLoader.createInst(resourceLoader, info, IndexReaderFactory.class);
+      indexReaderFactory = resourceLoader.newInstance(info, IndexReaderFactory.class, true);
       indexReaderFactory.init(info.initArgs);
     } else {
       indexReaderFactory = new StandardIndexReaderFactory();
@@ -1416,7 +1415,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     final PluginInfo info = solrConfig.getPluginInfo(CodecFactory.class.getName());
     final CodecFactory factory;
     if (info != null) {
-      factory = CoreRefreshingClassLoader.createInst(resourceLoader,  info, CodecFactory.class);
+      factory = resourceLoader.newInstance( info, CodecFactory.class, true);
       factory.init(info.initArgs);
     } else {
       factory = new CodecFactory() {
@@ -1454,7 +1453,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     final StatsCache cache;
     PluginInfo pluginInfo = solrConfig.getPluginInfo(StatsCache.class.getName());
     if (pluginInfo != null && pluginInfo.className != null && pluginInfo.className.length() > 0) {
-      cache = CoreRefreshingClassLoader.createInst(resourceLoader, pluginInfo, StatsCache.class);
+      cache = resourceLoader.newInstance( pluginInfo, StatsCache.class, true);
       initPlugin(pluginInfo ,cache);
       if (log.isDebugEnabled()) {
         log.debug("Using statsCache impl: {}", cache.getClass().getName());

@@ -23,7 +23,6 @@ import java.util.Vector;
 import org.apache.solr.core.*;
 import org.apache.solr.core.PluginBag.PluginHolder;
 import org.apache.solr.metrics.SolrMetricsContext;
-import org.apache.solr.pkg.CoreRefreshingClassLoader;
 import org.apache.solr.pkg.PackagePluginHolder;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
@@ -127,7 +126,7 @@ public abstract class UpdateHandler implements SolrInfoBean {
         ulog = new HdfsUpdateLog(((HdfsDirectoryFactory)dirFactory).getConfDir());
       } else {
         ulog = ulogPluginInfo.className == null ? new UpdateLog():
-                CoreRefreshingClassLoader.createInst(core.getResourceLoader(), ulogPluginInfo, UpdateLog.class);
+                core.getResourceLoader().newInstance(ulogPluginInfo, UpdateLog.class, true);
       }
 
       if (!core.isReloaded() && !dirFactory.isPersistent()) {

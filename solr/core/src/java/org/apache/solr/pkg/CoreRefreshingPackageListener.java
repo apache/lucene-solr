@@ -17,8 +17,6 @@
 
 package org.apache.solr.pkg;
 
-import java.util.function.Function;
-
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
@@ -26,12 +24,12 @@ import org.apache.solr.core.SolrResourceLoader;
 /**A utility class that loads classes from packages and reloads core if any of those packages are updated
  *
  */
-public class CoreRefreshingClassLoader implements PackageListeners.Listener {
+public class CoreRefreshingPackageListener implements PackageListeners.Listener {
   private final SolrCore solrCore;
   private final PluginInfo info;
   private final PackageLoader.Package.Version version;
 
-  public CoreRefreshingClassLoader(SolrCore solrCore, PluginInfo info, PackageLoader.Package.Version version) {
+  public CoreRefreshingPackageListener(SolrCore solrCore, PluginInfo info, PackageLoader.Package.Version version) {
     this.solrCore = solrCore;
     this.info = info;
     this.version = version;
@@ -54,7 +52,8 @@ public class CoreRefreshingClassLoader implements PackageListeners.Listener {
   public void changed(PackageLoader.Package pkg, Ctx ctx) {
     PackageLoader.Package.Version version = pkg.getLatest(solrCore.getSolrConfig().maxPackageVersion(info.cName.pkg));
     if(version != this.version) {
-      ctx.runLater(SolrCore.class.getName(), () -> solrCore.getCoreContainer().reload(CoreRefreshingClassLoader.class.getName() , solrCore.uniqueId));
+      ctx.runLater(CoreRefreshingPackageListener.class.getSimpleName()+"/"+ SolrCore.class.getName(),
+              () -> solrCore.getCoreContainer().reload(CoreRefreshingPackageListener.class.getName() , solrCore.uniqueId));
     }
   }
 
@@ -63,36 +62,9 @@ public class CoreRefreshingClassLoader implements PackageListeners.Listener {
     return version;
   }
 
-  /**
-   * Load a class using an appropriate {@link SolrResourceLoader} depending of the package of that class
-   */
-  public static <T> Class<? extends T> findClass(SolrResourceLoader srl, PluginInfo info, Class<T>  type) {
-    if(info.cName.pkg == null) return srl.findClass(info.className, type);
-    return _get(srl, info,
-            (Function<PackageLoader.Package.Version, Class<? extends T>>) ver -> ver.getLoader().findClass(info.cName.className, type));
-
-  }
-
-  private static  <T> T _get(SolrResourceLoader srl, PluginInfo info, Function<PackageLoader.Package.Version, T> fun) {
-    PluginInfo.ClassName cName = info.cName;
-    SolrCore core = srl.getCore();
-    PackageLoader.Package.Version latest = srl.getCoreContainer().getPackageLoader().getPackage(cName.pkg)
-            .getLatest(core.getSolrConfig().maxPackageVersion(cName.pkg));
-    T result = fun.apply(latest);
-    if(srl.getCore() !=null) {
-      srl.getCore().getPackageListeners().addListener(new CoreRefreshingClassLoader(core, info, latest));
-    }
-    return result;
-  }
-
   public static <T> T createInst(SolrResourceLoader srl, PluginInfo info, Class<T> type) {
-    if(info.cName.pkg == null) {
-        return srl.newInstance(info.cName.className == null?
-                type.getName():
-                info.cName.className ,
-                type);
+    return srl.newInstance(info, type,true);
     }
-    return _get(srl, info, version -> version.getLoader().newInstance(info.cName.className, type));
-  }
+
 
 }
