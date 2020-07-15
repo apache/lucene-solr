@@ -1085,7 +1085,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       }
     } else if (action != null && request.getParams().get(CoreAdminParams.ACTION).equals(CollectionParams.CollectionAction.DELETE.toString())) {
       try {
-        getZkStateReader().waitForState(params.get("name"), 10, TimeUnit.SECONDS, (n,c)->c==null);
+        getZkStateReader().waitForState(params.get("name"), 10, TimeUnit.SECONDS, (c)->c==null);
       } catch (InterruptedException e) {
         ParWork.propegateInterrupt(e);
         throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, e);
@@ -1094,6 +1094,28 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       }
     } else if (action != null && request.getParams().get(CoreAdminParams.ACTION).equals(CollectionParams.CollectionAction.ADDREPLICA.toString())) {
       // nocommit how do we do this right? We need to know how many replicas at start of the request and look for at least that +1
+    } else if (action != null && request.getParams().get(CoreAdminParams.ACTION).equals(CollectionParams.CollectionAction.DELETENODE.toString())) {
+      // TODO: make efficient, timeout
+      String node = request.getParams().get("node");
+      try {
+        boolean wait = true;
+        while (wait) {
+          ClusterState clusterState = getZkStateReader().getClusterState();
+          for (DocCollection docCollection : clusterState.getCollectionsMap().values()) {
+            for (Replica replica : docCollection.getReplicas()) {
+              if (replica.getNodeName().equals(node)) {
+                Thread.sleep(100);
+                continue;
+              }
+            }
+          }
+          break;
+        }
+
+      } catch (InterruptedException e) {
+        ParWork.propegateInterrupt(e);
+        throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, e);
+      }
     }
   }
 

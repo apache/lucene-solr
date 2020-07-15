@@ -240,10 +240,13 @@ public class SolrZkClient implements Closeable {
           });
     } catch (Exception e) {
       try (ParWork closer = new ParWork(this, true)) {
+        zkConnManagerCallbackExecutor.shutdownNow();
+        zkCallbackExecutor.shutdownNow();
         closer.collect(zkConnManagerCallbackExecutor);
         closer.collect(zkCallbackExecutor);
         closer.collect(connManager);
         closer.collect(keeper);
+        closer.collect("zkClientCloseOnException");
       }
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
@@ -253,10 +256,13 @@ public class SolrZkClient implements Closeable {
     } catch (Exception e) {
       ParWork.propegateInterrupt(e);
       try (ParWork closer = new ParWork(this, true)) {
+        zkConnManagerCallbackExecutor.shutdownNow();
+        zkCallbackExecutor.shutdownNow();
         closer.collect(zkConnManagerCallbackExecutor);
         closer.collect(zkCallbackExecutor);
         closer.collect(connManager);
         closer.collect(keeper);
+        closer.collect("zkClientCloseOnException");
       }
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }

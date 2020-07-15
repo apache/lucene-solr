@@ -278,7 +278,7 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
         deactivateMarkers(ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH);
         deactivateMarkers(ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH);
       } catch (InterruptedException | AlreadyClosedException e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propegateInterrupt(e, true);
         return;
       } catch (KeeperException e) {
         log.error("", e);

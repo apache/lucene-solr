@@ -1760,46 +1760,53 @@ public class CoreContainer implements Closeable {
     if (cd == null) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Cannot unload non-existent core [" + name + "]");
     }
+    SolrCore core = null;
+    boolean close;
+    try {
+       close = solrCores.isLoadedNotPendingClose(name);
+       core = solrCores.remove(name);
 
-    boolean close = solrCores.isLoadedNotPendingClose(name);
-    SolrCore core = solrCores.remove(name);
+      solrCores.removeCoreDescriptor(cd);
+      coresLocator.delete(this, cd);
+      if (core == null) {
+        // transient core
+        SolrCore.deleteUnloadedCore(cd, deleteDataDir, deleteInstanceDir);
+        return;
+      }
+    } finally {
+      if (isZooKeeperAware()) {
+        // cancel recovery in cloud mode
+        if (core != null) {
+          core.getSolrCoreState().cancelRecovery(true, true);
+        }
+        if (cd.getCloudDescriptor().getReplicaType() == Replica.Type.PULL
+                || cd.getCloudDescriptor().getReplicaType() == Replica.Type.TLOG) {
+          // Stop replication if this is part of a pull/tlog replica before closing the core
+          zkSys.getZkController().stopReplicationFromLeader(name);
 
-    solrCores.removeCoreDescriptor(cd);
-    coresLocator.delete(this, cd);
-    if (core == null) {
-      // transient core
-      SolrCore.deleteUnloadedCore(cd, deleteDataDir, deleteInstanceDir);
-      return;
+        }
+
+        try {
+          zkSys.getZkController().unregister(name, cd);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Interrupted while unregistering core [" + name + "] from cloud state");
+        } catch (KeeperException e) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Error unregistering core [" + name + "] from cloud state", e);
+        } catch (Exception e) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Error unregistering core [" + name + "] from cloud state", e);
+        }
+
+      }
     }
 
     // delete metrics specific to this core
     metricManager.removeRegistry(core.getCoreMetricManager().getRegistryName());
 
-    if (isZooKeeperAware()) {
-      // cancel recovery in cloud mode
-      core.getSolrCoreState().cancelRecovery();
-      if (cd.getCloudDescriptor().getReplicaType() == Replica.Type.PULL
-          || cd.getCloudDescriptor().getReplicaType() == Replica.Type.TLOG) {
-        // Stop replication if this is part of a pull/tlog replica before closing the core
-        zkSys.getZkController().stopReplicationFromLeader(name);
-      }
-    }
 
     core.unloadOnClose(cd, deleteIndexDir, deleteDataDir, deleteInstanceDir);
-    if (close)
-      core.closeAndWait();
-
-    if (isZooKeeperAware()) {
-      try {
-        zkSys.getZkController().unregister(name, cd);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Interrupted while unregistering core [" + name + "] from cloud state");
-      } catch (KeeperException e) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Error unregistering core [" + name + "] from cloud state", e);
-      } catch (Exception e) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Error unregistering core [" + name + "] from cloud state", e);
-      }
+    if (close) {
+      core.close();
     }
   }
 

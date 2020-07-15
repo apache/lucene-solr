@@ -91,6 +91,10 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
       return true;
     }
 
+    // nocommit - look into this - these client threads on the qtp can stick around, but are TERMINATED state
+    if (threadName.startsWith("httpClient-")) {
+      return true;
+    }
 
 
 

@@ -429,7 +429,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
           return false;
         });
     } catch (TimeoutException e) {
-      return false;
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Timed out waiting for nodes to go away");
     }
 
     return true;

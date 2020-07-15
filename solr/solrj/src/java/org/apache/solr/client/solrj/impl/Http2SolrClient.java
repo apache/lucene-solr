@@ -249,7 +249,7 @@ public class Http2SolrClient extends SolrClient {
       if (closeClient) {
         closer.collect(() -> {
             try {
-              httpClient.setStopTimeout(10);
+              httpClient.setStopTimeout(1);
               httpClient.stop();
             } catch (InterruptedException e) {
               ParWork.propegateInterrupt(e);
@@ -258,15 +258,7 @@ public class Http2SolrClient extends SolrClient {
             }
         });
       }
-      closer.addCollect("http2SolrClientClose");
-      closer.collect(() -> {
-        try {
-          httpClientExecutor.stop();
-        } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
-        }
-      });
-      closer.addCollect("http2SolrClientExecClose");
+     closer.addCollect("http2SolrClientClose");
     }
 
     assert ObjectReleaseTracker.release(this);

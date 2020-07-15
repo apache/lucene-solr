@@ -27,6 +27,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.solr.cloud.ZkController.ContextKey;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -331,7 +332,10 @@ public  class LeaderElector {
       try {
         // am I the next leader?
         checkIfIamLeader(context, true);
-      } catch (Exception e) {
+      } catch (AlreadyClosedException e) {
+        log.info("Already shutting down");
+        return;
+      }  catch (Exception e) {
         ParWork.propegateInterrupt(e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Exception canceling election", e);
       }

@@ -25,6 +25,7 @@ import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -100,35 +101,44 @@ public class DeleteNodeCmd implements OverseerCollectionMessageHandler.Cmd {
                               String node,
                               String async) throws InterruptedException {
     CountDownLatch cleanupLatch = new CountDownLatch(sourceReplicas.size());
-    for (ZkNodeProps sourceReplica : sourceReplicas) {
-      String coll = sourceReplica.getStr(COLLECTION_PROP);
-      String shard = sourceReplica.getStr(SHARD_ID_PROP);
-      String type = sourceReplica.getStr(ZkStateReader.REPLICA_TYPE);
-      log.info("Deleting replica type={} for collection={} shard={} on node={}", type, coll, shard, node);
-      @SuppressWarnings({"rawtypes"})
-      NamedList deleteResult = new NamedList();
-      try {
-        if (async != null) sourceReplica = sourceReplica.plus(ASYNC, async);
-        ((DeleteReplicaCmd)ocmh.commandMap.get(DELETEREPLICA)).deleteReplica(clusterState, sourceReplica.plus("parallel", "true"), deleteResult, () -> {
-          cleanupLatch.countDown();
-          if (deleteResult.get("failure") != null) {
-            synchronized (results) {
+    try (ParWork worker = new ParWork("cleanupReplicas")) {
+      for (ZkNodeProps sReplica : sourceReplicas) {
+        worker.collect(() -> {
+          ZkNodeProps sourceReplica = sReplica;
+          String coll = sourceReplica.getStr(COLLECTION_PROP);
+          String shard = sourceReplica.getStr(SHARD_ID_PROP);
+          String type = sourceReplica.getStr(ZkStateReader.REPLICA_TYPE);
+          log.info("Deleting replica type={} for collection={} shard={} on node={}", type, coll, shard, node);
+          @SuppressWarnings({"rawtypes"})
+          NamedList deleteResult = new NamedList();
+          try {
+            if (async != null) sourceReplica = sourceReplica.plus(ASYNC, async);
+            ((DeleteReplicaCmd) ocmh.commandMap.get(DELETEREPLICA)).deleteReplica(clusterState, sourceReplica.plus("parallel", "true"), deleteResult, () -> {
+              cleanupLatch.countDown();
+              if (deleteResult.get("failure") != null) {
+                synchronized (results) {
 
-              results.add("failure", String.format(Locale.ROOT, "Failed to delete replica for collection=%s shard=%s" +
-                  " on node=%s", coll, shard, node));
-            }
+                  results.add("failure", String.format(Locale.ROOT, "Failed to delete replica for collection=%s shard=%s" +
+                          " on node=%s", coll, shard, node));
+                }
+              }
+            });
+          } catch (KeeperException e) {
+            log.warn("Error deleting ", e);
+            cleanupLatch.countDown();
+          } catch (InterruptedException e) {
+            ParWork.propegateInterrupt(e);
+            cleanupLatch.countDown();
+          }catch (Exception e) {
+            log.warn("Error deleting ", e);
+            cleanupLatch.countDown();
+            throw e;
           }
         });
-      } catch (KeeperException e) {
-        log.warn("Error deleting ", e);
-        cleanupLatch.countDown();
-      } catch (Exception e) {
-        log.warn("Error deleting ", e);
-        cleanupLatch.countDown();
-        throw e;
       }
+      worker.addCollect("deleteNodeReplicas");
     }
-    log.debug("Waiting for delete node action to complete");
+    if (log.isDebugEnabled()) log.debug("Waiting for delete node action to complete");
     cleanupLatch.await(5, TimeUnit.MINUTES);
   }
 

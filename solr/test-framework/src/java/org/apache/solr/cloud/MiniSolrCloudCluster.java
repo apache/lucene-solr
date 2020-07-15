@@ -70,6 +70,7 @@ import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
@@ -277,6 +278,7 @@ public class MiniSolrCloudCluster {
    */
    MiniSolrCloudCluster(int numServers, Path baseDir, String solrXml, JettyConfig jettyConfig,
       ZkTestServer zkTestServer, Optional<String> securityJson, boolean trackJettyMetrics, boolean formatZk) throws Exception {
+     ObjectReleaseTracker.track(this);
     try {
       Objects.requireNonNull(securityJson);
       this.baseDir = Objects.requireNonNull(baseDir);
@@ -500,6 +502,7 @@ public class MiniSolrCloudCluster {
         .withServlets(extraServlets)
         .withFilters(extraRequestFilters)
         .withSSLConfig(sslConfig)
+        .withExecutor(jettyConfig.qtp)
         .build());
   }
 
@@ -655,6 +658,7 @@ public class MiniSolrCloudCluster {
       }
     } finally {
       System.clearProperty("zkHost");
+      ObjectReleaseTracker.release(this);
     }
 
   }

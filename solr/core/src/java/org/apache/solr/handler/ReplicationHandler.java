@@ -65,6 +65,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.SegmentCommitInfo;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -404,6 +405,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   private volatile IndexFetcher currentIndexFetcher;
 
   public IndexFetchResult doFetch(SolrParams solrParams, boolean forceReplication) {
+    if (this.closed || core.getCoreContainer().isShutDown()) {
+      throw new AlreadyClosedException("");
+    }
     String masterUrl = solrParams == null ? null : solrParams.get(MASTER_URL);
     if (!indexFetchLock.tryLock())
       return IndexFetchResult.LOCK_OBTAIN_FAILED;
@@ -1754,20 +1758,30 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   @Override
   public void close() {
-
+    this.closed = true;
     if (executorService != null) executorService.shutdown();
-    if (pollingIndexFetcher != null) {
-      pollingIndexFetcher.destroy();
-    }
-    if (currentIndexFetcher != null && currentIndexFetcher != pollingIndexFetcher) {
-      currentIndexFetcher.destroy();
-    }
-    ExecutorUtil.shutdownAndAwaitTermination(restoreExecutor);
+
     if (restoreFuture != null) {
       restoreFuture.cancel(false);
     }
 
-    ExecutorUtil.shutdownAndAwaitTermination(executorService);
+    try (ParWork closer = new ParWork(this, true)) {
+      if (pollingIndexFetcher != null) {
+        closer.collect(() -> {
+          pollingIndexFetcher.destroy();
+        });
+      }
+
+      if (currentIndexFetcher != null && currentIndexFetcher != pollingIndexFetcher) {
+        closer.collect(() -> {
+          currentIndexFetcher.destroy();
+        });
+      }
+      closer.collect(restoreExecutor);
+      closer.collect(executorService);
+      closer.addCollect("ReplicationHandlerClose");
+    }
+
   }
 
   private static final String SUCCESS = "success";

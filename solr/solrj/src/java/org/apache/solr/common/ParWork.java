@@ -600,7 +600,7 @@ public class ParWork implements Closeable {
   public static ExecutorService getExecutorService(int corePoolSize, int maximumPoolSize, int keepAliveTime) {
     MAXIMUM_POOL_SIZE = Integer.getInteger("solr.maxThreadExecPoolSize",
             (int) Math.max(2, Math.round(Runtime.getRuntime().availableProcessors() / 2.0d)));
-    CAPACITY = Integer.getInteger("solr.threadExecQueueSize", 60);
+    CAPACITY = Integer.getInteger("solr.threadExecQueueSize", 80);
     ThreadPoolExecutor exec;
     exec = new ThreadPoolExecutor(0, MAXIMUM_POOL_SIZE,
             KEEP_ALIVE_TIME, TimeUnit.SECONDS,

@@ -162,7 +162,7 @@ public class ZkStateReader implements SolrCloseable {
    */
   protected volatile ClusterState clusterState = new ClusterState(Collections.emptySet(), Collections.emptyMap(), -1);
 
-  private final int GET_LEADER_RETRY_DEFAULT_TIMEOUT = Integer.parseInt(System.getProperty("zkReaderGetLeaderRetryTimeoutMs", "4000"));
+  private final int GET_LEADER_RETRY_DEFAULT_TIMEOUT = Integer.parseInt(System.getProperty("zkReaderGetLeaderRetryTimeoutMs", "1000"));
 
   public static final String LEADER_ELECT_ZKNODE = "leader_elect";
 
@@ -918,12 +918,12 @@ public class ZkStateReader implements SolrCloseable {
   }
 
   public Replica getLeader(String collection, String shard) {
-    return getLeader(getClusterState().getCollection(collection), shard);
+    return getLeader(getClusterState().getLiveNodes(), getClusterState().getCollection(collection), shard);
   }
 
-  public Replica getLeader(DocCollection docCollection, String shard) {
+  public Replica getLeader(Set<String> liveNodes, DocCollection docCollection, String shard) {
     Replica replica = docCollection != null ? docCollection.getLeader(shard) : null;
-    if (replica != null && getClusterState().getLiveNodes().contains(replica.getNodeName())) {
+    if (replica != null && liveNodes.contains(replica.getNodeName())) {
       return replica;
     }
     return null;
@@ -962,7 +962,7 @@ public class ZkStateReader implements SolrCloseable {
       waitForState(collection, timeout, TimeUnit.MILLISECONDS, (n, c) -> {
         if (c == null)
           return false;
-        Replica l = getLeader(c, shard);
+        Replica l = getLeader(n, c, shard);
         if (l != null) {
           leader.set(l);
           return true;
@@ -970,7 +970,6 @@ public class ZkStateReader implements SolrCloseable {
         return false;
       });
     } catch (TimeoutException e) {
-      e.printStackTrace();
       throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "No registered leader was found after waiting for "
           + timeout + "ms " + ", collection: " + collection + " slice: " + shard + " saw state=" + clusterState.getCollectionOrNull(collection)
           + " with live_nodes=" + clusterState.getLiveNodes());
@@ -1774,6 +1773,7 @@ public class ZkStateReader implements SolrCloseable {
    */
   public void waitForState(final String collection, long wait, TimeUnit unit, Predicate<DocCollection> predicate)
       throws InterruptedException, TimeoutException {
+    assert collection != null;
     final CountDownLatch latch = new CountDownLatch(1);
     waitLatches.add(latch);
     AtomicReference<DocCollection> docCollection = new AtomicReference<>();

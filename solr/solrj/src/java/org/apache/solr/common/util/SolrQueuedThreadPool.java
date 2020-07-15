@@ -91,8 +91,14 @@ public class SolrQueuedThreadPool extends QueuedThreadPool implements Closeable 
     @Override
     protected void doStop() throws Exception {
         if (!killStop) {
-            super.doStop();
+            //while (!isStopped()) {
+                super.doStop();
+            //}
         }
+    }
+
+    public void stdStop() throws Exception {
+        super.doStop();
     }
 
     @Override

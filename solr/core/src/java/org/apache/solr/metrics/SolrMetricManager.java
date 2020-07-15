@@ -480,12 +480,7 @@ public class SolrMetricManager {
     if (isSharedRegistry(registry)) {
       SharedMetricRegistries.remove(registry);
     } else {
-      swapLock.lock();
-      try {
-        registries.remove(registry);
-      } finally {
-        swapLock.unlock();
-      }
+      registries.remove(registry);
     }
   }
 

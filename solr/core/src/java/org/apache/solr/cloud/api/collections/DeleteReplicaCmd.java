@@ -258,43 +258,22 @@ public class DeleteReplicaCmd implements Cmd {
       shardRequestTracker.sendShardRequest(replica.getNodeName(), params, shardHandler);
     }
 
-    Callable<Boolean> callable = () -> {
+    try {
       try {
         if (isLive) {
           shardRequestTracker.processResponses(results, shardHandler, false, null);
         }
-
         // try and ensure core info is removed from cluster state
         ocmh.deleteCoreNode(collectionName, replicaName, replica, core);
-        if (ocmh.waitForCoreNodeGone(collectionName, shard, replicaName, 15000)) return Boolean.TRUE;
-        return Boolean.FALSE;
+        ocmh.waitForCoreNodeGone(collectionName, shard, replicaName, 5000);
       } catch (Exception e) {
         SolrZkClient.checkInterrupted(e);
         results.add("failure", "Could not complete delete " + e.getMessage());
-        throw e;
       } finally {
         if (onComplete != null) onComplete.run();
       }
-    };
-
-//    if (!parallel) {
-//      try {
-//        if (!callable.call())
-//          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-//                  "Could not remove replica : " + collectionName + "/" + shard + "/" + replicaName);
-//      } catch (InterruptedException | KeeperException e) {
-//        throw e;
-//      } catch (Exception ex) {
-//        throw new SolrException(SolrException.ErrorCode.UNKNOWN, "Error waiting for corenode gone", ex);
-//      }
-//
-//    } else {
-      try (ParWork worker = new ParWork(this)) {
-        worker.add("AddReplica", callable);
-      }
-
- //   }
-
+    } catch (Exception ex) {
+      throw new SolrException(SolrException.ErrorCode.UNKNOWN, "Error waiting for corenode gone", ex);
+    }
   }
-
 }
