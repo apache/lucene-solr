@@ -20,7 +20,6 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Objects;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
