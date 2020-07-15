@@ -225,7 +225,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private final Codec codec;
   private final MemClassLoader memClassLoader;
   //singleton listener for all packages used in schema
-  private final SchemaPluginsLoader schemaPluginsLoader;
+  private final MultiPackageListener schemaPluginsLoader;
 
   private final CircuitBreakerManager circuitBreakerManager;
 
@@ -278,7 +278,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   public PackageListeners getPackageListeners() {
     return packageListeners;
   }
-  public SchemaPluginsLoader getSchemaPluginsLoader() {
+  public MultiPackageListener getSchemaPluginsLoader() {
     return schemaPluginsLoader;
   }
 
@@ -951,7 +951,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       this.solrConfig = configSet.getSolrConfig();
       this.resourceLoader = configSet.getSolrConfig().getResourceLoader();
       this.resourceLoader.core = this;
-      schemaPluginsLoader = new SchemaPluginsLoader(coreContainer, resourceLoader,
+      schemaPluginsLoader = new MultiPackageListener(coreContainer, resourceLoader,
               solrConfig::maxPackageVersion,
               () -> setLatestSchema(configSet.getIndexSchema(true)));
       this.packageListeners.addListener(schemaPluginsLoader);

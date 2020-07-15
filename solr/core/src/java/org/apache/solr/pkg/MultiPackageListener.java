@@ -31,21 +31,23 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 /**
- * A {@link SolrClassLoader} that is specifically designed to load schema plugins from packages.
- * This class would register a listener for any package that is used in a schema and reload the schema
- * if any of those packages are updated
+ * A {@link SolrClassLoader} that is designed to listen to a set of packages.
+ * This class would register a listener each package that is loaded through this
+ * if any of those packages are updated , the onReload runnable is executed
  * */
-public class SchemaPluginsLoader implements SolrClassLoader , PackageListeners.Listener {
+public class MultiPackageListener implements SolrClassLoader , PackageListeners.Listener {
     private final CoreContainer coreContainer;
     private final SolrResourceLoader coreResourceLoader;
     private final Function<String, String> pkgVersionSupplier;
+    /** package name and the versions that we are tracking
+     */
     private Map<String ,PackageAPI.PkgVersion> packageVersions =  new HashMap<>(1);
     private final Runnable onReload;
 
-    public SchemaPluginsLoader(CoreContainer coreContainer,
-                               SolrResourceLoader coreResourceLoader,
-                               Function<String, String> pkgVersionSupplier,
-                               Runnable onReload) {
+    public MultiPackageListener(CoreContainer coreContainer,
+                                SolrResourceLoader coreResourceLoader,
+                                Function<String, String> pkgVersionSupplier,
+                                Runnable onReload) {
         this.coreContainer = coreContainer;
         this.coreResourceLoader = coreResourceLoader;
         this.pkgVersionSupplier = pkgVersionSupplier;
@@ -75,8 +77,7 @@ public class SchemaPluginsLoader implements SolrClassLoader , PackageListeners.L
     }
 
     @Override
-    public MapWriter getPackageVersion(String className) {
-        PluginInfo.ClassName cName = new PluginInfo.ClassName(className);
+    public MapWriter getPackageVersion(PluginInfo.ClassName cName) {
         if (cName.pkg == null) return null;
         PackageAPI.PkgVersion p = packageVersions.get(cName.pkg);
         return p == null ? null : p::writeMap;
@@ -147,7 +148,4 @@ public class SchemaPluginsLoader implements SolrClassLoader , PackageListeners.L
         }
         ctx.runLater(null, onReload);
     }
-
-
-
 }

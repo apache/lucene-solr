@@ -106,7 +106,7 @@ public class PackageListeners {
     /**A callback when the package is updated */
     void changed(PackageLoader.Package pkg, Ctx ctx);
 
-    default MapWriter getPackageVersion(String className) {
+    default MapWriter getPackageVersion(PluginInfo.ClassName cName) {
       return null;
     }
     class Ctx {
