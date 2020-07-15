@@ -710,7 +710,8 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
       stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + ZkStateReader.STATE_JSON,
               ZkStateReader.emptyJson, CreateMode.PERSISTENT, false);
-
+      stateManager.makePath(ZkStateReader.getCollectionPropsPath(collection),
+              ZkStateReader.emptyJson, CreateMode.PERSISTENT, false);
       stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/terms", null, CreateMode.PERSISTENT,
               false);
 

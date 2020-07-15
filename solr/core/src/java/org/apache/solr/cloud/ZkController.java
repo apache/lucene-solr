@@ -408,17 +408,21 @@ public class ZkController implements Closeable {
 
       @Override
       public void command() {
-        try {
-          ZkController.this.overseer.close();
-        } catch (Exception e) {
-          log.error("Error trying to stop any Overseer threads", e);
+
+        try (ParWork worker = new ParWork("disconnected", true)) {
+          worker.collect( ZkController.this.overseer);
+          worker.collect(() -> {
+            clearZkCollectionTerms();
+          });
+          worker.collect(electionContexts.values());
+          worker.collect(() -> {
+            markAllAsNotLeader(descriptorsSupplier);
+          });
+          worker.collect(() -> {
+            cc.cancelCoreRecoveries();
+          });
+          worker.addCollect("disconnected");
         }
-        cc.cancelCoreRecoveries();
-        clearZkCollectionTerms();
-        try (ParWork closer = new ParWork(electionContexts)) {
-          closer.add("election_contexts", electionContexts.values());
-        }
-        markAllAsNotLeader(descriptorsSupplier);
       }
     });
     zkClient.setAclProvider(zkACLProvider);
@@ -529,11 +533,18 @@ public class ZkController implements Closeable {
         return cc.isShutDown();
       }});
     zkClient.setDisconnectListener(() -> {
-      try {
-        ZkController.this.overseer.close();
-      } catch (NullPointerException e) {
-        // okay
-      }
+
+        try (ParWork worker = new ParWork("disconnected", true)) {
+          worker.collect( ZkController.this.overseer);
+          worker.collect(() -> {
+            clearZkCollectionTerms();
+          });
+          worker.collect(electionContexts.values());
+          worker.collect(() -> {
+            markAllAsNotLeader(descriptorsSupplier);
+          });
+          worker.addCollect("disconnected");
+        }
     });
     init();
 

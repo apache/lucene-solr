@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -89,8 +90,9 @@ public class CollectionProperties {
     while (true) {
       Stat s = new Stat();
       try {
-        if (client.exists(znodePath, true)) {
-          Map<String, String> properties = (Map<String, String>) Utils.fromJSON(client.getData(znodePath, null, s, true));
+        byte[] propData = client.getData(znodePath, null, s, true);
+        if (propData != null) {
+          Map<String, String> properties = (Map<String, String>) Utils.fromJSON(propData);
           if (propertyValue == null) {
             if (properties.remove(propertyName) != null) { // Don't update ZK unless absolutely necessary.
               client.setData(znodePath, Utils.toJSON(properties), s.getVersion(), true);
@@ -105,8 +107,14 @@ public class CollectionProperties {
           properties.put(propertyName, propertyValue);
           client.create(znodePath, Utils.toJSON(properties), CreateMode.PERSISTENT, true);
         }
-      } catch (KeeperException.BadVersionException | KeeperException.NodeExistsException e) {
+      } catch (KeeperException.BadVersionException e) {
         //race condition
+        try {
+          Thread.sleep(50);
+        } catch (InterruptedException e1) {
+          ParWork.propegateInterrupt(e1);
+          return;
+        }
         continue;
       } catch (InterruptedException | KeeperException e) {
         throw new IOException("Error setting property for collection " + collection, SolrZkClient.checkInterrupted(e));

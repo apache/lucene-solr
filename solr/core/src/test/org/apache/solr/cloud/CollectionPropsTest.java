@@ -216,13 +216,6 @@ public class CollectionPropsTest extends SolrCloudTestCase {
     assertEquals(1, watcher.waitForTrigger());
     final Map<String, String> props = watcher.getProps();
     assertTrue(props.toString(), props.isEmpty());
-
-    // Remove watcher and make sure that the watcher is not triggered
-    log.info("removing watcher");
-    zkStateReader.removeCollectionPropsWatcher(collectionName, watcher);
-    log.info("setting value1 (again)");
-    collectionProps.setCollectionProperty(collectionName, "property", "value1");
-    assertEquals("ZK watcher was triggered after it was removed for collection " + collectionName, 0, watcher.waitForTrigger());
   }
 
   @Test

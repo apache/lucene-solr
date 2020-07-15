@@ -1219,7 +1219,7 @@ public class ZkStateReader implements SolrCloseable {
     }
   }
 
-  static String getCollectionPropsPath(final String collection) {
+  public static String getCollectionPropsPath(final String collection) {
     return COLLECTIONS_ZKNODE + '/' + collection + '/' + COLLECTION_PROPS_ZKNODE;
   }
 
