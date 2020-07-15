@@ -224,6 +224,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private IndexReaderFactory indexReaderFactory;
   private final Codec codec;
   private final MemClassLoader memClassLoader;
+  //singleton listener for all packages used in schema
   private final SchemaPluginsLoader schemaPluginsLoader;
 
   private final CircuitBreakerManager circuitBreakerManager;
@@ -953,7 +954,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       schemaPluginsLoader = new SchemaPluginsLoader(coreContainer, resourceLoader,
               solrConfig::maxPackageVersion,
               () -> setLatestSchema(configSet.getIndexSchema(true)));
-      this.packageListeners.addListener(schemaPluginsLoader.listener);
+      this.packageListeners.addListener(schemaPluginsLoader);
       IndexSchema schema = configSet.getIndexSchema();
 
       this.configSetProperties = configSet.getProperties();

@@ -23,6 +23,7 @@ import java.lang.ref.SoftReference;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.logging.MDCLoggingContext;
@@ -97,15 +98,17 @@ public class PackageListeners {
 
 
   public interface Listener {
-    /**Name of the package or null to listen to all package changes
-     */
+    /**Name of the package or null to listen to all package changes */
     String packageName();
 
     PluginInfo pluginInfo();
 
+    /**A callback when the package is updated */
     void changed(PackageLoader.Package pkg, Ctx ctx);
 
-    PackageLoader.Package.Version getPackageVersion();
+    default MapWriter getPackageVersion(String className) {
+      return null;
+    }
     class Ctx {
       private Map<String, Runnable> runLater;
 

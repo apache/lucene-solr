@@ -225,7 +225,7 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
         String klas = (String) v;
         PluginInfo.ClassName parsedClassName = new PluginInfo.ClassName(klas);
         if (parsedClassName.pkg != null) {
-          MapWriter mw = req.getCore().getSchemaPluginsLoader().getVersionInfo(klas);
+          MapWriter mw = req.getCore().getSchemaPluginsLoader().getPackageVersion(klas);
           if (mw != null) nl.add("_packageinfo_", mw);
         }
       }

@@ -35,22 +35,22 @@ import java.util.function.Function;
  * This class would register a listener for any package that is used in a schema and reload the schema
  * if any of those packages are updated
  * */
-public class SchemaPluginsLoader implements SolrClassLoader {
+public class SchemaPluginsLoader implements SolrClassLoader , PackageListeners.Listener {
     private final CoreContainer coreContainer;
-    private final SolrResourceLoader loader;
+    private final SolrResourceLoader coreResourceLoader;
     private final Function<String, String> pkgVersionSupplier;
     private Map<String ,PackageAPI.PkgVersion> packageVersions =  new HashMap<>(1);
     private final Runnable onReload;
 
     public SchemaPluginsLoader(CoreContainer coreContainer,
-                               SolrResourceLoader loader,
+                               SolrResourceLoader coreResourceLoader,
                                Function<String, String> pkgVersionSupplier,
                                Runnable onReload) {
         this.coreContainer = coreContainer;
-        this.loader = loader;
+        this.coreResourceLoader = coreResourceLoader;
         this.pkgVersionSupplier = pkgVersionSupplier;
         this.onReload = () -> {
-            SchemaPluginsLoader.this.packageVersions = new HashMap<>();
+            packageVersions = new HashMap<>();
             onReload.run();
         };
     }
@@ -60,7 +60,7 @@ public class SchemaPluginsLoader implements SolrClassLoader {
     public <T> T newInstance(String cname, Class<T> expectedType, String... subpackages) {
         PluginInfo.ClassName cName = new PluginInfo.ClassName(cname);
         if(cName.pkg == null){
-            return loader.newInstance(cname, expectedType, subpackages);
+            return coreResourceLoader.newInstance(cname, expectedType, subpackages);
         } else {
             PackageLoader.Package.Version version = findPkgVersion(cName);
             return applyResourceLoaderAware(version, version.getLoader().newInstance(cName.className, expectedType, subpackages));
@@ -74,13 +74,13 @@ public class SchemaPluginsLoader implements SolrClassLoader {
         return theVersion;
     }
 
-    public MapWriter getVersionInfo(String className) {
+    @Override
+    public MapWriter getPackageVersion(String className) {
         PluginInfo.ClassName cName = new PluginInfo.ClassName(className);
         if (cName.pkg == null) return null;
         PackageAPI.PkgVersion p = packageVersions.get(cName.pkg);
         return p == null ? null : p::writeMap;
     }
-
 
     private <T> T applyResourceLoaderAware(PackageLoader.Package.Version version, T obj) {
         if (obj instanceof ResourceLoaderAware) {
@@ -100,7 +100,7 @@ public class SchemaPluginsLoader implements SolrClassLoader {
     public <T> T newInstance(String cname, Class<T> expectedType, String[] subPackages, Class[] params, Object[] args) {
         PluginInfo.ClassName cName = new PluginInfo.ClassName(cname);
         if (cName.pkg == null) {
-            return loader.newInstance(cname, expectedType, subPackages, params, args);
+            return coreResourceLoader.newInstance(cname, expectedType, subPackages, params, args);
         } else {
             PackageLoader.Package.Version version = findPkgVersion(cName);
             return applyResourceLoaderAware(version, version.getLoader().newInstance(cName.className, expectedType, subPackages, params, args));
@@ -111,7 +111,7 @@ public class SchemaPluginsLoader implements SolrClassLoader {
     public <T> Class<? extends T> findClass(String cname, Class<T> expectedType) {
         PluginInfo.ClassName cName = new PluginInfo.ClassName(cname);
         if (cName.pkg == null) {
-            return loader.findClass(cname, expectedType);
+            return coreResourceLoader.findClass(cname, expectedType);
         } else {
             PackageLoader.Package.Version version = findPkgVersion(cName);
             return version.getLoader().findClass(cName.className, expectedType);
@@ -119,41 +119,35 @@ public class SchemaPluginsLoader implements SolrClassLoader {
         }
     }
 
-    public final PackageListeners.Listener listener = new PackageListeners.Listener() {
-        @Override
-        public String packageName() {
-            return null;
-        }
+    @Override
+    public String packageName() {
+        return null;
+    }
 
-        @Override
-        public PluginInfo pluginInfo() {
-            return null;
-        }
+    @Override
+    public PluginInfo pluginInfo() {
+        return null;
+    }
 
-        @Override
-        public void changed(PackageLoader.Package pkg, Ctx ctx) {
-            PackageAPI.PkgVersion  currVer = packageVersions.get(pkg.name);
-            if(currVer == null) {
-                //not watching this
-                return;
-            }
-            String latestSupportedVersion = pkgVersionSupplier.apply(pkg.name);
-            if(latestSupportedVersion == null) {
-                //no specific version configured. use the latest
-                latestSupportedVersion = pkg.getLatest().getVersion();
-            }
-            if(Objects.equals(currVer.version, latestSupportedVersion)) {
-                //no need to update
-                return;
-            }
-            ctx.runLater(null, onReload);
+    @Override
+    public void changed(PackageLoader.Package pkg, Ctx ctx) {
+        PackageAPI.PkgVersion currVer = packageVersions.get(pkg.name);
+        if (currVer == null) {
+            //not watching this
+            return;
         }
+        String latestSupportedVersion = pkgVersionSupplier.apply(pkg.name);
+        if (latestSupportedVersion == null) {
+            //no specific version configured. use the latest
+            latestSupportedVersion = pkg.getLatest().getVersion();
+        }
+        if (Objects.equals(currVer.version, latestSupportedVersion)) {
+            //no need to update
+            return;
+        }
+        ctx.runLater(null, onReload);
+    }
 
-        @Override
-        public PackageLoader.Package.Version getPackageVersion() {
-            return null;
-        }
-    };
 
 
 }

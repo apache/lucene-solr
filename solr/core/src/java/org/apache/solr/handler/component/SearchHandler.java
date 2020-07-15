@@ -171,11 +171,6 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
           // but it is not worth optimizing as these are lightweight objects
           components = null;
         }
-
-        @Override
-        public PackageLoader.Package.Version getPackageVersion() {
-          return null;
-        }
       });
     }
 
