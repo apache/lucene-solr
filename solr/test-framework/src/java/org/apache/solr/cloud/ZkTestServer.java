@@ -42,6 +42,7 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -119,7 +120,7 @@ public class ZkTestServer implements Closeable {
 
   protected volatile SolrZkClient chRootClient;
 
-  public final AtomicBoolean startupWait = new AtomicBoolean(false);
+  public volatile CountDownLatch startupWait = new CountDownLatch(1);
 
   static public enum LimitViolationAction {
     IGNORE, REPORT, FAIL,
@@ -361,10 +362,7 @@ public class ZkTestServer implements Closeable {
                 config.getMaxClientCnxns());
         cnxnFactory.startup(zooKeeperServer);
 
-        startupWait.set(true);
-        synchronized (startupWait) {
-          startupWait.notifyAll();
-        }
+        startupWait.countDown();
 
         log.info("ZK Port:" + zooKeeperServer.getClientPort());
         cnxnFactory.join();
@@ -548,7 +546,6 @@ public class ZkTestServer implements Closeable {
 
   public void run(boolean solrFormat) throws InterruptedException, IOException {
     log.info("STARTING ZK TEST SERVER dataDir={}", this.zkDir);
-
     // docs say no config for netty yet
    // System.setProperty("zookeeper.serverCnxnFactory", "org.apache.zookeeper.server.NettyServerCnxnFactory");
    // System.setProperty("zookeeper.clientCnxnSocket", "org.apache.zookeeper.ClientCnxnSocketNetty");
@@ -601,10 +598,9 @@ public class ZkTestServer implements Closeable {
 
       zooThread.start();
 
-      synchronized (startupWait) {
-        while (!startupWait.get()) {
-          startupWait.wait(10000);
-        }
+      boolean success = startupWait.await(5, TimeUnit.SECONDS);
+      if (!success) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Timeout waiting for zk test server to start");
       }
 
       init(solrFormat);
@@ -653,6 +649,7 @@ public class ZkTestServer implements Closeable {
     if (zooThread != null) {
       ObjectReleaseTracker.release(zooThread);
     }
+    startupWait = new CountDownLatch(1);
     zooThread = null;
     ObjectReleaseTracker.release(this);
 

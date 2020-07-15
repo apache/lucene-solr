@@ -27,6 +27,7 @@ import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.TimeOut;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.KeeperState;
@@ -108,15 +109,15 @@ public class ConnectionManager implements Watcher, Closeable {
     this.isClosedCheck = isClosed;
   }
 
-  private synchronized void connected() {
+  private void connected() {
     connected = true;
     likelyExpiredState = LikelyExpiredState.NOT_EXPIRED;
+    log.info("Connected, notify any wait");
     connectedLatch.countDown();
     disconnectedLatch = new CountDownLatch(1);
-    notifyAll();
   }
 
-  private synchronized void disconnected() {
+  private void disconnected() {
     connected = false;
     // record the time we expired unless we are already likely expired
     if (!likelyExpiredState.isLikelyExpired(0)) {
@@ -124,7 +125,6 @@ public class ConnectionManager implements Watcher, Closeable {
     }
     disconnectedLatch.countDown();;
     connectedLatch = new CountDownLatch(1);
-    notifyAll();
   }
 
   @Override
@@ -161,15 +161,8 @@ public class ConnectionManager implements Watcher, Closeable {
       if (beforeReconnect != null) {
         try {
           beforeReconnect.command();
-        } catch (Exception e) {
-
-          if (e instanceof  InterruptedException) {
-            // does not currently throw InterruptedException
-            // but could change
-            ParWork.propegateInterrupt(e);
-          }
-
-          log.warn("Exception running beforeReconnect command", e);
+        }  catch (Exception e) {
+          ParWork.propegateInterrupt("Exception running beforeReconnect command", e);
         }
       }
 
@@ -183,7 +176,7 @@ public class ConnectionManager implements Watcher, Closeable {
                 @Override
                 public void update(SolrZooKeeper keeper) {
                   try {
-                    waitForConnected(Long.MAX_VALUE);
+                    waitForConnected(1000);
 
                     try {
                       client.updateKeeper(keeper);
@@ -197,11 +190,6 @@ public class ConnectionManager implements Watcher, Closeable {
                         log.error("$ZkClientConnectionStrategy.ZkUpdate.update(SolrZooKeeper=" + keeper + ")", e1);
                         ParWork.propegateInterrupt(e);
                         exp.addSuppressed(e1);
-                      }
-
-                      if (Thread.currentThread().isInterrupted()) {
-                        Thread.currentThread().interrupt();
-                        return;
                       }
 
                       throw exp;
@@ -226,11 +214,6 @@ public class ConnectionManager implements Watcher, Closeable {
                       exp.addSuppressed(e);
                     }
 
-                    if (Thread.currentThread().isInterrupted()) {
-                      Thread.currentThread().interrupt();
-                      return;
-                    }
-
                     throw exp;
                   }
 
@@ -248,8 +231,7 @@ public class ConnectionManager implements Watcher, Closeable {
             return;
           }
           SolrException.log(log, "", e);
-          log.info("Could not connect due to error, sleeping for 1s and trying again");
-          waitSleep(500);
+          log.info("Could not connect due to error, trying again");
         }
 
       } while (!isClosed());
@@ -264,11 +246,11 @@ public class ConnectionManager implements Watcher, Closeable {
     }
   }
 
-  public synchronized boolean isConnectedAndNotClosed() {
+  public boolean isConnectedAndNotClosed() {
     return !isClosed() && connected;
   }
 
-  public synchronized boolean isConnected() {
+  public boolean isConnected() {
     return connected;
   }
 
@@ -287,47 +269,28 @@ public class ConnectionManager implements Watcher, Closeable {
     return isClosed() || likelyExpiredState.isLikelyExpired((long) (client.getZkClientTimeout() * 0.90));
   }
 
-  public synchronized void waitSleep(long waitFor) {
-    try {
-      wait(waitFor);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-    }
-  }
-
-  public synchronized void waitForConnected(long waitForConnection)
+  public void waitForConnected(long waitForConnection)
           throws TimeoutException, InterruptedException {
     log.info("Waiting for client to connect to ZooKeeper");
-    TimeOut timeout = new TimeOut(waitForConnection, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
-    boolean success = false;
-    while (!success) {
-      if (client.isConnected()) {
-        connected();
-        break;
-      }
-      if (timeout.hasTimedOut()) {
-        throw new TimeoutException("Could not connect to ZooKeeper " + zkServerAddress + " within " + waitForConnection + " ms");
-      }
-      success = connectedLatch.await(250, TimeUnit.MILLISECONDS);
+
+    if (client.isConnected()) return;
+    boolean success = connectedLatch.await(waitForConnection, TimeUnit.MILLISECONDS);
+    if (client.isConnected()) return;
+    if (!success) {
+      throw new TimeoutException("Timeout waiting to connect to ZooKeeper");
     }
 
     log.info("Client is connected to ZooKeeper");
   }
 
-  public synchronized void waitForDisconnected(long waitForDisconnected)
+  public void waitForDisconnected(long waitForDisconnected)
       throws InterruptedException, TimeoutException {
-    TimeOut timeout = new TimeOut(waitForDisconnected, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
-    boolean success = false;
-    while (!success) {
-      if (client.isConnected()) {
-        connected();
-        break;
-      }
-      if (timeout.hasTimedOut()) {
-        throw new TimeoutException("Timeout waiting to disconnect from ZooKeeper " + zkServerAddress + " within " + waitForDisconnected + " ms");
-      }
-      success = disconnectedLatch.await(250, TimeUnit.MILLISECONDS);
+    if (!client.isConnected()) return;
+    boolean success = disconnectedLatch.await(1000, TimeUnit.MILLISECONDS);
+    if (!success) {
+      throw new TimeoutException("Timeout waiting to disconnect from ZooKeeper");
     }
+
   }
 
   private void closeKeeper(SolrZooKeeper keeper) {
