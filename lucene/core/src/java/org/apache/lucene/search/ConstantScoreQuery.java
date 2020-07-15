@@ -39,6 +39,14 @@ public final class ConstantScoreQuery extends Query {
     this(query, false);
   }
 
+  /**
+   * Create ConstantScoreQuery which can be explain or not
+   *
+   * @param query Query which striped off scores
+   *
+   * @param explainable This boolean variable indicates whether to explain
+   *                    default value is false
+   */
   public ConstantScoreQuery(Query query, boolean explainable) {
     this.query = Objects.requireNonNull(query, "Query must not be null");
     this.explainable = explainable;
