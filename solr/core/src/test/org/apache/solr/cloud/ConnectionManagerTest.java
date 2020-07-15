@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
@@ -28,6 +29,8 @@ import org.apache.solr.common.cloud.ConnectionManager;
 import org.apache.solr.common.cloud.DefaultConnectionStrategy;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.TimeOut;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.EventType;
@@ -130,7 +133,8 @@ public class ConnectionManagerTest extends SolrTestCaseJ4 {
                
         // reconnect -- should no longer be likely expired
         cm.process(new WatchedEvent(EventType.None, KeeperState.Expired, ""));
-
+        TimeOut timeout = new TimeOut(2, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+        timeout.waitFor("should have thrown exception", () ->  strat.isExceptionThrow());
         assertTrue(strat.isExceptionThrow());
       } finally {
         cm.close();
