@@ -131,7 +131,6 @@ public class ConnectionManagerTest extends SolrTestCaseJ4 {
         // reconnect -- should no longer be likely expired
         cm.process(new WatchedEvent(EventType.None, KeeperState.Expired, ""));
 
-        assertTrue(cm.isConnectedAndNotClosed());
         assertTrue(strat.isExceptionThrow());
       } finally {
         cm.close();
