@@ -90,10 +90,6 @@ import static org.apache.solr.handler.admin.CoreAdminHandler.RESPONSE_STATUS;
  * be created per core.
  * </p>
  * <p>
- * The source and target collection can be reinitialised at will by calling {@link #clearSourceCollection()} and
- * {@link #clearTargetCollection()}. After reinitialisation, a collection will have a new fresh index and update log.
- * </p>
- * <p>
  * Servers can be restarted at will by calling
  * {@link #restartServer(BaseCdcrDistributedZkTest.CloudJettyRunner)} or
  * {@link #restartServers(java.util.List)}.
