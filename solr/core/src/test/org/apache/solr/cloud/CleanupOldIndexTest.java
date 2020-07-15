@@ -51,10 +51,6 @@ public class CleanupOldIndexTest extends SolrCloudTestCase {
   @AfterClass
   public static void afterClass() throws Exception {
 
-    if (null != cluster && suiteFailureMarker.wasSuccessful()) {
-      zkClient().printLayoutToStream(System.out);
-    }
-
   }
 
   private static final String COLLECTION = "oldindextest";

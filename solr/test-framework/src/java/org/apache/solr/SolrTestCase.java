@@ -51,6 +51,8 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,7 +91,7 @@ public class SolrTestCase extends LuceneTestCase {
    * on completion of the test suite
    * </p>
    * @see <a href="https://issues.apache.org/jira/browse/SOLR-14247">SOLR-14247</a>
-   * @see #shutdownLogger
+   * @see #afterSolrTestCase()
    */
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -99,9 +101,24 @@ public class SolrTestCase extends LuceneTestCase {
              .around(new RevertDefaultThreadHandlerRule());
   private static volatile Random random;
 
+  private static volatile boolean failed = false;
+
   @Rule
   public TestRule solrTestRules =
-          RuleChain.outerRule(new SystemPropertiesRestoreRule());
+          RuleChain.outerRule(new SystemPropertiesRestoreRule()).around(
+                  new TestWatcher() {
+                    @Override
+                    protected void failed(Throwable e, Description description) {
+                      failed = true;
+                    }
+
+                    @Override
+                    protected void succeeded(Description description) {
+
+                    }
+                  });
+
+
 
   public static final int DEFAULT_ZK_SESSION_TIMEOUT = 20000;  // default socket connection timeout in ms
   public static final int DEFAULT_CONNECTION_TIMEOUT = 10000;  // default socket connection timeout in ms
@@ -329,7 +346,7 @@ public class SolrTestCase extends LuceneTestCase {
       ExecutorUtil.shutdownAndAwaitTermination(CoreContainer.solrCoreLoadExecutor);
       CoreContainer.solrCoreLoadExecutor = null;
 
-      if (suiteFailureMarker.wasSuccessful()) {
+      if (!failed) {
         // if the tests passed, make sure everything was closed / released
         String orr = ObjectReleaseTracker.checkEmpty();
         ObjectReleaseTracker.clear();
@@ -349,7 +366,7 @@ public class SolrTestCase extends LuceneTestCase {
       checkForInterruptRequest();
 
       long testTime = TimeUnit.SECONDS.convert(System.nanoTime() - testStartTime, TimeUnit.NANOSECONDS);
-      if (suiteFailureMarker.wasSuccessful() && !TEST_NIGHTLY && testTime > SOLR_TEST_TIMEOUT) {
+      if (!failed && !TEST_NIGHTLY && testTime > SOLR_TEST_TIMEOUT) {
         log.error("This test suite is too long for non @Nightly runs! Please improve it's performance, break it up, make parts of it @Nightly or make the whole suite @Nightly: "
                 + testTime);
 //          fail(
