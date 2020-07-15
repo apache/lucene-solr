@@ -85,7 +85,7 @@ public class SyncStrategy implements Closeable {
       return PeerSync.PeerSyncResult.success();
     }
 
-    if (isClosed) {
+    if (isClosed || zkController.getCoreContainer().isShutDown()) {
       log.warn("Closed, skipping sync up.");
       return PeerSync.PeerSyncResult.failure();
     }

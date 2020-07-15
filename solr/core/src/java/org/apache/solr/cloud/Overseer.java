@@ -616,8 +616,15 @@ public class Overseer implements SolrCloseable {
     MDCLoggingContext.setNode(zkController == null ?
         null :
         zkController.getNodeName());
+
+    if (getCoreContainer().isShutDown()) {
+      if (log.isDebugEnabled()) log.debug("Already closed, exiting");
+    }
+
     this.id = id;
     this.context = context;
+
+
     closed = false;
 
     try {

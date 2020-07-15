@@ -512,7 +512,7 @@ public class ParWork implements Closeable {
                 }
 
               } catch (InterruptedException e1) {
-                log.error(WORK_WAS_INTERRUPTED, e1);
+                log.warn(WORK_WAS_INTERRUPTED, e1);
                 Thread.currentThread().interrupt();
               }
             }
