@@ -291,6 +291,9 @@ public class PackageLoader implements Closeable {
       public String getVersion() {
         return version.version;
       }
+      public PackageAPI.PkgVersion getPkgVersion(){
+        return version.copy();
+      }
 
       @SuppressWarnings({"rawtypes"})
       public Collection getFiles() {

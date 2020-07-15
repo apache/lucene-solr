@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.PluginInfo;
@@ -67,7 +68,7 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
       }
 
       @Override
-      public PackageLoader.Package.Version getPackageVersion() {
+      public MapWriter getPackageVersion(PluginInfo.ClassName cName) {
         return pkgVersion;
       }
 

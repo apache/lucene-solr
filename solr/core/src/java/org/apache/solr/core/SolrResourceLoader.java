@@ -46,7 +46,6 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.ShardHandlerFactory;
-import org.apache.solr.pkg.CoreRefreshingPackageListener;
 import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.QueryResponseWriter;
@@ -781,13 +780,14 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
 
   private  <T> T _classLookup(PluginInfo info, Function<PackageLoader.Package.Version, T> fun, boolean registerCoreReloadListener ) {
     PluginInfo.ClassName cName = info.cName;
-    PackageLoader.Package.Version latest = getCoreContainer().getPackageLoader().getPackage(cName.pkg)
-            .getLatest(core.getSolrConfig().maxPackageVersion(cName.pkg));
-    T result = fun.apply(latest);
-    if (registerCoreReloadListener && getCore() != null) {
-      getCore().getPackageListeners().addListener(new CoreRefreshingPackageListener(core, info, latest));
+    if (registerCoreReloadListener) {
+      if (getCore() == null) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "SolrCore not set");
+      }
+      return fun.apply(getCore().getCoreReloadingPackageListener().findPkgVersion(cName, true));
+    } else {
+      return fun.apply(getCore().getCoreReloadingPackageListener().findPkgVersion(cName, false));
     }
-    return result;
   }
 
   /**

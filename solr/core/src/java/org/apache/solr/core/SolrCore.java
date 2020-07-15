@@ -57,6 +57,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
@@ -112,6 +113,7 @@ import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.pkg.MultiPackageListener;
 import org.apache.solr.pkg.PackageListeners;
 import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.pkg.PackagePluginHolder;
@@ -229,7 +231,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private final MemClassLoader memClassLoader;
 
   private final CircuitBreakerManager circuitBreakerManager;
-
+  //a single package listener for all cores that require core reloading
+  private final MultiPackageListener coreReloadingPackageListener;
   private final List<Runnable> confListeners = new CopyOnWriteArrayList<>();
 
   private final ReentrantLock ruleExpiryLock;
@@ -276,6 +279,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     return restManager;
   }
 
+  public MultiPackageListener getCoreReloadingPackageListener(){
+    return coreReloadingPackageListener;
+  }
   public PackageListeners getPackageListeners() {
     return packageListeners;
   }
@@ -953,6 +959,10 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       this.solrConfig = configSet.getSolrConfig();
       this.resourceLoader = configSet.getSolrConfig().getResourceLoader();
       this.resourceLoader.core = this;
+      this.coreReloadingPackageListener = new MultiPackageListener(coreContainer,
+              resourceLoader,
+              pkg -> solrConfig.maxPackageVersion(pkg),
+              () -> coreContainer.reload(name, uniqueId));
       this.configSetProperties = configSet.getProperties();
       // Initialize the metrics manager
       this.coreMetricManager = initCoreMetricManager(solrConfig);

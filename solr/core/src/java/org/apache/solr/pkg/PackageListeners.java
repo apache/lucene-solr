@@ -23,6 +23,7 @@ import java.lang.ref.SoftReference;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.logging.MDCLoggingContext;
@@ -97,23 +98,36 @@ public class PackageListeners {
 
 
   public interface Listener {
-    /**Name of the package or null to listen to all package changes
-     */
+    /**Name of the package or null to listen to all package changes */
     String packageName();
 
     PluginInfo pluginInfo();
 
+    /**A callback when the package is updated */
     void changed(PackageLoader.Package pkg, Ctx ctx);
 
-    PackageLoader.Package.Version getPackageVersion();
+    default MapWriter getPackageVersion(PluginInfo.ClassName cName) {
+      return null;
+    }
     class Ctx {
-      private Map<String, Runnable > runLater;
-      public void runLater(String name,  Runnable runnable  ){
-        if(runLater == null) runLater = new LinkedHashMap<>();
+      private Map<String, Runnable> runLater;
+
+      /**
+       * If there are multiple packages to be updated and there are multiple listeners,
+       * This is executed after all of the {@link Listener#changed(PackageLoader.Package, Ctx)}
+       * calls are invoked. The name is a unique identifier that can be used by consumers to avoid duplicate
+       * If no deduplication is required, use null as the name
+       */
+      public void runLater(String name, Runnable runnable) {
+        if (runLater == null) runLater = new LinkedHashMap<>();
+        if (name == null) {
+          name = runnable.getClass().getSimpleName() + "@" + runnable.hashCode();
+        }
         runLater.put(name, runnable);
       }
-      private void runLaterTasks(){
-        if(runLater == null) return;
+
+      private void runLaterTasks() {
+        if (runLater == null) return;
         new Thread(() -> runLater.forEach((s, runnable) -> {
           try {
             runnable.run();
