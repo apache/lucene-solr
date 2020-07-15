@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -134,6 +135,7 @@ import org.apache.solr.common.util.OrderedExecutor;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.stats.MetricUtils;
 import org.apache.zookeeper.KeeperException;
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -394,9 +396,9 @@ public class CoreContainer implements Closeable {
     if (solrCoreLoadExecutor == null) {
       synchronized (CoreContainer.class) {
         if (solrCoreLoadExecutor == null) {
-          solrCoreLoadExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(0, Integer.MAX_VALUE,
+          solrCoreLoadExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(0, Math.max(2, Runtime.getRuntime().availableProcessors() / 2),
                   3, TimeUnit.SECONDS,
-                  new SynchronousQueue<>(),
+                  new BlockingArrayQueue<>(100, 10),
                   new SolrNamedThreadFactory("SolrCoreLoader"));
         }
       }
