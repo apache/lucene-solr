@@ -119,7 +119,7 @@ public class ScheduledTriggerIntegrationTest extends SolrCloudTestCase {
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
-    assertTrue("ScheduledTrigger did not fire in time", triggerFiredLatch.await(45, TimeUnit.SECONDS));
+    assertTrue("ScheduledTrigger did not fire in time", triggerFiredLatch.await(10, TimeUnit.SECONDS));
     assertEquals(1, events.size());
     Map<String, Object> actionContextProps = actionContextPropertiesRef.get();
     assertNotNull(actionContextProps);
