@@ -1024,6 +1024,10 @@ public class SolrZkClient implements Closeable {
     }
   }
 
+  public void setHigherLevelIsClosed(IsClosed isClosed) {
+    this.higherLevelIsClosed = isClosed;
+  }
+
   /**
    * Update all ACLs for a zk tree based on our configured {@link ZkACLProvider}.
    * @param root the root node to recursively update

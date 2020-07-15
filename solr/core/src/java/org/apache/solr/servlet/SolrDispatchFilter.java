@@ -66,6 +66,7 @@ import org.apache.solr.api.V2HttpCall;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.ConnectionManager;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
@@ -288,6 +289,12 @@ public class SolrDispatchFilter extends BaseSolrFilter {
 
     NodeConfig nodeConfig = loadNodeConfig(zkClient, solrHome, extraProperties);
     this.cores = new CoreContainer(zkClient, nodeConfig,  new CorePropertiesLocator(nodeConfig.getCoreRootDirectory()), true);
+    if (zkClient != null) zkClient.setHigherLevelIsClosed(new ConnectionManager.IsClosed() {
+      @Override
+      public boolean isClosed() {
+        return cores.isShutDown();
+      }
+    });
     cores.load();
     return cores;
   }
