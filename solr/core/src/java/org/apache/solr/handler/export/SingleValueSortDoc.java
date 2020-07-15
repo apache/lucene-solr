@@ -62,6 +62,11 @@ class SingleValueSortDoc extends SortDoc {
     this.value1 = value1;
   }
 
+  public void setGlobalValues(SortDoc previous) {
+    SortValue previousValue = ((SingleValueSortDoc)previous).value1;
+    value1.toGlobalValue(previousValue);
+  }
+
   public SortDoc copy() {
     return new SingleValueSortDoc(value1.copy());
   }

@@ -21,7 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.LeafReaderContext;
 
-class SortDoc {
+class SortDoc implements Comparable {
 
   protected int docId = -1;
   protected int ord = -1;

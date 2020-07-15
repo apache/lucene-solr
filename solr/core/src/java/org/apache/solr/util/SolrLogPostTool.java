@@ -487,6 +487,11 @@ public class SolrLogPostTool {
           setFieldIfUnset(doc, "rows_i", dr);
         }
 
+        if(parts[0].equals("start")) {
+          String dr = URLDecoder.decode(parts[1], Charset.defaultCharset());
+          setFieldIfUnset(doc, "start_i", dr);
+        }
+
         if(parts[0].equals("distrib")) {
           String dr = URLDecoder.decode(parts[1], Charset.defaultCharset());
           setFieldIfUnset(doc, "distrib_s", dr);

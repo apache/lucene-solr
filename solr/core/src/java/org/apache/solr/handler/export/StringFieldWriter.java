@@ -55,45 +55,22 @@ class StringFieldWriter extends FieldWriter {
 
   public boolean write(SortDoc sortDoc, LeafReader reader, MapWriter.EntryWriter ew, int fieldIndex) throws IOException {
     BytesRef ref;
-    SortValue sortValue = sortDoc.getSortValue(this.field);
-    if (sortValue != null) {
-      if (sortValue.isPresent()) {
-        ref = (BytesRef) sortValue.getCurrentValue();
-      } else { //empty-value
-        return false;
-      }
-    } else {
-      // field is not part of 'sort' param, but part of 'fl' param
-      SortedDocValues vals = lastDocValues.get(sortDoc.ord);
-      if (vals == null || vals.docID() >= sortDoc.docId) {
-        vals = DocValues.getSorted(reader, this.field);
-        lastDocValues.put(sortDoc.ord, vals);
-      }
-      if (vals.advance(sortDoc.docId) != sortDoc.docId) {
-        return false;
-      }
-      int ord = vals.ordValue();
-      ref = vals.lookupOrd(ord);
+    SortedDocValues vals = DocValues.getSorted(reader, this.field);
+
+    if (vals.advance(sortDoc.docId) != sortDoc.docId) {
+      return false;
     }
+
+    int ord = vals.ordValue();
+    ref = vals.lookupOrd(ord);
 
     if (ew instanceof JavaBinCodec.BinEntryWriter) {
       ew.put(this.field, utf8.reset(ref.bytes, ref.offset, ref.length, null));
     } else {
       String v = null;
-      if (sortValue != null) {
-        v = ((StringValue) sortValue).getLastString();
-        if (v == null) {
-          fieldType.indexedToReadable(ref, cref);
-          v = cref.toString();
-          ((StringValue) sortValue).setLastString(v);
-        }
-      } else {
-        fieldType.indexedToReadable(ref, cref);
-        v = cref.toString();
-      }
-
+      fieldType.indexedToReadable(ref, cref);
+      v = cref.toString();
       ew.put(this.field, v);
-
     }
     return true;
   }

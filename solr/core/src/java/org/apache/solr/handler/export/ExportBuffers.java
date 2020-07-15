@@ -92,7 +92,9 @@ class ExportBuffers {
     fillBuffer = bufferOne;
     outputBuffer = bufferTwo;
     SortDoc writerSortDoc = exportWriter.getSortDoc(searcher, sort.getSort());
+
     MergeIterator mergeIterator = exportWriter.getMergeIterator(leaves, sets, writerSortDoc);
+
     bufferOne.initialize(writerSortDoc);
     bufferTwo.initialize(writerSortDoc);
     barrier = new CyclicBarrier(2, () -> swapBuffers());
@@ -103,6 +105,7 @@ class ExportBuffers {
         long lastOutputCounter = 0;
         for (int count = 0; count < totalHits; ) {
           // log.debug("--- filler fillOutDocs in {}", fillBuffer);
+
           exportWriter.fillOutDocs(mergeIterator, buffer);
           count += (buffer.outDocsIndex + 1);
           // log.debug("--- filler count={}, exchange buffer from {}", count, buffer);

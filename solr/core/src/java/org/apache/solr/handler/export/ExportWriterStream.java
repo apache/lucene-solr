@@ -56,6 +56,7 @@ public class ExportWriterStream extends TupleStream implements Expressible {
   StreamContext context;
   StreamComparator streamComparator;
   int pos = -1;
+  int index = -1;
   ExportBuffers exportBuffers;
   ExportBuffers.Buffer buffer;
   Timer.Context writeOutputTimerContext;
@@ -196,6 +197,7 @@ public class ExportWriterStream extends TupleStream implements Expressible {
         res = Tuple.EOF();
       } else {
         pos = buffer.outDocsIndex;
+        index = -1;  //restart index.
         log.debug("--- ews new pos={}", pos);
       }
     }
@@ -213,7 +215,7 @@ public class ExportWriterStream extends TupleStream implements Expressible {
     if (writeOutputTimerContext == null) {
       writeOutputTimerContext = exportBuffers.getWriteOutputBufferTimer().time();
     }
-    SortDoc sortDoc = buffer.outDocs[pos];
+    SortDoc sortDoc = buffer.outDocs[++index];
     tupleEntryWriter.tuple = new Tuple();
     exportBuffers.exportWriter.writeDoc(sortDoc, exportBuffers.leaves, tupleEntryWriter, exportBuffers.exportWriter.fieldWriters);
     pos--;

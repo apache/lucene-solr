@@ -38,7 +38,7 @@ class StringValue implements SortValue {
   protected LongValues toGlobal = LongValues.IDENTITY; // this segment to global ordinal. NN;
   protected SortedDocValues docValues;
 
-  protected int currentOrd;
+  public int currentOrd;
   protected int lastDocID;
   private boolean present;
 
@@ -75,6 +75,7 @@ class StringValue implements SortValue {
   }
 
   public void setCurrentValue(int docId) throws IOException {
+    //System.out.println(docId +":"+lastDocID);
     if (docId < lastDocID) {
       throw new AssertionError("docs were sent out-of-order: lastDocID=" + lastDocID + " vs doc=" + docId);
     }
@@ -84,9 +85,11 @@ class StringValue implements SortValue {
     if (docId > docValues.docID()) {
       docValues.advance(docId);
     }
+
     if (docId == docValues.docID()) {
       present = true;
       currentOrd = docValues.ordValue();
+      //System.out.println("Local:"+currentOrd+", Global:"+toGlobal.get(docValues.ordValue()));
     } else {
       present = false;
       currentOrd = -1;
@@ -104,6 +107,7 @@ class StringValue implements SortValue {
     this.present = v.present;
     this.leafOrd = v.leafOrd;
     this.lastOrd = v.lastOrd;
+    this.toGlobal = v.toGlobal;
   }
 
   public Object getCurrentValue() throws IOException {
@@ -120,6 +124,7 @@ class StringValue implements SortValue {
     lastOrd = currentOrd;
     StringValue sv = (StringValue)previousValue;
     if(sv.lastOrd == currentOrd) {
+      //Take the global ord from the previousValue
       this.currentOrd = sv.currentOrd;
     } else {
       this.currentOrd = (int) toGlobal.get(this.currentOrd);
@@ -142,6 +147,7 @@ class StringValue implements SortValue {
   public void reset() {
     this.currentOrd = comp.resetValue();
     this.present = false;
+    lastDocID = 0;
   }
 
   public int compareTo(SortValue o) {
