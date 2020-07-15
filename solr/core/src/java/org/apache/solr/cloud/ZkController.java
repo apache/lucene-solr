@@ -181,7 +181,6 @@ public class ZkController implements Closeable {
 
   public final static String COLLECTION_PARAM_PREFIX = "collection.";
   public final static String CONFIGNAME_PROP = "configName";
-  private String closeStack;
 
   static class ContextKey {
 
@@ -596,28 +595,31 @@ public class ZkController implements Closeable {
    * Closes the underlying ZooKeeper client.
    */
   public void close() {
-    if (this.isClosed) {
-      throw new AssertionError(closeStack);
-    }
+    log.info("Closing ZkController");
+    assert !this.isClosed;
+
     this.isClosed = true;
-    StringBuilderWriter sw = new StringBuilderWriter(1000);
-    PrintWriter pw = new PrintWriter(sw);
-    new ObjectReleaseTracker.ObjectTrackerException(this.getClass().getName()).printStackTrace(pw);
-    this.closeStack = sw.toString();
 
     try (ParWork closer = new ParWork(this, true)) {
-      // nocommit
-      closer.add("Cleanup&Terms", collectionToTerms.values());
-      closer.add("ZkController Internals",
-              electionContexts.values(), cloudManager, sysPropsCacher, cloudSolrClient, zkStateReader, closeZkClient ? zkClient : null);
-      ElectionContext context = null;
-      if (overseerElector != null) {
-        context = overseerElector.getContext();
+      closer.collect(electionContexts.values());
+      closer.collect(cloudManager);
+      closer.collect(collectionToTerms.values());
+      closer.collect(sysPropsCacher);
+      closer.collect(cloudSolrClient);
+
+      closer.collect(zkStateReader);
+      if (closeZkClient) {
+        closer.collect(zkClient);
       }
-      closer.add("ZkController Internals", context, overseerContexts.values() , overseer);
-    } finally {
-      assert ObjectReleaseTracker.release(this);
+      if (overseerElector != null && overseerElector.getContext() != null ) {
+        closer.collect(overseerElector.getContext());
+      }
+
+      closer.collect(overseerContexts.values());
+      closer.collect(overseer);
+      closer.addCollect("closeZkController");
     }
+    assert ObjectReleaseTracker.release(this);
   }
 
   /**

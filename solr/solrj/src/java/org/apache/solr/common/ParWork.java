@@ -689,7 +689,7 @@ public class ParWork implements Closeable {
 
       if (!handled) {
         String msg = label + " -> I do not know how to close: " + object.getClass().getName();
-        log.error(RAN_INTO_AN_ERROR_WHILE_DOING_WORK, msg);
+        log.error(msg);
         IllegalArgumentException illegal = new IllegalArgumentException(msg);
         exception.set(illegal);
       }

@@ -52,7 +52,7 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
     super.runLeaderProcess(context, weAreReplacement, pauseBeforeStartMs);
 
     synchronized (this) {
-      if (!this.isClosed && !overseer.getZkController().getCoreContainer().isShutDown()) {
+      if (!this.isClosed && !overseer.getZkController().getCoreContainer().isShutDown() && (overseer.getUpdaterThread() == null || !overseer.getUpdaterThread().isAlive())) {
         overseer.start(id, context);
       }
     }
