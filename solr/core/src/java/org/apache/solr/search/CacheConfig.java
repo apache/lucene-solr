@@ -54,7 +54,7 @@ public class CacheConfig implements MapSerializable{
 
   /**
    * When this object is created, the core is not yet available . So, if the class is to be
-   * loaded from a package we should have  acorresponding core
+   * loaded from a package we should have a corresponding core
    *
    */
   @SuppressWarnings({"rawtypes"})
