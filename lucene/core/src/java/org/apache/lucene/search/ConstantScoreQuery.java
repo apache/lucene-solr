@@ -182,8 +182,8 @@ public final class ConstantScoreQuery extends Query {
         @Override
         public Explanation explain(LeafReaderContext context, int doc) throws IOException {
           if (explainable) {
-            String description = getQuery().toString() + (score() == 1f ? "" : "^" + score());
-            Explanation explanation = getQuery().createWeight(searcher, scoreMode, boost).explain(context, doc);
+            String description = "ConstantScore(" + query.toString() + ")";
+            Explanation explanation = query.createWeight(searcher, scoreMode, boost).explain(context, doc);
             return Explanation.match(score(), description, explanation);
           }
           return super.explain(context, doc);

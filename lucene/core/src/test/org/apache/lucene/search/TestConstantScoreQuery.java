@@ -18,7 +18,9 @@ package org.apache.lucene.search;
 
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Objects;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -231,4 +233,91 @@ public class TestConstantScoreQuery extends LuceneTestCase {
     dir.close();
   }
 
+  // Check the equality of the results between ConstantScoreQuery and explainable ConstantScoreQuery
+  public void testResultEqualityWithExplainableConstantScoreQuery() throws Exception {
+    Directory d = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), d);
+    Document doc = new Document();
+    doc.add(newStringField("field", "a", Field.Store.NO));
+    w.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("field", "b", Field.Store.NO));
+    w.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("field", "c", Field.Store.NO));
+    w.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("field", "d", Field.Store.NO));
+    w.addDocument(doc);
+    IndexReader r = w.getReader();
+    w.close();
+
+    Query query = new TermQuery(new Term("field", "a"));
+    Query constantScoreQuery = new ConstantScoreQuery(query);
+    Query explainableConstantScoreQuery = new ConstantScoreQuery(query, true);
+
+    IndexSearcher s = newSearcher(r);
+
+    assertEquals(s.count(explainableConstantScoreQuery), s.count(constantScoreQuery));
+
+    for (int i = 1; i <= r.numDocs(); i++) {
+      TopDocs constantScoreDocs = s.search(constantScoreQuery, i);
+      TopDocs explainableConstantScoreDocs = s.search(explainableConstantScoreQuery, i);
+      assertEquals(constantScoreDocs.scoreDocs.length, explainableConstantScoreDocs.scoreDocs.length);
+      for (int j = 0; j < constantScoreDocs.scoreDocs.length; j++) {
+        assertEquals(constantScoreDocs.scoreDocs[j].score, explainableConstantScoreDocs.scoreDocs[j].score, 0);
+        assertEquals(constantScoreDocs.scoreDocs[j].doc, explainableConstantScoreDocs.scoreDocs[j].doc);
+        assertEquals(constantScoreDocs.scoreDocs[j].shardIndex, explainableConstantScoreDocs.scoreDocs[j].shardIndex);
+      }
+    }
+
+    r.close();
+    d.close();
+  }
+
+  // Check the difference of explain() result between ConstantScoreQuery and explainable ConstantScoreQuery
+  public void testExplainDiffWithExplainableConstantScoreQuery() throws Exception {
+    Directory d = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), d);
+    Document doc = new Document();
+    doc.add(newStringField("field", "a", Field.Store.NO));
+    w.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("field", "b", Field.Store.NO));
+    w.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("field", "c", Field.Store.NO));
+    w.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("field", "d", Field.Store.NO));
+    w.addDocument(doc);
+    IndexReader r = w.getReader();
+    w.close();
+
+    Query query = new TermQuery(new Term("field", "a"));
+    Query constantScoreQuery = new ConstantScoreQuery(query);
+    Query explainableConstantScoreQuery = new ConstantScoreQuery(query, true);
+
+    IndexSearcher s = newSearcher(r);
+    System.out.println(Arrays.asList(s.explain(constantScoreQuery, 0).getDetails()));
+    System.out.println(Arrays.asList(s.explain(explainableConstantScoreQuery, 0).getDetails()));
+    for (int i = 1; i <= r.numDocs(); i++) {
+      TopDocs constantScoreDocs = s.search(constantScoreQuery, i);
+      TopDocs explainableConstantScoreDocs = s.search(explainableConstantScoreQuery, i);
+      assertEquals(constantScoreDocs.scoreDocs.length, explainableConstantScoreDocs.scoreDocs.length);
+
+      for (int j = 0; j < constantScoreDocs.scoreDocs.length; j++) {
+        assertEquals(s.explain(constantScoreQuery, j).getDescription(),
+                s.explain(explainableConstantScoreQuery, j).getDescription());
+        assertEquals(s.explain(constantScoreQuery, j).getValue(),
+                s.explain(explainableConstantScoreQuery, j).getValue());
+        assertNotEquals(s.explain(constantScoreQuery, j).getDetails().length,
+                s.explain(explainableConstantScoreQuery, j).getDetails().length);
+
+      }
+    }
+
+    r.close();
+    d.close();
+  }
 }
