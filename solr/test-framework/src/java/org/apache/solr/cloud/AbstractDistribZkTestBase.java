@@ -201,13 +201,12 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
   }
 
 
-  public static void waitForCollectionToDisappear(String collection,
-      ZkStateReader zkStateReader, boolean failOnTimeout, int timeoutSeconds)
+  public static void waitForCollectionToDisappear(String collection, ZkStateReader zkStateReader)
       throws Exception {
-    log.info("Wait for collection to disappear - collection: {} failOnTimeout:{} timeout (sec):{}"
-        , collection, failOnTimeout, timeoutSeconds);
+    log.info("Wait for collection to disappear - collection: {}"
+        , collection);
 
-    zkStateReader.waitForState(collection, timeoutSeconds, TimeUnit.SECONDS, (docCollection) -> docCollection == null);
+    zkStateReader.waitForState(collection, 10, TimeUnit.SECONDS, (docCollection) -> docCollection == null);
     log.info("Collection has disappeared - collection:{}", collection);
   }
 

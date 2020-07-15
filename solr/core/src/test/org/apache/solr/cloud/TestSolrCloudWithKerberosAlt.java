@@ -141,9 +141,7 @@ public class TestSolrCloudWithKerberosAlt extends SolrCloudTestCase {
         
     // delete the collection we created earlier
     CollectionAdminRequest.deleteCollection(collectionName).process(client);
-        
-    AbstractDistribZkTestBase.waitForCollectionToDisappear
-        (collectionName, client.getZkStateReader(), true, 330);
+    cluster.waitForRemovedCollection(collectionName);
   }
 
   @Override

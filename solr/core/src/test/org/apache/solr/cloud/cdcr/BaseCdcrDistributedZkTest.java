@@ -355,36 +355,12 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
   }
 
   /**
-   * Clear the source collection. It will delete then create the collection through the collection API.
-   * The collection will have a new fresh index, i.e., including a new update log.
-   */
-  protected void clearSourceCollection() throws Exception {
-    this.deleteCollection(SOURCE_COLLECTION);
-    this.waitForCollectionToDisappear(SOURCE_COLLECTION);
-    this.createCollection(SOURCE_COLLECTION);
-    this.waitForRecoveriesToFinish(SOURCE_COLLECTION, true);
-    this.updateMappingsFromZk(SOURCE_COLLECTION);
-  }
-
-  /**
    * Starts the servers, saves and associates the node names to the target collection,
    * and finally creates the target collection.
    */
   private void createTargetCollection() throws Exception {
     List<String> nodeNames = this.startServers(shardCount * replicationFactor);
     this.collectionToNodeNames.put(TARGET_COLLECTION, nodeNames);
-    this.createCollection(TARGET_COLLECTION);
-    this.waitForRecoveriesToFinish(TARGET_COLLECTION, true);
-    this.updateMappingsFromZk(TARGET_COLLECTION);
-  }
-
-  /**
-   * Clear the source collection. It will delete then create the collection through the collection API.
-   * The collection will have a new fresh index, i.e., including a new update log.
-   */
-  protected void clearTargetCollection() throws Exception {
-    this.deleteCollection(TARGET_COLLECTION);
-    this.waitForCollectionToDisappear(TARGET_COLLECTION);
     this.createCollection(TARGET_COLLECTION);
     this.waitForRecoveriesToFinish(TARGET_COLLECTION, true);
     this.updateMappingsFromZk(TARGET_COLLECTION);
@@ -490,17 +466,6 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
     }
 
     return res;
-  }
-
-  private void waitForCollectionToDisappear(String collection) throws Exception {
-    CloudSolrClient client = this.createCloudClient(null);
-    try {
-      client.connect();
-      ZkStateReader zkStateReader = client.getZkStateReader();
-      AbstractDistribZkTestBase.waitForCollectionToDisappear(collection, zkStateReader, true, 15);
-    } finally {
-      client.close();
-    }
   }
 
   private void waitForRecoveriesToFinish(String collection, boolean verbose) throws Exception {
@@ -611,7 +576,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
     this.waitForRecoveriesToFinish(temporaryCollection,zkStateReader, true);
     // delete the temporary collection - we will create our own collections later
     this.deleteCollection(temporaryCollection);
-    this.waitForCollectionToDisappear(temporaryCollection);
+    this.waitForCollectionToDisappear(temporaryCollection, zkStateReader);
     System.clearProperty("collection");
 
     return nodeNames;
