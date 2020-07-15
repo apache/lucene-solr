@@ -1057,6 +1057,8 @@
             <jvmarg line="@{additional.vm.args}"/>
             <jvmarg line="${tests.asserts.args}"/>
             <jvmarg line="${tests.runtimespecific.args}"/>
+            <jvmarg line=" -XX:+UseParallelGC"/>
+
 
             <!-- set the number of times tests should run -->
             <sysproperty key="tests.iters" value="${tests.iters}"/>

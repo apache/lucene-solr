@@ -75,7 +75,7 @@ allprojects {
         apc = Runtime.runtime.availableProcessors();
       }
 
-      jvmArgs Commandline.translateCommandline(propertyOrDefault("tests.jvmargs", "-XX:TieredStopAtLevel=1 -XX:-UseBiasedLocking -XX:ActiveProcessorCount=" + apc));
+      jvmArgs Commandline.translateCommandline(propertyOrDefault("tests.jvmargs", "-XX:TieredStopAtLevel=1 -XX:+UseParallelGC -XX:-UseBiasedLocking -XX:ActiveProcessorCount=" + apc));
 
       systemProperty 'java.util.logging.config.file', file("${commonDir}/tools/junit4/logging.properties")
       systemProperty 'java.awt.headless', 'true'
