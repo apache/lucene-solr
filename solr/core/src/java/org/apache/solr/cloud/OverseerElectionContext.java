@@ -44,7 +44,8 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
   @Override
   void runLeaderProcess(ElectionContext context, boolean weAreReplacement, int pauseBeforeStartMs) throws KeeperException,
           InterruptedException, IOException {
-    if (isClosed) {
+    if (isClosed || zkClient.isClosed()) {
+      log.info("Bailing on becoming leader, we are closed");
       return;
     }
 
