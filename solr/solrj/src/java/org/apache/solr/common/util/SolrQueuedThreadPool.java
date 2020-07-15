@@ -18,6 +18,7 @@ package org.apache.solr.common.util;
 
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -67,7 +68,11 @@ public class SolrQueuedThreadPool extends QueuedThreadPool implements Closeable 
 //    }
 
     public void close() {
+        TimeOut timeout = new TimeOut(5, TimeUnit.SECONDS, TimeSource.NANO_TIME);
         while (getBusyThreads() != 0) {
+            if (timeout.hasTimedOut()) {
+                throw new RuntimeException("Timed out waiting for SolrQueuedThreadPool to close");
+            }
             try {
                 synchronized (notify) {
                     notify.wait(500);
