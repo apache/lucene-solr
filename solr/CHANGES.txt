@@ -6,7 +6,7 @@ https://github.com/apache/lucene-solr/blob/master/solr/solr-ref-guide/src/solr-u
 
 ==================  9.0.0 ==================
 
-Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+Consult the lucene/CHANGES.txt file for additional, low level, changes in this release.
 
 Upgrade Notes
 ---------------------
@@ -104,7 +104,7 @@ Bug Fixes
 
 ==================  8.7.0 ==================
 
-Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+Consult the lucene/CHANGES.txt file for additional, low level, changes in this release.
 
 New Features
 ---------------------
@@ -154,7 +154,7 @@ Other Changes
 
 ==================  8.6.0 ==================
 
-Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+Consult the lucene/CHANGES.txt file for additional, low level, changes in this release.
 
 New Features
 ---------------------
