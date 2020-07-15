@@ -51,22 +51,6 @@ public class CloudConfigSetService extends ConfigSetService {
   public SolrResourceLoader createCoreResourceLoader(CoreDescriptor cd) {
     final String colName = cd.getCollectionName();
 
-    // For back compat with cores that can create collections without the collections API
-    try {
-      if (!zkController.getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + colName, true)) {
-        // TODO remove this functionality or maybe move to a CLI mechanism
-        log.warn("Auto-creating collection (in ZK) from core descriptor (on disk).  This feature may go away!");
-        if (!zkController.getCoreContainer().isShutDown()) {
-          CreateCollectionCmd.createCollectionZkNode(zkController.getSolrCloudManager().getDistribStateManager(), colName, cd.getCloudDescriptor().getParams(), null);
-        }
-      }
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "Interrupted auto-creating collection", e);
-    } catch (KeeperException e) {
-      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "Failure auto-creating collection", e);
-    }
-
     // The configSet is read from ZK and populated.  Ignore CD's pre-existing configSet; only populated in standalone
     final String configSetName;
     try {
