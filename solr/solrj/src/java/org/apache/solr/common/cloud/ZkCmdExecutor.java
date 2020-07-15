@@ -80,6 +80,10 @@ public class ZkCmdExecutor {
         if (tryCnt > 0 && isClosed()) {
           throw new AlreadyClosedException();
         }
+        if (timeout.hasTimedOut()) {
+          throw new RuntimeException("Timed out attempting zk call");
+        }
+
         return (T) operation.execute();
       } catch (KeeperException.ConnectionLossException e) {
         if (exception == null) {
@@ -91,15 +95,13 @@ public class ZkCmdExecutor {
         }
 
         if (timeout.hasTimedOut()) {
-          break;
+          throw new RuntimeException("Timed out attempting zk call");
         }
 
         retryDelay(tryCnt);
-
       }
       tryCnt++;
     }
-    throw exception;
   }
   
   private boolean isClosed() {
@@ -140,7 +142,7 @@ public class ZkCmdExecutor {
    *          the number of the attempts performed so far
    */
   protected void retryDelay(int attemptCount) throws InterruptedException {
-    long sleep = (attemptCount + 1) * retryDelay;
+    long sleep = retryDelay;
     log.info("delaying for retry, attempt={} retryDelay={} sleep={} timeout={}", attemptCount, retryDelay, sleep, timeoutms);
     Thread.sleep(sleep);
   }

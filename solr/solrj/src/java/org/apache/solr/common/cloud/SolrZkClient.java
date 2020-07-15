@@ -208,7 +208,7 @@ public class SolrZkClient implements Closeable {
 
     this.zkClientTimeout = zkClientTimeout;
     // we must retry at least as long as the session timeout
-    zkCmdExecutor = new ZkCmdExecutor(zkClientTimeout, new IsClosed() {
+    zkCmdExecutor = new ZkCmdExecutor(3000, new IsClosed() {
 
       @Override
       public boolean isClosed() {

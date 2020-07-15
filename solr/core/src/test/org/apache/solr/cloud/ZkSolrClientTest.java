@@ -214,7 +214,7 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
         timeout = random().nextInt(1000) + 500;
       }
       
-      ZkCmdExecutor zkCmdExecutor = new ZkCmdExecutor(timeout);
+      ZkCmdExecutor zkCmdExecutor = new ZkCmdExecutor(3000);
       final long start = System.nanoTime();
       expectThrows(KeeperException.SessionExpiredException.class, () -> {
         zkCmdExecutor.retryOperation(() -> {
@@ -339,7 +339,7 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
 
       zkClient.clean("/");
 
-      ZkCmdExecutor zkCmdExecutor = new ZkCmdExecutor(30000);
+      ZkCmdExecutor zkCmdExecutor = new ZkCmdExecutor(3000);
       expectThrows(KeeperException.NoNodeException.class,
           "We should not be able to create this path",
           () -> zkCmdExecutor.ensureExists("/collection/collection/leader", (byte[]) null, CreateMode.PERSISTENT, zkClient, 2));

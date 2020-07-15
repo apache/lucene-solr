@@ -356,7 +356,7 @@ public  class LeaderElector {
       // we use 2 param so that replica won't create /collection/{collection} if it doesn't exist
       ShardLeaderElectionContext slec = (ShardLeaderElectionContext) context;
 
-      ZkCmdExecutor zkCmdExecutor = new ZkCmdExecutor(zkClient.getZkClientTimeout());
+      ZkCmdExecutor zkCmdExecutor = new ZkCmdExecutor(3000);
       zkCmdExecutor.ensureExists(electZKPath, (byte[])null, CreateMode.PERSISTENT, zkClient, 2);
       zkCmdExecutor.ensureExists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + slec.collection + "/"
               + ZkStateReader.SHARD_LEADERS_ZKNODE + (slec.shardId != null ? ("/" + slec.shardId)
