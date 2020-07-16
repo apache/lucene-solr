@@ -629,7 +629,7 @@ public class ZkTestServer implements Closeable {
         chRootClient.printLayout();
       }
     } catch (Exception e) {
-      log.warn("Exception trying to print zk layout to log on shutdown", e);
+      ParWork.propegateInterrupt("Exception trying to print zk layout to log on shutdown", e);
     }
     if (chRootClient != null && zkServer != null) {
       writeZkMonitorFile();
@@ -637,7 +637,8 @@ public class ZkTestServer implements Closeable {
 
 
     try (ParWork worker = new ParWork(this, true)) {
-      worker.add("zkClients", timer, chRootClient, () -> {
+      worker.add("zkClients", timer, chRootClient);
+      worker.add("zkServer", () -> {
         if (zkServer != null) zkServer.shutdown();
         return zkServer;
       }, () -> {

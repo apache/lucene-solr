@@ -86,7 +86,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final int DEFAULT_TIMEOUT = 15;
-  private static SolrQueuedThreadPool qtp;
+  private static volatile SolrQueuedThreadPool qtp;
 
   private static class Config {
     final String name;
@@ -304,7 +304,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     }
     if (qtp != null) {
 
-      qtp.close();
+      qtp.stop();
       qtp = null;
     }
   }

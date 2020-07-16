@@ -305,7 +305,7 @@ public class JettySolrRunner implements Closeable {
     if (config.qtp != null) {
       qtp = config.qtp;
     } else {
-      qtp = new SolrQueuedThreadPool("JettySolrRunner qtp", false);
+      qtp = new SolrQueuedThreadPool("JettySolrRunner qtp");
       qtp.setMaxThreads(Integer.getInteger("solr.maxContainerThreads", THREAD_POOL_MAX_THREADS));
       qtp.setLowThreadsThreshold(Integer.getInteger("solr.lowContainerThreadsThreshold", -1)); // we don't use this or connections will get cut
       qtp.setMinThreads(Integer.getInteger("solr.minContainerThreads", 2));

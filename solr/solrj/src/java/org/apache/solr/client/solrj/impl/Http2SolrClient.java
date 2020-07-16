@@ -29,20 +29,15 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -60,6 +55,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.client.solrj.util.Constants;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
@@ -224,7 +220,10 @@ public class Http2SolrClient extends SolrClient {
       httpClient = new HttpClient(transport, sslContextFactory);
       httpClient.setMaxConnectionsPerDestination(4);
     }
-    httpClientExecutor = new SolrQueuedThreadPool("httpClient", false);
+    httpClientExecutor = new SolrQueuedThreadPool("httpClient");
+    httpClientExecutor.setMaxThreads(10);
+    httpClientExecutor.setMinThreads(1);
+    httpClient.setIdleTimeout(idleTimeout);
     try {
       httpClientExecutor.start();
       httpClient.setExecutor(httpClientExecutor);
@@ -238,6 +237,7 @@ public class Http2SolrClient extends SolrClient {
 
       httpClient.start();
     } catch (Exception e) {
+      close();
       throw new RuntimeException(e);
     }
     return httpClient;
@@ -823,7 +823,8 @@ public class Http2SolrClient extends SolrClient {
         try {
           available.acquire();
         } catch (InterruptedException ignored) {
-
+          ParWork.propegateInterrupt(ignored);
+          throw new AlreadyClosedException("Interrupted");
         }
       };
       completeListener = result -> {
