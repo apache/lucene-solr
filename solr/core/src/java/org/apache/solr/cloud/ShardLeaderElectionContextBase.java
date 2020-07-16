@@ -19,10 +19,11 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.ArrayList;
 
+// DO NOT SUBSTITUTE java nio Path here, see SOLR-13939
+import org.apache.hadoop.fs.Path;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -71,7 +72,8 @@ class ShardLeaderElectionContextBase extends ElectionContext {
     this.shardId = shardId;
     this.collection = collection;
 
-    String parent = Paths.get(leaderPath).getParent().toString();
+    // Fails on Windows if you use nio Paths.get here
+    String parent = new Path(leaderPath).getParent().toString();
     ZkCmdExecutor zcmd = new ZkCmdExecutor(30000);
     // only if /collections/{collection} exists already do we succeed in creating this path
     log.info("make sure parent is created {}", parent);
@@ -99,7 +101,8 @@ class ShardLeaderElectionContextBase extends ElectionContext {
           // version whenever a leader registers.
           log.debug("Removing leader registration node on cancel: {} {}", leaderPath, leaderZkNodeParentVersion);
           List<Op> ops = new ArrayList<>(2);
-          ops.add(Op.check(Paths.get(leaderPath).getParent().toString(), leaderZkNodeParentVersion));
+          // Fails on Windows if you use nio Paths.get here
+          ops.add(Op.check(new Path(leaderPath).getParent().toString(), leaderZkNodeParentVersion));
           ops.add(Op.delete(leaderPath, -1));
           zkClient.multi(ops, true);
         } catch (InterruptedException e) {
@@ -119,7 +122,8 @@ class ShardLeaderElectionContextBase extends ElectionContext {
       throws KeeperException, InterruptedException, IOException {
     // register as leader - if an ephemeral is already there, wait to see if it goes away
 
-    String parent = Paths.get(leaderPath).getParent().toString();
+    // Fails on Windows if you use nio Paths.get here
+    String parent = new Path(leaderPath).getParent().toString();
     try {
       RetryUtil.retryOnThrowable(NodeExistsException.class, 60000, 5000, () -> {
         synchronized (lock) {
