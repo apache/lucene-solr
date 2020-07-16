@@ -16,11 +16,12 @@ parent.iml
 *.ipr
 *.iws
 /*.iml
-/.project
-/.classpath
-/.settings
+.project
+.classpath
+.settings
 /.caches
 /prj.el
+bin
 /bin
 /bin.*
 pom.xml

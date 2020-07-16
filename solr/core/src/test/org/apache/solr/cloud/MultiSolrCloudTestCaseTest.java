@@ -27,7 +27,6 @@ public class MultiSolrCloudTestCaseTest extends MultiSolrCloudTestCase {
 
   private static int numShards;
   private static int numReplicas;
-  private static int maxShardsPerNode;
   private static int nodesPerCluster;
 
   @BeforeClass
@@ -47,8 +46,7 @@ public class MultiSolrCloudTestCaseTest extends MultiSolrCloudTestCase {
 
     numShards = 1+random().nextInt(2);
     numReplicas = 1+random().nextInt(2);
-    maxShardsPerNode = 1+random().nextInt(2);
-    nodesPerCluster = (numShards*numReplicas + (maxShardsPerNode-1))/maxShardsPerNode;
+    nodesPerCluster = numShards*numReplicas;
 
     doSetupClusters(
         clusterIds,
@@ -58,7 +56,7 @@ public class MultiSolrCloudTestCaseTest extends MultiSolrCloudTestCase {
             return nodesPerCluster;
           }
         },
-        new DefaultClusterInitFunction(numShards, numReplicas, maxShardsPerNode) {
+        new DefaultClusterInitFunction(numShards, numReplicas) {
           @Override
           public void accept(String clusterId, MiniSolrCloudCluster cluster) {
             for (final String collection : collections) {

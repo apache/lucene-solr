@@ -25,10 +25,7 @@ import java.util.concurrent.Callable;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.*;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -39,6 +36,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.request.beans.Package;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -46,6 +44,7 @@ import org.apache.solr.common.MapWriterMap;
 import org.apache.solr.common.NavigableObject;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.annotation.JsonProperty;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -137,7 +136,6 @@ public class TestPackages extends SolrCloudTestCase {
 
       CollectionAdminRequest
           .createCollection(COLLECTION_NAME, "conf", 2, 2)
-          .setMaxShardsPerNode(100)
           .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(COLLECTION_NAME, 2, 4);
 
@@ -641,6 +639,139 @@ public class TestPackages extends SolrCloudTestCase {
     public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
       return null;
     }
+  }
+
+  @SuppressWarnings("rawtypes")
+  public void testSchemaPlugins() throws Exception {
+    String COLLECTION_NAME = "testSchemaLoadingColl";
+    System.setProperty("managed.schema.mutable", "true");
+
+    MiniSolrCloudCluster cluster =
+            configureCluster(4)
+                    .withJettyConfig(jetty -> jetty.enableV2(true))
+                    .addConfig("conf", configset("cloud-managed"))
+                    .configure();
+    try {
+      String FILE1 = "/schemapkg/schema-plugins.jar";
+      byte[] derFile = readFile("cryptokeys/pub_key512.der");
+      uploadKey(derFile, PackageStoreAPI.KEYS_DIR+"/pub_key512.der", cluster);
+      postFileAndWait(cluster, "runtimecode/schema-plugins.jar.bin", FILE1,
+              "iSRhrogDyt9P1htmSf/krh1kx9oty3TYyWm4GKHQGlb8a+X4tKCe9kKk+3tGs+bU9zq5JBZ5txNXsn96aZem5A==");
+
+      Package.AddVersion add = new Package.AddVersion();
+      add.version = "1.0";
+      add.pkg = "schemapkg";
+      add.files = Arrays.asList(new String[]{FILE1});
+      V2Request req = new V2Request.Builder("/cluster/package")
+              .forceV2(true)
+              .withMethod(SolrRequest.METHOD.POST)
+              .withPayload(Collections.singletonMap("add", add))
+              .build();
+      req.process(cluster.getSolrClient());
+
+      TestDistribPackageStore.assertResponseValues(10,
+              () -> new V2Request.Builder("/cluster/package").
+                      withMethod(SolrRequest.METHOD.GET)
+                      .build().process(cluster.getSolrClient()),
+              Utils.makeMap(
+                      ":result:packages:schemapkg[0]:version", "1.0",
+                      ":result:packages:schemapkg[0]:files[0]", FILE1
+              ));
+
+      CollectionAdminRequest
+              .createCollection(COLLECTION_NAME, "conf", 2, 2)
+              .process(cluster.getSolrClient());
+      cluster.waitForActiveCollection(COLLECTION_NAME, 2, 4);
+
+      String addFieldTypeAnalyzerWithClass = "{\n" +
+              "'add-field-type' : {" +
+              "    'name' : 'myNewTextFieldWithAnalyzerClass',\n" +
+              "    'class':'schemapkg:my.pkg.MyTextField',\n" +
+              "    'analyzer' : {\n" +
+              "        'luceneMatchVersion':'5.0.0'" ;
+//          + ",\n" +
+//          "        'class':'schemapkg:my.pkg.MyWhitespaceAnalyzer'\n";
+      String charFilters =
+              "        'charFilters' : [{\n" +
+                      "            'class':'schemapkg:my.pkg.MyPatternReplaceCharFilterFactory',\n" +
+                      "            'replacement':'$1$1',\n" +
+                      "            'pattern':'([a-zA-Z])\\\\\\\\1+'\n" +
+                      "        }],\n";
+      String tokenizer =
+              "        'tokenizer' : { 'class':'schemapkg:my.pkg.MyWhitespaceTokenizerFactory' },\n";
+      String filters =
+              "        'filters' : [{ 'class':'solr.ASCIIFoldingFilterFactory' }]\n";
+      String suffix = "    }\n" +
+              "}}";
+      cluster.getSolrClient().request(new SolrRequest(SolrRequest.METHOD.POST, "/schema") {
+
+        @Override
+        public RequestWriter.ContentWriter getContentWriter(String expectedType) {
+          return new RequestWriter.StringPayloadContentWriter(addFieldTypeAnalyzerWithClass + ',' + charFilters + tokenizer + filters + suffix, CommonParams.JSON_MIME);
+        }
+
+        @Override
+        public SolrParams getParams() {
+          return null;
+        }
+
+        @Override
+        public String getCollection() {
+          return COLLECTION_NAME;
+        }
+
+        @Override
+        public SolrResponse createResponse(SolrClient client) {
+          return new SolrResponseBase();
+        }
+      });
+      verifySchemaComponent(cluster.getSolrClient(), COLLECTION_NAME, "/schema/fieldtypes/myNewTextFieldWithAnalyzerClass",
+              Utils.makeMap(":fieldType:analyzer:charFilters[0]:_packageinfo_:version" ,"1.0",
+                      ":fieldType:analyzer:tokenizer:_packageinfo_:version","1.0",
+                      ":fieldType:_packageinfo_:version","1.0"));
+
+      add = new Package.AddVersion();
+      add.version = "2.0";
+      add.pkg = "schemapkg";
+      add.files = Arrays.asList(new String[]{FILE1});
+      req = new V2Request.Builder("/cluster/package")
+              .forceV2(true)
+              .withMethod(SolrRequest.METHOD.POST)
+              .withPayload(Collections.singletonMap("add", add))
+              .build();
+      req.process(cluster.getSolrClient());
+
+      TestDistribPackageStore.assertResponseValues(10,
+              () -> new V2Request.Builder("/cluster/package").
+                      withMethod(SolrRequest.METHOD.GET)
+                      .build().process(cluster.getSolrClient()),
+              Utils.makeMap(
+                      ":result:packages:schemapkg[0]:version", "2.0",
+                      ":result:packages:schemapkg[0]:files[0]", FILE1
+              ));
+
+      verifySchemaComponent(cluster.getSolrClient(), COLLECTION_NAME, "/schema/fieldtypes/myNewTextFieldWithAnalyzerClass",
+              Utils.makeMap(":fieldType:analyzer:charFilters[0]:_packageinfo_:version" ,"2.0",
+                      ":fieldType:analyzer:tokenizer:_packageinfo_:version","2.0",
+                      ":fieldType:_packageinfo_:version","2.0"));
+
+    } finally {
+      cluster.shutdown();
+    }
+
+  }
+  @SuppressWarnings({"rawtypes","unchecked"})
+  private void verifySchemaComponent(SolrClient client, String COLLECTION_NAME, String path,
+                                     Map expected) throws Exception {
+    SolrParams params = new MapSolrParams((Map) Utils.makeMap("collection", COLLECTION_NAME,
+            WT, JAVABIN,
+            "meta", "true"));
+
+    GenericSolrRequest req = new GenericSolrRequest(SolrRequest.METHOD.GET,path
+            , params);
+    TestDistribPackageStore.assertResponseValues(10,
+            client,
+            req, expected);
   }
 
   public static void postFileAndWait(MiniSolrCloudCluster cluster, String fname, String path, String sig) throws Exception {

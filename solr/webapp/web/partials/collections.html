@@ -49,9 +49,6 @@ limitations under the License.
             </select>
           </p>
 
-          <p class="clearfix"><label for="add_maxShardsPerNode">maxShardsPerNode:</label>
-            <input type="text" name="replicationFactor" id="add_maxShardsPerNode" ng-model="newCollection.maxShardsPerNode"></p>
-
           <p class="clearfix"><label for="add_shards">shards:</label>
             <input type="text" name="shards" id="add_shards" ng-model="newCollection.shards"></p>
 
@@ -212,11 +209,6 @@ limitations under the License.
             <li><dl class="clearfix">
               <dt><span>replicationFactor:</span></dt>
                 <dd>{{collection.replicationFactor}}</dd>
-            </dl></li>
-
-            <li><dl class="clearfix">
-              <dt><span>maxShardsPerNode:</span></dt>
-                <dd>{{collection.maxShardsPerNode}}</dd>
             </dl></li>
 
             <li><dl class="clearfix">

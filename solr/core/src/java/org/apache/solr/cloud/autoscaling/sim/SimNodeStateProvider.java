@@ -35,7 +35,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
-import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
@@ -291,14 +291,14 @@ public class SimNodeStateProvider implements NodeStateProvider {
       String collection = m.group(1);
       String shard = m.group(2);
       String replica = m.group(3);
-      List<ReplicaInfo> replicas = clusterStateProvider.simGetReplicaInfos(collection, shard);
+      List<Replica> replicas = clusterStateProvider.simGetReplicaInfos(collection, shard);
       replicas.forEach(r -> {
-        if (r.getNode().equals(node) && r.getCore().endsWith(replica)) {
-          Object value = r.getVariables().get(key);
+        if (r.getNodeName().equals(node) && r.getCoreName().endsWith(replica)) {
+          Object value = r.getProperties().get(key);
           if (value != null) {
             values.put(tag, value);
           } else {
-            value = r.getVariables().get(tag);
+            value = r.getProperties().get(tag);
             if (value != null) {
               values.put(tag, value);
             }
@@ -334,18 +334,18 @@ public class SimNodeStateProvider implements NodeStateProvider {
   }
 
   @Override
-  public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
-    List<ReplicaInfo> replicas = clusterStateProvider.simGetReplicaInfos(node);
+  public Map<String, Map<String, List<Replica>>> getReplicaInfo(String node, Collection<String> keys) {
+    List<Replica> replicas = clusterStateProvider.simGetReplicaInfos(node);
     if (replicas == null || replicas.isEmpty()) {
       return new HashMap<>();
     }
-    Map<String, Map<String, List<ReplicaInfo>>> res = new HashMap<>();
+    Map<String, Map<String, List<Replica>>> res = new HashMap<>();
     // TODO: probably needs special treatment for "metrics:solr.core..." tags
-    for (ReplicaInfo r : replicas) {
+    for (Replica r : replicas) {
       @SuppressWarnings({"unchecked"})
-      Map<String, List<ReplicaInfo>> perCollection = res.computeIfAbsent(r.getCollection(), Utils.NEW_HASHMAP_FUN);
+      Map<String, List<Replica>> perCollection = res.computeIfAbsent(r.getCollection(), Utils.NEW_HASHMAP_FUN);
       @SuppressWarnings({"unchecked"})
-      List<ReplicaInfo> perShard = perCollection.computeIfAbsent(r.getShard(), Utils.NEW_ARRAYLIST_FUN);
+      List<Replica> perShard = perCollection.computeIfAbsent(r.getShard(), Utils.NEW_ARRAYLIST_FUN);
       // XXX filter out some properties?
       perShard.add(r);
     }

@@ -21,7 +21,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -287,7 +286,6 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection("testNodeWithMultipleReplicasLost",
         "conf", 2, 3);
-    create.setMaxShardsPerNode(2);
     create.process(solrClient);
     
     cluster.waitForActiveCollection("testNodeWithMultipleReplicasLost", 2, 6);
@@ -372,7 +370,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     assertEquals(response.get("result").toString(), "success");
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection("testNodeAdded",
-        "conf",1, 2).setMaxShardsPerNode(2);
+        "conf",1, 2);
     create.process(solrClient);
 
     waitForState("Timed out waiting for replicas of new collection to be active",
@@ -541,7 +539,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     NodeStateProvider stateProvider = cloudManager.getNodeStateProvider();
     List<String> nodes = new ArrayList<>();
     cloudManager.getClusterStateProvider().getLiveNodes().forEach(n -> {
-      Map<String, Map<String, List<ReplicaInfo>>> map = stateProvider.getReplicaInfo(n, ImplicitSnitch.tags);
+      Map<String, Map<String, List<Replica>>> map = stateProvider.getReplicaInfo(n, ImplicitSnitch.tags);
       if (map.containsKey("testSelected3") && map.containsKey("testSelected2") && map.containsKey("testSelected1")) {
         nodes.add(n);
       }
@@ -666,7 +664,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
 
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionNamePrefix + "_0",
-        "conf", numShards, nNrtReplicas, nTlogReplicas, nPullReplicas).setMaxShardsPerNode(2);
+        "conf", numShards, nNrtReplicas, nTlogReplicas, nPullReplicas);
     create.process(solrClient);
 
     waitForState("Timed out waiting for replicas of new collection to be active",
@@ -695,7 +693,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
 
     for (int i = 1; i < numCollections; i++) {
       create = CollectionAdminRequest.createCollection(collectionNamePrefix + "_" + i,
-          "conf", numShards, 2).setMaxShardsPerNode(numShards * 2);
+          "conf", numShards, 2);
       create.process(solrClient);
 
       waitForState("Timed out waiting for replicas of new collection to be active",
@@ -767,7 +765,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     String newNodeName = newNode.getNodeName();
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionNamePrefix + "_0",
-        "conf", numShards, 2).setMaxShardsPerNode(numShards * 2);
+        "conf", numShards, 2);
     create.process(solrClient);
 
     waitForState("Timed out waiting for replicas of new collection to be active",

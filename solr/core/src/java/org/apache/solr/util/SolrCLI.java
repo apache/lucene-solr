@@ -100,7 +100,6 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
-import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
 import org.apache.solr.client.solrj.cloud.autoscaling.Variable;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -1171,14 +1170,14 @@ public class SolrCLI implements CLIO {
           }
           Map<String, Object> paramsMap = new LinkedHashMap<>();
           params.toMap(paramsMap);
-          ReplicaInfo info = simCloudManager.getSimClusterStateProvider().simGetReplicaInfo(
+          Replica info = simCloudManager.getSimClusterStateProvider().simGetReplicaInfo(
               params.get(CollectionAdminParams.COLLECTION), params.get("replica"));
           if (info == null) {
             CLIO.err("Could not find ReplicaInfo for params: " + params);
           } else if (verbose) {
             paramsMap.put("replicaInfo", info);
-          } else if (info.getVariable(Variable.Type.CORE_IDX.tagName) != null) {
-            paramsMap.put(Variable.Type.CORE_IDX.tagName, info.getVariable(Variable.Type.CORE_IDX.tagName));
+          } else if (info.get(Variable.Type.CORE_IDX.tagName) != null) {
+            paramsMap.put(Variable.Type.CORE_IDX.tagName, info.get(Variable.Type.CORE_IDX.tagName));
           }
           if (withSuggestions) {
             perStepOps.add(paramsMap);
@@ -1726,12 +1725,6 @@ public class SolrCLI implements CLIO {
           .required(false)
           .desc("Number of copies of each document across the collection (replicas per shard); default is 1")
           .build(),
-      Option.builder("maxShardsPerNode")
-          .argName("#")
-          .hasArg()
-          .required(false)
-          .desc("Maximum number of shards per Solr node; default is determined based on the number of shards, replication factor, and live nodes.")
-          .build(),
       Option.builder("confdir")
           .argName("NAME")
           .hasArg()
@@ -1922,11 +1915,6 @@ public class SolrCLI implements CLIO {
       // build a URL to create the collection
       int numShards = optionAsInt(cli, "shards", 1);
       int replicationFactor = optionAsInt(cli, "replicationFactor", 1);
-      int maxShardsPerNode = -1;
-
-      if (cli.hasOption("maxShardsPerNode")) {
-        maxShardsPerNode = Integer.parseInt(cli.getOptionValue("maxShardsPerNode"));
-      }
 
       String confname = cli.getOptionValue("confname");
       String confdir = cli.getOptionValue("confdir");
@@ -1962,12 +1950,11 @@ public class SolrCLI implements CLIO {
       // doesn't seem to exist ... try to create
       String createCollectionUrl =
           String.format(Locale.ROOT,
-              "%s/admin/collections?action=CREATE&name=%s&numShards=%d&replicationFactor=%d&maxShardsPerNode=%d",
+              "%s/admin/collections?action=CREATE&name=%s&numShards=%d&replicationFactor=%d",
               baseUrl,
               collectionName,
               numShards,
-              replicationFactor,
-              maxShardsPerNode);
+              replicationFactor);
       if (confname != null && !"".equals(confname.trim())) {
         createCollectionUrl = createCollectionUrl + String.format(Locale.ROOT, "&collection.configName=%s", confname);
       }

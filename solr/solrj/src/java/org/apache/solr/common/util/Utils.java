@@ -24,8 +24,8 @@ import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.StringReader;
 import java.io.Writer;
+import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
-import java.lang.invoke.VarHandle;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.net.URL;
@@ -830,13 +830,14 @@ public class Utils {
     List<FieldWriter> fieldWriters = null;
     try {
       fieldWriters = getReflectData(o.getClass());
-    } catch (Exception e) {
+    } catch (IllegalAccessException e) {
       throw new RuntimeException(e);
     }
     for (FieldWriter fieldWriter : fieldWriters) {
       try {
         fieldWriter.write(ew, o);
-      } catch (IllegalAccessException e) {
+      } catch( Throwable e) {
+        throw new RuntimeException(e);
         //should not happen
       }
     }
@@ -857,19 +858,29 @@ public class Utils {
         int modifiers = field.getModifiers();
         if (Modifier.isPublic(modifiers) && !Modifier.isStatic(modifiers)) {
           String fname = prop.value().isEmpty() ? field.getName() : prop.value();
-          final VarHandle vhandle = lookup.unreflectVarHandle(field);
-          if (field.getType() == int.class) {
-            l.add((ew, inst) -> ew.put(fname, (int) vhandle.get(inst)));
-          } else if (field.getType() == long.class) {
-            l.add((ew, inst) -> ew.put(fname, (long) vhandle.get(inst)));
-          } else if (field.getType() == boolean.class) {
-            l.add((ew, inst) -> ew.put(fname, (boolean) vhandle.get(inst)));
-          } else if (field.getType() == double.class) {
-            l.add((ew, inst) -> ew.put(fname, (double) vhandle.get(inst)));
-          } else if (field.getType() == float.class) {
-            l.add((ew, inst) -> ew.put(fname, (float) vhandle.get(inst)));
-          } else {
-            l.add((ew, inst) -> ew.put(fname, vhandle.get(inst)));
+          try {
+            if (field.getType() == int.class) {
+              MethodHandle mh = lookup.findGetter(c, field.getName(), int.class);
+              l.add((ew, inst) -> ew.put(fname, (int) mh.invoke(inst)));
+            } else if (field.getType() == long.class) {
+              MethodHandle mh = lookup.findGetter(c, field.getName(), long.class);
+              l.add((ew, inst) -> ew.put(fname, (long) mh.invoke(inst)));
+            } else if (field.getType() == boolean.class) {
+              MethodHandle mh = lookup.findGetter(c, field.getName(), boolean.class);
+              l.add((ew, inst) -> ew.put(fname, (boolean) mh.invoke(inst)));
+            } else if (field.getType() == double.class) {
+              MethodHandle mh = lookup.findGetter(c, field.getName(), double.class);
+              l.add((ew, inst) -> ew.put(fname, (double) mh.invoke(inst)));
+            } else if (field.getType() == float.class) {
+              MethodHandle mh = lookup.findGetter(c, field.getName(), float.class);
+              l.add((ew, inst) -> ew.put(fname, (float) mh.invoke(inst)));
+            } else {
+              MethodHandle mh = lookup.findGetter(c, field.getName(), field.getType());
+              l.add((ew, inst) -> ew.put(fname, mh.invoke(inst)));
+            }
+          } catch (NoSuchFieldException e) {
+            //this is unlikely
+            throw new RuntimeException(e);
           }
         }}
 
@@ -883,10 +894,10 @@ public class Utils {
 
 
   @SuppressWarnings("rawtypes")
-  static Map<Class, List<FieldWriter>> storedReflectData =   new ConcurrentHashMap<>();
+  private static Map<Class, List<FieldWriter>> storedReflectData =   new ConcurrentHashMap<>();
 
   interface FieldWriter {
-    void write(MapWriter.EntryWriter ew, Object inst) throws IllegalAccessException, IOException;
+    void write(MapWriter.EntryWriter ew, Object inst) throws Throwable;
   }
 
 }

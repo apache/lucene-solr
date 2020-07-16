@@ -302,7 +302,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     return tupleStream;
   }
 
-  protected void identifyLowestSortingUnexportedDocs(List<LeafReaderContext> leaves, SortDoc sortDoc, SortQueue queue) throws IOException {
+  private void identifyLowestSortingUnexportedDocs(List<LeafReaderContext> leaves, SortDoc sortDoc, SortQueue queue) throws IOException {
     Timer.Context timerContext = identifyLowestSortingDocTimer.time();
     try {
       queue.reset();
@@ -324,7 +324,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     }
   }
 
-  protected void transferBatchToBufferForOutput(SortQueue queue,
+  private void transferBatchToBufferForOutput(SortQueue queue,
                                                 List<LeafReaderContext> leaves,
                                                 ExportBuffers.Buffer destination) throws IOException {
     Timer.Context timerContext = transferBatchToBufferTimer.time();

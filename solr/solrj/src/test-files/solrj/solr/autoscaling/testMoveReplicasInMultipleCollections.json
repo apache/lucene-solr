@@ -38,7 +38,6 @@
             "type":"NRT"}}}},
     "router":{
       "name":"compositeId"},
-    "maxShardsPerNode":"2",
     "autoAddReplicas":"true",
     "nrtReplicas":"2",
     "tlogReplicas":"0"},
@@ -82,7 +81,6 @@
             "leader":"true"}}}},
     "router":{
       "name":"compositeId"},
-    "maxShardsPerNode":"2",
     "autoAddReplicas":"true",
     "nrtReplicas":"2",
     "tlogReplicas":"0"}}

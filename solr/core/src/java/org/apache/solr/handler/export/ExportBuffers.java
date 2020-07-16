@@ -240,7 +240,10 @@ class ExportBuffers {
     }
   }
 
-  public static final class Buffer {
+  /**
+   * Buffer used for transporting documents from the filler to the writer thread.
+   */
+  static final class Buffer {
     static final int EMPTY = -1;
     static final int NO_MORE_DOCS = -2;
 

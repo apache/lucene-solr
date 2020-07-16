@@ -176,7 +176,7 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
     }
 
     try (CloudSolrClient client = createCloudClient("collection1")) {
-        createCollection(null, "testcollection", 1, 1, 1, client, null, "conf1");
+        createCollection(null, "testcollection", 1, 1, client, null, "conf1");
 
     }
     List<Integer> numShardsNumReplicas = new ArrayList<>(2);

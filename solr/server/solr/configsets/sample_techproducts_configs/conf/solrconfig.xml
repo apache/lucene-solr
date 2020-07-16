@@ -774,7 +774,7 @@
          -->
        <!-- Controls the distribution of a query to shards other than itself.
             Consider making 'preferLocalShards' true when:
-              1) maxShardsPerNode > 1
+              1) more than 1 replica may be located on a node
               2) Number of shards > 1
               3) CloudSolrClient or LbHttpSolrServer is used by clients.
             Without this option, every core broadcasts the distributed query to

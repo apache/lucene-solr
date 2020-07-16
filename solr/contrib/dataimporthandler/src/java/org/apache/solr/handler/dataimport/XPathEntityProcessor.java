@@ -184,8 +184,7 @@ public class XPathEntityProcessor extends EntityProcessorBase {
       }
     }
     String url = context.getEntityAttribute(URL);
-    @SuppressWarnings({"unchecked"})
-    List<String> l = url == null ? Collections.EMPTY_LIST : resolver.getVariables(url);
+    List<String> l = url == null ? Collections.emptyList() : resolver.getVariables(url);
     for (String s : l) {
       if (s.startsWith(entityName + ".")) {
         if (placeHolderVariables == null)

@@ -38,7 +38,6 @@ import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
@@ -55,7 +54,7 @@ public class Row implements MapWriter {
   public final String node;
   final Cell[] cells;
   //this holds the details of each replica in the node
-  public Map<String, Map<String, List<ReplicaInfo>>> collectionVsShardVsReplicas;
+  public Map<String, Map<String, List<Replica>>> collectionVsShardVsReplicas;
 
   boolean anyValueMissing = false;
   boolean isLive = true;
@@ -130,7 +129,7 @@ public class Row implements MapWriter {
   }
 
 
-  public void forEachShard(String collection, BiConsumer<String, List<ReplicaInfo>> consumer) {
+  public void forEachShard(String collection, BiConsumer<String, List<Replica>> consumer) {
     collectionVsShardVsReplicas
         .getOrDefault(collection, Collections.emptyMap())
         .forEach(consumer);
@@ -172,7 +171,7 @@ public class Row implements MapWriter {
 
   public Row(String node, Cell[] cells, boolean anyValueMissing,
              @SuppressWarnings({"rawtypes"}) Map<String,
-                     Map<String, List<ReplicaInfo>>> collectionVsShardVsReplicas, boolean isLive, Policy.Session session,
+                     Map<String, List<Replica>>> collectionVsShardVsReplicas, boolean isLive, Policy.Session session,
              @SuppressWarnings({"rawtypes"}) Map perRowCache,
              @SuppressWarnings({"rawtypes"})Map globalCache) {
     this.session = session;
@@ -251,11 +250,11 @@ public class Row implements MapWriter {
     row = session.copy().getNode(this.node);
     if (row == null) throw new RuntimeException("couldn't get a row");
     row.lazyCopyReplicas(coll, shard);
-    Map<String, List<ReplicaInfo>> c = row.collectionVsShardVsReplicas.computeIfAbsent(coll, k -> new HashMap<>());
-    List<ReplicaInfo> replicas = c.computeIfAbsent(shard, k -> new ArrayList<>());
+    Map<String, List<Replica>> c = row.collectionVsShardVsReplicas.computeIfAbsent(coll, k -> new HashMap<>());
+    List<Replica> replicas = c.computeIfAbsent(shard, k -> new ArrayList<>());
     String replicaname = "SYNTHETIC." + new Random().nextInt(1000) + 1000;
-    ReplicaInfo ri = new ReplicaInfo(replicaname, replicaname, coll, shard, type, this.node,
-        Utils.makeMap(ZkStateReader.REPLICA_TYPE, type != null ? type.toString() : Replica.Type.NRT.toString()));
+    Replica ri = new Replica(replicaname, this.node, coll, shard, replicaname,
+        Replica.State.ACTIVE, type != null ? type : Replica.Type.NRT, Collections.emptyMap());
     replicas.add(ri);
     for (Cell cell : row.cells) {
       cell.type.projectAddReplica(cell, ri, opCollector, strictMode);
@@ -281,8 +280,8 @@ public class Row implements MapWriter {
     perCollCache = cacheCopy;
     if (isAlreadyCopied) return;//caches need to be invalidated but the rest can remain as is
 
-    Map<String, Map<String, List<ReplicaInfo>>> replicasCopy = new HashMap<>(collectionVsShardVsReplicas);
-    Map<String, List<ReplicaInfo>> oneColl = replicasCopy.get(coll);
+    Map<String, Map<String, List<Replica>>> replicasCopy = new HashMap<>(collectionVsShardVsReplicas);
+    Map<String, List<Replica>> oneColl = replicasCopy.get(coll);
     if (oneColl != null) {
       replicasCopy.put(coll, Utils.getDeepCopy(oneColl, 2));
     }
@@ -296,7 +295,7 @@ public class Row implements MapWriter {
 
   @SuppressWarnings({"unchecked"})
   public void createCollShard(Pair<String, String> collShard) {
-    Map<String, List<ReplicaInfo>> shardInfo = collectionVsShardVsReplicas.computeIfAbsent(collShard.first(), Utils.NEW_HASHMAP_FUN);
+    Map<String, List<Replica>> shardInfo = collectionVsShardVsReplicas.computeIfAbsent(collShard.first(), Utils.NEW_HASHMAP_FUN);
     if (collShard.second() != null) shardInfo.computeIfAbsent(collShard.second(), Utils.NEW_ARRAYLIST_FUN);
   }
 
@@ -318,14 +317,14 @@ public class Row implements MapWriter {
   }
 
 
-  public ReplicaInfo getReplica(String coll, String shard, Replica.Type type) {
-    Map<String, List<ReplicaInfo>> c = collectionVsShardVsReplicas.get(coll);
+  public Replica getReplica(String coll, String shard, Replica.Type type) {
+    Map<String, List<Replica>> c = collectionVsShardVsReplicas.get(coll);
     if (c == null) return null;
-    List<ReplicaInfo> r = c.get(shard);
+    List<Replica> r = c.get(shard);
     if (r == null) return null;
     int idx = -1;
     for (int i = 0; i < r.size(); i++) {
-      ReplicaInfo info = r.get(i);
+      Replica info = r.get(i);
       if (type == null || info.getType() == type) {
         idx = i;
         break;
@@ -350,20 +349,20 @@ public class Row implements MapWriter {
     Consumer<OperationInfo> opCollector = it -> furtherOps.add(it);
     Row row = session.copy().getNode(this.node);
     row.lazyCopyReplicas(coll, shard);
-    Map<String, List<ReplicaInfo>> c = row.collectionVsShardVsReplicas.get(coll);
+    Map<String, List<Replica>> c = row.collectionVsShardVsReplicas.get(coll);
     if (c == null) return null;
-    List<ReplicaInfo> r = c.get(shard);
+    List<Replica> r = c.get(shard);
     if (r == null) return null;
     int idx = -1;
     for (int i = 0; i < r.size(); i++) {
-      ReplicaInfo info = r.get(i);
+      Replica info = r.get(i);
       if (type == null || info.getType() == type) {
         idx = i;
         break;
       }
     }
     if (idx == -1) return null;
-    ReplicaInfo removed = r.remove(idx);
+    Replica removed = r.remove(idx);
     for (Cell cell : row.cells) {
       cell.type.projectRemoveReplica(cell, removed, opCollector);
     }
@@ -379,23 +378,23 @@ public class Row implements MapWriter {
     return isLive;
   }
 
-  public void forEachReplica(Consumer<ReplicaInfo> consumer) {
+  public void forEachReplica(Consumer<Replica> consumer) {
     forEachReplica(collectionVsShardVsReplicas, consumer);
   }
 
-  public void forEachReplica(String coll, Consumer<ReplicaInfo> consumer) {
+  public void forEachReplica(String coll, Consumer<Replica> consumer) {
     collectionVsShardVsReplicas.getOrDefault(coll, Collections.emptyMap()).forEach((shard, replicaInfos) -> {
-      for (ReplicaInfo replicaInfo : replicaInfos) {
+      for (Replica replicaInfo : replicaInfos) {
         consumer.accept(replicaInfo);
       }
     });
   }
 
-  public static void forEachReplica(Map<String, Map<String, List<ReplicaInfo>>> collectionVsShardVsReplicas, Consumer<ReplicaInfo> consumer) {
+  public static void forEachReplica(Map<String, Map<String, List<Replica>>> collectionVsShardVsReplicas, Consumer<Replica> consumer) {
     collectionVsShardVsReplicas.forEach((coll, shardVsReplicas) -> shardVsReplicas
         .forEach((shard, replicaInfos) -> {
           for (int i = 0; i < replicaInfos.size(); i++) {
-            ReplicaInfo r = replicaInfos.get(i);
+            Replica r = replicaInfos.get(i);
             consumer.accept(r);
           }
         }));

@@ -32,7 +32,6 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
-import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.Row;
 import org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -105,8 +104,8 @@ public class TestSimPolicyCloud extends SimSolrCloudTestCase {
     AtomicInteger count = new AtomicInteger(0);
     for (Row row : session.getSortedNodes()) {
       row.collectionVsShardVsReplicas.forEach((c, shardVsReplicas) -> shardVsReplicas.forEach((s, replicaInfos) -> {
-        for (ReplicaInfo replicaInfo : replicaInfos) {
-          if (replicaInfo.getVariables().containsKey(Type.CORE_IDX.tagName)) count.incrementAndGet();
+        for (Replica replicaInfo : replicaInfos) {
+          if (replicaInfo.getProperties().containsKey(Type.CORE_IDX.tagName)) count.incrementAndGet();
         }
       }));
     }
@@ -269,7 +268,6 @@ public class TestSimPolicyCloud extends SimSolrCloudTestCase {
         Utils.getObjectByPath(json, true, "cluster-policy[2]/port"));
 
     CollectionAdminRequest.createCollectionWithImplicitRouter("policiesTest", "conf", "s1", 1, 1, 1)
-        .setMaxShardsPerNode(-1)
         .process(solrClient);
     CloudUtil.waitForState(cluster, "Timeout waiting for collection to become active", "policiesTest",
         CloudUtil.clusterShape(1, 3, false, true));

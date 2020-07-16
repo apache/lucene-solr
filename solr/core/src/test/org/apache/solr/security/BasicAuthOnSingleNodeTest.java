@@ -41,7 +41,6 @@ public class BasicAuthOnSingleNodeTest extends SolrCloudAuthTestCase {
         .withSecurityJson(STD_CONF)
         .configure();
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 4, 1)
-        .setMaxShardsPerNode(100)
         .setBasicAuthCredentials("solr", "solr")
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION, 4, 4);

@@ -31,7 +31,6 @@ import com.google.common.util.concurrent.AtomicDouble;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
-import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -243,13 +242,13 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
     assertNotNull("nodeRates", nodeRates);
     // no node violations because node rates weren't set in the config
     assertTrue(nodeRates.toString(), nodeRates.isEmpty());
-    List<ReplicaInfo> replicaRates = (List<ReplicaInfo>) ev.event.getProperties().get(SearchRateTrigger.HOT_REPLICAS);
+    List<Replica> replicaRates = (List<Replica>) ev.event.getProperties().get(SearchRateTrigger.HOT_REPLICAS);
     assertNotNull("replicaRates", replicaRates);
     assertTrue(replicaRates.toString(), replicaRates.size() > 0);
     AtomicDouble totalReplicaRate = new AtomicDouble();
     replicaRates.forEach(r -> {
-      assertTrue(r.toString(), r.getVariable("rate") != null);
-      totalReplicaRate.addAndGet((Double) r.getVariable("rate"));
+      assertTrue(r.toString(), r.get("rate") != null);
+      totalReplicaRate.addAndGet((Double) r.get("rate"));
     });
     Map<String, Object> shardRates = (Map<String, Object>) ev.event.getProperties().get(SearchRateTrigger.HOT_SHARDS);
     assertNotNull("shardRates", shardRates);

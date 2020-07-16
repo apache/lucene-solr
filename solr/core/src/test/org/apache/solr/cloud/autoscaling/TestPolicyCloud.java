@@ -36,7 +36,6 @@ import org.apache.solr.client.solrj.cloud.DistributedQueueFactory;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
-import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.Row;
 import org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -157,9 +156,9 @@ public class TestPolicyCloud extends SolrCloudTestCase {
     try (SolrCloudManager cloudManager = new SolrClientCloudManager(new ZkDistributedQueueFactory(cluster.getZkClient()), cluster.getSolrClient())) {
       String nodeName = cloudManager.getClusterStateProvider().getLiveNodes().iterator().next();
       SolrClientNodeStateProvider nodeStateProvider = (SolrClientNodeStateProvider) cloudManager.getNodeStateProvider();
-      Map<String, Map<String, List<ReplicaInfo>>> result = nodeStateProvider.getReplicaInfo(nodeName, Collections.singleton("UPDATE./update.requests"));
+      Map<String, Map<String, List<Replica>>> result = nodeStateProvider.getReplicaInfo(nodeName, Collections.singleton("UPDATE./update.requests"));
       nodeStateProvider.forEachReplica(nodeName, replicaInfo -> {
-        if (replicaInfo.getVariables().containsKey("UPDATE./update.requests")) count.incrementAndGet();
+        if (replicaInfo.getProperties().containsKey("UPDATE./update.requests")) count.incrementAndGet();
       });
       assertTrue(count.get() > 0);
 
@@ -177,8 +176,8 @@ public class TestPolicyCloud extends SolrCloudTestCase {
       count .set(0);
       for (Row row : session.getSortedNodes()) {
         row.collectionVsShardVsReplicas.forEach((c, shardVsReplicas) -> shardVsReplicas.forEach((s, replicaInfos) -> {
-          for (ReplicaInfo replicaInfo : replicaInfos) {
-            if (replicaInfo.getVariables().containsKey(Type.CORE_IDX.tagName)) count.incrementAndGet();
+          for (Replica replicaInfo : replicaInfos) {
+            if (replicaInfo.getProperties().containsKey(Type.CORE_IDX.tagName)) count.incrementAndGet();
           }
         }));
       }
@@ -424,7 +423,6 @@ public class TestPolicyCloud extends SolrCloudTestCase {
 
     final String collectionName = "addshard_with_reptype_using_policy";
     CollectionAdminRequest.createCollectionWithImplicitRouter(collectionName, "conf", "s1", 1, 1, 1)
-        .setMaxShardsPerNode(-1)
         .process(cluster.getSolrClient());
     
     cluster.waitForActiveCollection(collectionName, 1, 3);

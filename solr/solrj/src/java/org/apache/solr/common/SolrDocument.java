@@ -407,6 +407,8 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument> impleme
    }
 
   @Override
+  
+  @Deprecated
   public int getChildDocumentCount() {
     if (_childDocuments == null) return 0;
     return _childDocuments.size();

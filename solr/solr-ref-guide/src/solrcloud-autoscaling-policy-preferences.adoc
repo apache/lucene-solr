@@ -430,8 +430,6 @@ When a collection-specific policy is used, the rules in that policy are *appende
 
 It is possible to override rules specified in the cluster policy using collection-specific policy. For example, if a rule `{replica:'<3', node:'#ANY'}` is present in the cluster policy and the collection-specific policy has a rule `{replica:'<4', node:'#ANY'}`, the cluster policy is ignored in favor of the collection policy.
 
-Also, if `maxShardsPerNode` is specified during the time of collection creation, then both `maxShardsPerNode` and the policy rules must be satisfied.
-
 Some attributes such as `cores` can only be used in the cluster policy. See the section <<Policy Rule Attributes>> for details.
 
 To create a new named policy, use the <<solrcloud-autoscaling-api.adoc#create-and-modify-collection-specific-policy,`set-policy` API>>.  Once you have a named policy, you can specify the `policy=<policy_name>` parameter to the CREATE command of the Collection API:
@@ -577,7 +575,7 @@ Example scenario testing the behavior of `.autoAddReplicas` trigger:
 create_cluster numNodes=2 // inline comment
 // load autoscaling config from a JSON string. Notice that the value must be URL-encoded
 load_autoscaling json={'cluster-policy'+:+[{'replica'+:+'<3',+'shard'+:+'#EACH',+'collection'+:+'testCollection','node':'#ANY'}]}&defaultWaitFor=10
-solr_request /admin/collections?action=CREATE&autoAddReplicas=true&name=testCollection&numShards=2&replicationFactor=2&maxShardsPerNode=2
+solr_request /admin/collections?action=CREATE&autoAddReplicas=true&name=testCollection&numShards=2&replicationFactor=2
 wait_collection collection=testCollection&shards=2&replicas=2
 // prepare a listener for trigger events and the processing state SUCCEEDED
 event_listener trigger=.auto_add_replicas&stage=SUCCEEDED
@@ -596,7 +594,7 @@ Example scenario testing the behavior of `indexSize` trigger. Notice the use of 
 [source,text]
 ----
 create_cluster numNodes=100
-solr_request /admin/collections?action=CREATE&autoAddReplicas=true&name=testCollection&numShards=2&replicationFactor=2&maxShardsPerNode=2
+solr_request /admin/collections?action=CREATE&autoAddReplicas=true&name=testCollection&numShards=2&replicationFactor=2
 wait_collection collection=testCollection&shards=2&replicas=2
 // example of defining a trigger config
 solr_request /admin/autoscaling?httpMethod=POST&stream.body={'set-trigger':{'name':'indexSizeTrigger','event':'indexSize','waitFor':'10s','aboveDocs':1000,'enabled':true,'actions':[{'name':'compute_plan','class':'solr.ComputePlanAction'},{'name':'execute_plan','class':'solr.ExecutePlanAction'}]}}
@@ -622,7 +620,7 @@ a random node to consistently add replicas to it.
 [source,text]
 ----
 create_cluster numNodes=2
-solr_request /admin/collections?action=CREATE&autoAddReplicas=true&name=testCollection&numShards=2&replicationFactor=2&maxShardsPerNode=10
+solr_request /admin/collections?action=CREATE&autoAddReplicas=true&name=testCollection&numShards=2&replicationFactor=2
 wait_collection collection=testCollection&shards=2&replicas=2
 ctx_set key=myNode&value=${_random_node_}
 solr_request /admin/collections?action=ADDREPLICA&collection=testCollection&shard=shard1&node=${myNode}

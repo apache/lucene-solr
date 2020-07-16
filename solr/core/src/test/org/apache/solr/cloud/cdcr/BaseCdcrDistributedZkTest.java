@@ -75,7 +75,6 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.CREATE_NODE_SET;
 import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.NUM_SLICES;
 import static org.apache.solr.common.cloud.ZkStateReader.CLUSTER_PROPS;
-import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.handler.admin.CoreAdminHandler.COMPLETED;
 import static org.apache.solr.handler.admin.CoreAdminHandler.RESPONSE_STATUS;
@@ -408,7 +407,6 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
     try {
       // Create the target collection
       Map<String, List<Integer>> collectionInfos = new HashMap<>();
-      int maxShardsPerNode = 1;
 
       StringBuilder sb = new StringBuilder();
       for (String nodeName : collectionToNodeNames.get(name)) {
@@ -417,7 +415,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
       }
       sb.deleteCharAt(sb.length() - 1);
 
-      createCollection(collectionInfos, name, shardCount, replicationFactor, maxShardsPerNode, client, sb.toString());
+      createCollection(collectionInfos, name, shardCount, replicationFactor, client, sb.toString());
     } finally {
       client.close();
     }
@@ -425,14 +423,13 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
 
   private CollectionAdminResponse createCollection(Map<String, List<Integer>> collectionInfos,
                                                    String collectionName, int numShards, int replicationFactor,
-                                                   int maxShardsPerNode, SolrClient client, String createNodeSetStr)
+                                                   SolrClient client, String createNodeSetStr)
       throws SolrServerException, IOException {
     return createCollection(collectionInfos, collectionName,
         Utils.makeMap(
             NUM_SLICES, numShards,
             REPLICATION_FACTOR, replicationFactor,
-            CREATE_NODE_SET, createNodeSetStr,
-            MAX_SHARDS_PER_NODE, maxShardsPerNode),
+            CREATE_NODE_SET, createNodeSetStr),
         client, "conf1");
   }
 

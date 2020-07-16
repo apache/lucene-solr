@@ -108,6 +108,50 @@ jdbc(
 )
 ----
 
+== drill
+
+The `drill` function is designed to support efficient high cardinality aggregation. The `drill`
+function sends a request to the `export` handler in a specific collection which includes a Streaming
+Expression that the `export` handler applies to the sorted result set. The `export` handler then emits the aggregated tuples.
+The `drill` function reads and emits the aggregated tuples fromn each shard maintaining the sort order,
+but does not merge the aggregations. Streaming Expression functions can be wrapped around the `drill` function to
+merge the aggregates.
+
+=== drill Parameters
+
+* `collection`: (Mandatory) the collection being searched.
+* `q`: (Mandatory) The query to perform on the Solr index.
+* `fl`: (Mandatory) The list of fields to return.
+* `sort`: (Mandatory) The sort criteria.
+* `expr`: The streaming expression that is sent to the export handler that operates over the sorted
+result set. The `input()` function provides the stream of sorted tuples from the export handler (see examples below).
+
+=== drill Syntax
+
+Example 1: Basic drill syntax
+
+[source,text]
+----
+drill(articles,
+      q="abstract:water",
+      fl="author",
+      sort="author asc",
+      rollup(input(), over="author", count(*)))
+----
+
+Example 2: A `rollup` wrapped around the `drill` function to sum the counts emitted from each shard.
+
+[source,text]
+----
+rollup(drill(articles,
+             q="abstract:water",
+             fl="author",
+             sort="author asc",
+             rollup(input(), over="author", count(*))),
+       over="author",
+       sum(count(*)))
+----
+
 == echo
 
 The `echo` function returns a single Tuple echoing its text parameter. `Echo` is the simplest stream source designed to provide text
@@ -135,7 +179,8 @@ The `facet` function provides aggregations that are rolled up over buckets. Unde
 * `overfetch`: (Default 150) Over-fetching is used to provide accurate aggregations over high cardinality fields.
 * `method`: The JSON facet API aggregation method.
 * `bucketSizeLimit`: Sets the absolute number of rows to fetch. This is incompatible with rows, offset and overfetch. This value is applied to each dimension. '-1' will fetch all the buckets.
-* `metrics`: List of metrics to compute for the buckets. Currently supported metrics are `sum(col)`, `avg(col)`, `min(col)`, `max(col)`, `count(*)`.
+* `metrics`: List of metrics to compute for the buckets. Currently supported metrics are `sum(col)`, `avg(col)`, `min(col)`, `max(col)`, `count(*)`, `per(col, 50)`. The `per` metric calculates a percentile
+for a numeric column and can be specified multiple times in the same facet function.
 
 === facet Syntax
 
@@ -156,6 +201,8 @@ facet(collection1,
       max(a_f),
       avg(a_i),
       avg(a_f),
+      per(a_f, 50),
+      per(a_f, 75),
       count(*))
 ----
 
@@ -179,6 +226,8 @@ facet(collection1,
       max(a_f),
       avg(a_i),
       avg(a_f),
+      per(a_f, 50),
+      per(a_f, 75),
       count(*))
 ----
 
@@ -431,7 +480,9 @@ The `stats` function gathers simple aggregations for a search result set. The st
 
 * `collection`: (Mandatory) Collection the stats will be aggregated from.
 * `q`: (Mandatory) The query to build the aggregations from.
-* `metrics`: (Mandatory) The metrics to include in the result tuple. Current supported metrics are `sum(col)`, `avg(col)`, `min(col)`, `max(col)` and `count(*)`
+* `metrics`: (Mandatory) The metrics to include in the result tuple. Current supported metrics are `sum(col)`, `avg(col)`, `min(col)`, `max(col)`, `count(*)`,  `per(col, 50)`. The `per` metric calculates a percentile
+for a numeric column and can be specified multiple times in the same stats function.
+
 
 === stats Syntax
 
@@ -447,6 +498,8 @@ stats(collection1,
       max(a_f),
       avg(a_i),
       avg(a_f),
+      per(a_f, 50),
+      per(a_f, 75),
       count(*))
 ----
 
@@ -464,7 +517,9 @@ JSON Facet API as its high performance aggregation engine.
 * `end`: (Mandatory) The end of the time series expressed in Solr date or date math syntax.
 * `gap`: (Mandatory) The time gap between time series aggregation points expressed in Solr date math syntax.
 * `format`: (Optional) Date template to format the date field in the output tuples. Formatting is performed by Java's SimpleDateFormat class.
-* `metrics`: (Mandatory) The metrics to include in the result tuple. Current supported metrics are `sum(col)`, `avg(col)`, `min(col)`, `max(col)` and `count(*)`
+* `metrics`: (Mandatory) The metrics to include in the result tuple. Current supported metrics are `sum(col)`, `avg(col)`, `min(col)`, `max(col)`, `count(*)`,  `per(col, 50)`. The `per` metric calculates a percentile
+for a numeric column and can be specified multiple times in the same timeseries function.
+
 
 === timeseries Syntax
 
@@ -482,6 +537,8 @@ timeseries(collection1,
            max(a_f),
            avg(a_i),
            avg(a_f),
+           per(a_f, 50),
+           per(a_f, 75),
            count(*))
 ----
 

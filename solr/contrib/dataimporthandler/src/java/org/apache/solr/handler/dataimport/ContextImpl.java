@@ -84,9 +84,8 @@ public class ContextImpl extends Context {
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
   public List<Map<String, String>> getAllEntityFields() {
-    return epw==null || epw.getEntity() == null ? Collections.EMPTY_LIST : epw.getEntity().getAllFieldsList();
+    return epw==null || epw.getEntity() == null ? Collections.emptyList() : epw.getEntity().getAllFieldsList();
   }
 
   @Override

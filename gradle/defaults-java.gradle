@@ -25,10 +25,24 @@ allprojects {
     tasks.withType(JavaCompile) {
       options.encoding = "UTF-8"
       options.compilerArgs += [
-        "-Xlint",
         "-Xlint:-deprecation",
         "-Xlint:-serial",
-
+        "-Xlint:cast",
+        "-Xlint:classfile",
+        "-Xlint:dep-ann",
+        "-Xlint:divzero",
+        "-Xlint:empty",
+        "-Xlint:fallthrough",
+        "-Xlint:finally",
+        "-Xlint:options",
+        "-Xlint:overrides",
+        "-Xlint:path",
+        "-Xlint:processing",
+        "-Xlint:rawtypes",
+        "-Xlint:static",
+        "-Xlint:try",
+        "-Xlint:unchecked",
+        "-Xlint:varargs",
         "-Xdoclint:all/protected",
         "-Xdoclint:-missing",
         "-Xdoclint:-accessibility",

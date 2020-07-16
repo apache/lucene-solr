@@ -40,7 +40,6 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.cloud.Overseer.LeaderStatus;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
@@ -151,7 +150,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
         Overseer overseer,
         DistributedMap completedMap,
         DistributedMap failureMap) {
-      super(zkStateReader, myId, shardHandlerFactory, adminPath, new Stats(), overseer, new OverseerNodePrioritizer(zkStateReader, overseer.getStateUpdateQueue(), adminPath, shardHandlerFactory, null), workQueue, runningMap, completedMap, failureMap);
+      super(zkStateReader, myId, shardHandlerFactory, adminPath, new Stats(), overseer, new OverseerNodePrioritizer(zkStateReader, overseer.getStateUpdateQueue(), adminPath, shardHandlerFactory), workQueue, runningMap, completedMap, failureMap);
     }
     
     @Override
@@ -253,8 +252,6 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   
   protected Set<String> commonMocks(int liveNodesCount) throws Exception {
     when(shardHandlerFactoryMock.getShardHandler()).thenReturn(shardHandlerMock);
-    when(shardHandlerFactoryMock.getShardHandler(any(Http2SolrClient.class))).thenReturn(shardHandlerMock);
-    when(shardHandlerFactoryMock.getShardHandler(any(HttpClient.class))).thenReturn(shardHandlerMock);
     when(workQueueMock.peekTopN(anyInt(), any(), anyLong())).thenAnswer(invocation -> {
       Object result;
       int count = 0;
@@ -542,14 +539,13 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   }
 
   protected void issueCreateJob(Integer numberOfSlices,
-      Integer replicationFactor, Integer maxShardsPerNode, List<String> createNodeList, boolean sendCreateNodeList, boolean createNodeSetShuffle) {
+      Integer replicationFactor, List<String> createNodeList, boolean sendCreateNodeList, boolean createNodeSetShuffle) {
     Map<String,Object> propMap = Utils.makeMap(
         Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.CREATE.toLower(),
         ZkStateReader.REPLICATION_FACTOR, replicationFactor.toString(),
         "name", COLLECTION_NAME,
         "collection.configName", CONFIG_NAME,
-        OverseerCollectionMessageHandler.NUM_SLICES, numberOfSlices.toString(),
-        ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode.toString()
+        OverseerCollectionMessageHandler.NUM_SLICES, numberOfSlices.toString()
     );
     if (sendCreateNodeList) {
       propMap.put(OverseerCollectionMessageHandler.CREATE_NODE_SET,
@@ -723,7 +719,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     SEND_NULL
   }
   protected void testTemplate(Integer numberOfNodes, Integer numberOfNodesToCreateOn, CreateNodeListOptions createNodeListOption, Integer replicationFactor,
-      Integer numberOfSlices, Integer maxShardsPerNode,
+      Integer numberOfSlices,
       boolean collectionExceptedToBeCreated) throws Exception {
     assertTrue("Wrong usage of testTemplate. numberOfNodesToCreateOn " + numberOfNodesToCreateOn + " is not allowed to be higher than numberOfNodes " + numberOfNodes, numberOfNodes.intValue() >= numberOfNodesToCreateOn.intValue());
     assertTrue("Wrong usage of testTemplage. createNodeListOption has to be " + CreateNodeListOptions.SEND + " when numberOfNodes and numberOfNodesToCreateOn are unequal", ((createNodeListOption == CreateNodeListOptions.SEND) || (numberOfNodes.intValue() == numberOfNodesToCreateOn.intValue())));
@@ -753,7 +749,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     final List<String> createNodeListToSend = ((createNodeListOption != CreateNodeListOptions.SEND_NULL) ? createNodeList : null);
     final boolean sendCreateNodeList = (createNodeListOption != CreateNodeListOptions.DONT_SEND);
     final boolean dontShuffleCreateNodeSet = (createNodeListToSend != null) && sendCreateNodeList && random().nextBoolean();
-    issueCreateJob(numberOfSlices, replicationFactor, maxShardsPerNode, createNodeListToSend, sendCreateNodeList, !dontShuffleCreateNodeSet);
+    issueCreateJob(numberOfSlices, replicationFactor, createNodeListToSend, sendCreateNodeList, !dontShuffleCreateNodeSet);
     waitForEmptyQueue(10000);
 
     if (collectionExceptedToBeCreated) {
@@ -772,9 +768,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.DONT_SEND;
     Integer replicationFactor = 1;
     Integer numberOfSlices = 8;
-    Integer maxShardsPerNode = 2;
     testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
-        maxShardsPerNode, true);
+        true);
   }
   
   @Test
@@ -784,9 +779,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.DONT_SEND;
     Integer replicationFactor = 2;
     Integer numberOfSlices = 4;
-    Integer maxShardsPerNode = 2;
     testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
-        maxShardsPerNode, true);
+        true);
   }
   
   @Test
@@ -796,9 +790,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.SEND;
     Integer replicationFactor = 1;
     Integer numberOfSlices = 8;
-    Integer maxShardsPerNode = 2;
     testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
-        maxShardsPerNode, true);
+        true);
   }
   
   @Test
@@ -808,9 +801,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.SEND;
     Integer replicationFactor = 2;
     Integer numberOfSlices = 4;
-    Integer maxShardsPerNode = 2;
     testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
-        maxShardsPerNode, true);
+        true);
   }
   
   @Test
@@ -820,9 +812,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.SEND_NULL;
     Integer replicationFactor = 1;
     Integer numberOfSlices = 8;
-    Integer maxShardsPerNode = 2;
     testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
-        maxShardsPerNode, true);
+        true);
   }
   
   @Test
@@ -832,9 +823,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.SEND_NULL;
     Integer replicationFactor = 2;
     Integer numberOfSlices = 4;
-    Integer maxShardsPerNode = 2;
     testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
-        maxShardsPerNode, true);
+        true);
   }  
   
   @Test
@@ -844,9 +834,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.DONT_SEND;
     Integer replicationFactor = 1;
     Integer numberOfSlices = 6;
-    Integer maxShardsPerNode = 2;
     testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
-        maxShardsPerNode, true);
+        true);
   }
   
   @Test
@@ -856,37 +845,10 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.DONT_SEND;
     Integer replicationFactor = 2;
     Integer numberOfSlices = 3;
-    Integer maxShardsPerNode = 2;
     testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
-        maxShardsPerNode, true);
+        true);
   }
   
-  @Test
-  public void testNoReplicationCollectionNotCreatedDueToMaxShardsPerNodeLimit()
-      throws Exception {
-    Integer numberOfNodes = 4;
-    Integer numberOfNodesToCreateOn = 4;
-    CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.DONT_SEND;
-    Integer replicationFactor = 1;
-    Integer numberOfSlices = 6;
-    Integer maxShardsPerNode = 1;
-    testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
-        maxShardsPerNode, false);
-  }
-  
-  @Test
-  public void testReplicationCollectionNotCreatedDueToMaxShardsPerNodeLimit()
-      throws Exception {
-    Integer numberOfNodes = 4;
-    Integer numberOfNodesToCreateOn = 4;
-    CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.DONT_SEND;
-    Integer replicationFactor = 2;
-    Integer numberOfSlices = 3;
-    Integer maxShardsPerNode = 1;
-    testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
-        maxShardsPerNode, false);
-  }
-
   @Test
   public void testNoReplicationLimitedNodesToCreateOn()
       throws Exception {
@@ -895,9 +857,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.SEND;
     Integer replicationFactor = 1;
     Integer numberOfSlices = 6;
-    Integer maxShardsPerNode = 3;
     testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
-        maxShardsPerNode, true);
+        true);
   }
   
   @Test
@@ -908,9 +869,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.SEND;
     Integer replicationFactor = 2;
     Integer numberOfSlices = 3;
-    Integer maxShardsPerNode = 3;
     testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
-        maxShardsPerNode, true);
+        true);
   }
 
   @Test
@@ -921,9 +881,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.SEND;
     Integer replicationFactor = 1;
     Integer numberOfSlices = 8;
-    Integer maxShardsPerNode = 2;
     testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
-        maxShardsPerNode, false);
+        false);
   }
   
   @Test
@@ -934,9 +893,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.SEND;
     Integer replicationFactor = 2;
     Integer numberOfSlices = 4;
-    Integer maxShardsPerNode = 2;
     testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
-        maxShardsPerNode, false);
+        false);
   }
 
 }
