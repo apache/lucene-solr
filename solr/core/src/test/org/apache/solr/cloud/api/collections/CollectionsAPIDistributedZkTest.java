@@ -63,8 +63,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
       System.setProperty("createCollectionWaitTimeTillActive", "10");
       TestInjection.randomDelayInCoreCreation = "true:5";
     } else {
-      System.setProperty("createCollectionWaitTimeTillActive", "5");
-      TestInjection.randomDelayInCoreCreation = "true:1";
+      System.setProperty("createCollectionWaitTimeTillActive", "10");
     }
 
     configureCluster(4)

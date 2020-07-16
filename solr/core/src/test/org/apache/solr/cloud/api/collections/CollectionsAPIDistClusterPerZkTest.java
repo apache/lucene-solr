@@ -102,8 +102,7 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
       System.setProperty("createCollectionWaitTimeTillActive", "10");
       TestInjection.randomDelayInCoreCreation = "true:5";
     } else {
-      System.setProperty("createCollectionWaitTimeTillActive", "5");
-      TestInjection.randomDelayInCoreCreation = "true:1";
+      System.setProperty("createCollectionWaitTimeTillActive", "10");
     }
     // this class deletes all the collections between each test and so really
     // stresses a difficult code path - give a higher so timeout for low end hardware to make it through
@@ -464,7 +463,6 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2)
         .setMaxShardsPerNode(4)
         .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(collectionName, 2, 4);
 
     ArrayList<String> nodeList
         = new ArrayList<>(cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes());
