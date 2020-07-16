@@ -17,9 +17,7 @@
 package org.apache.solr.core;
 
 
-/**
- * A generic interface to load plugin classes
- */
+/** A generic interface to load plugin classes */
 public interface SolrClassLoader {
 
     <T> T newInstance(String cname, Class<T> expectedType, String... subpackages);
