@@ -16,8 +16,6 @@
  */
 package org.apache.solr.client.solrj.io.eval;
 
-import org.apache.solr.client.solrj.io.eval.OneValueWorker;
-import org.apache.solr.client.solrj.io.eval.RecursiveObjectEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
