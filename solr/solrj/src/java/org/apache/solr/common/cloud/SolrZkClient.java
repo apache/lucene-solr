@@ -915,7 +915,6 @@ public class SolrZkClient implements Closeable {
     zkConnManagerCallbackExecutor.shutdownNow();
     zkCallbackExecutor.shutdownNow();
     try (ParWork worker = new ParWork(this, true)) {
-
       worker.add("ZkClientExecutors&ConnMgr", zkCallbackExecutor, zkConnManagerCallbackExecutor, connManager, keeper);
     }
 

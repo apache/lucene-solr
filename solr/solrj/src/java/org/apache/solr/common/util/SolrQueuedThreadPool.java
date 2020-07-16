@@ -68,7 +68,7 @@ public class SolrQueuedThreadPool extends QueuedThreadPool implements Closeable 
 //    }
 
     public void close() {
-        TimeOut timeout = new TimeOut(5, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+        TimeOut timeout = new TimeOut(15, TimeUnit.SECONDS, TimeSource.NANO_TIME);
         while (getBusyThreads() != 0) {
             if (timeout.hasTimedOut()) {
                 throw new RuntimeException("Timed out waiting for SolrQueuedThreadPool to close");
@@ -91,9 +91,7 @@ public class SolrQueuedThreadPool extends QueuedThreadPool implements Closeable 
     @Override
     protected void doStop() throws Exception {
         if (!killStop) {
-            //while (!isStopped()) {
-                super.doStop();
-            //}
+           super.doStop();
         }
     }
 

@@ -128,20 +128,20 @@ public class Http2SolrClient extends SolrClient {
   private static final List<String> errPath = Arrays.asList("metadata", "error-class");
   private final Map<String, String> headers;
 
-  private HttpClient httpClient;
+  private volatile HttpClient httpClient;
   private volatile Set<String> queryParams = Collections.emptySet();
   private int idleTimeout;
 
-  private ResponseParser parser = new BinaryResponseParser();
+  private volatile ResponseParser parser = new BinaryResponseParser();
   private volatile RequestWriter requestWriter = new BinaryRequestWriter();
-  private List<HttpListenerFactory> listenerFactory = new LinkedList<>();
-  private AsyncTracker asyncTracker = new AsyncTracker();
+  private final Set<HttpListenerFactory> listenerFactory = ConcurrentHashMap.newKeySet();
+  private final AsyncTracker asyncTracker = new AsyncTracker();
   /**
    * The URL of the Solr server.
    */
-  private String serverBaseUrl;
-  private boolean closeClient;
-  private SolrQueuedThreadPool httpClientExecutor;
+  private volatile String serverBaseUrl;
+  private volatile boolean closeClient;
+  private volatile SolrQueuedThreadPool httpClientExecutor;
 
   protected Http2SolrClient(String serverBaseUrl, Builder builder) {
     if (serverBaseUrl != null)  {
@@ -190,11 +190,11 @@ public class Http2SolrClient extends SolrClient {
   private HttpClient createHttpClient(Builder builder) {
     HttpClient httpClient;
 
-    BlockingArrayQueue<Runnable> queue = new BlockingArrayQueue<>(256, 256);
+//    BlockingArrayQueue<Runnable> queue = new BlockingArrayQueue<>(256, 256);
 //    httpClientExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(Integer.getInteger("solr.http2solrclient.corepool.size", 2),
 //            Integer.getInteger("solr.http2solrclient.maxpool.size", 10), Integer.getInteger("solr.http2solrclient.pool.keepalive", 3000),
 //            TimeUnit.MILLISECONDS, queue, new SolrNamedThreadFactory("h2sc"));
-    httpClientExecutor = new SolrQueuedThreadPool("httpClient", false);
+
 
     SslContextFactory.Client sslContextFactory;
     boolean ssl;
@@ -224,16 +224,18 @@ public class Http2SolrClient extends SolrClient {
       httpClient = new HttpClient(transport, sslContextFactory);
       httpClient.setMaxConnectionsPerDestination(4);
     }
-
-    httpClient.setExecutor(httpClientExecutor);
-    httpClient.setStrictEventOrdering(false);
-    httpClient.setConnectBlocking(false);
-    httpClient.setFollowRedirects(false);
-    httpClient.setMaxRequestsQueuedPerDestination(asyncTracker.getMaxRequestsQueuedPerDestination());
-    httpClient.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, AGENT));
-    httpClient.setIdleTimeout(idleTimeout);
-    if (builder.connectionTimeout != null) httpClient.setConnectTimeout(builder.connectionTimeout);
+    httpClientExecutor = new SolrQueuedThreadPool("httpClient", false);
     try {
+      httpClientExecutor.start();
+      httpClient.setExecutor(httpClientExecutor);
+      httpClient.setStrictEventOrdering(false);
+      httpClient.setConnectBlocking(false);
+      httpClient.setFollowRedirects(false);
+      httpClient.setMaxRequestsQueuedPerDestination(asyncTracker.getMaxRequestsQueuedPerDestination());
+      httpClient.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, AGENT));
+      httpClient.setIdleTimeout(idleTimeout);
+      if (builder.connectionTimeout != null) httpClient.setConnectTimeout(builder.connectionTimeout);
+
       httpClient.start();
     } catch (Exception e) {
       throw new RuntimeException(e);
@@ -249,7 +251,7 @@ public class Http2SolrClient extends SolrClient {
       if (closeClient) {
         closer.collect(() -> {
             try {
-              httpClient.setStopTimeout(1);
+             // httpClient.setStopTimeout();
               httpClient.stop();
             } catch (InterruptedException e) {
               ParWork.propegateInterrupt(e);
