@@ -223,7 +223,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private final RecoveryStrategy.Builder recoveryStrategyBuilder;
   private IndexReaderFactory indexReaderFactory;
   private final Codec codec;
-  private final MemClassLoader memClassLoader;
   //singleton listener for all packages used in schema
   private final PackageListeningClassLoader schemaPluginsLoader;
 
@@ -1003,10 +1002,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       this.solrDelPolicy = initDeletionPolicy(delPolicy);
 
       this.codec = initCodec(solrConfig, this.schema);
-
-      memClassLoader = new MemClassLoader(
-          PluginBag.RuntimeLib.getLibObjects(this, solrConfig.getPluginInfos(PluginBag.RuntimeLib.class.getName())),
-          getResourceLoader());
       initIndex(prev != null, reload);
 
       initWriters();
@@ -1035,9 +1030,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
       // Initialize the RestManager
       restManager = initRestManager();
-
-      // at this point we can load jars loaded from remote urls.
-      memClassLoader.loadRemoteJars();
 
       // Finally tell anyone who wants to know
       resourceLoader.inform(resourceLoader);
@@ -1610,14 +1602,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     qParserPlugins.close();
     valueSourceParsers.close();
     transformerFactories.close();
-
-    if (memClassLoader != null) {
-      try {
-        memClassLoader.close();
-      } catch (Exception e) {
-      }
-    }
-
 
     try {
       if (null != updateHandler) {
@@ -2789,9 +2773,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     };
   }
 
-  public MemClassLoader getMemClassLoader() {
-    return memClassLoader;
-  }
 
   public interface RawWriter {
     default String getContentType() {

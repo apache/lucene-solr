@@ -77,7 +77,7 @@ import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigSetProperties;
-import org.apache.solr.core.TestDynamicLoading;
+import org.apache.solr.core.TestSolrConfigHandler;
 import org.apache.solr.security.BasicAuthIntegrationTest;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.ExternalPaths;
@@ -485,7 +485,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
   private long uploadConfigSet(String configSetName, String suffix, String username, String password,
       SolrZkClient zkClient) throws IOException {
     // Read zipped sample config
-    ByteBuffer sampleZippedConfig = TestDynamicLoading
+    ByteBuffer sampleZippedConfig = TestSolrConfigHandler
         .getFileContent(
             createTempZipFile("solr/configsets/upload/"+configSetName), false);
 
@@ -509,7 +509,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     File zipFile = new File(solrCluster.getBaseDir().toFile().getAbsolutePath() +
         File.separator + TestUtil.randomSimpleString(random(), 6, 8) + ".zip");
 
-    File directory = TestDynamicLoading.getFile(directoryPath);
+    File directory = SolrTestCaseJ4.getFile(directoryPath);
     if (log.isInfoEnabled()) {
       log.info("Directory: {}", directory.getAbsolutePath());
     }

@@ -572,21 +572,6 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       op.getMap(PluginInfo.INVARIANTS, null);
       op.getMap(PluginInfo.APPENDS, null);
       if (op.hasError()) return overlay;
-      if (info.clazz == PluginBag.RuntimeLib.class) {
-        if (!PluginBag.RuntimeLib.isEnabled()) {
-          op.addError("Solr not started with -Denable.runtime.lib=true");
-          return overlay;
-        }
-        try {
-          try (PluginBag.RuntimeLib rtl = new PluginBag.RuntimeLib(req.getCore())) {
-            rtl.init(new PluginInfo(info.tag, op.getDataMap()));
-          }
-        } catch (Exception e) {
-          op.addError(e.getMessage());
-          log.error("can't load this plugin ", e);
-          return overlay;
-        }
-      }
       if (!verifyClass(op, clz, info.clazz)) return overlay;
       if (pluginExists(info, overlay, name)) {
         if (isCeate) {

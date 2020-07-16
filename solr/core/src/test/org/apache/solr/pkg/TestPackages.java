@@ -68,7 +68,7 @@ import org.junit.Test;
 import static org.apache.solr.common.cloud.ZkStateReader.SOLR_PKGS_PATH;
 import static org.apache.solr.common.params.CommonParams.JAVABIN;
 import static org.apache.solr.common.params.CommonParams.WT;
-import static org.apache.solr.core.TestDynamicLoading.getFileContent;
+import static org.apache.solr.core.TestSolrConfigHandler.getFileContent;
 import static org.apache.solr.filestore.TestDistribPackageStore.readFile;
 import static org.apache.solr.filestore.TestDistribPackageStore.uploadKey;
 import static org.apache.solr.filestore.TestDistribPackageStore.waitForAllNodesHaveFile;

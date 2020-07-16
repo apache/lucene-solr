@@ -16,10 +16,9 @@
  */
 package org.apache.solr.core;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.StringReader;
+import java.io.*;
 import java.lang.invoke.MethodHandles;
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +26,8 @@ import java.util.Objects;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.io.FileUtils;
@@ -45,6 +46,7 @@ import org.apache.solr.search.SolrCache;
 import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestBase;
 import org.apache.solr.util.RestTestHarness;
+import org.apache.solr.util.SimplePostTool;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
 import org.junit.Before;
@@ -67,8 +69,53 @@ public class TestSolrConfigHandler extends RestTestBase {
   private static final String collection = "collection1";
   private static final String confDir = collection + "/conf";
 
+    public static ByteBuffer getFileContent(String f) throws IOException {
+      return getFileContent(f, true);
+    }
 
-  @Before
+    /**
+     * @param loadFromClassPath if true, it will look in the classpath to find the file,
+     *        otherwise load from absolute filesystem path.
+     */
+    public static ByteBuffer getFileContent(String f, boolean loadFromClassPath) throws IOException {
+      ByteBuffer jar;
+      File file = loadFromClassPath ? getFile(f): new File(f);
+      try (FileInputStream fis = new FileInputStream(file)) {
+        byte[] buf = new byte[fis.available()];
+        fis.read(buf);
+        jar = ByteBuffer.wrap(buf);
+      }
+      return jar;
+    }
+
+    public static  ByteBuffer persistZip(String loc,
+                                           @SuppressWarnings({"rawtypes"})Class... classes) throws IOException {
+      ByteBuffer jar = generateZip(classes);
+      try (FileOutputStream fos =  new FileOutputStream(loc)){
+        fos.write(jar.array(), 0, jar.limit());
+        fos.flush();
+      }
+      return jar;
+    }
+
+    public static ByteBuffer generateZip(@SuppressWarnings({"rawtypes"})Class... classes) throws IOException {
+      SimplePostTool.BAOS bos = new SimplePostTool.BAOS();
+      try (ZipOutputStream zipOut = new ZipOutputStream(bos)) {
+        zipOut.setLevel(ZipOutputStream.DEFLATED);
+        for (@SuppressWarnings({"rawtypes"})Class c : classes) {
+          String path = c.getName().replace('.', '/').concat(".class");
+          ZipEntry entry = new ZipEntry(path);
+          ByteBuffer b = SimplePostTool.inputStreamToByteArray(c.getClassLoader().getResourceAsStream(path));
+          zipOut.putNextEntry(entry);
+          zipOut.write(b.array(), 0, b.limit());
+          zipOut.closeEntry();
+        }
+      }
+      return bos.getByteBuffer();
+    }
+
+
+    @Before
   public void before() throws Exception {
     tmpSolrHome = createTempDir().toFile();
     tmpConfDir = new File(tmpSolrHome, confDir);

@@ -130,22 +130,11 @@ public class PluginBag<T> implements AutoCloseable {
 
   @SuppressWarnings({"unchecked"})
   public PluginHolder<T> createPlugin(PluginInfo info) {
-    if ("true".equals(String.valueOf(info.attributes.get("runtimeLib")))) {
-      if (log.isDebugEnabled()) {
-        log.debug(" {} : '{}'  created with runtimeLib=true ", meta.getCleanTag(), info.name);
-      }
-      LazyPluginHolder<T> holder = new LazyPluginHolder<>(meta, info, core, RuntimeLib.isEnabled() ?
-          core.getMemClassLoader() :
-          core.getResourceLoader(), true);
-
-      return meta.clazz == UpdateRequestProcessorFactory.class ?
-          (PluginHolder<T>) new UpdateRequestProcessorChain.LazyUpdateProcessorFactoryHolder(holder) :
-          holder;
-    } else if ("lazy".equals(info.attributes.get("startup")) && meta.options.contains(SolrConfig.PluginOpts.LAZY)) {
+   if ("lazy".equals(info.attributes.get("startup")) && meta.options.contains(SolrConfig.PluginOpts.LAZY)) {
       if (log.isDebugEnabled()) {
         log.debug("{} : '{}' created with startup=lazy ", meta.getCleanTag(), info.name);
       }
-      return new LazyPluginHolder<T>(meta, info, core, core.getResourceLoader(), false);
+      return new LazyPluginHolder<T>(meta, info, core, core.getResourceLoader());
     } else {
       if (info.pkgName != null) {
         PackagePluginHolder<T> holder = new PackagePluginHolder<>(info, core, meta);
@@ -433,22 +422,13 @@ public class PluginBag<T> implements AutoCloseable {
     protected SolrException solrException;
     private final SolrCore core;
     protected ResourceLoader resourceLoader;
-    private final boolean isRuntimeLib;
 
 
-    LazyPluginHolder(SolrConfig.SolrPluginInfo pluginMeta, PluginInfo pluginInfo, SolrCore core, ResourceLoader loader, boolean isRuntimeLib) {
+    LazyPluginHolder(SolrConfig.SolrPluginInfo pluginMeta, PluginInfo pluginInfo, SolrCore core, ResourceLoader loader) {
       super(pluginInfo);
       this.pluginMeta = pluginMeta;
-      this.isRuntimeLib = isRuntimeLib;
       this.core = core;
       this.resourceLoader = loader;
-      if (loader instanceof MemClassLoader) {
-        if (!RuntimeLib.isEnabled()) {
-          String s = "runtime library loading is not enabled, start Solr with -Denable.runtime.lib=true";
-          log.warn(s);
-          solrException = new SolrException(SolrException.ErrorCode.SERVER_ERROR, s);
-        }
-      }
     }
 
     @Override
@@ -474,24 +454,14 @@ public class PluginBag<T> implements AutoCloseable {
       if (log.isInfoEnabled()) {
         log.info("Going to create a new {} with {} ", pluginMeta.getCleanTag(), pluginInfo);
       }
-      if (resourceLoader instanceof MemClassLoader) {
-        MemClassLoader loader = (MemClassLoader) resourceLoader;
-        loader.loadJars();
-      }
+
       @SuppressWarnings({"unchecked"})
       Class<T> clazz = (Class<T>) pluginMeta.clazz;
       T localInst = null;
       try {
         localInst = SolrCore.createInstance(pluginInfo.className, clazz, pluginMeta.getCleanTag(), null, resourceLoader);
       } catch (SolrException e) {
-        if (isRuntimeLib && !(resourceLoader instanceof MemClassLoader)) {
-          throw new SolrException(SolrException.ErrorCode.getErrorCode(e.code()),
-              e.getMessage() + ". runtime library loading is not enabled, start Solr with -Denable.runtime.lib=true",
-              e.getCause());
-        }
         throw e;
-
-
       }
       initInstance(localInst, pluginInfo);
       if (localInst instanceof SolrCoreAware) {
@@ -510,165 +480,6 @@ public class PluginBag<T> implements AutoCloseable {
       return true;
     }
   }
-
-  /**
-   * This represents a Runtime Jar. A jar requires two details , name and version
-   */
-  public static class RuntimeLib implements PluginInfoInitialized, AutoCloseable {
-    private String name, version, sig, sha512, url;
-    private BlobRepository.BlobContentRef<ByteBuffer> jarContent;
-    private final CoreContainer coreContainer;
-    private boolean verified = false;
-
-    @Override
-    public void init(PluginInfo info) {
-      name = info.attributes.get(NAME);
-      url = info.attributes.get("url");
-      sig = info.attributes.get("sig");
-      if(url == null) {
-        Object v = info.attributes.get("version");
-        if (name == null || v == null) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "runtimeLib must have name and version");
-        }
-        version = String.valueOf(v);
-      } else {
-        sha512 = info.attributes.get("sha512");
-        if(sha512 == null){
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "runtimeLib with url must have a 'sha512' attribute");
-        }
-        ByteBuffer buf = null;
-        buf = coreContainer.getBlobRepository().fetchFromUrl(name, url);
-
-        String digest = BlobRepository.sha512Digest(buf);
-        if(!sha512.equals(digest))  {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, StrUtils.formatString(BlobRepository.INVALID_JAR_MSG, url, sha512, digest)  );
-        }
-        log.info("dynamic library verified {}, sha512: {}", url, sha512);
-      }
-    }
-
-    public RuntimeLib(SolrCore core) {
-      coreContainer = core.getCoreContainer();
-    }
-
-    public String getUrl(){
-      return url;
-    }
-
-    @SuppressWarnings({"unchecked"})
-    void loadJar() {
-      if (jarContent != null) return;
-      synchronized (this) {
-        if (jarContent != null) return;
-
-        jarContent = url == null?
-            coreContainer.getBlobRepository().getBlobIncRef(name + "/" + version):
-            coreContainer.getBlobRepository().getBlobIncRef(name, null,url,sha512);
-
-      }
-    }
-
-    public static boolean isEnabled() {
-      return Boolean.getBoolean("enable.runtime.lib");
-    }
-
-    public String getName() {
-      return name;
-    }
-
-    public String getVersion() {
-      return version;
-    }
-
-    public String getSig() {
-      return sig;
-
-    }
-
-    public ByteBuffer getFileContent(String entryName) throws IOException {
-      if (jarContent == null)
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "jar not available: " + name  );
-      return getFileContent(jarContent.blob, entryName);
-
-    }
-
-    public ByteBuffer getFileContent(BlobRepository.BlobContent<ByteBuffer> blobContent,  String entryName) throws IOException {
-      ByteBuffer buff = blobContent.get();
-      ByteArrayInputStream zipContents = new ByteArrayInputStream(buff.array(), buff.arrayOffset(), buff.limit());
-      ZipInputStream zis = new ZipInputStream(zipContents);
-      try {
-        ZipEntry entry;
-        while ((entry = zis.getNextEntry()) != null) {
-          if (entryName == null || entryName.equals(entry.getName())) {
-            SimplePostTool.BAOS out = new SimplePostTool.BAOS();
-            byte[] buffer = new byte[2048];
-            int size;
-            while ((size = zis.read(buffer, 0, buffer.length)) != -1) {
-              out.write(buffer, 0, size);
-            }
-            out.close();
-            return out.getByteBuffer();
-          }
-        }
-      } finally {
-        zis.closeEntry();
-      }
-      return null;
-    }
-
-
-    @Override
-    public void close() {
-      if (jarContent != null) coreContainer.getBlobRepository().decrementBlobRefCount(jarContent);
-    }
-
-    public static List<RuntimeLib> getLibObjects(SolrCore core, List<PluginInfo> libs) {
-      List<RuntimeLib> l = new ArrayList<>(libs.size());
-      for (PluginInfo lib : libs) {
-        RuntimeLib rtl = new RuntimeLib(core);
-        try {
-          rtl.init(lib);
-        } catch (Exception e) {
-          log.error("error loading runtime library", e);
-        }
-        l.add(rtl);
-      }
-      return l;
-    }
-
-    public void verify() throws Exception {
-      if (verified) return;
-      if (jarContent == null) {
-        log.error("Calling verify before loading the jar");
-        return;
-      }
-
-      if (!coreContainer.isZooKeeperAware())
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Signing jar is possible only in cloud");
-      Map<String, byte[]> keys = CloudUtil.getTrustedKeys(coreContainer.getZkController().getZkClient(), "exe");
-      if (keys.isEmpty()) {
-        if (sig == null) {
-          verified = true;
-          return;
-        } else {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "No public keys are available in ZK to verify signature for runtime lib  " + name);
-        }
-      } else if (sig == null) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, StrUtils.formatString("runtimelib {0} should be signed with one of the keys in ZK /keys/exe ", name));
-      }
-
-      try {
-        String matchedKey = new CryptoKeys(keys).verify(sig, jarContent.blob.get());
-        if (matchedKey == null)
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "No key matched signature for jar : " + name + " version: " + version);
-        log.info("Jar {} signed with {} successfully verified", name, matchedKey);
-      } catch (Exception e) {
-        if (e instanceof SolrException) throw e;
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error verifying key ", e);
-      }
-    }
-  }
-
 
   public Api v2lookup(String path, String method, Map<String, String> parts) {
     if (apiBag == null) {
