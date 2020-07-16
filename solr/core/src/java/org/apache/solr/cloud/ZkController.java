@@ -401,7 +401,9 @@ public class ZkController implements Closeable {
 
     ContextKey contextKey = new ContextKey(collection, coreNodeName);
     ElectionContext context = electionContexts.get(contextKey);
-    context.close();
+    if (context != null) {
+      context.close();
+    }
   }
 
   public void start() {
