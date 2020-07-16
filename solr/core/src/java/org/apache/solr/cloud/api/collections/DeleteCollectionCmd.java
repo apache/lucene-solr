@@ -177,29 +177,29 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 //            "Could not fully remove collection: " + collection);
 //      }
     } finally {
-      // HUH? This is delete collection, taking out /collections/name
-      // How can you leave /collections/name/counter?
-      try {
-        String collectionPath =  ZkStateReader.getCollectionPathRoot(collection);
-
-//          if (removeCounterNode) {
-//            zkStateReader.getZkClient().clean(collectionPath);
-//          } else {
-            final String counterNodePath = Assign.getCounterNodePath(collection);
-            zkStateReader.getZkClient().clean(collectionPath, s -> !s.equals(counterNodePath));
-     //     }
-
-      } catch (InterruptedException e) {
-        SolrException.log(log, "Cleaning up collection in zk was interrupted:"
-            + collection, e);
-        Thread.currentThread().interrupt();
-      } catch (KeeperException e) {
-        SolrException.log(log, "Problem cleaning up collection in zk:"
-            + collection, e);
-        if (e instanceof  KeeperException.SessionExpiredException) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-        }
-      }
+//      // HUH? This is delete collection, taking out /collections/name
+//      // How can you leave /collections/name/counter?
+//      try {
+//        String collectionPath =  ZkStateReader.getCollectionPathRoot(collection);
+//
+////          if (removeCounterNode) {
+////            zkStateReader.getZkClient().clean(collectionPath);
+////          } else {
+////            final String counterNodePath = Assign.getCounterNodePath(collection);
+////            zkStateReader.getZkClient().clean(collectionPath, s -> !s.equals(counterNodePath));
+//     //     }
+//
+//      } catch (InterruptedException e) {
+//        SolrException.log(log, "Cleaning up collection in zk was interrupted:"
+//            + collection, e);
+//        Thread.currentThread().interrupt();
+//      } catch (KeeperException e) {
+//        SolrException.log(log, "Problem cleaning up collection in zk:"
+//            + collection, e);
+//        if (e instanceof  KeeperException.SessionExpiredException) {
+//          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+//        }
+//      }
     }
   }
 

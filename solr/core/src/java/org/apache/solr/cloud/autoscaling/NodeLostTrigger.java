@@ -96,7 +96,7 @@ public class NodeLostTrigger extends TriggerBase {
           nodeNameVsTimeRemoved.put(n, cloudManager.getTimeSource().getTimeNs());
         }
       });
-    } catch (NoSuchElementException e) {
+    } catch (NoSuchElementException | AlreadyClosedException e) {
       // ignore
     } catch (Exception e) {
       log.warn("Exception retrieving nodeLost markers", e);

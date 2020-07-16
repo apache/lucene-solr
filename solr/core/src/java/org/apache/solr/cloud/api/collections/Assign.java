@@ -32,6 +32,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableMap;
@@ -68,67 +69,13 @@ import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 public class Assign {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static String getCounterNodePath(String collection) {
-    return ZkStateReader.COLLECTIONS_ZKNODE + "/"+collection+"/counter";
-  }
-
-  public static int incAndGetId(DistribStateManager stateManager, String collection, int defaultValue) {
-    String path = ZkStateReader.COLLECTIONS_ZKNODE + "/"+collection;
-    try {
-      if (!stateManager.hasData(path)) {
-        try {
-          stateManager.makePath(path);
-        } catch (AlreadyExistsException e) {
-          // it's okay if another beats us creating the node
-        }
-      }
-      path += "/counter";
-      if (!stateManager.hasData(path)) {
-        try {
-          stateManager.createData(path, NumberUtils.intToBytes(defaultValue), CreateMode.PERSISTENT);
-        } catch (AlreadyExistsException e) {
-          // it's okay if another beats us creating the node
-        }
-      }
-    } catch (InterruptedException e) {
-      Thread.interrupted();
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error creating counter node in Zookeeper for collection:" + collection, e);
-    } catch (IOException | KeeperException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error creating counter node in Zookeeper for collection:" + collection, e);
-    }
-
-    while (true) {
-      try {
-        int version = 0;
-        int currentId = 0;
-        VersionedData data = stateManager.getData(path, null);
-        if (data != null) {
-          currentId = NumberUtils.bytesToInt(data.getData());
-          version = data.getVersion();
-        }
-        byte[] bytes = NumberUtils.intToBytes(++currentId);
-        stateManager.setData(path, bytes, version);
-        return currentId;
-      } catch (BadVersionException e) {
-        continue;
-      } catch (IOException | KeeperException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error inc and get counter from Zookeeper for collection:"+collection, e);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error inc and get counter from Zookeeper for collection:" + collection, e);
-      }
-    }
-  }
+  private static AtomicInteger REPLICA_CNT = new AtomicInteger(0);
 
   public static String assignCoreNodeName(DistribStateManager stateManager, DocCollection collection) {
     // for backward compatibility;
-    int defaultValue = defaultCounterValue(collection, false);
-    String coreNodeName = "core_node" + incAndGetId(stateManager, collection.getName(), defaultValue);
-    while (collection.getReplica(coreNodeName) != null) {
-      // there is wee chance that, the new coreNodeName id not totally unique,
-      // but this will be guaranteed unique for new collections
-      coreNodeName = "core_node" + incAndGetId(stateManager, collection.getName(), defaultValue);
-    }
+    int defaultValue = defaultCounterValue(collection, "");
+    String coreNodeName = "core_node" + defaultValue;
+
     return coreNodeName;
   }
 
@@ -181,40 +128,22 @@ public class Assign {
     return String.format(Locale.ROOT, "%s_%s_replica_%s%s", collectionName, shard, type.name().substring(0,1).toLowerCase(Locale.ROOT), replicaNum);
   }
 
-  private static int defaultCounterValue(DocCollection collection, boolean newCollection, String shard) {
-    if (newCollection) return 0;
-
+  public static int defaultCounterValue(DocCollection collection, String shard) {
     int defaultValue;
     if (collection.getSlice(shard) != null && collection.getSlice(shard).getReplicas().isEmpty()) {
-      return 0;
+      return REPLICA_CNT.incrementAndGet();
     } else {
-      defaultValue = collection.getReplicas().size() * 2;
+      defaultValue = collection.getReplicas().size() + REPLICA_CNT.incrementAndGet();
     }
 
-    if (collection.getReplicationFactor() != null) {
-      // numReplicas and replicationFactor * numSlices can be not equals,
-      // in case of many addReplicas or deleteReplicas are executed
-      defaultValue = Math.max(defaultValue,
-          collection.getReplicationFactor() * collection.getSlices().size());
-    }
-    return defaultValue;
-  }
-  
-  private static int defaultCounterValue(DocCollection collection, boolean newCollection) {
-    if (newCollection) return 0;
-    int defaultValue = collection.getReplicas().size();
     return defaultValue;
   }
 
   public static String buildSolrCoreName(DistribStateManager stateManager, DocCollection collection, String shard, Replica.Type type, boolean newCollection) {
-    Slice slice = collection.getSlice(shard);
-    int defaultValue = defaultCounterValue(collection, newCollection, shard);
-    int replicaNum = incAndGetId(stateManager, collection.getName(), defaultValue);
-    String coreName = buildSolrCoreName(collection.getName(), shard, type, replicaNum);
-    while (existCoreName(coreName, slice)) {
-      replicaNum = incAndGetId(stateManager, collection.getName(), defaultValue);
-      coreName = buildSolrCoreName(collection.getName(), shard, type, replicaNum);
-    }
+
+    int defaultValue = defaultCounterValue(collection, shard);
+    String coreName = buildSolrCoreName(collection.getName(), shard, type, defaultValue);
+
     return coreName;
   }
 

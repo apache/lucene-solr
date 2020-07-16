@@ -120,22 +120,6 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void deleteCollectionRemovesStaleZkCollectionsNode() throws Exception {
-    String collectionName = "out_of_sync_collection";
-
-    // manually create a collections zknode
-    cluster.getZkClient().makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName, true);
-
-    CollectionAdminRequest.deleteCollection(collectionName)
-        .process(cluster.getSolrClient());
-
-    assertFalse(CollectionAdminRequest.listCollections(cluster.getSolrClient())
-                  .contains(collectionName));
-
-    assertFalse(cluster.getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName, true));
-  }
-
-  @Test
   public void testBadActionNames() {
     // try a bad action
     ModifiableSolrParams params = new ModifiableSolrParams();

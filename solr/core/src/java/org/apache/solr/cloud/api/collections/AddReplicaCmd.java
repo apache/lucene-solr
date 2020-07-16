@@ -96,9 +96,9 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
   @SuppressWarnings({"unchecked"})
   List<ZkNodeProps> addReplica(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results, Runnable onComplete)
       throws IOException, InterruptedException, KeeperException {
-    if (log.isDebugEnabled()) {
-      log.debug("addReplica() : {}", Utils.toJSONString(message));
-    }
+
+    log.info("addReplica() : {}", Utils.toJSONString(message));
+
 
     String extCollectionName = message.getStr(COLLECTION_PROP);
     boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
@@ -332,17 +332,29 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       coreName = Assign.buildSolrCoreName(cloudManager.getDistribStateManager(), coll, shard, replicaType);
     } else if (!skipCreateReplicaInClusterState) {
       //Validate that the core name is unique in that collection
-      for (Slice slice : coll.getSlices()) {
-        for (Replica replica : slice.getReplicas()) {
-          String replicaCoreName = replica.getStr(CORE_NAME_PROP);
-          if (coreName.equals(replicaCoreName)) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Another replica with the same core name already exists" +
-                " for this collection");
+      while (true) {
+        try {
+          clusterState = cloudManager.getClusterStateProvider().getClusterState();
+        } catch (IOException e) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Node: " + node + " is not live");
+        }
+        coll = clusterState.getCollection(collection);
+        for (Slice slice : coll.getSlices()) {
+          for (Replica replica : slice.getReplicas()) {
+            String replicaCoreName = replica.getStr(CORE_NAME_PROP);
+            if (coreName.equals(replicaCoreName)) {
+              log.info("Another replica with the same core name already exists" +
+                      " for this collection");
+              coreName = Assign.buildSolrCoreName(cloudManager.getDistribStateManager(), coll, shard, replicaType);
+              continue;
+            }
           }
         }
+        break;
       }
     }
     log.info("Returning CreateReplica command.");
+
     return new CreateReplica(collection, shard, node, replicaType, coreName, coreNodeName);
   }
 

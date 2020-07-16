@@ -485,21 +485,6 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
       assertEquals(instanceDirStr, instancePath.toString());
     }
 
-    //Test to make sure we can't create another replica with an existing core_name of that collection
-    String coreName = newReplica.getStr(CORE_NAME_PROP);
-    SolrException e = expectThrows(SolrException.class, () -> {
-      ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set("action", "addreplica");
-      params.set("collection", collectionName);
-      params.set("shard", "shard1");
-      params.set("name", coreName);
-      QueryRequest request = new QueryRequest(params);
-      request.setPath("/admin/collections");
-      cluster.getSolrClient().request(request);
-    });
-
-    assertTrue(e.getMessage().contains("Another replica with the same core name already exists for this collection"));
-
     // Check that specifying property.name works. DO NOT remove this when the "name" property is deprecated
     // for ADDREPLICA, this is "property.name". See SOLR-7132
     response = CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")

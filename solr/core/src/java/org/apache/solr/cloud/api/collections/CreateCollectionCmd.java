@@ -340,17 +340,20 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
             for (Replica rep : replicas.values()) {
               if (rep.getCoreName().equals(sreq.params.get(CoreAdminParams.NAME)) && rep.getBaseUrl().equals(sreq.shards[0])) {
                 sreq.params.set(CoreAdminParams.CORE_NODE_NAME, rep.getName());
-                break;
               }
             }
-//            Replica replica = replicas.get(e.getKey());
-//
-//            if (replica != null) {
-//              String coreNodeName = replica.getName();
-//              sreq.params.set(CoreAdminParams.CORE_NODE_NAME, coreNodeName);
-//              log.info("Set the {} for replica {} to {}", CoreAdminParams.CORE_NODE_NAME, replica, coreNodeName);
-//            }
+            Replica replica = replicas.get(e.getKey());
 
+            if (replica != null) {
+              String coreNodeName = replica.getName();
+              sreq.params.set(CoreAdminParams.CORE_NODE_NAME, coreNodeName);
+              log.info("Set the {} for replica {} to {}", CoreAdminParams.CORE_NODE_NAME, replica, coreNodeName);
+            }
+            if (sreq.params.get(CoreAdminParams.CORE_NODE_NAME) == null) {
+              System.out.println(replicas);
+              System.out.println(coresToCreate);
+            }
+           
             log.info("Submit request to shard for for replica={}", sreq.actualShards != null ? Arrays.asList(sreq.actualShards) : "null");
             shardHandler.submit(sreq, sreq.shards[0], sreq.params);
           }

@@ -1110,7 +1110,8 @@ public class SimClusterStateProvider implements ClusterStateProvider {
             replicaProps.put("SEARCHER.searcher.deletedDocs", new AtomicLong(0));
             replicaProps.put("SEARCHER.searcher.numDocs", new AtomicLong(0));
             replicaProps.put("SEARCHER.searcher.maxDoc", new AtomicLong(0));
-            ReplicaInfo ri = new ReplicaInfo("core_node" + Assign.incAndGetId(stateManager, withCollection, 0),
+            AtomicInteger aid = new AtomicInteger();
+            ReplicaInfo ri = new ReplicaInfo("core_node" + aid.incrementAndGet(),
                 coreName, withCollection, withCollectionShard, pos.type, pos.node, replicaProps);
             cloudManager.submit(() -> {
               simAddReplica(pos.node, ri, false);
@@ -1133,7 +1134,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
         replicaProps.put("SEARCHER.searcher.deletedDocs", new AtomicLong(0));
         replicaProps.put("SEARCHER.searcher.numDocs", new AtomicLong(0));
         replicaProps.put("SEARCHER.searcher.maxDoc", new AtomicLong(0));
-        ReplicaInfo ri = new ReplicaInfo("core_node" + Assign.incAndGetId(stateManager, collectionName, 0),
+        ReplicaInfo ri = new ReplicaInfo("core_node" +  replicaNum.get(),
             coreName, collectionName, pos.shard, pos.type, pos.node, replicaProps);
         cloudManager.submit(() -> {
           simAddReplica(pos.node, ri, true);
@@ -1486,7 +1487,8 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       String subSliceName = replicaPosition.shard;
       String subShardNodeName = replicaPosition.node;
 //      String solrCoreName = collectionName + "_" + subSliceName + "_replica_n" + (replicaPosition.index);
-      String solrCoreName = Assign.buildSolrCoreName(collectionName, subSliceName, replicaPosition.type, Assign.incAndGetId(stateManager, collectionName, 0));
+      int defaultValue = Assign.defaultCounterValue(collection, subSliceName);
+      String solrCoreName = Assign.buildSolrCoreName(collectionName, subSliceName, replicaPosition.type, defaultValue);
       Map<String, Object> replicaProps = new HashMap<>();
       replicaProps.put(ZkStateReader.SHARD_ID_PROP, replicaPosition.shard);
       replicaProps.put(ZkStateReader.NODE_NAME_PROP, replicaPosition.node);
@@ -1507,8 +1509,8 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       replicaProps.put("SEARCHER.searcher.deletedDocs", new AtomicLong(0));
       replicaProps.put(Type.CORE_IDX.metricsAttribute, new AtomicLong(replicasIndexSize));
       replicaProps.put(Variable.coreidxsize, new AtomicDouble((Double)Type.CORE_IDX.convertVal(replicasIndexSize)));
-
-      ReplicaInfo ri = new ReplicaInfo("core_node" + Assign.incAndGetId(stateManager, collectionName, 0),
+      AtomicInteger aid = new AtomicInteger();
+      ReplicaInfo ri = new ReplicaInfo("core_node" + aid.incrementAndGet(),
           solrCoreName, collectionName, replicaPosition.shard, replicaPosition.type, subShardNodeName, replicaProps);
       simAddReplica(replicaPosition.node, ri, false);
     }
