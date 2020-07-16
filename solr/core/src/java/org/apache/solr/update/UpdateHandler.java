@@ -30,6 +30,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.core.PluginBag.PluginHolder.createHolder;
 import static org.apache.solr.pkg.PackagePluginHolder.createHolder;
 
 /**
@@ -173,7 +174,7 @@ public abstract class UpdateHandler implements SolrInfoBean {
    * @see SolrCoreAware
    */
   public void registerCommitCallback( SolrEventListener listener) {
-    commitCallbacks.add(createHolder(listener, core,  SolrEventListener.class,null));
+    commitCallbacks.add(createHolder(listener,  SolrEventListener.class));
   }
 
   /**
@@ -184,7 +185,7 @@ public abstract class UpdateHandler implements SolrInfoBean {
    * @see SolrCoreAware
    */
   public void registerSoftCommitCallback( SolrEventListener listener ) {
-    softCommitCallbacks.add(createHolder(listener, core,  SolrEventListener.class,null));
+    softCommitCallbacks.add(createHolder(listener,  SolrEventListener.class));
   }
 
   /**
@@ -195,7 +196,7 @@ public abstract class UpdateHandler implements SolrInfoBean {
    * @see SolrCoreAware
    */
   public void registerOptimizeCallback( SolrEventListener listener ) {
-    optimizeCallbacks.add(createHolder(listener, core, SolrEventListener.class, null));
+    optimizeCallbacks.add(createHolder(listener,  SolrEventListener.class));
   }
 
   public abstract void split(SplitIndexCommand cmd) throws IOException;

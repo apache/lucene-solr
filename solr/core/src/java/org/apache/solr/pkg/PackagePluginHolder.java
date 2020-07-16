@@ -75,12 +75,6 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
 
     });
   }
-  public static <T> PluginBag.PluginHolder<T> createHolder(T inst, SolrCore core, Class<T> type, String msg) {
-    SolrConfig.SolrPluginInfo plugin = SolrConfig.classVsSolrPluginInfo.get(type.getName());
-    PluginInfo info = new PluginInfo(plugin.tag, Collections.singletonMap("class", inst.getClass().getName()));
-    return createHolder(info, core, type, msg);
-
-  }
 
   public static <T> PluginBag.PluginHolder<T> createHolder(PluginInfo info, SolrCore core, Class<T> type, String msg) {
     if(info.cName.pkg == null) {

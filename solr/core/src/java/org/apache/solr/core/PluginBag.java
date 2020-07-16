@@ -413,6 +413,11 @@ public class PluginBag<T> implements AutoCloseable {
       if (pluginInfo != null) return pluginInfo.className;
       return null;
     }
+    public static <T> PluginBag.PluginHolder<T> createHolder(T inst,  Class<T> type) {
+      SolrConfig.SolrPluginInfo plugin = SolrConfig.classVsSolrPluginInfo.get(type.getName());
+      PluginInfo info = new PluginInfo(plugin.tag, Collections.singletonMap("class", inst.getClass().getName()));
+      return new PluginHolder<T> (info,inst);
+    }
 
     public PluginInfo getPluginInfo() {
       return pluginInfo;

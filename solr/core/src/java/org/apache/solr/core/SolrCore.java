@@ -668,7 +668,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    * @see SolrCoreAware
    */
   public void registerFirstSearcherListener(SolrEventListener listener) {
-    firstSearcherListeners.add(createHolder(listener, this, SolrEventListener.class, null));
+    firstSearcherListeners.add(createHolder(listener,  SolrEventListener.class));
   }
 
   /**
@@ -679,7 +679,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    * @see SolrCoreAware
    */
   public void registerNewSearcherListener(SolrEventListener listener) {
-    newSearcherListeners.add(createHolder(listener, this, SolrEventListener.class, null));
+    newSearcherListeners.add(createHolder(listener,  SolrEventListener.class));
   }
 
   /**
