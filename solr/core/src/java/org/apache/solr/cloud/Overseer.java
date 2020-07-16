@@ -39,7 +39,6 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.api.collections.CreateCollectionCmd;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
-import org.apache.solr.cloud.autoscaling.OverseerTriggerThread;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.cloud.overseer.CollectionMutator;
 import org.apache.solr.cloud.overseer.NodeMutator;
@@ -89,10 +88,9 @@ import com.codahale.metrics.Timer;
  * <p>The Overseer deals with:</p>
  * <ul>
  *   <li>Cluster State updates, i.e. updating Collections' <code>state.json</code> files in ZooKeeper, see {@link ClusterStateUpdater},</li>
- *   <li>Collection API implementation, including Autoscaling replica placement computation, see
+ *   <li>Collection API implementation, see
  *   {@link OverseerCollectionConfigSetProcessor} and {@link OverseerCollectionMessageHandler} (and the example below),</li>
  *   <li>Updating Config Sets, see {@link OverseerCollectionConfigSetProcessor} and {@link OverseerConfigSetMessageHandler},</li>
- *   <li>Autoscaling triggers, see {@link org.apache.solr.cloud.autoscaling.OverseerTriggerThread}.</li>
  * </ul>
  *
  * <p>The nodes in the cluster communicate with the Overseer over queues implemented in ZooKeeper. There are essentially
@@ -644,14 +642,8 @@ public class Overseer implements SolrCloseable {
     ccThread = new OverseerThread(ccTg, overseerCollectionConfigSetProcessor, "OverseerCollectionConfigSetProcessor-" + id);
     ccThread.setDaemon(true);
 
-    ThreadGroup triggerThreadGroup = new ThreadGroup("Overseer autoscaling triggers");
-    OverseerTriggerThread trigger = new OverseerTriggerThread(zkController.getCoreContainer().getResourceLoader(),
-        zkController.getSolrCloudManager());
-    triggerThread = new OverseerThread(triggerThreadGroup, trigger, "OverseerAutoScalingTriggerThread-" + id);
-
     updaterThread.start();
     ccThread.start();
-    triggerThread.start();
 
     systemCollectionCompatCheck(new BiConsumer<String, Object>() {
       boolean firstPair = true;
