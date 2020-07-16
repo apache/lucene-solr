@@ -39,7 +39,6 @@ import org.junit.Test;
 /**
  * Randomly generate taggable text and verify via simple tag algorithm.
  */
-@Repeat(iterations = 10)
 public class RandomizedTaggerTest extends TaggerTestCase {
 
   @BeforeClass
@@ -75,6 +74,15 @@ public class RandomizedTaggerTest extends TaggerTestCase {
           buf.append(RandomPicks.randomFrom(R, names));
         }
       }
+      // try to avoid:
+      // 'Exception writing document id 6 to the index; possible analysis error: input automaton is too large: 1001'
+      String name;
+      if (buf.length() > 150) {
+        name = buf.substring(0, 150);
+      } else {
+        name = buf.toString();
+      }
+
       names.add(buf.toString());
     }
 
