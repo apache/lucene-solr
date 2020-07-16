@@ -746,6 +746,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
     assertTrue("'bleh_s' copyField rule exists in the schema", l.isEmpty());
   }
 
+  @Nightly // TODO: sometimes this can be very slow it looks
   public void testDeleteAndReplace() throws Exception {
     RestTestHarness harness = restTestHarness;
 
