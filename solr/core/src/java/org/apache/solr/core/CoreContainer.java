@@ -1177,13 +1177,10 @@ public class CoreContainer {
       core.close();
       throw new IllegalStateException("This CoreContainer has been closed");
     }
-    SolrCore old = solrCores.putCore(cd, core);
-    /*
-     * set both the name of the descriptor and the name of the
-     * core, since the descriptors name is used for persisting.
-     */
 
-    core.setName(cd.getName());
+    assert core.getName().equals(cd.getName()) : "core name " + core.getName() + " != cd " + cd.getName();
+
+    SolrCore old = solrCores.putCore(cd, core);
 
     coreInitFailures.remove(cd.getName());
 
@@ -1691,6 +1688,7 @@ public class CoreContainer {
    * Swaps two SolrCore descriptors.
    */
   public void swap(String n0, String n1) {
+    apiAssumeStandalone();
     if (n0 == null || n1 == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Can not swap unnamed cores.");
     }
@@ -1786,6 +1784,7 @@ public class CoreContainer {
   }
 
   public void rename(String name, String toName) {
+    apiAssumeStandalone();
     SolrIdentifierValidator.validateCoreName(toName);
     try (SolrCore core = getCore(name)) {
       if (core != null) {
@@ -1803,6 +1802,12 @@ public class CoreContainer {
 
         coresLocator.rename(this, old.getCoreDescriptor(), core.getCoreDescriptor());
       }
+    }
+  }
+
+  private void apiAssumeStandalone() {
+    if (getZkController() != null) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Not supported in SolrCloud");
     }
   }
 
