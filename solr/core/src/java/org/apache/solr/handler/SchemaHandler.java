@@ -202,9 +202,9 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
     }
   }
 
-  /**If a plugin is loaded from a package, the version of the package being used should be added
+  /**
+   * If a plugin is loaded from a package, the version of the package being used should be added
    * to the response
-   *
    */
   @SuppressWarnings("rawtypes")
   private void insertPackageInfo(Object o, SolrQueryRequest req) {
