@@ -803,7 +803,10 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     }
 
     assertNotNull("previousFacets is null", previousFacets);
-    assertEquals("Mismatch in number of facets: ", facetCounts.size(), previousFacets.size() / 2);
+
+    // we are dividing by 2, allow off by 1
+    int diff = facetCounts.size() - (previousFacets.size() / 2);
+    assertTrue("Mismatch in number of facets: ", diff < 2);
     int pos;
     for (pos = 0 ; pos < previousFacets.size() ; pos += 2) {
       String label = (String)previousFacets.get(pos);

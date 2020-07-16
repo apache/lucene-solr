@@ -177,7 +177,7 @@ public class SolrTestCase extends LuceneTestCase {
     System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
     System.setProperty("solr.clustering.enabled", "false");
     System.setProperty("solr.peerSync.useRangeVersions", String.valueOf(random().nextBoolean()));
-    System.setProperty("zookeeper.nio.directBufferBytes", Integer.toString(64 * 1024 * 2));
+    System.setProperty("zookeeper.nio.directBufferBytes", Integer.toString(32 * 1024 * 2));
 
 
     if (!TEST_NIGHTLY) {
