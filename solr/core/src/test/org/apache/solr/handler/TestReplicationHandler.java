@@ -695,10 +695,6 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         
       for(int retries=0; ;retries++) { 
 
-        Thread.yield(); // might not be necessary at all
-        // poll interval on slave is 1 second, so we just sleep for a few seconds
-        Thread.sleep(2000);
-        
         NamedList<Object> slaveDetails=null;
         try {
           slaveDetails = getSlaveDetails();

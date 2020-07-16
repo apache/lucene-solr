@@ -208,9 +208,6 @@ public class TestStressInPlaceUpdates extends SolrCloudBridgeTestCase {
 
               DocInfo info = model.get(id);
 
-              // yield after getting the next version to increase the odds of updates happening out of order
-              if (rand.nextBoolean()) Thread.yield();
-
               if (oper < commitPercent + deletePercent + deleteByQueryPercent) {
                 final boolean dbq = (oper >= commitPercent + deletePercent);
                 final String delType = dbq ? "DBI": "DBQ";

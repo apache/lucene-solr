@@ -110,7 +110,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
     // no need to redundently factor them in here as well
     DOC_ID_INCR = TestUtil.nextInt(random(), 1, 7);
     
-    NUM_THREADS = atLeast(3);
+    NUM_THREADS = atLeast(TEST_NIGHTLY ? 3 : 2);
     EXEC_SERVICE = testExecutor;
     
     // at least 2, but don't go crazy on nightly/test.multiplier with "atLeast()"
@@ -413,7 +413,6 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
             }
             doRandomAtomicUpdate(docId);
           }
-          if (rand.nextBoolean()) { Thread.yield(); }
         }
         
       } catch (Error err) {

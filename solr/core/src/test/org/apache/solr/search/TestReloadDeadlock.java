@@ -147,9 +147,6 @@ public class TestReloadDeadlock extends TestRTGBase {
 
               long version = testVersion.incrementAndGet();
 
-              // yield after getting the next version to increase the odds of updates happening out of order
-              if (rand.nextBoolean()) Thread.yield();
-
               if (oper < commitPercent + deleteByQueryPercent) {
                 deleteByQuery(id, nextVal, version);
               } else {

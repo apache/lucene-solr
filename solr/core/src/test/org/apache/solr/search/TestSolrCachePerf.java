@@ -116,12 +116,9 @@ public class TestSolrCachePerf extends SolrTestCaseJ4 {
               } else {
                 String value = cache.get(key);
                 if (value == null) {
-                  // increase a likelihood of context switch
-                  Thread.yield();
                   cache.put(key, VALUE);
                 }
               }
-              Thread.yield();
               stopLatch.countDown();
             }
           } catch (InterruptedException e) {

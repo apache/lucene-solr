@@ -175,9 +175,6 @@ public class TestStressReorder extends TestRTGBase {
             // test may need to change depending on how we handle version numbers.
             long version = testVersion.incrementAndGet();
 
-            // yield after getting the next version to increase the odds of updates happening out of order
-            if (rand.nextBoolean()) Thread.yield();
-
               if (oper < commitPercent + deletePercent) {
                 verbose("deleting id",id,"val=",nextVal,"version",version);
 
