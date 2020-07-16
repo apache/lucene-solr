@@ -827,7 +827,7 @@ public class MiniSolrCloudCluster {
   
   public void waitForActiveCollection(String collection, long wait, TimeUnit unit, int shards, int totalReplicas) {
     log.info("waitForActiveCollection: {}", collection);
-    CollectionStatePredicate predicate = BaseCloudSolrClient.expectedShardsAndActiveReplicas(shards, totalReplicas);
+    CollectionStatePredicate predicate = BaseCloudSolrClient.expectedShardsAndActiveReplicas(shards, totalReplicas, false);
 
     AtomicReference<DocCollection> state = new AtomicReference<>();
     AtomicReference<Set<String>> liveNodesLastSeen = new AtomicReference<>();

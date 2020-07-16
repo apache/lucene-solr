@@ -83,7 +83,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @LuceneTestCase.Slow
-//@LuceneTestCase.Nightly // nocommit - nightly for a moment
 public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -91,6 +90,14 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   public static void beforeCollectionsAPISolrJTest() throws Exception {
     System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
 
+    // this class deletes all the collections between each test and so really
+    // stresses a difficult code path - give a higher so timeout for low end hardware to make it through
+    // bad cases
+    System.setProperty("distribUpdateSoTimeout", "20000");
+    System.setProperty("socketTimeout", "20000");
+    System.setProperty("solr.test.socketTimeout.default", "20000");
+    System.setProperty("solr.so_commit_timeout.default", "20000");
+    System.setProperty("solr.httpclient.defaultSoTimeout", "20000");
     configureCluster( 4)
             .addConfig("conf", configset("cloud-minimal"))
             .addConfig("conf2", configset("cloud-dynamic"))
