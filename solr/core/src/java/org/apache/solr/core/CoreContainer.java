@@ -334,7 +334,6 @@ public class CoreContainer {
 
   public CoreContainer(NodeConfig config, CoresLocator locator, boolean asyncSolrCoreLoad) {
     this.loader = config.getSolrResourceLoader();
-    this.loader.coreContainer = this;
     this.solrHome = config.getSolrHome();
     this.cfg = requireNonNull(config);
     try {

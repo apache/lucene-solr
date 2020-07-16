@@ -35,7 +35,7 @@ import java.util.function.Function;
  * This class would register a listener each package that is loaded through this
  * if any of those packages are updated , the onReload runnable is executed
  * */
-public class MultiPackageListener implements SolrClassLoader , PackageListeners.Listener {
+public class PackageListeningClassLoader implements SolrClassLoader , PackageListeners.Listener {
     private final CoreContainer coreContainer;
     private final SolrResourceLoader fallbackResourceLoader;
     private final Function<String, String> pkgVersionSupplier;
@@ -49,10 +49,10 @@ public class MultiPackageListener implements SolrClassLoader , PackageListeners.
      * @param pkgVersionSupplier Get the version configured for a given package
      * @param onReload The callback function that should be run if a package is updated
      */
-    public MultiPackageListener(CoreContainer coreContainer,
-                                SolrResourceLoader fallbackResourceLoader,
-                                Function<String, String> pkgVersionSupplier,
-                                Runnable onReload) {
+    public PackageListeningClassLoader(CoreContainer coreContainer,
+                                       SolrResourceLoader fallbackResourceLoader,
+                                       Function<String, String> pkgVersionSupplier,
+                                       Runnable onReload) {
         this.coreContainer = coreContainer;
         this.fallbackResourceLoader = fallbackResourceLoader;
         this.pkgVersionSupplier = pkgVersionSupplier;
@@ -70,13 +70,16 @@ public class MultiPackageListener implements SolrClassLoader , PackageListeners.
         if(cName.pkg == null){
             return fallbackResourceLoader.newInstance(cname, expectedType, subpackages);
         } else {
-            PackageLoader.Package.Version version = findPkgVersion(cName, true);
+            PackageLoader.Package.Version version = findPackageVersion(cName, true);
             return applyResourceLoaderAware(version, version.getLoader().newInstance(cName.className, expectedType, subpackages));
-
         }
     }
 
-    public PackageLoader.Package.Version findPkgVersion(PluginInfo.ClassName cName, boolean registerListener) {
+    /**
+     * This looks up for package and also listens for that package if required
+     * @param cName The class name
+     */
+    public PackageLoader.Package.Version findPackageVersion(PluginInfo.ClassName cName, boolean registerListener) {
         PackageLoader.Package.Version theVersion = coreContainer.getPackageLoader().getPackage(cName.pkg).getLatest(pkgVersionSupplier.apply(cName.pkg));
         if(registerListener) {
             packageVersions.put(cName.pkg, theVersion.getPkgVersion());
@@ -111,7 +114,7 @@ public class MultiPackageListener implements SolrClassLoader , PackageListeners.
         if (cName.pkg == null) {
             return fallbackResourceLoader.newInstance(cname, expectedType, subPackages, params, args);
         } else {
-            PackageLoader.Package.Version version = findPkgVersion(cName, true);
+            PackageLoader.Package.Version version = findPackageVersion(cName, true);
             return applyResourceLoaderAware(version, version.getLoader().newInstance(cName.className, expectedType, subPackages, params, args));
         }
     }
@@ -122,7 +125,7 @@ public class MultiPackageListener implements SolrClassLoader , PackageListeners.
         if (cName.pkg == null) {
             return fallbackResourceLoader.findClass(cname, expectedType);
         } else {
-            PackageLoader.Package.Version version = findPkgVersion(cName, true);
+            PackageLoader.Package.Version version = findPackageVersion(cName, true);
             return version.getLoader().findClass(cName.className, expectedType);
         }
     }

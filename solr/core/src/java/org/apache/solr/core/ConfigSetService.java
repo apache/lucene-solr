@@ -208,7 +208,6 @@ public abstract class ConfigSetService {
     public SolrResourceLoader createCoreResourceLoader(CoreDescriptor cd) {
       Path instanceDir = locateInstanceDir(cd);
       SolrResourceLoader solrResourceLoader = new SolrResourceLoader(instanceDir, parentLoader.getClassLoader());
-      solrResourceLoader.coreContainer = parentLoader.coreContainer;
       return solrResourceLoader;
     }
 

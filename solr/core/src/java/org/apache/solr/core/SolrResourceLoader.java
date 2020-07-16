@@ -62,7 +62,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @since solr 1.3
  */
-public class SolrResourceLoader implements ResourceLoader, Closeable {
+public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassLoader {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String base = "org.apache.solr";
@@ -784,9 +784,9 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
       if (getCore() == null) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "SolrCore not set");
       }
-      return fun.apply(getCore().getCoreReloadingPackageListener().findPkgVersion(cName, true));
+      return fun.apply(getCore().getCoreReloadingPackageListener().findPackageVersion(cName, true));
     } else {
-      return fun.apply(getCore().getCoreReloadingPackageListener().findPkgVersion(cName, false));
+      return fun.apply(getCore().getCoreReloadingPackageListener().findPackageVersion(cName, false));
     }
   }
 
@@ -806,9 +806,6 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
     return _classLookup( info, version -> version.getLoader().newInstance(info.cName.className, type), registerCoreReloadListener);
   }
 
-  public CoreContainer getCoreContainer(){
-    return coreContainer;
-  }
   public static void persistConfLocally(SolrResourceLoader loader, String resourceName, byte[] content) {
     // Persist locally
     File confFile = new File(loader.getConfigDir(), resourceName);
