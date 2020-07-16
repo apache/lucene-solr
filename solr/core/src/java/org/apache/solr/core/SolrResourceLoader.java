@@ -58,8 +58,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @since solr 1.3
  */
-public class SolrResourceLoader implements ResourceLoader,Closeable
-{
+public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassLoader {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String base = "org.apache.solr";
@@ -76,6 +75,12 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
   protected URLClassLoader classLoader;
   private final Path instanceDir;
   private String dataDir; // gone in 9.0
+
+  /**
+   * this is set  by the {@link SolrCore}
+   * This could be null if the core is not yet initialized
+   */
+  SolrCore core;
 
   private final List<SolrCoreAware> waitingForCore = Collections.synchronizedList(new ArrayList<SolrCoreAware>());
   private final List<SolrInfoBean> infoMBeans = Collections.synchronizedList(new ArrayList<SolrInfoBean>());
@@ -200,6 +205,11 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
     TokenFilterFactory.reloadTokenFilters(this.classLoader);
     TokenizerFactory.reloadTokenizers(this.classLoader);
   }
+
+  public SolrCore getCore(){
+    return core;
+  }
+
 
   private static URLClassLoader addURLsToClassLoader(final URLClassLoader oldLoader, List<URL> urls) {
     if (urls.size() == 0) {

@@ -10,7 +10,8 @@ Consult the lucene/CHANGES.txt file for additional, low level, changes in this r
 
 New Features
 ---------------------
-(No changes)
+
+* SOLR-14151 Make schema components load from packages (noble)
 
 Improvements
 ---------------------

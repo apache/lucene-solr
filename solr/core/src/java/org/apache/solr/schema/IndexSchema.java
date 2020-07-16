@@ -62,6 +62,7 @@ import org.apache.solr.common.util.Cache;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.SolrClassLoader;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.XmlConfigFile;
@@ -135,6 +136,7 @@ public class IndexSchema {
   protected final Version luceneVersion;
   protected float version;
   protected final SolrResourceLoader loader;
+  protected final SolrClassLoader solrClassLoader;
   protected final Properties substitutableProperties;
 
   protected Map<String,SchemaField> fields = new HashMap<>();
@@ -188,6 +190,7 @@ public class IndexSchema {
   protected IndexSchema(Version luceneVersion, SolrResourceLoader loader, Properties substitutableProperties) {
     this.luceneVersion = Objects.requireNonNull(luceneVersion);
     this.loader = loader;
+    this.solrClassLoader = loader.getCore() == null? loader: loader.getCore().getSchemaPluginsLoader();
     this.substitutableProperties = substitutableProperties;
   }
 
@@ -206,6 +209,10 @@ public class IndexSchema {
   /** Gets the name of the resource used to instantiate this schema. */
   public String getResourceName() {
     return resourceName;
+  }
+
+  public SolrClassLoader getSolrClassLoader() {
+    return solrClassLoader;
   }
 
   /** Sets the name of the resource used to instantiate this schema. */
@@ -391,7 +398,7 @@ public class IndexSchema {
         return sf.getType().getUninversionType(sf);
       }
       // else...
-      
+
       // It would be nice to throw a helpful error here, with a good useful message for the user,
       // but unfortunately, inspite of the UninvertingReader class jdoc claims that the uninversion
       // process is lazy, that doesn't mean it's lazy as of "When a caller attempts ot use doc values"
@@ -405,7 +412,7 @@ public class IndexSchema {
   }
 
   /**
-   * Writes the schema in schema.xml format to the given writer 
+   * Writes the schema in schema.xml format to the given writer
    */
   void persist(Writer writer) throws IOException {
     final SolrQueryResponse response = new SolrQueryResponse();
@@ -499,18 +506,18 @@ public class IndexSchema {
       final FieldTypePluginLoader typeLoader = new FieldTypePluginLoader(this, fieldTypes, schemaAware);
       expression = getFieldTypeXPathExpressions();
       NodeList nodes = (NodeList) xpath.evaluate(expression, document, XPathConstants.NODESET);
-      typeLoader.load(loader, nodes);
+      typeLoader.load(solrClassLoader, nodes);
 
       // load the fields
       Map<String,Boolean> explicitRequiredProp = loadFields(document, xpath);
 
       expression = stepsToPath(SCHEMA, SIMILARITY); //   /schema/similarity
       Node node = (Node) xpath.evaluate(expression, document, XPathConstants.NODE);
-      similarityFactory = readSimilarity(loader, node);
+      similarityFactory = readSimilarity(solrClassLoader, node);
       if (similarityFactory == null) {
         final Class<?> simClass = SchemaSimilarityFactory.class;
         // use the loader to ensure proper SolrCoreAware handling
-        similarityFactory = loader.newInstance(simClass.getName(), SimilarityFactory.class);
+        similarityFactory = solrClassLoader.newInstance(simClass.getName(), SimilarityFactory.class);
         similarityFactory.init(new ModifiableSolrParams());
       } else {
         isExplicitSimilarity = true;
@@ -594,12 +601,12 @@ public class IndexSchema {
           uniqueKeyField.required = true;
           requiredFields.add(uniqueKeyField);
         }
-      }                
+      }
 
       /////////////// parse out copyField commands ///////////////
       // Map<String,ArrayList<SchemaField>> cfields = new HashMap<String,ArrayList<SchemaField>>();
       // expression = "/schema/copyField";
-    
+
       dynamicCopyFields = new DynamicCopy[] {};
       loadCopyFields(document, xpath);
 
@@ -754,10 +761,10 @@ public class IndexSchema {
         log.error(msg);
         throw new SolrException(ErrorCode.SERVER_ERROR, msg);
       }
-      
+
       registerCopyField(source, dest, maxCharsInt);
     }
-      
+
     for (Map.Entry<SchemaField, Integer> entry : copyFieldTargetCounts.entrySet()) {
       if (entry.getValue() > 1 && !entry.getKey().multiValued())  {
         log.warn("Field {} is not multivalued and destination for multiople {} ({})"
@@ -786,7 +793,7 @@ public class IndexSchema {
     }
     return false;
   }
-  
+
   protected boolean isValidDynamicField(List<DynamicField> dFields, SchemaField f) {
     String glob = f.getName();
     if (f.getDefaultValue() != null) {
@@ -853,7 +860,7 @@ public class IndexSchema {
    * <code>inform( SolrCore core )</code> function for <code>SolrCoreAware</code> classes.
    * Outside <code>inform</code>, this could potentially throw a ConcurrentModificationException
    * </p>
-   * 
+   *
    * @see SolrCoreAware
    */
   public void registerCopyField(String source, String dest, int maxChars) {
@@ -863,10 +870,10 @@ public class IndexSchema {
     DynamicField destDynamicField = null;
     SchemaField destSchemaField = fields.get(dest);
     SchemaField sourceSchemaField = fields.get(source);
-    
+
     DynamicField sourceDynamicBase = null;
     DynamicField destDynamicBase = null;
-    
+
     boolean sourceIsDynamicFieldReference = false;
     boolean sourceIsExplicitFieldGlob = false;
 
@@ -892,7 +899,7 @@ public class IndexSchema {
         }
       }
     }
-    
+
     if (null == destSchemaField || (null == sourceSchemaField && ! sourceIsExplicitFieldGlob)) {
       // Go through dynamicFields array only once, collecting info for both source and dest fields, if needed
       for (DynamicField dynamicField : dynamicFields) {
@@ -914,7 +921,7 @@ public class IndexSchema {
             destDynamicBase = dynamicField;
           }
         }
-        if (null != destSchemaField 
+        if (null != destSchemaField
             && (null != sourceSchemaField || sourceIsDynamicFieldReference || sourceIsExplicitFieldGlob)) {
           break;
         }
@@ -971,7 +978,7 @@ public class IndexSchema {
     copyFieldList.add(new CopyField(sourceSchemaField, destSchemaField, maxChars));
     incrementCopyFieldTargetCount(destSchemaField);
   }
-  
+
   private void incrementCopyFieldTargetCount(SchemaField dest) {
     copyFieldTargetCounts.put(dest, copyFieldTargetCounts.containsKey(dest) ? copyFieldTargetCounts.get(dest) + 1 : 1);
   }
@@ -983,7 +990,7 @@ public class IndexSchema {
     dynamicCopyFields = temp;
   }
 
-  static SimilarityFactory readSimilarity(SolrResourceLoader loader, Node node) {
+  static SimilarityFactory readSimilarity(SolrClassLoader loader, Node node) {
     if (node==null) {
       return null;
     } else {
@@ -1024,7 +1031,7 @@ public class IndexSchema {
         else { return new NameEquals(regex);
         }
       }
-      
+
       /** Returns true if the given name matches this pattern */
       abstract boolean matches(String name);
 
@@ -1033,7 +1040,7 @@ public class IndexSchema {
 
       /** Returns the result of combining this pattern's fixed string component with the given replacement */
       abstract String subst(String replacement);
-      
+
       /** Returns the length of the original regex, including the asterisk, if any. */
       public int length() { return regex.length(); }
 
@@ -1076,7 +1083,7 @@ public class IndexSchema {
     public int compareTo(DynamicReplacement other) {
       return other.pattern.length() - pattern.length();
     }
-    
+
     /** Returns the regex used to create this instance's pattern */
     public String getRegex() {
       return pattern.regex;
@@ -1110,7 +1117,7 @@ public class IndexSchema {
 
   public static class DynamicCopy extends DynamicReplacement {
     private final DynamicField destination;
-    
+
     private final int maxChars;
     public int getMaxChars() { return maxChars; }
 
@@ -1120,7 +1127,7 @@ public class IndexSchema {
     final DynamicField destDynamicBase;
     public DynamicField getDestDynamicBase() { return destDynamicBase; }
 
-    DynamicCopy(String sourceRegex, DynamicField destination, int maxChars, 
+    DynamicCopy(String sourceRegex, DynamicField destination, int maxChars,
                 DynamicField sourceDynamicBase, DynamicField destDynamicBase) {
       super(sourceRegex);
       this.destination = destination;
@@ -1144,7 +1151,7 @@ public class IndexSchema {
       return destination.makeSchemaField(targetFieldName);
     }
 
-    
+
     @Override
     public String toString() {
       return destination.prototype.toString();
@@ -1165,7 +1172,7 @@ public class IndexSchema {
    }
    return  null; 
   }
-  
+
   /**
    * Does the schema explicitly define the specified field, i.e. not as a result
    * of a copyField declaration?  We consider it explicitly defined if it matches
@@ -1198,7 +1205,7 @@ public class IndexSchema {
     }
 
     return false;
-  }   
+  }
 
   /**
    * Returns the SchemaField that should be used for the specified field name, or
@@ -1373,10 +1380,10 @@ public class IndexSchema {
 
     return result;
   }
-  
+
   /**
-   * Check if a field is used as the destination of a copyField operation 
-   * 
+   * Check if a field is used as the destination of a copyField operation
+   *
    * @since solr 1.3
    */
   public boolean isCopyFieldTarget( SchemaField f ) {
@@ -1529,14 +1536,14 @@ public class IndexSchema {
   /**
    * Returns a list of copyField directives, with optional details and optionally restricting to those
    * directives that contain the requested source and/or destination field names.
-   * 
+   *
    * @param showDetails If true, source and destination dynamic bases, and explicit fields matched by source globs,
    *                    will be added to dynamic copyField directives where appropriate
    * @param requestedSourceFields If not null, output is restricted to those copyField directives
-   *                              with the requested source field names 
+   *                              with the requested source field names
    * @param requestedDestinationFields If not null, output is restricted to those copyField directives
-   *                                   with the requested destination field names 
-   * @return a list of copyField directives 
+   *                                   with the requested destination field names
+   * @return a list of copyField directives
    */
   public List<SimpleOrderedMap<Object>> getCopyFieldProperties
       (boolean showDetails, Set<String> requestedSourceFields, Set<String> requestedDestinationFields) {
@@ -1613,7 +1620,7 @@ public class IndexSchema {
    * Requires synchronizing on the object returned by
    * {@link #getSchemaUpdateLock()}.
    *
-   * @param newField the SchemaField to add 
+   * @param newField the SchemaField to add
    * @param persist to persist the schema or not
    * @return a new IndexSchema based on this schema with newField added
    * @see #newField(String, String, Map)
@@ -1689,7 +1696,7 @@ public class IndexSchema {
   }
 
   /**
-   * Copies this schema, deletes the named field from the copy, creates a new field 
+   * Copies this schema, deletes the named field from the copy, creates a new field
    * with the same name using the given args, then rebinds any referring copy fields
    * to the replacement field.
    *
@@ -1699,7 +1706,7 @@ public class IndexSchema {
    * Requires synchronizing on the object returned by {@link #getSchemaUpdateLock()}.
    *
    * @param fieldName The name of the field to be replaced
-   * @param replacementFieldType  The field type of the replacement field                                   
+   * @param replacementFieldType  The field type of the replacement field
    * @param replacementArgs Initialization params for the replacement field
    * @return a new IndexSchema based on this schema with the named field replaced
    */
@@ -1757,7 +1764,7 @@ public class IndexSchema {
    * Requires synchronizing on the object returned by {@link #getSchemaUpdateLock()}.
    *
    * @param fieldNamePattern The glob for the dynamic field to be replaced
-   * @param replacementFieldType  The field type of the replacement dynamic field                                   
+   * @param replacementFieldType  The field type of the replacement dynamic field
    * @param replacementArgs Initialization params for the replacement dynamic field
    * @return a new IndexSchema based on this schema with the named dynamic field replaced
    */
@@ -1787,10 +1794,10 @@ public class IndexSchema {
 
   /**
    * Copies this schema and adds the new copy fields to the copy.
-   * 
-   * Requires synchronizing on the object returned by 
+   *
+   * Requires synchronizing on the object returned by
    * {@link #getSchemaUpdateLock()}
-   * 
+   *
    * @param source source field name
    * @param destinations collection of target field names
    * @param maxChars max number of characters to copy from the source to each
@@ -1812,7 +1819,7 @@ public class IndexSchema {
    * Requires synchronizing on the object returned by
    * {@link #getSchemaUpdateLock()}.
    *
-   * @param copyFields Key is the name of the source field name, value is a collection of target field names. 
+   * @param copyFields Key is the name of the source field name, value is a collection of target field names.
    *                   Each corresponding copy field directives must exist.
    * @return The new Schema with the copy fields deleted
    */
@@ -1824,8 +1831,8 @@ public class IndexSchema {
 
 
   /**
-   * Returns a SchemaField if the given fieldName does not already 
-   * exist in this schema, and does not match any dynamic fields 
+   * Returns a SchemaField if the given fieldName does not already
+   * exist in this schema, and does not match any dynamic fields
    * in this schema.  The resulting SchemaField can be used in a call
    * to {@link #addField(SchemaField)}.
    *
@@ -1842,8 +1849,8 @@ public class IndexSchema {
   }
 
   /**
-   * Returns a SchemaField if the given dynamic field glob does not already 
-   * exist in this schema, and does not match any dynamic fields 
+   * Returns a SchemaField if the given dynamic field glob does not already
+   * exist in this schema, and does not match any dynamic fields
    * in this schema.  The resulting SchemaField can be used in a call
    * to {@link #addField(SchemaField)}.
    *
@@ -1904,15 +1911,15 @@ public class IndexSchema {
   }
 
   /**
-   * Copies this schema, deletes the named field type from the copy, creates a new field type 
+   * Copies this schema, deletes the named field type from the copy, creates a new field type
    * with the same name using the given args, rebuilds fields and dynamic fields of the given
    * type, then rebinds any referring copy fields to the rebuilt fields.
-   * 
+   *
    * <p>
    * The schema will not be persisted.
    * <p>
    * Requires synchronizing on the object returned by {@link #getSchemaUpdateLock()}.
-   *  
+   *
    * @param typeName The name of the field type to be replaced
    * @param replacementClassName The class name of the replacement field type
    * @param replacementArgs Initialization params for the replacement field type
@@ -1944,14 +1951,14 @@ public class IndexSchema {
   protected String getFieldTypeXPathExpressions() {
     //               /schema/fieldtype | /schema/fieldType | /schema/types/fieldtype | /schema/types/fieldType
     String expression = stepsToPath(SCHEMA, FIELD_TYPE.toLowerCase(Locale.ROOT)) // backcompat(?)
-        + XPATH_OR + stepsToPath(SCHEMA, FIELD_TYPE)
-        + XPATH_OR + stepsToPath(SCHEMA, TYPES, FIELD_TYPE.toLowerCase(Locale.ROOT))
-        + XPATH_OR + stepsToPath(SCHEMA, TYPES, FIELD_TYPE);
+            + XPATH_OR + stepsToPath(SCHEMA, FIELD_TYPE)
+            + XPATH_OR + stepsToPath(SCHEMA, TYPES, FIELD_TYPE.toLowerCase(Locale.ROOT))
+            + XPATH_OR + stepsToPath(SCHEMA, TYPES, FIELD_TYPE);
     return expression;
   }
 
   /**
-   * Helper method that returns <code>true</code> if the {@link #ROOT_FIELD_NAME} uses the exact 
+   * Helper method that returns <code>true</code> if the {@link #ROOT_FIELD_NAME} uses the exact
    * same 'type' as the {@link #getUniqueKeyField()}
    *
    * @lucene.internal

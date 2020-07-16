@@ -267,7 +267,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
                       if (o instanceof Map) {
                         @SuppressWarnings({"rawtypes"})
                         Map m1 = (Map) o;
-                        m1.put("_packageinfo_", listener.getPackageVersion());
+                        m1.put("_packageinfo_", listener.getPackageVersion(info.cName));
                       }
                     }
                   }

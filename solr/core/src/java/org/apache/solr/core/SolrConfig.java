@@ -57,6 +57,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.handler.component.SearchComponent;
+import org.apache.solr.pkg.PackageListeners;
+import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.transform.TransformerFactory;
@@ -105,6 +107,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String DEFAULT_CONF_FILE = "solrconfig.xml";
+
 
   private RequestParams requestParams;
 
@@ -952,6 +955,21 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     return requestParams;
   }
 
+  /**
+   * The version of package that should be loaded for a given package name
+   * This information is stored in the params.json in the same configset
+   * If params.json is absent or there is no corresponding version specified for a given package,
+   * this returns a null and the latest is used by the caller
+   */
+  public String maxPackageVersion(String pkg) {
+    RequestParams.ParamSet p = getRequestParams().getParams(PackageListeners.PACKAGE_VERSIONS);
+    if (p == null) {
+      return null;
+    }
+    Object o = p.get().get(pkg);
+    if (o == null || PackageLoader.LATEST.equals(o)) return null;
+    return o.toString();
+  }
 
   public RequestParams refreshRequestParams() {
     requestParams = RequestParams.getFreshRequestParams(getResourceLoader(), requestParams);
