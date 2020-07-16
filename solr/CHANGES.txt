@@ -6,7 +6,7 @@ https://github.com/apache/lucene-solr/blob/master/solr/solr-ref-guide/src/solr-u
 
 ==================  9.0.0 ==================
 
-Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+Consult the lucene/CHANGES.txt file for additional, low level, changes in this release.
 
 Upgrade Notes
 ---------------------
@@ -93,7 +93,9 @@ Other Changes
 * LUCENE-9411: Fail complation on warnings, 9x gradle-only (Erick Erickson, Dawid Weiss)
   Deserves mention here as well as Lucene CHANGES.txt since it affects both.
 
-* SOLR-12847: Remove support for maxShardsPerNode.
+* SOLR-12847: Remove support for maxShardsPerNode. (ab)
+
+* SOLR-14244: Remove ReplicaInfo. (ab)
 
 Bug Fixes
 ---------------------
@@ -102,11 +104,12 @@ Bug Fixes
 
 ==================  8.7.0 ==================
 
-Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+Consult the lucene/CHANGES.txt file for additional, low level, changes in this release.
 
 New Features
 ---------------------
-(No changes)
+
+* SOLR-14151 Make schema components load from packages (noble)
 
 Improvements
 ---------------------
@@ -115,12 +118,13 @@ Improvements
 
 * SOLR-14537: Improve performance of ExportWriter. (ab, Joel Bernstein)
 
-* SOLR-14566: Request ID's ('rid') are now added by default to distributed search requests, and can be used to correlate 
+* SOLR-14566: Request ID's ('rid') are now added by default to distributed search requests, and can be used to correlate
   logs from the receiving coordinator node with those from downstream shard requests.  This can be disabled by providing a
   disableRequestId=true request parameter. (Jason Gerlowski)
 
 * SOLR-14635: ThreadDumpHandler has been enhanced to show lock ownership (hossman)
 
+* SOLR-11262: Implement writeMap and writeIterator in XMLWriter (yonik, Munendra S N)
 
 Optimizations
 ---------------------
@@ -141,12 +145,17 @@ Other Changes
 
 * SOLR-14592: Upgrade Zookeeper to 3.6.1. NOTE: this required upgrading netty to 4.1.50 (Erick Erickson)
 
-* SOLR-10742: SolrCores.getNamesForCore is quite inefficient and blocks other core operations. 
+* SOLR-10742: SolrCores.getNamesForCore is quite inefficient and blocks other core operations.
   NOTE: this experimental method has been removed (Erick Erickson)
+
+* SOLR-13939: Extract any non-gradle related patches (deprecations, URL fixes, etc.) from gradle effort. NOTE:
+  this will be in several separate commits/pushes. (Erick Erickson)
+
+* SOLR-14637: Update CloudSolrClient examples to remove deprecated method. (Andras Salamon via Eric Pugh)
 
 ==================  8.6.0 ==================
 
-Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+Consult the lucene/CHANGES.txt file for additional, low level, changes in this release.
 
 New Features
 ---------------------

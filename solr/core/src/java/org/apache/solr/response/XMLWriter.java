@@ -24,6 +24,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.solr.common.IteratorWriter;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -271,6 +273,28 @@ public class XMLWriter extends TextResponseWriter {
   }
 
   @Override
+  public void writeMap(String name, MapWriter val) throws IOException {
+    // As the size is not known. So, always both startTag and endTag is written
+    // irrespective of number of entries in MapWriter
+    startTag("lst", name, false);
+    incLevel();
+
+    val.writeMap(new MapWriter.EntryWriter() {
+      @Override
+      public MapWriter.EntryWriter put(CharSequence k, Object v) throws IOException {
+        writeVal( null == k ? null : k.toString(), v);
+        return this;
+      }
+    });
+
+    decLevel();
+    if (doIndent) {
+      indent();
+    }
+    writer.write("</lst>");
+  }
+
+  @Override
   @SuppressWarnings({"unchecked", "rawtypes"})
   public void writeMap(String name, @SuppressWarnings({"rawtypes"})Map map, boolean excludeOuter, boolean isFirstVal) throws IOException {
     int sz = map.size();
@@ -316,6 +340,28 @@ public class XMLWriter extends TextResponseWriter {
     else {
       startTag("arr", name, true );
     }
+  }
+
+  @Override
+  public void writeIterator(String name, IteratorWriter val) throws IOException {
+    // As the size is not known. So, always both startTag and endTag is written
+    // irrespective of number of entries in IteratorWriter
+    startTag("arr", name, false );
+    incLevel();
+
+    val.writeIter(new IteratorWriter.ItemWriter() {
+      @Override
+      public IteratorWriter.ItemWriter add(Object o) throws IOException {
+        writeVal(null, o);
+        return this;
+      }
+    });
+
+    decLevel();
+    if (doIndent) {
+      indent();
+    }
+    writer.write("</arr>");
   }
 
   //

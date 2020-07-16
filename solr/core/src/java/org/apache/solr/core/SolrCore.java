@@ -225,6 +225,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private IndexReaderFactory indexReaderFactory;
   private final Codec codec;
   private final MemClassLoader memClassLoader;
+  //singleton listener for all packages used in schema
+  private final PackageListeningClassLoader schemaPluginsLoader;
 
   //a single package listener for all cores that require core reloading
   private final PackageListeningClassLoader coreReloadingClassLoader;
@@ -279,6 +281,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
   public PackageListeners getPackageListeners() {
     return packageListeners;
+  }
+  public PackageListeningClassLoader getSchemaPluginsLoader() {
+    return schemaPluginsLoader;
   }
 
   static int boolean_query_max_clause_count = Integer.MIN_VALUE;
@@ -957,6 +962,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
               () -> setLatestSchema(configSet.getIndexSchema(true)));
       this.packageListeners.addListener(schemaPluginsLoader);
       IndexSchema schema = configSet.getIndexSchema();
+
       this.coreReloadingClassLoader = new PackageListeningClassLoader(coreContainer,
               resourceLoader,
               solrConfig::maxPackageVersion,

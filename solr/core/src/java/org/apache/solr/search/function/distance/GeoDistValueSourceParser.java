@@ -210,9 +210,8 @@ public class GeoDistValueSourceParser extends ValueSourceParser {
 
     final SpatialStrategy strategy;
     final DistanceUnits distanceUnits;
-    @SuppressWarnings({"unchecked"})
     public SpatialStrategyMultiValueSource(SpatialStrategy strategy, DistanceUnits distanceUnits) {
-      super(Collections.EMPTY_LIST);
+      super(Collections.emptyList());
       this.strategy = strategy;
       this.distanceUnits = distanceUnits;
     }

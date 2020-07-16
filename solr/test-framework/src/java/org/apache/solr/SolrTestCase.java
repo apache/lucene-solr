@@ -20,7 +20,9 @@ package org.apache.solr;
 import java.lang.invoke.MethodHandles;
 import java.io.File;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
@@ -37,6 +39,7 @@ import org.slf4j.LoggerFactory;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
 import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAsBoolean;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 
 /**
  * All Solr test cases should derive from this class eventually. This is originally a result of async logging, see:
@@ -50,6 +53,13 @@ import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAs
  * SolrTestCaseJ4.
  */
 
+  // ThreadLeakFilters are not additive. Any subclass that requires filters
+  // other than these must redefine these as well.
+@ThreadLeakFilters(defaultFilters = true, filters = {
+        SolrIgnoredThreadsFilter.class,
+        QuickPatchThreadsFilter.class
+})
+@ThreadLeakLingering(linger = 10000)
 public class SolrTestCase extends LuceneTestCase {
 
   /**

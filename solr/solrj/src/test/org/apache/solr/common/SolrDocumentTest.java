@@ -94,7 +94,7 @@ public class SolrDocumentTest extends SolrTestCase
     try { doc.getFieldValuesMap().putAll( null );        fail( "should be unsupported!" ); } catch( UnsupportedOperationException ex ){}
     try { doc.getFieldValuesMap().values();              fail( "should be unsupported!" ); } catch( UnsupportedOperationException ex ){}
     try { doc.getFieldValuesMap().remove( "key" );       fail( "should be unsupported!" ); } catch( UnsupportedOperationException ex ){}
-    try { doc.getFieldValueMap().put( "key", Collections.EMPTY_LIST ); fail( "should be unsupported!" ); } catch( UnsupportedOperationException ex ){}
+    try { doc.getFieldValueMap().put( "key", Collections.emptyList() ); fail( "should be unsupported!" ); } catch( UnsupportedOperationException ex ){}
 
     assertEquals( null, doc.getFieldValueMap().get( "aaa" ) );
     doc.setField( "aaa", "bbb" );

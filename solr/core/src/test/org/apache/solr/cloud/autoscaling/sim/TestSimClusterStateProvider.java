@@ -29,7 +29,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.Preference;
-import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -64,7 +63,7 @@ public class TestSimClusterStateProvider extends SolrCloudTestCase {
   private static Collection<String> liveNodes;
   private static Map<String, Object> clusterProperties;
   private static AutoScalingConfig autoScalingConfig;
-  private static Map<String, Map<String, Map<String, List<ReplicaInfo>>>> replicas;
+  private static Map<String, Map<String, Map<String, List<Replica>>>> replicas;
   private static Map<String, Map<String, Object>> nodeValues;
   private static ClusterState realState;
 

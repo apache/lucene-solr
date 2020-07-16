@@ -19,7 +19,6 @@ package org.apache.solr.response;
 import java.io.File;
 import java.io.FilePermission;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
 import java.io.Writer;
@@ -130,7 +129,6 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
   public void inform(SolrCore core) {
     // need to leverage SolrResourceLoader, so load init.properties.file here instead of init()
     if (initPropertiesFileName != null) {
-      InputStream is = null;
       try {
         velocityInitProps.load(new InputStreamReader(core.getResourceLoader().openResource(initPropertiesFileName), StandardCharsets.UTF_8));
       } catch (IOException e) {
