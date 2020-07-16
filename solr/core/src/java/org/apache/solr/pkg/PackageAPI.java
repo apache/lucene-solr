@@ -192,7 +192,7 @@ public class PackageAPI {
 
     public PkgVersion(Package.AddVersion addVersion) {
       this.version = addVersion.version;
-      this.files = addVersion.files;
+      this.files = addVersion.files == null? null : Collections.unmodifiableList(addVersion.files);
       this.manifest = addVersion.manifest;
       this.manifestSHA512 = addVersion.manifestSHA512;
     }
@@ -220,6 +220,15 @@ public class PackageAPI {
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
+    }
+
+    public PkgVersion copy() {
+      PkgVersion result = new PkgVersion();
+      result.version = this.version;
+      result.files =  this.files;
+      result.manifest =  this.manifest;
+      result.manifestSHA512 =  this.manifestSHA512;
+      return result;
     }
   }
 

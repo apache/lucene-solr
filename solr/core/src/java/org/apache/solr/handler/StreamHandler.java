@@ -158,8 +158,8 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
     }
 
     @Override
-    protected void initNewInstance(PackageLoader.Package.Version newest) {
-      clazz = newest.getLoader().findClass(pluginInfo.className, Expressible.class);
+    protected Object initNewInstance(PackageLoader.Package.Version newest) {
+      return clazz = newest.getLoader().findClass(pluginInfo.className, Expressible.class);
     }
 
   }
