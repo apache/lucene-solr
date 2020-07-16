@@ -44,6 +44,11 @@ public class PackageListeningClassLoader implements SolrClassLoader , PackageLis
     private Map<String ,PackageAPI.PkgVersion> packageVersions =  new HashMap<>(1);
     private final Runnable onReload;
 
+    /**
+     * @param fallbackResourceLoader The {@link SolrResourceLoader} to use if no package is specified
+     * @param pkgVersionSupplier Get the version configured for a given package
+     * @param onReload The callback function that should be run if a package is updated
+     */
     public PackageListeningClassLoader(CoreContainer coreContainer,
                                        SolrResourceLoader fallbackResourceLoader,
                                        Function<String, String> pkgVersionSupplier,
