@@ -82,7 +82,6 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
    * This could be null if the core is not yet initialized
    */
   SolrCore core;
-  CoreContainer coreContainer;
 
   private final List<SolrCoreAware> waitingForCore = Collections.synchronizedList(new ArrayList<SolrCoreAware>());
   private final List<SolrInfoBean> infoMBeans = Collections.synchronizedList(new ArrayList<SolrInfoBean>());
@@ -765,9 +764,6 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
   }
 
 
-  public CoreContainer getCoreContainer(){
-    return coreContainer;
-  }
   public static void persistConfLocally(SolrResourceLoader loader, String resourceName, byte[] content) {
     // Persist locally
     File confFile = new File(loader.getConfigDir(), resourceName);

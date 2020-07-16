@@ -19,7 +19,6 @@ package org.apache.solr.core;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.IndexSchema;
 
-import java.util.function.Function;
 
 /**
  * Stores a core's configuration in the form of a SolrConfig and IndexSchema.
@@ -32,10 +31,7 @@ public class ConfigSet {
 
   private final SolrConfig solrconfig;
 
-  /**Provide a Schema object on demand
-   * The first Boolean is to signify a a forcefetch
-   */
-  private final Function<Boolean, IndexSchema> indexSchema;
+  private final SchemaSupplier schemaSupplier;
 
   @SuppressWarnings({"rawtypes"})
   private final NamedList properties;
@@ -43,11 +39,11 @@ public class ConfigSet {
   private final boolean trusted;
 
   @SuppressWarnings({"rawtypes"})
-  public ConfigSet(String name, SolrConfig solrConfig, Function<Boolean, IndexSchema> indexSchema,
+  public ConfigSet(String name, SolrConfig solrConfig, SchemaSupplier indexSchemaSupplier,
       NamedList properties, boolean trusted) {
     this.name = name;
     this.solrconfig = solrConfig;
-    this.indexSchema = indexSchema;
+    this.schemaSupplier = indexSchemaSupplier;
     this.properties = properties;
     this.trusted = trusted;
   }
@@ -62,13 +58,13 @@ public class ConfigSet {
 
   /**
    *
-   * @param forceFetch get a fresh value and not cached valiue
+   * @param forceFetch get a fresh value and not cached value
    */
   public IndexSchema getIndexSchema(boolean forceFetch) {
-    return indexSchema.apply(forceFetch);
+    return schemaSupplier.get(forceFetch);
   }
   public IndexSchema getIndexSchema() {
-    return indexSchema.apply(Boolean.FALSE);
+    return schemaSupplier.get(false);
   }
 
   @SuppressWarnings({"rawtypes"})
@@ -78,5 +74,15 @@ public class ConfigSet {
   
   public boolean isTrusted() {
     return trusted;
+  }
+
+  /**Provide a Schema object on demand
+   * We want IndexSchema Objects to be lazily instantiated because when a configset is
+   * created the {@link SolrResourceLoader} associated with it is not associated with a core
+   * So, we may not be able to update the core if we the schema classes are updated
+   * */
+  interface SchemaSupplier {
+     IndexSchema get(boolean forceFetch);
+
   }
 }

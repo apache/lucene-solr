@@ -35,7 +35,7 @@ import java.util.function.Function;
  * This class would register a listener each package that is loaded through this
  * if any of those packages are updated , the onReload runnable is executed
  * */
-public class MultiPackageListener implements SolrClassLoader , PackageListeners.Listener {
+public class PackageListeningClassLoader implements SolrClassLoader , PackageListeners.Listener {
     private final CoreContainer coreContainer;
     private final SolrResourceLoader coreResourceLoader;
     private final Function<String, String> pkgVersionSupplier;
@@ -44,10 +44,10 @@ public class MultiPackageListener implements SolrClassLoader , PackageListeners.
     private Map<String ,PackageAPI.PkgVersion> packageVersions =  new HashMap<>(1);
     private final Runnable onReload;
 
-    public MultiPackageListener(CoreContainer coreContainer,
-                                SolrResourceLoader coreResourceLoader,
-                                Function<String, String> pkgVersionSupplier,
-                                Runnable onReload) {
+    public PackageListeningClassLoader(CoreContainer coreContainer,
+                                       SolrResourceLoader coreResourceLoader,
+                                       Function<String, String> pkgVersionSupplier,
+                                       Runnable onReload) {
         this.coreContainer = coreContainer;
         this.coreResourceLoader = coreResourceLoader;
         this.pkgVersionSupplier = pkgVersionSupplier;

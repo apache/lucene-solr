@@ -82,7 +82,7 @@ public abstract class ConfigSetService {
               ) ? false: true;
 
       SolrConfig solrConfig = createSolrConfig(dcore, coreLoader, trusted);
-      Function<Boolean,IndexSchema> schema = clean -> createIndexSchema(dcore, solrConfig, clean);// ;
+      ConfigSet.SchemaSupplier schema = force -> createIndexSchema(dcore, solrConfig, force);
       return new ConfigSet(configSetName(dcore), solrConfig, schema, properties, trusted);
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -210,7 +210,6 @@ public abstract class ConfigSetService {
     public SolrResourceLoader createCoreResourceLoader(CoreDescriptor cd) {
       Path instanceDir = locateInstanceDir(cd);
       SolrResourceLoader solrResourceLoader = new SolrResourceLoader(instanceDir, parentLoader.getClassLoader());
-      solrResourceLoader.coreContainer = parentLoader.coreContainer;
       return solrResourceLoader;
     }
 
