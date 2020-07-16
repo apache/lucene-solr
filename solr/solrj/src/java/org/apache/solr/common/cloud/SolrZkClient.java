@@ -240,7 +240,7 @@ public class SolrZkClient implements Closeable {
         closer.collect(zkCallbackExecutor);
         closer.collect(connManager);
         closer.collect(keeper);
-        closer.collect("zkClientCloseOnException");
+        closer.addCollect("zkClientCloseOnException");
       }
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
@@ -256,7 +256,7 @@ public class SolrZkClient implements Closeable {
         closer.collect(zkCallbackExecutor);
         closer.collect(connManager);
         closer.collect(keeper);
-        closer.collect("zkClientCloseOnException");
+        closer.addCollect("zkClientCloseOnException");
       }
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }

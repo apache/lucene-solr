@@ -41,7 +41,7 @@ import org.junit.Test;
  * <code>facet.pivot</code> so the assertions in this test vary from that test.
  * </p>
  */
-@LuceneTestCase.Nightly
+@LuceneTestCase.Nightly // can be slow
 public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistributedSearchTestCase {
 
   private static List<String> ALL_STATS = Arrays.asList("min", "max", "sum", "stddev", "avg", "sumsq", "unique",
