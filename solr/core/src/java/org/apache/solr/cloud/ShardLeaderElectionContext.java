@@ -132,6 +132,10 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
   @Override
   void runLeaderProcess(ElectionContext context, boolean weAreReplacement, int pauseBeforeStart) throws KeeperException,
           InterruptedException, IOException {
+    if (isClosed()) {
+      return;
+    }
+
     String coreName = leaderProps.getStr(ZkStateReader.CORE_NAME_PROP);
     ActionThrottle lt;
     try (SolrCore core = cc.getCore(coreName)) {
@@ -161,7 +165,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 //        throw new SolrException(ErrorCode.SERVER_ERROR, e1);
 //      }
 
-      if (isClosed) {
+      if (isClosed()) {
         // Solr is shutting down or the ZooKeeper session expired while waiting for replicas. If the later,
         // we cannot be sure we are still the leader, so we should bail out. The OnReconnect handler will
         // re-register the cores and handle a new leadership election.
@@ -192,7 +196,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           }
         }
 
-        if (isClosed) {
+        if (isClosed()) {
           return;
         }
 
@@ -435,5 +439,9 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     return collection;
   }
 
+
+  public boolean isClosed() {
+    return closed || zkController.getCoreContainer().isShutDown() || zkController.getZkClient().isConnected() == false;
+  }
 }
 

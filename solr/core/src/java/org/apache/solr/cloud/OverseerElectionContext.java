@@ -123,5 +123,9 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
   public void checkIfIamLeaderFired() {
 
   }
+
+  public boolean isClosed() {
+    return closed || overseer.getCoreContainer().isShutDown() || zkClient.isConnected() == false;
+  }
 }
 

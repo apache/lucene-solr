@@ -932,7 +932,6 @@ public abstract class BaseCloudSolrClient extends SolrClient {
 
       }
     } catch (Exception exc) {
-      System.out.println("IMHERE");
       exc.printStackTrace();
       Throwable rootCause = SolrException.getRootCause(exc);
       // don't do retry support for admin requests

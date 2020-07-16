@@ -1700,6 +1700,11 @@ public class ZkController implements Closeable {
       }
     }
     MDCLoggingContext.setCoreDescriptor(cc, cd);
+
+    if ((state == Replica.State.ACTIVE || state == Replica.State.RECOVERING ) && isClosed()) {
+      throw new AlreadyClosedException();
+    }
+
     try {
       String collection = cd.getCloudDescriptor().getCollectionName();
 

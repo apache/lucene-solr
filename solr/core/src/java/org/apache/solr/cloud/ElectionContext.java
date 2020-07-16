@@ -33,7 +33,7 @@ public abstract class ElectionContext implements Closeable {
   protected final String id;
   protected final String leaderPath;
   protected volatile String leaderSeqPath;
-  private volatile boolean closed;
+  protected volatile boolean closed;
 
   public ElectionContext(final String id, final String electionPath, final String leaderPath, final ZkNodeProps leaderProps) {
     this.id = id;
