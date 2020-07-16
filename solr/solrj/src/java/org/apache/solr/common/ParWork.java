@@ -65,7 +65,7 @@ public class ParWork implements Closeable {
 
   protected final static ThreadLocal<ExecutorService> THREAD_LOCAL_EXECUTOR = new ThreadLocal<>();
   public static volatile int MAXIMUM_POOL_SIZE;
-  public static final long KEEP_ALIVE_TIME = 3;
+  public static final long KEEP_ALIVE_TIME = 10;
   public static volatile int CAPACITY;
 
   private Set<Object> collectSet = null;
@@ -506,7 +506,7 @@ public class ParWork implements Closeable {
 
                 for (Future<Object> future : results) {
                   if (!future.isDone() || future.isCancelled()) {
-                    log.warn("A task did nor finish isDone={} isCanceled={}", future.isDone(), future.isCancelled());
+                    log.warn("A task did not finish isDone={} isCanceled={}", future.isDone(), future.isCancelled());
                   //  throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "A task did nor finish" +future.isDone()  + " " + future.isCancelled());
                   }
                 }

@@ -369,14 +369,6 @@ public class CoreContainer implements Closeable {
         updateShardHandler.initializeMetrics(solrMetricsContext, "updateShardHandler");
       });
       work.addCollect("shard-handlers");
-      work.collect(() -> {
-//        if (zkClient != null) {
-//          zkSys.initZooKeeper(this, cfg.getCloudConfig());
-//        }
-//        coreConfigService = ConfigSetService.createConfigSetService(cfg, loader, zkSys == null ? null : zkSys.zkController);
-//
-//        containerProperties.putAll(cfg.getSolrProperties());
-      });
 
       work.addCollect("init");
     }
