@@ -302,7 +302,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
 
   @Override
   public void doRecovery(CoreContainer cc, CoreDescriptor cd) {
-    if (prepForClose) {
+    if (prepForClose || cc.isShutDown()) {
       return;
     }
     Runnable recoveryTask = new Runnable() {
@@ -353,6 +353,9 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
 
               recoveryStrat = recoveryStrategyBuilder.create(cc, cd, DefaultSolrCoreState.this);
               recoveryStrat.setRecoveringAfterStartup(recoveringAfterStartup);
+              if (prepForClose || cc.isShutDown()) {
+                return;
+              }
               recoveryStrat.run();
             } finally {
               recoveryLock.unlock();

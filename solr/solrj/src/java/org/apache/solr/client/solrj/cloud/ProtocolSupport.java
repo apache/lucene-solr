@@ -138,8 +138,6 @@ public class ProtocolSupport {
     /**
      * Ensures that the given path exists with no data, the current
      * ACL and no flags.
-     *
-     * @param path
      */
     protected void ensurePathExists(String path) {
         ensureExists(path, null, acl, CreateMode.PERSISTENT);
@@ -148,9 +146,6 @@ public class ProtocolSupport {
     /**
      * Ensures that the given path exists with the given data, ACL and flags.
      *
-     * @param path
-     * @param acl
-     * @param flags
      */
     protected void ensureExists(
         final String path,

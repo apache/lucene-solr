@@ -98,16 +98,13 @@ public class ConnectionManager implements Watcher, Closeable {
 
   private volatile LikelyExpiredState likelyExpiredState = LikelyExpiredState.EXPIRED;
 
-  private IsClosed isClosedCheck;
-
-  public ConnectionManager(String name, SolrZkClient client, String zkServerAddress, ZkClientConnectionStrategy strat, OnReconnect onConnect, BeforeReconnect beforeReconnect, IsClosed isClosed) {
+  public ConnectionManager(String name, SolrZkClient client, String zkServerAddress, ZkClientConnectionStrategy strat, OnReconnect onConnect, BeforeReconnect beforeReconnect) {
     this.name = name;
     this.client = client;
     this.connectionStrategy = strat;
     this.zkServerAddress = zkServerAddress;
     this.onReconnect = onConnect;
     this.beforeReconnect = beforeReconnect;
-    this.isClosedCheck = isClosed;
   }
 
   private void connected() {
@@ -189,9 +186,11 @@ public class ConnectionManager implements Watcher, Closeable {
 
                     try {
                       client.updateKeeper(keeper);
+                    } catch (InterruptedException e) {
+                      ParWork.propegateInterrupt(e);
+                      return;
                     } catch (Exception e) {
                       log.error("$ZkClientConnectionStrategy.ZkUpdate.update(SolrZooKeeper=" + keeper + ")", e);
-                      ParWork.propegateInterrupt(e);
                       SolrException exp = new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
                       try {
                         closeKeeper(keeper);
@@ -208,10 +207,12 @@ public class ConnectionManager implements Watcher, Closeable {
                       onReconnect.command();
                     }
 
+                  } catch (InterruptedException e) {
+                    ParWork.propegateInterrupt(e);
+                    return;
                   } catch (Exception e1) {
-                    ParWork.propegateInterrupt(e1);
+                    log.error("Exception updating zk instance", e1);
                     SolrException exp = new SolrException(SolrException.ErrorCode.SERVER_ERROR, e1);
-
 
                     // if there was a problem creating the new SolrZooKeeper
                     // or if we cannot run our reconnect command, close the keeper
@@ -234,6 +235,9 @@ public class ConnectionManager implements Watcher, Closeable {
 
           break;
 
+        } catch (InterruptedException e) {
+          ParWork.propegateInterrupt(e);
+          return;
         } catch (Exception e) {
           ParWork.propegateInterrupt(e);
           if (e instanceof  InterruptedException) {
@@ -243,7 +247,7 @@ public class ConnectionManager implements Watcher, Closeable {
           log.info("Could not connect due to error, trying again");
         }
 
-      } while (!isClosed());
+      } while (!isClosed() && !client.isClosed());
 
       log.info("zkClient Connected: {}", connected);
     } else if (state == KeeperState.Disconnected) {
@@ -271,7 +275,7 @@ public class ConnectionManager implements Watcher, Closeable {
   }
 
   private boolean isClosed() {
-    return isClosed || isClosedCheck.isClosed();
+    return client.isClosed() || isClosed;
   }
 
   public boolean isLikelyExpired() {

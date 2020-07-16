@@ -27,8 +27,6 @@ public interface ZooKeeperOperation {
      * to ZooKeeper closes during this operation.
      *
      * @return the result of the operation or null
-     * @throws KeeperException
-     * @throws InterruptedException
      */
     boolean execute() throws KeeperException, InterruptedException;
 

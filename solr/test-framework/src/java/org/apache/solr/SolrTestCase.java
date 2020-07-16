@@ -182,7 +182,7 @@ public class SolrTestCase extends LuceneTestCase {
 
     if (!TEST_NIGHTLY) {
       //TestInjection.randomDelayMaxInCoreCreationInSec = 2;
-      System.setProperty("zookeeper.request.timeout", "1000");
+      System.setProperty("zookeeper.request.timeout", "5000");
       System.setProperty(SolrTestCaseJ4.USE_NUMERIC_POINTS_SYSPROP, "false");
 //      System.setProperty("solr.tests.IntegerFieldType", "org.apache.solr.schema.IntPointField");
 //      System.setProperty("solr.tests.FloatFieldType", "org.apache.solr.schema.FloatPointField");
@@ -213,8 +213,8 @@ public class SolrTestCase extends LuceneTestCase {
 
       System.setProperty("solr.disableMetricsHistoryHandler", "true");
 
-      System.setProperty("solr.leaderThrottle", "0");
-      System.setProperty("solr.recoveryThrottle", "0");
+      System.setProperty("solr.leaderThrottle", "1000");
+      System.setProperty("solr.recoveryThrottle", "1000");
 
       System.setProperty("solr.suppressDefaultConfigBootstrap", "true");
 

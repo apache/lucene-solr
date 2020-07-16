@@ -160,7 +160,7 @@ public class IndexFetcher {
 
   private boolean useExternalCompression = false;
 
-  boolean fetchFromLeader = false;
+  final boolean fetchFromLeader;
 
   private final HttpClient myHttpClient;
 
@@ -236,6 +236,8 @@ public class IndexFetcher {
     Object fetchFromLeader = initArgs.get(FETCH_FROM_LEADER);
     if (fetchFromLeader != null && fetchFromLeader instanceof Boolean) {
       this.fetchFromLeader = (boolean) fetchFromLeader;
+    } else {
+      this.fetchFromLeader = false;
     }
     Object skipCommitOnMasterVersionZero = initArgs.get(SKIP_COMMIT_ON_MASTER_VERSION_ZERO);
     if (skipCommitOnMasterVersionZero != null && skipCommitOnMasterVersionZero instanceof Boolean) {
@@ -255,13 +257,13 @@ public class IndexFetcher {
     String compress = (String) initArgs.get(COMPRESSION);
     useInternalCompression = INTERNAL.equals(compress);
     useExternalCompression = EXTERNAL.equals(compress);
-    connTimeout = getParameter(initArgs, HttpClientUtil.PROP_CONNECTION_TIMEOUT, 30000, null);
+    connTimeout = getParameter(initArgs, HttpClientUtil.PROP_CONNECTION_TIMEOUT, 5000, null);
     
     // allow a master override for tests - you specify this in /replication slave section of solrconfig and some 
     // test don't want to define this
     soTimeout = Integer.getInteger("solr.indexfetcher.sotimeout", -1);
     if (soTimeout == -1) {
-      soTimeout = getParameter(initArgs, HttpClientUtil.PROP_SO_TIMEOUT, Integer.getInteger("solr.indexfetch.so_timeout.default", 120000), null);
+      soTimeout = getParameter(initArgs, HttpClientUtil.PROP_SO_TIMEOUT, Integer.getInteger("solr.indexfetch.so_timeout.default", 15000), null);
     }
 
     if (initArgs.getBooleanArg(TLOG_FILES) != null) {

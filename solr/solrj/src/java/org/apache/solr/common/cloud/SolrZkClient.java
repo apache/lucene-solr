@@ -216,13 +216,7 @@ public class SolrZkClient implements Closeable {
       }
     });
     connManager = new ConnectionManager("ZooKeeperConnection Watcher:"
-        + zkServerAddress, this, zkServerAddress, strat, onReconnect, beforeReconnect, new IsClosed() {
-
-          @Override
-          public boolean isClosed() {
-            return SolrZkClient.this.isClosed();
-          }
-        });
+        + zkServerAddress, this, zkServerAddress, strat, onReconnect, beforeReconnect);
 
     try {
       strat.connect(zkServerAddress, zkClientTimeout, wrapWatcher(connManager),

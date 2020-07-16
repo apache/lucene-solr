@@ -390,7 +390,7 @@ public class CoreContainer implements Closeable {
     if (solrCoreLoadExecutor == null) {
       synchronized (CoreContainer.class) {
         if (solrCoreLoadExecutor == null) {
-          solrCoreLoadExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(0, Math.max(4, Runtime.getRuntime().availableProcessors() / 2),
+          solrCoreLoadExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(0, Math.max(3, Runtime.getRuntime().availableProcessors() / 2),
                   3, TimeUnit.SECONDS,
                   new BlockingArrayQueue<>(100, 10),
                   new SolrNamedThreadFactory("SolrCoreLoader"));
