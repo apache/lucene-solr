@@ -64,6 +64,7 @@ import org.slf4j.LoggerFactory;
  */
 @LuceneTestCase.Slow
 @SolrTestCaseJ4.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@LuceneTestCase.Nightly // slow test
 public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
