@@ -30,6 +30,8 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 
+import org.apache.commons.lang.builder.EqualsBuilder;
+import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -568,14 +570,40 @@ public class UpdateRequest extends AbstractUpdateRequest {
     isLastDocInBatch = true;
   }
 
+  //private Map<SolrInputDocument,Map<String,Object>> documents = null;
+  //private Iterator<SolrInputDocument> docIterator = null;
+  //private Map<String,Map<String,Object>> deleteById = null;
+  //private List<String> deleteQuery = null;
   @Override
   public int hashCode() {
-    return 0;
+
+    return new HashCodeBuilder()
+        .appendSuper(super.hashCode())
+        .append(documents)
+        .append(docIterator)
+        .append(deleteById)
+        .append(deleteQuery)
+        .toHashCode();
   }
 
   @Override
   public boolean equals(Object rhs) {
-    return false;
+    if (rhs == null || getClass() != rhs.getClass()) {
+      return false;
+    } else if (this == rhs) {
+      return true;
+    } else if (hashCode() != rhs.hashCode()){
+      return false;
+    }
+
+    final UpdateRequest rhsCast = (UpdateRequest) rhs;
+    return new EqualsBuilder()
+        .appendSuper(super.equals(rhs))
+        .append(documents, rhsCast.documents)
+        .append(docIterator, rhsCast.docIterator)
+        .append(deleteById, rhsCast.deleteById)
+        .append(deleteQuery, rhsCast.deleteQuery)
+        .isEquals();
   }
 
 }

@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 package org.apache.solr.client.solrj.request;
+import org.apache.commons.lang.builder.EqualsBuilder;
+import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -140,5 +142,30 @@ public abstract class AbstractUpdateRequest extends SolrRequest<UpdateResponse> 
     return this;
   }
 
+  @Override
+  public int hashCode() {
+    return new HashCodeBuilder()
+        .appendSuper(super.hashCode())
+        .append(params)
+        .append(commitWithin)
+        .toHashCode();
+  }
 
+  @Override
+  public boolean equals(Object rhs) {
+    if (rhs == null || getClass() != rhs.getClass()) {
+      return false;
+    } else if (this == rhs) {
+      return true;
+    } else if (hashCode() != rhs.hashCode()){
+      return false;
+    }
+
+    final AbstractUpdateRequest rhsCast = (AbstractUpdateRequest) rhs;
+    return new EqualsBuilder()
+        .appendSuper(super.equals(rhs))
+        .append(params, rhsCast.params)
+        .append(commitWithin, rhsCast.commitWithin)
+        .isEquals();
+  }
 }
