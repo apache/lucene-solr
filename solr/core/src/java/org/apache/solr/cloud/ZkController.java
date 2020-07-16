@@ -439,6 +439,7 @@ public class ZkController implements Closeable {
 
               @Override
               public void command() throws SessionExpiredException {
+                if (cc.isShutDown() || !zkClient.isConnected()) return;
                 log.info("ZooKeeper session re-connected ... refreshing core states after session expiration.");
 
                 try {
@@ -457,7 +458,6 @@ public class ZkController implements Closeable {
                   // Overseer.createClientNodes(zkClient, getNodeName());
 
 
-
                   // start the overseer first as following code may need it's processing
                   if (!zkRunOnly) {
                     ElectionContext context = new OverseerElectionContext(getNodeName(), zkClient, overseer);
@@ -469,8 +469,8 @@ public class ZkController implements Closeable {
                       ParWork.close(overseerElector.getContext());
                     }
                     LeaderElector overseerElector = new LeaderElector(zkClient, new ContextKey("overseer", "overseer"), overseerContexts);
-                    ZkController.this.overseer = new Overseer((HttpShardHandler) ((HttpShardHandlerFactory)cc.getShardHandlerFactory()).getShardHandler(cc.getUpdateShardHandler().getUpdateOnlyHttpClient()), cc.getUpdateShardHandler(),
-                            CommonParams.CORES_HANDLER_PATH, zkStateReader,  ZkController.this, cloudConfig);
+                    ZkController.this.overseer = new Overseer((HttpShardHandler) ((HttpShardHandlerFactory) cc.getShardHandlerFactory()).getShardHandler(cc.getUpdateShardHandler().getUpdateOnlyHttpClient()), cc.getUpdateShardHandler(),
+                            CommonParams.CORES_HANDLER_PATH, zkStateReader, ZkController.this, cloudConfig);
                     overseerElector.setup(context);
                     overseerElector.joinElection(context, true);
                   }
@@ -522,11 +522,13 @@ public class ZkController implements Closeable {
                   log.warn("ConnectionManager interrupted", e);
                   // Restore the interrupted status
                   Thread.currentThread().interrupt();
-                  close();
                   throw new ZooKeeperException(
                           SolrException.ErrorCode.SERVER_ERROR, "", e);
                 } catch (SessionExpiredException e) {
                   throw e;
+                } catch (AlreadyClosedException e) {
+                  log.info("Already closed");
+                  return;
                 } catch (Exception e) {
                   SolrException.log(log, "", e);
                   throw new ZooKeeperException(

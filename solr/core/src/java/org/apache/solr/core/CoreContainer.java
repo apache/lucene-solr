@@ -1618,9 +1618,7 @@ public class CoreContainer implements Closeable {
       try {
         solrCores.waitAddPendingCoreOps(cd.getName());
         ConfigSet coreConfig = coreConfigService.loadConfigSet(cd);
-        if (log.isInfoEnabled()) {
-          log.info("Reloading SolrCore '{}' using configuration from {}", cd.getName(), coreConfig.getName());
-        }
+        log.info("Reloading SolrCore '{}' using configuration from {}", cd.getName(), coreConfig.getName());
         newCore = core.reload(coreConfig);
 
         DocCollection docCollection = null;
@@ -1670,10 +1668,17 @@ public class CoreContainer implements Closeable {
       } catch (SolrCoreState.CoreIsClosedException e) {
         throw e;
       } catch (Exception e) {
-        coreInitFailures.put(cd.getName(), new CoreLoadFailure(cd, e));
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to reload core [" + cd.getName() + "]", e);
+        ParWork.propegateInterrupt("Exception reloading SolrCore", e);
+        SolrException exp = new SolrException(ErrorCode.SERVER_ERROR, "Unable to reload core [" + cd.getName() + "]", e);
+        try {
+          coreInitFailures.put(cd.getName(), new CoreLoadFailure(cd, e));
+
+        } catch (Exception e1) {
+          exp.addSuppressed(e1);
+        }
+        throw exp;
       } finally {
-        if (!success && newCore != null) {
+        if (!success) {
           ParWork.close(newCore);
         }
         solrCores.removeFromPendingOps(cd.getName());

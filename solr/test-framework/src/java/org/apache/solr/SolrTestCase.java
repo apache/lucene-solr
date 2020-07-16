@@ -193,6 +193,7 @@ public class SolrTestCase extends LuceneTestCase {
 
       System.setProperty("solr.MaxConcurrentRequests", "5");
       System.setProperty("solr.tests.infostream", "false");
+      System.setProperty("numVersionBuckets", "8192");
 
 
       System.setProperty("zookeeper.nio.numSelectorThreads", "1");
