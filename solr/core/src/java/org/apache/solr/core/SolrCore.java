@@ -230,9 +230,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
   //a single package listener for all cores that require core reloading
   private final PackageListeningClassLoader coreReloadingClassLoader;
-  //singleton listener for all packages used in schema
-  private final PackageListeningClassLoader schemaPluginsLoader;
   private final CircuitBreakerManager circuitBreakerManager;
+
   private final List<Runnable> confListeners = new CopyOnWriteArrayList<>();
 
   private final ReentrantLock ruleExpiryLock;
