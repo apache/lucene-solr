@@ -69,7 +69,7 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
 
       @Override
       public MapWriter getPackageVersion(PluginInfo.ClassName cName) {
-        return pkgVersion;
+        return pkgVersion == null ? null : ew -> pkgVersion.writeMap(ew);
       }
 
     });

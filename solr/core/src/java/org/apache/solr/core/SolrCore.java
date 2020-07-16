@@ -112,10 +112,7 @@ import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
-import org.apache.solr.pkg.PackageListeningClassLoader;
-import org.apache.solr.pkg.PackageListeners;
-import org.apache.solr.pkg.PackageLoader;
-import org.apache.solr.pkg.PackagePluginHolder;
+import org.apache.solr.pkg.*;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.BinaryResponseWriter;
@@ -229,9 +226,11 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private final Codec codec;
   private final MemClassLoader memClassLoader;
 
-  private final CircuitBreakerManager circuitBreakerManager;
   //a single package listener for all cores that require core reloading
-  private final PackageListeningClassLoader coreReloadingPackageListener;
+  private final PackageListeningClassLoader coreReloadingClassLoader;
+  //singleton listener for all packages used in schema
+  private final PackageListeningClassLoader schemaPluginsLoader;
+  private final CircuitBreakerManager circuitBreakerManager;
   private final List<Runnable> confListeners = new CopyOnWriteArrayList<>();
 
   private final ReentrantLock ruleExpiryLock;
@@ -278,9 +277,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     return restManager;
   }
 
-  public PackageListeningClassLoader getCoreReloadingPackageListener(){
-    return coreReloadingPackageListener;
-  }
   public PackageListeners getPackageListeners() {
     return packageListeners;
   }
@@ -738,7 +734,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     final RecoveryStrategy.Builder rsBuilder;
     if (info != null && info.className != null) {
       log.info(info.className);
-      rsBuilder = getResourceLoader().newInstance( info, RecoveryStrategy.Builder.class, true);
+      rsBuilder = getResourceLoader().newInstance(info, RecoveryStrategy.Builder.class, true);
     } else {
       log.debug("solr.RecoveryStrategy.Builder");
       rsBuilder = new RecoveryStrategy.Builder();
@@ -948,20 +944,24 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     final CountDownLatch latch = new CountDownLatch(1);
 
     try {
-      IndexSchema schema = configSet.getIndexSchema();
 
       CoreDescriptor cd = Objects.requireNonNull(coreDescriptor, "coreDescriptor cannot be null");
       coreContainer.solrCores.addCoreDescriptor(cd);
 
       setName(name);
-
       this.solrConfig = configSet.getSolrConfig();
       this.resourceLoader = configSet.getSolrConfig().getResourceLoader();
       this.resourceLoader.core = this;
-      this.coreReloadingPackageListener = new PackageListeningClassLoader(coreContainer,
+      schemaPluginsLoader = new PackageListeningClassLoader(coreContainer, resourceLoader,
+              solrConfig::maxPackageVersion,
+              () -> setLatestSchema(configSet.getIndexSchema(true)));
+      this.packageListeners.addListener(schemaPluginsLoader);
+      IndexSchema schema = configSet.getIndexSchema();
+      this.coreReloadingClassLoader = new PackageListeningClassLoader(coreContainer,
               resourceLoader,
               solrConfig::maxPackageVersion,
               () -> coreContainer.reload(name, uniqueId));
+      this.packageListeners.addListener(coreReloadingClassLoader);
       this.configSetProperties = configSet.getProperties();
       // Initialize the metrics manager
       this.coreMetricManager = initCoreMetricManager(solrConfig);
@@ -3255,6 +3255,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     return blobRef;
   }
 
+  public PackageListeningClassLoader getCoreReloadingClassLoader(){
+    return coreReloadingClassLoader;
+  }
   /**
    * Run an arbitrary task in it's own thread. This is an expert option and is
    * a method you should use with great care. It would be bad to run something that never stopped
@@ -3276,5 +3279,4 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   public void runAsync(Runnable r) {
     coreAsyncTaskExecutor.submit(r);
   }
-
 }

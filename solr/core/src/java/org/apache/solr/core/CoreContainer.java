@@ -1603,7 +1603,8 @@ public class CoreContainer {
    * and processed by the old core
    *
    * @param name the name of the SolrCore to reload
-   * @param coreId The unique Id of the core
+   * @param coreId The unique Id of the core {@link SolrCore#uniqueId}. If this is null, it's reloaded anyway. If the current
+   *               core has a different id, this is a no-op
    */
   public void reload(String name, UUID coreId) {
     if (isShutDown) {

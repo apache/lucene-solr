@@ -32,8 +32,8 @@ import java.util.Objects;
 import java.util.function.Function;
 /**
  * A {@link SolrClassLoader} that is designed to listen to a set of packages.
- * This class would register a listener each package that is loaded through this
- * if any of those packages are updated , the onReload runnable is executed
+ * This class registers a listener for each package that is loaded through this.
+ * If any of those packages are updated, the onReload runnable is run
  * */
 public class PackageListeningClassLoader implements SolrClassLoader , PackageListeners.Listener {
     private final CoreContainer coreContainer;
@@ -72,6 +72,7 @@ public class PackageListeningClassLoader implements SolrClassLoader , PackageLis
         } else {
             PackageLoader.Package.Version version = findPackageVersion(cName, true);
             return applyResourceLoaderAware(version, version.getLoader().newInstance(cName.className, expectedType, subpackages));
+
         }
     }
 
@@ -127,6 +128,7 @@ public class PackageListeningClassLoader implements SolrClassLoader , PackageLis
         } else {
             PackageLoader.Package.Version version = findPackageVersion(cName, true);
             return version.getLoader().findClass(cName.className, expectedType);
+
         }
     }
 

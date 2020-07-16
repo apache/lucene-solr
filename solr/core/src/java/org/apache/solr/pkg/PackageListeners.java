@@ -22,6 +22,7 @@ import java.lang.ref.Reference;
 import java.lang.ref.SoftReference;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Consumer;
 
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.core.PluginInfo;
@@ -34,7 +35,7 @@ public class PackageListeners {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String PACKAGE_VERSIONS = "PKG_VERSIONS";
-  private SolrCore core;
+  private final SolrCore core;
 
   public PackageListeners(SolrCore core) {
     this.core = core;
@@ -70,7 +71,7 @@ public class PackageListeners {
         invokeListeners(pkgInfo, ctx);
       }
     } finally {
-      ctx.runLaterTasks();
+      ctx.runLaterTasks(core::runAsync);
       MDCLoggingContext.clear();
     }
   }
@@ -126,15 +127,11 @@ public class PackageListeners {
         runLater.put(name, runnable);
       }
 
-      private void runLaterTasks() {
+      private void runLaterTasks(Consumer<Runnable> runnableExecutor) {
         if (runLater == null) return;
-        new Thread(() -> runLater.forEach((s, runnable) -> {
-          try {
-            runnable.run();
-          } catch (Exception e) {
-            log.error("Unknown error", e);
-          }
-        })).start();
+        for (Runnable r : runLater.values()) {
+          runnableExecutor.accept(r);
+        }
       }
     }
 

@@ -84,7 +84,6 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
    * This could be null if the core is not yet initialized
    */
   SolrCore core;
-  CoreContainer coreContainer;
 
   private final List<SolrCoreAware> waitingForCore = Collections.synchronizedList(new ArrayList<SolrCoreAware>());
   private final List<SolrInfoBean> infoMBeans = Collections.synchronizedList(new ArrayList<SolrInfoBean>());
@@ -784,9 +783,9 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
       if (getCore() == null) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "SolrCore not set");
       }
-      return fun.apply(getCore().getCoreReloadingPackageListener().findPackageVersion(cName, true));
+      return fun.apply(getCore().getCoreReloadingClassLoader().findPackageVersion(cName, true));
     } else {
-      return fun.apply(getCore().getCoreReloadingPackageListener().findPackageVersion(cName, false));
+      return fun.apply(getCore().getCoreReloadingClassLoader().findPackageVersion(cName, false));
     }
   }
 
