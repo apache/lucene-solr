@@ -30,7 +30,6 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.core.PluginBag.PluginHolder.createHolder;
 import static org.apache.solr.pkg.PackagePluginHolder.createHolder;
 
 /**
