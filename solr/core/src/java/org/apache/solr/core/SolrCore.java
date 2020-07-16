@@ -176,6 +176,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.PATH;
+import static org.apache.solr.pkg.PackagePluginHolder.createHolder;
 
 /**
  * SolrCore got its name because it represents the "core" of Solr -- one index and everything needed to make it work.
@@ -645,11 +646,11 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     for (PluginInfo info : solrConfig.getPluginInfos(SolrEventListener.class.getName())) {
       final String event = info.attributes.get("event");
       if ("firstSearcher".equals(event)) {
-        PluginHolder<SolrEventListener> obj = PackagePluginHolder.createHolder(info, this, SolrEventListener.class, label);
+        PluginHolder<SolrEventListener> obj = createHolder(info, this, SolrEventListener.class, label);
         firstSearcherListeners.add(obj);
         log.debug("[{}] Added SolrEventListener for firstSearcher: [{}]", logid, obj);
       } else if ("newSearcher".equals(event)) {
-        PluginHolder<SolrEventListener> obj = PackagePluginHolder.createHolder(info, this, SolrEventListener.class, label);
+        PluginHolder<SolrEventListener> obj = createHolder(info, this, SolrEventListener.class, label);
         newSearcherListeners.add(obj);
         log.debug("[{}] Added SolrEventListener for newSearcher: [{}]", logid, obj);
       }
@@ -667,8 +668,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    * @see SolrCoreAware
    */
   public void registerFirstSearcherListener(SolrEventListener listener) {
-    firstSearcherListeners.add(new PluginHolder<>(listener,
-            SolrConfig.classVsSolrPluginInfo.get(SolrEventListener.class.getName())));
+    firstSearcherListeners.add(createHolder(listener, this, SolrEventListener.class, null));
   }
 
   /**
@@ -679,8 +679,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    * @see SolrCoreAware
    */
   public void registerNewSearcherListener(SolrEventListener listener) {
-    newSearcherListeners.add(
-            new PluginHolder<>(listener, SolrConfig.classVsSolrPluginInfo.get(SolrEventListener.class.getName())));
+    newSearcherListeners.add(createHolder(listener, this, SolrEventListener.class, null));
   }
 
   /**
