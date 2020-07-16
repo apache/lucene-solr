@@ -66,7 +66,7 @@ public class ParWork implements Closeable {
   protected final static ThreadLocal<ExecutorService> THREAD_LOCAL_EXECUTOR = new ThreadLocal<>();
   public static volatile int MAXIMUM_POOL_SIZE;
   public static final long KEEP_ALIVE_TIME = 10;
-  public static volatile int CAPACITY;
+  public static volatile int CAPACITY = 30;
 
   private Set<Object> collectSet = null;
 
@@ -635,6 +635,7 @@ public class ParWork implements Closeable {
 //            Thread.currentThread().interrupt();
 //          }
 //          executor.execute(r);
+         // considering this, does end up out of order
          r.run();
        }
      });

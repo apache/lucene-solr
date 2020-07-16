@@ -86,6 +86,7 @@ public class ZkCmdExecutor {
 
         return (T) operation.execute();
       } catch (KeeperException.ConnectionLossException e) {
+        log.warn("ConnectionLost to ZK");
         if (exception == null) {
           exception = e;
         }
