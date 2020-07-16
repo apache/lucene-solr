@@ -168,15 +168,12 @@ public class CloudSolrClient extends BaseCloudSolrClient {
 
   @Override
   public void close() throws IOException {
-    try (ParWork closer = new ParWork(this)) {
+    try (ParWork closer = new ParWork(this, true)) {
       closer.collect(stateProvider);
-
-
       if (shutdownLBHttpSolrServer) {
         closer.collect(lbClient);
       }
-
-      if (clientIsInternal && myClient != null) {
+      if (clientIsInternal) {
         closer.collect(myClient);
       }
       closer.addCollect("cloudclient");
