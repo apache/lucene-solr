@@ -105,6 +105,14 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
       System.setProperty("createCollectionWaitTimeTillActive", "5");
       TestInjection.randomDelayInCoreCreation = "true:1";
     }
+    // this class deletes all the collections between each test and so really
+    // stresses a difficult code path - give a higher so timeout for low end hardware to make it through
+    // bad cases
+    System.setProperty("distribUpdateSoTimeout", "20000");
+    System.setProperty("socketTimeout", "20000");
+    System.setProperty("solr.test.socketTimeout.default", "20000");
+    System.setProperty("solr.so_commit_timeout.default", "20000");
+    System.setProperty("solr.httpclient.defaultSoTimeout", "20000");
 
     configureCluster(4)
         .addConfig("conf", configset(getConfigSet()))
