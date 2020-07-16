@@ -157,10 +157,5 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
     this.zkIndexSchemaReader = zkIndexSchemaReader;
   }
 
-  @Override
-  public CoreContainer getCoreContainer() {
-    return zkController.getCoreContainer();
-  }
-
   public ZkIndexSchemaReader getZkIndexSchemaReader() { return zkIndexSchemaReader; }
 }
