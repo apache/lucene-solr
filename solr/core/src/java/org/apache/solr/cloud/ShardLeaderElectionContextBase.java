@@ -45,7 +45,7 @@ import org.slf4j.LoggerFactory;
 class ShardLeaderElectionContextBase extends ElectionContext {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected final SolrZkClient zkClient;
-
+  private volatile boolean closed;
   private volatile Integer leaderZkNodeParentVersion;
 
   public ShardLeaderElectionContextBase(final String coreNodeName, String electionPath, String leaderPath,
@@ -56,6 +56,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
 
   @Override
   public void close() {
+    this.closed = true;
     try {
       super.close();
     } catch (Exception e) {
@@ -131,7 +132,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
     String parent = Paths.get(leaderPath).getParent().toString();
     List<String> errors = new ArrayList<>();
     try {
-      if (closed || zkClient.isClosed()) {
+      if (isClosed()) {
         log.info("Bailing on becoming leader, we are closed");
         return;
       }
@@ -170,6 +171,11 @@ class ShardLeaderElectionContextBase extends ElectionContext {
       ParWork.propegateInterrupt(t);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Could not register as the leader because creating the ephemeral registration node in ZooKeeper failed: " + errors, t);
     }
+  }
+
+  @Override
+  public boolean isClosed() {
+    return closed || zkClient.isClosed();
   }
 
   Integer getLeaderZkNodeParentVersion() {

@@ -615,6 +615,8 @@ public class Overseer implements SolrCloseable {
       if (log.isDebugEnabled()) log.debug("Already closed, exiting");
       return;
     }
+    doClose();
+    closed = false;
 
     MDCLoggingContext.setNode(zkController == null ?
         null :
@@ -623,15 +625,12 @@ public class Overseer implements SolrCloseable {
     this.id = id;
     this.context = context;
 
+//    try {
+//      if (context != null) context.close();
+//    } catch (Exception e) {
+//      log.error("", e);
+//    }
 
-    closed = false;
-
-    try {
-      if (context != null) context.close();
-    } catch (Exception e) {
-      log.error("", e);
-    }
-    doClose();
     stats = new Stats();
     log.info("Overseer (id={}) starting", id);
     //createOverseerNode(reader.getZkClient());
@@ -819,13 +818,16 @@ public class Overseer implements SolrCloseable {
       log.info("Overseer (id={}) closing", id);
     }
     this.closed = true;
-
-    try {
-     if (context != null) context.close();
-    } catch (Exception e) {
-      log.error("", e);
+    try (ParWork closer = new ParWork(this)) {
+      closer.collect(context);
+      closer.collect(context);
+      closer.collect(()->{
+         doClose();
+      });
+      closer.addCollect("OverseerClose");
     }
-    doClose();
+
+
     assert ObjectReleaseTracker.release(this);
   }
 
