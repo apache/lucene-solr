@@ -65,6 +65,7 @@ public abstract class ElectionContext implements Closeable {
   public boolean isClosed() {
     return closed;
   }
+
 }
 
 

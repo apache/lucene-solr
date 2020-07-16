@@ -439,9 +439,9 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     return collection;
   }
 
-
+  @Override
   public boolean isClosed() {
-    return closed || zkController.getCoreContainer().isShutDown() || zkController.getZkClient().isConnected() == false;
+    return closed || cc.isShutDown() || zkController.getZkClient().isConnected() == false;
   }
 }
 

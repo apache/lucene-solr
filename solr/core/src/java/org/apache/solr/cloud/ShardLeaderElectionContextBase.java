@@ -66,52 +66,60 @@ class ShardLeaderElectionContextBase extends ElectionContext {
 
   @Override
   public void cancelElection() throws InterruptedException, KeeperException {
-    super.cancelElection();
-    if (!zkClient.isConnected()) {
+    if (!zkClient.isConnected() || zkClient.isClosed()) {
       log.info("Can't cancel, zkClient is not connected");
+      return;
     }
-    Integer version = leaderZkNodeParentVersion;
-    if (version != null) {
-      try {
-        // We need to be careful and make sure we *only* delete our own leader registration node.
-        // We do this by using a multi and ensuring the parent znode of the leader registration node
-        // matches the version we expect - there is a setData call that increments the parent's znode
-        // version whenever a leader registers.
-        log.debug("Removing leader registration node on cancel: {} {}", leaderPath, version);
-        List<Op> ops = new ArrayList<>(2);
-        ops.add(Op.check(Paths.get(leaderPath).getParent().toString(), version));
-        ops.add(Op.check(electionPath, -1));
-        ops.add(Op.delete(leaderPath, -1));
-        zkClient.multi(ops, true);
-      } catch (KeeperException e) {
-        if (e instanceof NoNodeException) {
-          // okay
-          return;
-        }
-        if (e instanceof KeeperException.SessionExpiredException) {
-          log.warn("ZooKeeper session expired");
-          throw e;
-        }
-
-        List<OpResult> results = e.getResults();
-        for (OpResult result : results) {
-          if (((OpResult.ErrorResult) result).getErr() == -101) {
-            // no node, fine
-          } else {
-            throw new SolrException(ErrorCode.SERVER_ERROR, "Exception canceling election", e);
+    super.cancelElection();
+    try {
+      Integer version = leaderZkNodeParentVersion;
+      if (version != null) {
+        try {
+          // We need to be careful and make sure we *only* delete our own leader registration node.
+          // We do this by using a multi and ensuring the parent znode of the leader registration node
+          // matches the version we expect - there is a setData call that increments the parent's znode
+          // version whenever a leader registers.
+          log.debug("Removing leader registration node on cancel: {} {}", leaderPath, version);
+          List<Op> ops = new ArrayList<>(2);
+          ops.add(Op.check(Paths.get(leaderPath).getParent().toString(), version));
+          ops.add(Op.check(electionPath, -1));
+          ops.add(Op.delete(leaderPath, -1));
+          zkClient.multi(ops, true);
+        } catch (KeeperException e) {
+          if (e instanceof NoNodeException) {
+            // okay
+            return;
           }
-        }
+          if (e instanceof KeeperException.SessionExpiredException) {
+            log.warn("ZooKeeper session expired");
+            throw e;
+          }
 
-      } catch (InterruptedException | AlreadyClosedException e) {
-        ParWork.propegateInterrupt(e);
-        return;
-      } catch (Exception e) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Exception canceling election", e);
-      } finally {
-        version = null;
+          List<OpResult> results = e.getResults();
+          for (OpResult result : results) {
+            if (((OpResult.ErrorResult) result).getErr() == -101) {
+              // no node, fine
+            } else {
+              throw new SolrException(ErrorCode.SERVER_ERROR, "Exception canceling election", e);
+            }
+          }
+
+        } catch (InterruptedException | AlreadyClosedException e) {
+          ParWork.propegateInterrupt(e);
+          return;
+        } catch (Exception e) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Exception canceling election", e);
+        } finally {
+          version = null;
+        }
+      } else {
+        log.info("No version found for ephemeral leader parent node, won't remove previous leader registration.");
       }
-    } else {
-      log.info("No version found for ephemeral leader parent node, won't remove previous leader registration.");
+    } catch (Exception e) {
+      if (e instanceof  InterruptedException) {
+        Thread.currentThread().interrupt();
+      }
+      log.error("Exception trying to cancel election {} {}", e.getClass().getName(), e.getMessage());
     }
   }
 
@@ -123,7 +131,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
     String parent = Paths.get(leaderPath).getParent().toString();
     List<String> errors = new ArrayList<>();
     try {
-      if (isClosed() || zkClient.isClosed()) {
+      if (closed || zkClient.isClosed()) {
         log.info("Bailing on becoming leader, we are closed");
         return;
       }
