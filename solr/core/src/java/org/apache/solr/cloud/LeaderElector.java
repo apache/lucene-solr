@@ -218,6 +218,10 @@ public  class LeaderElector {
    * @return sequential node number
    */
   public int joinElection(ElectionContext context, boolean replacement,boolean joinAtHead) throws KeeperException, InterruptedException, IOException {
+    if (zkClient.isClosed()) {
+      throw new AlreadyClosedException();
+    }
+
     context.joinedElectionFired();
 
     final String shardsElectZkPath = context.electionPath + LeaderElector.ELECTION_NODE;

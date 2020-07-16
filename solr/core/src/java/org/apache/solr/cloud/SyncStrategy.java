@@ -55,9 +55,9 @@ public class SyncStrategy implements Closeable {
   private final ShardHandler shardHandler;
 
   private volatile boolean isClosed;
-  
-  private final HttpClient client;
-  
+
+  private volatile ZkController zkController;
+
   private static class RecoveryRequest {
     ZkNodeProps leaderProps;
     String baseUrl;
@@ -66,7 +66,6 @@ public class SyncStrategy implements Closeable {
   
   public SyncStrategy(CoreContainer cc) {
     UpdateShardHandler updateShardHandler = cc.getUpdateShardHandler();
-    client = updateShardHandler.getDefaultHttpClient();
     shardHandler = ((HttpShardHandlerFactory)cc.getShardHandlerFactory()).getShardHandler(cc.getUpdateShardHandler().getDefaultHttpClient());
   }
   
@@ -85,7 +84,7 @@ public class SyncStrategy implements Closeable {
       return PeerSync.PeerSyncResult.success();
     }
 
-    if (isClosed || zkController.getCoreContainer().isShutDown()) {
+    if (isClosed()) {
       log.warn("Closed, skipping sync up.");
       return PeerSync.PeerSyncResult.failure();
     }
@@ -98,13 +97,17 @@ public class SyncStrategy implements Closeable {
       log.error("No UpdateLog found - cannot sync");
       return PeerSync.PeerSyncResult.failure();
     }
-
+    this.zkController = zkController;
     return syncReplicas(zkController, core, leaderProps, peerSyncOnlyWithActive);
   }
-  
+
+  private boolean isClosed() {
+    return isClosed || (zkController != null && zkController.getCoreContainer().isShutDown());
+  }
+
   private PeerSync.PeerSyncResult syncReplicas(ZkController zkController, SolrCore core,
       ZkNodeProps leaderProps, boolean peerSyncOnlyWithActive) {
-    if (isClosed) {
+    if (isClosed()) {
       log.info("We have been closed, won't sync with replicas");
       return PeerSync.PeerSyncResult.failure();
     }
@@ -125,7 +128,7 @@ public class SyncStrategy implements Closeable {
       SolrException.log(log, "Sync Failed", e);
     }
     try {
-      if (isClosed) {
+      if (isClosed()) {
         log.info("We have been closed, won't attempt to sync replicas back to leader");
         return PeerSync.PeerSyncResult.failure();
       }
@@ -152,7 +155,7 @@ public class SyncStrategy implements Closeable {
     List<ZkCoreNodeProps> nodes = zkController.getZkStateReader()
         .getReplicaProps(collection, shardId,core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName());
     
-    if (isClosed) {
+    if (isClosed()) {
       log.info("We have been closed, won't sync with replicas");
       return PeerSync.PeerSyncResult.failure();
     }
@@ -182,7 +185,7 @@ public class SyncStrategy implements Closeable {
                         String shardId, ZkNodeProps leaderProps, CoreDescriptor cd,
                         int nUpdates) {
     
-    if (isClosed) {
+    if (isClosed()) {
       log.info("We have been closed, won't sync replicas to me.");
       return;
     }

@@ -611,13 +611,14 @@ public class Overseer implements SolrCloseable {
   }
 
   public synchronized void start(String id, ElectionContext context) {
+    if (getCoreContainer().isShutDown()) {
+      if (log.isDebugEnabled()) log.debug("Already closed, exiting");
+      return;
+    }
+
     MDCLoggingContext.setNode(zkController == null ?
         null :
         zkController.getNodeName());
-
-    if (getCoreContainer().isShutDown()) {
-      if (log.isDebugEnabled()) log.debug("Already closed, exiting");
-    }
 
     this.id = id;
     this.context = context;
