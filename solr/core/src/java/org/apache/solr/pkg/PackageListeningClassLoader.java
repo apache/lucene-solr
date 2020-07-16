@@ -37,7 +37,7 @@ import java.util.function.Function;
  * */
 public class PackageListeningClassLoader implements SolrClassLoader , PackageListeners.Listener {
     private final CoreContainer coreContainer;
-    private final SolrResourceLoader fallbackResourceLoader;
+    private final SolrClassLoader fallbackClassLoader;
     private final Function<String, String> pkgVersionSupplier;
     /** package name and the versions that we are tracking
      */
@@ -45,16 +45,16 @@ public class PackageListeningClassLoader implements SolrClassLoader , PackageLis
     private final Runnable onReload;
 
     /**
-     * @param fallbackResourceLoader The {@link SolrResourceLoader} to use if no package is specified
+     * @param fallbackClassLoader The {@link SolrClassLoader} to use if no package is specified
      * @param pkgVersionSupplier Get the version configured for a given package
      * @param onReload The callback function that should be run if a package is updated
      */
     public PackageListeningClassLoader(CoreContainer coreContainer,
-                                       SolrResourceLoader fallbackResourceLoader,
+                                       SolrClassLoader fallbackClassLoader,
                                        Function<String, String> pkgVersionSupplier,
                                        Runnable onReload) {
         this.coreContainer = coreContainer;
-        this.fallbackResourceLoader = fallbackResourceLoader;
+        this.fallbackClassLoader = fallbackClassLoader;
         this.pkgVersionSupplier = pkgVersionSupplier;
         this.onReload = () -> {
             packageVersions = new HashMap<>();
@@ -67,7 +67,7 @@ public class PackageListeningClassLoader implements SolrClassLoader , PackageLis
     public <T> T newInstance(String cname, Class<T> expectedType, String... subpackages) {
         PluginInfo.ClassName cName = new PluginInfo.ClassName(cname);
         if(cName.pkg == null) {
-            return fallbackResourceLoader.newInstance(cname, expectedType, subpackages);
+            return fallbackClassLoader.newInstance(cname, expectedType, subpackages);
         } else {
             PackageLoader.Package.Version version = findPackageVersion(cName, true);
             return applyResourceLoaderAware(version, version.getLoader().newInstance(cName.className, expectedType, subpackages));
@@ -113,7 +113,7 @@ public class PackageListeningClassLoader implements SolrClassLoader , PackageLis
     public <T> T newInstance(String cname, Class<T> expectedType, String[] subPackages, Class[] params, Object[] args) {
         PluginInfo.ClassName cName = new PluginInfo.ClassName(cname);
         if (cName.pkg == null) {
-            return fallbackResourceLoader.newInstance(cname, expectedType, subPackages, params, args);
+            return fallbackClassLoader.newInstance(cname, expectedType, subPackages, params, args);
         } else {
             PackageLoader.Package.Version version = findPackageVersion(cName, true);
             return applyResourceLoaderAware(version, version.getLoader().newInstance(cName.className, expectedType, subPackages, params, args));
@@ -124,7 +124,7 @@ public class PackageListeningClassLoader implements SolrClassLoader , PackageLis
     public <T> Class<? extends T> findClass(String cname, Class<T> expectedType) {
         PluginInfo.ClassName cName = new PluginInfo.ClassName(cname);
         if (cName.pkg == null) {
-            return fallbackResourceLoader.findClass(cname, expectedType);
+            return fallbackClassLoader.findClass(cname, expectedType);
         } else {
             PackageLoader.Package.Version version = findPackageVersion(cName, true);
             return version.getLoader().findClass(cName.className, expectedType);
