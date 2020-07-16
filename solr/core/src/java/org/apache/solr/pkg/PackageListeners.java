@@ -71,7 +71,7 @@ public class PackageListeners {
         invokeListeners(pkgInfo, ctx);
       }
     } finally {
-      ctx.runLaterTasks(core::runAsync);
+      ctx.runLaterTasks(r -> core.getCoreContainer().runAsync(r));
       MDCLoggingContext.clear();
     }
   }
