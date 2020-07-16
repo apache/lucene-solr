@@ -46,6 +46,7 @@ import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.util.OrderedExecutor;
 import org.apache.solr.common.util.SysStats;
 import org.apache.zookeeper.KeeperException;
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,9 +65,12 @@ public class ParWork implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected final static ThreadLocal<ExecutorService> THREAD_LOCAL_EXECUTOR = new ThreadLocal<>();
+
   public static volatile int MAXIMUM_POOL_SIZE;
   public static final long KEEP_ALIVE_TIME = 10;
+
   public static volatile int CAPACITY = 30;
+  private static final int GROWBY = 30;
 
   private Set<Object> collectSet = null;
 
@@ -604,7 +608,7 @@ public class ParWork implements Closeable {
     ThreadPoolExecutor exec;
     exec = new ThreadPoolExecutor(0, MAXIMUM_POOL_SIZE,
             KEEP_ALIVE_TIME, TimeUnit.SECONDS,
-             new ArrayBlockingQueue<>(CAPACITY), // size?
+             new BlockingArrayQueue<>(CAPACITY, GROWBY), // size?
              new ThreadFactory() {
                AtomicInteger threadNumber = new AtomicInteger(1);
                ThreadGroup group;
@@ -629,14 +633,7 @@ public class ParWork implements Closeable {
          if (executor.isShutdown() || executor.isTerminated() || executor.isTerminating()) {
            throw new AlreadyClosedException();
          }
-//          try {
-//            Thread.sleep(1000);
-//          } catch (InterruptedException e) {
-//            Thread.currentThread().interrupt();
-//          }
-//          executor.execute(r);
-         // considering this, does end up out of order
-         r.run();
+         executor.execute(r);
        }
      });
     return exec;
