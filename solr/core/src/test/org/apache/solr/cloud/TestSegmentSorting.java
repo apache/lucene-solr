@@ -55,7 +55,7 @@ public class TestSegmentSorting extends SolrCloudTestCase {
   
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(NUM_SERVERS)
+    configureCluster(TEST_NIGHTLY ? NUM_SERVERS : 2)
       .addConfig(configName, Paths.get(TEST_HOME(), "collection1", "conf"))
       .configure();
   }
@@ -79,8 +79,9 @@ public class TestSegmentSorting extends SolrCloudTestCase {
     
     CollectionAdminRequest.Create cmd = 
       CollectionAdminRequest.createCollection(collectionName, configName,
-                                              NUM_SHARDS, REPLICATION_FACTOR)
-      .setProperties(collectionProperties);
+                                              NUM_SHARDS, TEST_NIGHTLY ? REPLICATION_FACTOR : 1)
+              .setMaxShardsPerNode(10)
+              .setProperties(collectionProperties);
 
     assertTrue( cmd.process(cloudSolrClient).isSuccess() );
 
