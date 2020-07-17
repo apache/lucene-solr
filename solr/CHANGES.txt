@@ -128,6 +128,9 @@ Improvements
 
 * SOLR-11262: Implement writeMap and writeIterator in XMLWriter (yonik, Munendra S N)
 
+* SOLR-13205: Prevent StringIndexOutOfBoundsException when parsing field names in SolrQueryParserBase
+  (pramodkumar9 via Jason Gerlowski)
+
 Optimizations
 ---------------------
 
