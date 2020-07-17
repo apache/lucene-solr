@@ -396,7 +396,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
       } catch (NullPointerException e) {
         // okay
       }
-      if (wait && recoveryFuture != null) {
+      if (wait && recoveryStrat != null && recoveryFuture != null) {
         try {
           recoveryFuture.get(10, TimeUnit.MINUTES);
         } catch (InterruptedException e) {

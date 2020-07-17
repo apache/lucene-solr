@@ -1847,6 +1847,7 @@ public class CoreContainer implements Closeable {
     return cfg.getCoreRootDirectory();
   }
 
+
   /**
    * Gets a core by name and increase its refcount.
    *
@@ -1856,9 +1857,21 @@ public class CoreContainer implements Closeable {
    * @see SolrCore#close()
    */
   public SolrCore getCore(String name) {
+    return getCore(name, false);
+  }
+
+  /**
+   * Gets a core by name and increase its refcount.
+   *
+   * @param name the core name
+   * @return the core if found, null if a SolrCore by this name does not exist
+   * @throws SolrCoreInitializationException if a SolrCore with this name failed to be initialized
+   * @see SolrCore#close()
+   */
+  public SolrCore getCore(String name, boolean forClose) {
 
     // Do this in two phases since we don't want to lock access to the cores over a load.
-    SolrCore core = solrCores.getCoreFromAnyList(name, true);
+    SolrCore core = solrCores.getCoreFromAnyList(name, true, true);
 
     // If a core is loaded, we're done just return it.
     if (core != null) {

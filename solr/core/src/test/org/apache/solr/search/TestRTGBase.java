@@ -44,7 +44,7 @@ public class TestRTGBase extends SolrTestCaseJ4 {
   public static String FROM_LEADER = DistribPhase.FROMLEADER.toString();
 
   protected final ConcurrentHashMap<Integer,DocInfo> model = new ConcurrentHashMap<>();
-  protected Map<Integer,DocInfo> committedModel = new HashMap<>();
+  protected Map<Integer,DocInfo> committedModel = new ConcurrentHashMap<>();
   protected long snapshotCount;
   protected long committedModelClock;
   protected volatile int lastId;

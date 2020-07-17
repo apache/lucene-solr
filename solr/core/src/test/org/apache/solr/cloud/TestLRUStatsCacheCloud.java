@@ -17,12 +17,14 @@
 package org.apache.solr.cloud;
 
 import org.apache.solr.search.stats.LRUStatsCache;
+import org.junit.Ignore;
 
 /**
  *
  */
-public class
-TestLRUStatsCacheCloud extends TestBaseStatsCacheCloud {
+@Ignore
+// nocommit - use this test to work out parallel commits waiting for flushed updates@Ignore // nocommit - use this test to work out parallel commits waiting for flushed updates
+public class TestLRUStatsCacheCloud extends TestBaseStatsCacheCloud {
   @Override
   protected boolean assertSameScores() {
     return true;

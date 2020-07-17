@@ -299,9 +299,13 @@ class SolrCores implements Closeable {
     return ret;
   }
 
-  /* If you don't increment the reference count, someone could close the core before you use it. */
   SolrCore  getCoreFromAnyList(String name, boolean incRefCount) {
-    if (closed) {
+    return getCoreFromAnyList(name, incRefCount, false);
+  }
+
+  /* If you don't increment the reference count, someone could close the core before you use it. */
+  SolrCore  getCoreFromAnyList(String name, boolean incRefCount, boolean onClose) {
+    if (!onClose && closed) {
       throw new AlreadyClosedException("SolrCores has been closed");
     }
     SolrCore core = cores.get(name);

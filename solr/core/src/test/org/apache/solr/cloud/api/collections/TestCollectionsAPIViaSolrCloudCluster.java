@@ -58,14 +58,16 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
 
   private static final int numShards = 2;
   private static final int numReplicas = 2;
-  private static final int maxShardsPerNode = 1;
-  private static final int nodeCount = 5;
+  private static final int maxShardsPerNode = TEST_NIGHTLY ? 1 : 10;
+  private static int nodeCount;
   private static final String configName = "solrCloudCollectionConfig";
   private static final Map<String,String> collectionProperties  // ensure indexes survive core shutdown
       = Collections.singletonMap("solr.directoryFactory", "solr.StandardDirectoryFactory");
 
   @Override
   public void setUp() throws Exception {
+    System.setProperty("solr.skipCommitOnClose", "false");
+    nodeCount = TEST_NIGHTLY ? nodeCount : 2;
     configureCluster(nodeCount).addConfig(configName, configset("cloud-minimal")).configure();
     super.setUp();
   }
@@ -210,6 +212,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
   }
 
   @Test
+  @Ignore // nocommit - good debug for parallel commit
   public void testStopAllStartAll() throws Exception {
 
     final String collectionName = "testStopAllStartAllCollection";
@@ -237,6 +240,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
       client.add(collectionName, doc);
       if (ii*2 == numDocs) client.commit(collectionName);
     }
+
     client.commit(collectionName);
 
     // query collection

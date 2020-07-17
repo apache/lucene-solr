@@ -32,6 +32,7 @@ import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
@@ -91,6 +92,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
    * Requests from leader to it's followers will be retried this amount of times by default
    */
   static final int MAX_RETRIES_TO_FOLLOWERS_DEFAULT = Integer.getInteger("solr.retries.to.followers", 3);
+  private long versionOnUpdate;
+  private VersionBucket bucket;
+  private boolean isReplayOrPeersync;
+  private boolean leaderLogic;
+  private boolean forwardedFromCollection;
 
   /**
    * Values this processor supports for the <code>DISTRIB_UPDATE_PARAM</code>.
@@ -230,7 +236,39 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       return;
     }
 
-    doDistribAdd(cmd);
+    try (ParWork worker = new ParWork(this)) {
+      worker.collect(() -> {
+        if (vinfo != null) vinfo.lockForUpdate();
+        try {
+
+          // TODO: possibly set checkDeleteByQueries as a flag on the command?
+          doLocalAdd(cmd);
+
+          // if the update updates a doc that is part of a nested structure,
+          // force open a realTimeSearcher to trigger a ulog cache refresh.
+          // This refresh makes RTG handler aware of this update.q
+          if (ulog != null) {
+            if (req.getSchema().isUsableForChildDocs() && shouldRefreshUlogCaches(cmd)) {
+              ulog.openRealtimeSearcher();
+            }
+          }
+
+        } catch (IOException e) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, e);
+        } finally {
+          if (vinfo != null) vinfo.unlockForUpdate();
+        }
+      });
+      SolrInputDocument clonedDoc = shouldCloneCmdDoc() ? cmd.solrDoc.deepCopy(): null;
+      if (clonedDoc != null) {
+        cmd.solrDoc = clonedDoc;
+      }
+      if (req.getCore().getCoreContainer().isZooKeeperAware()) {
+        doDistribAdd(worker, cmd);
+      }
+      worker.addCollect("distUpdate");
+    }
+
 
     // TODO: what to do when no idField?
     if (returnVersions && rsp != null && idField != null) {
@@ -250,7 +288,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   }
 
-  protected void doDistribAdd(AddUpdateCommand cmd) throws IOException {
+  protected void doDistribAdd(ParWork worker, AddUpdateCommand cmd) throws IOException {
     // no-op for derived classes to implement
   }
 
@@ -279,7 +317,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     BytesRef idBytes = cmd.getIndexedId();
 
     if (idBytes == null) {
-      super.processAdd(cmd);
       return false;
     }
 
@@ -288,7 +325,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             "Atomic document updates are not supported unless <updateLog/> is configured");
       } else {
-        super.processAdd(cmd);
         return false;
       }
     }
@@ -333,13 +369,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       }
     }
 
-    vinfo.lockForUpdate();
-    try {
-      long finalVersionOnUpdate = versionOnUpdate;
-      return bucket.runWithLock(vinfo.getVersionBucketLockTimeoutMs(), () -> doVersionAdd(cmd, finalVersionOnUpdate, isReplayOrPeersync, leaderLogic, forwardedFromCollection, bucket));
-    } finally {
-      vinfo.unlockForUpdate();
-    }
+    long finalVersionOnUpdate = versionOnUpdate;
+    return bucket.runWithLock(vinfo.getVersionBucketLockTimeoutMs(), () -> doVersionAdd(cmd, finalVersionOnUpdate, isReplayOrPeersync, leaderLogic, forwardedFromCollection, bucket));
+
   }
 
   private boolean doVersionAdd(AddUpdateCommand cmd, long versionOnUpdate, boolean isReplayOrPeersync,
@@ -492,21 +524,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         }
       }
 
-      SolrInputDocument clonedDoc = shouldCloneCmdDoc() ? cmd.solrDoc.deepCopy(): null;
-
-      // TODO: possibly set checkDeleteByQueries as a flag on the command?
-      doLocalAdd(cmd);
-
-      // if the update updates a doc that is part of a nested structure,
-      // force open a realTimeSearcher to trigger a ulog cache refresh.
-      // This refresh makes RTG handler aware of this update.q
-      if(req.getSchema().isUsableForChildDocs() && shouldRefreshUlogCaches(cmd)) {
-        ulog.openRealtimeSearcher();
-      }
-
-      if (clonedDoc != null) {
-        cmd.solrDoc = clonedDoc;
-      }
     } finally {
       bucket.unlock();
     }
@@ -544,7 +561,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private long waitForDependentUpdates(AddUpdateCommand cmd, long versionOnUpdate,
                                boolean isReplayOrPeersync, VersionBucket bucket) throws IOException {
     long lastFoundVersion = 0;
-    TimeOut waitTimeout = new TimeOut(Integer.getInteger("solr.dependentupdate.timeout", 5) , TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    TimeOut waitTimeout = new TimeOut(Integer.getInteger("solr.dependentupdate.timeout", 3) , TimeUnit.SECONDS, TimeSource.NANO_TIME);
 
     vinfo.lockForUpdate();
     try {

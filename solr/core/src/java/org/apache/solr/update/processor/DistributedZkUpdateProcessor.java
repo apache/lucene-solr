@@ -37,6 +37,7 @@ import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkShardTerms;
 import org.apache.solr.cloud.overseer.OverseerAction;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
@@ -225,10 +226,12 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
             log.info("send commit to leaders nodes={}", useNodes);
             params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
                     zkController.getBaseUrl(), req.getCore().getName()));
-            cmdDistrib.distribCommit(cmd, useNodes, params);
+
+            List<SolrCmdDistributor.Node> finalUseNodes = useNodes;
+            ParWork.getExecutor().submit(() -> cmdDistrib.distribCommit(cmd, finalUseNodes, params));
+
           }
         }
-
         if (isLeader) {
 
           log.info("Do a local commit on NRT endpoint");
@@ -246,13 +249,16 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
             params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
                     zkController.getBaseUrl(), req.getCore().getName()));
 
-            cmdDistrib.distribCommit(cmd, useNodes, params);
+
+            List<SolrCmdDistributor.Node> finalUseNodes1 = useNodes;
+            ParWork.getExecutor().submit(() -> cmdDistrib.distribCommit(cmd, finalUseNodes1, params));
           }
 
-          // if (useNodes != null && useNodes.size() > 0) {
-         // cmdDistrib.blockAndDoRetries();
-          //  }
         }
+
+          if (useNodes != null && useNodes.size() > 0 && cmd.waitSearcher) {
+             cmdDistrib.blockAndDoRetries();
+          }
       }
 
       if (log.isDebugEnabled()) {
@@ -281,7 +287,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   }
 
   @Override
-  protected void doDistribAdd(AddUpdateCommand cmd) throws IOException {
+  protected void doDistribAdd(ParWork worker, AddUpdateCommand cmd) throws IOException {
 
     if (isLeader && !isSubShardLeader)  {
       DocCollection coll = clusterState.getCollection(collection);
@@ -303,7 +309,13 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
             zkController.getBaseUrl(), req.getCore().getName()));
         params.set(DISTRIB_FROM_COLLECTION, collection);
         params.set(DISTRIB_FROM_SHARD, cloudDesc.getShardId());
-        cmdDistrib.distribAdd(cmd, nodesByRoutingRules, params, true);
+        worker.collect(() -> {
+          try {
+            cmdDistrib.distribAdd(cmd, nodesByRoutingRules, params, true);
+          } catch (IOException e) {
+            throw new SolrException(ErrorCode.SERVER_ERROR, e);
+          }
+        });
       }
     }
 
@@ -330,9 +342,22 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         // and the current in-place update (that depends on the previous update), if reordered
         // in the stream, can result in the current update being bottled up behind the previous
         // update in the stream and can lead to degraded performance.
-        cmdDistrib.distribAdd(cmd, nodes, params, true, rollupReplicationTracker, leaderReplicationTracker);
+
+        worker.collect(() -> {
+          try {
+            cmdDistrib.distribAdd(cmd, nodes, params, true, rollupReplicationTracker, leaderReplicationTracker);
+          } catch (IOException e) {
+            throw new SolrException(ErrorCode.SERVER_ERROR, e);
+          }
+        });
       } else {
-        cmdDistrib.distribAdd(cmd, nodes, params, false, rollupReplicationTracker, leaderReplicationTracker);
+        worker.collect(() -> {
+          try {
+            cmdDistrib.distribAdd(cmd, nodes, params, false, rollupReplicationTracker, leaderReplicationTracker);
+          } catch (IOException e) {
+            throw new SolrException(ErrorCode.SERVER_ERROR, e);
+          }
+        });
       }
     }
   }

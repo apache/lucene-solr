@@ -30,12 +30,14 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.TestHarness;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
+@Ignore // nocommit - parallel commit/update
 public class TestStressReorder extends TestRTGBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -83,8 +85,13 @@ public class TestStressReorder extends TestRTGBase {
         // query variables
     final int percentRealtimeQuery = 75;
     final AtomicLong operations = new AtomicLong(TEST_NIGHTLY ? 50000 : 500);  // number of query operations to perform in total
-    int nReadThreads = 5 + random().nextInt(25);
 
+    int nReadThreads;
+    if (TEST_NIGHTLY) {
+      nReadThreads = 5 + random().nextInt(25);
+    } else {
+      nReadThreads = 3;
+    }
 
     /** // testing
     final int commitPercent = 5;

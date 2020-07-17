@@ -199,19 +199,19 @@ public class SolrCmdDistributor implements Closeable {
       addCommit(uReq, cmd);
       latches.add(submit(new Req(cmd, node, uReq, false)));
     }
-
-    if (cmd.waitSearcher) {
-      for (CountDownLatch latch : latches) {
-        try {
-          boolean success = latch.await(5, TimeUnit.SECONDS);
-          if (!success) {
-            log.warn("Timed out waiting for commit request to finish");
-          }
-        } catch (InterruptedException e) {
-          ParWork.propegateInterrupt(e);
-        }
-      }
-    }
+//
+//    if (cmd.waitSearcher) {
+//      for (CountDownLatch latch : latches) {
+//        try {
+//          boolean success = latch.await(5, TimeUnit.SECONDS);
+//          if (!success) {
+//            log.warn("Timed out waiting for commit request to finish");
+//          }
+//        } catch (InterruptedException e) {
+//          ParWork.propegateInterrupt(e);
+//        }
+//      }
+//    }
 
 
   }
