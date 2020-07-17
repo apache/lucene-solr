@@ -22,13 +22,25 @@ package org.apache.solr.cloud.api.collections.assign;
  */
 public class AddReplicaDecision extends BaseAssignDecision {
   private final String targetNode;
+  private final String replicaName;
+  private final String coreName;
 
-  public AddReplicaDecision(AssignRequest request, String targetNode) {
+  public AddReplicaDecision(AssignRequest request, String targetNode, String replicaName, String coreName) {
     super(request);
     this.targetNode = targetNode;
+    this.replicaName = replicaName;
+    this.coreName = coreName;
   }
 
   public String getTargetNode() {
     return targetNode;
+  }
+
+  public String getReplicaName() {
+    return replicaName;
+  }
+
+  public String getCoreName() {
+    return coreName;
   }
 }

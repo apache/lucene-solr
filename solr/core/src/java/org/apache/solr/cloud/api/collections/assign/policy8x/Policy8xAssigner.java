@@ -46,7 +46,8 @@ public class Policy8xAssigner implements Assigner {
               cloudManager, null, Collections.singletonList(areq.getShard()),
               nrtReplicas, tlogReplicas, pullReplicas, areq.getNodeSet() != null ? new ArrayList(areq.getNodeSet()) : null);
           positions.forEach(pos -> {
-            decisions.add(new AddReplicaDecision(req, pos.node));
+            // XXX very messy bits in CreateCollectionCmd produce these values
+            decisions.add(new AddReplicaDecision(req, pos.node, "xxxxx", "xxxxx"));
           });
         } else {
           decisions.add(NoopDecision.of("unsupported", req));

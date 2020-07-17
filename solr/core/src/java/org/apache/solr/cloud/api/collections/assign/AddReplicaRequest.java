@@ -31,21 +31,18 @@ public class AddReplicaRequest extends BaseAssignRequest {
   private final Replica.Type type;
   private final Map<String, Object> params = new HashMap<>();
   private final String targetNode;
-  private final String coreName;
   private final Set<String> nodeSet;
 
   public AddReplicaRequest(String collection, String shard, Replica.Type type, Map<String, Object> params,
-                           String targetNode, String coreName, Set<String> nodeSet) {
+                           String targetNode, Set<String> nodeSet) {
     super(collection, shard);
     this.type = type;
     if (params != null) {
       this.params.putAll(params);
     }
     this.targetNode = targetNode;
-    this.coreName = coreName;
     this.nodeSet = nodeSet;
     Objects.requireNonNull(this.type, "'type' must not be null");
-    Objects.requireNonNull(this.coreName, "'coreName' must not be null");
   }
 
   public Replica.Type getType() {
@@ -59,10 +56,6 @@ public class AddReplicaRequest extends BaseAssignRequest {
   // impls may request a specific target node
   public String getTargetNode() {
     return targetNode;
-  }
-
-  public String getCoreName() {
-    return coreName;
   }
 
   // subset of live nodes to consider as valid targets, or null

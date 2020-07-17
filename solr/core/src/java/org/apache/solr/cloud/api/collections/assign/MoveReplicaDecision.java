@@ -28,7 +28,7 @@ public interface MoveReplicaDecision extends AssignDecision {
 
   String getCollectionName();
 
-  String getSliceName();
+  String getShardName();
 
   String getReplicaName();
 
