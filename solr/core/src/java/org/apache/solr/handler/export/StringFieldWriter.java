@@ -34,7 +34,9 @@ import org.apache.solr.schema.FieldType;
 class StringFieldWriter extends FieldWriter {
   private String field;
   private FieldType fieldType;
-  private Map<Integer, SortedDocValues> lastDocValues = new HashMap<>();
+  private BytesRef lastRef;
+  private int lastOrd = -1;
+
   private CharsRefBuilder cref = new CharsRefBuilder();
   final ByteArrayUtf8CharSequence utf8 = new ByteArrayUtf8CharSequence(new byte[0], 0, 0) {
     @Override
@@ -54,15 +56,30 @@ class StringFieldWriter extends FieldWriter {
   }
 
   public boolean write(SortDoc sortDoc, LeafReader reader, MapWriter.EntryWriter ew, int fieldIndex) throws IOException {
-    BytesRef ref;
-    SortedDocValues vals = DocValues.getSorted(reader, this.field);
+    StringValue stringValue = (StringValue)sortDoc.getSortValue(this.field);
+    BytesRef ref = null;
 
-    if (vals.advance(sortDoc.docId) != sortDoc.docId) {
-      return false;
+    if(stringValue != null) {
+      //We already have the top level ordinal used for sorting.
+      //Now let's use it for caching the BytesRef so we don't have to look it up.
+      //When we have long runs of repeated values do to the sort order of the docs this i huge win.
+      if(this.lastOrd == stringValue.currentOrd) {
+        ref = lastRef;
+      }
+
+      this.lastOrd = stringValue.currentOrd;
     }
 
-    int ord = vals.ordValue();
-    ref = vals.lookupOrd(ord);
+    if(ref == null) {
+      SortedDocValues vals = DocValues.getSorted(reader, this.field);
+      if (vals.advance(sortDoc.docId) != sortDoc.docId) {
+        return false;
+      }
+
+      int ord = vals.ordValue();
+      ref = vals.lookupOrd(ord);
+      lastRef = ref.clone();
+    }
 
     if (ew instanceof JavaBinCodec.BinEntryWriter) {
       ew.put(this.field, utf8.reset(ref.bytes, ref.offset, ref.length, null));

@@ -733,10 +733,10 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
         bits.clear(sortDoc.docId);
 
         //Load the global ordinal (only matters for strings)
-        sortDoc.setGlobalValues(lastDoc);
+        sortDoc.setGlobalValues(nextDoc);
 
         //Save this doc so we don't have to lookup the global ordinal for the next doc if they have the same segment ordinal.
-        lastDoc.setValues(sortDoc);
+        //lastDoc.setValues(sortDoc);
         nextDoc.setValues(sortDoc);
         //We are now done with this doc.
         sortDoc.reset();
@@ -767,12 +767,8 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
 
         while(true) {
           SortDoc sortDoc = queue.pop();
-          if(sortDoc == null) {
-            break;
-          } else {
-            if(sortDoc.docId > -1) {
-              outDocs[++index] = sortDoc;
-            }
+          if(sortDoc.docId > -1) {
+            outDocs[++index] = sortDoc;
           }
         }
       } catch (Exception e) {

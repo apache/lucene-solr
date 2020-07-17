@@ -76,11 +76,13 @@ class StringValue implements SortValue {
 
   public void setCurrentValue(int docId) throws IOException {
     //System.out.println(docId +":"+lastDocID);
+    /*
     if (docId < lastDocID) {
       throw new AssertionError("docs were sent out-of-order: lastDocID=" + lastDocID + " vs doc=" + docId);
     }
 
     lastDocID = docId;
+    */
 
     if (docId > docValues.docID()) {
       docValues.advance(docId);
