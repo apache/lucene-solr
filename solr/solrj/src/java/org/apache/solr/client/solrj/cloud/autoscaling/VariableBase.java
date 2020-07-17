@@ -18,8 +18,6 @@
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
 
-import org.apache.solr.client.solrj.impl.SolrClientNodeStateProvider;
-import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 import org.apache.solr.common.util.StrUtils;
 
 import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.FREEDISK;
@@ -136,8 +134,6 @@ public class VariableBase implements Variable {
       }
       return num;
     } else if (varType.type == String.class) {
-      if (isRuleVal && !varType.vals.isEmpty() && !varType.vals.contains(val))
-        throw new RuntimeException(name + ": " + val + " must be one of " + StrUtils.join(varType.vals, ','));
       return val;
     } else {
       throw new RuntimeException("Invalid type ");
