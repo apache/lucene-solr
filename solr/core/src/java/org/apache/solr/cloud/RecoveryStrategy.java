@@ -54,6 +54,7 @@ import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory.DirContext;
@@ -127,15 +128,16 @@ public class RecoveryStrategy implements Runnable, Closeable {
   private volatile String coreZkNodeName;
   private final ZkStateReader zkStateReader;
   private volatile String coreName;
-  private AtomicInteger retries = new AtomicInteger(0);
+  private final AtomicInteger retries = new AtomicInteger(0);
   private boolean recoveringAfterStartup;
   private volatile HttpUriRequest prevSendPreRecoveryHttpUriRequest;
   private volatile Replica.Type replicaType;
   private volatile CoreDescriptor coreDescriptor;
 
-  private CoreContainer cc;
+  private final CoreContainer cc;
 
   protected RecoveryStrategy(CoreContainer cc, CoreDescriptor cd, RecoveryListener recoveryListener) {
+    ObjectReleaseTracker.track(this);
     this.cc = cc;
     this.coreName = cd.getName();
     this.recoveryListener = recoveryListener;
@@ -196,29 +198,39 @@ public class RecoveryStrategy implements Runnable, Closeable {
   @Override
   final public void close() {
     close = true;
-    try {
-      prevSendPreRecoveryHttpUriRequest.abort();
-    } catch (NullPointerException e) {
-      // expected
-    }
+    try (ParWork closer = new ParWork(this, true)) {
+      closer.collect(() -> {
+        try {
+          prevSendPreRecoveryHttpUriRequest.abort();
+        } catch (NullPointerException e) {
+          // expected
+        }
+      });
 
-    try (SolrCore core = cc.getCore(coreName)) {
 
-      if (core == null) {
-        SolrException.log(log, "SolrCore not found - cannot recover:" + coreName);
-        return;
+      try (SolrCore core = cc.getCore(coreName)) {
+
+        if (core == null) {
+          SolrException.log(log, "SolrCore not found - cannot recover:" + coreName);
+          return;
+        }
+        SolrRequestHandler handler = core.getRequestHandler(ReplicationHandler.PATH);
+        ReplicationHandler replicationHandler = (ReplicationHandler) handler;
+
+        if (replicationHandler == null) {
+          throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
+                  "Skipping recovery, no " + ReplicationHandler.PATH + " handler found");
+        }
+        closer.collect(() -> {
+          replicationHandler.abortFetch();
+        });
+
       }
-      SolrRequestHandler handler = core.getRequestHandler(ReplicationHandler.PATH);
-      ReplicationHandler replicationHandler = (ReplicationHandler) handler;
-
-      if (replicationHandler == null) {
-        throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
-                "Skipping recovery, no " + ReplicationHandler.PATH + " handler found");
-      }
-      replicationHandler.abortFetch();
+      closer.addCollect("recoveryStratClose");
     }
 
     log.warn("Stopping recovery for core=[{}] coreNodeName=[{}]", coreName, coreZkNodeName);
+    ObjectReleaseTracker.release(this);
   }
 
   final private void recoveryFailed(final SolrCore core,
@@ -226,7 +238,9 @@ public class RecoveryStrategy implements Runnable, Closeable {
       final String shardZkNodeName, final CoreDescriptor cd) throws Exception {
     SolrException.log(log, "Recovery failed - I give up.");
     try {
-      zkController.publish(cd, Replica.State.RECOVERY_FAILED);
+      if (zkController.getZkClient().isConnected()) {
+        zkController.publish(cd, Replica.State.RECOVERY_FAILED);
+      }
     } finally {
       close();
       recoveryListener.failed();
@@ -337,29 +351,33 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
   @Override
   final public void run() {
-    if (cc.isShutDown()) {
-      return;
-    }
-    // set request info for logging
-    try (SolrCore core = cc.getCore(coreName)) {
-
-      if (core == null) {
-        SolrException.log(log, "SolrCore not found - cannot recover:" + coreName);
+    try {
+      if (cc.isShutDown()) {
         return;
       }
+      // set request info for logging
+      try (SolrCore core = cc.getCore(coreName)) {
 
-      log.info("Starting recovery process. recoveringAfterStartup={}", recoveringAfterStartup);
+        if (core == null) {
+          SolrException.log(log, "SolrCore not found - cannot recover:" + coreName);
+          return;
+        }
 
-      try {
-        doRecovery(core);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        SolrException.log(log, "", e);
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
-      } catch (Exception e) {
-        log.error("", e);
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
+        log.info("Starting recovery process. recoveringAfterStartup={}", recoveringAfterStartup);
+
+        try {
+          doRecovery(core);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          SolrException.log(log, "", e);
+          throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
+        } catch (Exception e) {
+          log.error("", e);
+          throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
+        }
       }
+    } finally {
+      close();
     }
   }
 

@@ -1160,16 +1160,16 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   }
 
   public static final class DistributedUpdatesAsyncException extends SolrException {
-    public final List<Error> errors;
-    public DistributedUpdatesAsyncException(List<Error> errors) {
+    public final Set<Error> errors;
+    public DistributedUpdatesAsyncException(Set<Error> errors) {
       super(buildCode(errors), buildMsg(errors), null);
       this.errors = errors;
 
       // create a merged copy of the metadata from all wrapped exceptions
       NamedList<String> metadata = new NamedList<String>();
       for (Error error : errors) {
-        if (error.e instanceof SolrException) {
-          SolrException e = (SolrException) error.e;
+        if (error.t instanceof SolrException) {
+          SolrException e = (SolrException) error.t;
           NamedList<String> eMeta = e.getMetadata();
           if (null != eMeta) {
             metadata.addAll(eMeta);
@@ -1182,7 +1182,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
 
     /** Helper method for constructor */
-    private static int buildCode(List<Error> errors) {
+    private static int buildCode(Set<Error> errors) {
       assert null != errors;
       assert 0 < errors.size();
 
@@ -1205,17 +1205,17 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
     
     /** Helper method for constructor */
-    private static String buildMsg(List<Error> errors) {
+    private static String buildMsg(Set<Error> errors) {
       assert null != errors;
       assert 0 < errors.size();
       
       if (1 == errors.size()) {
-        return "Async exception during distributed update: " + errors.get(0).e.getMessage();
+        return "Async exception during distributed update: " + errors.iterator().next().t.getMessage();
       } else {
         StringBuilder buf = new StringBuilder(errors.size() + " Async exceptions during distributed update: ");
         for (Error error : errors) {
           buf.append("\n");
-          buf.append(error.e.getMessage());
+          buf.append(error.t.getMessage());
         }
         return buf.toString();
       }

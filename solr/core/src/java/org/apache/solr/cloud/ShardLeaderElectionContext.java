@@ -36,6 +36,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
@@ -73,6 +74,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
                     + "/leader_elect/" + shardId,  ZkStateReader.getShardLeadersPath(
             collection, shardId), props,
             zkController.getZkClient());
+    ObjectReleaseTracker.track(this);
     this.cc = cc;
     this.syncStrategy = new SyncStrategy(cc);
     this.shardId = shardId;
@@ -98,6 +100,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     }
 
     this.isClosed = true;
+    ObjectReleaseTracker.release(this);
   }
 
   @Override

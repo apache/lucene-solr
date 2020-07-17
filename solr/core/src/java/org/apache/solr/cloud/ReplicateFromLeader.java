@@ -22,9 +22,11 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 
 import org.apache.lucene.index.IndexCommit;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
@@ -48,6 +50,7 @@ public class ReplicateFromLeader implements Closeable {
   private volatile long lastVersion = 0;
 
   public ReplicateFromLeader(CoreContainer cc, String coreName) {
+    ObjectReleaseTracker.track(this);
     this.cc = cc;
     this.coreName = coreName;
   }
@@ -133,7 +136,7 @@ public class ReplicateFromLeader implements Closeable {
     return hour + ":" + min + ":" + sec;
   }
 
-  public void stopReplication() {
+  private void stopReplication() {
     if (replicationProcess != null) {
       replicationProcess.close();
     }
@@ -141,6 +144,11 @@ public class ReplicateFromLeader implements Closeable {
 
   @Override
   public void close() throws IOException {
-    stopReplication();
+    try {
+      stopReplication();
+    } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
+    }
+    ObjectReleaseTracker.release(this);
   }
 }

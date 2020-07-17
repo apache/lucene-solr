@@ -364,8 +364,8 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
     isClosed = true;
 
-    try (ParWork closer = new ParWork(this)) {
-      closer.add("OTP", selector);
+    try (ParWork closer = new ParWork(this, true)) {
+      closer.add("selector", selector);
     }
   }
 

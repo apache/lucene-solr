@@ -97,7 +97,7 @@ public class ZkTestServer implements Closeable {
     }
   }
 
-  Path file = Paths.get("/home/miller/zk.zklog");
+  private Path zkMonitoringFile;
 
   public static final int TIMEOUT = 45000;
   public static final int TICK_TIME = 1000;
@@ -453,7 +453,10 @@ public class ZkTestServer implements Closeable {
       log.info("Overriding limiter action to: {}", limiterAction);
       getLimiter().setAction(LimitViolationAction.valueOf(limiterAction));
     }
-
+    String zkMonFile = System.getProperty("solr.tests.zkmonfile");
+    if (zkMonFile != null) {
+      zkMonitoringFile = Paths.get(System.getProperty("solr.tests.zkmonfile"));
+    }
     ObjectReleaseTracker.track(this);
   }
 
@@ -631,7 +634,7 @@ public class ZkTestServer implements Closeable {
     } catch (Exception e) {
       ParWork.propegateInterrupt("Exception trying to print zk layout to log on shutdown", e);
     }
-    if (chRootClient != null && zkServer != null) {
+    if (zkMonitoringFile != null && chRootClient != null && zkServer != null) {
       writeZkMonitorFile();
     }
 
@@ -664,9 +667,9 @@ public class ZkTestServer implements Closeable {
   }
 
   private void writeZkMonitorFile() {
-//    synchronized (file) {
-//      chRootClient.printLayoutToFile(file);
-//    }
+    synchronized (zkMonitoringFile) {
+      chRootClient.printLayoutToFile(zkMonitoringFile);
+    }
   }
 
 //  public static boolean waitForServerDown(String hp, long timeoutMs) {

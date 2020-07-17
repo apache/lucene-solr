@@ -652,11 +652,12 @@ public class MiniSolrCloudCluster {
 
       try (ParWork parWork = new ParWork(this, true)) {
         parWork.collect(solrClient);
-         parWork.collect(shutdowns);
+        parWork.collect(shutdowns);
+        parWork.addCollect("jetties&solrClient");
         if (!externalZkServer) {
           parWork.collect(zkServer);
         }
-        parWork.addCollect("miniclusterShutdown");
+        parWork.addCollect("zkServer");
       }
     } finally {
       System.clearProperty("zkHost");

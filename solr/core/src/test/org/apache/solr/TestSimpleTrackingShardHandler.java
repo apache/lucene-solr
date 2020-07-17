@@ -39,9 +39,7 @@ public class TestSimpleTrackingShardHandler extends BaseDistributedSearchTestCas
     RequestTrackingQueue trackingQueue = new RequestTrackingQueue();
     
     TrackingShardHandlerFactory.setTrackingQueue(jettys, trackingQueue);
-    // sanity check that our control jetty has the correct configs as well
-    TrackingShardHandlerFactory.setTrackingQueue(Collections.singletonList(controlJetty), trackingQueue);
-    
+
     QueryResponse ignored = query("q","*:*", "fl", "id", "sort", "id asc");
 
     int numShardRequests = 0;

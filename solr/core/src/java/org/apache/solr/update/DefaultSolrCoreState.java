@@ -135,7 +135,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
     }
 
     boolean succeeded = false;
-    lock(iwLock.readLock());
+    iwLock.readLock().lock();
     try {
       // Multiple readers may be executing this, but we only want one to open the writer on demand.
       synchronized (this) {
@@ -185,11 +185,6 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
     }
   }
 
-  // acquires the lock or throws an exception if the CoreState has been closed.
-  private void lock(Lock lock) {
-    lock.lock();
-  }
-
   // closes and opens index writers without any locking
   private void changeWriter(SolrCore core, boolean rollback, boolean openNewWriter) throws IOException {
     String coreName = core.getName();
@@ -207,7 +202,6 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
           iw.close();
         } catch (Exception e) {
           ParWork.propegateInterrupt("Error closing old IndexWriter. core=" + coreName, e);
-          throw new SolrException(ErrorCode.SERVER_ERROR, e);
         }
       } else {
         try {
@@ -215,7 +209,6 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
           iw.rollback();
         } catch (Exception e) {
           ParWork.propegateInterrupt("Error rolling back old IndexWriter. core=" + coreName, e);
-          throw new SolrException(ErrorCode.SERVER_ERROR, e);
         }
       }
     }
@@ -228,7 +221,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
 
   @Override
   public void newIndexWriter(SolrCore core, boolean rollback) throws IOException {
-    lock(iwLock.writeLock());
+    iwLock.writeLock().lock();
     try {
       changeWriter(core, rollback, true);
     } finally {
@@ -238,7 +231,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
 
   @Override
   public void closeIndexWriter(SolrCore core, boolean rollback) throws IOException {
-    lock(iwLock.writeLock());
+    iwLock.writeLock().lock();
     changeWriter(core, rollback, false);
     // Do not unlock the writeLock in this method.  It will be unlocked by the openIndexWriter call (see base class javadoc)
   }
@@ -254,7 +247,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
 
   @Override
   public void rollbackIndexWriter(SolrCore core) throws IOException {
-    lock(iwLock.writeLock());
+    iwLock.writeLock().lock();
     try {
       changeWriter(core, true, true);
     } finally {
@@ -276,7 +269,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   }
 
   public Sort getMergePolicySort() throws IOException {
-    lock(iwLock.readLock());
+    iwLock.readLock().lock();
     try {
       if (indexWriter != null) {
         final MergePolicy mergePolicy = indexWriter.getConfig().getMergePolicy();
@@ -302,70 +295,75 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
 
   @Override
   public void doRecovery(CoreContainer cc, CoreDescriptor cd) {
-    if (prepForClose || cc.isShutDown()) {
+    if (prepForClose || cc.isShutDown() || closed) {
+      cc.getUpdateShardHandler().getRecoveryExecutor().shutdownNow();
       return;
     }
-    Runnable recoveryTask = new Runnable() {
-      @Override
-      public void run() {
-        MDCLoggingContext.setCoreDescriptor(cc, cd);
+    Runnable recoveryTask = () -> {
+      MDCLoggingContext.setCoreDescriptor(cc, cd);
+      try {
+        if (SKIP_AUTO_RECOVERY) {
+          log.warn("Skipping recovery according to sys prop solrcloud.skip.autorecovery");
+          return;
+        }
+
+        // check before we grab the lock
+        if (prepForClose || closed || cc.isShutDown()) {
+          log.warn("Skipping recovery because Solr is shutdown");
+          return;
+        }
+
+        // if we can't get the lock, another recovery is running
+        // we check to see if there is already one waiting to go
+        // after the current one, and if there is, bail
+        boolean locked = recoveryLock.tryLock();
         try {
-          if (SKIP_AUTO_RECOVERY) {
-            log.warn("Skipping recovery according to sys prop solrcloud.skip.autorecovery");
+          if (!locked && recoveryWaiting.get() > 0) {
             return;
           }
 
-          // check before we grab the lock
-          if (closed || cc.isShutDown()) {
-            log.warn("Skipping recovery because Solr is shutdown");
-            return;
-          }
+          recoveryWaiting.incrementAndGet();
+          cancelRecovery();
 
-          // if we can't get the lock, another recovery is running
-          // we check to see if there is already one waiting to go
-          // after the current one, and if there is, bail
-          boolean locked = recoveryLock.tryLock();
+          recoveryLock.lock();
           try {
-            if (!locked && recoveryWaiting.get() > 0) {
+            // don't use recoveryLock.getQueueLength() for this
+            if (recoveryWaiting.decrementAndGet() > 0) {
+              // another recovery waiting behind us, let it run now instead of after we finish
               return;
             }
 
-            recoveryWaiting.incrementAndGet();
-            cancelRecovery();
+            // to be air tight we must also check after lock
+            if (prepForClose || closed || cc.isShutDown()) {
+              log.info("Skipping recovery due to being closed");
+              return;
+            }
+            log.info("Running recovery");
 
-            recoveryLock.lock();
+            recoveryThrottle.minimumWaitBetweenActions();
+            recoveryThrottle.markAttemptingAction();
+            if (recoveryStrat != null) {
+              ParWork.close(recoveryStrat);
+            }
+            iwLock.writeLock().lock();
             try {
-              // don't use recoveryLock.getQueueLength() for this
-              if (recoveryWaiting.decrementAndGet() > 0) {
-                // another recovery waiting behind us, let it run now instead of after we finish
+              if (prepForClose || cc.isShutDown() || closed) {
                 return;
               }
-
-              // to be air tight we must also check after lock
-              if (closed || cc.isShutDown()) {
-                log.info("Skipping recovery due to being closed");
-                return;
-              }
-              log.info("Running recovery");
-
-              recoveryThrottle.minimumWaitBetweenActions();
-              recoveryThrottle.markAttemptingAction();
-
               recoveryStrat = recoveryStrategyBuilder.create(cc, cd, DefaultSolrCoreState.this);
               recoveryStrat.setRecoveringAfterStartup(recoveringAfterStartup);
-              if (prepForClose || cc.isShutDown()) {
-                return;
-              }
               recoveryStrat.run();
             } finally {
-              recoveryLock.unlock();
+              iwLock.writeLock().unlock();
             }
           } finally {
-            if (locked) recoveryLock.unlock();
+            recoveryLock.unlock();
           }
         } finally {
-          MDCLoggingContext.clear();
+          if (locked) recoveryLock.unlock();
         }
+      } finally {
+        MDCLoggingContext.clear();
       }
     };
     try {
@@ -411,34 +409,39 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
         }
       }
       recoveryFuture = null;
-      recoveryStrat = null;
     }
   }
 
   /** called from recoveryStrat on a successful recovery */
   @Override
   public void recovered() {
-    recoveryStrat = null;
     recoveringAfterStartup = false;  // once we have successfully recovered, we no longer need to act as if we are recovering after startup
   }
 
   /** called from recoveryStrat on a failed recovery */
   @Override
   public void failed() {
-    recoveryStrat = null;
+
   }
 
   @Override
   public void close(IndexWriterCloser closer) {
-    lock(iwLock.writeLock());
-    synchronized (this) {
-      cancelRecovery();
-      try {
-        closeIndexWriter(closer);
-      } finally {
-        iwLock.writeLock().unlock();
-      }
-      closed = true;
+    try (ParWork worker = new ParWork(this, true)) {
+      worker.collect(() -> {
+        cancelRecovery(true, true);
+      });
+      worker.collect(() -> {
+        ParWork.close(recoveryStrat);
+      });
+      worker.collect(() -> {
+        iwLock.writeLock().lock();
+        try {
+          closeIndexWriter(closer);
+        } finally {
+          iwLock.writeLock().unlock();
+        }
+      });
+      worker.addCollect("recoveryStratClose");
     }
   }
 

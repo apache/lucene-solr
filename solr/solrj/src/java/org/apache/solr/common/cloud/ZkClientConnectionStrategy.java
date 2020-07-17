@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkCredentialsProvider.ZkCredentials;
 import org.apache.zookeeper.Watcher;
@@ -62,7 +63,7 @@ public abstract class ZkClientConnectionStrategy {
       try {
         listener.connected();
       } catch (Exception e) {
-        SolrException.log(log, "", e);
+        ParWork.propegateInterrupt(e);
       }
     }
   }

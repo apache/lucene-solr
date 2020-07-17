@@ -47,20 +47,26 @@ public class TestStressVersions extends TestRTGBase {
     clearIndex();
     assertU(commit());
 
-    final int commitPercent = 5 + random().nextInt(20);
+    final int commitPercent = 5 + random().nextInt(TEST_NIGHTLY ? 20 : 3);
     final int softCommitPercent = 30+random().nextInt(75); // what percent of the commits are soft
     final int deletePercent = 4+random().nextInt(25);
     final int deleteByQueryPercent = 1 + random().nextInt(5);
     final int optimisticPercent = 1+random().nextInt(50);    // percent change that an update uses optimistic locking
     final int optimisticCorrectPercent = 25+random().nextInt(70);    // percent change that a version specified will be correct
     final int ndocs = 5 + (random().nextBoolean() ? random().nextInt(25) : random().nextInt(200));
-    int nWriteThreads = 5 + random().nextInt(25);
+    int nWriteThreads;
+    if (TEST_NIGHTLY) {
+      nWriteThreads = 5 + random().nextInt(6);
+    } else {
+      nWriteThreads = 3;
+    }
+
 
     final int maxConcurrentCommits = nWriteThreads;
 
     // query variables
     final int percentRealtimeQuery = 75;
-    final AtomicLong operations = new AtomicLong(50000);  // number of query operations to perform in total
+    final AtomicLong operations = new AtomicLong(TEST_NIGHTLY ? 50000 : 500);  // number of query operations to perform in total
     int nReadThreads = 5 + random().nextInt(25);
 
 

@@ -221,11 +221,11 @@ public class Http2SolrClient extends SolrClient {
       httpClient.setMaxConnectionsPerDestination(4);
     }
     httpClientExecutor = new SolrQueuedThreadPool("httpClient");
-    httpClientExecutor.setMaxThreads(10);
-    httpClientExecutor.setMinThreads(1);
+    httpClientExecutor.setMaxThreads(Math.max(4 , Runtime.getRuntime().availableProcessors()));
+    httpClientExecutor.setMinThreads(3);
     httpClient.setIdleTimeout(idleTimeout);
     try {
-      httpClientExecutor.start();
+     // httpClientExecutor.start();
       httpClient.setExecutor(httpClientExecutor);
       httpClient.setStrictEventOrdering(false);
       httpClient.setConnectBlocking(false);
@@ -252,6 +252,7 @@ public class Http2SolrClient extends SolrClient {
         closer.collect(() -> {
             try {
              // httpClient.setStopTimeout();
+             // httpClientExecutor.doStop();
               httpClient.stop();
             } catch (InterruptedException e) {
               ParWork.propegateInterrupt(e);
@@ -264,6 +265,10 @@ public class Http2SolrClient extends SolrClient {
     }
 
     assert ObjectReleaseTracker.release(this);
+  }
+
+  public void waitForOutstandingRequests() {
+    asyncTracker.waitForComplete();
   }
 
   public boolean isV2ApiRequest(final SolrRequest request) {
@@ -755,7 +760,9 @@ public class Http2SolrClient extends SolrClient {
             }
             metadata = (NamedList<String>) err.get("metadata");
           }
-        } catch (Exception ex) {}
+        } catch (Exception ex) {
+          log.warn("Unexpected exception", ex);
+        }
         if (reason == null) {
           StringBuilder msg = new StringBuilder();
           msg.append(response.getReason())

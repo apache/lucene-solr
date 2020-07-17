@@ -61,17 +61,28 @@ public class TestStressReorder extends TestRTGBase {
     clearIndex();
     assertU(commit());
 
-    final int commitPercent = 5 + random().nextInt(20);
+    final int commitPercent = 5 + random().nextInt(TEST_NIGHTLY ? 20 : 3);
     final int softCommitPercent = 30+random().nextInt(75); // what percent of the commits are soft
-    final int deletePercent = 4+random().nextInt(25);
+    final int deletePercent = 4+random().nextInt(TEST_NIGHTLY ? 25 : 5);
     final int deleteByQueryPercent = random().nextInt(8);
-    final int ndocs = 5 + (random().nextBoolean() ? random().nextInt(25) : random().nextInt(200));
-    int nWriteThreads = 5 + random().nextInt(25);
+    int ndocs;
+    if (TEST_NIGHTLY) {
+      ndocs = 5 + (random().nextBoolean() ? random().nextInt(25) : random().nextInt(200));
+    } else {
+      ndocs = 50;
+    }
+
+    int nWriteThreads;
+    if (TEST_NIGHTLY) {
+      nWriteThreads = 5 + random().nextInt(6);
+    } else {
+      nWriteThreads = 3;
+    }
 
     final int maxConcurrentCommits = nWriteThreads;
         // query variables
     final int percentRealtimeQuery = 75;
-    final AtomicLong operations = new AtomicLong(50000);  // number of query operations to perform in total
+    final AtomicLong operations = new AtomicLong(TEST_NIGHTLY ? 50000 : 500);  // number of query operations to perform in total
     int nReadThreads = 5 + random().nextInt(25);
 
 

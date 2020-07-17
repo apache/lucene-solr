@@ -77,9 +77,7 @@ public class ZkCmdExecutor {
     int tryCnt = 0;
     while (true) {
       try {
-        if (tryCnt > 0 && isClosed()) {
-          throw new AlreadyClosedException();
-        }
+
         if (timeout.hasTimedOut()) {
           throw new RuntimeException("Timed out attempting zk call");
         }
@@ -103,10 +101,6 @@ public class ZkCmdExecutor {
       }
       tryCnt++;
     }
-  }
-  
-  private boolean isClosed() {
-    return isClosed != null && isClosed.isClosed();
   }
 
   public void ensureExists(String path, final SolrZkClient zkClient) throws KeeperException, InterruptedException {

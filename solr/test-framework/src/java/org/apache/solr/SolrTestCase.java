@@ -149,6 +149,8 @@ public class SolrTestCase extends LuceneTestCase {
    */
   @BeforeClass
   public static void setDefaultConfigDirSysPropIfNotSet() throws Exception {
+    log.info("*******************************************************************");
+    log.info("@BeforeClass ------------------------------------------------------");
     // random is expensive, you are supposed to cache it
     random = LuceneTestCase.random();
 
@@ -309,6 +311,8 @@ public class SolrTestCase extends LuceneTestCase {
                "for tests to run properly",
                SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE, ExternalPaths.DEFAULT_CONFIGSET);
     }
+    log.info("@BeforeClass end ------------------------------------------------------");
+    log.info("*******************************************************************");
   }
 
   protected static boolean isSSLMode() {
@@ -343,6 +347,8 @@ public class SolrTestCase extends LuceneTestCase {
   
   @AfterClass
   public static void afterSolrTestCase() throws Exception {
+    log.info("*******************************************************************");
+    log.info("@After Class ------------------------------------------------------");
     try {
       ExecutorUtil.shutdownAndAwaitTermination(CoreContainer.solrCoreLoadExecutor);
       CoreContainer.solrCoreLoadExecutor = null;
@@ -404,6 +410,8 @@ public class SolrTestCase extends LuceneTestCase {
       }
 
     }
+    log.info("@AfterClass end ------------------------------------------------------");
+    log.info("*******************************************************************");
   }
 
   private static SSLTestConfig buildSSLConfig() {

@@ -77,6 +77,7 @@ import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
@@ -194,6 +195,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
                                         Stats stats,
                                         Overseer overseer,
                                         OverseerNodePrioritizer overseerPrioritizer) {
+    ObjectReleaseTracker.track(this);
     this.zkStateReader = zkStateReader;
     this.shardHandlerFactory = shardHandlerFactory;
     this.adminPath = adminPath;
@@ -946,7 +948,12 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   @Override
   public void close() throws IOException {
     this.isClosed = true;
-    cloudManager.close();
+    try {
+      cloudManager.close();
+    } catch (NullPointerException e) {
+      // okay
+    }
+    ObjectReleaseTracker.release(this);
   }
 
   @Override

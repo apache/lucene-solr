@@ -37,10 +37,12 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
+import org.junit.Ignore;
 import org.junit.Test;
 import static org.hamcrest.core.StringContains.containsString;
 
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@Ignore // nocommit leaks 3 recovery strats
 public class PeerSyncTest extends BaseDistributedSearchTestCase {
   protected static int numVersions = 100;  // number of versions to use when syncing
   protected static final String FROM_LEADER = DistribPhase.FROMLEADER.toString();

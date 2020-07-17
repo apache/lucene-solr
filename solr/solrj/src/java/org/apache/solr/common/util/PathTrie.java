@@ -31,8 +31,8 @@ import static java.util.Collections.emptyList;
  * like /collections/{collection}/shards/{shard}/{replica}
  */
 public class PathTrie<T> {
-  private final Set<String> reserved = new HashSet<>();
-  Node root = new Node(emptyList(), null);
+  private final Set<String> reserved = ConcurrentHashMap.newKeySet(64);
+  private volatile Node root = new Node(emptyList(), null);
 
   public PathTrie() {
   }

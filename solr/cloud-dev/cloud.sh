@@ -90,7 +90,7 @@
 #
 ##################################################################################
 
-DEFAULT_VCS_WORKSPACE='../code/lucene-solr'
+DEFAULT_VCS_WORKSPACE='/data2/lucene-solr'
 
 ############## Normally  no need to edit below this line ##############
 
@@ -288,10 +288,7 @@ copyTarball() {
 # Assume that zookeeper holds it if it is   #
 #############################################
 testZookeeper() {
-  PORT_FOUND=$( netstat -an | grep '\b'${ZK_PORT}'\s' | grep LISTEN | awk '{print $4}' | sed -E 's/.*\b('${ZK_PORT}')\s*/\1/');
-  if [[ -z  "$PORT_FOUND" ]]; then
-    echo "No process listening on port ${ZK_PORT}. Please start zookeeper and try again"; exit 8;
-  fi
+  echo "no"
 }
 
 ##########################

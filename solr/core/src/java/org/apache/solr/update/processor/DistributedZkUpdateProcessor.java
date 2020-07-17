@@ -456,7 +456,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
           // don't forward to ourself
           leaderForAnyShard = true;
         } else {
-          leaders.add(new SolrCmdDistributor.ForwardNode(coreLeaderProps, zkController.getZkStateReader(), collection, sliceName, maxRetriesOnForward));
+          leaders.add(new SolrCmdDistributor.ForwardNode(coreLeaderProps, zkController.getZkStateReader(), collection, sliceName));
         }
       }
 
@@ -744,7 +744,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         // I need to forward on to the leader...
         forwardToLeader = true;
         return Collections.singletonList(
-            new SolrCmdDistributor.ForwardNode(new ZkCoreNodeProps(leaderReplica), zkController.getZkStateReader(), collection, shardId, maxRetriesOnForward));
+            new SolrCmdDistributor.ForwardNode(new ZkCoreNodeProps(leaderReplica), zkController.getZkStateReader(), collection, shardId));
       }
 
     } catch (InterruptedException e) {
@@ -1103,14 +1103,18 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     // send in a background thread
 
     cmdDistrib.finish();
-    List<SolrCmdDistributor.Error> errors = cmdDistrib.getErrors();
+    Set<SolrCmdDistributor.Error> errors = cmdDistrib.getErrors();
+    if (errors.size() > 0) {
+      log.info("There were errors during the request {}", errors);
+    }
+
     // TODO - we may need to tell about more than one error...
 
-    List<SolrCmdDistributor.Error> errorsForClient = new ArrayList<>(errors.size());
+    Set<SolrCmdDistributor.Error> errorsForClient = new HashSet<>(errors.size());
     Set<String> replicasShouldBeInLowerTerms = new HashSet<>();
     for (final SolrCmdDistributor.Error error : errors) {
 
-      if (error.req.node instanceof SolrCmdDistributor.ForwardNode) {
+      if (error.req.node instanceof SolrCmdDistributor.ForwardNode || error.req.uReq.getDeleteQuery() != null) {
         // if it's a forward, any fail is a problem -
         // otherwise we assume things are fine if we got it locally
         // until we start allowing min replication param
@@ -1122,7 +1126,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
       // for now we don't error - we assume if it was added locally, we
       // succeeded
-      log.warn("Error sending update to {}", error.req.node.getBaseUrl(), error.e);
+      log.warn("Error sending update to {}", error.req.node.getBaseUrl(), error.t);
 
       // Since it is not a forward request, for each fail, try to tell them to
       // recover - the doc was already added locally, so it should have been
@@ -1140,11 +1144,11 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       final String replicaUrl = error.req.node.getUrl();
 
       // if the remote replica failed the request because of leader change (SOLR-6511), then fail the request
-      String cause = (error.e instanceof SolrException) ? ((SolrException)error.e).getMetadata("cause") : null;
+      String cause = (error.t instanceof SolrException) ? ((SolrException)error.t).getMetadata("cause") : null;
       if ("LeaderChanged".equals(cause)) {
         // let's just fail this request and let the client retry? or just call processAdd again?
         log.error("On {}, replica {} now thinks it is the leader! Failing the request to let the client retry!"
-            , cloudDesc.getCoreNodeName(), replicaUrl, error.e);
+            , cloudDesc.getCoreNodeName(), replicaUrl, error.t);
         errorsForClient.add(error);
         continue;
       }
@@ -1193,7 +1197,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
             String coreNodeName = ((Replica) stdNode.getNodeProps().getNodeProps()).getName();
             // if false, then the node is probably not "live" anymore
             // and we do not need to send a recovery message
-            Throwable rootCause = SolrException.getRootCause(error.e);
+            Throwable rootCause = SolrException.getRootCause(error.t);
             log.error("Setting up to try to start recovery on replica {} with url {} by increasing leader term", coreNodeName, replicaUrl, rootCause);
             replicasShouldBeInLowerTerms.add(coreNodeName);
           } catch (Exception exc) {

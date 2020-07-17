@@ -33,6 +33,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
@@ -65,6 +66,7 @@ public class SyncStrategy implements Closeable {
   }
   
   public SyncStrategy(CoreContainer cc) {
+    ObjectReleaseTracker.track(this);
     UpdateShardHandler updateShardHandler = cc.getUpdateShardHandler();
     shardHandler = ((HttpShardHandlerFactory)cc.getShardHandlerFactory()).getShardHandler(cc.getUpdateShardHandler().getDefaultHttpClient());
   }
@@ -274,6 +276,7 @@ public class SyncStrategy implements Closeable {
   
   public void close() {
     this.isClosed = true;
+    ObjectReleaseTracker.release(this);
   }
   
   public static ModifiableSolrParams params(String... params) {

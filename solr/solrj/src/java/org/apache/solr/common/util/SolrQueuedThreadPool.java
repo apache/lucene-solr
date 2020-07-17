@@ -69,7 +69,7 @@ public class SolrQueuedThreadPool extends QueuedThreadPool implements Closeable 
     }
 
     @Override
-    protected void doStop() throws Exception {
+    public void doStop() throws Exception {
       super.doStop();
     }
 

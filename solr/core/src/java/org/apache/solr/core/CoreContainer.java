@@ -1030,7 +1030,6 @@ public class CoreContainer implements Closeable {
     if (this.isShutDown) {
       return;
     }
-
     log.info("Closing CoreContainer");
     // must do before isShutDown=true
     if (isZooKeeperAware()) {

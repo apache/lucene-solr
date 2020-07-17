@@ -26,6 +26,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -33,6 +34,11 @@ import org.junit.Test;
  * Test proper registration and collection of index and directory metrics.
  */
 public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
+
+  @Before
+  public void beforeMethod() {
+    System.setProperty("solr.tests.maxBufferedDocs", "20");
+  }
 
   @After
   public void afterMethod() throws Exception {

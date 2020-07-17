@@ -175,6 +175,7 @@ public class ConnectionManager implements Watcher, Closeable {
       do {
         // This loop will break if a valid connection is made. If a connection is not made then it will repeat and
         // try again to create a new connection.
+        log.info("Running reconnect strategy");
         try {
           connectionStrategy.reconnect(zkServerAddress,
               client.getZkClientTimeout(), this,
@@ -251,7 +252,7 @@ public class ConnectionManager implements Watcher, Closeable {
 
       log.info("zkClient Connected: {}", connected);
     } else if (state == KeeperState.Disconnected) {
-      log.warn("zkClient has disconnected");
+      log.info("zkClient has disconnected");
       disconnected();
       connectionStrategy.disconnected();
     } else if (state == KeeperState.AuthFailed) {
@@ -270,6 +271,7 @@ public class ConnectionManager implements Watcher, Closeable {
   // we use a volatile rather than sync
   // to avoid possible deadlock on shutdown
   public void close() {
+    log.info("Close called on ZK ConnectionManager");
     this.isClosed = true;
     this.likelyExpiredState = LikelyExpiredState.EXPIRED;
   }

@@ -61,7 +61,7 @@ public class IndexSizeEstimatorTest extends SolrCloudTestCase {
 
   private static CloudSolrClient solrClient;
   private static String collection = IndexSizeEstimator.class.getSimpleName() + "_collection";
-  private static int NUM_DOCS = 2000;
+  private static int NUM_DOCS = TEST_NIGHTLY ? 2000 : 200;
   private static Set<String> fields;
 
   @BeforeClass
@@ -251,7 +251,7 @@ public class IndexSizeEstimatorTest extends SolrCloudTestCase {
     solrClient.request(ureq, collection);
     solrClient.commit(collection);
     // verify the number of docs
-    TimeOut timeOut = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     while (!timeOut.hasTimedOut()) {
       QueryResponse rsp = solrClient.query(collection, params("q", "*:*", "rows", "0"));
       if (rsp.getResults().getNumFound() == n) {

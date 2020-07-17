@@ -22,6 +22,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
@@ -212,7 +213,7 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
   public void finish() throws IOException {
     try {
       cmdDistrib.finish();
-      final List<SolrCmdDistributor.Error> errors = cmdDistrib.getErrors();
+      final Set<SolrCmdDistributor.Error> errors = cmdDistrib.getErrors();
       if (!errors.isEmpty()) {
         throw new DistributedUpdateProcessor.DistributedUpdatesAsyncException(errors);
       }
@@ -266,7 +267,7 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
           "No 'leader' replica available for shard " + slice.getName() + " of collection " + collection);
     }
     return new SolrCmdDistributor.ForwardNode(new ZkCoreNodeProps(leader), zkController.getZkStateReader(),
-        collection, slice.getName(), DistributedUpdateProcessor.MAX_RETRIES_ON_FORWARD_DEAULT);
+        collection, slice.getName());
   }
 
 }
