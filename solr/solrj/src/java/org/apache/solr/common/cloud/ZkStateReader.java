@@ -45,7 +45,6 @@ import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
-import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.Callable;
 import org.apache.solr.common.SolrCloseable;
@@ -216,40 +215,6 @@ public class ZkStateReader implements SolrCloseable {
   private static final long LAZY_CACHE_TIME = TimeUnit.NANOSECONDS.convert(STATE_UPDATE_DELAY, TimeUnit.MILLISECONDS);
 
   private Future<?> collectionPropsCacheCleaner; // only kept to identify if the cleaner has already been started.
-
-  /**
-   * Get current {@link AutoScalingConfig}.
-   *
-   * @return current configuration from <code>autoscaling.json</code>. NOTE:
-   * this data is retrieved from ZK on each call.
-   */
-  public AutoScalingConfig getAutoScalingConfig() throws KeeperException, InterruptedException {
-    return getAutoScalingConfig(null);
-  }
-
-  /**
-   * Get current {@link AutoScalingConfig}.
-   *
-   * @param watcher optional {@link Watcher} to set on a znode to watch for config changes.
-   * @return current configuration from <code>autoscaling.json</code>. NOTE:
-   * this data is retrieved from ZK on each call.
-   */
-  @SuppressWarnings({"unchecked"})
-  public AutoScalingConfig getAutoScalingConfig(Watcher watcher) throws KeeperException, InterruptedException {
-    Stat stat = new Stat();
-
-    Map<String, Object> map = new HashMap<>();
-    try {
-      byte[] bytes = zkClient.getData(SOLR_AUTOSCALING_CONF_PATH, watcher, stat, true);
-      if (bytes != null && bytes.length > 0) {
-        map = (Map<String, Object>) fromJSON(bytes);
-      }
-    } catch (KeeperException.NoNodeException e) {
-      // ignore
-    }
-    map.put(AutoScalingParams.ZK_VERSION, stat.getVersion());
-    return new AutoScalingConfig(map);
-  }
 
   private static class CollectionWatch<T> {
 

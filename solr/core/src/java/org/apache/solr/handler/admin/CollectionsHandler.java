@@ -103,7 +103,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
-import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.POLICY;
 import static org.apache.solr.client.solrj.response.RequestStatusState.COMPLETED;
 import static org.apache.solr.client.solrj.response.RequestStatusState.FAILED;
 import static org.apache.solr.client.solrj.response.RequestStatusState.NOT_FOUND;
@@ -468,7 +467,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           PULL_REPLICAS,
           TLOG_REPLICAS,
           NRT_REPLICAS,
-          POLICY,
           WAIT_FOR_FINAL_STATE,
           WITH_COLLECTION,
           ALIAS);
@@ -558,7 +556,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           PULL_REPLICAS,
           TLOG_REPLICAS,
           REPLICATION_FACTOR,
-          POLICY,
           CREATE_NODE_SET,
           CREATE_NODE_SET_SHUFFLE,
           AUTO_ADD_REPLICAS,

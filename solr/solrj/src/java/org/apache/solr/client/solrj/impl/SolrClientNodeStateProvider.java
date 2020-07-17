@@ -34,9 +34,6 @@ import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
-import org.apache.solr.client.solrj.cloud.autoscaling.Row;
-import org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type;
-import org.apache.solr.client.solrj.cloud.autoscaling.VariableBase;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.common.MapWriter;
@@ -60,15 +57,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.emptyMap;
-import static org.apache.solr.client.solrj.cloud.autoscaling.Clause.METRICS_PREFIX;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.FREEDISK;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.TOTALDISK;
-import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.WITH_COLLECTION;
 
 /**
  * The <em>real</em> {@link NodeStateProvider}, which communicates with Solr via SolrJ.
  */
 public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter {
+  public static final String METRICS_PREFIX = "metrics:";
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   //only for debugging
   public static SolrClientNodeStateProvider INST;
@@ -128,9 +124,6 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
   public Map<String, Object> getNodeValues(String node, Collection<String> tags) {
     Map<String, Object> tagVals = fetchTagValues(node, tags);
     nodeVsTags.put(node, tagVals);
-    if (tags.contains(WITH_COLLECTION.tagName)) {
-      tagVals.put(WITH_COLLECTION.tagName, withCollectionsMap);
-    }
     return tagVals;
   }
 
@@ -142,26 +135,29 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
   }
 
   public void forEachReplica(String node, Consumer<Replica> consumer){
-    Row.forEachReplica(nodeVsCollectionVsShardVsReplicaInfo.get(node), consumer);
+    forEachReplica(nodeVsCollectionVsShardVsReplicaInfo.get(node), consumer);
   }
 
-
+  public static void forEachReplica(Map<String, Map<String, List<Replica>>> collectionVsShardVsReplicas, Consumer<Replica> consumer) {
+    collectionVsShardVsReplicas.forEach((coll, shardVsReplicas) -> shardVsReplicas
+            .forEach((shard, replicaInfos) -> {
+              for (int i = 0; i < replicaInfos.size(); i++) {
+                Replica r = replicaInfos.get(i);
+                consumer.accept(r);
+              }
+            }));
+  }
   @Override
   public Map<String, Map<String, List<Replica>>> getReplicaInfo(String node, Collection<String> keys) {
     @SuppressWarnings({"unchecked"})
     Map<String, Map<String, List<Replica>>> result = nodeVsCollectionVsShardVsReplicaInfo.computeIfAbsent(node, Utils.NEW_HASHMAP_FUN);
     if (!keys.isEmpty()) {
       Map<String, Pair<String, Replica>> metricsKeyVsTagReplica = new HashMap<>();
-      Row.forEachReplica(result, r -> {
+      forEachReplica(result, r -> {
         for (String key : keys) {
           if (r.getProperties().containsKey(key)) continue;// it's already collected
           String perReplicaMetricsKey = "solr.core." + r.getCollection() + "." + r.getShard() + "." + Utils.parseMetricsReplicaName(r.getCollection(), r.getCoreName()) + ":";
-          Type tagType = VariableBase.getTagType(key);
           String perReplicaValue = key;
-          if (tagType != null) {
-            perReplicaValue = tagType.metricsAttribute;
-            perReplicaValue = perReplicaValue == null ? key : perReplicaValue;
-          }
           perReplicaMetricsKey += perReplicaValue;
           metricsKeyVsTagReplica.put(perReplicaMetricsKey, new Pair<>(key, r));
         }
@@ -171,8 +167,6 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
         Map<String, Object> tagValues = fetchReplicaMetrics(node, metricsKeyVsTagReplica);
         tagValues.forEach((k, o) -> {
           Pair<String, Replica> p = metricsKeyVsTagReplica.get(k);
-          Type validator = VariableBase.getTagType(p.first());
-          if (validator != null) o = validator.convertVal(o);
           if (p.second() != null) p.second().getProperties().put(p.first(), o);
         });
 
@@ -183,7 +177,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
 
   protected Map<String, Object> fetchReplicaMetrics(String node, Map<String, Pair<String, Replica>> metricsKeyVsTagReplica) {
     Map<String, Object> collect = metricsKeyVsTagReplica.entrySet().stream()
-        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getKey));
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getKey));
     ClientSnitchCtx ctx = new ClientSnitchCtx(null, null, emptyMap(), solrClient);
     fetchReplicaMetrics(node, ctx, collect);
     return ctx.getTags();
@@ -315,7 +309,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
   }
 
   static class ClientSnitchCtx
-      extends SnitchContext {
+          extends SnitchContext {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     ZkClientClusterStateProvider zkClientClusterStateProvider;

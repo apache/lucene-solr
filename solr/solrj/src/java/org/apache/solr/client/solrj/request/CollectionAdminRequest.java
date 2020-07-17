@@ -55,7 +55,6 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
-import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.POLICY;
 import static org.apache.solr.common.cloud.DocCollection.RULE;
 import static org.apache.solr.common.cloud.DocCollection.SNITCH;
 import static org.apache.solr.common.cloud.ZkStateReader.AUTO_ADD_REPLICAS;
@@ -89,7 +88,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       SNITCH,
       REPLICATION_FACTOR,
       AUTO_ADD_REPLICAS,
-      POLICY,
       COLL_CONF,
       WITH_COLLECTION,
       COLOCATED_WITH,
@@ -446,7 +444,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected Boolean autoAddReplicas;
     protected String alias;
     protected String[] rule , snitch;
-    protected String withCollection;
 
     /** Constructor intended for typical use cases */
     protected Create(String collection, String config, Integer numShards, Integer numNrtReplicas, Integer numTlogReplicas, Integer numPullReplicas) { // TODO: maybe add other constructors
@@ -576,23 +573,12 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       }
       if (rule != null) params.set(DocCollection.RULE, rule);
       if (snitch != null) params.set(DocCollection.SNITCH, snitch);
-      params.setNonNull(POLICY, policy);
-      params.setNonNull(WITH_COLLECTION, withCollection);
       params.setNonNull(ALIAS, alias);
       return params;
     }
 
     public Create setPolicy(String policy) {
       this.policy = policy;
-      return this;
-    }
-
-    public String getWithCollection() {
-      return withCollection;
-    }
-
-    public Create setWithCollection(String withCollection) {
-      this.withCollection = withCollection;
       return this;
     }
   }

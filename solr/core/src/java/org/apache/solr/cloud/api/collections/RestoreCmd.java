@@ -35,7 +35,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
 import org.apache.solr.cloud.overseer.OverseerAction;
@@ -222,7 +221,6 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
 
     List<String> sliceNames = new ArrayList<>();
     restoreCollection.getSlices().forEach(x -> sliceNames.add(x.getName()));
-    PolicyHelper.SessionWrapper sessionWrapper = null;
 
     try {
       Assign.AssignRequest assignRequest = new Assign.AssignRequestBuilder()
@@ -236,7 +234,6 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
       Assign.AssignStrategyFactory assignStrategyFactory = new Assign.AssignStrategyFactory(ocmh.cloudManager);
       Assign.AssignStrategy assignStrategy = assignStrategyFactory.create(clusterState, restoreCollection);
       List<ReplicaPosition> replicaPositions = assignStrategy.assign(ocmh.cloudManager, assignRequest);
-      sessionWrapper = PolicyHelper.getLastSessionWrapper(true);
 
       CountDownLatch countDownLatch = new CountDownLatch(restoreCollection.getSlices().size());
 
@@ -430,7 +427,6 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
 
       log.info("Completed restoring collection={} backupName={}", restoreCollection, backupName);
     } finally {
-      if (sessionWrapper != null) sessionWrapper.release();
     }
   }
 
