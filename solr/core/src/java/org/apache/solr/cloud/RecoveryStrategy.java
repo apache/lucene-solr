@@ -137,7 +137,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
   private final CoreContainer cc;
 
   protected RecoveryStrategy(CoreContainer cc, CoreDescriptor cd, RecoveryListener recoveryListener) {
-    ObjectReleaseTracker.track(this);
+    // ObjectReleaseTracker.track(this);
     this.cc = cc;
     this.coreName = cd.getName();
     this.recoveryListener = recoveryListener;
@@ -187,8 +187,8 @@ public class RecoveryStrategy implements Runnable, Closeable {
     // (even though getRecoveryOnlyHttpClient() already has them set)
     final UpdateShardHandlerConfig cfg = cc.getConfig().getUpdateShardHandlerConfig();
     return (new HttpSolrClient.Builder(leaderUrl)
-            .withConnectionTimeout(cfg.getDistributedConnectionTimeout())
-            .withSocketTimeout(cfg.getDistributedSocketTimeout())
+            .withConnectionTimeout(3)
+            .withSocketTimeout(5)
             .withHttpClient(cc.getUpdateShardHandler().getDefaultHttpClient())
             .markInternalRequest()
             ).build();
@@ -230,7 +230,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
     }
 
     log.warn("Stopping recovery for core=[{}] coreNodeName=[{}]", coreName, coreZkNodeName);
-    ObjectReleaseTracker.release(this);
+    //ObjectReleaseTracker.release(this);
   }
 
   final private void recoveryFailed(final SolrCore core,

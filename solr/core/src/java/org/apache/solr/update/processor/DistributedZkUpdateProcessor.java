@@ -226,7 +226,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
             params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
                     zkController.getBaseUrl(), req.getCore().getName()));
             cmdDistrib.distribCommit(cmd, useNodes, params);
-            cmdDistrib.blockAndDoRetries();
           }
         }
 
@@ -251,7 +250,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
           }
 
           // if (useNodes != null && useNodes.size() > 0) {
-          cmdDistrib.blockAndDoRetries();
+         // cmdDistrib.blockAndDoRetries();
           //  }
         }
       }
@@ -554,9 +553,9 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       }
     }
 
-    if (someReplicas) {
-      cmdDistrib.blockAndDoRetries();
-    }
+//    if (someReplicas) {
+//      cmdDistrib.blockAndDoRetries();
+//    }
   }
 
   // used for deleteByQuery to get the list of nodes this leader should forward to

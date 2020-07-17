@@ -16,6 +16,7 @@
  */
 package org.apache.solr.client.solrj.embedded;
 
+import org.apache.solr.common.util.SolrQueuedThreadPool;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
@@ -49,11 +50,11 @@ public class JettyConfig {
 
   public final boolean enableProxy;
 
-  public final QueuedThreadPool qtp;
+  public final SolrQueuedThreadPool qtp;
 
   private JettyConfig(boolean onlyHttp1, int port, int portRetryTime , String context, boolean stopAtShutdown,
                       Long waitForLoadingCoresToFinishMs, Map<ServletHolder, String> extraServlets,
-                      Map<Class<? extends Filter>, String> extraFilters, SSLConfig sslConfig, boolean enableV2, boolean enableProxy, QueuedThreadPool qtp) {
+                      Map<Class<? extends Filter>, String> extraFilters, SSLConfig sslConfig, boolean enableV2, boolean enableProxy, SolrQueuedThreadPool qtp) {
     this.onlyHttp1 = onlyHttp1;
     this.port = port;
     this.context = context;
@@ -102,7 +103,7 @@ public class JettyConfig {
     SSLConfig sslConfig = null;
     int portRetryTime = 60;
     boolean enableProxy;
-    QueuedThreadPool qtp;
+    SolrQueuedThreadPool qtp;
 
     public Builder useOnlyHttp1(boolean useOnlyHttp1) {
       this.onlyHttp1 = useOnlyHttp1;
@@ -170,7 +171,7 @@ public class JettyConfig {
       return this;
     }
 
-    public Builder withExecutor(QueuedThreadPool qtp) {
+    public Builder withExecutor(SolrQueuedThreadPool qtp) {
       this.qtp = qtp;
       return this;
     }

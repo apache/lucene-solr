@@ -301,7 +301,7 @@ public class JettySolrRunner implements Closeable {
 
   private void init(int port) {
 
-    QueuedThreadPool qtp;
+    SolrQueuedThreadPool qtp;
     if (config.qtp != null) {
       qtp = config.qtp;
     } else {

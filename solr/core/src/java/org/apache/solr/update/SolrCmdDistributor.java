@@ -80,7 +80,7 @@ public class SolrCmdDistributor implements Closeable {
     assert !finished : "lifecycle sanity check";
     finished = true;
 
-    blockAndDoRetries();
+   // blockAndDoRetries();
   }
   
   public void close() {
@@ -250,11 +250,17 @@ public class SolrCmdDistributor implements Closeable {
           if (t instanceof SolrException) {
             error.statusCode = ((SolrException) t).code();
           }
+          boolean success = false;
           if (checkRetry(error)) {
             log.info("Retrying distrib update on error: {}", t.getMessage());
             submit(req);
+            success = true;
           } else {
             allErrors.add(error);
+            latch.countDown();
+          }
+
+          if (!success) {
             latch.countDown();
           }
 
