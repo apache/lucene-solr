@@ -22,14 +22,13 @@ import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.ArrayList;
 
-// DO NOT SUBSTITUTE java nio Path here, see SOLR-13939
-import org.apache.hadoop.fs.Path;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
+import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.RetryUtil;
@@ -72,8 +71,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
     this.shardId = shardId;
     this.collection = collection;
 
-    // Fails on Windows if you use nio Paths.get here
-    String parent = new Path(leaderPath).getParent().toString();
+    String parent = ZkMaintenanceUtils.getZkParent(leaderPath);
     ZkCmdExecutor zcmd = new ZkCmdExecutor(30000);
     // only if /collections/{collection} exists already do we succeed in creating this path
     log.info("make sure parent is created {}", parent);
@@ -101,8 +99,8 @@ class ShardLeaderElectionContextBase extends ElectionContext {
           // version whenever a leader registers.
           log.debug("Removing leader registration node on cancel: {} {}", leaderPath, leaderZkNodeParentVersion);
           List<Op> ops = new ArrayList<>(2);
-          // Fails on Windows if you use nio Paths.get here
-          ops.add(Op.check(new Path(leaderPath).getParent().toString(), leaderZkNodeParentVersion));
+          String parent = ZkMaintenanceUtils.getZkParent(leaderPath);
+          ops.add(Op.check(parent, leaderZkNodeParentVersion));
           ops.add(Op.delete(leaderPath, -1));
           zkClient.multi(ops, true);
         } catch (InterruptedException e) {
@@ -122,8 +120,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
       throws KeeperException, InterruptedException, IOException {
     // register as leader - if an ephemeral is already there, wait to see if it goes away
 
-    // Fails on Windows if you use nio Paths.get here
-    String parent = new Path(leaderPath).getParent().toString();
+    String parent = ZkMaintenanceUtils.getZkParent(leaderPath);
     try {
       RetryUtil.retryOnThrowable(NodeExistsException.class, 60000, 5000, () -> {
         synchronized (lock) {
