@@ -120,6 +120,7 @@ public class CloudTestUtils {
    * Helper class for sending (JSON) autoscaling requests that can randomize between V1 and V2 requests
    */
   @SuppressWarnings({"rawtypes"})
+  // nocommit remove this
   public static class AutoScalingRequest extends SolrRequest {
     private SolrParams params = null;
     /**

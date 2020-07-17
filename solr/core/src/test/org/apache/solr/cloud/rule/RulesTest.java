@@ -28,13 +28,11 @@ import java.util.stream.Collectors;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
-import org.apache.solr.cloud.CloudTestUtils.AutoScalingRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -157,62 +155,6 @@ public class RulesTest extends SolrCloudTestCase {
     expectedException.expectMessage(containsString("Could not identify nodes matching the rules"));
     CollectionAdminRequest.addReplicaToShard(rulesColl, "shard2").process(cluster.getSolrClient());
     
-  }
-
-  @Test
-  public void testPortRuleInPresenceOfClusterPolicy() throws Exception  {
-    JettySolrRunner jetty = cluster.getRandomJetty(random());
-    String port = Integer.toString(jetty.getLocalPort());
-
-    // this cluster policy prohibits having any replicas on a node with the above port
-    String setClusterPolicyCommand = "{" +
-        " 'set-cluster-policy': [" +
-        "      {'replica': 0, 'port':'" + port + "'}" +
-        "    ]" +
-        "}";
-    @SuppressWarnings({"rawtypes"})
-    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
-    cluster.getSolrClient().request(req);
-
-    // but this collection is created with a replica placement rule that says all replicas must be created
-    // on a node with above port (in direct conflict with the cluster policy)
-    String rulesColl = "portRuleColl2";
-    CollectionAdminRequest.createCollectionWithImplicitRouter(rulesColl, "conf", "shard1", 2)
-        .setRule("port:" + port)
-        .setSnitch("class:ImplicitSnitch")
-        .process(cluster.getSolrClient());
-    
-    waitForState("Collection should have followed port rule w/ImplicitSnitch, not cluster policy",
-                 rulesColl, (liveNodes, rulesCollection) -> {
-                   // first sanity check that the collection exists & the rules/snitch are listed
-                   if (null == rulesCollection) {
-                     return false;
-                   } else {
-                     @SuppressWarnings({"rawtypes"})
-                     List list = (List) rulesCollection.get("rule");
-                     if (null == list || 1 != list.size()) {
-                       return false;
-                     }
-                     if (! port.equals(((Map) list.get(0)).get("port"))) {
-                       return false;
-                     }
-                     list = (List) rulesCollection.get("snitch");
-                     if (null == list || 1 != list.size()) {
-                       return false;
-                     }
-                     if (! "ImplicitSnitch".equals(((Map)list.get(0)).get("class"))) {
-                       return false;
-                     }
-                   }
-                   if (2 != rulesCollection.getReplicas().size()) {
-                     return false;
-                   }
-                   // now sanity check that the rules were *obeyed*
-                   // (and the contradictory policy was ignored)
-                   return rulesCollection.getReplicas().stream().allMatch
-                     (replica -> (replica.getNodeName().contains(port) &&
-                                  replica.isActive(liveNodes)));
-                 });
   }
 
   @Test
