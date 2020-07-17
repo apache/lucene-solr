@@ -17,9 +17,6 @@
 
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
-
-import org.apache.solr.common.util.StrUtils;
-
 import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.FREEDISK;
 
 public class VariableBase implements Variable {
