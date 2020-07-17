@@ -19,8 +19,6 @@ package org.apache.solr.cloud.api.collections.assign;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.solr.common.cloud.Replica;
-
 /**
  * Represents basic information about a replica.
  */
@@ -30,13 +28,13 @@ public class AssignerReplica {
   private final String collection;
   private final String shard;
   private final String core;
-  private final Replica.Type type;
-  private final Replica.State state;
+  private final String type;
+  private final String state;
   private final Map<String, Object> properties = new HashMap<>();
 
   public AssignerReplica(String name, String node,
                          String collection, String shard, String core,
-                         Replica.Type type, Replica.State state,
+                         String type, String state,
                          Map<String, Object> properties) {
     this.name = name;
     this.node = node;
@@ -72,11 +70,11 @@ public class AssignerReplica {
     return core;
   }
 
-  public Replica.Type getType() {
+  public String getType() {
     return type;
   }
 
-  public Replica.State getState() {
+  public String getState() {
     return state;
   }
 

@@ -68,7 +68,7 @@ public class SolrCloudManagerAssignerClusterState implements AssignerClusterStat
           shards.forEach((shard, infos) -> {
             infos.forEach(info -> {
               AssignerReplica ar = new AssignerReplica(info.getName(), info.getNodeName(), info.getCollection(),
-                  info.getShard(), info.getCoreName(), info.getType(), info.getState(),
+                  info.getShard(), info.getCoreName(), info.getType().toString(), info.getState().toString(),
                   info.getProperties());
               replicas.add(ar);
             });
@@ -133,8 +133,8 @@ public class SolrCloudManagerAssignerClusterState implements AssignerClusterStat
                     r.getCollection(),
                     r.getShard(),
                     r.getCoreName(),
-                    r.getType(),
-                    r.getState(),
+                    r.getType().toString(),
+                    r.getState().toString(),
                     r.getProperties())).collect(Collectors.toList());
           }
 

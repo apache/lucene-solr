@@ -43,7 +43,8 @@ public class AssignerNodeStateProvider implements NodeStateProvider {
       Map<String, List<Replica>> perColl = replicas.computeIfAbsent(ar.getCollection(), Utils.NEW_HASHMAP_FUN);
       List<Replica> perShard = perColl.computeIfAbsent(ar.getShard(), Utils.NEW_ARRAYLIST_FUN);
       Replica r = new Replica(ar.getName(), ar.getNode(), ar.getCollection(), ar.getShard(),
-          ar.getCore(), ar.getState(), ar.getType(), ar.getProperties());
+          ar.getCore(), Replica.State.getState(ar.getState()),
+          Replica.Type.get(ar.getType()), ar.getProperties());
       perShard.add(r);
     });
     return replicas;
