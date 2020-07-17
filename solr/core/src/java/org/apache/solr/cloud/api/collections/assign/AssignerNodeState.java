@@ -18,7 +18,6 @@ package org.apache.solr.cloud.api.collections.assign;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
 
 /**
  *
@@ -29,6 +28,8 @@ public interface AssignerNodeState {
   long getTotalDiskGB();
 
   long getFreeDiskGB();
+
+  int getNumCores();
 
   Map<String, Object> getProperties();
 }

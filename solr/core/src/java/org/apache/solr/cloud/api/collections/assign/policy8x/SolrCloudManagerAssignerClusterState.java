@@ -17,6 +17,8 @@ import org.apache.solr.cloud.api.collections.assign.AssignerCollectionState;
 import org.apache.solr.cloud.api.collections.assign.AssignerNodeState;
 import org.apache.solr.cloud.api.collections.assign.AssignerReplica;
 import org.apache.solr.cloud.api.collections.assign.AssignerShardState;
+import org.apache.solr.cloud.api.collections.assign.ReplicaState;
+import org.apache.solr.cloud.api.collections.assign.ReplicaType;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -60,20 +62,22 @@ public class SolrCloudManagerAssignerClusterState implements AssignerClusterStat
   public AssignerNodeState getNodeState(String nodeName, Collection<String> nodeKeys, Collection<String> replicaKeys) {
     final NodeStateProvider nodeStateProvider = cloudManager.getNodeStateProvider();
     return new AssignerNodeState() {
-      @Override
-      public Collection<AssignerReplica> getReplicas() {
-        Map<String, Map<String, List<Replica>>> replicaInfos = nodeStateProvider.getReplicaInfo(nodeName, replicaKeys);
-        List<AssignerReplica> replicas = new ArrayList<>();
+      Map<String, Map<String, List<Replica>>> replicaInfos = nodeStateProvider.getReplicaInfo(nodeName, replicaKeys);
+      List<AssignerReplica> replicas = new ArrayList<>();
+      {
         replicaInfos.forEach((coll, shards) -> {
           shards.forEach((shard, infos) -> {
             infos.forEach(info -> {
               AssignerReplica ar = new AssignerReplica(info.getName(), info.getNodeName(), info.getCollection(),
-                  info.getShard(), info.getCoreName(), info.getType().toString(), info.getState().toString(),
-                  info.getProperties());
+                  info.getShard(), info.getCoreName(), ReplicaType.get(info.getType().toString()),
+                  ReplicaState.get(info.getState().toString()), info.getProperties());
               replicas.add(ar);
             });
           });
         });
+      }
+      @Override
+      public Collection<AssignerReplica> getReplicas() {
         return replicas;
       }
 
@@ -85,6 +89,11 @@ public class SolrCloudManagerAssignerClusterState implements AssignerClusterStat
       @Override
       public long getFreeDiskGB() {
         return -1;
+      }
+
+      @Override
+      public int getNumCores() {
+        return replicas.size();
       }
 
       @Override
@@ -133,8 +142,8 @@ public class SolrCloudManagerAssignerClusterState implements AssignerClusterStat
                     r.getCollection(),
                     r.getShard(),
                     r.getCoreName(),
-                    r.getType().toString(),
-                    r.getState().toString(),
+                    ReplicaType.get(r.getType().toString()),
+                    ReplicaState.get(r.getState().toString()),
                     r.getProperties())).collect(Collectors.toList());
           }
 

@@ -28,13 +28,13 @@ public class AssignerReplica {
   private final String collection;
   private final String shard;
   private final String core;
-  private final String type;
-  private final String state;
+  private final ReplicaType type;
+  private final ReplicaState state;
   private final Map<String, Object> properties = new HashMap<>();
 
   public AssignerReplica(String name, String node,
                          String collection, String shard, String core,
-                         String type, String state,
+                         ReplicaType type, ReplicaState state,
                          Map<String, Object> properties) {
     this.name = name;
     this.node = node;
@@ -70,11 +70,11 @@ public class AssignerReplica {
     return core;
   }
 
-  public String getType() {
+  public ReplicaType getType() {
     return type;
   }
 
-  public String getState() {
+  public ReplicaState getState() {
     return state;
   }
 

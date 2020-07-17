@@ -37,8 +37,8 @@ public class AssignerClusterStateProvider implements ClusterStateProvider {
         Map<String, Replica> replicas = new HashMap<>();
         shardState.getReplicas().forEach(ar -> {
           Replica r = new Replica(ar.getName(), ar.getNode(), ar.getCollection(), ar.getShard(),
-              ar.getCore(), Replica.State.getState(ar.getState()),
-              Replica.Type.get(ar.getType()), ar.getProperties());
+              ar.getCore(), Replica.State.getState(ar.getState().toString()),
+              Replica.Type.get(ar.getType().toString()), ar.getProperties());
           replicas.put(r.getName(), r);
         });
         Slice slice = new Slice(shard, replicas, shardState.getProperties(), coll);
