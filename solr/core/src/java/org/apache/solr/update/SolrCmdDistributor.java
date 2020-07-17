@@ -185,12 +185,13 @@ public class SolrCmdDistributor implements Closeable {
   }
 
   public void distribCommit(CommitUpdateCommand cmd, List<Node> nodes,
-      ModifiableSolrParams params) throws IOException {
-    
+      ModifiableSolrParams params) {
+    Set<CountDownLatch> latches = new HashSet<>(nodes.size());
+
     // we need to do any retries before commit...
     blockAndDoRetries();
     if (log.isDebugEnabled()) log.debug("Distrib commit to: {} params: {}", nodes, params);
-    Set<CountDownLatch> latches = new HashSet<>(nodes.size());
+
     for (Node node : nodes) {
       UpdateRequest uReq = new UpdateRequest();
       uReq.setParams(params);
@@ -198,19 +199,21 @@ public class SolrCmdDistributor implements Closeable {
       addCommit(uReq, cmd);
       latches.add(submit(new Req(cmd, node, uReq, false)));
     }
+
     if (cmd.waitSearcher) {
       for (CountDownLatch latch : latches) {
         try {
-          boolean success = latch.await(30, TimeUnit.SECONDS);
+          boolean success = latch.await(5, TimeUnit.SECONDS);
           if (!success) {
             log.warn("Timed out waiting for commit request to finish");
           }
         } catch (InterruptedException e) {
-           ParWork.propegateInterrupt(e);
+          ParWork.propegateInterrupt(e);
         }
       }
     }
-    
+
+
   }
 
   public void blockAndDoRetries() {
@@ -244,41 +247,50 @@ public class SolrCmdDistributor implements Closeable {
         @Override
         public void onFailure(Throwable t) {
           log.warn("Error sending distributed update", t);
-          Error error = new Error();
-          error.t = t;
-          error.req = req;
-          if (t instanceof SolrException) {
-            error.statusCode = ((SolrException) t).code();
-          }
           boolean success = false;
-          if (checkRetry(error)) {
-            log.info("Retrying distrib update on error: {}", t.getMessage());
-            submit(req);
-            success = true;
-          } else {
-            allErrors.add(error);
-            latch.countDown();
-          }
+          try {
+            Error error = new Error();
+            error.t = t;
+            error.req = req;
+            if (t instanceof SolrException) {
+              error.statusCode = ((SolrException) t).code();
+            }
 
-          if (!success) {
-            latch.countDown();
+            if (checkRetry(error)) {
+              log.info("Retrying distrib update on error: {}", t.getMessage());
+              submit(req);
+              success = true;
+            } else {
+              allErrors.add(error);
+              latch.countDown();
+            }
+          } finally {
+            if (!success) {
+              latch.countDown();
+            }
           }
-
         }});
     } catch (Exception e) {
-      latch.countDown();
-      log.warn("Error sending distributed update", e);
-      Error error = new Error();
-      error.t = e;
-      error.req = req;
-      if (e instanceof SolrException) {
-        error.statusCode = ((SolrException) e).code();
-      }
-      if (checkRetry(error)) {
-        submit(req);
-      } else {
-        allErrors.add(error);
-      }
+      boolean success = false;
+     try {
+       log.warn("Error sending distributed update", e);
+       Error error = new Error();
+       error.t = e;
+       error.req = req;
+       if (e instanceof SolrException) {
+         error.statusCode = ((SolrException) e).code();
+       }
+       if (checkRetry(error)) {
+         submit(req);
+         success = true;
+       } else {
+         allErrors.add(error);
+       }
+     } finally {
+       if (!success) {
+         latch.countDown();
+       }
+     }
     }
 
     return latch;

@@ -16,14 +16,19 @@
  */
 package org.apache.solr.handler.component;
 
+import static org.apache.solr.util.stats.InstrumentedHttpRequestExecutor.KNOWN_METRIC_NAME_STRATEGIES;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map.Entry;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -39,30 +44,32 @@ import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.AsyncLBHttpSolrClient;
+import org.apache.solr.client.solrj.impl.AsyncLBHttpSolrClient.Builder;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.LBHttp2SolrClient;
-import org.apache.solr.client.solrj.impl.LBSolrClient;
+import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.routing.AffinityReplicaListTransformerFactory;
+import org.apache.solr.client.solrj.routing.NodePreferenceRulesComparator;
 import org.apache.solr.client.solrj.routing.ReplicaListTransformer;
 import org.apache.solr.client.solrj.routing.ReplicaListTransformerFactory;
 import org.apache.solr.client.solrj.routing.RequestReplicaListTransformerGenerator;
-import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.routing.ShufflingReplicaListTransformer;
 import org.apache.solr.cloud.ZkController;
-import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.core.PluginInfo;
@@ -72,48 +79,67 @@ import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.security.HttpClientBuilderPlugin;
 import org.apache.solr.update.UpdateShardHandlerConfig;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.plugin.SolrCoreAware;
+import org.apache.solr.util.stats.HttpClientMetricNameStrategy;
 import org.apache.solr.util.stats.InstrumentedHttpListenerFactory;
+import org.apache.solr.util.stats.InstrumentedHttpRequestExecutor;
+import org.apache.solr.util.stats.InstrumentedPoolingHttpClientConnectionManager;
 import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.util.stats.InstrumentedHttpListenerFactory.KNOWN_METRIC_NAME_STRATEGIES;
 
 public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.apache.solr.util.plugin.PluginInfoInitialized, SolrMetricProducer, SolrCoreAware {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String DEFAULT_SCHEME = "http";
 
+  public static boolean ASYNC = false;
   // We want an executor that doesn't take up any resources if
   // it's not used, so it could be created statically for
   // the distributed search component if desired.
   //
   // Consider CallerRuns policy and a lower max threads to throttle
   // requests at some point (or should we simply return failure?)
-  //
-  // This executor is initialized in the init method
-//  private ExecutorService commExecutor;
+  private ExecutorService commExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(
+          0,
+          Integer.MAX_VALUE,
+          5, TimeUnit.SECONDS, // terminate idle threads after 15 sec
+          new SynchronousQueue<>(),  // directly hand off tasks
+          new SolrNamedThreadFactory("httpShardExecutor"),
+          // the Runnable added to this executor handles all exceptions so we disable stack trace collection as an optimization
+          // see SOLR-11880 for more details
+          false
+  );
 
-  protected volatile Http2SolrClient defaultClient;
+  private Http2SolrClient solrClient;
+  private HttpClient httpClient;
+
   protected volatile InstrumentedHttpListenerFactory httpListenerFactory;
-  private volatile LBHttp2SolrClient loadbalancer;
-
-  int corePoolSize = 0;
+  protected InstrumentedPoolingHttpClientConnectionManager clientConnectionManager;
+  //protected CloseableHttpClient defaultClient;
+  protected InstrumentedHttpRequestExecutor httpRequestExecutor;
+  private SolrClient loadbalancer;
+  //default values:
+  int soTimeout = 30000;
+  int connectionTimeout = 15000;
+  int maxConnectionsPerHost = 20;
+  int maxConnections = 10000;
+  int corePoolSize = 4;
   int maximumPoolSize = Integer.MAX_VALUE;
-  int keepAliveTime = 5;
+  int keepAliveTime = 15;
   int queueSize = -1;
-  volatile int   permittedLoadBalancerRequestsMinimumAbsolute = 0;
-  volatile float permittedLoadBalancerRequestsMaximumFraction = 1.0f;
-  volatile boolean accessPolicy = false;
+  int   permittedLoadBalancerRequestsMinimumAbsolute = 0;
+  float permittedLoadBalancerRequestsMaximumFraction = 1.0f;
+  boolean accessPolicy = false;
   private volatile WhitelistHostChecker whitelistHostChecker = null;
-  private volatile SolrMetricsContext solrMetricsContext;
-
   private String scheme = null;
 
-  private volatile InstrumentedHttpListenerFactory.NameStrategy metricNameStrategy;
+  private volatile SolrMetricsContext solrMetricsContext;
+
+  private HttpClientMetricNameStrategy metricNameStrategy;
+
+  private String metricTag;
 
   protected final Random r = new Random();
 
@@ -149,36 +175,25 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
 
   static final String SET_SOLR_DISABLE_SHARDS_WHITELIST_CLUE = " set -D"+INIT_SOLR_DISABLE_SHARDS_WHITELIST+"=true to disable shards whitelist checks";
 
+
   public HttpShardHandlerFactory() {
-    ObjectReleaseTracker.track(this);
+
   }
+
 
   /**
    * Get {@link ShardHandler} that uses the default http client.
    */
   @Override
   public ShardHandler getShardHandler() {
-    return getShardHandler(defaultClient);
+    return getShardHandler(solrClient);
   }
 
   /**
    * Get {@link ShardHandler} that uses custom http client.
    */
   public ShardHandler getShardHandler(final Http2SolrClient httpClient){
-    return new HttpShardHandler(this, httpClient);
-  }
-
-  @Deprecated
-  public ShardHandler getShardHandler(final HttpClient httpClient) {
-    // a little hack for backward-compatibility when we are moving from apache http client to jetty client
-    return new HttpShardHandler(this, null) {
-      @Override
-      protected NamedList<Object> request(String url, @SuppressWarnings({"rawtypes"})SolrRequest req) throws IOException, SolrServerException {
-        try (SolrClient client = new HttpSolrClient.Builder(url).withHttpClient(httpClient).markInternalRequest().build()) {
-          return client.request(req);
-        }
-      }
-    };
+    return new HttpShardHandler(this, solrClient);
   }
 
   /**
@@ -219,15 +234,16 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     }
   }
 
+
   @SuppressWarnings({"unchecked"})
   private void initReplicaListTransformers(@SuppressWarnings({"rawtypes"})NamedList routingConfig) {
     String defaultRouting = null;
     ReplicaListTransformerFactory stableRltFactory = null;
     ReplicaListTransformerFactory defaultRltFactory;
     if (routingConfig != null && routingConfig.size() > 0) {
-      Iterator<Entry<String,?>> iter = routingConfig.iterator();
+      Iterator<Map.Entry<String,?>> iter = routingConfig.iterator();
       do {
-        Entry<String, ?> e = iter.next();
+        Map.Entry<String, ?> e = iter.next();
         String key = e.getKey();
         switch (key) {
           case ShardParams.REPLICA_RANDOM:
@@ -261,8 +277,8 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   @Override
   public void init(PluginInfo info) {
     StringBuilder sb = new StringBuilder();
-    @SuppressWarnings({"rawtypes"})
     NamedList args = info.initArgs;
+    this.soTimeout = getParameter(args, HttpClientUtil.PROP_SO_TIMEOUT, soTimeout,sb);
     this.scheme = getParameter(args, INIT_URL_SCHEME, null,sb);
     if(StringUtils.endsWith(this.scheme, "://")) {
       this.scheme = StringUtils.removeEnd(this.scheme, "://");
@@ -271,27 +287,30 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     String strategy = getParameter(args, "metricNameStrategy", UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY, sb);
     this.metricNameStrategy = KNOWN_METRIC_NAME_STRATEGIES.get(strategy);
     if (this.metricNameStrategy == null)  {
-      throw new SolrException(ErrorCode.SERVER_ERROR,
-          "Unknown metricNameStrategy: " + strategy + " found. Must be one of: " + KNOWN_METRIC_NAME_STRATEGIES.keySet());
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+              "Unknown metricNameStrategy: " + strategy + " found. Must be one of: " + KNOWN_METRIC_NAME_STRATEGIES.keySet());
     }
 
+    this.connectionTimeout = getParameter(args, HttpClientUtil.PROP_CONNECTION_TIMEOUT, connectionTimeout, sb);
+    this.maxConnectionsPerHost = getParameter(args, HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, maxConnectionsPerHost,sb);
+    this.maxConnections = getParameter(args, HttpClientUtil.PROP_MAX_CONNECTIONS, maxConnections,sb);
     this.corePoolSize = getParameter(args, INIT_CORE_POOL_SIZE, corePoolSize,sb);
     this.maximumPoolSize = getParameter(args, INIT_MAX_POOL_SIZE, maximumPoolSize,sb);
     this.keepAliveTime = getParameter(args, MAX_THREAD_IDLE_TIME, keepAliveTime,sb);
     this.queueSize = getParameter(args, INIT_SIZE_OF_QUEUE, queueSize,sb);
     this.permittedLoadBalancerRequestsMinimumAbsolute = getParameter(
-        args,
-        LOAD_BALANCER_REQUESTS_MIN_ABSOLUTE,
-        permittedLoadBalancerRequestsMinimumAbsolute,
-        sb);
+            args,
+            LOAD_BALANCER_REQUESTS_MIN_ABSOLUTE,
+            permittedLoadBalancerRequestsMinimumAbsolute,
+            sb);
     this.permittedLoadBalancerRequestsMaximumFraction = getParameter(
-        args,
-        LOAD_BALANCER_REQUESTS_MAX_FRACTION,
-        permittedLoadBalancerRequestsMaximumFraction,
-        sb);
+            args,
+            LOAD_BALANCER_REQUESTS_MAX_FRACTION,
+            permittedLoadBalancerRequestsMaximumFraction,
+            sb);
     this.accessPolicy = getParameter(args, INIT_FAIRNESS_POLICY, accessPolicy,sb);
     this.whitelistHostChecker = new WhitelistHostChecker(args == null? null: (String) args.get(INIT_SHARDS_WHITELIST), !getDisableShardsWhitelist());
-    log.info("Host whitelist initialized: {}", this.whitelistHostChecker);
+    log.debug("created with {}",sb);
 
     // magic sysprop to make tests reproducible: set by SolrTestCaseJ4.
     String v = System.getProperty("tests.shardhandler.randomSeed");
@@ -300,50 +319,67 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     }
 
     BlockingQueue<Runnable> blockingQueue = (this.queueSize == -1) ?
-        new SynchronousQueue<Runnable>(this.accessPolicy) :
-        new ArrayBlockingQueue<Runnable>(this.queueSize, this.accessPolicy);
+            new SynchronousQueue<Runnable>(this.accessPolicy) :
+            new ArrayBlockingQueue<Runnable>(this.queueSize, this.accessPolicy);
 
-//    this.commExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(
-//        this.corePoolSize,
-//        this.maximumPoolSize,
-//        this.keepAliveTime, TimeUnit.SECONDS,
-//        blockingQueue,
-//        new SolrNamedThreadFactory("httpShardExecutor"),
-//        // the Runnable added to this executor handles all exceptions so we disable stack trace collection as an optimization
-//        // see SOLR-11880 for more details
-//        false
-//    );
-
-    this.httpListenerFactory = new InstrumentedHttpListenerFactory(this.metricNameStrategy);
-    int connectionTimeout = getParameter(args, HttpClientUtil.PROP_CONNECTION_TIMEOUT,
-        HttpClientUtil.DEFAULT_CONNECT_TIMEOUT, sb);
-    int maxConnectionsPerHost = getParameter(args, HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST,
-        HttpClientUtil.DEFAULT_MAXCONNECTIONSPERHOST, sb);
-    int soTimeout = getParameter(args, HttpClientUtil.PROP_SO_TIMEOUT,
-        HttpClientUtil.DEFAULT_SO_TIMEOUT, sb);
-
-    this.defaultClient = new Http2SolrClient.Builder()
-        .connectionTimeout(connectionTimeout)
-        .idleTimeout(soTimeout)
-        .markInternalRequest()
-        .maxConnectionsPerHost(maxConnectionsPerHost).build();
-    this.defaultClient.addListenerFactory(this.httpListenerFactory);
-    this.loadbalancer = new LBHttp2SolrClient(defaultClient);
+    this.commExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(
+            this.corePoolSize,
+            this.maximumPoolSize,
+            this.keepAliveTime, TimeUnit.SECONDS,
+            blockingQueue,
+            new SolrNamedThreadFactory("httpShardExecutor")
+    );
 
     initReplicaListTransformers(getParameter(args, "replicaRouting", null, sb));
 
-    log.debug("created with {}",sb);
+    ModifiableSolrParams clientParams = getClientParams();
+    httpRequestExecutor = new InstrumentedHttpRequestExecutor(this.metricNameStrategy);
+
+    if (ASYNC) {
+      this.loadbalancer = createAsyncLoadbalancer(solrClient);
+    } else {
+      this.loadbalancer = createLoadbalancer(httpClient);
+    }
   }
 
-  @Override
-  public void setSecurityBuilder(HttpClientBuilderPlugin clientBuilderPlugin) {
-    clientBuilderPlugin.setup(defaultClient);
+  protected ModifiableSolrParams getClientParams() {
+    ModifiableSolrParams clientParams = new ModifiableSolrParams();
+    clientParams.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, maxConnectionsPerHost);
+    clientParams.set(HttpClientUtil.PROP_MAX_CONNECTIONS, maxConnections);
+    return clientParams;
   }
 
-  protected <T> T getParameter(@SuppressWarnings({"rawtypes"})NamedList initArgs, String configKey, T defaultValue, StringBuilder sb) {
+  protected ExecutorService getThreadPoolExecutor(){
+    return this.commExecutor;
+  }
+
+  public Http2SolrClient getHttpClient(){
+    return this.solrClient;
+  }
+
+  protected LBHttpSolrClient createLoadbalancer(HttpClient httpClient){
+    LBHttpSolrClient client = new LBHttpSolrClient.Builder()
+            .withHttpClient(httpClient)
+            .withConnectionTimeout(connectionTimeout)
+            .withSocketTimeout(soTimeout)
+            .markInternalRequest()
+            .build();
+    return client;
+  }
+
+  protected AsyncLBHttpSolrClient createAsyncLoadbalancer(Http2SolrClient httpClient){
+    AsyncLBHttpSolrClient client = new Builder()
+            .withConnectionTimeout(connectionTimeout)
+            .withSocketTimeout(soTimeout)
+            .withHttp2SolrClient(solrClient)
+            .solrInternal()
+            .build();
+    return client;
+  }
+
+  protected <T> T getParameter(NamedList initArgs, String configKey, T defaultValue, StringBuilder sb) {
     T toReturn = defaultValue;
     if (initArgs != null) {
-      @SuppressWarnings({"unchecked"})
       T temp = (T) initArgs.get(configKey);
       toReturn = (temp != null) ? temp : defaultValue;
     }
@@ -354,23 +390,23 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
 
   @Override
   public void close() {
-    try (ParWork closer = new ParWork(this, true)) {
-      closer.add("closeHttpShardHandlerFactory", loadbalancer, defaultClient, () -> {
-        try {
-          SolrMetricProducer.super.close();
-        } catch (Exception e) {
-          log.warn("Exception closing.", e);
+    try {
+      try {
+        if (loadbalancer != null) {
+          IOUtils.closeQuietly(loadbalancer);
         }
-        return HttpShardHandlerFactory.this;
-      });
+
+      } finally {
+        if (solrClient != null) {
+          IOUtils.closeQuietly(solrClient);
+        }
+        if (clientConnectionManager != null)  {
+          clientConnectionManager.close();
+        }
+      }
+    } finally {
+      ExecutorUtil.shutdownAndAwaitTermination(commExecutor);
     }
-
-    ObjectReleaseTracker.release(this);
-  }
-
-  @Override
-  public SolrMetricsContext getSolrMetricsContext() {
-    return solrMetricsContext;
   }
 
   /**
@@ -380,17 +416,37 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
    * @param urls The list of solr server urls to load balance across
    * @return The response from the request
    */
-  public LBSolrClient.Rsp makeLoadBalancedRequest(final QueryRequest req, List<String> urls)
-    throws SolrServerException, IOException {
-    return loadbalancer.request(newLBHttpSolrClientReq(req, urls));
+  public AsyncLBHttpSolrClient.Rsp makeAsyncLoadBalancedRequest(final QueryRequest req, List<String> urls)
+          throws SolrServerException, IOException {
+    return ((AsyncLBHttpSolrClient)loadbalancer).request(new AsyncLBHttpSolrClient.Req(req, urls));
   }
 
-  protected LBSolrClient.Req newLBHttpSolrClientReq(final QueryRequest req, List<String> urls) {
+  protected AsyncLBHttpSolrClient.Req newAsyncLBHttpSolrClientReq(final QueryRequest req, List<String> urls) {
     int numServersToTry = (int)Math.floor(urls.size() * this.permittedLoadBalancerRequestsMaximumFraction);
     if (numServersToTry < this.permittedLoadBalancerRequestsMinimumAbsolute) {
       numServersToTry = this.permittedLoadBalancerRequestsMinimumAbsolute;
     }
-    return new LBSolrClient.Req(req, urls, numServersToTry);
+    return new AsyncLBHttpSolrClient.Req(req, urls, numServersToTry);
+  }
+
+  /**
+   * Makes a request to one or more of the given urls, using the configured load balancer.
+   *
+   * @param req The solr search request that should be sent through the load balancer
+   * @param urls The list of solr server urls to load balance across
+   * @return The response from the request
+   */
+  public LBHttpSolrClient.Rsp makeLoadBalancedRequest(final QueryRequest req, List<String> urls)
+          throws SolrServerException, IOException {
+    return ((LBHttpSolrClient)loadbalancer).request(new LBHttpSolrClient.Req(req, urls));
+  }
+
+  protected LBHttpSolrClient.Req newLBHttpSolrClientReq(final QueryRequest req, List<String> urls) {
+    int numServersToTry = (int)Math.floor(urls.size() * this.permittedLoadBalancerRequestsMaximumFraction);
+    if (numServersToTry < this.permittedLoadBalancerRequestsMinimumAbsolute) {
+      numServersToTry = this.permittedLoadBalancerRequestsMinimumAbsolute;
+    }
+    return new LBHttpSolrClient.Req(req, urls, numServersToTry);
   }
 
   /**
@@ -433,9 +489,16 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   /**
    * Creates a new completion service for use by a single set of distributed requests.
    */
-  public CompletionService<ShardResponse> newCompletionService() {
-    return new ExecutorCompletionService<>(ParWork.getExecutor());
-  } // ##Super expert usage
+  public CompletionService newCompletionService() {
+    return new ExecutorCompletionService<ShardResponse>(commExecutor);
+  }
+
+
+  @Override
+  public void inform(SolrCore core) {
+    this.solrClient = core.getCoreContainer().getUpdateShardHandler().getUpdateOnlyHttpClient();
+    this.httpClient = core.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient();
+  }
 
   /**
    * Rebuilds the URL replacing the URL scheme of the passed URL with the
@@ -452,6 +515,13 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     return url;
   }
 
+
+  @Override
+  public SolrMetricsContext getSolrMetricsContext() {
+    return solrMetricsContext;
+  }
+
+
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     solrMetricsContext = parentContext.getChildContext(this);
@@ -461,12 +531,6 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
 //        solrMetricsContext.getMetricRegistry(),
 //        SolrMetricManager.mkName("httpShardExecutor", expandedScope, "threadPool"));
   }
-
-  @Override
-  public void inform(SolrCore core) {
-    this.defaultClient = core.getCoreContainer().getUpdateShardHandler().getUpdateOnlyHttpClient();
-  }
-
   /**
    * Class used to validate the hosts in the "shards" parameter when doing a distributed
    * request
@@ -491,25 +555,25 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     final static Set<String> implGetShardsWhitelist(final String shardsWhitelist) {
       if (shardsWhitelist != null && !shardsWhitelist.isEmpty()) {
         return StrUtils.splitSmart(shardsWhitelist, ',')
-            .stream()
-            .map(String::trim)
-            .map((hostUrl) -> {
-              URL url;
-              try {
-                if (!hostUrl.startsWith("http://") && !hostUrl.startsWith("https://")) {
-                  // It doesn't really matter which protocol we set here because we are not going to use it. We just need a full URL.
-                  url = new URL("http://" + hostUrl);
-                } else {
-                  url = new URL(hostUrl);
-                }
-              } catch (MalformedURLException e) {
-                throw new SolrException(ErrorCode.SERVER_ERROR, "Invalid URL syntax in \"" + INIT_SHARDS_WHITELIST + "\": " + shardsWhitelist, e);
-              }
-              if (url.getHost() == null || url.getPort() < 0) {
-                throw new SolrException(ErrorCode.SERVER_ERROR, "Invalid URL syntax in \"" + INIT_SHARDS_WHITELIST + "\": " + shardsWhitelist);
-              }
-              return url.getHost() + ":" + url.getPort();
-            }).collect(Collectors.toSet());
+                .stream()
+                .map(String::trim)
+                .map((hostUrl) -> {
+                  URL url;
+                  try {
+                    if (!hostUrl.startsWith("http://") && !hostUrl.startsWith("https://")) {
+                      // It doesn't really matter which protocol we set here because we are not going to use it. We just need a full URL.
+                      url = new URL("http://" + hostUrl);
+                    } else {
+                      url = new URL(hostUrl);
+                    }
+                  } catch (MalformedURLException e) {
+                    throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid URL syntax in \"" + INIT_SHARDS_WHITELIST + "\": " + shardsWhitelist, e);
+                  }
+                  if (url.getHost() == null || url.getPort() < 0) {
+                    throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid URL syntax in \"" + INIT_SHARDS_WHITELIST + "\": " + shardsWhitelist);
+                  }
+                  return url.getHost() + ":" + url.getPort();
+                }).collect(Collectors.toSet());
       }
       return null;
     }
@@ -554,37 +618,37 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
             url = new URL(shardUrl);
           }
         } catch (MalformedURLException e) {
-          throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid URL syntax in \"shards\" parameter: " + shardsParamValue, e);
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid URL syntax in \"shards\" parameter: " + shardsParamValue, e);
         }
         if (url.getHost() == null || url.getPort() < 0) {
-          throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid URL syntax in \"shards\" parameter: " + shardsParamValue);
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid URL syntax in \"shards\" parameter: " + shardsParamValue);
         }
         if (!localWhitelistHosts.contains(url.getHost() + ":" + url.getPort())) {
           log.warn("The '{}' parameter value '{}' contained value(s) not on the shards whitelist ({}), shardUrl: '{}'"
-              , ShardParams.SHARDS, shardsParamValue, localWhitelistHosts, shardUrl);
-          throw new SolrException(ErrorCode.FORBIDDEN,
-              "The '"+ShardParams.SHARDS+"' parameter value '"+shardsParamValue+"' contained value(s) not on the shards whitelist. shardUrl:" + shardUrl + "." +
-                  HttpShardHandlerFactory.SET_SOLR_DISABLE_SHARDS_WHITELIST_CLUE);
+                  , ShardParams.SHARDS, shardsParamValue, localWhitelistHosts, shardUrl);
+          throw new SolrException(SolrException.ErrorCode.FORBIDDEN,
+                  "The '"+ShardParams.SHARDS+"' parameter value '"+shardsParamValue+"' contained value(s) not on the shards whitelist. shardUrl:" + shardUrl + "." +
+                          HttpShardHandlerFactory.SET_SOLR_DISABLE_SHARDS_WHITELIST_CLUE);
         }
       });
     }
-    
+
     Set<String> generateWhitelistFromLiveNodes(ClusterState clusterState) {
       return clusterState
-          .getLiveNodes()
-          .stream()
-          .map((liveNode) -> liveNode.substring(0, liveNode.indexOf('_')))
-          .collect(Collectors.toSet());
+              .getLiveNodes()
+              .stream()
+              .map((liveNode) -> liveNode.substring(0, liveNode.indexOf('_')))
+              .collect(Collectors.toSet());
     }
-    
+
     public boolean hasExplicitWhitelist() {
       return this.whitelistHosts != null;
     }
-    
+
     public boolean isWhitelistHostCheckingEnabled() {
       return whitelistHostCheckingEnabled;
     }
-    
+
     /**
      * Only to be used by tests
      */
@@ -593,12 +657,5 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
       return this.whitelistHosts;
     }
 
-    @Override
-    public String toString() {
-      return "WhitelistHostChecker [whitelistHosts=" + whitelistHosts + ", whitelistHostCheckingEnabled="
-          + whitelistHostCheckingEnabled + "]";
-    }
-    
-  }
-  
+}
 }

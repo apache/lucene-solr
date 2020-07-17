@@ -68,7 +68,7 @@ public class SyncStrategy implements Closeable {
   public SyncStrategy(CoreContainer cc) {
     ObjectReleaseTracker.track(this);
     UpdateShardHandler updateShardHandler = cc.getUpdateShardHandler();
-    shardHandler = ((HttpShardHandlerFactory)cc.getShardHandlerFactory()).getShardHandler(cc.getUpdateShardHandler().getDefaultHttpClient());
+    shardHandler = ((HttpShardHandlerFactory)cc.getShardHandlerFactory()).getShardHandler(cc.getUpdateShardHandler().getUpdateOnlyHttpClient());
   }
   
   private static class ShardCoreRequest extends ShardRequest {

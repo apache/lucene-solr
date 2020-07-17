@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.http.client.HttpClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -53,9 +54,9 @@ public class OverseerNodePrioritizer {
 
   private ZkDistributedQueue stateUpdateQueue;
 
-  private HttpClient httpClient;
+  private Http2SolrClient httpClient;
 
-  public OverseerNodePrioritizer(ZkStateReader zkStateReader, ZkDistributedQueue stateUpdateQueue, String adminPath, ShardHandlerFactory shardHandlerFactory, HttpClient httpClient) {
+  public OverseerNodePrioritizer(ZkStateReader zkStateReader, ZkDistributedQueue stateUpdateQueue, String adminPath, ShardHandlerFactory shardHandlerFactory, Http2SolrClient httpClient) {
     this.zkStateReader = zkStateReader;
     this.adminPath = adminPath;
     this.shardHandlerFactory = shardHandlerFactory;

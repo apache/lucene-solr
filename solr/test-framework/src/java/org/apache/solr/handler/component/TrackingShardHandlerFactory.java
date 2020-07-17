@@ -94,49 +94,7 @@ public class TrackingShardHandlerFactory extends HttpShardHandlerFactory {
   }
 
   @Override
-  public ShardHandler getShardHandler(Http2SolrClient client) {
-    final ShardHandlerFactory factory = this;
-    final ShardHandler wrapped = super.getShardHandler(client);
-    return new HttpShardHandler(this, client) {
-      @Override
-      public void prepDistributed(ResponseBuilder rb) {
-        wrapped.prepDistributed(rb);
-      }
-
-      @Override
-      public void submit(ShardRequest sreq, String shard, ModifiableSolrParams params) {
-        synchronized (TrackingShardHandlerFactory.this) {
-          if (isTracking()) {
-            queue.offer(new ShardRequestAndParams(sreq, shard, params));
-          }
-        }
-        wrapped.submit(sreq, shard, params);
-      }
-
-      @Override
-      public ShardResponse takeCompletedIncludingErrors() {
-        return wrapped.takeCompletedIncludingErrors();
-      }
-
-      @Override
-      public ShardResponse takeCompletedOrError() {
-        return wrapped.takeCompletedOrError();
-      }
-
-      @Override
-      public void cancelAll() {
-        wrapped.cancelAll();
-      }
-
-      @Override
-      public ShardHandlerFactory getShardHandlerFactory() {
-        return factory;
-      }
-    };
-  }
-
-  @Override
-  public ShardHandler getShardHandler(HttpClient httpClient) {
+  public ShardHandler getShardHandler(Http2SolrClient httpClient) {
     final ShardHandlerFactory factory = this;
     final ShardHandler wrapped = super.getShardHandler(httpClient);
     return new HttpShardHandler(this, null) {
@@ -157,7 +115,7 @@ public class TrackingShardHandlerFactory extends HttpShardHandlerFactory {
 
       @Override
       protected NamedList<Object> request(String url, @SuppressWarnings({"rawtypes"})SolrRequest req) throws IOException, SolrServerException {
-        try (SolrClient client = new HttpSolrClient.Builder(url).withHttpClient(httpClient).build()) {
+        try (SolrClient client = new Http2SolrClient.Builder(url).withHttpClient(httpClient).build()) {
           return client.request(req);
         }
       }

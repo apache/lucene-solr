@@ -882,13 +882,15 @@ public class Http2SolrClient extends SolrClient {
       return MAX_OUTSTANDING_REQUESTS * 3;
     }
 
-    public void waitForComplete() {
+    public synchronized void waitForComplete() {
       if (Http2SolrClient.this.closed != null) {
         throw new IllegalStateException("Already closed! " + Http2SolrClient.this.closed );
       }
       if (log.isDebugEnabled()) log.debug("Before wait for outstanding requests registered: {} arrived: {}", phaser.getRegisteredParties(), phaser.getArrivedParties());
+
       int arrival = phaser.arriveAndAwaitAdvance();
-      if (log.isDebugEnabled()) log.debug("After wait for outstanding requests registered: {} arrived: {} ourArrival#: {}", phaser.getRegisteredParties(), phaser.getArrivedParties(), arrival);
+
+      if (log.isDebugEnabled()) log.debug("After wait for outstanding requests registered: {} arrived: {}", phaser.getRegisteredParties(), phaser.getArrivedParties());
     }
 
     public void waitForCompleteFinal() {

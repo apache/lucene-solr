@@ -18,11 +18,13 @@ package org.apache.solr.cloud;
 
 import org.apache.solr.search.stats.ExactStatsCache;
 import org.apache.solr.util.LogLevel;
+import org.junit.Ignore;
 
 /**
  *
  */
 @LogLevel("org.apache.solr.search=DEBUG")
+@Ignore // nocommit - use this test to work out parallel commits waiting for flushed updates
 public class TestExactStatsCacheCloud extends TestBaseStatsCacheCloud {
   @Override
   protected boolean assertSameScores() {

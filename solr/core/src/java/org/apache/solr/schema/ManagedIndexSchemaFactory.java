@@ -436,7 +436,8 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
     this.schema = schema;
     try (SolrCore core = coreContainer.getCore(coreName)) {
       if (core == null) {
-        throw new AlreadyClosedException();
+        log.info("core already closed, won't update schema");
+        return;
       }
       core.setLatestSchema(schema);
     }
