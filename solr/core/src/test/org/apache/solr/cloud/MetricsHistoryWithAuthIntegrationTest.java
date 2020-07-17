@@ -86,7 +86,7 @@ public class MetricsHistoryWithAuthIntegrationTest extends SolrCloudTestCase {
   public void testValuesAreCollected() throws Exception {
 
     // default format is LIST
-    TimeOut timeout = new TimeOut(5, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     final AtomicReference<NamedList<Object>> dataRef = new AtomicReference<>();
     timeout.waitFor("", () -> {
       try {
