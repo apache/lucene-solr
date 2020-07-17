@@ -28,12 +28,11 @@ public class IndexRateLimiter extends RequestRateLimiter {
   final static String INDEX_WAIT_FOR_SLOT_ALLOCATION_INMS = "indexWaitForSlotAllocationInMS";
   final static String INDEX_REQUEST_SUSPEND_TIME_INMS = "indexRequestSuspendTimeInMS";
 
-  public IndexRateLimiter(FilterConfig filterConfig, String _suspended, String _resumed) {
-    super(constructIndexRateLimiterConfig(filterConfig, _suspended, _resumed));
+  public IndexRateLimiter(FilterConfig filterConfig) {
+    super(constructIndexRateLimiterConfig(filterConfig));
   }
 
-  protected static RateLimiterConfig constructIndexRateLimiterConfig(FilterConfig filterConfig, String _suspended,
-                                                                     String _resumed) {
+  protected static RateLimiterConfig constructIndexRateLimiterConfig(FilterConfig filterConfig) {
     RateLimiterConfig indexRateLimiterConfig = new RateLimiterConfig();
 
     indexRateLimiterConfig.requestSuspendTimeInMS = getParamAndParseLong(filterConfig, INDEX_REQUEST_SUSPEND_TIME_INMS,
@@ -42,8 +41,8 @@ public class IndexRateLimiter extends RequestRateLimiter {
         DEFAULT_TIMEOUT_MS);
     indexRateLimiterConfig.allowedRequests = getParamAndParseInt(filterConfig, MAX_INDEX_REQUESTS,
         DEFAULT_CONCURRENT_REQUESTS);
-    indexRateLimiterConfig._suspended = _suspended;
-    indexRateLimiterConfig._resumed = _resumed;
+
+    indexRateLimiterConfig.allowedRequests = 20;
 
     return indexRateLimiterConfig;
   }

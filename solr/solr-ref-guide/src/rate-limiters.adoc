@@ -1,0 +1,104 @@
+= Request Rate Limiters
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+Solr allows rate limiting per request type. Each request type can be allocated a maximum allowed number of concurrent requests
+that can be active. The default rate limiting is implemented for updates and searches.
+
+If an indexing or search request exceeds the request quota, further incoming requests are automatically queued asynchronously with
+a configurable timeout.
+
+== When To Use Rate Limiters
+Rate limiters should be used when the user wishes to allocate a guaranteed capacity of the request threadpool to a specific
+request type. Indexing and search requests are mostly competing with each other for CPU resources. This becomes especially
+pronounced under high stress in production workloads.
+
+== Rate Limiter Configurations
+The default rate limiters are indexing and search rate limiters. Accordingly, they can be configured in web.xml.
+
+==== Maximum Number Of Concurrent Requests
+Allows setting maximum concurrent indexing/search requests at a given point in time. Default value is 10. To disable rate limiting,
+set it to Integer.MAX_VALUE
+[source,xml]
+----
+<maxIndexRequests>15</maxIndexRequests>
+----
+[source,xml]
+----
+<maxQueryRequests>15</maxQueryRequests>
+----
+
+==== Request Slot Allocation Wait Time
+Wait time in ms for which a request will wait for a slot to be available when all slots are full,
+before the request is put into the wait queue. This allows requests to have a chance to proceed if
+the unavailability of the request slots for this rate limiter is a transient phenomenon. Default value
+is -1, indicating no wait.
+[source,xml]
+----
+<indexWaitForSlotAllocationInMS>100</indexWaitForSlotAllocationInMS>
+----
+[source,xml]
+----
+<queryWaitForSlotAllocationInMS>100</queryWaitForSlotAllocationInMS>
+----
+
+==== Request Suspension Time
+Time in ms for which a request will be put to sleep when a slot is not available. Note that this is not
+a busy wait -- the request is asynchronously paused while being assigned this value as the timeout, post
+which the request shall reattempt processing. Default value is 50 ms.
+[source,xml]
+----
+<indexRequestSuspendTimeInMS>100</indexRequestSuspendTimeInMS>
+----
+[source,xml]
+----
+<indexRequestSuspendTimeInMS>100</indexRequestSuspendTimeInMS>
+----
+
+
+== Salient Points
+
+These are some of the things to keep in mind when using rate limiters
+
+=== Over Subscribing
+It is possible to define a size of quota for a request type which exceeds the size
+of the available threadpool. Solr does not enforce rules on the size of a quota that
+can be define for a request type. This is intentionally done to allow users full
+control on their quota allocation. However, if the quota exceeds the available threadpool's
+size, the standard queuing policies of the threadpool will kick in.
+
+[source,xml]
+----
+<memoryCircuitBreakerThresholdPct>75</memoryCircuitBreakerThresholdPct>
+----
+
+Consider the following example:
+
+JVM has been allocated a maximum heap of 5GB (-Xmx) and memoryCircuitBreakerThresholdPct is set to 75. In this scenario, the heap usage
+at which the circuit breaker will trip is 3.75GB.
+
+Note that this circuit breaker is checked for each incoming search request and considers the current heap usage of the node, i.e every search
+request will get the live heap usage and compare it against the set memory threshold. The check does not impact performance,
+but any performance regressions that are suspected to be caused by this feature should be reported to the dev list.
+
+
+== Performance Considerations
+It is worth noting that while JVM circuit breaker does not add any noticeable overhead per query, having too many
+circuit breakers checked for a single request can cause a performance overhead.
+
+In addition, it is a good practice to exponentially back off while retrying requests on a busy node.
+

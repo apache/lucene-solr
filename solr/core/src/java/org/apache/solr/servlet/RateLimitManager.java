@@ -27,27 +27,43 @@ import org.apache.solr.client.solrj.SolrRequest;
 import static org.apache.solr.common.params.CommonParams.SOLR_REQUEST_CONTEXT_PARAM;
 import static org.apache.solr.common.params.CommonParams.SOLR_REQUEST_TYPE_PARAM;
 
+/**
+ * This class is responsible for managing rate limiting per request type. Rate limiters
+ * can be registered with this class against a corresponding type. There can be only one
+ * rate limiter associated with a request type.
+ *
+ * The actual rate limiting and the limits should be implemented in the corresponding RequestRateLimiter
+ * implementation. RateLimitManager is responsible for the orchestration but not the specifics of how the
+ * rate limiting is being done for a specific request type.
+ */
 public class RateLimitManager {
   public final static int DEFAULT_CONCURRENT_REQUESTS= 10;
-  public final static int DEFAULT_SUSPEND_TIME_INMS = 50;
+  public final static long DEFAULT_SUSPEND_TIME_INMS = 2000;
   public final static long DEFAULT_TIMEOUT_MS = -1;
-
-  private final String _suspended;
 
   private final Map<String, RequestRateLimiter> requestRateLimiterMap;
 
-  public RateLimitManager(String _suspended) {
-    this.requestRateLimiterMap = new HashMap();
-
-    this._suspended = _suspended;
+  public RateLimitManager() {
+    this.requestRateLimiterMap = new HashMap<String, RequestRateLimiter>();
   }
 
+  // Handles an incoming request. The main orchestration code path, this method will
+  // identify which (if any) rate limiter can handle this request. Internal requests will not be
+  // rate limited
+  // Returns true if request is accepted for processing, false if it should be rejected
+
+  // NOTE: It is upto specific rate limiter implementation to handle queuing of rejected requests.
   public boolean handleRequest(HttpServletRequest request) throws InterruptedException {
     String requestContext = request.getHeader(SOLR_REQUEST_CONTEXT_PARAM);
     String typeOfRequest = request.getHeader(SOLR_REQUEST_TYPE_PARAM);
 
+    if (typeOfRequest == null) {
+      // Cannot determine if this request should be throttled
+      return true;
+    }
+
     // Do not throttle internal requests
-    if (requestContext.equals(SolrRequest.SolrClientContext.SERVER.toString())) {
+    if (requestContext != null && requestContext.equals(SolrRequest.SolrClientContext.SERVER.toString())) {
       return true;
     }
 
@@ -58,17 +74,11 @@ public class RateLimitManager {
       return true;
     }
 
-    Boolean suspended = (Boolean) request.getAttribute(_suspended);
-    boolean accepted;
-
-    if (suspended == null) {
-      accepted = requestRateLimiter.handleNewRequest(request);
-    } else {
-      accepted = requestRateLimiter.handleSuspendedRequest(request);
-    }
-
-    return accepted;
+    return requestRateLimiter.handleNewRequest(request);
   }
+
+  // Resume a pending request from one of the registered rate limiters.
+  // The current model is round robin -- iterate over the list and get a pending request and resume it.
 
   // TODO: This should be a priority queue based model
   public void resumePendingRequest() {
@@ -83,6 +93,7 @@ public class RateLimitManager {
     }
   }
 
+  // Decrement the active requests in the rate limiter for the corresponding request type.
   public void decrementActiveRequests(HttpServletRequest request) {
     String typeOfRequest = request.getHeader(SOLR_REQUEST_TYPE_PARAM);
 
@@ -101,15 +112,23 @@ public class RateLimitManager {
   }
 
   public RequestRateLimiter getRequestRateLimiter(SolrRequest.SolrRequestType requestType) {
-    return requestRateLimiterMap.get(requestType);
+    return requestRateLimiterMap.get(requestType.toString());
   }
 
-  public static RateLimitManager buildRateLimitManager(FilterConfig config, String _resumed, String _suspended) {
-    RateLimitManager rateLimitManager = new RateLimitManager(_suspended);
+  public static class Builder {
+    protected FilterConfig config;
 
-    rateLimitManager.registerRequestRateLimiter(new IndexRateLimiter(config, _suspended, _resumed), SolrRequest.SolrRequestType.UPDATE);
-    rateLimitManager.registerRequestRateLimiter(new QueryRateLimiter(config, _suspended, _resumed), SolrRequest.SolrRequestType.QUERY);
+    public void setConfig(FilterConfig config) {
+      this.config = config;
+    }
 
-    return rateLimitManager;
+    public RateLimitManager build() {
+      RateLimitManager rateLimitManager = new RateLimitManager();
+
+      rateLimitManager.registerRequestRateLimiter(new IndexRateLimiter(config), SolrRequest.SolrRequestType.UPDATE);
+      rateLimitManager.registerRequestRateLimiter(new QueryRateLimiter(config), SolrRequest.SolrRequestType.QUERY);
+
+      return rateLimitManager;
+    }
   }
 }

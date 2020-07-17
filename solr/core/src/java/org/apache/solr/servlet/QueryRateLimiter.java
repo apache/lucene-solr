@@ -28,24 +28,20 @@ public class QueryRateLimiter extends RequestRateLimiter {
   final static String QUERY_WAIT_FOR_SLOT_ALLOCATION_INMS = "queryWaitForSlotAllocationInMS";
   final static String QUERY_REQUEST_SUSPEND_TIME_INMS = "queryRequestSuspendTimeInMS";
 
-  public QueryRateLimiter(FilterConfig filterConfig, String _suspended,
-                          String _resumed) {
-    super(constructIndexRateLimiterConfig(filterConfig, _suspended, _resumed));
+  public QueryRateLimiter(FilterConfig filterConfig) {
+    super(constructQueryRateLimiterConfig(filterConfig));
   }
 
-  protected static RequestRateLimiter.RateLimiterConfig constructIndexRateLimiterConfig(FilterConfig filterConfig, String _suspended,
-                                                                                        String _resumed) {
-    RequestRateLimiter.RateLimiterConfig indexRateLimiterConfig = new RequestRateLimiter.RateLimiterConfig();
+  protected static RequestRateLimiter.RateLimiterConfig constructQueryRateLimiterConfig(FilterConfig filterConfig) {
+    RequestRateLimiter.RateLimiterConfig queryRateLimiterConfig = new RequestRateLimiter.RateLimiterConfig();
 
-    indexRateLimiterConfig.requestSuspendTimeInMS = getParamAndParseLong(filterConfig, QUERY_REQUEST_SUSPEND_TIME_INMS,
+    queryRateLimiterConfig.requestSuspendTimeInMS = getParamAndParseLong(filterConfig, QUERY_REQUEST_SUSPEND_TIME_INMS,
         DEFAULT_SUSPEND_TIME_INMS);
-    indexRateLimiterConfig.waitForSlotAcquisition = getParamAndParseLong(filterConfig, QUERY_WAIT_FOR_SLOT_ALLOCATION_INMS,
+    queryRateLimiterConfig.waitForSlotAcquisition = getParamAndParseLong(filterConfig, QUERY_WAIT_FOR_SLOT_ALLOCATION_INMS,
         DEFAULT_TIMEOUT_MS);
-    indexRateLimiterConfig.allowedRequests = getParamAndParseInt(filterConfig, MAX_QUERY_REQUESTS,
+    queryRateLimiterConfig.allowedRequests = getParamAndParseInt(filterConfig, MAX_QUERY_REQUESTS,
         DEFAULT_CONCURRENT_REQUESTS);
-    indexRateLimiterConfig._suspended = _suspended;
-    indexRateLimiterConfig._resumed = _resumed;
 
-    return indexRateLimiterConfig;
+    return queryRateLimiterConfig;
   }
 }

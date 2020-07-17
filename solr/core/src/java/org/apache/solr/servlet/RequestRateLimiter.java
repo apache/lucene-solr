@@ -21,15 +21,21 @@ import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
 import javax.servlet.FilterConfig;
-import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class RequestRateLimiter {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   private Semaphore allowedConcurrentRequests;
   private RateLimiterConfig rateLimiterConfig;
   private Queue<AsyncContext> waitQueue;
@@ -45,55 +51,17 @@ public class RequestRateLimiter {
   public boolean handleNewRequest(HttpServletRequest request) throws InterruptedException {
     boolean accepted = allowedConcurrentRequests.tryAcquire(rateLimiterConfig.waitForSlotAcquisition, TimeUnit.MILLISECONDS);
 
-    if (accepted) {
-      request.setAttribute(rateLimiterConfig._suspended, Boolean.FALSE);
-    } else {
-      request.setAttribute(rateLimiterConfig._suspended, Boolean.TRUE);
-      if (rateLimiterConfig.waitForSlotAcquisition > 0) {
-        AsyncContext asyncContext = request.startAsync();
-        AsyncListener asyncListener = buildAsyncListener();
+    if (!accepted) {
+      AsyncContext asyncContext = request.startAsync();
+      AsyncListener asyncListener = buildAsyncListener();
 
-        if (rateLimiterConfig.requestSuspendTimeInMS > 0) {
-          asyncContext.setTimeout(rateLimiterConfig.requestSuspendTimeInMS);
-        }
-
-        asyncContext.addListener(asyncListener);
-        listenerQueue.add(asyncListener);
+      if (rateLimiterConfig.requestSuspendTimeInMS > 0) {
+        asyncContext.setTimeout(rateLimiterConfig.requestSuspendTimeInMS);
       }
-    }
 
-    return accepted;
-  }
-
-  public boolean handleSuspendedRequest(HttpServletRequest request) throws InterruptedException {
-    boolean accepted = false;
-    Boolean isSuspended = (Boolean)request.getAttribute(rateLimiterConfig._suspended);
-
-    if (isSuspended == null) {
-      throw new IllegalAccessError("Request to handle suspended request for non suspended request");
-    }
-
-    if (isSuspended.booleanValue())
-    {
-      request.setAttribute(rateLimiterConfig._suspended,Boolean.FALSE);
-
-      Boolean resumed = (Boolean)request.getAttribute(rateLimiterConfig._resumed);
-      if (Boolean.TRUE.equals(resumed))
-      {
-        allowedConcurrentRequests.acquire();
-        accepted = true;
-      }
-      else
-      {
-        // Timeout! try 1 more time.
-        accepted = allowedConcurrentRequests.tryAcquire(rateLimiterConfig.waitForSlotAcquisition, TimeUnit.MILLISECONDS);
-      }
-    }
-    else
-    {
-      // pass through resume of previously accepted request
-      allowedConcurrentRequests.acquire();
-      accepted = true;
+      asyncContext.addListener(asyncListener);
+      listenerQueue.add(asyncListener);
+      waitQueue.add(asyncContext);
     }
 
     return accepted;
@@ -103,21 +71,21 @@ public class RequestRateLimiter {
     AsyncContext asyncContext = waitQueue.poll();
 
     if (asyncContext != null) {
-      ServletRequest candidate = asyncContext.getRequest();
-      Boolean suspended = (Boolean)candidate.getAttribute(rateLimiterConfig._suspended);
-
-      if (Boolean.TRUE.equals(suspended))
+      try
       {
-        try
-        {
-          candidate.setAttribute(rateLimiterConfig._resumed, Boolean.TRUE);
-          asyncContext.dispatch();
-          return true;
-        }
-        catch (IllegalStateException x)
-        {
-          throw new RuntimeException(x.getMessage());
-        }
+        //System.out.println("FIRINGFOOOOFIIRRRING");
+        HttpServletResponse servletResponse = (HttpServletResponse) asyncContext.getResponse();
+
+        servletResponse.setContentType("APPLICATION/OCTET-STREAM");
+
+
+        System.out.println("FIRINGFOOOOFIIRRRING");
+        asyncContext.dispatch();
+        return true;
+      }
+      catch (IllegalStateException x)
+      {
+        log.warn(x.getMessage());
       }
     }
 
@@ -138,8 +106,32 @@ public class RequestRateLimiter {
       @Override
       public void onTimeout(AsyncEvent asyncEvent) throws IOException {
         AsyncContext asyncContext = asyncEvent.getAsyncContext();
-        waitQueue.remove(asyncContext);
-        asyncContext.dispatch();
+
+        if (!waitQueue.remove(asyncContext)) {
+          return;
+        }
+
+        HttpServletResponse servletResponse = ((HttpServletResponse)asyncEvent.getSuppliedResponse());
+
+        servletResponse.setContentType("APPLICATION/OCTET-STREAM");
+        servletResponse.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+
+        String responseMessage = "Too many requests for this request type." +
+            "Please try after some time or increase the quota for this request type";
+
+        servletResponse.getWriter().write(responseMessage);
+        servletResponse.getWriter().flush();
+        servletResponse.getWriter().close();
+
+        //((HttpServletResponse)asyncEvent.getSuppliedResponse()).sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+        System.out.println("CLEARING OUT1");
+        asyncContext.complete();
+        //TODO: atri
+
+        /*if (waitQueue.remove(asyncContext)) {
+          System.out.println("FIRINGNFIRINGFIRING");
+          asyncContext.dispatch();
+        }*/
       }
 
       @Override
@@ -178,7 +170,13 @@ public class RequestRateLimiter {
     public long requestSuspendTimeInMS;
     public long waitForSlotAcquisition;
     public int allowedRequests;
-    public String _suspended;
-    public String _resumed;
+
+    public RateLimiterConfig() { }
+
+    public RateLimiterConfig(long requestSuspendTimeInMS, long waitForSlotAcquisition, int allowedRequests) {
+      this.requestSuspendTimeInMS = requestSuspendTimeInMS;
+      this.waitForSlotAcquisition = waitForSlotAcquisition;
+      this.allowedRequests = allowedRequests;
+    }
   }
 }

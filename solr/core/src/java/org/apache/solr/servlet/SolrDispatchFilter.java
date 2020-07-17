@@ -188,7 +188,11 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       coresInit = createCoreContainer(solrHomePath, extraProperties);
       this.httpClient = coresInit.getUpdateShardHandler().getDefaultHttpClient();
       setupJvmMetrics(coresInit);
-      this.rateLimitManager = RateLimitManager.buildRateLimitManager(config, _suspended, _resumed);
+      RateLimitManager.Builder builder = new RateLimitManager.Builder();
+
+      builder.setConfig(config);
+
+      this.rateLimitManager = builder.build();
       if (log.isDebugEnabled()) {
         log.debug("user.dir={}", System.getProperty("user.dir"));
       }
@@ -690,5 +694,10 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   
   public void closeOnDestroy(boolean closeOnDestroy) {
     this.closeOnDestroy = closeOnDestroy;
+  }
+
+  // Only for testing
+  void replaceRateLimitManager(RateLimitManager rateLimitManager) {
+    this.rateLimitManager = rateLimitManager;
   }
 }

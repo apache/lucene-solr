@@ -394,7 +394,9 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       //return new HttpGet(basePath + path + wparams.toQueryString());
 
       HttpGet result = new HttpGet(basePath + path + wparams.toQueryString());
-      result.setHeaders(contextHeaders);
+
+      result.addHeader(contextHeaders[0]);
+      result.addHeader(contextHeaders[1]);
       return result;
     }
 
@@ -439,6 +441,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
 
         postOrPut.addHeader(contextHeaders[0]);
         postOrPut.addHeader(contextHeaders[1]);
+
         return postOrPut;
 
       } else if (streams == null || isMultipart) {
@@ -602,8 +605,13 @@ public class HttpSolrClient extends BaseHttpSolrClient {
 
       // handle some http level checks before trying to parse the response
       switch (httpStatus) {
+        //TODO: atri
+
         case HttpStatus.SC_OK:
         case HttpStatus.SC_BAD_REQUEST:
+          //TODO: atri
+        case HttpStatus.SC_SERVICE_UNAVAILABLE:
+          break;
         case HttpStatus.SC_CONFLICT:  // 409
           break;
         case HttpStatus.SC_MOVED_PERMANENTLY:
