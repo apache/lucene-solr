@@ -79,10 +79,10 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   private final CloudDescriptor cloudDesc;
   private final ZkController zkController;
   private final SolrCmdDistributor cmdDistrib;
-  protected List<SolrCmdDistributor.Node> nodes;
-  private Set<String> skippedCoreNodeNames;
+  protected volatile List<SolrCmdDistributor.Node> nodes;
+  private volatile Set<String> skippedCoreNodeNames;
   private final String collection;
-  private boolean readOnlyCollection = false;
+  private final boolean readOnlyCollection;
 
   // The cached immutable clusterState for the update... usually refreshed for each individual update.
   // Different parts of this class used to request current clusterState views, which lead to subtle bugs and race conditions
@@ -92,7 +92,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   //   1) cluster topology change across multiple adds
   //   2) use of methods directly on zkController that use a different clusterState
   //   3) in general, not controlling carefully enough exactly when our view of clusterState is updated
-  protected ClusterState clusterState;
+  protected volatile ClusterState clusterState;
 
   // should we clone the document before sending it to replicas?
   // this is set to true in the constructor if the next processors in the chain
@@ -100,8 +100,8 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   private final boolean cloneRequiredOnLeader;
 
   //used for keeping track of replicas that have processed an add/update from the leader
-  private RollupRequestReplicationTracker rollupReplicationTracker = null;
-  private LeaderRequestReplicationTracker leaderReplicationTracker = null;
+  private volatile RollupRequestReplicationTracker rollupReplicationTracker = null;
+  private volatile LeaderRequestReplicationTracker leaderReplicationTracker = null;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -119,6 +119,8 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     if (coll != null) {
       // check readOnly property in coll state
       readOnlyCollection = coll.isReadOnly();
+    } else {
+      readOnlyCollection = false;
     }
   }
 
@@ -1114,7 +1116,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     Set<String> replicasShouldBeInLowerTerms = new HashSet<>();
     for (final SolrCmdDistributor.Error error : errors) {
 
-      if (error.req.node instanceof SolrCmdDistributor.ForwardNode || error.req.uReq.getDeleteQuery() != null) {
+      if (error.req.node instanceof SolrCmdDistributor.ForwardNode) {
         // if it's a forward, any fail is a problem -
         // otherwise we assume things are fine if we got it locally
         // until we start allowing min replication param

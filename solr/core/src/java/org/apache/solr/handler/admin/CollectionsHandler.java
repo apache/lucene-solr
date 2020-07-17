@@ -282,7 +282,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
     props.put(QUEUE_OPERATION, operation.action.toLower());
 
-    if (operation.sendToOCPQueue) {
+    // nocommit make sure we wait for things like collection prop
+    // mods - but need to ensure async doesn't wait when I get to async
+   // if (operation.sendToOCPQueue) {
       ZkNodeProps zkProps = new ZkNodeProps(props);
       SolrResponse overseerResponse = sendToOCPQueue(zkProps, operation.timeOut);
       rsp.getValues().addAll(overseerResponse.getResponse());
@@ -291,10 +293,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         rsp.setException(exp);
       }
 
-    } else {
+  //  } else {
       // submits and doesn't wait for anything (no response)
-      coreContainer.getZkController().getOverseer().offerStateUpdate(Utils.toJSON(props));
-    }
+   //   coreContainer.getZkController().getOverseer().offerStateUpdate(Utils.toJSON(props));
+   // }
 
   }
 

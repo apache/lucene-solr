@@ -415,27 +415,20 @@ public class Overseer implements SolrCloseable {
       }
       AtomicBoolean stop = new AtomicBoolean(false);
 
-      ParWork.getExecutor().invokeAll(Collections.singleton(new Callable<Object>() { // ### expert use
+      // ### expert use
+      ParWork.getExecutor().invokeAll(Collections.singleton(() -> {
 
-          @Override
-          public Object call() throws Exception {
-
-            List<ZkWriteCommand> zkWriteOps = processMessage(clusterState, message, operation);
-                ZkStateWriter zkStateWriter = new ZkStateWriter(zkController.getZkStateReader(), new Stats());
-                ClusterState cs = zkStateWriter.enqueueUpdate(clusterState, zkWriteOps,
-                        new ZkStateWriter.ZkWriteCallback() {
-
-                          @Override
-                          public void onWrite() throws Exception {
-                            // log.info("on write callback");
-                          }
-
-                        });
-                state.set(cs);
-                return null;
+        List<ZkWriteCommand> zkWriteOps = processMessage(clusterState, message, operation);
+        ZkStateWriter zkStateWriter1 = new ZkStateWriter(zkController.getZkStateReader(), new Stats());
+        ClusterState cs = zkStateWriter1.enqueueUpdate(clusterState, zkWriteOps,
+                () -> {
+                  // log.info("on write callback");
+                });
+        state.set(cs);
+        return null;
 
 
-          }}));
+      }));
 
       return (state.get() != null ? state.get() : clusterState);
     }
@@ -475,8 +468,9 @@ public class Overseer implements SolrCloseable {
             }
             break;
           case MODIFYCOLLECTION:
-            CollectionsHandler.verifyRuleParams(zkController.getCoreContainer() ,message.getProperties());
-            return Collections.singletonList(new CollectionMutator(getSolrCloudManager()).modifyCollection(clusterState,message));
+            CollectionsHandler.verifyRuleParams(zkController.getCoreContainer(), message.getProperties());
+            ZkWriteCommand zkwrite = new CollectionMutator(getSolrCloudManager()).modifyCollection(clusterState, message);
+            return Collections.singletonList(zkwrite);
           case MIGRATESTATEFORMAT:
             return Collections.singletonList(new ClusterStateMutator(getSolrCloudManager()).migrateStateFormat(clusterState, message));
           default:

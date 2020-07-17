@@ -111,10 +111,10 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
     String registry = "solr.core." + h.coreName;
     String key = "SEARCHER.searcher.indexVersion";
     boolean found = false;
-    int count = 10;
+    int count = 30;
     while (!found && count-- > 0) {
       h.getCoreContainer().getRequestHandler("/admin/metrics").handleRequest(
-          req("prefix", "SEARCHER", "registry", registry, "compact", "true"), rsp);
+              req("prefix", "SEARCHER", "registry", registry, "compact", "true"), rsp);
 
       NamedList values = rsp.getValues();
       // this is not guaranteed to exist right away after core reload - there's a
@@ -134,7 +134,7 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
         assertTrue(metrics.get(key) instanceof Long);
         break;
       } else {
-        Thread.sleep(250);
+        Thread.sleep(200);
       }
     }
     if (softFail && !found) {
