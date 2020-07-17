@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
 
-import org.apache.hadoop.fs.Path;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -63,7 +62,7 @@ public class TestLocalFSCloudBackupRestore extends AbstractCloudBackupRestoreTes
         .addConfig("confFaulty", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .withSolrXml(solrXml)
         .configure();
-    cluster.getZkClient().delete(ZkConfigManager.CONFIGS_ZKNODE + Path.SEPARATOR + "confFaulty" + Path.SEPARATOR + "solrconfig.xml", -1, true);
+    cluster.getZkClient().delete(ZkConfigManager.CONFIGS_ZKNODE + "/" + "confFaulty" + "/" + "solrconfig.xml", -1, true);
 
     boolean whitespacesInPath = random().nextBoolean();
     if (whitespacesInPath) {
