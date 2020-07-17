@@ -18,7 +18,6 @@
 package org.apache.solr.cloud.api.collections.assign;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
@@ -30,12 +29,19 @@ public interface AssignerClusterState {
   Set<String> getLiveNodes();
   Collection<String> getCollections();
 
-  default AssignerNodeState getNodeState(String nodeName) {
-    return getNodeState(nodeName, Collections.emptySet(), Collections.emptySet());
-  }
-
+  /**
+   * Get a node state.
+   * @param nodeName node name
+   * @param nodeKeys node metrics / properties that the plugin is interested in
+   * @param replicaKeys replica metrics / properties that the plugin is interested in
+   */
   AssignerNodeState getNodeState(String nodeName, Collection<String> nodeKeys, Collection<String> replicaKeys);
 
+  /**
+   * Get collection state.
+   * @param collectionName collection name
+   * @param replicaKeys replica metrics / properties that the plugin is interested in.
+   */
   AssignerCollectionState getCollectionState(String collectionName, Collection<String> replicaKeys);
 
   // other cluster properties

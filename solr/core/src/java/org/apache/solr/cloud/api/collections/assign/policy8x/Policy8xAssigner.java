@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
@@ -17,7 +16,7 @@ import org.apache.solr.cloud.api.collections.assign.AssignDecision;
 import org.apache.solr.cloud.api.collections.assign.AssignDecisions;
 import org.apache.solr.cloud.api.collections.assign.AssignRequest;
 import org.apache.solr.cloud.api.collections.assign.NoopDecision;
-import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.cloud.api.collections.assign.ReplicaType;
 import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.util.TimeSource;
 
@@ -39,9 +38,9 @@ public class Policy8xAssigner implements Assigner {
       for (AssignRequest req : requests) {
         if (req instanceof AddReplicaRequest) {
           AddReplicaRequest areq = (AddReplicaRequest) req;
-          int nrtReplicas = areq.getType() == Replica.Type.NRT ? 1 : 0;
-          int tlogReplicas = areq.getType() == Replica.Type.TLOG ? 1 : 0;
-          int pullReplicas = areq.getType() == Replica.Type.PULL ? 1 : 0;
+          int nrtReplicas = areq.getType() == ReplicaType.NRT ? 1 : 0;
+          int tlogReplicas = areq.getType() == ReplicaType.TLOG ? 1 : 0;
+          int pullReplicas = areq.getType() == ReplicaType.PULL ? 1 : 0;
           List<ReplicaPosition> positions = PolicyHelper.getReplicaLocations(areq.getCollection(), autoScalingConfig,
               cloudManager, null, Collections.singletonList(areq.getShard()),
               nrtReplicas, tlogReplicas, pullReplicas, areq.getNodeSet() != null ? new ArrayList(areq.getNodeSet()) : null);

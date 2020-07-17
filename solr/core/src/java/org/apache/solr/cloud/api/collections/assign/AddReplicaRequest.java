@@ -22,18 +22,16 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import org.apache.solr.common.cloud.Replica;
-
 /**
  *
  */
 public class AddReplicaRequest extends BaseAssignRequest {
-  private final Replica.Type type;
+  private final ReplicaType type;
   private final Map<String, Object> params = new HashMap<>();
   private final String targetNode;
   private final Set<String> nodeSet;
 
-  public AddReplicaRequest(String collection, String shard, Replica.Type type, Map<String, Object> params,
+  public AddReplicaRequest(String collection, String shard, ReplicaType type, Map<String, Object> params,
                            String targetNode, Set<String> nodeSet) {
     super(collection, shard);
     this.type = type;
@@ -45,7 +43,7 @@ public class AddReplicaRequest extends BaseAssignRequest {
     Objects.requireNonNull(this.type, "'type' must not be null");
   }
 
-  public Replica.Type getType() {
+  public ReplicaType getType() {
     return type;
   }
 
