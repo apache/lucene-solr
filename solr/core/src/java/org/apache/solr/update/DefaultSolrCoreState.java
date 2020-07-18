@@ -434,11 +434,14 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
         ParWork.close(recoveryStrat);
       });
       worker.collect(() -> {
-        iwLock.writeLock().lock();
+      // we can't lock here without
+      // a blocking race, we should not need to
+      // though
+       // iwLock.writeLock().lock();
         try {
           closeIndexWriter(closer);
         } finally {
-          iwLock.writeLock().unlock();
+         // iwLock.writeLock().unlock();
         }
       });
       worker.addCollect("recoveryStratClose");

@@ -421,7 +421,7 @@ public class HttpClientUtil {
   }
 
   public static void close(HttpClient httpClient) { 
-
+    if (httpClient == null) return;
     org.apache.solr.common.util.IOUtils.closeQuietly((CloseableHttpClient) httpClient);
 
     assert ObjectReleaseTracker.release(httpClient);

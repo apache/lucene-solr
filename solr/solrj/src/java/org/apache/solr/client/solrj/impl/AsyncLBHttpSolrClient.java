@@ -1035,7 +1035,7 @@ public class AsyncLBHttpSolrClient extends SolrClient {
       return this;
     }
     
-    public Builder solrInternal() {
+    public Builder markInternalRequest() {
       this.headers.put(QoSParams.REQUEST_SOURCE, QoSParams.INTERNAL);
       return this;
     }

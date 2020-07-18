@@ -205,7 +205,7 @@ public class SolrCmdDistributor implements Closeable {
       uReq.setParams(params);
 
       addCommit(uReq, cmd);
-      latches.add(submit(new Req(cmd, node, uReq, false)));
+      submit(new Req(cmd, node, uReq, false));
     }
 
   }
@@ -220,16 +220,35 @@ public class SolrCmdDistributor implements Closeable {
         : AbstractUpdateRequest.ACTION.COMMIT, false, cmd.waitSearcher, cmd.maxOptimizeSegments, cmd.softCommit, cmd.expungeDeletes, cmd.openSearcher);
   }
 
-  private CountDownLatch submit(final Req req) {
+  private void submit(final Req req) {
 
     if (log.isDebugEnabled()) {
       log.debug("sending update to "
           + req.node.getUrl() + " retry:"
           + req.retries + " " + req.cmd + " params:" + req.uReq.getParams());
     }
-    CountDownLatch latch = new CountDownLatch(1);
     try {
       req.uReq.setBasePath(req.node.getUrl());
+
+      if (req.synchronous) {
+        blockAndDoRetries();
+
+        try {
+          req.uReq.setBasePath(req.node.getUrl());
+          solrClient.request(req.uReq);
+        } catch (Exception e) {
+          SolrException.log(log, e);
+          Error error = new Error();
+          error.t = e;
+          error.req = req;
+          if (e instanceof SolrException) {
+            error.statusCode = ((SolrException) e).code();
+          }
+          allErrors.add(error);
+        }
+
+        return;
+      }
 
       if (!(req.cmd instanceof CommitUpdateCommand) && (!(req.cmd instanceof DeleteUpdateCommand) || (req.cmd instanceof DeleteUpdateCommand && ((DeleteUpdateCommand)req.cmd).query != null))) {
         phaser.register();
@@ -241,7 +260,6 @@ public class SolrCmdDistributor implements Closeable {
         public void onSuccess(NamedList result) {
           log.info("Success for distrib update {}", result);
           arrive(req);
-          latch.countDown();
         }
 
         @Override
@@ -263,12 +281,10 @@ public class SolrCmdDistributor implements Closeable {
             } else {
               arrive(req);
               allErrors.add(error);
-              latch.countDown();
             }
           } finally {
             if (!success) {
               arrive(req);
-              latch.countDown();
             }
           }
         }});
@@ -291,12 +307,10 @@ public class SolrCmdDistributor implements Closeable {
      } finally {
        if (!success) {
          arrive(req);
-         latch.countDown();
+
        }
      }
     }
-
-    return latch;
   }
 
   private void arrive(Req req) {

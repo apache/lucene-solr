@@ -2293,7 +2293,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         return state;
       }
       try {
-        Thread.sleep(100);
+        Thread.sleep(50);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
         throw new RuntimeException("Interrupted whie waiting for request completion. Last state seen: " + state, e);

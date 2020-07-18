@@ -128,8 +128,9 @@ public class HttpSolrClientConPoolTest extends SolrJettyTestBase {
     final ExecutorService threads = ExecutorUtil.newMDCAwareFixedThreadPool(threadCount,
         new SolrNamedThreadFactory(getClass().getSimpleName()+"TestScheduler"));
     CloseableHttpClient httpClient = HttpClientUtil.createClient(new ModifiableSolrParams(), pool);
+    LBHttpSolrClient roundRobin = null;
     try{
-      final LBHttpSolrClient roundRobin = new LBHttpSolrClient.Builder().
+      roundRobin = new LBHttpSolrClient.Builder().
                 withBaseSolrUrl(fooUrl).
                 withBaseSolrUrl(barUrl).
                 withHttpClient(httpClient)
@@ -185,6 +186,7 @@ public class HttpSolrClientConPoolTest extends SolrJettyTestBase {
     }finally {
       threads.shutdown();
       HttpClientUtil.close(httpClient);
+      roundRobin.close();
     }
   }
 }

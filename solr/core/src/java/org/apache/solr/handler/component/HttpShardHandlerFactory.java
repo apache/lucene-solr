@@ -49,6 +49,7 @@ import org.apache.solr.client.solrj.impl.AsyncLBHttpSolrClient;
 import org.apache.solr.client.solrj.impl.AsyncLBHttpSolrClient.Builder;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.routing.AffinityReplicaListTransformerFactory;
@@ -58,6 +59,7 @@ import org.apache.solr.client.solrj.routing.ReplicaListTransformerFactory;
 import org.apache.solr.client.solrj.routing.RequestReplicaListTransformerGenerator;
 import org.apache.solr.client.solrj.routing.ShufflingReplicaListTransformer;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
@@ -90,7 +92,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.apache.solr.util.plugin.PluginInfoInitialized, SolrMetricProducer, SolrCoreAware {
+public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.apache.solr.util.plugin.PluginInfoInitialized, SolrMetricProducer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String DEFAULT_SCHEME = "http";
 
@@ -101,20 +103,16 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   //
   // Consider CallerRuns policy and a lower max threads to throttle
   // requests at some point (or should we simply return failure?)
-  private ExecutorService commExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(
-          0,
-          Integer.MAX_VALUE,
-          5, TimeUnit.SECONDS, // terminate idle threads after 15 sec
-          new SynchronousQueue<>(),  // directly hand off tasks
-          new SolrNamedThreadFactory("httpShardExecutor"),
-          // the Runnable added to this executor handles all exceptions so we disable stack trace collection as an optimization
-          // see SOLR-11880 for more details
-          false
-  );
-
-  private Http2SolrClient solrClient;
-  private HttpClient httpClient;
-
+//  private ExecutorService commExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(
+//          0,
+//          Integer.MAX_VALUE,
+//          5, TimeUnit.SECONDS, // terminate idle threads after 15 sec
+//          new SynchronousQueue<>(),  // directly hand off tasks
+//          new SolrNamedThreadFactory("httpShardExecutor"),
+//          // the Runnable added to this executor handles all exceptions so we disable stack trace collection as an optimization
+//          // see SOLR-11880 for more details
+//          false
+//  );
   protected volatile InstrumentedHttpListenerFactory httpListenerFactory;
   protected InstrumentedPoolingHttpClientConnectionManager clientConnectionManager;
   //protected CloseableHttpClient defaultClient;
@@ -174,6 +172,9 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   static final String INIT_SOLR_DISABLE_SHARDS_WHITELIST = "solr.disable." + INIT_SHARDS_WHITELIST;
 
   static final String SET_SOLR_DISABLE_SHARDS_WHITELIST_CLUE = " set -D"+INIT_SOLR_DISABLE_SHARDS_WHITELIST+"=true to disable shards whitelist checks";
+
+  private volatile Http2SolrClient solrClient;
+  private volatile HttpClient httpClient;
 
 
   public HttpShardHandlerFactory() {
@@ -322,13 +323,13 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
             new SynchronousQueue<Runnable>(this.accessPolicy) :
             new ArrayBlockingQueue<Runnable>(this.queueSize, this.accessPolicy);
 
-    this.commExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(
-            this.corePoolSize,
-            this.maximumPoolSize,
-            this.keepAliveTime, TimeUnit.SECONDS,
-            blockingQueue,
-            new SolrNamedThreadFactory("httpShardExecutor")
-    );
+//    this.commExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(
+//            this.corePoolSize,
+//            this.maximumPoolSize,
+//            this.keepAliveTime, TimeUnit.SECONDS,
+//            blockingQueue,
+//            new SolrNamedThreadFactory("httpShardExecutor")
+//    );
 
     initReplicaListTransformers(getParameter(args, "replicaRouting", null, sb));
 
@@ -338,7 +339,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     if (ASYNC) {
       this.loadbalancer = createAsyncLoadbalancer(solrClient);
     } else {
-      this.loadbalancer = createLoadbalancer(httpClient);
+      this.loadbalancer = createLoadbalancer(solrClient);
     }
   }
 
@@ -349,17 +350,9 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     return clientParams;
   }
 
-  protected ExecutorService getThreadPoolExecutor(){
-    return this.commExecutor;
-  }
-
-  public Http2SolrClient getHttpClient(){
-    return this.solrClient;
-  }
-
-  protected LBHttpSolrClient createLoadbalancer(HttpClient httpClient){
+  protected LBHttpSolrClient createLoadbalancer(Http2SolrClient httpClient){
     LBHttpSolrClient client = new LBHttpSolrClient.Builder()
-            .withHttpClient(httpClient)
+            .withHttp2SolrClientBuilder(new Http2SolrClient.Builder().withHttpClient(httpClient))
             .withConnectionTimeout(connectionTimeout)
             .withSocketTimeout(soTimeout)
             .markInternalRequest()
@@ -371,8 +364,8 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     AsyncLBHttpSolrClient client = new Builder()
             .withConnectionTimeout(connectionTimeout)
             .withSocketTimeout(soTimeout)
-            .withHttp2SolrClient(solrClient)
-            .solrInternal()
+            .withHttp2SolrClient(httpClient)
+            .markInternalRequest()
             .build();
     return client;
   }
@@ -390,23 +383,25 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
 
   @Override
   public void close() {
-    try {
+
       try {
         if (loadbalancer != null) {
           IOUtils.closeQuietly(loadbalancer);
         }
 
       } finally {
-        if (solrClient != null) {
-          IOUtils.closeQuietly(solrClient);
-        }
         if (clientConnectionManager != null)  {
           clientConnectionManager.close();
         }
       }
-    } finally {
-      ExecutorUtil.shutdownAndAwaitTermination(commExecutor);
-    }
+  }
+
+  public void setHttp2Client(Http2SolrClient solrClient) {
+    this.solrClient = solrClient;
+  }
+
+  public void setHttpClient(HttpClient httpClient) {
+    this.httpClient = httpClient;
   }
 
   /**
@@ -490,15 +485,9 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
    * Creates a new completion service for use by a single set of distributed requests.
    */
   public CompletionService newCompletionService() {
-    return new ExecutorCompletionService<ShardResponse>(commExecutor);
-  }
+    return new ExecutorCompletionService<ShardResponse>(ParWork.getExecutor());
+  } // ### expert usage
 
-
-  @Override
-  public void inform(SolrCore core) {
-    this.solrClient = core.getCoreContainer().getUpdateShardHandler().getUpdateOnlyHttpClient();
-    this.httpClient = core.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient();
-  }
 
   /**
    * Rebuilds the URL replacing the URL scheme of the passed URL with the

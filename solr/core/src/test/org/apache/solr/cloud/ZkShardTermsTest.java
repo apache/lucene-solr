@@ -335,7 +335,7 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
     TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, new TimeSource.CurrentTimeSource());
     while (!timeOut.hasTimedOut()) {
       if (expected == supplier.get()) return;
-      Thread.sleep(500);
+      Thread.sleep(50);
     }
     assertEquals(expected, supplier.get());
   }

@@ -84,7 +84,7 @@ public class HttpShardHandler extends ShardHandler {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public HttpShardHandler(HttpShardHandlerFactory httpShardHandlerFactory, Http2SolrClient solrClientt) {
+  public HttpShardHandler(HttpShardHandlerFactory httpShardHandlerFactory, Http2SolrClient solrClient) {
     this.solrClient = solrClient;
     this.httpShardHandlerFactory = httpShardHandlerFactory;
     completionService = httpShardHandlerFactory.newCompletionService();
@@ -196,7 +196,7 @@ public class HttpShardHandler extends ShardHandler {
               // nocommit
             }
           });
-          assert areq != null;
+       //   assert areq != null;
         //  srsp.setAbortableRequest(areq);
           asyncPending.add(srsp);
         } else {

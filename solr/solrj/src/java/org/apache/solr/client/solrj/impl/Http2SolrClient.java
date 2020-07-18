@@ -255,24 +255,31 @@ public class Http2SolrClient extends SolrClient {
     PrintWriter pw = new PrintWriter(sw);
     new AlreadyClosedException("Already closed at: ").printStackTrace(pw);
     this.closed = sw.toString();
-    try {
-      httpClientExecutor.prepareToStop();
-    } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
-      throw new RuntimeException(e);
+
+    if (httpClientExecutor != null) {
+      try {
+        httpClientExecutor.prepareToStop();
+      } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
+        throw new RuntimeException(e);
+      }
     }
-    try {
-      scheduler.stop();
-    } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
-      throw new RuntimeException(e);
+    if (scheduler != null) {
+      try {
+        scheduler.stop();
+      } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
+        throw new RuntimeException(e);
+      }
     }
     // we wait for async requests, so far devs don't want to give sugar for this
     asyncTracker.waitForCompleteFinal();
-    try {
-      httpClientExecutor.waitForStopping();
-    } catch (InterruptedException e) {
-      ParWork.propegateInterrupt(e);
+    if (httpClientExecutor != null) {
+      try {
+        httpClientExecutor.waitForStopping();
+      } catch (InterruptedException e) {
+        ParWork.propegateInterrupt(e);
+      }
     }
     try (ParWork closer = new ParWork(this, true)) {
 
@@ -595,7 +602,7 @@ public class Http2SolrClient extends SolrClient {
       if (streams != null || contentWriter != null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "GET can't send streams!");
       }
-
+     System.out.println("url:" + basePath + path + wparams.toQueryString());
       Request req = httpClient.newRequest(basePath + path + wparams.toQueryString()).method(HttpMethod.GET);
       for (Map.Entry<String,String> entry : headers.entrySet()) {
         req.header(entry.getKey(), entry.getValue());
@@ -713,6 +720,7 @@ public class Http2SolrClient extends SolrClient {
 
     return req;
   }
+
 
   private boolean wantStream(final ResponseParser processor) {
     return processor == null || processor instanceof InputStreamResponseParser;
@@ -963,6 +971,11 @@ public class Http2SolrClient extends SolrClient {
     //do not set this from an external client
     public Builder markInternalRequest() {
       this.headers.put(QoSParams.REQUEST_SOURCE, QoSParams.INTERNAL);
+      return this;
+    }
+
+    public Builder withBaseUrl(String url) {
+      this.baseSolrUrl = url;
       return this;
     }
 

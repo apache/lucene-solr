@@ -105,6 +105,8 @@ import org.apache.solr.handler.admin.SecurityConfHandlerZk;
 import org.apache.solr.handler.admin.ZookeeperInfoHandler;
 import org.apache.solr.handler.admin.ZookeeperReadAPI;
 import org.apache.solr.handler.admin.ZookeeperStatusHandler;
+import org.apache.solr.handler.component.HttpShardHandler;
+import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.sql.CalciteSolrDriver;
 import org.apache.solr.logging.LogWatcher;
@@ -343,7 +345,7 @@ public class CoreContainer implements Closeable {
 
     this.replayUpdatesExecutor = new OrderedExecutor( cfg.getReplayUpdatesThreads(),
             ParWork.getExecutorService(0,  cfg.getReplayUpdatesThreads(), 1000));
-    
+
     metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig());
     String registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.node);
     solrMetricsContext = new SolrMetricsContext(metricManager, registryName, metricTag);
@@ -360,20 +362,22 @@ public class CoreContainer implements Closeable {
       }
 
       work.collect(() -> {
-        shardHandlerFactory = ShardHandlerFactory.newInstance(cfg.getShardHandlerFactoryPluginInfo(), loader);
+        updateShardHandler = new UpdateShardHandler(cfg.getUpdateShardHandlerConfig());
+        updateShardHandler.initializeMetrics(solrMetricsContext, "updateShardHandler");
+      });
+
+      work.addCollect("updateShardHandler");
+
+      work.collect(() -> {
+        shardHandlerFactory = ShardHandlerFactory.newInstance(cfg.getShardHandlerFactoryPluginInfo(),
+                loader, updateShardHandler);
         if (shardHandlerFactory instanceof SolrMetricProducer) {
           SolrMetricProducer metricProducer = (SolrMetricProducer) shardHandlerFactory;
           metricProducer.initializeMetrics(solrMetricsContext, "httpShardHandler");
         }
       });
+      work.addCollect("shardHandler");
 
-      work.collect(() -> {
-        updateShardHandler = new UpdateShardHandler(cfg.getUpdateShardHandlerConfig());
-        updateShardHandler.initializeMetrics(solrMetricsContext, "updateShardHandler");
-      });
-      work.addCollect("shard-handlers");
-
-      work.addCollect("init");
     }
     if (zkClient != null) {
       zkSys.initZooKeeper(this, cfg.getCloudConfig());
@@ -1145,7 +1149,7 @@ public class CoreContainer implements Closeable {
       closer.add("loader", loader);
 
 
-    }
+     }
 
     assert ObjectReleaseTracker.release(this);
   }

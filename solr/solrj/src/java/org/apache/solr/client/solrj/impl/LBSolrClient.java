@@ -47,11 +47,14 @@ import org.apache.solr.client.solrj.request.IsUpdateRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.AlreadyClosedException;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.slf4j.MDC;
 
@@ -99,6 +102,8 @@ public abstract class LBSolrClient extends SolrClient {
     // not a top-level request, we are interested only in the server being sent to i.e. it need not distribute our request to further servers
     solrQuery.setDistrib(false);
   }
+
+  private volatile boolean closed;
 
   protected static class ServerWrapper {
     final String baseUrl;
@@ -193,6 +198,7 @@ public abstract class LBSolrClient extends SolrClient {
   }
 
   public LBSolrClient(List<String> baseSolrUrls) {
+    ObjectReleaseTracker.track(this);
     if (!baseSolrUrls.isEmpty()) {
       for (String s : baseSolrUrls) {
         ServerWrapper wrapper = createServerWrapper(s);
@@ -361,6 +367,9 @@ public abstract class LBSolrClient extends SolrClient {
 
   protected Exception doRequest(String baseUrl, Req req, Rsp rsp, boolean isNonRetryable,
                                 boolean isZombie) throws SolrServerException, IOException {
+    if (closed)  {
+      throw new AlreadyClosedException();
+    }
     Exception ex = null;
     try {
       rsp.server = baseUrl;
@@ -693,11 +702,9 @@ public abstract class LBSolrClient extends SolrClient {
 
   @Override
   public void close() {
-    synchronized (this) {
-      if (aliveCheckExecutor != null) {
-        aliveCheckExecutor.shutdownNow();
-        ExecutorUtil.shutdownAndAwaitTermination(aliveCheckExecutor);
-      }
-    }
+    this.closed = true;
+
+    if (aliveCheckExecutor != null) aliveCheckExecutor.shutdownNow();
+    ParWork.close(aliveCheckExecutor);
   }
 }
