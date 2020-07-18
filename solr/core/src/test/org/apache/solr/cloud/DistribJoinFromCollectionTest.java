@@ -52,7 +52,6 @@ import static org.hamcrest.CoreMatchers.not;
 /**
  * Tests using fromIndex that points to a collection in SolrCloud mode.
  */
-@Ignore // nocommit debug
 public class DistribJoinFromCollectionTest extends SolrCloudTestCase{
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
