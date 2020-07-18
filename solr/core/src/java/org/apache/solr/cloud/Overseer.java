@@ -317,9 +317,9 @@ public class Overseer implements SolrCloseable {
           LinkedList<Pair<String, byte[]>> queue = null;
           try {
             // We do not need to filter any nodes here cause all processed nodes are removed once we flush clusterstate
-            queue = new LinkedList<>(stateUpdateQueue.peekElements(1000, 3000L, (x) -> true));
+            queue = new LinkedList<>(stateUpdateQueue.peekElements(1000, 10000L, (x) -> true));
           } catch (InterruptedException | AlreadyClosedException e) {
-            Thread.currentThread().interrupt();
+            ParWork.propegateInterrupt(e);
             return;
           } catch (KeeperException.SessionExpiredException e) {
             log.error("run()", e);
@@ -328,6 +328,12 @@ public class Overseer implements SolrCloseable {
             return;
           } catch (Exception e) {
             log.error("Unexpected error in Overseer state update loop", e);
+            try {
+              Thread.sleep(1000);
+            } catch (InterruptedException interruptedException) {
+              ParWork.propegateInterrupt(e);
+              return;
+            }
             continue;
           }
           try {
@@ -367,6 +373,12 @@ public class Overseer implements SolrCloseable {
             return;
           } catch (Exception e) {
             log.error("Unexpected error in Overseer state update loop", e);
+            try {
+              Thread.sleep(1000);
+            } catch (InterruptedException interruptedException) {
+              ParWork.propegateInterrupt(e);
+              return;
+            }
             continue;
           }
         }
