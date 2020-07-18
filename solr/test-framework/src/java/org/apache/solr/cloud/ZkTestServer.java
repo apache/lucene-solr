@@ -650,10 +650,13 @@ public class ZkTestServer implements Closeable {
       });
     }
 
+
+    startupWait = new CountDownLatch(1);
     if (zooThread != null) {
       ObjectReleaseTracker.release(zooThread);
     }
-    startupWait = new CountDownLatch(1);
+    zooThread.interrupt();
+    zooThread.join(10000);
     zooThread = null;
     ObjectReleaseTracker.release(this);
 
