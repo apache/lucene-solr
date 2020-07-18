@@ -340,7 +340,10 @@ public class CoreContainer implements Closeable {
     this.coresLocator = locator;
 
     this.asyncSolrCoreLoad = asyncSolrCoreLoad;
-    this.replayUpdatesExecutor = new OrderedExecutor(10, ParWork.getExecutorService(10, 10, 3));
+
+    this.replayUpdatesExecutor = new OrderedExecutor( cfg.getReplayUpdatesThreads(),
+            ParWork.getExecutorService(0,  cfg.getReplayUpdatesThreads(), 1000));
+    
     metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig());
     String registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.node);
     solrMetricsContext = new SolrMetricsContext(metricManager, registryName, metricTag);
