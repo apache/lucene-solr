@@ -398,6 +398,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
    * This is more complex then {@link #testBespoke} but should still be easier to trace/debug then 
    * a pure random monstrosity.
    */
+  @Nightly // this can hit pretty long cases
   public void testBespokeStructures() throws Exception {
     // we don't need to test every field, just make sure we test enough fields to hit every suffix..
     final int maxFacetFieldNum;
