@@ -18,7 +18,6 @@ package org.apache.solr.update;
 
 import java.io.Closeable;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
@@ -37,13 +36,13 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.solr.common.util.FastInputStream;
+import org.apache.solr.common.util.FastOutputStream;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.DataInputInputStream;
-import org.apache.solr.common.util.FastInputStream;
-import org.apache.solr.common.util.FastOutputStream;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -116,7 +115,10 @@ public class TransactionLog implements Closeable {
       }
 
       // no need to synchronize globalStringMap - it's only updated before the first record is written to the log
-      Integer idx = globalStringMap.get(s.toString());
+      Integer idx;
+      synchronized (globalStringList) {
+        idx = globalStringMap.get(s.toString());
+      }
       if (idx == null) {
         // write a normal string
         writeStr(s);
@@ -131,7 +133,9 @@ public class TransactionLog implements Closeable {
       int idx = readSize(fis);
       if (idx != 0) {// idx != 0 is the index of the extern string
         // no need to synchronize globalStringList - it's only updated before the first record is written to the log
-        return globalStringList.get(idx - 1);
+        synchronized (globalStringList) {
+          return globalStringList.get(idx - 1);
+        }
       } else {// idx == 0 means it has a string value
         // this shouldn't happen with this codec subclass.
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Corrupt transaction log");
@@ -276,17 +280,19 @@ public class TransactionLog implements Closeable {
 
   protected void addGlobalStrings(Collection<String> strings) {
     if (strings == null) return;
-    int origSize = globalStringMap.size();
-    for (String s : strings) {
-      Integer idx = null;
-      if (origSize > 0) {
-        idx = globalStringMap.get(s);
+    synchronized (globalStringList) {
+      int origSize = globalStringMap.size();
+      for (String s : strings) {
+        Integer idx = null;
+        if (origSize > 0) {
+          idx = globalStringMap.get(s);
+        }
+        if (idx != null) continue;  // already in list
+        globalStringList.add(s);
+        globalStringMap.put(s, globalStringList.size());
       }
-      if (idx != null) continue;  // already in list
-      globalStringList.add(s);
-      globalStringMap.put(s, globalStringList.size());
+      assert globalStringMap.size() == globalStringList.size();
     }
-    assert globalStringMap.size() == globalStringList.size();
   }
 
   Collection<String> getGlobalStrings() {
