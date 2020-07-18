@@ -440,12 +440,14 @@ public class JettySolrRunner implements Closeable {
 
         qosFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
         qosFilter.setHeldClass(SolrQoSFilter.class);
+        qosFilter.setAsyncSupported(true);
         root.addFilter(qosFilter, "*", EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
 
         root.addServlet(Servlet404.class, "/*");
 
         // Map dispatchFilter in same path as in web.xml
-        root.addFilter(dispatchFilter, "*", EnumSet.of(DispatcherType.REQUEST));
+        dispatchFilter.setAsyncSupported(true);
+        root.addFilter(dispatchFilter, "*", EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
 
         log.info("Jetty loaded and ready to go");
         startLatch.countDown();

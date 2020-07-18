@@ -25,12 +25,14 @@
   <filter>
     <filter-name>SolrQosFilter</filter-name>
     <filter-class>org.apache.solr.servlet.SolrQoSFilter</filter-class>
+    <async-supported>true</async-supported>
   </filter>
 
   <!-- Any path (name) registered in solrconfig.xml will be sent to that filter -->
   <filter>
     <filter-name>SolrRequestFilter</filter-name>
     <filter-class>org.apache.solr.servlet.SolrDispatchFilter</filter-class>
+    <async-supported>true</async-supported>
     <!--
     Exclude patterns is a list of directories that would be short circuited by the 
     SolrDispatchFilter. It includes all Admin UI related static content.
@@ -45,12 +47,14 @@
   <filter-mapping>
     <filter-name>SolrQosFilter</filter-name>
     <url-pattern>/*</url-pattern>
-    <dispatcher>REQUEST</dispatcher>
     <dispatcher>ASYNC</dispatcher>
+    <dispatcher>REQUEST</dispatcher>
   </filter-mapping>
   <filter-mapping>
     <filter-name>SolrRequestFilter</filter-name>
     <url-pattern>/*</url-pattern>
+    <dispatcher>ASYNC</dispatcher>
+    <dispatcher>REQUEST</dispatcher>
   </filter-mapping>
 
   <servlet>
