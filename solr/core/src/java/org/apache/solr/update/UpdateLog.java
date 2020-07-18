@@ -192,19 +192,17 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   long id = -1;
   protected volatile State state = State.ACTIVE;
 
-  protected TransactionLog bufferTlog;
+  protected volatile TransactionLog bufferTlog;
   protected volatile TransactionLog tlog;
   protected final byte[] buffer = new byte[65536];
-  protected final byte[] obuffer = new byte[65536];
-  protected final byte[] tbuffer = new byte[65536];
 
   protected TransactionLog prevTlog;
   protected TransactionLog prevTlogOnPrecommit;
   protected final Deque<TransactionLog> logs = new LinkedList<>();  // list of recent logs, newest first
-  protected LinkedList<TransactionLog> newestLogsOnStartup = new LinkedList<>();
+  protected final LinkedList<TransactionLog> newestLogsOnStartup = new LinkedList<>();
   protected int numOldRecords;  // number of records in the recent logs
 
-  protected Map<BytesRef,LogPtr> map = new HashMap<>();
+  protected Map<BytesRef,LogPtr> map = new HashMap<>(128);
   protected Map<BytesRef,LogPtr> prevMap;  // used while committing/reopening is happening
   protected Map<BytesRef,LogPtr> prevMap2;  // used while committing/reopening is happening
   protected TransactionLog prevMapLog;  // the transaction log used to look up entries found in prevMap
@@ -314,7 +312,9 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   /**
    * @return the current transaction log's size (based on its output stream)
    */
-  public synchronized long getCurrentLogSizeFromStream() {
+  public long getCurrentLogSizeFromStream() {
+    // if we sync this, it's a bad block and it's not critical its up to date
+    // if we want it up to date, we should make a fastinputstream with volatile size field
     return tlog == null ? 0 : tlog.getLogSizeFromStream();
   }
 
@@ -1812,7 +1812,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
           // after replay, update the max from the index
           log.info("Re-computing max version from index after log re-play.");
-          maxVersionFromIndex = null;
+//        /  maxVersionFromIndex = null;
           getMaxVersionFromIndex();
 
           versionInfo.unblockUpdates();

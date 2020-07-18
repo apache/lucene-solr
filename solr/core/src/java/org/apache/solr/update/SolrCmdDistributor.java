@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Phaser;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.SolrServerException;
@@ -66,6 +67,13 @@ public class SolrCmdDistributor implements Closeable {
   }
   
   private Http2SolrClient solrClient;
+
+  private final Phaser phaser = new Phaser(1) {
+    @Override
+    protected boolean onAdvance(int phase, int parties) {
+      return false;
+    }
+  };
 
   public SolrCmdDistributor(UpdateShardHandler updateShardHandler) {
     this.solrClient = updateShardHandler.getUpdateOnlyHttpClient();
@@ -199,25 +207,11 @@ public class SolrCmdDistributor implements Closeable {
       addCommit(uReq, cmd);
       latches.add(submit(new Req(cmd, node, uReq, false)));
     }
-//
-//    if (cmd.waitSearcher) {
-//      for (CountDownLatch latch : latches) {
-//        try {
-//          boolean success = latch.await(5, TimeUnit.SECONDS);
-//          if (!success) {
-//            log.warn("Timed out waiting for commit request to finish");
-//          }
-//        } catch (InterruptedException e) {
-//          ParWork.propegateInterrupt(e);
-//        }
-//      }
-//    }
-
 
   }
 
   public void blockAndDoRetries() {
-    solrClient.waitForOutstandingRequests();
+    phaser.arriveAndAwaitAdvance();
   }
   
   void addCommit(UpdateRequest ureq, CommitUpdateCommand cmd) {
@@ -236,11 +230,17 @@ public class SolrCmdDistributor implements Closeable {
     CountDownLatch latch = new CountDownLatch(1);
     try {
       req.uReq.setBasePath(req.node.getUrl());
+
+      if (!(req.cmd instanceof CommitUpdateCommand) && (!(req.cmd instanceof DeleteUpdateCommand) || (req.cmd instanceof DeleteUpdateCommand && ((DeleteUpdateCommand)req.cmd).query != null))) {
+        phaser.register();
+      }
+
       solrClient.request(req.uReq, null, new Http2SolrClient.OnComplete() {
 
         @Override
         public void onSuccess(NamedList result) {
           log.info("Success for distrib update {}", result);
+          arrive(req);
           latch.countDown();
         }
 
@@ -261,11 +261,13 @@ public class SolrCmdDistributor implements Closeable {
               submit(req);
               success = true;
             } else {
+              arrive(req);
               allErrors.add(error);
               latch.countDown();
             }
           } finally {
             if (!success) {
+              arrive(req);
               latch.countDown();
             }
           }
@@ -288,6 +290,7 @@ public class SolrCmdDistributor implements Closeable {
        }
      } finally {
        if (!success) {
+         arrive(req);
          latch.countDown();
        }
      }
@@ -295,7 +298,13 @@ public class SolrCmdDistributor implements Closeable {
 
     return latch;
   }
-  
+
+  private void arrive(Req req) {
+    if (!(req.cmd instanceof CommitUpdateCommand) && (!(req.cmd instanceof DeleteUpdateCommand) || (req.cmd instanceof DeleteUpdateCommand && ((DeleteUpdateCommand)req.cmd).query != null))) {
+      phaser.arriveAndDeregister();
+    }
+  }
+
   public static class Req {
     public Node node;
     public UpdateRequest uReq;

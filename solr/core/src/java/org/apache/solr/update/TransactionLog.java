@@ -18,6 +18,7 @@ package org.apache.solr.update;
 
 import java.io.Closeable;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
@@ -36,13 +37,13 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.DataInputInputStream;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.FastOutputStream;
-import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -252,19 +253,6 @@ public class TransactionLog implements Closeable {
     return true;
   }
 
-  public long writeData(Object o) {
-    @SuppressWarnings("resource") final LogCodec codec = new LogCodec(resolver);
-    try {
-      long pos = fos.size();   // if we had flushed, this should be equal to channel.position()
-      codec.init(fos);
-      codec.writeVal(o);
-      return pos;
-    } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-    }
-  }
-
-
   @SuppressWarnings({"unchecked"})
   private void readHeader(FastInputStream fis) throws IOException {
     // read existing header
@@ -277,7 +265,7 @@ public class TransactionLog implements Closeable {
 
     // needed to read other records
 
-    synchronized (this) {
+    synchronized (globalStringList) {
       globalStringList = (List<String>) header.get("strings");
       globalStringMap = new HashMap<>(globalStringList.size());
       for (int i = 0; i < globalStringList.size(); i++) {
@@ -302,7 +290,7 @@ public class TransactionLog implements Closeable {
   }
 
   Collection<String> getGlobalStrings() {
-    synchronized (this) {
+    synchronized (globalStringList) {
       return new ArrayList<>(globalStringList);
     }
   }
@@ -342,7 +330,7 @@ public class TransactionLog implements Closeable {
     }
   }
 
-  int lastAddSize;
+  volatile int lastAddSize;
 
   /**
    * Writes an add update command to the transaction log. This is not applicable for
@@ -376,7 +364,7 @@ public class TransactionLog implements Closeable {
       checkWriteHeader(codec, sdoc);
 
       // adaptive buffer sizing
-      int bufSize = lastAddSize;    // unsynchronized access of lastAddSize should be fine
+      int bufSize = lastAddSize;
       // at least 256 bytes and at most 1 MB
       bufSize = Math.min(1024 * 1024, Math.max(256, bufSize + (bufSize >> 3) + 256));
 
@@ -395,9 +383,11 @@ public class TransactionLog implements Closeable {
         codec.writeLong(cmd.getVersion());
         codec.writeSolrInputDocument(cmd.getSolrInputDocument());
       }
-      lastAddSize = (int) out.size();
+
 
       synchronized (this) {
+        lastAddSize = (int) out.size();
+
         long pos = fos.size();   // if we had flushed, this should be equal to channel.position()
         assert pos != 0;
 
@@ -631,7 +621,7 @@ public class TransactionLog implements Closeable {
   /**
    * @return the FastOutputStream size
    */
-  public synchronized long getLogSizeFromStream() {
+  public long getLogSizeFromStream() {
     return fos.size();
   }
 
