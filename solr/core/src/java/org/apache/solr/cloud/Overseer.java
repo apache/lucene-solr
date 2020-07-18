@@ -198,6 +198,7 @@ public class Overseer implements SolrCloseable {
     private final ZkDistributedQueue workQueue;
 
     private volatile boolean isClosed = false;
+    private int lastVersion;
 
     public ClusterStateUpdater(final ZkStateReader reader, final String myId, Stats zkStats) {
       this.zkClient = reader.getZkClient();
@@ -317,7 +318,7 @@ public class Overseer implements SolrCloseable {
           LinkedList<Pair<String, byte[]>> queue = null;
           try {
             // We do not need to filter any nodes here cause all processed nodes are removed once we flush clusterstate
-            queue = new LinkedList<>(stateUpdateQueue.peekElements(1000, 10000L, (x) -> true));
+            queue = new LinkedList<>(stateUpdateQueue.peekElements(1000, 2000L, (x) -> true));
           } catch (InterruptedException | AlreadyClosedException e) {
             ParWork.propegateInterrupt(e);
             return;
@@ -373,13 +374,15 @@ public class Overseer implements SolrCloseable {
             return;
           } catch (Exception e) {
             log.error("Unexpected error in Overseer state update loop", e);
-            try {
-              Thread.sleep(1000);
-            } catch (InterruptedException interruptedException) {
-              ParWork.propegateInterrupt(e);
-              return;
+            if (!isClosed()) {
+              try {
+                Thread.sleep(1000);
+              } catch (InterruptedException interruptedException) {
+                ParWork.propegateInterrupt(e);
+                return;
+              }
+              continue;
             }
-            continue;
           }
         }
       } finally {
@@ -416,33 +419,29 @@ public class Overseer implements SolrCloseable {
       return false;
     }
 
-    private ClusterState processQueueItem(ZkNodeProps message, final ClusterState clusterState, ZkStateWriter zkStateWriter, boolean enableBatching, ZkStateWriter.ZkWriteCallback callback) throws Exception {
+    private ClusterState processQueueItem(ZkNodeProps message, ClusterState clusterState, ZkStateWriter zkStateWriter, boolean enableBatching, ZkStateWriter.ZkWriteCallback callback) throws Exception {
       if (log.isDebugEnabled()) log.debug("Consume state update from queue {}", message);
-      assert clusterState != null;
-      AtomicReference<ClusterState> state = new AtomicReference<>();
+     // assert clusterState != null;
 
-      final String operation = message.getStr(QUEUE_OPERATION);
-      if (operation == null) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Message missing " + QUEUE_OPERATION + ":" + message);
-      }
-      AtomicBoolean stop = new AtomicBoolean(false);
+      ClusterState cs = null;
+    //  if (clusterState.getZNodeVersion() == 0 || clusterState.getZNodeVersion() > lastVersion) {
 
-      // ### expert use
-      ParWork.getExecutor().invokeAll(Collections.singleton(() -> {
+
+        final String operation = message.getStr(QUEUE_OPERATION);
+        if (operation == null) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Message missing " + QUEUE_OPERATION + ":" + message);
+        }
 
         List<ZkWriteCommand> zkWriteOps = processMessage(clusterState, message, operation);
         ZkStateWriter zkStateWriter1 = new ZkStateWriter(zkController.getZkStateReader(), new Stats());
-        ClusterState cs = zkStateWriter1.enqueueUpdate(clusterState, zkWriteOps,
+        cs = zkStateWriter1.enqueueUpdate(clusterState, zkWriteOps,
                 () -> {
                   // log.info("on write callback");
                 });
-        state.set(cs);
-        return null;
+        lastVersion = cs.getZNodeVersion();
+    //  }
 
-
-      }));
-
-      return (state.get() != null ? state.get() : clusterState);
+      return cs;
     }
 
     private List<ZkWriteCommand> processMessage(ClusterState clusterState,
@@ -563,6 +562,11 @@ public class Overseer implements SolrCloseable {
     @Override
     public void close() throws IOException {
       thread.close();
+      try {
+        join(10000);
+      } catch (InterruptedException e) {
+        throw new RuntimeException("Interrupted waiting to close");
+      }
       this.isClosed = true;
     }
 
@@ -839,7 +843,7 @@ public class Overseer implements SolrCloseable {
 
   @Override
   public boolean isClosed() {
-    return closed;
+    return closed || zkController.getCoreContainer().isShutDown();
   }
 
   void doClose() {
@@ -849,18 +853,18 @@ public class Overseer implements SolrCloseable {
     try (ParWork closer = new ParWork(this, true)) {
 
       closer.collect(() -> {
-        IOUtils.closeQuietly(ccThread);
         ccThread.interrupt();
+        IOUtils.closeQuietly(ccThread);
       });
 
       closer.collect(() -> {
-        IOUtils.closeQuietly(updaterThread);
         updaterThread.interrupt();
+        IOUtils.closeQuietly(updaterThread);
       });
 
       closer.collect(() -> {
-        IOUtils.closeQuietly(triggerThread);
         triggerThread.interrupt();
+        IOUtils.closeQuietly(triggerThread);
       });
 
       closer.addCollect("OverseerInternals");

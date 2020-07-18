@@ -80,7 +80,8 @@ public final class CommitTracker implements Runnable, Closeable {
   private static final boolean WAIT_SEARCHER = true;
 
   private String name;
-  
+  private volatile boolean closed;
+
   public CommitTracker(String name, SolrCore core, int docsUpperBound, int timeUpperBound, long tLogFileSizeUpperBound,
                        boolean openSearcher, boolean softCommit) {
     this.core = core;
@@ -103,6 +104,7 @@ public final class CommitTracker implements Runnable, Closeable {
   }
   
   public synchronized void close() {
+    this.closed = true;
     if (pending != null) {
       pending.cancel(false);
       pending = null;
@@ -164,7 +166,9 @@ public final class CommitTracker implements Runnable, Closeable {
       // log.info("###scheduling for " + commitMaxTime);
 
       // schedule our new commit
-      pending = scheduler.schedule(this, commitMaxTime, TimeUnit.MILLISECONDS);
+      if (!closed) {
+        pending = scheduler.schedule(this, commitMaxTime, TimeUnit.MILLISECONDS);
+      }
     }
   }
   

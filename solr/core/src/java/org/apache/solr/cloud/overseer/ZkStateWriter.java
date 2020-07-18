@@ -194,13 +194,13 @@ public class ZkStateWriter {
                       prevState.getZNodeVersion());
             }
 
-           // assert c.getStateFormat() > 1;
+            // assert c.getStateFormat() > 1;
             // stat = reader.getZkClient().getCurator().checkExists().forPath(path);
 
             prevVersion = prevState.getCollection(c.getName()).getZNodeVersion();
-            Map<String,Slice> existingSlices = prevState.getCollection(c.getName()).getSlicesMap();
+            Map<String, Slice> existingSlices = prevState.getCollection(c.getName()).getSlicesMap();
 
-            Map<String,Slice> newSliceMap = new HashMap<>(existingSlices.size() + 1);
+            Map<String, Slice> newSliceMap = new HashMap<>(existingSlices.size() + 1);
 
             if (log.isDebugEnabled()) {
               log.debug("Existing slices {}", existingSlices);
@@ -214,12 +214,13 @@ public class ZkStateWriter {
               log.debug("Add collection {}", c);
             }
 
+            DocCollection finalC = c;
             prevState.getCollection(c.getName()).getSlicesMap().forEach((sliceId, slice) -> {
               Collection<Replica> replicas = slice.getReplicas();
 
-              Map<String,Replica> newReplicas = new HashMap<>();
+              Map<String, Replica> newReplicas = new HashMap<>();
 
-              Map<String,Object> newProps = new HashMap<>();
+              Map<String, Object> newProps = new HashMap<>();
 
               newProps.putAll(slice.getProperties());
 
@@ -232,11 +233,11 @@ public class ZkStateWriter {
 
               replicas.forEach((replica) -> newReplicas.put(replica.getName(), replica));
 
-              c.getSlice(sliceId).getReplicas().forEach((replica) -> {
+              finalC.getSlice(sliceId).getReplicas().forEach((replica) -> {
                 newReplicas.put(replica.getName(), replica);
               });
 
-              Slice newSlice = new Slice(sliceId, newReplicas, newProps, c.getName());
+              Slice newSlice = new Slice(sliceId, newReplicas, newProps, finalC.getName());
               newSliceMap.put(sliceId, newSlice);
 
             });
@@ -250,19 +251,19 @@ public class ZkStateWriter {
             LinkedHashMap collStates = new LinkedHashMap<>(prevState.getCollectionsMap());
             collStates.put(name, new ClusterState.CollectionRef(newCollection));
             newClusterState = new ClusterState(prevState.getLiveNodes(), collStates, prevVersion);
-
+            c = newClusterState.getCollection(name);
             byte[] data = Utils.toJSON(singletonMap(c.getName(), newCollection));
 
             if (log.isDebugEnabled()) {
               log.debug("Write state.json bytes={} cs={}", data.length, newClusterState);
             }
-           // stat = reader.getZkClient().getCurator().setData().withVersion(prevVersion).forPath(path, data);
-            stat =  reader.getZkClient().setData(path, data, prevVersion, true);
+            // stat = reader.getZkClient().getCurator().setData().withVersion(prevVersion).forPath(path, data);
+            stat = reader.getZkClient().setData(path, data, prevVersion, true);
           } else {
             if (log.isDebugEnabled()) {
               log.debug("writePendingUpdates() - going to create_collection {}", path);
             }
-         //   assert c.getStateFormat() > 1;
+            //   assert c.getStateFormat() > 1;
             DocCollection newCollection = new DocCollection(name, c.getSlicesMap(), c.getProperties(), c.getRouter(),
                     0, path);
 
@@ -279,15 +280,16 @@ public class ZkStateWriter {
             try {
               prevVersion = 0;
               reader.getZkClient().create(path, data, CreateMode.PERSISTENT, true);
-            } catch(KeeperException.NodeExistsException e) {
-              stat =  reader.getZkClient().setData(path, data, -1, true);
+            } catch (KeeperException.NodeExistsException e) {
+              stat = reader.getZkClient().setData(path, data, -1, true);
             }
           }
 
         } catch (Exception e) {
           if (e instanceof KeeperException.BadVersionException) {
             // nocommit invalidState = true;
-            if (log.isDebugEnabled()) log.debug("Tried to update the cluster state using version={} but we where rejected, currently at {}", prevVersion, ((KeeperException.BadVersionException) e).getMessage(), e);
+            if (log.isDebugEnabled())
+              log.debug("Tried to update the cluster state using version={} but we where rejected, currently at {}", prevVersion, ((KeeperException.BadVersionException) e).getMessage(), e);
             throw (KeeperException.BadVersionException) e;
           }
           ParWork.propegateInterrupt(e);
@@ -298,19 +300,20 @@ public class ZkStateWriter {
 
         updates.clear();
         // numUpdates = 0;
-        try {
-          reader.waitForState(c.getName(), 5, TimeUnit.SECONDS,
-                  (l, col) -> {
-                    if (col != null && col.getZNodeVersion() > prevState.getZNodeVersion()) {
-                      if (log.isDebugEnabled()) log.debug("Waited for ver: {}", col.getZNodeVersion());
-                      return true;
-                    }
-                    return false;
-                  });
-        } catch (TimeoutException e) {
-          throw new RuntimeException(e);
+        if (c != null) {
+          try {
+            reader.waitForState(c.getName(), 5, TimeUnit.SECONDS,
+                    (l, col) -> {
+                      if (col != null && col.getZNodeVersion() > prevState.getZNodeVersion()) {
+                        if (log.isDebugEnabled()) log.debug("Waited for ver: {}", col.getZNodeVersion());
+                        return true;
+                      }
+                      return false;
+                    });
+          } catch (TimeoutException e) {
+            throw new RuntimeException(e);
+          }
         }
-
       }
 
       // assert newClusterState.getZNodeVersion() >= 0;

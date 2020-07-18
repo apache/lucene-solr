@@ -69,7 +69,7 @@ public class ApiBag {
   /**Register a POJO annotated with {@link EndPoint}
    * @param o the instance to be used for invocations
    */
-  public synchronized List<Api> registerObject(Object o) {
+  public List<Api> registerObject(Object o) {
     List<Api> l = AnnotatedApi.getApis(o);
     for (Api api : l) {
       register(api, Collections.EMPTY_MAP);
