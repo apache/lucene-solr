@@ -253,12 +253,11 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
             List<SolrCmdDistributor.Node> finalUseNodes1 = useNodes;
             ParWork.getExecutor().submit(() -> cmdDistrib.distribCommit(cmd, finalUseNodes1, params));
           }
-
+        }
+        if (useNodes != null && useNodes.size() > 0 && cmd.waitSearcher) {
+          cmdDistrib.blockAndDoRetries();
         }
 
-          if (useNodes != null && useNodes.size() > 0 && cmd.waitSearcher) {
-             cmdDistrib.blockAndDoRetries();
-          }
       }
 
       if (log.isDebugEnabled()) {

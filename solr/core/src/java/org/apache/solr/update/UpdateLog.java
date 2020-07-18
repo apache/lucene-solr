@@ -108,6 +108,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   private boolean debug = log.isDebugEnabled();
   private boolean trace = log.isTraceEnabled();
 
+  private final Object dbqlock = new Object();
+
   // TODO: hack
   public FileSystem getFs() {
     return null;
@@ -740,7 +742,9 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       if (prevMap2 != null) prevMap2.clear();
 
       oldDeletes.clear();
-      deleteByQueries.clear();
+      synchronized (dbqlock) {
+        deleteByQueries.clear();
+      }
     }
   }
 
@@ -751,7 +755,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     dbq.q = q;
     dbq.version = version;
 
-    synchronized (this) {
+    synchronized (dbqlock) {
       if (deleteByQueries.isEmpty() || deleteByQueries.getFirst().version < version) {
         // common non-reordered case
         deleteByQueries.addFirst(dbq);
@@ -779,7 +783,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   }
 
   public List<DBQ> getDBQNewer(long version) {
-    synchronized (this) {
+    synchronized (dbqlock) {
       if (deleteByQueries.isEmpty() || deleteByQueries.getFirst().version < version) {
         // fast common case
         return null;
@@ -1163,7 +1167,9 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       // The deleteByQueries and oldDeletes lists
       // would've been populated by items from the logs themselves (which we
       // will replay now). So lets clear them out here before the replay.
-      deleteByQueries.clear();
+      synchronized (dbqlock) {
+        deleteByQueries.clear();
+      }
       oldDeletes.clear();
     } finally {
       versionInfo.unblockUpdates();

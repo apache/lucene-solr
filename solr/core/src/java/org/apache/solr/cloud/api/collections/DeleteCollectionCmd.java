@@ -145,6 +145,7 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         }
       }
 
+    } finally {
       ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, DELETE.toLower(), NAME, collection);
       ocmh.overseer.offerStateUpdate(Utils.toJSON(m));
 
@@ -160,46 +161,6 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
           return a;
         });
       }
-
-//      TimeOut timeout = new TimeOut(60, TimeUnit.SECONDS, timeSource);
-//      boolean removed = false;
-//      while (! timeout.hasTimedOut()) {
-//        timeout.sleep(100);
-//        removed = !zkStateReader.getClusterState().hasCollection(collection);
-//        if (removed) {
-//          timeout.sleep(500); // just a bit of time so it's more likely other
-//          // readers see on return
-//          break;
-//        }
-//      }
-//      if (!removed) {
-//        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-//            "Could not fully remove collection: " + collection);
-//      }
-    } finally {
-//      // HUH? This is delete collection, taking out /collections/name
-//      // How can you leave /collections/name/counter?
-//      try {
-//        String collectionPath =  ZkStateReader.getCollectionPathRoot(collection);
-//
-////          if (removeCounterNode) {
-////            zkStateReader.getZkClient().clean(collectionPath);
-////          } else {
-////            final String counterNodePath = Assign.getCounterNodePath(collection);
-////            zkStateReader.getZkClient().clean(collectionPath, s -> !s.equals(counterNodePath));
-//     //     }
-//
-//      } catch (InterruptedException e) {
-//        SolrException.log(log, "Cleaning up collection in zk was interrupted:"
-//            + collection, e);
-//        Thread.currentThread().interrupt();
-//      } catch (KeeperException e) {
-//        SolrException.log(log, "Problem cleaning up collection in zk:"
-//            + collection, e);
-//        if (e instanceof  KeeperException.SessionExpiredException) {
-//          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-//        }
-//      }
     }
   }
 
