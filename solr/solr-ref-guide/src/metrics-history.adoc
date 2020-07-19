@@ -19,7 +19,7 @@
 Solr collects long-term history of certain key metrics both in SolrCloud and in standalone mode.
 
 This information can be used for very simple monitoring and troubleshooting, but also some
-SolrCloud components (e.g., autoscaling) can use this data for making informed decisions based on
+SolrCloud components can use this data for making informed decisions based on
 long-term trends of selected metrics.
 
 [IMPORTANT]

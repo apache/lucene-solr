@@ -126,7 +126,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
   }
 
   protected Map<String, Object> fetchTagValues(String node, Collection<String> tags) {
-    AutoScalingSnitch snitch = new AutoScalingSnitch();
+    MetricsFetchingSnitch snitch = new MetricsFetchingSnitch();
     ClientSnitchCtx ctx = new ClientSnitchCtx(null, node, snitchSession, solrClient);
     snitch.getTags(node, new HashSet<>(tags), ctx);
     return ctx.getTags();
@@ -208,8 +208,8 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
 
   }
 
-  //uses metrics API to get node information
-  static class AutoScalingSnitch extends ImplicitSnitch {
+  // uses metrics API to get node information
+  static class MetricsFetchingSnitch extends ImplicitSnitch {
     @Override
     protected void getRemoteInfo(String solrNode, Set<String> requestedTags, SnitchContext ctx) {
       if (!((ClientSnitchCtx)ctx).isNodeAlive(solrNode)) return;
