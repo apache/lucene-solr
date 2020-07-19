@@ -333,8 +333,6 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       throw ex;
     } catch (Exception ex) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, null, ex);
-    } finally {
-
     }
   }
 
