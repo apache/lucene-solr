@@ -14,22 +14,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.cloud.autoscaling;
+package org.apache.solr.client.solrj.cloud;
 
 /**
  *
  */
-public class AlreadyExistsException extends Exception {
+public class NotEmptyException extends Exception {
 
-  private final String id;
+  private final String path;
 
-  public AlreadyExistsException(String id) {
-    super("Already exists: " + id);
-    this.id = id;
+  public NotEmptyException(String path) {
+    super("Path not empty: " + path);
+    this.path = path;
   }
 
-  public String getId() {
-    return id;
+  public String getPath() {
+    return path;
   }
 
 }

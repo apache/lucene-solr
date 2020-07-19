@@ -56,7 +56,6 @@ import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
@@ -972,7 +971,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       return null;
     }),
     UTILIZENODE_OP(UTILIZENODE, (req, rsp, h) -> {
-      return copy(req.getParams().required(), null, AutoScalingParams.NODE);
+      return copy(req.getParams().required(), null, "node");
     }),
     ADDREPLICAPROP_OP(ADDREPLICAPROP, (req, rsp, h) -> {
       Map<String, Object> map = copy(req.getParams().required(), null,

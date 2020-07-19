@@ -14,22 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.cloud.autoscaling;
+package org.apache.solr.client.solrj.cloud;
 
 /**
  *
  */
-public class NotEmptyException extends Exception {
+public class BadVersionException extends Exception {
 
   private final String path;
+  private final int requested;
 
-  public NotEmptyException(String path) {
-    super("Path not empty: " + path);
+  public BadVersionException(int requested, String path) {
+    super(path);
     this.path = path;
+    this.requested = requested;
   }
 
   public String getPath() {
     return path;
   }
 
+  public int getRequested() {
+    return requested;
+  }
 }

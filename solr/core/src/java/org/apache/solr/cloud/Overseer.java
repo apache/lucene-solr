@@ -82,8 +82,7 @@ import com.codahale.metrics.Timer;
  * collections, shards, replicas and setting various properties.</p>
  *
  * <p>The <b>Overseer</b> is a single elected node in the SolrCloud cluster that is in charge of interactions with
- * ZooKeeper that require global synchronization. It also hosts the Collection API implementation and the
- * Autoscaling framework.</p>
+ * ZooKeeper that require global synchronization. </p>
  *
  * <p>The Overseer deals with:</p>
  * <ul>

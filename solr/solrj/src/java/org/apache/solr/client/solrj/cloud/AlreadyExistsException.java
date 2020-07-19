@@ -14,27 +14,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.cloud.autoscaling;
+package org.apache.solr.client.solrj.cloud;
 
 /**
  *
  */
-public class BadVersionException extends Exception {
+public class AlreadyExistsException extends Exception {
 
-  private final String path;
-  private final int requested;
+  private final String id;
 
-  public BadVersionException(int requested, String path) {
-    super(path);
-    this.path = path;
-    this.requested = requested;
+  public AlreadyExistsException(String id) {
+    super("Already exists: " + id);
+    this.id = id;
   }
 
-  public String getPath() {
-    return path;
+  public String getId() {
+    return id;
   }
 
-  public int getRequested() {
-    return requested;
-  }
 }

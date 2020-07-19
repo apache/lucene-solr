@@ -69,9 +69,6 @@ public class RulesTest extends SolrCloudTestCase {
   @After
   public void removeCollections() throws Exception {
     cluster.deleteAllCollections();
-    // clear any cluster policy test methods may have set
-    cluster.getSolrClient().getZkStateReader().getZkClient().setData(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH,
-        "{}".getBytes(StandardCharsets.UTF_8), true);
   }
 
   @Test

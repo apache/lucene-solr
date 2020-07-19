@@ -57,8 +57,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.emptyMap;
-import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.FREEDISK;
-import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.TOTALDISK;
 
 /**
  * The <em>real</em> {@link NodeStateProvider}, which communicates with Solr via SolrJ.
@@ -246,7 +244,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
         groups.add("solr.node");
         prefixes.add("CONTAINER.fs.usableSpace");
       }
-      if (requestedTags.contains(TOTALDISK.tagName)) {
+      if (requestedTags.contains (Variable.TOTALDISK.tagName)) {
         groups.add("solr.node");
         prefixes.add("CONTAINER.fs.totalSpace");
       }
@@ -272,13 +270,13 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
         SimpleSolrResponse rsp = snitchContext.invokeWithRetry(solrNode, CommonParams.METRICS_PATH, params);
         NamedList<?> metrics = (NamedList<?>) rsp.nl.get("metrics");
 
-        if (requestedTags.contains(FREEDISK.tagName)) {
+        if (requestedTags.contains(Variable.FREEDISK.tagName)) {
           Object n = Utils.getObjectByPath(metrics, true, "solr.node/CONTAINER.fs.usableSpace");
-          if (n != null) ctx.getTags().put(FREEDISK.tagName, FREEDISK.convertVal(n));
+          if (n != null) ctx.getTags().put(Variable.FREEDISK.tagName, Variable.FREEDISK.convertVal(n));
         }
-        if (requestedTags.contains(TOTALDISK.tagName)) {
+        if (requestedTags.contains(Variable.TOTALDISK.tagName)) {
           Object n = Utils.getObjectByPath(metrics, true, "solr.node/CONTAINER.fs.totalSpace");
-          if (n != null) ctx.getTags().put(TOTALDISK.tagName, TOTALDISK.convertVal(n));
+          if (n != null) ctx.getTags().put(Variable.TOTALDISK.tagName, Variable.TOTALDISK.convertVal(n));
         }
         if (requestedTags.contains(CORES)) {
           NamedList<?> node = (NamedList<?>) metrics.get("solr.node");
@@ -388,5 +386,36 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
       }
     }
 
+  }
+
+  public enum Variable {
+    FREEDISK("freedisk", null, Double.class),
+    TOTALDISK("totaldisk", null, Double.class),
+    CORE_IDX("INDEX.sizeInGB",  "INDEX.sizeInBytes", Double.class)
+    ;
+
+
+    public final String tagName, metricsAttribute;
+    public final Class type;
+
+
+    Variable(String tagName, String metricsAttribute, Class type) {
+      this.tagName = tagName;
+      this.metricsAttribute = metricsAttribute;
+      this.type = type;
+    }
+
+    public Object convertVal(Object val) {
+      if(val instanceof String) {
+        return Double.valueOf((String)val);
+      } else if (val instanceof Number) {
+        Number num = (Number)val;
+        return num.doubleValue();
+
+      } else {
+        throw new IllegalArgumentException("Unknown type : "+val);
+      }
+
+    }
   }
 }
