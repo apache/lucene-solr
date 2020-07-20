@@ -16,41 +16,19 @@
  */
 package org.apache.solr.cloud.hdfs;
 
-import java.io.File;
-import java.lang.invoke.MethodHandles;
-import java.net.URI;
-import java.util.Arrays;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.ForkJoinWorkerThread;
-import java.util.regex.Pattern;
-
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.FileUtil;
-import org.apache.hadoop.fs.HardLink;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.RawLocalFileSystem;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.MiniDFSNNTopology;
-import org.apache.hadoop.hdfs.server.datanode.fsdataset.impl.BlockPoolSlice;
 import org.apache.hadoop.hdfs.server.namenode.NameNodeAdapter;
-import org.apache.hadoop.hdfs.server.namenode.NameNodeResourceChecker;
 import org.apache.hadoop.hdfs.server.namenode.ha.HATestUtil;
-import org.apache.hadoop.http.HttpServer2;
 import org.apache.hadoop.io.nativeio.NativeIO;
 import org.apache.hadoop.metrics2.MetricsSystem;
 import org.apache.hadoop.metrics2.impl.MetricsSystemImpl;
 import org.apache.hadoop.metrics2.lib.DefaultMetricsSystem;
-import org.apache.hadoop.util.DiskChecker;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
@@ -63,6 +41,18 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.lucene.util.LuceneTestCase.TEST_NIGHTLY;
 import static org.apache.lucene.util.LuceneTestCase.random;
+import java.io.File;
+import java.lang.invoke.MethodHandles;
+import java.net.URI;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinWorkerThread;
+import java.util.regex.Pattern;
 
 public class HdfsTestUtil {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
