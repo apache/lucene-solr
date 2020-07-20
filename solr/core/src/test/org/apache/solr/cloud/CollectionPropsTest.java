@@ -38,12 +38,14 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.zookeeper.KeeperException;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @LuceneTestCase.Slow
 @SolrTestCaseJ4.SuppressSSL
+@Ignore // nocommit - if i remember right there is something to find here.
 public class CollectionPropsTest extends SolrCloudTestCase {
   private String collectionName;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

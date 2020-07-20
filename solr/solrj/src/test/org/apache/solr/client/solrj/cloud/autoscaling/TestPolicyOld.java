@@ -17,6 +17,9 @@
 
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
+import org.junit.Ignore;
+
+@Ignore // nocommit - I have to use the old policy, the new one is way too slow
 public class TestPolicyOld extends TestPolicy {
   public TestPolicyOld(){
     super();

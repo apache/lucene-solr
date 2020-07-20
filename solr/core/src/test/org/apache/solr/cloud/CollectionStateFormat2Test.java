@@ -22,8 +22,10 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.zookeeper.data.Stat;
 import org.junit.After;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore // debug
 public class CollectionStateFormat2Test extends SolrCloudTestCase {
 
   @BeforeClass
