@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -33,6 +34,7 @@ import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
@@ -197,14 +199,17 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
       HttpGet get = new HttpGet(url);
       if (authHeader != null) setAuthorizationHeader(get, authHeader);
       HttpResponse rsp = cl.execute(get);
-      s = EntityUtils.toString(rsp.getEntity());
       Map m = null;
+      s = IOUtils.toString(rsp.getEntity().getContent(), Charset.forName("UTF-8"));
       try {
-        m = (Map) Utils.fromJSONString(s);
-      } catch (Exception e) {
-        fail("Invalid json " + s);
+        try {
+          m = (Map) Utils.fromJSONString(s);
+        } catch (Exception e) {
+          fail("Invalid json " + s);
+        }
+      } finally {
+        Utils.consumeFully(rsp.getEntity());
       }
-      Utils.consumeFully(rsp.getEntity());
       Object actual = Utils.getObjectByPath(m, true, hierarchy);
       if (expected instanceof Predicate) {
         Predicate predicate = (Predicate) expected;

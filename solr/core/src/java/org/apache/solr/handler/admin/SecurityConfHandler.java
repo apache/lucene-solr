@@ -54,7 +54,7 @@ import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
 public abstract class SecurityConfHandler extends RequestHandlerBase implements PermissionNameProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  protected CoreContainer cores;
+  protected final CoreContainer cores;
 
   public SecurityConfHandler(CoreContainer coreContainer) {
     this.cores = coreContainer;

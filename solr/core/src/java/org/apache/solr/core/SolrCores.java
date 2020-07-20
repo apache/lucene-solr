@@ -518,7 +518,7 @@ class SolrCores implements Closeable {
   }
 
   public boolean isCoreLoading(String name) {
-    if (currentlyLoadingCores.contains(name)) {
+    if (container.startedLoadingCores() && currentlyLoadingCores.contains(name)) {
       return true;
     }
     return false;

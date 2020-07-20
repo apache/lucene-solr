@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
  */
 public class SecurityConfHandlerLocal extends SecurityConfHandler {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  protected Path securityJsonPath;
+  protected volatile Path securityJsonPath;
   
   public SecurityConfHandlerLocal(CoreContainer coreContainer) {
     super(coreContainer);

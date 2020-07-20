@@ -159,6 +159,7 @@ public class CoreContainer implements Closeable {
 
   final SolrCores solrCores = new SolrCores(this);
   private final boolean isZkAware;
+  private volatile boolean startedLoadingCores;
 
   public static class CoreLoadFailure {
 
@@ -433,6 +434,10 @@ public class CoreContainer implements Closeable {
         log.error("Exception while attempting to close old authorization plugin", e);
       }
     }
+  }
+
+  public boolean startedLoadingCores() {
+    return startedLoadingCores;
   }
 
   @SuppressWarnings({"unchecked"})
@@ -915,6 +920,8 @@ public class CoreContainer implements Closeable {
         }
 
       } finally {
+        
+        startedLoadingCores = true;
         if (futures != null && !asyncSolrCoreLoad) {
 
 
