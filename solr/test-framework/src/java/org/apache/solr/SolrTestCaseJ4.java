@@ -186,8 +186,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   protected static String coreName = DEFAULT_TEST_CORENAME;
 
   private static String initialRootLogLevel;
-  
-  protected volatile static ExecutorService testExecutor;
 
   protected void writeCoreProperties(Path coreDirectory, String corename) throws IOException {
     Properties props = new Properties();
@@ -239,8 +237,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     initClassLogLevels();
     resetExceptionIgnores();
 
-    testExecutor = new ParWorkExecutor("testExecutor",  Math.max(1, Runtime.getRuntime().availableProcessors()));
-
     // set solr.install.dir needed by some test configs outside of the test sandbox (!)
     System.setProperty("solr.install.dir", ExternalPaths.SOURCE_HOME);
     // not strictly needed by this class at this point in the control lifecycle, but for
@@ -262,19 +258,13 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   @AfterClass
   public static void teardownTestCases() throws Exception {
     TestInjection.notifyPauseForeverDone();
-    if (null != testExecutor) {
-      testExecutor.shutdown();
-    }
+
     try {
       try {
         deleteCore();
       } catch (Exception e) {
         ParWork.propegateInterrupt(e);
         log.error("Error deleting SolrCore.");
-      }
-      if (null != testExecutor) {
-        ExecutorUtil.shutdownAndAwaitTermination(testExecutor);
-        testExecutor = null;
       }
 
       resetExceptionIgnores();

@@ -22,6 +22,7 @@ import java.io.File;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
@@ -34,6 +35,7 @@ import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.cloud.autoscaling.ScheduledTriggers;
 import org.apache.solr.common.ParWork;
+import org.apache.solr.common.ParWorkExecutor;
 import org.apache.solr.common.TimeTracker;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
@@ -104,6 +106,8 @@ public class SolrTestCase extends LuceneTestCase {
 
   private static volatile boolean failed = false;
 
+  protected volatile static ExecutorService testExecutor;
+
   @Rule
   public TestRule solrTestRules =
           RuleChain.outerRule(new SystemPropertiesRestoreRule()).around(
@@ -157,6 +161,9 @@ public class SolrTestCase extends LuceneTestCase {
     random = LuceneTestCase.random();
 
     testStartTime = System.nanoTime();
+
+
+    testExecutor = new ParWorkExecutor("testExecutor",  Math.max(1, Runtime.getRuntime().availableProcessors()));
     // stop zkserver threads that can linger
     //interruptThreadsOnTearDown("nioEventLoopGroup", false);
 
@@ -352,6 +359,17 @@ public class SolrTestCase extends LuceneTestCase {
     log.info("*******************************************************************");
     log.info("@After Class ------------------------------------------------------");
     try {
+
+      if (null != testExecutor) {
+        testExecutor.shutdown();
+      }
+
+
+      if (null != testExecutor) {
+        ExecutorUtil.shutdownAndAwaitTermination(testExecutor);
+        testExecutor = null;
+      }
+
       ExecutorUtil.shutdownAndAwaitTermination(CoreContainer.solrCoreLoadExecutor);
       CoreContainer.solrCoreLoadExecutor = null;
 

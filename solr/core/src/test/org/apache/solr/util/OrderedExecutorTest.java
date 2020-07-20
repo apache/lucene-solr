@@ -105,8 +105,7 @@ public class OrderedExecutorTest extends SolrTestCase {
   @Test
   public void testRunInParallel() {
     final int parallelism = atLeast(3);
-    
-    final ExecutorService controlExecutor = ExecutorUtil.newMDCAwareCachedThreadPool("testRunInParallel_control");
+
     final OrderedExecutor orderedExecutor = new OrderedExecutor
       (parallelism, ExecutorUtil.newMDCAwareCachedThreadPool("testRunInParallel_test"));
 
@@ -120,7 +119,7 @@ public class OrderedExecutorTest extends SolrTestCase {
       
       for (int i = 0; i < parallelism; i++) {
         final int lockId = i;
-        controlExecutor.execute(() -> {
+        testExecutor.execute(() -> {
             orderedExecutor.execute(lockId, () -> {
                 try {
                   log.info("Worker #{} starting", lockId);
@@ -189,7 +188,6 @@ public class OrderedExecutorTest extends SolrTestCase {
         fail("interupt while trying to release the barrier and await the postBarrierLatch");
       }
     } finally {
-      ExecutorUtil.shutdownAndAwaitTermination(controlExecutor);
       orderedExecutor.shutdownAndAwaitTermination();
     }
   }
