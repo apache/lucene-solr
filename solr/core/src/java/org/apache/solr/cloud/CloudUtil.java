@@ -235,7 +235,6 @@ public class CloudUtil {
    * Return a {@link CollectionStatePredicate} that returns true if a collection has the expected
    * number of shards and replicas.
    * <p>Note: for shards marked as inactive the current Solr behavior is that replicas remain active.
-   * {@link org.apache.solr.cloud.autoscaling.sim.SimCloudManager} follows this behavior.</p>
    * @param expectedShards expected number of shards
    * @param expectedReplicas expected number of active replicas per shard
    * @param withInactive if true then count also inactive shards

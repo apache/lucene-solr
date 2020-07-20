@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -45,13 +44,11 @@ import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
-import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.Callable;
 import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -116,16 +113,10 @@ public class ZkStateReader implements SolrCloseable {
   public static final String COLLECTION_PROPS_ZKNODE = "collectionprops.json";
   public static final String REJOIN_AT_HEAD_PROP = "rejoinAtHead";
   public static final String SOLR_SECURITY_CONF_PATH = "/security.json";
-  public static final String SOLR_AUTOSCALING_CONF_PATH = "/autoscaling.json";
-  public static final String SOLR_AUTOSCALING_EVENTS_PATH = "/autoscaling/events";
-  public static final String SOLR_AUTOSCALING_TRIGGER_STATE_PATH = "/autoscaling/triggerState";
-  public static final String SOLR_AUTOSCALING_NODE_ADDED_PATH = "/autoscaling/nodeAdded";
-  public static final String SOLR_AUTOSCALING_NODE_LOST_PATH = "/autoscaling/nodeLost";
   public static final String SOLR_PKGS_PATH = "/packages.json";
 
   public static final String DEFAULT_SHARD_PREFERENCES = "defaultShardPreferences";
   public static final String REPLICATION_FACTOR = "replicationFactor";
-  public static final String AUTO_ADD_REPLICAS = "autoAddReplicas";
   public static final String MAX_CORES_PER_NODE = "maxCoresPerNode";
   public static final String PULL_REPLICAS = "pullReplicas";
   public static final String NRT_REPLICAS = "nrtReplicas";
@@ -217,40 +208,6 @@ public class ZkStateReader implements SolrCloseable {
 
   private Future<?> collectionPropsCacheCleaner; // only kept to identify if the cleaner has already been started.
 
-  /**
-   * Get current {@link AutoScalingConfig}.
-   *
-   * @return current configuration from <code>autoscaling.json</code>. NOTE:
-   * this data is retrieved from ZK on each call.
-   */
-  public AutoScalingConfig getAutoScalingConfig() throws KeeperException, InterruptedException {
-    return getAutoScalingConfig(null);
-  }
-
-  /**
-   * Get current {@link AutoScalingConfig}.
-   *
-   * @param watcher optional {@link Watcher} to set on a znode to watch for config changes.
-   * @return current configuration from <code>autoscaling.json</code>. NOTE:
-   * this data is retrieved from ZK on each call.
-   */
-  @SuppressWarnings({"unchecked"})
-  public AutoScalingConfig getAutoScalingConfig(Watcher watcher) throws KeeperException, InterruptedException {
-    Stat stat = new Stat();
-
-    Map<String, Object> map = new HashMap<>();
-    try {
-      byte[] bytes = zkClient.getData(SOLR_AUTOSCALING_CONF_PATH, watcher, stat, true);
-      if (bytes != null && bytes.length > 0) {
-        map = (Map<String, Object>) fromJSON(bytes);
-      }
-    } catch (KeeperException.NoNodeException e) {
-      // ignore
-    }
-    map.put(AutoScalingParams.ZK_VERSION, stat.getVersion());
-    return new AutoScalingConfig(map);
-  }
-
   private static class CollectionWatch<T> {
 
     int coreRefCount = 0;
@@ -264,7 +221,6 @@ public class ZkStateReader implements SolrCloseable {
 
   public static final Set<String> KNOWN_CLUSTER_PROPS = Set.of(
       URL_SCHEME,
-      AUTO_ADD_REPLICAS,
       CoreAdminParams.BACKUP_LOCATION,
       DEFAULT_SHARD_PREFERENCES,
       MAX_CORES_PER_NODE,

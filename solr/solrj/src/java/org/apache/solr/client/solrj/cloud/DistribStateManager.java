@@ -24,11 +24,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
-import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
-import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
-import org.apache.solr.client.solrj.cloud.autoscaling.NotEmptyException;
-import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.common.SolrCloseable;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -76,12 +71,6 @@ public interface DistribStateManager extends SolrCloseable {
   void setData(String path, byte[] data, int version) throws BadVersionException, NoSuchElementException, IOException, KeeperException, InterruptedException;
 
   List<OpResult> multi(final Iterable<Op> ops) throws BadVersionException, NoSuchElementException, AlreadyExistsException, IOException, KeeperException, InterruptedException;
-
-  AutoScalingConfig getAutoScalingConfig(Watcher watcher) throws InterruptedException, IOException;
-
-  default AutoScalingConfig getAutoScalingConfig() throws InterruptedException, IOException {
-    return getAutoScalingConfig(null);
-  }
 
   /**
    * List a subtree including the root path, using breadth-first traversal.

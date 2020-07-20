@@ -16,6 +16,10 @@
  */
 package org.apache.solr.cloud.api.collections;
 
+import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.CREATE_NODE_SET;
+import static org.apache.solr.common.cloud.DocCollection.SNITCH;
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -29,19 +33,15 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.ImmutableMap;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
-import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
-import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
-import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
-import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
+import org.apache.solr.client.solrj.cloud.AlreadyExistsException;
+import org.apache.solr.client.solrj.cloud.BadVersionException;
+import org.apache.solr.client.solrj.cloud.VersionedData;
 import org.apache.solr.cloud.rule.ReplicaAssigner;
 import org.apache.solr.cloud.rule.Rule;
 import org.apache.solr.common.SolrException;
@@ -52,19 +52,14 @@ import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.NumberUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.POLICY;
-import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.CREATE_NODE_SET;
-import static org.apache.solr.common.cloud.DocCollection.SNITCH;
-import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
+import com.google.common.collect.ImmutableMap;
 
 public class Assign {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -255,57 +250,6 @@ public class Assign {
     return nodeList;
   }
 
-  /**
-   * <b>Note:</b> where possible, the {@link #usePolicyFramework(DocCollection, SolrCloudManager)} method should
-   * be used instead of this method
-   *
-   * @return true if autoscaling policy framework should be used for replica placement
-   */
-  public static boolean usePolicyFramework(SolrCloudManager cloudManager) throws IOException, InterruptedException {
-    Objects.requireNonNull(cloudManager, "The SolrCloudManager instance cannot be null");
-    return usePolicyFramework(Optional.empty(), cloudManager);
-  }
-
-  /**
-   * @return true if auto scaling policy framework should be used for replica placement
-   * for this collection, otherwise false
-   */
-  public static boolean usePolicyFramework(DocCollection collection, SolrCloudManager cloudManager)
-      throws IOException, InterruptedException {
-    Objects.requireNonNull(collection, "The DocCollection instance cannot be null");
-    Objects.requireNonNull(cloudManager, "The SolrCloudManager instance cannot be null");
-    return usePolicyFramework(Optional.of(collection), cloudManager);
-  }
-
-  @SuppressWarnings({"unchecked"})
-  private static boolean usePolicyFramework(Optional<DocCollection> collection, SolrCloudManager cloudManager) throws IOException, InterruptedException {
-    boolean useLegacyAssignment = true;
-    Map<String, Object> clusterProperties = cloudManager.getClusterStateProvider().getClusterProperties();
-    if (clusterProperties.containsKey(CollectionAdminParams.DEFAULTS))  {
-      Map<String, Object> defaults = (Map<String, Object>) clusterProperties.get(CollectionAdminParams.DEFAULTS);
-      Map<String, Object> collectionDefaults = (Map<String, Object>) defaults.getOrDefault(CollectionAdminParams.CLUSTER, Collections.emptyMap());
-      useLegacyAssignment = Boolean.parseBoolean(collectionDefaults.getOrDefault(CollectionAdminParams.USE_LEGACY_REPLICA_ASSIGNMENT, "true").toString());
-    }
-
-    if (!useLegacyAssignment) {
-      // if legacy assignment is not selected then autoscaling is always available through the implicit policy/preferences
-      return true;
-    }
-
-    // legacy assignment is turned on, which means we must look at the actual autoscaling config
-    // to determine whether policy framework can be used or not for this collection
-
-    AutoScalingConfig autoScalingConfig = cloudManager.getDistribStateManager().getAutoScalingConfig();
-    // if no autoscaling configuration exists then obviously we cannot use the policy framework
-    if (autoScalingConfig.getPolicy().isEmpty()) return false;
-    // do custom preferences exist
-    if (!autoScalingConfig.getPolicy().hasEmptyPreferences()) return true;
-    // does a cluster policy exist
-    if (!autoScalingConfig.getPolicy().getClusterPolicy().isEmpty()) return true;
-    // finally we check if the current collection has a policy
-    return !collection.isPresent() || collection.get().getPolicyName() != null;
-  }
-
   static class ReplicaCount {
     public final String nodeName;
     public int thisCollectionNodes = 0;
@@ -356,44 +300,6 @@ public class Assign {
     AssignStrategyFactory assignStrategyFactory = new AssignStrategyFactory(cloudManager);
     AssignStrategy assignStrategy = assignStrategyFactory.create(clusterState, coll);
     return assignStrategy.assign(cloudManager, assignRequest);
-  }
-
-  public static List<ReplicaPosition> getPositionsUsingPolicy(String collName, List<String> shardNames,
-                                                              int nrtReplicas,
-                                                              int tlogReplicas,
-                                                              int pullReplicas,
-                                                              String policyName, SolrCloudManager cloudManager,
-                                                              List<String> nodesList) throws IOException, InterruptedException, AssignmentException {
-    log.debug("shardnames {} NRT {} TLOG {} PULL {} , policy {}, nodeList {}", shardNames, nrtReplicas, tlogReplicas, pullReplicas, policyName, nodesList);
-    List<ReplicaPosition> replicaPositions = null;
-    AutoScalingConfig autoScalingConfig = cloudManager.getDistribStateManager().getAutoScalingConfig();
-    try {
-      Map<String, String> kvMap = Collections.singletonMap(collName, policyName);
-      replicaPositions = PolicyHelper.getReplicaLocations(
-          collName,
-          autoScalingConfig,
-          cloudManager,
-          kvMap,
-          shardNames,
-          nrtReplicas,
-          tlogReplicas,
-          pullReplicas,
-          nodesList);
-      return replicaPositions;
-    } catch (Exception e) {
-      throw new AssignmentException("Error getting replica locations : " + e.getMessage(), e);
-    } finally {
-      if (log.isTraceEnabled()) {
-        if (replicaPositions != null) {
-          if (log.isTraceEnabled()) {
-            log.trace("REPLICA_POSITIONS: {}", Utils.toJSONString(Utils.getDeepCopy(replicaPositions, 7, true)));
-          }
-        }
-        if (log.isTraceEnabled()) {
-          log.trace("AUTOSCALING_CONF: {}", Utils.toJSONString(autoScalingConfig));
-        }
-      }
-    }
   }
 
   static HashMap<String, ReplicaCount> getNodeNameVsShardCount(String collectionName,
@@ -637,22 +543,6 @@ public class Assign {
     }
   }
 
-  public static class PolicyBasedAssignStrategy implements AssignStrategy {
-    public String policyName;
-
-    public PolicyBasedAssignStrategy(String policyName) {
-      this.policyName = policyName;
-    }
-
-    @Override
-    public List<ReplicaPosition> assign(SolrCloudManager solrCloudManager, AssignRequest assignRequest) throws Assign.AssignmentException, IOException, InterruptedException {
-      return Assign.getPositionsUsingPolicy(assignRequest.collectionName,
-          assignRequest.shardNames, assignRequest.numNrtReplicas,
-          assignRequest.numTlogReplicas, assignRequest.numPullReplicas,
-          policyName, solrCloudManager, assignRequest.nodes);
-    }
-  }
-
   public static class AssignStrategyFactory {
     public SolrCloudManager solrCloudManager;
 
@@ -663,19 +553,16 @@ public class Assign {
     public AssignStrategy create(ClusterState clusterState, DocCollection collection) throws IOException, InterruptedException {
       @SuppressWarnings({"unchecked", "rawtypes"})
       List<Map> ruleMaps = (List<Map>) collection.get("rule");
-      String policyName = collection.getStr(POLICY);
       @SuppressWarnings({"rawtypes"})
       List snitches = (List) collection.get(SNITCH);
 
       Strategy strategy = null;
-      if ((ruleMaps == null || ruleMaps.isEmpty()) && !usePolicyFramework(collection, solrCloudManager)) {
-        strategy = Strategy.LEGACY;
-      } else if (ruleMaps != null && !ruleMaps.isEmpty()) {
+      if (ruleMaps != null && !ruleMaps.isEmpty()) {
         strategy = Strategy.RULES;
       } else {
-        strategy = Strategy.POLICY;
+        strategy = Strategy.LEGACY;        
       }
-
+      
       switch (strategy) {
         case LEGACY:
           return new LegacyAssignStrategy();
@@ -683,15 +570,13 @@ public class Assign {
           List<Rule> rules = new ArrayList<>();
           for (Object map : ruleMaps) rules.add(new Rule((Map) map));
           return new RulesBasedAssignStrategy(rules, snitches, clusterState);
-        case POLICY:
-          return new PolicyBasedAssignStrategy(policyName);
         default:
           throw new Assign.AssignmentException("Unknown strategy type: " + strategy);
       }
     }
 
     private enum Strategy {
-      LEGACY, RULES, POLICY;
+      LEGACY, RULES;
     }
   }
 }

@@ -20,7 +20,6 @@ import static java.util.Arrays.asList;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_DEF;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.NUM_SHARDS_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_PATH;
 import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CollectionAdminParams.DEFAULTS;
 
@@ -63,7 +62,6 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -90,8 +88,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     .addConfig("conf2", configset("cloud-dynamic"))
     .configure();
     
-    // clear any persisted auto scaling configuration
-    zkClient().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(new ZkNodeProps()), true);
   }
   
   @After
@@ -550,22 +546,20 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
     // sanity check our expected default
     final ClusterProperties props = new ClusterProperties(zkClient());
-    assertEquals("Expecting prop to default to unset, test needs upated",
-                 props.getClusterProperty(ZkStateReader.AUTO_ADD_REPLICAS, null), null);
     
-    CollectionAdminResponse response = CollectionAdminRequest.setClusterProperty(ZkStateReader.AUTO_ADD_REPLICAS, "true")
+    CollectionAdminResponse response = CollectionAdminRequest.setClusterProperty(ZkStateReader.MAX_CORES_PER_NODE, "42")
       .process(cluster.getSolrClient());
     assertEquals(0, response.getStatus());
-    assertEquals("Cluster property was not set", props.getClusterProperty(ZkStateReader.AUTO_ADD_REPLICAS, null), "true");
+    assertEquals("Cluster property was not set", props.getClusterProperty(ZkStateReader.MAX_CORES_PER_NODE, null), "42");
 
     // Unset ClusterProp that we set.
-    CollectionAdminRequest.setClusterProperty(ZkStateReader.AUTO_ADD_REPLICAS, null).process(cluster.getSolrClient());
-    assertEquals("Cluster property was not unset", props.getClusterProperty(ZkStateReader.AUTO_ADD_REPLICAS, null), null);
+    CollectionAdminRequest.setClusterProperty(ZkStateReader.MAX_CORES_PER_NODE, null).process(cluster.getSolrClient());
+    assertEquals("Cluster property was not unset", props.getClusterProperty(ZkStateReader.MAX_CORES_PER_NODE, null), null);
 
-    response = CollectionAdminRequest.setClusterProperty(ZkStateReader.AUTO_ADD_REPLICAS, "false")
+    response = CollectionAdminRequest.setClusterProperty(ZkStateReader.MAX_CORES_PER_NODE, "1")
         .process(cluster.getSolrClient());
     assertEquals(0, response.getStatus());
-    assertEquals("Cluster property was not set", props.getClusterProperty(ZkStateReader.AUTO_ADD_REPLICAS, null), "false");
+    assertEquals("Cluster property was not set", props.getClusterProperty(ZkStateReader.MAX_CORES_PER_NODE, null), "1");
   }
 
   @Test
