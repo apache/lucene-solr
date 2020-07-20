@@ -124,7 +124,7 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
    */
   public static class Builder {
     protected Collection<String> zkHosts = new ArrayList<>();
-    protected List<String> solrUrls = new ArrayList<>();
+    protected List<String> solrUrls;
     protected String zkChroot;
     protected Http2SolrClient httpClient;
     protected boolean shardLeadersOnly = true;

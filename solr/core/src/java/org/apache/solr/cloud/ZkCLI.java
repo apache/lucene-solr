@@ -199,7 +199,7 @@ public class ZkCLI implements CLIO {
       try {
         zkClient = new SolrZkClient(zkServerAddress, 30000, 30000,
             () -> {
-            });
+            }).start();
 
         if (line.getOptionValue(CMD).equalsIgnoreCase(BOOTSTRAP)) {
           if (!line.hasOption(SOLRHOME)) {
