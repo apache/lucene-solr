@@ -57,6 +57,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
+import org.apache.solr.common.ParWorkExecutor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ConnectionManager.IsClosed;
@@ -101,37 +102,7 @@ public class SolrZkClient implements Closeable {
 
   private volatile SolrZooKeeper keeper;
 
-  private final ExecutorService zkCallbackExecutor =
-          new ThreadPoolExecutor(1, 1,
-                  30L, TimeUnit.SECONDS,
-                  new ArrayBlockingQueue<>(120), // size?
-                  new ThreadFactory() {
-                    AtomicInteger threadNumber = new AtomicInteger(1);
-                    ThreadGroup group;
-
-                    {
-                      SecurityManager s = System.getSecurityManager();
-                      group = (s != null) ? s.getThreadGroup() : Thread.currentThread().getThreadGroup();
-                    }
-
-                    @Override
-                    public Thread newThread(Runnable r) {
-                      Thread t = new Thread(group, r, "ZkCallback" + threadNumber.getAndIncrement(), 0);
-                      t.setDaemon(false);
-                      // t.setPriority(priority);
-                      return t;
-                    }
-                  }, new RejectedExecutionHandler() {
-
-            @Override
-            public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
-              log.warn("Task was rejected, running in caller thread");
-              if (executor.isShutdown() || executor.isTerminated() || executor.isTerminating()) {
-                throw new AlreadyClosedException();
-              }
-              executor.execute(r);
-            }
-          });
+  private final ExecutorService zkCallbackExecutor = new ParWorkExecutor("ZkCallback", 1);
 
   private final ExecutorService zkConnManagerCallbackExecutor =
       ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrNamedThreadFactory("zkConnectionManagerCallback"));

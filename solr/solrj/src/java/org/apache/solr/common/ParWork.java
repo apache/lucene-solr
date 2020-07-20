@@ -66,12 +66,6 @@ public class ParWork implements Closeable {
 
   protected final static ThreadLocal<ExecutorService> THREAD_LOCAL_EXECUTOR = new ThreadLocal<>();
 
-  public static volatile int MAXIMUM_POOL_SIZE;
-  public static final long KEEP_ALIVE_TIME = 10;
-
-  public static volatile int CAPACITY = 30;
-  private static final int GROWBY = 30;
-
   private Set<Object> collectSet = null;
 
   private static SysStats sysStats = SysStats.getSysStats();
@@ -557,6 +551,8 @@ public class ParWork implements Closeable {
   }
 
   public static void sizePoolByLoad() {
+    Integer maxPoolsSize = getMaxPoolSize();
+
     ThreadPoolExecutor executor = (ThreadPoolExecutor) getExecutor();
     double load =  ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage();
     if (load < 0) {
@@ -577,8 +573,8 @@ public class ParWork implements Closeable {
         if (cMax > 2) {
           executor.setMaximumPoolSize(Math.max(2, (int) ((double) cMax * 0.60D)));
         }
-      } else if (sLoad < 0.9D && MAXIMUM_POOL_SIZE != executor.getMaximumPoolSize()) {
-        executor.setMaximumPoolSize(MAXIMUM_POOL_SIZE);
+      } else if (sLoad < 0.9D && maxPoolsSize != executor.getMaximumPoolSize()) {
+        executor.setMaximumPoolSize(maxPoolsSize);
       }
       if (log.isDebugEnabled()) log.debug("ParWork, load:" + sLoad); //nocommit: remove when testing is done
 
@@ -602,41 +598,14 @@ public class ParWork implements Closeable {
   }
 
   public static ExecutorService getExecutorService(int corePoolSize, int maximumPoolSize, int keepAliveTime) {
-    MAXIMUM_POOL_SIZE = Integer.getInteger("solr.maxThreadExecPoolSize",
-            (int) Math.max(2, Math.round(Runtime.getRuntime().availableProcessors() / 2.0d)));
-    CAPACITY = Integer.getInteger("solr.threadExecQueueSize", 80);
     ThreadPoolExecutor exec;
-    exec = new ThreadPoolExecutor(0, MAXIMUM_POOL_SIZE,
-            KEEP_ALIVE_TIME, TimeUnit.SECONDS,
-             new BlockingArrayQueue<>(CAPACITY, GROWBY), // size?
-             new ThreadFactory() {
-               AtomicInteger threadNumber = new AtomicInteger(1);
-               ThreadGroup group;
-
-               {
-                 SecurityManager s = System.getSecurityManager();
-                 group = (s != null) ? s.getThreadGroup() : Thread.currentThread().getThreadGroup();
-               }
-
-               @Override
-               public Thread newThread(Runnable r) {
-                 Thread t = new Thread(group, r, "ParWork" + threadNumber.getAndIncrement(), 0);
-                 t.setDaemon(false);
-                 // t.setPriority(priority);
-                 return t;
-               }
-             }, new RejectedExecutionHandler() {
-
-       @Override
-       public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
-         log.warn("Task was rejected, running in caller thread");
-         if (executor.isShutdown() || executor.isTerminated() || executor.isTerminating()) {
-           throw new AlreadyClosedException();
-         }
-         executor.execute(r);
-       }
-     });
+    exec = new ParWorkExecutor("ParWork", getMaxPoolSize());
     return exec;
+  }
+
+  private static Integer getMaxPoolSize() {
+    return Integer.getInteger("solr.maxThreadExecPoolSize",
+            (int) Math.max(6, Math.round(Runtime.getRuntime().availableProcessors())));
   }
 
   private void handleObject(String label, AtomicReference<Throwable> exception, final TimeTracker workUnitTracker, Object object) {

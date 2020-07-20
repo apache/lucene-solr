@@ -176,17 +176,19 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     else
       log.debug("Found already existing elements in the work-queue. Last element: {}", oldestItemInWorkQueue);
 
-    try {
-      prioritizer.prioritizeOverseerNodes(myId);
-    } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
-      if (e instanceof KeeperException.SessionExpiredException) {
-        return;
+    if (prioritizer != null) {
+      try {
+        prioritizer.prioritizeOverseerNodes(myId);
+      } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
+        if (e instanceof KeeperException.SessionExpiredException) {
+          return;
+        }
+        if (e instanceof InterruptedException || e instanceof AlreadyClosedException) {
+          return;
+        }
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
-      if (e instanceof InterruptedException || e instanceof AlreadyClosedException) {
-        return;
-      }
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
 
     try {

@@ -27,6 +27,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import com.carrotsearch.hppc.IntHashSet;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
@@ -41,6 +42,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+@LuceneTestCase.Nightly // nocommit slow
 public class TestRangeQuery extends SolrTestCaseJ4 {
   
   private final static long DATE_START_TIME_RANDOM_TEST = 1499797224224L;

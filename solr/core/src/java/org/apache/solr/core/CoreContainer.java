@@ -780,20 +780,12 @@ public class CoreContainer implements Closeable {
         metricsHandler.initializeMetrics(solrMetricsContext, METRICS_PATH);
       });
 
-      if (!Boolean.getBoolean("solr.disableMetricsHistoryHandler")) {
-        work.collect(() -> {
-          createMetricsHistoryHandler();
-        });
-      }
-
       work.collect(() -> {
         autoscalingHistoryHandler = createHandler(AUTOSCALING_HISTORY_PATH, AutoscalingHistoryHandler.class.getName(), AutoscalingHistoryHandler.class);
         metricsCollectorHandler = createHandler(MetricsCollectorHandler.HANDLER_PATH, MetricsCollectorHandler.class.getName(), MetricsCollectorHandler.class);
         // may want to add some configuration here in the future
         metricsCollectorHandler.init(null);
       });
-
-      work.addCollect("ccload");
 
       work.collect(() -> {
         containerHandlers.put(AUTHZ_PATH, securityConfHandler);
@@ -808,7 +800,15 @@ public class CoreContainer implements Closeable {
         metricManager.loadReporters(metricReporters, loader, this, null, null, SolrInfoBean.Group.jetty);
       });
 
-      work.addCollect("ccload2");
+      work.addCollect("ccload");
+
+      if (!Boolean.getBoolean("solr.disableMetricsHistoryHandler")) {
+        work.collect(() -> {
+          createMetricsHistoryHandler();
+        });
+      }
+
+      work.addCollect("metricsHistoryHandlers");
     }
 
       // initialize gauges for reporting the number of cores and disk total/free
