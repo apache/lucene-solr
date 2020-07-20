@@ -70,7 +70,11 @@ public class SSLTestConfig {
   
   /** Creates an SSLTestConfig that does not use SSL or client authentication */
   public SSLTestConfig() {
-    this(false, false);
+    this.useSsl = false;
+    this.clientAuth = false;
+    this.checkPeerName = false;
+    keyStore = null;
+    trustStore = null;
   }
   
   /**
