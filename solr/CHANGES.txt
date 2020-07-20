@@ -36,6 +36,8 @@ Improvements
 
 Other Changes
 ----------------------
+* SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
+
 * LUCENE-9391: Upgrade HPPC to 0.8.2. (Haoyu Zhai)
 
 * SOLR-10288: Remove non-minified JavaScript from the webapp. (Erik Hatcher, marcussorealheis)
@@ -125,6 +127,9 @@ Improvements
 * SOLR-14635: ThreadDumpHandler has been enhanced to show lock ownership (hossman)
 
 * SOLR-11262: Implement writeMap and writeIterator in XMLWriter (yonik, Munendra S N)
+
+* SOLR-13205: Prevent StringIndexOutOfBoundsException when parsing field names in SolrQueryParserBase
+  (pramodkumar9 via Jason Gerlowski)
 
 Optimizations
 ---------------------

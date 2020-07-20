@@ -130,7 +130,7 @@ Add, edit or delete a cluster-wide property.
 === CLUSTERPROP Parameters
 
 `name`::
-The name of the property. Supported properties names are `autoAddReplicas`, `location`, `maxCoresPerNode`, `urlScheme` and `defaultShardPreferences`. Other properties can be set
+The name of the property. Supported properties names are `location`, `maxCoresPerNode`, `urlScheme` and `defaultShardPreferences`. Other properties can be set
 (for example, if you need them for custom plugins) but they must begin with the prefix `ext.`. Unknown properties that don't begin with `ext.` will be rejected.
 
 `val`::
@@ -281,27 +281,14 @@ http://localhost:8983/solr/admin/collections?action=BALANCESHARDUNIQUE&collectio
 
 Examining the clusterstate after issuing this call should show exactly one replica in each shard that has this property.
 
-[[utilizenode]]
-== UTILIZENODE: Utilize a New Node
-
-This command can be used to move some replicas from the existing nodes to either a new node or a less loaded node to reduce the load on the existing node.
-
-This uses your autoscaling policies and preferences to identify which replica needs to be moved. It tries to fix any policy violations first and then it tries to move some load off of the most loaded nodes according to the preferences.
-
-`/admin/collections?action=UTILIZENODE&node=nodeName`
-
-=== UTILIZENODE Parameters
-
-`node`:: The name of the node that needs to be utilized. This parameter is required.
-
 [[replacenode]]
 == REPLACENODE: Move All Replicas in a Node to Another
 
 This command recreates replicas in one node (the source) to another node(s) (the target). After each replica is copied, the replicas in the source node are deleted.
 
-For source replicas that are also shard leaders the operation will wait for the number of seconds set with the `timeout` parameter to make sure there's an active replica that can become a leader (either an existing replica becoming a leader or the new replica completing recovery and becoming a leader).
+For source replicas that are also shard leaders the operation will wait for the number of seconds set with the `timeout` parameter to make sure there's an active replica that can become a leader either an existing replica becoming a leader or the new replica completing recovery and becoming a leader).
 
-The API uses the Autoscaling framework to find nodes that can satisfy the disk requirements for the new replicas but only when an Autoscaling policy is configured. Refer to <<solrcloud-autoscaling-policy-preferences.adoc#solrcloud-autoscaling-policy-preferences,Autoscaling Policy and Preferences>> section for more details.
+The API uses the Autoscaling framework to find nodes that can satisfy the disk requirements for the new replicas but only when an Autoscaling policy is configured. Refer to <solrcloud-autoscaling-policy-preferences.adoc#solrcloud-autoscaling-policy-preferences,Autoscaling Policy and Preferences>> section for more details.
 
 `/admin/collections?action=REPLACENODE&sourceNode=_source-node_&targetNode=_target-node_`
 

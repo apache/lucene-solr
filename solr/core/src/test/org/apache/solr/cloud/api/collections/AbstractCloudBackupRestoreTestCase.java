@@ -121,9 +121,6 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
         CollectionAdminRequest.createCollectionWithImplicitRouter(getCollectionName(), "conf1", "shard1,shard2", replFactor, numTlogReplicas, numPullReplicas) :
         CollectionAdminRequest.createCollection(getCollectionName(), "conf1", NUM_SHARDS, replFactor, numTlogReplicas, numPullReplicas);
 
-    if (random().nextBoolean()) {
-      create.setAutoAddReplicas(true);//just to assert it survives the restoration
-    }
     Properties coreProps = new Properties();
     coreProps.put("customKey", "customValue");//just to assert it survives the restoration
     create.setProperties(coreProps);
@@ -366,7 +363,6 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
       assertEquals(origShardToDocCount, getShardToDocCountMap(client, restoreCollection));
     }
 
-    assertEquals(backupCollection.getAutoAddReplicas(), restoreCollection.getAutoAddReplicas());
     assertEquals(sameConfig ? "conf1" : "customConfigName",
         cluster.getSolrClient().getZkStateReader().readConfigName(restoreCollectionName));
 

@@ -38,8 +38,8 @@ import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
-import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
+import org.apache.solr.client.solrj.cloud.AlreadyExistsException;
+import org.apache.solr.client.solrj.cloud.BadVersionException;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
@@ -91,7 +91,6 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.POLICY;
 import static org.apache.solr.common.cloud.DocCollection.SNITCH;
 import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
@@ -146,9 +145,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       ZkStateReader.NRT_REPLICAS, "1",
       ZkStateReader.TLOG_REPLICAS, "0",
       ZkStateReader.PULL_REPLICAS, "0",
-      ZkStateReader.AUTO_ADD_REPLICAS, "false",
       DocCollection.RULE, null,
-      POLICY, null,
       SNITCH, null,
       WITH_COLLECTION, null,
       COLOCATED_WITH, null));
@@ -238,7 +235,6 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
         .put(ADDREPLICA, new AddReplicaCmd(this))
         .put(MOVEREPLICA, new MoveReplicaCmd(this))
         .put(REINDEXCOLLECTION, new ReindexCollectionCmd(this))
-        .put(UTILIZENODE, new UtilizeNodeCmd(this))
         .put(RENAME, new RenameCmd(this))
         .build()
     ;
