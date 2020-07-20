@@ -80,9 +80,6 @@ import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.params.CollectionAdminParams.CLUSTER;
-import static org.apache.solr.common.params.CollectionAdminParams.DEFAULTS;
-import static org.apache.solr.common.params.CollectionAdminParams.USE_LEGACY_REPLICA_ASSIGNMENT;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.anyInt;
@@ -370,7 +367,6 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     when(cloudDataProviderMock.getClusterStateProvider()).thenReturn(clusterStateProviderMock);
     when(clusterStateProviderMock.getClusterState()).thenReturn(clusterStateMock);
     when(clusterStateProviderMock.getLiveNodes()).thenReturn(liveNodes);
-    when(clusterStateProviderMock.getClusterProperties()).thenReturn(Utils.makeMap(DEFAULTS, Utils.makeMap(CLUSTER, Utils.makeMap(USE_LEGACY_REPLICA_ASSIGNMENT, true))));
     when(cloudDataProviderMock.getDistribStateManager()).thenReturn(stateManagerMock);
     when(cloudManagerMock.getDistribStateManager()).thenReturn(distribStateManagerMock);
 
