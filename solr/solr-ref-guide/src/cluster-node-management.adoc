@@ -281,6 +281,17 @@ http://localhost:8983/solr/admin/collections?action=BALANCESHARDUNIQUE&collectio
 
 Examining the clusterstate after issuing this call should show exactly one replica in each shard that has this property.
 
+[[replacenode]]
+== REPLACENODE: Move All Replicas in a Node to Another
+
+This command recreates replicas in one node (the source) to another node(s) (the target). After each replica is copied, the replicas in the source node are deleted.
+
+For source replicas that are also shard leaders the operation will wait for the number of seconds set with the `timeout` parameter to make sure there's an active replica that can become a leader either an existing replica becoming a leader or the new replica completing recovery and becoming a leader).
+
+The API uses the Autoscaling framework to find nodes that can satisfy the disk requirements for the new replicas but only when an Autoscaling policy is configured. Refer to <solrcloud-autoscaling-policy-preferences.adoc#solrcloud-autoscaling-policy-preferences,Autoscaling Policy and Preferences>> section for more details.
+
+`/admin/collections?action=REPLACENODE&sourceNode=_source-node_&targetNode=_target-node_`
+
 === REPLACENODE Parameters
 
 `sourceNode`::
