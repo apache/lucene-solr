@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+g
 public class RequestRateLimiter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -71,20 +71,11 @@ public class RequestRateLimiter {
     AsyncContext asyncContext = waitQueue.poll();
 
     if (asyncContext != null) {
-      try
-      {
-        //System.out.println("FIRINGFOOOOFIIRRRING");
-        HttpServletResponse servletResponse = (HttpServletResponse) asyncContext.getResponse();
-
-        servletResponse.setContentType("APPLICATION/OCTET-STREAM");
-
-
-        System.out.println("FIRINGFOOOOFIIRRRING");
+      try {
         asyncContext.dispatch();
         return true;
       }
-      catch (IllegalStateException x)
-      {
+      catch (IllegalStateException x) {
         log.warn(x.getMessage());
       }
     }
@@ -123,15 +114,7 @@ public class RequestRateLimiter {
         servletResponse.getWriter().flush();
         servletResponse.getWriter().close();
 
-        //((HttpServletResponse)asyncEvent.getSuppliedResponse()).sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
-        System.out.println("CLEARING OUT1");
         asyncContext.complete();
-        //TODO: atri
-
-        /*if (waitQueue.remove(asyncContext)) {
-          System.out.println("FIRINGNFIRINGFIRING");
-          asyncContext.dispatch();
-        }*/
       }
 
       @Override

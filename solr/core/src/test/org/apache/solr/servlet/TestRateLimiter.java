@@ -105,12 +105,12 @@ public class TestRateLimiter extends SolrCloudTestCase {
 
       MockRequestRateLimiter mockQueryRateLimiter = (MockRequestRateLimiter) rateLimitManager.getRequestRateLimiter(SolrRequest.SolrRequestType.QUERY);
 
-      assertTrue("Incoming request count did not match. Expected >  incoming " + mockQueryRateLimiter.incomingRequestCount.get(),
-          mockQueryRateLimiter.incomingRequestCount.get() > 50);
-      assertTrue("Incoming accepted new request count did not match. Expected 4 incoming " + mockQueryRateLimiter.acceptedNewRequestCount.get(),
+      assertTrue("Incoming request count did not match. Expected >200  incoming " + mockQueryRateLimiter.incomingRequestCount.get(),
+          mockQueryRateLimiter.incomingRequestCount.get() > 200);
+      assertTrue("Incoming accepted new request count did not match. Expected 200 incoming " + mockQueryRateLimiter.acceptedNewRequestCount.get(),
           mockQueryRateLimiter.acceptedNewRequestCount.get() == 200);
-      assertTrue("Incoming rejected new request count did not match. Expected 4 incoming " + mockQueryRateLimiter.rejectedRequestCount.get(),
-          mockQueryRateLimiter.rejectedRequestCount.get() > 180);
+      assertTrue("Incoming rejected new request count did not match. Expected >0 incoming " + mockQueryRateLimiter.rejectedRequestCount.get(),
+          mockQueryRateLimiter.rejectedRequestCount.get() > 0);
       assertTrue("Incoming total processed requests count did not match. Expected " + mockQueryRateLimiter.incomingRequestCount.get() + " incoming "
               + (mockQueryRateLimiter.acceptedNewRequestCount.get() + mockQueryRateLimiter.rejectedRequestCount.get()),
           (mockQueryRateLimiter.acceptedNewRequestCount.get() + mockQueryRateLimiter.rejectedRequestCount.get()) == mockQueryRateLimiter.incomingRequestCount.get());
@@ -188,14 +188,19 @@ public class TestRateLimiter extends SolrCloudTestCase {
       MockRequestRateLimiter mockIndexRateLimiter = (MockRequestRateLimiter) rateLimitManager.getRequestRateLimiter(SolrRequest.SolrRequestType.UPDATE);
 
       assertTrue("Incoming request count did not match. Expected > 4 incoming " +  mockIndexRateLimiter.incomingRequestCount.get(),
-           mockIndexRateLimiter.incomingRequestCount.get() > 10);
-      assertTrue("Incoming accepted new request count did not match. Expected 100 incoming " +  mockIndexRateLimiter.acceptedNewRequestCount.get(),
-           mockIndexRateLimiter.acceptedNewRequestCount.get() == 10);
-      assertTrue("Incoming rejected new request count did not match. Expected 4 incoming " +  mockIndexRateLimiter.rejectedRequestCount.get(),
-           mockIndexRateLimiter.rejectedRequestCount.get() > 0);
-      assertTrue("Incoming total processed requests count did not match. Expected " +  mockIndexRateLimiter.incomingRequestCount.get() + " incoming "
-              + ( mockIndexRateLimiter.acceptedNewRequestCount.get() +  mockIndexRateLimiter.rejectedRequestCount.get()),
-          ( mockIndexRateLimiter.acceptedNewRequestCount.get() +  mockIndexRateLimiter.rejectedRequestCount.get()) ==  mockIndexRateLimiter.incomingRequestCount.get());
+           mockIndexRateLimiter.incomingRequestCount.get() == 1);
+
+      MockRequestRateLimiter mockQueryRateLimiter = (MockRequestRateLimiter) rateLimitManager.getRequestRateLimiter(SolrRequest.SolrRequestType.QUERY);
+
+      assertTrue("Incoming request count did not match. Expected > 10 incoming " +  mockQueryRateLimiter.incomingRequestCount.get(),
+          mockQueryRateLimiter.incomingRequestCount.get() > 10);
+      assertTrue("Incoming accepted new request count did not match. Expected 10 incoming " +  mockQueryRateLimiter.acceptedNewRequestCount.get(),
+          mockQueryRateLimiter.acceptedNewRequestCount.get() == 10);
+      assertTrue("Incoming rejected new request count did not match. Expected >0 incoming " +  mockQueryRateLimiter.rejectedRequestCount.get(),
+          mockQueryRateLimiter.rejectedRequestCount.get() > 0);
+      assertTrue("Incoming total processed requests count did not match. Expected " +  mockQueryRateLimiter.incomingRequestCount.get() + " incoming "
+              + ( mockQueryRateLimiter.acceptedNewRequestCount.get() +  mockQueryRateLimiter.rejectedRequestCount.get()),
+          ( mockQueryRateLimiter.acceptedNewRequestCount.get() +  mockQueryRateLimiter.rejectedRequestCount.get()) ==  mockQueryRateLimiter.incomingRequestCount.get());
     } finally {
       executor.shutdown();
     }
