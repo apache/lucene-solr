@@ -15,8 +15,10 @@
  * limitations under the License.
  */
 
-apply plugin: 'java'
-// NOT a 'java-library'.  Maybe 'application' but seems too limiting.
+plugins {
+  id "java"
+  id "de.undercouch.download"
+}
 
 description = 'System for benchmarking Lucene'
 
