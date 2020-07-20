@@ -157,7 +157,6 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
   private String coll1State = "{'gettingstarted':{\n" +
       "    'replicationFactor':'2',\n" +
       "    'router':{'name':'compositeId'},\n" +
-      "    'autoAddReplicas':'false',\n" +
       "    'shards':{\n" +
       "      'shard1':{\n" +
       "        'range':'80000000-ffffffff',\n" +

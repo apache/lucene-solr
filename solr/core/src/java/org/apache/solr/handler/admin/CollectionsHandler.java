@@ -123,7 +123,6 @@ import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
 import static org.apache.solr.common.cloud.DocCollection.RULE;
 import static org.apache.solr.common.cloud.DocCollection.SNITCH;
-import static org.apache.solr.common.cloud.ZkStateReader.AUTO_ADD_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_PROP;
@@ -460,7 +459,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           CREATE_NODE_SET,
           CREATE_NODE_SET_SHUFFLE,
           SHARDS_PROP,
-          AUTO_ADD_REPLICAS,
           RULE,
           SNITCH,
           PULL_REPLICAS,
@@ -557,7 +555,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           REPLICATION_FACTOR,
           CREATE_NODE_SET,
           CREATE_NODE_SET_SHUFFLE,
-          AUTO_ADD_REPLICAS,
           "shards",
           CommonParams.ROWS,
           CommonParams.Q,
@@ -1165,7 +1162,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       }
       // from CREATE_OP:
       copy(req.getParams(), params, COLL_CONF, REPLICATION_FACTOR, NRT_REPLICAS, TLOG_REPLICAS,
-          PULL_REPLICAS, AUTO_ADD_REPLICAS, CREATE_NODE_SET, CREATE_NODE_SET_SHUFFLE);
+          PULL_REPLICAS, CREATE_NODE_SET, CREATE_NODE_SET_SHUFFLE);
       copyPropertiesWithPrefix(req.getParams(), params, COLL_PROP_PREFIX);
       return params;
     }),

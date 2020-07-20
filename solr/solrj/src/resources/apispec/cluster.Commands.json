@@ -78,9 +78,6 @@
         "urlScheme": {
           "type": "string"
         },
-        "autoAddReplicas": {
-          "type": "boolean"
-        },
         "maxCoresPerNode": {
           "type": "boolean"
         },

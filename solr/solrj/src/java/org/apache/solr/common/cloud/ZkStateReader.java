@@ -117,7 +117,6 @@ public class ZkStateReader implements SolrCloseable {
 
   public static final String DEFAULT_SHARD_PREFERENCES = "defaultShardPreferences";
   public static final String REPLICATION_FACTOR = "replicationFactor";
-  public static final String AUTO_ADD_REPLICAS = "autoAddReplicas";
   public static final String MAX_CORES_PER_NODE = "maxCoresPerNode";
   public static final String PULL_REPLICAS = "pullReplicas";
   public static final String NRT_REPLICAS = "nrtReplicas";
@@ -222,7 +221,6 @@ public class ZkStateReader implements SolrCloseable {
 
   public static final Set<String> KNOWN_CLUSTER_PROPS = Set.of(
       URL_SCHEME,
-      AUTO_ADD_REPLICAS,
       CoreAdminParams.BACKUP_LOCATION,
       DEFAULT_SHARD_PREFERENCES,
       MAX_CORES_PER_NODE,

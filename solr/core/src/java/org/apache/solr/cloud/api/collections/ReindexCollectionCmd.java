@@ -110,8 +110,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
       ZkStateReader.REPLICATION_FACTOR,
       "shards",
       CollectionAdminParams.CREATE_NODE_SET_PARAM,
-      CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM,
-      ZkStateReader.AUTO_ADD_REPLICAS
+      CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM
   );
 
   private final OverseerCollectionMessageHandler ocmh;

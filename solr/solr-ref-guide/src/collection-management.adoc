@@ -224,7 +224,6 @@ At least one `_attribute_` parameter is required.
 The attributes that can be modified are:
 
 * replicationFactor
-* autoAddReplicas
 * collection.configName
 * rule
 * snitch
@@ -703,7 +702,7 @@ There's a number of optional parameters that determine the target collection lay
 are not specified in the request then their values are copied from the source collection.
 The following parameters are currently supported (described in details in the <<create,CREATE collection>> section):
 `numShards`, `replicationFactor`, `nrtReplicas`, `tlogReplicas`, `pullReplicas`,
-`autoAddReplicas`, `shards`, `policy`, `createNodeSet`, `createNodeSet.shuffle`, `router.*`.
+`shards`, `policy`, `createNodeSet`, `createNodeSet.shuffle`, `router.*`.
 
 `removeSource`::
 Optional boolean. If true then after the processing is successfully finished the source collection will
@@ -886,7 +885,6 @@ http://localhost:8983/solr/admin/collections?action=COLSTATUS&collection=getting
     "gettingstarted": {
         "znodeVersion": 16,
         "properties": {
-            "autoAddReplicas": "false",
             "nrtReplicas": "2",
             "pullReplicas": "0",
             "replicationFactor": "2",
@@ -1030,7 +1028,6 @@ http://localhost:8983/solr/admin/collections?action=COLSTATUS&collection=getting
     "gettingstarted": {
         "znodeVersion": 33,
         "properties": {
-            "autoAddReplicas": "false",
             "nrtReplicas": "2",
             "pullReplicas": "0",
             "replicationFactor": "2",
@@ -1277,9 +1274,6 @@ The number of TLOG replicas to create for this collection. This type of replica 
 
 `pullReplicas`::
 The number of PULL replicas to create for this collection. This type of replica does not maintain a transaction log and only updates its index via replication from a leader. This type is not eligible to become a leader and should not be the only type of replicas in the collection. See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,Types of Replicas>> for more information about replica types.
-
-`autoAddReplicas`::
-When set to `true`, enables auto addition of replicas on shared file systems. See the section <<running-solr-on-hdfs.adoc#automatically-add-replicas-in-solrcloud,Automatically Add Replicas in SolrCloud>> for more details on settings and overrides.
 
 `property._name_=_value_`::
 Set core property _name_ to _value_. See the section <<defining-core-properties.adoc#defining-core-properties,Defining core.properties>> for details on supported properties and values.

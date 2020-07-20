@@ -293,7 +293,6 @@ public class RulesTest extends SolrCloudTestCase {
     p.add("rule", "cores:<5");
     p.add("rule", "node:*,replica:1");
     p.add("rule", "freedisk:>"+minGB2);
-    p.add("autoAddReplicas", "true");
     cluster.getSolrClient().request(new GenericSolrRequest(POST, COLLECTIONS_HANDLER_PATH, p));
 
     waitForState("Should have found updated rules in DocCollection",
@@ -313,9 +312,6 @@ public class RulesTest extends SolrCloudTestCase {
                      return false;
                    }
                    if (! (">"+minGB2).equals(((Map) list.get(2)).get("freedisk"))) {
-                     return false;
-                   }
-                   if (! "true".equals(String.valueOf(rulesCollection.getProperties().get("autoAddReplicas")))) {
                      return false;
                    }
                    list = (List) rulesCollection.get("snitch");
