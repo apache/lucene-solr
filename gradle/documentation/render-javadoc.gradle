@@ -165,6 +165,10 @@ class RenderJavadocTask extends DefaultTask {
 
   @TaskAction
   public void render() {
+    // TODO: add 'String executable' property, much like Gradle's built-in javadoc.
+    // resolve lazily to the current JVM's javadoc executable (using the public new API).
+    // the runtime-jvm-support.gradle should then lazily modify this
+    // property if alt jvm is requested (the logic to set alt jvm should be there, not here).
     def javadocCmd = org.gradle.internal.jvm.Jvm.current().getJavadocExecutable()
 
     def srcDirs = srcDirSet.srcDirs.findAll { dir -> dir.exists() }
