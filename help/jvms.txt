@@ -1,0 +1,18 @@
+Compiling and testing against different JVMs
+============================================
+
+By default tests are executed with the same Java Gradle is using internally.
+
+To run tests against a different Java version, define a property called
+"runtime.java.home" or define an environment variable "RUNTIME_JAVA_HOME"
+pointing at the JDK installation folder.
+
+If property is being used, it can be a system property (-D...) or a project
+property (-P...).
+
+Example:
+
+gradlew test -p lucene/test-framework --tests TestJvmInfo -Dtests.verbose=true -Druntime.java.home=/jvms/jdk14
+
+Note that an alternative JVM can also be made the "default" setting
+by adding it to (project-local) gradle.properties.
