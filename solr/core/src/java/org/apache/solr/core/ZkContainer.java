@@ -244,7 +244,7 @@ public class ZkContainer implements Closeable {
 
   public void close() {
     try (ParWork closer = new ParWork(this, true)) {
-      closer.add("zkContainer", zkController, zkClient, zkServer);
+      closer.add("zkContainer", zkController, zkServer);
     }
   }
 }

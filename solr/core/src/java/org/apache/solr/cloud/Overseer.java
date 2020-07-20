@@ -316,6 +316,10 @@ public class Overseer implements SolrCloseable {
           try {
             Set<String> processedNodes = new HashSet<>();
             while (queue != null && !queue.isEmpty()) {
+              if (Thread.currentThread().isInterrupted() || isClosed) {
+                log.info("Closing");
+                return;
+              }
               for (Pair<String, byte[]> head : queue) {
                 byte[] data = head.second();
                 final ZkNodeProps message = ZkNodeProps.load(data);

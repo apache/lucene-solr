@@ -118,6 +118,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   private SolrMetricManager metricManager;
   private String registryName;
   private volatile boolean closeOnDestroy = true;
+  private volatile SolrZkClient zkClient;
 
   /**
    * Enum to define action that needs to be processed.
@@ -281,7 +282,6 @@ public class SolrDispatchFilter extends BaseSolrFilter {
    */
   protected CoreContainer createCoreContainer(Path solrHome, Properties extraProperties) {
     String zkHost = System.getProperty("zkHost");
-    SolrZkClient zkClient = null;
     if (!StringUtils.isEmpty(zkHost)) {
       int startUpZkTimeOut = Integer.getInteger("waitForZk", 10); // nocommit - zk settings
       zkClient = new SolrZkClient(zkHost, (int) TimeUnit.SECONDS.toMillis(startUpZkTimeOut));
@@ -339,9 +339,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   
   @Override
   public void destroy() {
-    if (closeOnDestroy) {
-      close();
-    }
+    close();
   }
   
   public void close() {
@@ -362,7 +360,11 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     } finally {
       if (cc != null) {
         httpClient = null;
-        cc.shutdown();
+        try {
+          ParWork.close(cc);
+        } finally {
+          ParWork.close(zkClient);
+        }
       }
       GlobalTracer.get().close();
     }
@@ -702,9 +704,5 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     } else {
       return response;
     }
-  }
-  
-  public void closeOnDestroy(boolean closeOnDestroy) {
-    this.closeOnDestroy = closeOnDestroy;
   }
 }
