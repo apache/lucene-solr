@@ -108,10 +108,6 @@ public class TestCloudPhrasesIdentificationComponent extends SolrCloudTestCase {
 
   @AfterClass
   private static void afterClass() throws Exception {
-    if (null != CLOUD_CLIENT) {
-      CLOUD_CLIENT.close();
-      CLOUD_CLIENT = null;
-    }
     for (HttpSolrClient client : CLIENTS) {
       client.close();
     }

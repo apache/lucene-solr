@@ -77,6 +77,8 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.slf4j.Logger;
@@ -143,6 +145,7 @@ public class MiniSolrCloudCluster {
       "</solr>\n";
 
   private final Object startupWait = new Object();
+  private final SolrZkClient solrZkClient;
   private volatile ZkTestServer zkServer; // non-final due to injectChaos()
   private final boolean externalZkServer;
   private final List<JettySolrRunner> jettys = new CopyOnWriteArrayList<>();
@@ -332,7 +335,7 @@ public class MiniSolrCloudCluster {
 
       // build the client
       solrClient = buildSolrClient();
-
+      solrZkClient = solrClient.getZkStateReader().getZkClient();
       if (numServers > 0) {
         waitForAllNodes(numServers, STARTUP_WAIT_SECONDS);
       }
@@ -651,20 +654,75 @@ public class MiniSolrCloudCluster {
    */
   public void shutdown() throws Exception {
     try {
+      log.info("creating cluster shutdown zk node");
+      zkServer.getZkClient().mkdirs("/solr" + ZkController.CLUSTER_SHUTDOWN);
+      zkServer.getZkClient().printLayout();
+      zkServer.getZkClient().printLayoutToStream(System.out);
+
+      CountDownLatch latch = new CountDownLatch(1);
+      List<String> children = zkServer.getZkClient().getChildren("/solr" + ZkStateReader.LIVE_NODES_ZKNODE, new Watcher() {
+        @Override
+        public void process(WatchedEvent event) {
+          if (Event.EventType.None.equals(event.getType())) {
+            return;
+          }
+          if (event.getType() == Event.EventType.NodeChildrenChanged) {
+            try {
+              List<String> children = zkServer.getZkClient().getChildren("/solr" + ZkStateReader.LIVE_NODES_ZKNODE, this, false);
+              if (children.size() == 0) {
+                latch.countDown();
+              }
+            } catch (KeeperException e) {
+              log.error("Exception on proper shutdown", e);
+              return;
+            } catch (InterruptedException e) {
+              ParWork.propegateInterrupt(e);
+              return;
+            }
+          }
+        }
+      }, false);
+
+      if (children.size() > 0) {
+        boolean success = latch.await(10, TimeUnit.SECONDS);
+        if (!success)  {
+          throw new TimeoutException("Time out waiting to see solr live nodes go down " + children.size());
+        }
+      }
+
+    } catch (KeeperException.NodeExistsException e) {
+      log.info("Shutdown zk node already exists");
+    } catch (Exception e) {
+      log.error("Exception on proper shutdown", e);
+    }
+
+
+    //ZkStateReader reader = zkServer.getZkClient().getZkStateReader();
+
+//    try {
+//      reader.waitForLiveNodes(10, TimeUnit.SECONDS, (o, n) -> n.size() == 0);
+//    } catch (InterruptedException e) {
+//      Thread.currentThread().interrupt();
+//      throw new SolrException(ErrorCode.SERVER_ERROR, "interrupted");
+//    }
+   // Thread.sleep(40000);
+
+    try {
       List<Callable<JettySolrRunner>> shutdowns = new ArrayList<>(jettys.size());
       for (final JettySolrRunner jetty : jettys) {
-        shutdowns.add(() -> stopJettySolrRunner(jetty, false));
+        shutdowns.add(() -> stopJettySolrRunner(jetty, true));
       }
       jettys.clear();
 
       try (ParWork parWork = new ParWork(this, true)) {
-        parWork.collect(solrClient);
         parWork.collect(shutdowns);
-        parWork.addCollect("jetties&solrClient");
+        parWork.addCollect("jetties");
+        parWork.collect(solrClient);
+        parWork.addCollect("solrClient");
         if (!externalZkServer) {
           parWork.collect(zkServer);
+          parWork.addCollect("zkServer");
         }
-        parWork.addCollect("zkServer");
       }
     } finally {
       System.clearProperty("zkHost");
@@ -682,7 +740,7 @@ public class MiniSolrCloudCluster {
   }
 
   public SolrZkClient getZkClient() {
-    return solrClient.getZkStateReader().getZkClient();
+    return solrZkClient;
   }
   
   protected CloudSolrClient buildSolrClient() {
@@ -759,28 +817,31 @@ public class MiniSolrCloudCluster {
     }
   }
 
-  public synchronized void injectChaos(Random random) throws Exception {
+  public  void injectChaos(Random random) throws Exception {
+    if (LuceneTestCase.TEST_NIGHTLY && false) { // nocommit
+      synchronized (this) {
+        // sometimes we restart one of the jetty nodes
+        if (random.nextBoolean()) {
+          JettySolrRunner jetty = jettys.get(random.nextInt(jettys.size()));
+          jetty.stop();
+          log.info("============ Restarting jetty");
+          jetty.start();
+        }
 
-    // sometimes we restart one of the jetty nodes
-    if (random.nextBoolean()) {
-      JettySolrRunner jetty = jettys.get(random.nextInt(jettys.size()));
-      jetty.stop();
-      log.info("============ Restarting jetty");
-      jetty.start();
-    }
+        // sometimes we restart zookeeper
+        if (random.nextBoolean()) {
+          zkServer.shutdown();
+          log.info("============ Restarting zookeeper");
+          zkServer = new ZkTestServer(zkServer.getZkDir(), zkServer.getPort());
+          zkServer.run(false);
+        }
 
-    // sometimes we restart zookeeper
-    if (random.nextBoolean()) {
-      zkServer.shutdown();
-      log.info("============ Restarting zookeeper");
-      zkServer = new ZkTestServer(zkServer.getZkDir(), zkServer.getPort());
-      zkServer.run(false);
-    }
-
-    // sometimes we cause a connection loss - sometimes it will hit the overseer
-    if (random.nextBoolean()) {
-      JettySolrRunner jetty = jettys.get(random.nextInt(jettys.size()));
-      ChaosMonkey.causeConnectionLoss(jetty);
+        // sometimes we cause a connection loss - sometimes it will hit the overseer
+        if (random.nextBoolean()) {
+          JettySolrRunner jetty = jettys.get(random.nextInt(jettys.size()));
+          ChaosMonkey.causeConnectionLoss(jetty);
+        }
+      }
     }
   }
 

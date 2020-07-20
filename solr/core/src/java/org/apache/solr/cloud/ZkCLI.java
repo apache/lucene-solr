@@ -197,7 +197,7 @@ public class ZkCLI implements CLIO {
       SolrZkClient zkClient = null;
       CoreContainer cc = null;
       try {
-        zkClient = new SolrZkClient(zkServerAddress, 30000, 30000,
+        zkClient = new SolrZkClient(zkServerAddress, 30000, 10000,
             () -> {
             }).start();
 

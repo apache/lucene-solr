@@ -91,6 +91,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.server.handler.ShutdownHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.server.session.DefaultSessionIdManager;
 import org.eclipse.jetty.server.session.HouseKeeper;
@@ -464,7 +465,9 @@ public class JettySolrRunner implements Closeable {
     }
 
     chain = injectJettyHandlers(chain);
-
+    ShutdownHandler shutdownHandler = new ShutdownHandler("solrrocks", true, true);
+    shutdownHandler.setHandler(chain);
+    chain = shutdownHandler;
     if(config.enableV2) {
       RewriteHandler rwh = new RewriteHandler();
       rwh.setHandler(chain);

@@ -655,7 +655,9 @@ public class Overseer implements SolrCloseable {
 
     updaterThread.start();
     ccThread.start();
-    triggerThread.start();
+    if (triggerThread != null) {
+      triggerThread.start();
+    }
 
     systemCollectionCompatCheck(new BiConsumer<String, Object>() {
       boolean firstPair = true;

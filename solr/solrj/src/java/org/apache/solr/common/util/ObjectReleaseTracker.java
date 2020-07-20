@@ -80,6 +80,10 @@ public class ObjectReleaseTracker {
     public ObjectTrackerException(String msg) {
       super(msg);
     }
+
+    public ObjectTrackerException(Throwable t) {
+      super(t);
+    }
   }
 
 }

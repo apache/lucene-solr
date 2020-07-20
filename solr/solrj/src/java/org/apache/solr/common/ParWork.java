@@ -43,6 +43,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.OrderedExecutor;
 import org.apache.solr.common.util.SysStats;
 import org.apache.zookeeper.KeeperException;
@@ -667,7 +668,7 @@ public class ParWork implements Closeable {
       } else {
         if (ignoreExceptions) {
           warns.add(t);
-          log.error("Error", t);
+          log.error("Error handling close for an object", new ObjectReleaseTracker.ObjectTrackerException(t));
           if (t instanceof Error && !(t instanceof AssertionError)) {
             throw (Error) t;
           }

@@ -61,6 +61,7 @@ import org.apache.solr.common.ParWorkExecutor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ConnectionManager.IsClosed;
+import org.apache.solr.common.util.CloseTracker;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
@@ -97,6 +98,7 @@ public class SolrZkClient implements Closeable {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final int zkClientConnectTimeout;
+  private final CloseTracker closeTracker;
 
   private volatile ConnectionManager connManager;
 
@@ -124,6 +126,7 @@ public class SolrZkClient implements Closeable {
 
   // expert: for tests
   public SolrZkClient() {
+    closeTracker = new CloseTracker();
     zkClientConnectTimeout = 0;
   }
 
@@ -157,6 +160,7 @@ public class SolrZkClient implements Closeable {
   public SolrZkClient(String zkServerAddress, int zkClientTimeout, int clientConnectTimeout,
       ZkClientConnectionStrategy strat, final OnReconnect onReconnect, BeforeReconnect beforeReconnect, ZkACLProvider zkACLProvider, IsClosed higherLevelIsClosed) {
     ObjectReleaseTracker.track(this);
+    closeTracker = new CloseTracker();
     this.zkServerAddress = zkServerAddress;
     this.higherLevelIsClosed = higherLevelIsClosed;
     if (strat == null) {
@@ -854,6 +858,7 @@ public class SolrZkClient implements Closeable {
   }
 
   public void close() {
+    closeTracker.close();
     if (isClosed) return; // it's okay if we over close - same as solrcore
     isClosed = true;
 

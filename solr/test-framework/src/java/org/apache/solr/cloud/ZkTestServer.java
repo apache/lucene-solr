@@ -49,6 +49,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.management.JMException;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -56,6 +57,7 @@ import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
+import org.apache.solr.common.util.CloseTracker;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.TimeOut;
 import org.apache.solr.common.util.TimeSource;
@@ -96,6 +98,8 @@ public class ZkTestServer implements Closeable {
       // must override getSolrHome
     }
   }
+
+  private volatile CloseTracker closeTracker;
 
   private Path zkMonitoringFile;
 
@@ -543,18 +547,21 @@ public class ZkTestServer implements Closeable {
     run(false);
   }
 
-  public void run(boolean solrFormat) throws InterruptedException, IOException {
+  public synchronized void run(boolean solrFormat) throws InterruptedException, IOException {
     log.info("STARTING ZK TEST SERVER dataDir={}", this.zkDir);
     // docs say no config for netty yet
    // System.setProperty("zookeeper.serverCnxnFactory", "org.apache.zookeeper.server.NettyServerCnxnFactory");
    // System.setProperty("zookeeper.clientCnxnSocket", "org.apache.zookeeper.ClientCnxnSocketNetty");
 
-
+    if (zooThread != null) {
+      throw new AlreadyClosedException();
+    }
+    if (closeTracker != null) {
+      throw new AlreadyClosedException();
+    }
+    closeTracker = new CloseTracker();
 
     try {
-      if (zooThread != null) {
-        throw new IllegalStateException("ZK TEST SERVER IS ALREADY RUNNING");
-      }
       // we don't call super.distribSetUp
       zooThread = new Thread("ZkTestServer Run Thread") {
 
@@ -620,9 +627,9 @@ public class ZkTestServer implements Closeable {
     }
   }
 
-  public void shutdown() throws IOException, InterruptedException {
+  public synchronized void shutdown() throws IOException, InterruptedException {
     log.info("Shutting down ZkTestServer.");
-
+    closeTracker.close();
     try {
       if (chRootClient != null) {
         chRootClient.printLayout();

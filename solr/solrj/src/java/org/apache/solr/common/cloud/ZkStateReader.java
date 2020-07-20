@@ -55,6 +55,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.util.CloseTracker;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.Pair;
@@ -156,6 +157,7 @@ public class ZkStateReader implements SolrCloseable {
   private static final String SOLR_ENVIRONMENT = "environment";
 
   public static final String REPLICA_TYPE = "type";
+  private final CloseTracker closeTracker;
 
   /**
    * A view of the current state of all collections; combines all the different state sources into a single view.
@@ -337,6 +339,7 @@ public class ZkStateReader implements SolrCloseable {
   }
 
   public ZkStateReader(SolrZkClient zkClient, Runnable securityNodeListener) {
+    closeTracker = new CloseTracker();
     this.zkClient = zkClient;
     this.configManager = new ZkConfigManager(zkClient);
     this.closeClient = false;
@@ -346,6 +349,7 @@ public class ZkStateReader implements SolrCloseable {
 
 
   public ZkStateReader(String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout) {
+    closeTracker = new CloseTracker();
     this.zkClient = new SolrZkClient(zkServerAddress, zkClientTimeout, zkClientConnectTimeout,
         // on reconnect, reload cloud info
         new OnReconnect() {
@@ -416,7 +420,8 @@ public class ZkStateReader implements SolrCloseable {
       public void process(WatchedEvent event) {
         if (EventType.None.equals(event.getType())) {
           return;
-        }   log.info("Got event on live node watcher {}", event.toString());
+        }
+        log.info("Got event on live node watcher {}", event.toString());
         if (event.getType() == EventType.NodeCreated) {
           latch.countDown();
         } else {
@@ -891,6 +896,7 @@ public class ZkStateReader implements SolrCloseable {
   }
 
   public void close() {
+    closeTracker.close();
     this.closed = true;
 
     try (ParWork closer = new ParWork(this)) {

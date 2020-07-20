@@ -22,8 +22,12 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
+import java.net.HttpURLConnection;
 import java.net.InetAddress;
+import java.net.MalformedURLException;
 import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.net.URL;
 import java.net.URLEncoder;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
@@ -161,6 +165,9 @@ import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 public class ZkController implements Closeable {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  public static final String CLUSTER_SHUTDOWN = "/cluster/shutdown";
+
   static final int WAIT_DOWN_STATES_TIMEOUT_SECONDS = 60;
   public final int WAIT_FOR_STATE = Integer.getInteger("solr.waitForState", 10);
 
@@ -339,7 +346,6 @@ public class ZkController implements Closeable {
     if (cc == null) log.error("null corecontainer");
     if (cc == null) throw new IllegalArgumentException("CoreContainer cannot be null.");
     try {
-      this.closeZkClient = true;
       this.cc = cc;
       this.descriptorsSupplier = descriptorsSupplier;
       this.cloudConfig = cloudConfig;
@@ -930,9 +936,137 @@ public class ZkController implements Closeable {
   }
 
   private void init() {
-    log.info("do init");
+    log.info("making shutdown watcher for cluster");
     try {
-      zkClient.mkdir("/cluster_lock");
+      zkClient.exists(CLUSTER_SHUTDOWN, new Watcher() {
+        @Override
+        public void process(WatchedEvent event) {
+          if (Event.EventType.None.equals(event.getType())) {
+            return;
+          }
+
+          log.info("Got even for shutdown {}" + event);
+          if (event.getType().equals(Event.EventType.NodeCreated)) {
+            log.info("Shutdown zk node created, shutting down");
+            shutdown();
+          } else {
+            log.info("Remaking shutdown watcher");
+            Stat stat = null;
+            try {
+              stat = zkClient.exists(CLUSTER_SHUTDOWN, this);
+            } catch (KeeperException e) {
+              SolrException.log(log, e);
+              return;
+            } catch (InterruptedException e) {
+              SolrException.log(log, e);
+              return;
+            }
+            if (stat != null) {
+              log.info("Got shutdown even while remaking watcher, shutting down");
+              shutdown();
+            }
+          }
+        }
+
+        private void shutdown() {
+          Thread updaterThead = overseer.getUpdaterThread();
+          log.info("Cluster shutdown initiated");
+          if (updaterThead!= null && updaterThead.isAlive()) {
+            log.info("We are the Overseer, wait for others to shutdown");
+
+            CountDownLatch latch = new CountDownLatch(1);
+            List<String> children = null;
+            try {
+              children = zkClient.getChildren("/solr" + ZkStateReader.LIVE_NODES_ZKNODE, new Watcher() {
+                @Override
+                public void process(WatchedEvent event) {
+                  if (Event.EventType.None.equals(event.getType())) {
+                    return;
+                  }
+                  if (event.getType() == Event.EventType.NodeChildrenChanged) {
+                    Thread updaterThead = overseer.getUpdaterThread();
+                    if (updaterThead == null || !updaterThead.isAlive()) {
+                      log.info("We were the Overseer, but it seems not anymore, shutting down");
+                      latch.countDown();
+                      return;
+                    }
+
+                    try {
+                      List<String> children = zkClient.getChildren("/solr" + ZkStateReader.LIVE_NODES_ZKNODE, this, false);
+                      if (children.size() == 1) {
+                        latch.countDown();
+                      }
+                    } catch (KeeperException e) {
+                      log.error("Exception on proper shutdown", e);
+                      return;
+                    } catch (InterruptedException e) {
+                      ParWork.propegateInterrupt(e);
+                      return;
+                    }
+                  }
+                }
+              }, false);
+            } catch (KeeperException e) {
+              log.error("Time out waiting to see solr live nodes go down " + children.size());
+              return;
+            } catch (InterruptedException e) {
+              ParWork.propegateInterrupt(e);
+              return;
+            }
+
+            if (children.size() > 1) {
+              boolean success = false;
+              try {
+                success = latch.await(10, TimeUnit.SECONDS);
+              } catch (InterruptedException e) {
+                ParWork.propegateInterrupt(e);
+              }
+              if (!success)  {
+                log.error("Time out waiting to see solr live nodes go down " + children.size());
+              }
+            }
+          }
+
+          ParWork.getExecutor().submit(new Runnable() {
+            @Override
+            public void run() {
+              try {
+                cc.close();
+              } catch (IOException e) {
+                log.error("IOException on shutdown", e);
+                return;
+              }
+              URL url = null;
+              try {
+                url = new URL(getHostName() + ":" + getHostPort() + "/shutdown?token=" + "solrrocks");
+              } catch (MalformedURLException e) {
+                SolrException.log(log, e);
+                return;
+              }
+              try {
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("POST");
+                connection.getResponseCode();
+                log.info("Shutting down " + url + ": " + connection.getResponseCode() + " " + connection.getResponseMessage());
+              } catch (SocketException e) {
+                SolrException.log(log, e);
+                // Okay - the server is not running
+              } catch (IOException e) {
+                SolrException.log(log, e);
+                return;
+              }
+            }
+          });
+        }
+      });
+    } catch (KeeperException e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
+    } catch (InterruptedException e) {
+      ParWork.propegateInterrupt(e);
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
+    }
+    try {
+      zkClient.mkdirs("/cluster/cluster_lock");
     } catch (KeeperException.NodeExistsException e) {
       // okay
     } catch (KeeperException e) {
@@ -940,7 +1074,7 @@ public class ZkController implements Closeable {
     }
     boolean createdClusterNodes = false;
     try {
-      DistributedLock lock = new DistributedLock(zkClient, "/cluster_lock", zkClient.getZkACLProvider().getACLsToAdd("/cluster_lock"));
+      DistributedLock lock = new DistributedLock(zkClient, "/cluster/cluster_lock", zkClient.getZkACLProvider().getACLsToAdd("/cluster/cluster_lock"));
       if (log.isDebugEnabled()) log.debug("get cluster lock");
       while (!lock.lock()) {
         Thread.sleep(250);
