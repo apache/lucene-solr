@@ -42,11 +42,6 @@ allprojects {
       srcDirSet = sourceSets.main.java;
 
       outputDir = project.javadoc.destinationDir;
-
-      // set javadoc command path when it passed via ext property
-      if (project.hasProperty("javadocCmdPath")) {
-        javadocCmdPath = project.javadocCmdPath
-      }
     }
 
     task renderSiteJavadoc(type: RenderJavadocTask) {
@@ -62,10 +57,6 @@ allprojects {
       // Place the documentation under Lucene or Solr's documentation directory.
       // docroot is defined in 'documentation.gradle'
       outputDir = project.docroot.toPath().resolve(project.relativeDocPath).toFile()
-
-      if (project.hasProperty("javadocCmdPath")) {
-        javadocCmdPath = project.javadocCmdPath
-      }
     }
   }
 }
@@ -161,7 +152,7 @@ class RenderJavadocTask extends DefaultTask {
   def solrDocUrl = "${->project.solrDocUrl}"
 
   @Input
-  def javadocCmdPath = org.gradle.internal.jvm.Jvm.current().getJavadocExecutable().toString()
+  def javadocCmdPath = "${-> project.hasProperty("javadocCmdPath") ? project.javadocCmdPath : org.gradle.internal.jvm.Jvm.current().getJavadocExecutable().toString()}"
   
   /** Utility method to recursively collect all tasks with same name like this one that we depend on */
   private Set findRenderTasksInDependencies() {
