@@ -371,7 +371,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   @SuppressForbidden(reason = "Using the Level class from log4j2 directly")
-  private static Map<String, Level> savedClassLogLevels = new HashMap<>();
+  protected static Map<String, Level> savedClassLogLevels = new HashMap<>();
 
   public static void initClassLogLevels() {
     Class currentClass = RandomizedContext.current().getTargetClass();
