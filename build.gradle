@@ -181,3 +181,21 @@ apply from: file('gradle/hacks/hashmapAssertions.gradle')
 
 apply from: file('gradle/solr/packaging.gradle')
 apply from: file('gradle/solr/solr-forbidden-apis.gradle')
+
+allprojects {
+  task ufclasspath {
+    doLast{
+      File ufPath = new File(project.getRootDir().getParentFile(), "unitflier/run/solr");
+      if (configurations.hasProperty('testRuntimeClasspath')) {
+        java.io.File file = new java.io.File(ufPath, project.projectDir.name + '.txt');
+        file.getParentFile().mkdirs();
+        file.write project.projectDir.toString() + "\n"
+        file << sourceSets.test.output.classesDirs.asPath + "\n"
+        file << project.projectDir.toString() + "/src/test-files" + ":" + project.projectDir.toString() + "/src/resources" + ":" + sourceSets.main.output.classesDirs.asPath + ":"
+        file << sourceSets.test.output.classesDirs.asPath + ":"
+        file << configurations.testRuntimeClasspath.asPath + "\n"
+      }
+    }
+  }
+}
+
