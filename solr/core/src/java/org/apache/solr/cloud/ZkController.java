@@ -16,90 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import com.google.common.base.Strings;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.solr.client.solrj.cloud.DistributedLock;
-import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
-import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
-import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
-import org.apache.solr.cloud.overseer.OverseerAction;
-import org.apache.solr.cloud.overseer.SliceMutator;
-import org.apache.solr.common.AlreadyClosedException;
-import org.apache.solr.common.ParWork;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.BeforeReconnect;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.ConnectionManager;
-import org.apache.solr.common.cloud.DefaultZkACLProvider;
-import org.apache.solr.common.cloud.DefaultZkCredentialsProvider;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.DocCollectionWatcher;
-import org.apache.solr.common.cloud.LiveNodesListener;
-import org.apache.solr.common.cloud.NodesSysPropsCacher;
-import org.apache.solr.common.cloud.OnReconnect;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Replica.Type;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkACLProvider;
-import org.apache.solr.common.cloud.ZkConfigManager;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.apache.solr.common.cloud.ZkCredentialsProvider;
-import org.apache.solr.common.cloud.ZkMaintenanceUtils;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.cloud.ZooKeeperException;
-import org.apache.solr.common.params.CollectionParams;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.CloseTracker;
-import org.apache.solr.common.util.IOUtils;
-import org.apache.solr.common.util.ObjectReleaseTracker;
-import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.util.TimeOut;
-import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.common.util.URLUtil;
-import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.CloseHook;
-import org.apache.solr.core.CloudConfig;
-import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.CoreDescriptor;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrCoreInitializationException;
-import org.apache.solr.handler.admin.ConfigSetsHandlerApi;
-import org.apache.solr.handler.component.HttpShardHandler;
-import org.apache.solr.handler.component.HttpShardHandlerFactory;
-import org.apache.solr.logging.MDCLoggingContext;
-import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.servlet.SolrDispatchFilter;
-import org.apache.solr.servlet.SolrLifcycleListener;
-import org.apache.solr.servlet.SolrShutdownHandler;
-import org.apache.solr.update.UpdateLog;
-import org.apache.solr.util.RTimer;
-import org.apache.solr.util.RefCounted;
-import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.KeeperException.NoNodeException;
-import org.apache.zookeeper.KeeperException.SessionExpiredException;
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.data.Stat;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTIONS_ZKNODE;
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.CORE_NODE_NAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.ELECTION_NODE_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -138,6 +54,69 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
+
+import com.google.common.base.Strings;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.solr.client.solrj.cloud.DistributedLock;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
+import org.apache.solr.cloud.overseer.OverseerAction;
+import org.apache.solr.cloud.overseer.SliceMutator;
+import org.apache.solr.common.AlreadyClosedException;
+import org.apache.solr.common.ParWork;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.*;
+import org.apache.solr.common.cloud.Replica.Type;
+import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CloseTracker;
+import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.TimeOut;
+import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.URLUtil;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.CloseHook;
+import org.apache.solr.core.CloudConfig;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrCoreInitializationException;
+import org.apache.solr.handler.admin.ConfigSetsHandlerApi;
+import org.apache.solr.handler.component.HttpShardHandler;
+import org.apache.solr.handler.component.HttpShardHandlerFactory;
+import org.apache.solr.logging.MDCLoggingContext;
+import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.solr.servlet.SolrLifcycleListener;
+import org.apache.solr.update.UpdateLog;
+import org.apache.solr.util.RTimer;
+import org.apache.solr.util.RefCounted;
+import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.KeeperException.NoNodeException;
+import org.apache.zookeeper.KeeperException.SessionExpiredException;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.data.Stat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTIONS_ZKNODE;
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NODE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.ELECTION_NODE_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 
 /**
  * Handle ZooKeeper interactions.
@@ -915,12 +894,6 @@ public class ZkController implements Closeable, Runnable {
 
 
     paths.put("/autoscaling", null);
-    paths.put(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, emptyJson);
-    paths.put(ZkStateReader.SOLR_AUTOSCALING_EVENTS_PATH, null);
-    paths.put(ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH, null);
-    // created with ephem node
-    // paths.put(ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH, null);
-    paths.put(ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH, null);
     paths.put("/autoscaling/events/.scheduled_maintenance", null);
     paths.put("/autoscaling/events/.auto_add_replicas", null);
 //
@@ -1246,30 +1219,6 @@ public class ZkController implements Closeable, Runnable {
             i++;
           }
 
-          // retrieve current trigger config - if there are no nodeLost triggers
-          // then don't create markers
-          boolean createNodes = false;
-          try {
-            createNodes = zkStateReader.getAutoScalingConfig().hasTriggerForEvents(TriggerEventType.NODELOST);
-          } catch (KeeperException | InterruptedException e1) {
-            ParWork.propagateInterrupt(e1);
-            log.warn("Unable to read autoscaling.json", e1);
-          }
-          if (createNodes) {
-            byte[] json = Utils.toJSON(Collections.singletonMap("timestamp", getSolrCloudManager().getTimeSource().getEpochTimeNs()));
-            for (String n : oldNodes) {
-              String path = ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH + "/" + n;
-
-              try {
-                zkClient.create(path, json, CreateMode.PERSISTENT, true);
-              } catch (KeeperException.NodeExistsException e) {
-                // someone else already created this node - ignore
-              } catch (KeeperException | InterruptedException e1) {
-                ParWork.propagateInterrupt(e1);
-                log.warn("Unable to register nodeLost path for {}", n, e1);
-              }
-            }
-          }
           return false;
         }
       }
@@ -1437,35 +1386,19 @@ public class ZkController implements Closeable, Runnable {
   private void createEphemeralLiveNode() {
     String nodeName = getNodeName();
     String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
-    String nodeAddedPath =
-        ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH + "/" + nodeName;
     log.info("Register node as live in ZooKeeper:" + nodePath);
 
     log.info("Create our ephemeral live node");
 
-    createLiveNodeImpl(nodePath, nodeAddedPath);
+    createLiveNodeImpl(nodePath);
   }
 
-  private void createLiveNodeImpl(String nodePath, String nodeAddedPath) {
+  private void createLiveNodeImpl(String nodePath) {
     Map<String, byte[]> dataMap = new HashMap<>(2);
     Map<String, CreateMode> createModeMap = new HashMap<>(2);
     dataMap.put(nodePath, null);
     createModeMap.put(nodePath, CreateMode.EPHEMERAL);
     try {
-      // if there are nodeAdded triggers don't create nodeAdded markers
-      boolean createMarkerNode = zkStateReader.getAutoScalingConfig().hasTriggerForEvents(TriggerEventType.NODEADDED);
-
-      // TODO, do this optimistically
-//      if (createMarkerNode && !zkClient.exists(nodeAddedPath, true)) {
-//        // use EPHEMERAL so that it disappears if this node goes down
-//        // and no other action is taken
-//        byte[] json = Utils.toJSON(Collections.singletonMap("timestamp", TimeSource.NANO_TIME.getEpochTimeNs()));
-//        dataMap.put(nodeAddedPath, json);
-//        createModeMap.put(nodePath, CreateMode.EPHEMERAL);
-//      }
-
-      //   zkClient.mkDirs(dataMap, createModeMap);
-
       try {
         zkClient.getSolrZooKeeper().create(nodePath, null, zkClient.getZkACLProvider().getACLsToAdd(nodePath), CreateMode.EPHEMERAL);
       } catch (KeeperException.NodeExistsException e) {
@@ -1483,15 +1416,8 @@ public class ZkController implements Closeable, Runnable {
   public void removeEphemeralLiveNode() throws KeeperException, InterruptedException {
     String nodeName = getNodeName();
     String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
-    String nodeAddedPath = ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH + "/" + nodeName;
-
     try {
       zkClient.delete(nodePath, -1);
-    } catch (NoNodeException e) {
-      // okay
-    }
-    try {
-      zkClient.delete(nodeAddedPath, -1);
     } catch (NoNodeException e) {
       // okay
     }

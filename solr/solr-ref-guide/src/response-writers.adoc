@@ -1,5 +1,5 @@
 = Response Writers
-:page-children: velocity-response-writer
+
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -32,7 +32,6 @@ The `wt` parameter selects the Response Writer to be used. The list below descri
 * <<Python Response Writer,python>>
 * <<Ruby Response Writer,ruby>>
 * <<Smile Response Writer,smile>>
-* <<Velocity Response Writer,velocity>>
 * <<XLSX Response Writer,xlsx>>
 * <<Standard XML Response Writer,xml>>
 * <<XSLT Response Writer,xslt>>
@@ -297,13 +296,6 @@ IW-02,"electronics,connector",iPod & iPod Mini USB 2.0 Cable,1,11.5,0.98867977
 F8V7067-APL-KIT,"electronics,connector",Belkin Mobile Power Cord for iPod w/ Dock,1,19.95,0.6523595
 MA147LL/A,"electronics,music",Apple 60 GB iPod with Video Playback Black,10,399.0,0.2446348
 ----
-
-[[velocity-writer]]
-== Velocity Response Writer
-
-The `VelocityResponseWriter` processes the Solr response and request context through Apache Velocity templating.
-
-See the <<velocity-response-writer.adoc#velocity-response-writer,Velocity Response Writer>> section for details.
 
 == Smile Response Writer
 

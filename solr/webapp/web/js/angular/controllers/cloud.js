@@ -753,8 +753,6 @@ var graphSubController = function ($scope, Zookeeper) {
                                 pullReplicas: state[c].pullReplicas,
                                 replicationFactor: state[c].replicationFactor,
                                 router: state[c].router.name,
-                                maxShardsPerNode: state[c].maxShardsPerNode,
-                                autoAddReplicas: state[c].autoAddReplicas,
                                 nrtReplicas: state[c].nrtReplicas,
                                 tlogReplicas: state[c].tlogReplicas,
                                 numShards: shards.length
@@ -874,7 +872,6 @@ solrAdminApp.directive('graph', function(Constants) {
                   tooltip += "numShards: [" + d.data.numShards + "],<br/>";
                   tooltip += "maxShardsPerNode: [" + d.data.maxShardsPerNode + "],<br/>";
                   tooltip += "router: [" + d.data.router + "],<br/>";
-                  tooltip += "autoAddReplicas: [" + d.data.autoAddReplicas + "],<br/>";
                   tooltip += "replicationFactor: [" + d.data.replicationFactor + "],<br/>";
                   tooltip += "nrtReplicas: [" + d.data.nrtReplicas + "],<br/>";
                   tooltip += "pullReplicas: [" + d.data.pullReplicas + "],<br/>";

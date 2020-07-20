@@ -24,10 +24,6 @@ A replica is a physical copy of a shard.
 
 Add one or more replicas to a shard in a collection. The node name can be specified if the replica is to be created in a specific node. Otherwise, a set of nodes can be specified and the most suitable ones among them will be chosen to create the replica(s).
 
-The API uses the Autoscaling framework to find nodes that can satisfy the disk requirements for the new replica(s) but only when an Autoscaling preferences or policy is configured. Refer to <<solrcloud-autoscaling-policy-preferences.adoc#solrcloud-autoscaling-policy-preferences,Autoscaling Policy and Preferences>> section for more details.
-
-WARNING: If the destination node is specified, this command will ignore the maxShardsPerNode property.
-
 `/admin/collections?action=ADDREPLICA&collection=_collection_&shard=_shard_&node=_nodeName_`
 
 === ADDREPLICA Parameters
@@ -160,11 +156,9 @@ http://localhost:8983/solr/admin/collections?action=addreplica&collection=gettin
 [[movereplica]]
 == MOVEREPLICA: Move a Replica to a New Node
 
-This command moves a replica from one node to another node. In case of shared filesystems the `dataDir` will be reused.
+This command moves a replica from one node to another node by executing ADDREPLICA on the destination and then DELETEREPLICA on the source. If this command is interrupted or times out before the ADDREPLICA operation produces a replica in an active state, the DELETEREPLICA will not occur. Timeouts do not cancel the ADDREPLICA, and will result in extra shards. In case of shared filesystems the `dataDir` will be reused.
 
-If this command is used on a collection where more than one replica from the same shard exists on the same node, and the shard/source node parameters match more than one replica, the replica selected is not deterministic (currently it's random).
-
-WARNING: MOVERREPLICA invokes ADDREPLICA followed by DELETEREPLICA and specifies the destination node. Therefore it does not enforce maxShardsPerNode.
+If this command is used on a collection where more than one replica from the same shard exists on the same node, and the `shard` and `sourceNode` parameters match more than one replica, the replica selected is not deterministic (currently it's random).
 
 === MOVEREPLICA Parameters
 
@@ -175,13 +169,19 @@ The name of the collection. This parameter is required.
 The name of the destination node. This parameter is required.
 
 `sourceNode`::
-The name of the node that contains the replica. This parameter is required unless replica is specified. If replica is specified this parameter is ignroed.
+The name of the node that contains the replica to move. This parameter is required unless `replica` is specified. If `replica` is specified this parameter is ignored.
 
 `shard`::
-The name of the shard for which a replica should be moved. This parameter is required unless replica is specified. If replica is specified, this parameter is ignored.
+The name of the shard for which a replica should be moved. This parameter is required unless `replica` is specified. If `replica` is specified, this parameter is ignored.
 
 `replica`::
-The name of the replica to move. This parameter is required unless shard and sourceNode are specified, however his parameter has precedence over those two parameters.
+The name of the replica to move. This parameter is required unless `shard` and `sourceNode` are specified, however this parameter has precedence over those two parameters.
+
+`timeout`::
+The number of seconds to wait for the replica to be live in the new location before deleting the replica in the old location. Defaults to 600 seconds. Deletion will not occur and creation will not be rolled back in the event of a timeout, potentially leaving an extra replica. Presently, this parameter is ignored if the replica is an hdfs replica.
+
+`inPlaceMove`::
+For replicas that use shared filesystems allow 'in-place' move that reuses shared data. Defaults to true, but is ignored if the replica does not have the property `shared_storage` with a value of `true`
 
 `async`::
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
@@ -196,14 +196,13 @@ Request ID to track this action which will be <<collections-api.adoc#asynchronou
 [.tab-label]*V2 API*
 *Input*
 
-`POST /api/c/test2`
+`POST /api/c/test`
 
 [source,json]
 ----
 {
   "move-replica":{
     "replica":"core_node6",
-    "sourceNode":"localhost:8982_sol",
     "targetNode": "localhost:8983_solr"
   }
 }
@@ -230,7 +229,7 @@ Request ID to track this action which will be <<collections-api.adoc#asynchronou
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=MOVEREPLICA&collection=test&targetNode=localhost:8983_solr&fromNode=localhost:8982_solr&replica=core_node6
+http://localhost:8983/solr/admin/collections?action=MOVEREPLICA&collection=test&targetNode=localhost:8983_solr&replica=core_node6
 ----
 
 *Output*

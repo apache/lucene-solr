@@ -1,4 +1,4 @@
-= RequestHandlers and SearchComponents in SolrConfig
+= Request Handlers and Search Components in SolrConfig
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -18,34 +18,84 @@
 
 After the `<query>` section of `solrconfig.xml`, request handlers and search components are configured.
 
-A _request handler_ processes requests coming to Solr. These might be query requests or index update requests. You will likely need several of these defined, depending on how you want Solr to handle the various requests you will make.
+A _request handler_ processes requests coming to Solr. These might be query requests, index update requests or specialized interactions such as <<ping.adoc#ping,ping>>.
 
-A _search component_ is a feature of search, such as highlighting or faceting. The search component is defined in `solrconfig.xml` separate from the request handlers, and then registered with a request handler as needed.
+Not all handlers are defined explicitly in `solrconfig.xml`, many essential ones are actually defined <<implicit-requesthandlers.adoc#implicit-requesthandlers,implicitly>>.
 
-These are often referred to as "requestHandler" and "searchComponent", which is how they are defined in `solrconfig.xml`.
+Additionally, handlers can be defined - or even overridden - in `configoverlay.json` by using <<config-api.adoc#config-api,Config API>>.
+Finally, independent parameter sets can be also defined by <<request-parameters-api.adoc#request-parameters-api,Request Parameters API>>.
+They will be stored in `params.json` file and referenced with <<#paramsets-and-useparams,useParams>>.
 
-== Request Handlers
+All of this multi-layered configuration, may be verified via  <<config-api.adoc#config-api,Config API>>.
 
-Every request handler is defined with a name and a class. The name of the request handler is referenced with the request to Solr, typically as a path. For example, if Solr is installed at `\http://localhost:8983/solr/` and you have a collection named "gettingstarted", you can make a request that looks like this:
+Defining your own config handlers is often a useful way to provide defaults and advanced configuration to support business cases and simplify client API.
+At the same time, using every single option explained in this guide, will most certainly cause some confusion about which parameter is actually used when.
+
+== Defining and Calling Request Handlers
+
+Every request handler is defined with a name and a class. The name of the request handler is referenced with the request to Solr, typically as a path.
+For example, if Solr is installed at `\http://localhost:8983/solr/`, and you have a collection named "gettingstarted", you can make a request that looks like this:
 
 [source,text]
 ----
 http://localhost:8983/solr/gettingstarted/select?q=solr
 ----
 
-This query will be processed by the request handler with the name `/select`. We've only used the "q" parameter here, which includes our query term, a simple keyword of "solr". If the request handler has more parameters defined, those will be used with any query we send to this request handler unless they are over-ridden by the client (or user) in the query itself.
+This query will be processed by the request handler with the name `/select`. We've only used the "q" parameter here, which includes our query term, a simple keyword of "solr".
+If the request handler has more default parameters defined, those will be used with any query we send to that request handler unless they are overridden by the client (or user) in the query itself.
 
-If you have another request handler defined, you would send your request with that name. For example, `/update` is a request handler that handles index updates (i.e., sending new documents to the index). By default, `/select` is a request handler that handles query requests.
+If you have another request handler defined, you could send your request with that name.
+For example, `/update` is an implicit request handler that handles index updates (i.e., sending new documents to the index).
+By default, `/select` is a request handler that handles query requests and one expected by most examples and tools.
 
-Request handlers can also process requests for nested paths of their names, for example, a request using `/myhandler/extrapath` may be processed by a request handler registered with the name `/myhandler`. If a request handler is explicitly defined by the name `/myhandler/extrapath`, that would take precedence over the nested path. This assumes you are using the request handler classes included with Solr; if you create your own request handler, you should make sure it includes the ability to handle nested paths if you want to use them with your custom request handler.
+Request handlers can also process requests for nested paths in their names,
+for example, a request using `/myhandler/extrapath` may be processed by a request handler registered with the name `/myhandler`.
+If a request handler is explicitly defined by the name `/myhandler/extrapath`, that would take precedence over the nested path.
+This assumes you are using the request handler classes included with Solr; if you create your own request handler,
+you should make sure it includes the ability to handle nested paths if you want to use them with your custom request handler.
 
-It is also possible to configure defaults for request handlers with a section called `initParams`. These defaults can be used when you want to have common properties that will be used by each separate handler. For example, if you intend to create several request handlers that will all request the same list of fields in the response, you can configure an `initParams` section with your list of fields. For more information about `initParams`, see the section <<initparams-in-solrconfig.adoc#initparams-in-solrconfig,InitParams in SolrConfig>>.
+If a request handler is not expected to be used very often, it can be marked with `startup="lazy"` to avoid loading until needed.
 
-=== SearchHandlers
+[source,xml]
+----
+<requestHandler name="/spell" class="solr.SearchHandler" startup="lazy">
+ ...
+</requestHandler>
+----
 
-The primary request handler defined with Solr by default is the "SearchHandler", which handles search queries. The request handler is defined, and then a list of defaults for the handler are defined with a `defaults` list.
+== Configuring Request Handlers
+There are 3 ways to configure request handlers inside their definitions and another 3 ways to configure them somewhere else.
 
-For example, in the default `solrconfig.xml`, the first request handler defined looks like this:
+=== Request Parameters (GET and POST)
+The easiest and most flexible way is to provide parameters with standard GET or POST requests.
+
+Here is an example of sending parameters `id`, `fl`, and `wt` to `/select` Search Handler.
+Notice the URL-encoded space (as +) for the values of `fl` parameter.
+
+[source,text]
+----
+http://localhost:8983/solr/techproducts/select?q=id:SP2514N&fl=id+name&wt=xml
+----
+
+And here is an example of parameters being sent through the POST form to `/query` Search Handler using <<json-request-api.adoc#json-request-api,JSON Request API>>.
+
+[source,bash]
+----
+curl http://localhost:8983/solr/techproducts/query -d '
+{
+  "query" : "memory",
+  "filter" : "inStock:true"
+}'
+----
+
+Either way, the parameters are extracted and combined with other options explained below.
+
+=== Defaults, Appends, and Invariants
+
+==== Defaults
+
+The most common way to configure request handlers is by providing `defaults` section.
+The parameters there are used unless they are overridden by any other method.
 
 [source,xml]
 ----
@@ -57,24 +107,44 @@ For example, in the default `solrconfig.xml`, the first request handler defined 
 </requestHandler>
 ----
 
-This example defines the `rows` parameter, which defines how many search results to return, to "10". The `echoParams` parameter defines that the parameters defined in the query should be returned when debug information is returned. Note also that the way the defaults are defined in the list varies if the parameter is a string, an integer, or another type.
+This example defined a useful troubleshooting parameter <<common-query-parameters.adoc#echoparams-parameter,echoParams>>, with value that returns only params defined in the request itself (no defaults), set it to `all` for more information.
+It also defines the `rows` parameter, with how many results to return (per page) (10 is a true default actually, so this is a redundant definition, if you are not going to modify it).
 
-All of the parameters described in the section  <<searching.adoc#searching,Searching>> can be defined as defaults for any of the SearchHandlers.
+Note also that the way the defaults are defined in the list varies if the parameter is a string, an integer, or another type.
 
-Besides `defaults`, there are other options for the SearchHandler, which are:
+Here is how some other primitive types are represented:
 
-* `appends`: This allows definition of parameters that are added to the user query. These might be <<common-query-parameters.adoc#fq-filter-query-parameter,filter queries>>, or other query rules that should be added to each query. There is no mechanism in Solr to allow a client to override these additions, so you should be absolutely sure you always want these parameters applied to queries.
-+
+[source,xml]
+----
+  <lst name="defaults">
+    <float name="hl.regex.slop">0.5</float>
+    <bool name="default">true</bool>
+  </lst>
+----
+
+Other specialized types may exist, they would be explained in the sections for relevant components.
+
+==== Appends
+
+In the `appends` section, you can define parameters that are added those already defined elsewhere.
+These are useful when the same parameter may be meaningfully defined multiple times, such as for <<common-query-parameters.adoc#fq-filter-query-parameter,filter queries>>.
+There is no mechanism in Solr to allow a client to override these additions, so you should be absolutely sure you always want these parameters applied to queries.
+
 [source,xml]
 ----
 <lst name="appends">
   <str name="fq">inStock:true</str>
 </lst>
 ----
-+
-In this example, the filter query "inStock:true" will always be added to every query.
-* `invariants`: This allows definition of parameters that cannot be overridden by a client. The values defined in an `invariants` section will always be used regardless of the values specified by the user, by the client, in `defaults` or in `appends`.
-+
+
+In this example, the filter query `inStock:true` will always be added to every query, enforcing that only available "products" are returned.
+
+==== Invariants
+
+In the `invariants` section, you can define parameters that cannot be overridden by a client.
+The values defined in the `invariants` section will always be used regardless of the values specified by the user, by the client, in `defaults` or in `appends`.
+
+
 [source,xml]
 ----
 <lst name="invariants">
@@ -84,88 +154,171 @@ In this example, the filter query "inStock:true" will always be added to every q
   <str name="facet.query">price:[500 TO *]</str>
 </lst>
 ----
-+
-In this example, facet fields have been defined which limits the facets that will be returned by Solr. If the client requests facets, the facets defined with a configuration like this are the only facets they will see.
 
-The final section of a request handler definition is `components`, which defines a list of search components that can be used with a request handler. They are only registered with the request handler. How to define a search component is discussed further on in the section on <<Search Components>> below. The `components` element can only be used with a request handler that is a SearchHandler.
+In this example, the `facet.field` and `facet.query` params would be fixed, limiting the facets clients can use.
+Faceting is not turned on by default - but if the client does specify  `facet=true` in the request,
+these are the only facets they will be able to see counts for; regardless of what other `facet.field` or `facet.query` params they may specify.
 
-The `solrconfig.xml` file includes many other examples of SearchHandlers that can be used or modified as needed.
+=== InitParams
+It is also possible to configure defaults for request handlers with a section called `initParams`.
+These defaults can be used when you want to have common properties that will be used by each separate handler.
+For example, if you intend to create several request handlers that will all request the same list of fields in the response, you can configure an `initParams` section with your list of fields.
+For more information about `initParams`, see the section <<initparams-in-solrconfig.adoc#initparams-in-solrconfig,InitParams in SolrConfig>>.
 
-=== UpdateRequestHandlers
+=== Paramsets and UseParams
+If you are expecting to change the parameters often, or if you want define sets of parameters that you can apply on the fly,
+you can define them with <<request-parameters-api.adoc#request-parameters-api,Request Parameters API>> and then invoke them
+by providing one or more in `useParams` setting either in the handler definition itself or as a query parameter.
 
-The UpdateRequestHandlers are request handlers which process updates to the index.
+[source,xml]
+----
+<requestHandler name="/terms" class="solr.SearchHandler" useParams="myQueries">
 
-In this guide, we've covered these handlers in detail in the section <<uploading-data-with-index-handlers.adoc#uploading-data-with-index-handlers,Uploading Data with Index Handlers>>.
+...
+</requestHandler>
+----
 
-=== ShardHandlers
+[source,text]
+----
+http://localhost/solr/techproducts/select?useParams=myFacets,myQueries
+----
 
-It is possible to configure a request handler to search across shards of a cluster, used with distributed search. More information about distributed search and how to configure the shardHandler is in the section <<distributed-search-with-index-sharding.adoc#distributed-search-with-index-sharding,Distributed Search with Index Sharding>>.
+If paramset is called but is not defined, it is ignored.
+This allows most <<implicit-requesthandlers.adoc#implicit-requesthandlers,implicit request handlers>> to call specific paramsets,
+that you can define later, as needed.
 
-=== Implicit Request Handlers
 
-Solr includes many out-of-the-box request handlers that are not configured in `solrconfig.xml`, and so are referred to as "implicit" - see <<implicit-requesthandlers.adoc#implicit-requesthandlers,Implicit RequestHandlers>>.
+== Search Handlers
 
-== Search Components
+Search Handlers are very important to Solr, as the data is indexed (roughly) once but is searched many times.
+The whole design of Solr (and Lucene) is optimising data for searching and Search Handler is a flexible gateway to that.
 
-Search components define the logic that is used by the SearchHandler to perform queries for users.
+The following sections are allowed within a Search Handler:
 
-=== Default Components
+[source,xml]
+----
+<requestHandler name="/select" class="solr.SearchHandler">
+... defaults/appends/invariants
+... first-components/last-components or components
+... shardHandlerFactory
+</requestHandler>
+----
 
-There are several default search components that work with all SearchHandlers without any additional configuration. If no components are defined (with the exception of `first-components` and `last-components` - see below), these are executed by default, in the following order:
+All the blocks are optional, especially since parameters can also be provided with `initParams` and `useParams`.
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+The defaults/appends/invariants blocks were described <<#defaults-appends-and-invariants,higher>> on the page. All the parameters described in the section  <<searching.adoc#searching,Searching>> can be defined as parameters for any of the Search Handlers.
+
+The Search Components blocks are described next, and <<distributed-requests.adoc#configuring-the-shardhandlerfactory,shardHandlerFactory>> is for fine-tuning of the SolrCloud distributed requests.
+
+=== Defining Search Components
+The search components themselves are defined outside of the Request Handlers and then are referenced from various Search Handlers that want to use them.
+Most Search Handlers use the default - implicit - stack of Search Components and only sometimes need to augment them with additional components prepended or appended.
+It is quite rare - and somewhat brittle - to completely override the component stack, though it is used in examples to clearly demonstrate the effect of a specific Search Component.
+
+==== Default Components
+
+As you can see below, what we see as a search experience is mostly a sequence of components defined below. They are called in the order listed.
 
 [cols="20,40,40",options="header"]
 |===
 |Component Name |Class Name |More Information
 |query |`solr.QueryComponent` |Described in the section <<query-syntax-and-parsing.adoc#query-syntax-and-parsing,Query Syntax and Parsing>>.
-|facet |`solr.FacetComponent` |Described in the section <<faceting.adoc#faceting,Faceting>>.
+|facet |`solr.FacetComponent` |Original parameter-based facet component, described in the section <<faceting.adoc#faceting,Faceting>>.
+|facet_module |`solr.facet.FacetModule` | JSON Faceting and Analytics module, described in the section <<json-facet-api.adoc#json-facet-api, JSON Facet API>>.
 |mlt |`solr.MoreLikeThisComponent` |Described in the section <<morelikethis.adoc#morelikethis,MoreLikeThis>>.
 |highlight |`solr.HighlightComponent` |Described in the section <<highlighting.adoc#highlighting,Highlighting>>.
 |stats |`solr.StatsComponent` |Described in the section <<the-stats-component.adoc#the-stats-component,The Stats Component>>.
-|debug |`solr.DebugComponent` |Described in the section on <<common-query-parameters.adoc#debug-parameter,Common Query Parameters>>.
 |expand |`solr.ExpandComponent` |Described in the section <<collapse-and-expand-results.adoc#collapse-and-expand-results,Collapse and Expand Results>>.
+|terms |`solr.TermsComponent` |Described in the section <<the-terms-component.adoc#the-terms-component,The Terms Component>>.
+|debug |`solr.DebugComponent` |Described in the section on <<common-query-parameters.adoc#debug-parameter,Common Query Parameters>>.
 |===
 
-If you register a new search component with one of these default names, the newly defined component will be used instead of the default.
+==== Shipped Custom Components
+Apart from default components, Solr ships with a number of additional - very useful - components.
+They do need to defined and referenced in `solrconfig.xml` to be actually used.
 
-=== First-Components and Last-Components
+* `AnalyticsComponent`, described in the section <<analytics.adoc#analytics,Analytics>>.
+* `ClusteringComponent`, described in the section <<result-clustering.adoc#result-clustering,Result Clustering>>.
+* `PhrasesIdentificationComponent`, used to identify & score "phrases" found in the input string, based on shingles in indexed fields, described in the {solr-javadocs}solr-core/org/apache/solr/handler/component/PhrasesIdentificationComponent.html[PhrasesIdentificationComponent] javadocs.
+* `QueryElevationComponent`, described in the section <<the-query-elevation-component.adoc#the-query-elevation-component,The Query Elevation Component>>.
+* `RealTimeGetComponent`, described in the section <<realtime-get.adoc#realtime-get,RealTime Get>>.
+* `ResponseLogComponent`, used to record which documents are returned to the user via the Solr log, described in the {solr-javadocs}solr-core/org/apache/solr/handler/component/ResponseLogComponent.html[ResponseLogComponent] javadocs.
+* `SpellCheckComponent`, described in the section <<spell-checking.adoc#spell-checking,Spell Checking>>.
+* `SuggestComponent`, described in the section <<suggester.adoc#suggester,Suggester>>.
+* `TermVectorComponent`, described in the section <<the-term-vector-component.adoc#the-term-vector-component,The Term Vector Component>>.
+
+Some third party components are also linked from https://solr.cool/ website.
+
+==== Defining Custom Search Components
+To define custom component, the syntax is:
+
+[source,xml]
+----
+<searchComponent name="spellcheck" class="solr.SpellCheckComponent">
+  <lst name="spellchecker">
+    <str name="classname">solr.IndexBasedSpellChecker</str>
+    ...
+  </lst>
+</searchComponent>
+----
+
+Custom components often have configuration elements not described here. Check specific component's documentation/examples for details.
+
+Notice: If you register a new search component with one of the default names, the newly defined component will be used instead of the default.
+This allows to override a specific component, while not having to worry so much about upgrading Solr.
+
+=== Referencing Search Components
 
 It's possible to define some components as being used before (with `first-components`) or after (with `last-components`) the default components listed above.
 
-[IMPORTANT]
-====
-`first-components` and/or `last-components` may only be used in conjunction with the default components. If you define your own `components`, the default components will not be executed, and `first-components` and `last-components` are disallowed.
-====
+[source,xml]
+----
+<searchComponent name="..." class="...">
+ <arr name="first-components">
+      <str>mycomponent</str>
+    </arr>
+    <arr name="last-components">
+      <str>spellcheck</str>
+    </arr>
+</searchComponent>
+----
+
+NOTE: The component registered with the name "debug" will always be executed after the "last-components"
+
+If you define `components` instead, the <<#default-components,default components (above)>> will not be executed, and `first-components` and `last-components` are disallowed.
+This should be considered as a last-resort option as the default list may change in a later Solr version.
 
 [source,xml]
 ----
-<arr name="first-components">
-  <str>mycomponent</str>
-</arr>
-<arr name="last-components">
-  <str>spellcheck</str>
-</arr>
+<searchComponent name="..." class="...">
+    <arr name="components">
+      <str>mycomponent</str>
+      <str>query</str>
+      <str>debug</str>
+    </arr>
+</searchComponent>
 ----
 
-=== Components
 
-If you define `components`, the default components (see above) will not be executed, and `first-components` and `last-components` are disallowed:
+== Update Request Handlers
+
+The Update Request Handlers are request handlers which process updates to the index. Most of the request handlers are <<implicit-requesthandlers.adoc#update-handlers,implicit>>
+and can be customized by defining properly named Paramsets.
+
+If you need to define additional Update Request Handler, the syntax is:
 
 [source,xml]
 ----
-<arr name="components">
-  <str>mycomponent</str>
-  <str>query</str>
-  <str>debug</str>
-</arr>
+<requestHandler name="/update/json" class="solr.UpdateRequestHandler">
+... defaults/appends/invariants
+</requestHandler>
+
 ----
 
-=== Other Useful Components
+The full details are covered in the section <<uploading-data-with-index-handlers.adoc#uploading-data-with-index-handlers,Uploading Data with Index Handlers>>.
 
-Many of the other useful components are described in sections of this Guide for the features they support. These are:
+Similar to Search Components for Search Handlers, Solr has document-preprocessing plugins for Update Request Handlers,
+called <<update-request-processors.adoc#update-request-processors,Update Request Processors>>,
+which also allow for default and custom configuration chains.
 
-* `SpellCheckComponent`, described in the section <<spell-checking.adoc#spell-checking,Spell Checking>>.
-* `TermVectorComponent`, described in the section <<the-term-vector-component.adoc#the-term-vector-component,The Term Vector Component>>.
-* `QueryElevationComponent`, described in the section <<the-query-elevation-component.adoc#the-query-elevation-component,The Query Elevation Component>>.
-* `TermsComponent`, described in the section <<the-terms-component.adoc#the-terms-component,The Terms Component>>.
+Note: Do not confuse Update Request Handlers with <<updatehandlers-in-solrconfig.adoc#updatehandlers-in-solrconfig,`updateHandler`>> section also defined in `solrconfig.xml`.

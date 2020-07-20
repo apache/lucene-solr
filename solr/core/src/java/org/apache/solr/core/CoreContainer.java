@@ -67,7 +67,6 @@ import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.OverseerTaskQueue;
 import org.apache.solr.cloud.ZkController;
-import org.apache.solr.cloud.autoscaling.AutoScalingHandler;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.PerThreadExecService;
@@ -91,7 +90,6 @@ import org.apache.solr.core.backup.repository.BackupRepositoryFactory;
 import org.apache.solr.filestore.PackageStoreAPI;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.SnapShooter;
-import org.apache.solr.handler.admin.AutoscalingHistoryHandler;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.admin.CoreAdminHandler;
@@ -136,7 +134,6 @@ import org.slf4j.LoggerFactory;
 import static java.util.Objects.requireNonNull;
 import static org.apache.solr.common.params.CommonParams.AUTHC_PATH;
 import static org.apache.solr.common.params.CommonParams.AUTHZ_PATH;
-import static org.apache.solr.common.params.CommonParams.AUTOSCALING_HISTORY_PATH;
 import static org.apache.solr.common.params.CommonParams.COLLECTIONS_HANDLER_PATH;
 import static org.apache.solr.common.params.CommonParams.CONFIGSETS_HANDLER_PATH;
 import static org.apache.solr.common.params.CommonParams.CORES_HANDLER_PATH;
@@ -242,8 +239,6 @@ public class CoreContainer implements Closeable {
 
   protected volatile MetricsCollectorHandler metricsCollectorHandler;
 
-  protected volatile AutoscalingHistoryHandler autoscalingHistoryHandler;
-
   private volatile SolrClientCache solrClientCache;
 
   private final ObjectCache objectCache = new ObjectCache();
@@ -259,8 +254,6 @@ public class CoreContainer implements Closeable {
   public final static long CORE_DISCOVERY_COMPLETE = 0x2L;
   public final static long INITIAL_CORE_LOAD_COMPLETE = 0x4L;
   private volatile long status = 0L;
-
-  protected volatile AutoScalingHandler autoScalingHandler;
 
   private enum CoreInitFailedAction {fromleader, none}
 
@@ -780,7 +773,6 @@ public class CoreContainer implements Closeable {
       });
 
       work.collect("", () -> {
-        autoscalingHistoryHandler = createHandler(AUTOSCALING_HISTORY_PATH, AutoscalingHistoryHandler.class.getName(), AutoscalingHistoryHandler.class);
         metricsCollectorHandler = createHandler(MetricsCollectorHandler.HANDLER_PATH, MetricsCollectorHandler.class.getName(), MetricsCollectorHandler.class);
         // may want to add some configuration here in the future
         metricsCollectorHandler.init(null);
@@ -919,9 +911,6 @@ public class CoreContainer implements Closeable {
 
       zkSys.getZkController().checkOverseerDesignate();
       // initialize this handler here when SolrCloudManager is ready
-      autoScalingHandler = new AutoScalingHandler(getZkController().getSolrCloudManager(), loader);
-      containerHandlers.put(AutoScalingHandler.HANDLER_PATH, autoScalingHandler);
-      autoScalingHandler.initializeMetrics(solrMetricsContext, AutoScalingHandler.HANDLER_PATH);
     }
     // This is a bit redundant but these are two distinct concepts for all they're accomplished at the same time.
     status |= LOAD_COMPLETE | INITIAL_CORE_LOAD_COMPLETE;

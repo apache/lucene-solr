@@ -1,13 +1,13 @@
 #
 #
 #
-# NOTE: Ant converts _config.yml.template into create _config.yml and performs ant property substitution.
+# NOTE: gradle converts _config.yml.template into create _config.yml and performs script engine substitutions
 #
 #
 #
 
 # Gems that are included for building the site. jekyll-asciidoc allows Jekyll to use Asciidoctor for variables and settings
-gems: [jekyll-asciidoc]
+plugins: [jekyll-asciidoc]
 
 destination: ../html-site
 
@@ -68,23 +68,21 @@ asciidoc: {}
 # NOTE: If you add any attributes here for use in adoc files, you almost certainly need to also add
 # them to the <asciidoctor:convert/> ant task for precommit validation as well.
 solr-attributes: &solr-attributes-ref
-  solr-root-path: "../../../"
-  solr-guide-draft-status: "${solr-guide-draft-status}"
-  solr-guide-version: "${solr-guide-version}"
-  solr-guide-version-path: "${solr-guide-version-path}"
-  solr-docs-version: "${solr-docs-version}"
-  java-javadocs: "${javadoc.link}"
-  solr-javadocs: "${html-solr-javadocs}"
-  lucene-javadocs: "${html-lucene-javadocs}"
-  build-date: "${DSTAMP}"
-  build-year: "${current.year}"
-  ivy-commons-codec-version: "${ivyversions./commons-codec/commons-codec}"
-  ivy-dropwizard-version: "${ivyversions.io.dropwizard.metrics.version}"
-  ivy-log4j-version: "${ivyversions.org.apache.logging.log4j.version}"
-  ivy-opennlp-version: "${ivyversions./org.apache.opennlp/opennlp-tools}"
-  ivy-tika-version: "${ivyversions.org.apache.tika.version}"
-  ivy-velocity-tools-version: "${ivyversions.org.apache.velocity.tools.version}"
-  ivy-zookeeper-version: "${ivyversions.org.apache.zookeeper.version}"
+  solr-root-path: '${solrRootPath}'
+  solr-guide-draft-status: '${solrGuideDraftStatus}'
+  solr-guide-version-path: '${solrGuideVersionPath}'
+  solr-docs-version: '${solrDocsVersion}'
+  java-javadocs: '${javadocLink}'
+  solr-javadocs: '${htmlSolrJavadocs}'
+  lucene-javadocs: '${htmlLuceneJavadocs}'
+  build-date: '${buildDate}'
+  build-year: '${buildYear}'
+  ivy-commons-codec-version: '${ivyCommonsCodec}'
+  ivy-dropwizard-version: '${ivyDropwizardMetrics}'
+  ivy-log4j-version: '${ivyLog4j}'
+  ivy-opennlp-version: '${ivyOpennlpTools}'
+  ivy-tika-version: '${ivyTika}'
+  ivy-zookeeper-version: '${ivyZookeeper}'
 
 asciidoctor:
   safe: 0
@@ -95,3 +93,4 @@ asciidoctor:
     icons: "font"
     source-highlighter: "rouge"
     rouge-theme: "thankful-eyes"
+    stem:

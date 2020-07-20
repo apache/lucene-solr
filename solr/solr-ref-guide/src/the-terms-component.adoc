@@ -22,26 +22,21 @@ In a sense, this search component provides fast field-faceting over the whole in
 
 == Configuring the Terms Component
 
-By default, the Terms Component is already configured in `solrconfig.xml` for each collection.
+Terms Component is one of  <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#defining-search-components,the default search components>>
+and does not need to be defined in `solrconfig.xml`.
 
-=== Defining the Terms Component
-
-Defining the Terms search component is straightforward: simply give it a name and use the class `solr.TermsComponent`.
+The definition is equivalent to:
 
 [source,xml]
 ----
 <searchComponent name="terms" class="solr.TermsComponent"/>
 ----
 
-This makes the component available for use, but by itself will not be useable until included with a request handler.
-
 === Using the Terms Component in a Request Handler
 
-The terms component is included with the `/terms` request handler, which is among Solr's out-of-the-box request handlers - see <<implicit-requesthandlers.adoc#implicit-requesthandlers,Implicit RequestHandlers>>.
+Solr comes with an <<implicit-requesthandlers.adoc#query-handlers,Implicit RequestHandler>> definition `/terms`, which enables (only) Terms component.
 
-Note that the defaults for this request handler set the parameter "terms" to true, which allows terms to be returned on request. The parameter "distrib" is set to false, which allows this handler to be used only on a single Solr core.
-
-You could add this component to another handler if you wanted to, and pass "terms=true" in the HTTP request in order to get terms back. If it is only defined in a separate handler, you must use that handler when querying in order to get terms and not regular documents as results.
+If you want to enable Terms component when using another Request Handler, `terms=true` parameter needs to be passed during the request or be set in the handler's defaults.
 
 === Terms Component Parameters
 
@@ -243,6 +238,46 @@ Results:
   </lst>
 </response>
 ----
+
+=== Using Terms Component as part of another handler
+
+This query augments a regular search with terms information.
+
+[source,text]
+http://localhost:8983/solr/techproducts/select?q=corsair&fl=id,name&rows=1&echoParams=none&wt=xml&terms=true&terms.fl=name
+
+Results (notice that the term counts are not affected by the query):
+
+[source,xml]
+----
+<response>
+
+<lst name="responseHeader">
+  <int name="status">0</int>
+  <int name="QTime">1</int>
+</lst>
+<result name="response" numFound="2" start="0" numFoundExact="true">
+  <doc>
+    <str name="id">VS1GB400C3</str>
+    <str name="name">CORSAIR ValueSelect 1GB 184-Pin DDR SDRAM Unbuffered DDR 400 (PC 3200) System Memory - Retail</str></doc>
+</result>
+<lst name="terms">
+  <lst name="name">
+    <int name="one">5</int>
+    <int name="184">3</int>
+    <int name="1gb">3</int>
+    <int name="3200">3</int>
+    <int name="400">3</int>
+    <int name="ddr">3</int>
+    <int name="gb">3</int>
+    <int name="ipod">3</int>
+    <int name="memory">3</int>
+    <int name="pc">3</int>
+  </lst>
+</lst>
+</response>
+----
+
 
 === SolrJ Invocation
 

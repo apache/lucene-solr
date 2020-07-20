@@ -58,13 +58,6 @@ limitations under the License.
           <p class="clearfix"><label for="add_routerField">router.field:</label>
             <input type="text" name="routerField" id="add_routerField" ng-model="newCollection.routerField"></p>
 
-          <p class="clearfix"><label for="add_autoAddReplicas">autoAddReplicas:</label>
-            <select name="autoAddReplicas" id="add_autoAddReplicas" ng-model="newCollection.autoAddReplicas">
-              <option value="true">true</option>
-              <option value="false">false</option>
-            </select>
-          </p>
-
         </div>
         <p class="clearfix note error" ng-show="addMessage">
           <span>{{addMessage}}</span>
@@ -222,11 +215,6 @@ limitations under the License.
             <li><dl class="clearfix">
               <dt><span>router:</span></dt>
                 <dd>{{collection.router.name}}</dd>
-            </dl></li>
-
-            <li><dl class="clearfix">
-              <dt><span>autoAddReplicas:</span></dt>
-                <dd>{{collection.autoAddReplicas}}</dd>
             </dl></li>
 
             <li ng-show="collection.aliases"><dl class="clearfix">

@@ -26,26 +26,28 @@ Many of these parsers are expressed the same way as <<local-parameters-in-querie
 
 There are two query parsers that support block joins. These parsers allow indexing and searching for relational content that has been <<indexing-nested-documents.adoc#indexing-nested-documents, indexed as Nested Documents>>.
 
-The example usage of the query parsers below assumes these two documents and each of their child documents have been indexed:
+The example usage of the query parsers below assumes the following documents have been indexed:
 
 [source,xml]
 ----
 <add>
   <doc>
-  <field name="id">1</field>
-  <field name="title">Solr has block join support</field>
-  <field name="content_type">parentDocument</field>
+    <field name="id">1</field>
+    <field name="content_type">parent</field>
+    <field name="title">Solr has block join support</field>
     <doc>
       <field name="id">2</field>
+      <field name="content_type">child</field>
       <field name="comments">SolrCloud supports it too!</field>
     </doc>
   </doc>
   <doc>
     <field name="id">3</field>
+    <field name="content_type">parent</field>
     <field name="title">New Lucene and Solr release</field>
-    <field name="content_type">parentDocument</field>
     <doc>
       <field name="id">4</field>
+      <field name="content_type">child</field>
       <field name="comments">Lots of new features</field>
     </doc>
   </doc>
@@ -54,21 +56,23 @@ The example usage of the query parsers below assumes these two documents and eac
 
 === Block Join Children Query Parser
 
-This parser takes a query that matches some parent documents and returns their children.
+This parser wraps a query that matches some parent documents and returns the children of those documents.
 
-The syntax for this parser is: `q={!child of=<allParents>}<someParents>`.
+The syntax for this parser is: `q={!child of=<blockMask>}<someParents>`.
 
-The parameter `allParents` is a filter that matches *only parent documents*; here you would define the field and value that you used to identify *all parent documents*.
+* The inner subordinate query string (`someParents`) must be a query that will match some parent documents
+* The `of` parameter must be a query string to use as a <<#block-mask,Block Mask>> -- typically a query that matches the set of all possible parent documents
 
-The parameter `someParents` identifies a query that will match some of the parent documents. The output is the children.
+The resulting query will match all documents which do _not_ match the `<blockMask>` query and are children (or descendents) of the documents matched by `<someParents>`.
 
-Using the example documents above, we can construct a query such as `q={!child of="content_type:parentDocument"}title:lucene&wt=xml`. We only get one document in response:
+Using the example documents above, we can construct a query such as `q={!child of="content_type:parent"}title:lucene`. We only get one document in response:
 
 [source,xml]
 ----
 <result name="response" numFound="1" start="0">
   <doc>
     <str name="id">4</str>
+    <arr name="content_type"><str>child</str></arr>
     <str name="comments">Lots of new features</str>
   </doc>
 </result>
@@ -76,12 +80,12 @@ Using the example documents above, we can construct a query such as `q={!child o
 
 [CAUTION]
 ====
-The query for `someParents` should match only parent documents passed by `allParents` or you may get an exception:
+The query for `someParents` *MUST* match a strict subset of the documents matched by the <<#block-mask,Block Mask>> or your query may result in an Error:
 
 [literal]
 Parent query must not match any docs besides parent filter. Combine them as must (+) and must-not (-) clauses to find a problem doc.
 
-You can search for `q=+(someParents) -(allParents)` to find a cause if you encounter this error.
+You can search for `q=+(someParents) -(blockMask)` to find a cause if you encounter this type of error.
 ====
 
 ==== Filtering and Tagging
@@ -89,78 +93,72 @@ You can search for `q=+(someParents) -(allParents)` to find a cause if you encou
 `{!child}` also supports `filters` and `excludeTags` local parameters like the following:
 
 [source,text]
-{!child of=<allParents> filters=$parentfq excludeTags=certain}<someParents>&parentfq=BRAND:Foo&parentfq=NAME:Bar&parentfq={!tag=certain}CATEGORY:Baz
+?q={!child of=<blockMask> filters=$parentfq excludeTags=certain}<someParents>
+&parentfq=BRAND:Foo
+&parentfq=NAME:Bar
+&parentfq={!tag=certain}CATEGORY:Baz
 
 This is equivalent to:
 
 [source,text]
-{!child of=<allParents>}+<someParents> +BRAND:Foo +NAME:Bar
+q={!child of=<blockMask>}+<someParents> +BRAND:Foo +NAME:Bar
 
 Notice "$" syntax in `filters` for referencing queries; comma-separated tags `excludeTags` allows to exclude certain queries by tagging. Overall the idea is similar to <<faceting.adoc#tagging-and-excluding-filters, excluding fq in facets>>. Note, that filtering is applied to the subordinate clause (`<someParents>`), and the intersection result is joined to the children.
 
 ==== All Children Syntax
 
-When subordinate clause (`<someParents>`) is omitted, it's parsed as a _segmented_ and _cached_ filter for children documents. More precisely, `q={!child of=<allParents>}` is equivalent to `q=\*:* -<allParents>`.
+When subordinate clause (`<someParents>`) is omitted, it's parsed as a _segmented_ and _cached_ filter for children documents. More precisely, `q={!child of=<blockMask>}` is equivalent to `q=\*:* -<blockMask>`.
 
 === Block Join Parent Query Parser
 
 This parser takes a query that matches child documents and returns their parents.
 
-The syntax for this parser is similar: `q={!parent which=<allParents>}<someChildren>`.
+The syntax for this parser is similar to the `child` parser: `q={!parent which=<blockMask>}<someChildren>`.
 
-The parameter `allParents` is a filter that matches *only parent documents*; here you would define the field and value that you used to identify *all parent documents*.
+* The inner subordinate query string (`someChildren`) must be a query that will match some child documents
+* The `which` parameter must be a query string to use as a <<#block-mask,Block Mask>> -- typically a query that matches the set of all possible parent documents
 
-The parameter `someChildren` is a query that matches some or all of the child documents.
+The resulting query will match all documents which _do_ match the `<blockMask>` query and are parents (or ancestors) of the documents matched by `<someChildren>`.
 
-[CAUTION]
-====
-The query for `someChildren` should match only child documents or you may get an exception:
-
-[literal]
-Child query must not match same docs with parent filter. Combine them as must clauses (+) to find a problem doc.
-
-You can search for `q=+(parentFilter) +(someChildren)` to find a cause.
-====
-
-Again using the example documents above, we can construct a query such as `q={!parent which="content_type:parentDocument"}comments:SolrCloud&wt=xml`. We get this document in response:
+Again using the example documents above, we can construct a query such as `q={!parent which="content_type:parent"}comments:SolrCloud`. We get this document in response:
 
 [source,xml]
 ----
 <result name="response" numFound="1" start="0">
   <doc>
     <str name="id">1</str>
+    <arr name="content_type"><str>parent</str></arr>
     <arr name="title"><str>Solr has block join support</str></arr>
-    <arr name="content_type"><str>parentDocument</str></arr>
   </doc>
 </result>
 ----
 
-.Using which
-[WARNING]
+
+[CAUTION]
 ====
-A common mistake is to try to filter parents with a `which` filter, as in this bad example:
+The query for `someChildren` *MUST NOT* match any documents matched by the <<#block-mask,Block Mask>> or your query may result in an Error:
 
-`q={!parent which="*title:join*"}comments:SolrCloud`
+[literal]
+Child query must not match same docs with parent filter. Combine them as must clauses (+) to find a problem doc.
 
-Instead, you should use a sibling mandatory clause as a filter:
-
-`q= *+title:join* +{!parent which="*content_type:parentDocument*"}comments:SolrCloud`
+You can search for `q=+(blockMask) +(someChildren)` to find a cause.
 ====
+
 
 ==== Filtering and Tagging
 
 The `{!parent}` query supports `filters` and `excludeTags` local parameters like the following:
 
 [source,text]
-{!parent which=<allParents> filters=$childfq excludeTags=certain}<someChildren>&
-childfq=COLOR:Red&
-childfq=SIZE:XL&
-childfq={!tag=certain}PRINT:Hatched
+?q={!parent which=<blockMask> filters=$childfq excludeTags=certain}<someChildren>
+&childfq=COLOR:Red
+&childfq=SIZE:XL
+&childfq={!tag=certain}PRINT:Hatched
 
 This is equivalent to:
 
 [source,text]
-{!parent which=<allParents>}+<someChildren> +COLOR:Red +SIZE:XL
+q={!parent which=<blockMask>}+<someChildren> +COLOR:Red +SIZE:XL
 
 Notice the "$" syntax in `filters` for referencing queries. Comma-separated tags in `excludeTags` allow excluding certain queries by tagging. Overall the idea is similar to <<faceting.adoc#tagging-and-excluding-filters, excluding fq in facets>>. Note that filtering is applied to the subordinate clause (`<someChildren>`) first, and the intersection result is joined to the parents.
 
@@ -170,7 +168,41 @@ You can optionally use the `score` local parameter to return scores of the subor
 
 ==== All Parents Syntax
 
-When subordinate clause (`<someChildren>`) is omitted, it's parsed as a _segmented_ and _cached_ filter for all parent documents, or more precisely `q={!parent which=<allParents>}` is equivalent to `q=<allParents>`.
+When subordinate clause (`<someChildren>`) is omitted, it's parsed as a _segmented_ and _cached_ filter for all parent documents, or more precisely `q={!parent which=<blockMask>}` is equivalent to `q=<blockMask>`.
+
+[#block-mask]
+=== Block Masks: The `of` and `which` local params
+
+The purpose of the "Block Mask" query specified as either an `of` or `which` param (depending on the parser used) is to identy the set of all documents in the index which should be treated as "parents" _(or their ancestors)_ and which documents should be treated as "children".  This is important because in the "on disk" index, the relationships are flattened into "blocks" of documents, so the `of` / `which` params are needed to serve as a "mask" against the flat document blocks to identify the boundaries of every hierarchical relationship.
+
+In the example queries above, we were able to use a very simple Block Mask of `doc_type:parent` because our data is very simple: every document is either a `parent` or a `child`  So this query string easily distinguishes _all_ of our documents.
+
+A common mistake is to try and use a `which` parameter that is more restrictive then the set of all parent documents, in order to filter the parents that are matched, as in this bad example:
+
+----
+// BAD! DO NOT USE!
+q={!parent which="title:join"}comments:support
+----
+
+This type of query will frequenly not work the way you might expect.  Since the `which` param only identifies _some_ of the "parent" documents, the resulting query can match "parent" documents it should not, because it will mistakenly identify all documents which do _not_ match the `which="title:join"` Block Mask as children of the next "parent" document in the index (that does match this Mask).
+
+A similar problematic situation can arise when mixing parent/child documents with "simple" documents that have no children _and do not match the query used to identify 'parent' documents_.  For example, if we add the following document to our existing parent/child example documents...
+
+[source,xml]
+----
+<add>
+  <doc>
+    <field name="id">0</field>
+    <field name="content_type">plain</field>
+    <field name="title">Lucene and Solr are cool</field>
+  </doc>
+</add>
+----
+
+...then our simple `doc_type:parent` Block Mask would no longer be adequate.  We would instead need to use `\*:* -doc_type:child` or `doc_type:(simple parent)` to prevent our "simple" document from mistakenly being treated as a "child" of an adjacent "parent" document.
+
+The <<searching-nested-documents#searching-nested-documents,Searching Nested Documents>> section contains more detailed examples of specifing Block Mask queries with non trivial hierarchicies of documents.
+
 
 == Boolean Query Parser
 
@@ -190,6 +222,9 @@ A list of queries *should* appear in matching documents. For a BooleanQuery with
 `filter`::
 A list of queries that *must* appear in matching documents. However, unlike `must`, the score of filter queries is ignored. Also, these queries are cached in filter cache. To avoid caching add either `cache=false` as local parameter, or `"cache":"false"` property to underneath Query DLS Object.
 
+`excludeTags`::
+Comma separated list of tags for excluding queries from parameters above. See explanation below.
+
 *Examples*
 
 [source,text]
@@ -200,6 +235,27 @@ A list of queries that *must* appear in matching documents. However, unlike `mus
 [source,text]
 ----
 {!bool filter=foo should=bar}
+----
+
+Parameters might also be multivalue references. The former example above is equivlent to 
+
+[source,text]
+----
+q={!bool must=$ref}&ref=foo&ref=bar
+----
+
+Referred queries might be excuded via tags. Overall the idea is similar to <<faceting.adoc#tagging-and-excluding-filters, excluding fq in facets>>.
+
+[source,text]
+----
+q={!bool must=$ref excludeTags=t2}&ref={!tag=t1}foo&ref={!tag=t2}bar
+----
+
+Since the later query is excluded via `t2`, the resulting query is equivalent to 
+
+[source,text]
+----
+q={!bool must=foo}
 ----
 
 == Boost Query Parser
@@ -551,9 +607,9 @@ http://localhost:8983/solr/alt_graph/query?fl=id&q={!graph+from=id+to=out_edge+m
 ----
 == Hash Range Query Parser
 
-The hash range query parser will return documents that have a field that contains a value that would be hashed to a particular range.  This is used by the XCJF query parser.  This query parser has a per segment cache for each field that this query parser will operate on.
+The hash range query parser will return documents that have a field that contains a value that would be hashed to a particular range.  This is used by the join query when using method=crossCollection.  The hash rang query parser has a per segment cache for each field that this query parser will operate on.
 
-When specifying a min/max hash range and a field name with the hash range query parser, only documents who contain a field value that hashes into that range will be returned.  If you want to query for a very large result set, you can query for various hash ranges to return a fraction of the documents with each range request.  In the XCJF case, the hash_range query parser is used to ensure that each shard only gets the set of join keys that would end up on that shard.
+When specifying a min/max hash range and a field name with the hash range query parser, only documents who contain a field value that hashes into that range will be returned.  If you want to query for a very large result set, you can query for various hash ranges to return a fraction of the documents with each range request.  In the cross collection join case, the hash_range query parser is used to ensure that each shard only gets the set of join keys that would end up on that shard.
 
 This query parser uses the MurmurHash3_x86_32.  This is the same as the default hashing for the default composite ID router in Solr.
 
@@ -637,7 +693,7 @@ This parameter is required.
 The name of the index to run the "from" query (`v` parameter) on and where "from" values are gathered.
 Must be located on the same node as the core processing the request.
 This parameter is optional; it defaults to the value of the processing core if not specified.
-See <<Joining Across Collections,Joining Across Collections>> below for more information.
+See <<Joining Across Single Shard Collections,Joining Across Single Shard Collections>> or <<Cross Collection Join,Cross Collection Join>> below for more information.
 
 `score`::
 An optional parameter that instructs Solr to return information about the "from" query scores.
@@ -681,9 +737,9 @@ But they are also expensive to build and need to be lazily populated after each 
 If you commit frequently and your use-case can tolerate a static warming query, consider adding one to `solrconfig.xml` so that this work is done as a part of the commit itself and not attached directly to user requests.
 Consider this method when the "from" query matches a large number of documents and the "to" result set is small to moderate in size, but only if sporadic post-commit slowness is tolerable.
 
-=== Joining Across Collections
+=== Joining Across Single Shard Collections
 
-You can also specify a `fromIndex` parameter to join with a field from another core or collection. If running in SolrCloud mode, then the collection specified in the `fromIndex` parameter must have a single shard and a replica on all Solr nodes where the collection you're joining to has a replica.
+You can also specify a `fromIndex` parameter to join with a field from another core or a single shard collection. If running in SolrCloud mode, then the collection specified in the `fromIndex` parameter must have a single shard and a replica on all Solr nodes where the collection you're joining to has a replica.
 
 Let's consider an example where you want to use a Solr join query to filter movies by directors that have won an Oscar. Specifically, imagine we have two collections with the following fields:
 
@@ -723,6 +779,92 @@ node 4: movie_directors_shard1_replica4
 At query time, the `JoinQParser` will access the local replica of the *movie_directors* collection to perform the join. If a local replica is not available or active, then the query will fail. At this point, it should be clear that since you're limited to a single shard and the data must be replicated across all nodes where it is needed, this approach works better with smaller data sets where there is a one-to-many relationship between the from collection and the to collection. Moreover, if you add a replica to the to collection, then you also need to add a replica for the from collection.
 
 For more information, Erick Erickson has written a blog post about join performance titled https://lucidworks.com/2012/06/20/solr-and-joins/[Solr and Joins].
+
+=== Cross Collection Join
+The Cross Collection Join Filter is a method for the join parser that will execute a query against a remote Solr collection to get back a set of join keys that will be used to as a filter query against the local Solr collection.
+
+The crossCollection join query will create an CrossCollectionQuery object.
+The CrossCollectionQuery will first query a remote Solr collection and get back a streaming expression result of the join keys.
+As the join keys are streamed to the node, a bitset of the matching documents in the local index is built up.
+This avoids keeping the full set of join keys in memory at any given time.
+This bitset is then inserted into the filter cache upon successful execution as with the normal behavior of the Solr filter cache.
+
+If the local index is sharded according to the join key field, the cross collection join can leverage a secondary query parser called the "hash_range" query parser.
+The hash_range query parser is responsible for returning only the documents that hash to a given range of values.
+This allows the CrossCollectionQuery to query the remote Solr collection and return only the join keys that would match a specific shard in the local Solr collection.
+This has the benefit of making sure that network traffic doesn't increase as the number of shards increases and allows for much greater scalability.
+
+The CrossCollection join query works with both String and Point types of fields.
+The fields that are being used for the join key must be single-valued and have docValues enabled.
+
+It's advised to shard the local collection by the join key as this allows for the optimization mentioned above to be utilized.
+
+The cross collection join queries should not be generally used as part of the `q` parameter, but rather it is designed to be used as a filter query (`fq` parameter) to ensure proper caching.
+
+The remote Solr collection that is being queried should have a single-valued field for the join key with docValues enabled.
+
+The remote Solr collection does not have any specific sharding requirements.
+
+==== Join Query Parser Definition in solrconfig.xml
+
+The cross collection join has some configuration options that can be specified in  `solrconfig.xml`.
+
+`routerField`::
+If the documents are routed to shards using the CompositeID router by the join field, then that field name should be specified in the configuration here.  This will allow the parser to optimize the resulting HashRange query.
+
+`solrUrl`::
+If specified, this array of strings specifies the white listed Solr URLs that you can pass to the solrUrl query parameter. Without this configuration the solrUrl parameter cannot be used. This restriction is necessary to prevent an attacker from using Solr to explore the network.
+
+[source,xml]
+----
+  <queryParser name="join" class="org.apache.solr.search.JoinQParserPlugin">
+    <str name="routerField">product_id_s</str>
+    <arr name="allowSolrUrls">
+      <str>http://othersolr.example.com:8983/solr</str>
+    </arr>
+  </queryParser>
+----
+
+==== Cross Collection Join Query Parameters
+
+`fromIndex`::
+The name of the external Solr collection to be queried to retrieve the set of join key values (required).
+
+`zkHost`::
+The connection string to be used to connect to ZooKeeper. `zkHost` and `solrUrl` are both optional parameters, and at most one of them should be specified. If neither `zkHost` nor `solrUrl` are specified, the local ZooKeeper cluster will be used. (optional).
+
+`solrUrl`::
+The URL of the external Solr node to be queried. Must be a character for character exact match of a whitelisted url. (optional, disabled by default for security).
+
+`from`::
+The join key field name in the external collection (required).
+
+`to`::
+The join key field name in the local collection.
+
+`v`::
+The query substituted in as a local param.  This is the query string that will match documents in the remote collection.
+
+`routed`::
+If `true`, the cross collection join query will use each shard's hash range to determine the set of join keys to retrieve for that shard.
+This parameter improves the performance of the cross-collection join, but it depends on the local collection being routed by the `to` field.
+If this parameter is not specified, the cross collection join query will try to determine the correct value automatically.
+
+`ttl`::
+The length of time that a cross colleciton join query in the cache will be considered valid, in seconds.
+Defaults to `3600` (one hour).
+The cross collection join query will not be aware of changes to the remote collection, so if the remote collection is updated, cached cross collection queries may give inaccurate results.
+After the `ttl` period has expired, the cross collection join query will re-execute the join against the remote collection.
+
+Other Parameters::
+Any normal Solr query parameter can also be specified/passed through as a local param.
+
+==== Cross Collection Query Examples
+
+[source,text]
+----
+http://localhost:8983/solr/localCollection/query?fl=id&q={!join method="crossCollection" fromIndex="otherCollection" from="fromField" to="toField" v="*:*"}
+----
 
 == Lucene Query Parser
 
@@ -925,6 +1067,17 @@ For easy filter construction to drill down in faceting, the <<Term Query Parser,
 
 For full analysis on all fields, including text fields, you may want to use the <<Field Query Parser,FieldQParserPlugin>>.
 
+== Ranking Query Parser
+
+The `RankQParserPlugin` is a faster implementation of ranking-related features of `FunctionQParser` and can work together with specialized field of {solr-javadocs}/solr-core/org/apache/solr/schema/RankField.html[`RankFields`] type.
+
+It allows queries like:
+
+[source,text]
+----
+http://localhost:8983/solr/techproducts?q=memory _query_:{!rank f='pagerank', function='log' scalingFactor='1.2'}
+----
+
 == Re-Ranking Query Parser
 
 The `ReRankQParserPlugin` is a special purpose parser for Re-Ranking the top results of a simple query using a more complex ranking query.
@@ -1114,94 +1267,6 @@ An optional parameter used to determine which of several query implementations s
 [source,text]
 ----
 {!terms f=categoryId method=booleanQuery separator=" "}8 6 7 5309
-----
-
-== XCJF Query Parser
-The Cross Collection Join Filter (XCJF) is a query parser plugin that will execute a query against a remote Solr collection to get back a set of join keys that will be used to as a filter query against the local Solr collection.
-
-The XCJF parser will create an XCJFQuery object.
-The XCJFQuery will first query a remote Solr collection and get back a streaming expression result of the join keys.
-As the join keys are streamed to the node, a bitset of the matching documents in the local index is built up.
-This avoids keeping the full set of join keys in memory at any given time.
-This bitset is then inserted into the filter cache upon successful execution as with the normal behavior of the Solr filter cache.
-
-If the local index is sharded according to the join key field, the XCJF parser can leverage a secondary query parser called the "hash_range" query parser.
-The hash_range query parser is responsible for returning only the documents that hash to a given range of values.
-This allows the XCJFQuery to query the remote Solr collection and return only the join keys that would match a specific shard in the local Solr collection.
-This has the benefit of making sure that network traffic doesn't increase as the number of shards increases and allows for much greater scalability.
-
-The XCJF parser works with both String and Point types of fields.
-The fields that are being used for the join key must be single-valued and have docValues enabled.
-
-It's advised to shard the local collection by the join key as this allows for the optimization mentioned above to be utilized.
-
-The XCJF parser should not be generally used as part of the `q` parameter, but rather it is designed to be used as a filter query (`fq` parameter) to ensure proper caching.
-
-The remote Solr collection that is being queried should have a single-valued field for the join key with docValues enabled.
-
-The remote Solr collection does not have any specific sharding requirements.
-
-=== XCJF Query Parser Definition in solrconfig.xml
-
-The XCJF has some configuration options that can be specified in  `solrconfig.xml`.
-
-`routerField`::
-If the documents are routed to shards using the CompositeID router by the join field, then that field name should be specified in the configuration here.  This will allow the parser to optimize the resulting HashRange query.
-
-`solrUrl`::
-If specified, this array of strings specifies the white listed Solr URLs that you can pass to the solrUrl query parameter. Without this configuration the solrUrl parameter cannot be used. This restriction is necessary to prevent an attacker from using Solr to explore the network.
-
-[source,xml]
-----
-  <queryParser name="xcjf" class="org.apache.solr.search.join.XCJFQParserPlugin">
-    <!-- Define which field has the routing information for the collection to use the hash range query parser. -->
-    <str name="routerField">joinfield_id_s</str>
-    <!-- Demo only, most users will want to remove this parameter -->
-    <arr name="solrUrl">
-      <str>http://othersolr.example.com:8983/solr</str>
-    </arr>
-  </queryParser>
-----
-
-=== XCJF Query Parameters
-
-`collection`::
-The name of the external Solr collection to be queried to retrieve the set of join key values (required).
-
-`zkHost`::
-The connection string to be used to connect to ZooKeeper. `zkHost` and `solrUrl` are both optional parameters, and at most one of them should be specified. If neither `zkHost` nor `solrUrl` are specified, the local ZooKeeper cluster will be used. (optional).
-
-`solrUrl`::
-The URL of the external Solr node to be queried. Must be a character for character exact match of a whitelisted url. (optional, disabled by default for security).
-
-`from`::
-The join key field name in the external collection (required).
-
-`to`::
-The join key field name in the local collection.
-
-`v`::
-The query substituted in as a local param.  This is the query string that will match documents in the remote collection.
-
-`routed`::
-If `true`, the XCJF query will use each shard's hash range to determine the set of join keys to retrieve for that shard.
-This parameter improves the performance of the cross-collection join, but it depends on the local collection being routed by the `to` field.
-If this parameter is not specified, the XCJF query will try to determine the correct value automatically.
-
-`ttl`::
-The length of time that an XCJF query in the cache will be considered valid, in seconds.
-Defaults to `3600` (one hour).
-The XCJF query will not be aware of changes to the remote collection, so if the remote collection is updated, cached XCJF queries may give inaccurate results.
-After the `ttl` period has expired, the XCJF query will re-execute the join against the remote collection.
-
-Other Parameters::
-Any normal Solr query parameter can also be specified/passed through as a local param.
-
-=== XCJF Query Examples
-
-[source,text]
-----
-http://localhost:8983/solr/localCollection/query?fl=id&q={!xcjf collection="otherCollection" from="fromField" to="toField" v="*:*"}
 ----
 
 == XML Query Parser

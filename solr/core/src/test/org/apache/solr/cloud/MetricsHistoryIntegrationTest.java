@@ -16,13 +16,12 @@
  */
 package org.apache.solr.cloud;
 
+import javax.imageio.ImageIO;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
-import javax.imageio.ImageIO;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
@@ -30,7 +29,6 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
-import org.apache.solr.cloud.autoscaling.sim.SimCloudManager;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
@@ -50,6 +48,7 @@ import org.slf4j.LoggerFactory;
  *
  */
 @LuceneTestCase.Slow
+@LuceneTestCase.Nightly
 @LogLevel("org.apache.solr.handler.admin=DEBUG")
 @Ignore // nocommit debug, I think it takes a bit of time for metrics to be populated
 public class MetricsHistoryIntegrationTest extends SolrCloudTestCase {
@@ -65,18 +64,11 @@ public class MetricsHistoryIntegrationTest extends SolrCloudTestCase {
     System.setProperty("solr.disableMetricsHistoryHandler", "false");
     System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
 
-    boolean simulated = TEST_NIGHTLY ? random().nextBoolean() : true;
-    if (simulated) {
-      cloudManager = SimCloudManager.createCluster(1, TimeSource.get("simTime:50"));
-      solrClient = ((SimCloudManager)cloudManager).simGetSolrClient();
-    }
     configureCluster(1)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
-    if (!simulated) {
-      cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
-      solrClient = cluster.getSolrClient();
-    }
+    cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
+    solrClient = cluster.getSolrClient();
     timeSource = cloudManager.getTimeSource();
     // create .system
     CollectionAdminRequest.createCollection(CollectionAdminParams.SYSTEM_COLL, null, 1, 1)
@@ -84,19 +76,12 @@ public class MetricsHistoryIntegrationTest extends SolrCloudTestCase {
     CloudUtil.waitForState(cloudManager, CollectionAdminParams.SYSTEM_COLL,
         30, TimeUnit.SECONDS, CloudUtil.clusterShape(1, 1));
     solrClient.query(CollectionAdminParams.SYSTEM_COLL, params(CommonParams.Q, "*:*"));
-    // sleep a little to allow the handler to collect some metrics
-    if (simulated) {
-      timeSource.sleep(90000);
-    } else {
-      timeSource.sleep(100000);
-    }
+    // sleep until next generation of kids grow up to allow the handler to collect some metrics
+    timeSource.sleep(100000);
   }
 
   @AfterClass
   public static void teardown() throws Exception {
-    if (cloudManager instanceof SimCloudManager) {
-      cloudManager.close();
-    }
     solrClient = null;
     cloudManager = null;
   }

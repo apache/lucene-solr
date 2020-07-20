@@ -16,9 +16,6 @@
  */
 package org.apache.solr.cloud.api.collections;
 
-import static org.hamcrest.CoreMatchers.hasItem;
-import static org.hamcrest.CoreMatchers.not;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -33,13 +30,10 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.ClusterProp;
 import org.apache.solr.client.solrj.response.RequestStatusState;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -53,6 +47,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.CoreMatchers.not;
 
 /**
  * This class implements the logic required to test Solr cloud backup/restore capability.
@@ -125,9 +122,6 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
       create.setMaxShardsPerNode((int) Math.ceil(NUM_SHARDS * backupReplFactor / (double) cluster.getJettySolrRunners().size()));//just to assert it survives the restoration
     }
 
-    if (random().nextBoolean()) {
-      create.setAutoAddReplicas(true);//just to assert it survives the restoration
-    }
     Properties coreProps = new Properties();
     coreProps.put("customKey", "customValue");//just to assert it survives the restoration
     create.setProperties(coreProps);
@@ -397,7 +391,6 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
       assertEquals(origShardToDocCount, getShardToDocCountMap(client, restoreCollection));
     }
 
-    assertEquals(backupCollection.getAutoAddReplicas(), restoreCollection.getAutoAddReplicas());
     assertEquals(sameConfig ? "_default" : "customConfigName",
         cluster.getSolrClient().getZkStateReader().readConfigName(restoreCollectionName));
 

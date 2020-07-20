@@ -19,7 +19,7 @@
 
 The Core Admin API is primarily used under the covers by the <<collections-api.adoc#collections-api,Collections API>> when running a <<solrcloud.adoc#solrcloud,SolrCloud>> cluster.
 
-SolrCloud users should not typically use the CoreAdmin API directly, but the API may be useful for users of single-node or master/slave Solr installations for core maintenance operations.
+SolrCloud users should not typically use the CoreAdmin API directly, but the API may be useful for users of single-node or leader/follower Solr installations for core maintenance operations.
 
 The CoreAdmin API is implemented by the CoreAdminHandler, which is a special purpose <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#requesthandlers-and-searchcomponents-in-solrconfig,request handler>> that is used to manage Solr cores. Unlike other request handlers, the CoreAdminHandler is not attached to a single core. Instead, there is a single instance of the CoreAdminHandler in each Solr node that manages all the cores running in that node and is accessible at the `/solr/admin/cores` path.
 
@@ -77,7 +77,7 @@ The `core.properties` file is built as part of the CREATE command. If you create
 The name of the new core. Same as `name` on the `<core>` element. This parameter is required.
 
 `instanceDir`::
-The directory where files for this core should be stored. Same as `instanceDir` on the `<core>` element. The default is the value specified for the `name` parameter if not supplied.
+The directory where files for this core should be stored. Same as `instanceDir` on the `<core>` element. The default is the value specified for the `name` parameter if not supplied. This directory must be inside `SOLR_HOME`, `SOLR_DATA_HOME` or one of the paths specified by system property `solr.allowPaths`.
 
 `config`::
 Name of the config file (i.e., `solrconfig.xml`) relative to `instanceDir`.
@@ -86,7 +86,7 @@ Name of the config file (i.e., `solrconfig.xml`) relative to `instanceDir`.
 Name of the schema file to use for the core. Please note that if you are using a "managed schema" (the default behavior) then any value for this property which does not match the effective `managedSchemaResourceName` will be read once, backed up, and converted for managed schema use. See <<schema-factory-definition-in-solrconfig.adoc#schema-factory-definition-in-solrconfig,Schema Factory Definition in SolrConfig>> for details.
 
 `dataDir`::
-Name of the data directory relative to `instanceDir`.
+Name of the data directory relative to `instanceDir`. If absolute value is used, it must be inside `SOLR_HOME`, `SOLR_DATA_HOME` or one of the paths specified by system property `solr.allowPaths`.
 
 `configSet`::
 Name of the configset to use for this core. For more information, see the section <<config-sets.adoc#config-sets,Configsets>>.

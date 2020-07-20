@@ -153,10 +153,10 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
   @Test
   public void testSetPropertyValidationOfCluster() throws IOException, SolrServerException {
     NamedList resp = cluster.getSolrClient().request(
-      new V2Request.Builder("/cluster").withMethod(SolrRequest.METHOD.POST).withPayload("{set-property: {name: autoAddReplicas, val:false}}").build());
+      new V2Request.Builder("/cluster").withMethod(SolrRequest.METHOD.POST).withPayload("{set-property: {name: maxCoresPerNode, val:42}}").build());
     assertTrue(resp.toString().contains("status=0"));
     resp = cluster.getSolrClient().request(
-        new V2Request.Builder("/cluster").withMethod(SolrRequest.METHOD.POST).withPayload("{set-property: {name: autoAddReplicas, val:null}}").build());
+        new V2Request.Builder("/cluster").withMethod(SolrRequest.METHOD.POST).withPayload("{set-property: {name: maxCoresPerNode, val:null}}").build());
     assertTrue(resp.toString().contains("status=0"));
   }
 

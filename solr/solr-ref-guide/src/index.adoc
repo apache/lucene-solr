@@ -10,6 +10,8 @@
     streaming-expressions, \
     solrcloud, \
     legacy-scaling-and-distribution, \
+    circuit-breakers, \
+    rate-limiters, \
     solr-plugins, \
     the-well-configured-solr-instance, \
     monitoring-solr, \
@@ -121,6 +123,10 @@ The *<<getting-started.adoc#getting-started,Getting Started>>* section guides yo
 *<<solrcloud.adoc#solrcloud,SolrCloud>>*: This section describes SolrCloud, which provides comprehensive distributed capabilities.
 
 *<<legacy-scaling-and-distribution.adoc#legacy-scaling-and-distribution,Legacy Scaling and Distribution>>*: This section tells you how to grow a Solr distribution by dividing a large index into sections called shards, which are then distributed across multiple servers, or by replicating a single index across multiple services.
+
+*<<circuit-breakers.adoc#circuit-breakers,Circuit Breakers>>*: This section talks about circuit breakers, a way of allowing a higher stability of Solr nodes and increased service level guarantees of requests that are accepted by Solr.
+
+*<<rate-limiters.adoc#rate-limiters,Request Rate Limiters>>*: This section talks about request rate limiters, a way of guaranteeing throughput per request type and dedicating resource quotas by resource type. Rate limiter configurations are per instance/JVM and applied to the entire JVM, not at a core/collection level.
 ****
 
 .Advanced Configuration

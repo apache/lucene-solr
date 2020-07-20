@@ -35,7 +35,6 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
 import org.apache.solr.common.ParWork;
@@ -154,9 +153,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       }
     }
 
-    AtomicReference<PolicyHelper.SessionWrapper> sessionWrapper = new AtomicReference<>();
     List<CreateReplica> createReplicas;
-
     try {
       ocmh.zkStateReader.waitForState(collectionName, 15, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
         if (collectionState == null) {
@@ -172,17 +169,11 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     }
     clusterState = ocmh.zkStateReader.getClusterState();
 
-    try {
-      ClusterState finalClusterState = clusterState;
-      createReplicas = buildReplicaPositions(ocmh.cloudManager, clusterState, collectionName, message, replicaTypesVsCount, sessionWrapper)
-          .stream()
-          .map(replicaPosition -> assignReplicaDetails(ocmh.cloudManager, finalClusterState, message, replicaPosition))
-          .collect(Collectors.toList());
-    } finally {
-      if (sessionWrapper.get() != null) {
-        sessionWrapper.get().release();
-      }
-    }
+    ClusterState finalClusterState = clusterState;
+    createReplicas = buildReplicaPositions(ocmh.cloudManager, clusterState, collectionName, message, replicaTypesVsCount)
+        .stream()
+        .map(replicaPosition -> assignReplicaDetails(ocmh.cloudManager, finalClusterState, message, replicaPosition))
+        .collect(Collectors.toList());
 
     if (createReplicas.size() != totalReplicas) {
       throw new IllegalStateException("Did not get enough positions to cover new replicas");
@@ -438,8 +429,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
 
   public static List<ReplicaPosition> buildReplicaPositions(SolrCloudManager cloudManager, ClusterState clusterState,
                                                             String collectionName, ZkNodeProps message,
-                                                            EnumMap<Replica.Type, Integer> replicaTypeVsCount,
-                                                            AtomicReference< PolicyHelper.SessionWrapper> sessionWrapper) throws IOException, InterruptedException {
+                                                            EnumMap<Replica.Type, Integer> replicaTypeVsCount) throws IOException, InterruptedException {
     boolean skipCreateReplicaInClusterState = message.getBool(SKIP_CREATE_REPLICA_IN_CLUSTER_STATE, false);
     boolean skipNodeAssignment = message.getBool(SKIP_NODE_ASSIGNMENT, false);
     String sliceName = message.getStr(SHARD_ID_PROP);
@@ -464,7 +454,6 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
 
       positions = Assign.getNodesForNewReplicas(clusterState, collection.getName(), sliceName, numNrtReplicas,
                     numTlogReplicas, numPullReplicas, createNodeSetStr, cloudManager);
-      sessionWrapper.set(PolicyHelper.getLastSessionWrapper(true));
     }
 
     if (positions == null)  {

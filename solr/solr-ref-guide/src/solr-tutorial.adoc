@@ -161,7 +161,7 @@ INFO  - 2017-07-27 12:48:59.289; org.apache.solr.client.solrj.impl.ZkClientClust
 Uploading /solr-{solr-docs-version}.0/server/solr/configsets/sample_techproducts_configs/conf for config techproducts to ZooKeeper at localhost:9983
 
 Creating new collection 'techproducts' using command:
-http://localhost:8983/solr/admin/collections?action=CREATE&name=techproducts&numShards=2&replicationFactor=2&maxShardsPerNode=2&collection.configName=techproducts
+http://localhost:8983/solr/admin/collections?action=CREATE&name=techproducts&numShards=2&replicationFactor=2&collection.configName=techproducts
 
 {
   "responseHeader":{
@@ -553,7 +553,7 @@ INFO  - 2017-07-27 15:07:46.191; org.apache.solr.client.solrj.impl.ZkClientClust
 Uploading /{solr-docs-version}.0/server/solr/configsets/_default/conf for config films to ZooKeeper at localhost:9983
 
 Creating new collection 'films' using command:
-http://localhost:7574/solr/admin/collections?action=CREATE&name=films&numShards=2&replicationFactor=2&maxShardsPerNode=2&collection.configName=films
+http://localhost:7574/solr/admin/collections?action=CREATE&name=films&numShards=2&replicationFactor=2&collection.configName=films
 
 {
   "responseHeader":{
@@ -751,11 +751,7 @@ There are a great deal of other parameters available to help you control how Sol
 
 ==== Range Facets
 
-For numerics or dates, it's often desirable to partition the facet counts into ranges rather than discrete values. A prime example of numeric range faceting, using the example techproducts data from our previous exercise, is `price`.  In the `/browse` UI, it looks like this:
-
-.Range facets
-image::images/solr-tutorial/tutorial-range-facet.png[Solr Quick Start: Range facets]
-
+For numerics or dates, it's often desirable to partition the facet counts into ranges rather than discrete values. A prime example of numeric range faceting, using the example techproducts data from our previous exercise, is `price`.
 The films data includes the release date for films, and we could use that to create date range facets, which are another common use for range facets.
 
 The Solr Admin UI doesn't yet support range facet options, so you will need to use curl or similar command line tool for the following examples.
@@ -912,11 +908,6 @@ In this example, assume there is a directory named "Documents" locally. To index
 +
 You may get errors as it works through your documents. These might be caused by the field guessing, or the file type may not be supported. Indexing content such as this demonstrates the need to plan Solr for your data, which requires understanding it and perhaps also some trial and error.
 
-DataImportHandler::
-Solr includes a tool called the <<uploading-structured-data-store-data-with-the-data-import-handler.adoc#uploading-structured-data-store-data-with-the-data-import-handler,Data Import Handler (DIH)>> which can connect to databases (if you have a jdbc driver), mail servers, or other structured data sources. There are several examples included for feeds, GMail, and a small HSQL database.
-+
-The `README.md` file in `example/example-DIH` will give you details on how to start working with this tool.
-
 SolrJ::
 SolrJ is a Java-based client for interacting with Solr. Use <<using-solrj.adoc#using-solrj,SolrJ>> for JVM-based languages or other <<client-apis.adoc#client-apis,Solr clients>> to programmatically create documents to send to Solr.
 
@@ -960,13 +951,6 @@ Jump ahead to the overall <<Wrapping Up,wrap up>> when you're ready to stop Solr
 Solr has sophisticated geospatial support, including searching within a specified distance range of a given location (or within a bounding box), sorting by distance, or even boosting results by the distance.
 
 Some of the example techproducts documents we indexed in Exercise 1 have locations associated with them to illustrate the spatial capabilities. To reindex this data, see <<index-the-techproducts-data,Exercise 1>>.
-
-Spatial queries can be combined with any other types of queries, such as in this example of querying for "ipod" within 10 kilometers from San Francisco:
-
-.Spatial queries and results
-image::images/solr-tutorial/tutorial-spatial.png[Solr Quick Start: spatial search]
-
-This is from Solr's example search UI (called `/browse`), which has a nice feature to show a map for each item and allow easy selection of the location to search near. You can see this yourself by going to <http://localhost:8983/solr/techproducts/browse?q=ipod&pt=37.7752%2C-122.4232&d=10&sfield=store&fq=%7B%21bbox%7D&queryOpts=spatial&queryOpts=spatial> in a browser.
 
 To learn more about Solr's spatial capabilities, see the section <<spatial-search.adoc#spatial-search,Spatial Search>>.
 

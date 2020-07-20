@@ -49,6 +49,7 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Ignore // Since maxShardsPerNode was removed in SOLR-12847 and autoscaling framework was removed in SOLR-14656, this test is broken
   public void testAddTooManyReplicas() throws Exception {
     final String collectionName = "TooManyReplicasInSeveralFlavors";
     CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1)

@@ -55,9 +55,9 @@ import org.apache.solr.api.ApiBag;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
+import org.apache.solr.client.solrj.cloud.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
-import org.apache.solr.client.solrj.cloud.autoscaling.Variable;
+import org.apache.solr.client.solrj.impl.SolrClientNodeStateProvider;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
@@ -128,7 +128,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
 
     DEFAULT_NODE_GAUGES.add("CONTAINER.fs.coreRoot.usableSpace");
 
-    DEFAULT_CORE_GAUGES.add(Variable.Type.CORE_IDX.metricsAttribute);
+    DEFAULT_CORE_GAUGES.add(SolrClientNodeStateProvider.Variable.CORE_IDX.metricsAttribute);
 
     DEFAULT_CORE_COUNTERS.add("QUERY./select.requests");
     DEFAULT_CORE_COUNTERS.add("UPDATE./update.requests");

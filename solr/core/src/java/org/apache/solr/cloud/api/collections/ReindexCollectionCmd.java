@@ -34,7 +34,6 @@ import java.util.stream.Stream;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -111,10 +110,8 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
       ZkStateReader.REPLICATION_FACTOR,
       ZkStateReader.MAX_SHARDS_PER_NODE,
       "shards",
-      Policy.POLICY,
       CollectionAdminParams.CREATE_NODE_SET_PARAM,
-      CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM,
-      ZkStateReader.AUTO_ADD_REPLICAS
+      CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM
   );
 
   private final OverseerCollectionMessageHandler ocmh;

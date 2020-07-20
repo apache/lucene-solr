@@ -61,13 +61,27 @@ Optionally, in the Query Elevation Component configuration you can also specify 
 The Query Elevation Search Component takes the following parameters:
 
 `queryFieldType`::
-Specifies which fieldType should be used to analyze the incoming text. For example, it may be appropriate to use a fieldType with a LowerCaseFilter.
+Specifies which fieldType should be used to analyze the incoming text. For example, it may be appropriate to use a fieldType with a LowerCaseFilter. Other example, if you need to unescape backslash-escaped queries, then you can define the fieldType to preprocess with a PatternReplaceCharFilter. Here is the corresponding example of fieldType (traditionally in `schema.xml`):
+
+[source,xml]
+----
+<fieldType name="unescapelowercase" class="solr.TextField">
+  <analyzer>
+    <charFilter class="solr.PatternReplaceCharFilterFactory" pattern="\\(.)" replacement="$1"/>
+    <tokenizer class="solr.StandardTokenizerFactory"/>
+    <filter class="solr.LowerCaseFilterFactory"/>
+  </analyzer>
+</fieldType>
+----
+
+// NOTE: {IsAlphabetic} and {Digit} below are escaped with '\' so Asciidoctor does not treat them as attributes during conversion to HTML.
+For example, to unescape only non-alphanumeric, the pattern could be `\\([^\p\{IsAlphabetic}\p\{Digit}])`.
 
 `config-file`::
 Path to the file that defines query elevation. This file must exist in `<instanceDir>/conf/<config-file>` or `<dataDir>/<config-file>`. If the file exists in the `conf/` directory it will be loaded once at startup. If it exists in the `data/` directory, it will be reloaded for each IndexReader.
 
 `forceElevation`::
-By default, this component respects the requested `sort` parameter: if the request asks to sort by date, it will order the results by date. If `forceElevation=true` (the default), results will first return the boosted docs, then order by date.
+By default, this component respects the requested `sort` parameter: if the request asks to sort by date, it will order the results by date. If `forceElevation=true`, results will first return the boosted docs, then order by date. This defaults to `false`.
 This is also a request parameter, which will override the config.
 
 `useConfiguredElevatedOrder`::

@@ -33,10 +33,9 @@ import java.util.function.BiConsumer;
 
 import org.apache.lucene.util.Version;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.cloud.AlreadyExistsException;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.api.collections.CreateCollectionCmd;
@@ -86,16 +85,14 @@ import org.slf4j.LoggerFactory;
  * collections, shards, replicas and setting various properties.</p>
  *
  * <p>The <b>Overseer</b> is a single elected node in the SolrCloud cluster that is in charge of interactions with
- * ZooKeeper that require global synchronization. It also hosts the Collection API implementation and the
- * Autoscaling framework.</p>
+ * ZooKeeper that require global synchronization. </p>
  *
  * <p>The Overseer deals with:</p>
  * <ul>
  *   <li>Cluster State updates, i.e. updating Collections' <code>state.json</code> files in ZooKeeper, see {@link ClusterStateUpdater},</li>
- *   <li>Collection API implementation, including Autoscaling replica placement computation, see
+ *   <li>Collection API implementation, see
  *   {@link OverseerCollectionConfigSetProcessor} and {@link OverseerCollectionMessageHandler} (and the example below),</li>
  *   <li>Updating Config Sets, see {@link OverseerCollectionConfigSetProcessor} and {@link OverseerConfigSetMessageHandler},</li>
- *   <li>Autoscaling triggers, see {@link org.apache.solr.cloud.autoscaling.OverseerTriggerThread}.</li>
  * </ul>
  *
  * <p>The nodes in the cluster communicate with the Overseer over queues implemented in ZooKeeper. There are essentially
@@ -512,7 +509,7 @@ public class Overseer implements SolrCloseable {
               getSolrCloudManager().getDistribStateManager().makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName + "/leaders/" + shardName, null, CreateMode.PERSISTENT, false);
               getSolrCloudManager().getDistribStateManager().makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName + "/terms/" + shardName, ZkStateReader.emptyJson, CreateMode.PERSISTENT, false);
 
-            } catch (KeeperException | AlreadyExistsException | IOException | InterruptedException e) {
+            } catch (KeeperException | IOException | InterruptedException | AlreadyExistsException e) {
               ParWork.propagateInterrupt(e);
               throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
             }
@@ -748,7 +745,6 @@ public class Overseer implements SolrCloseable {
     }
 
     systemCollectionCompatCheck(new StringBiConsumer());
-
     assert ObjectReleaseTracker.track(this);
   }
 

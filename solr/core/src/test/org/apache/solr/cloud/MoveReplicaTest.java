@@ -32,9 +32,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
@@ -111,7 +109,6 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     boolean isTlog = random().nextBoolean();
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(coll, "conf1", 2, 1, isTlog ? 1 : 0, !isTlog ? 1 : 0);
     create.setMaxShardsPerNode(3);
-    create.setAutoAddReplicas(false);
     cloudClient.request(create);
 
     addDocs(coll, 100);
@@ -223,7 +220,6 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     // random create tlog or pull type replicas with nrt
     boolean isTlog = random().nextBoolean();
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(coll, "conf1", 2, 1, isTlog ? 1 : 0, !isTlog ? 1 : 0);
-    create.setAutoAddReplicas(false);
     cloudClient.request(create);
 
     cluster.waitForActiveCollection(coll, 2, 4);

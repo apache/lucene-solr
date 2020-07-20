@@ -1,4 +1,4 @@
-= Rule-Based Authorization Plugin
+= Rule-Based Authorization Plugins
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -16,7 +16,9 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Solr's authentication plugins control whether users can access Solr in a binary fashion.  A user is either authenticated, or they aren't.  For more fine-grained access control, Solr's Rule-Based Authorization Plugins (hereafter, "RBAP") can be used.
+Solr's authentication plugins control whether users can access Solr in a binary fashion.
+A user is either authenticated, or they aren't.
+For more fine-grained access control, Solr's Rule-Based Authorization Plugins (hereafter, "RBAP") can be used.
 
 [CAUTION]
 ====
@@ -72,7 +74,6 @@ The syntax for individual permissions is more involved and is treated in greater
 User's roles may either come from the request itself, then you will use the `ExternalRoleRuleBasedAuthorizationPlugin` variant of RBAC. If you need to hardcode user-role mappings, then you need to use the `RuleBasedAuthorizationPlugin` and define the user-role mappings in `security.json` like this:
 
 user-role:: A mapping of individual users to the roles they belong to.  The value of this property is a JSON map, where each property name is a user, and each property value is either the name of a single role or a JSON array of multiple roles that the specified user belongs to.  For example:
-+
 [source,json]
 ----
 "user-role": {
@@ -80,6 +81,11 @@ user-role:: A mapping of individual users to the roles they belong to.  The valu
   "user2": ["role1", "role2"]
 }
 ----
+useShortName:: Determines if user-role mappings will resolve using the full principal or a shortened name provided by the authentication plugin. For example, the `KerberosAuthPlugin` may provide a full principal as `user@EXAMPLE.COM`, while the corresponding short name would be `user`.
++
+For some plugins the principal name and short name may be the same.
++
+This setting is optional and defaults to `false` if unset.
 
 === Example for RuleBasedAuthorizationPlugin and BasicAuth
 
@@ -118,7 +124,7 @@ This example `security.json` shows how the <<basic-authentication-plugin.adoc#ba
 
 Altogether, this example carves out two restricted areas.  Only `admin-user` can access Solr's Authentication and Authorization APIs, and only `dev-user` can access their `dev-private` collection.  All other APIs are left open, and can be accessed by both users.
 
-=== Example for ExternalRoleRuleBasedAuthorizationPlugin with JWT auth
+=== Example for External Role RuleBasedAuthorizationPlugin with JWT auth
 
 This example `security.json` shows how the <<jwt-authentication-plugin.adoc#jwt-authentication-plugin,JWT authentication plugin>>, which pulls user and user roles from JWT claims, can work with the `ExternalRoleRuleBasedAuthorizationPlugin` plugin:
 
@@ -139,9 +145,9 @@ This example `security.json` shows how the <<jwt-authentication-plugin.adoc#jwt-
 
 Let's walk through this example:
 
-<1> JWT Authentication plugin is enabled
-<2> Public keys is pulled over https
-<3> We expect each JWT token to contain a "roles" claim, which will be passed on to Authorization
+<1> JWT Authentication plugin is enabled.
+<2> Public keys will be pulled over HTTPS.
+<3> We expect each JWT token to contain a "roles" claim, which will be passed on to Authorization.
 <4> External Role Rule-based authorization plugin is enabled.
 <5> The 'admin' role has been defined, and it has permission to edit security settings.
 
@@ -208,21 +214,6 @@ The predefined permission names (and their effects) are:
 * *config-read*: this permission is allowed to read a collection's configuration using the <<config-api.adoc#config-api,Config API>>, the <<request-parameters-api.adoc#request-parameters-api,Request Parameters API>>, and other APIs which modify `configoverlay.json`. Note that this allows configuration read permissions for _all_ collections. If read permissions should only be applied to specific collections, a custom permission would need to be created.
 * *metrics-read*: this permission allows access to Solr's <<metrics-reporting.adoc#metrics-api,Metrics API>>
 * *metrics-history-read*: this permission allows access to Solr's <<metrics-history.adoc#metrics-history-api,Metrics History API>>, which provides long-term history for a select set of key Solr metrics.
-* *autoscaling-read*: this permission allows users to read Solr's <<solrcloud-autoscaling-api.adoc#read-api,autoscaling>> configuration.  This covers all read-only autoscaling APIs, including:
-** the "READ" API (`/solr/admin/autoscaling`)
-** the Diagnostics API (`/solr/admin/autoscaling/diagnostics`)
-** the Suggestions API (`/solr/admin/autoscaling/suggestions`)
-** The History API (`/solr/admin/autoscaling/history`)
-* *autoscaling-write*: this permission allows users to make changes to Solr's <<solrcloud-autoscaling-api.adoc#write-api,autoscaling>> configuration.  This covers all operations in the autoscaling Write API, including:
-** set-cluster-preferences
-** set-cluster-policy
-** set-policy
-** remove-policy
-** set-trigger
-** remove-trigger
-** set-listener
-** remove-listener
-** set-properties
 * *core-admin-edit*: Core admin commands that can mutate the system state.
 * *core-admin-read*: Read operations on the core admin API
 * *collection-admin-edit*: this permission is allowed to edit a collection's configuration using the <<collections-api.adoc#collections-api,Collections API>>. Note that this allows configuration edit permissions for _all_ collections. If edit permissions should only be applied to specific collections, a custom permission would need to be created. Specifically, the following actions of the Collections API would be allowed:
@@ -249,8 +240,8 @@ The predefined permission names (and their effects) are:
 ** OVERSEERSTATUS
 ** CLUSTERSTATUS
 ** REQUESTSTATUS
-* *update*: this permission is allowed to perform any update action on any collection. This includes sending documents for indexing (using an <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#updaterequesthandlers,update request handler>>). This applies to all collections by default (`collection:"*"`).
-* *read*: this permission is allowed to perform any read action on any collection. This includes querying using search handlers (using <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#searchhandlers,request handlers>>) such as `/select`, `/get`, `/browse`, `/tvrh`, `/terms`, `/clustering`, `/elevate`, `/export`, `/spell`, `/clustering`, and `/sql`. This applies to all collections by default ( `collection:"*"` ).
+* *update*: this permission is allowed to perform any update action on any collection. This includes sending documents for indexing (using an <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#update-request-handlers,update request handler>>). This applies to all collections by default (`collection:"*"`).
+* *read*: this permission is allowed to perform any read action on any collection. This includes querying using search handlers (using <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#search-handlers,request handlers>>) such as `/select`, `/get`, `/tvrh`, `/terms`, `/clustering`, `/elevate`, `/export`, `/spell`, `/clustering`, and `/sql`. This applies to all collections by default ( `collection:"*"` ).
 * *all*: Any requests coming to Solr.
 
 === Permission Ordering and Resolution
