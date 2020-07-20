@@ -44,7 +44,7 @@ public class OrderedExecutorTest extends SolrTestCase {
 
   @Test
   public void testExecutionInOrder() {
-    OrderedExecutor orderedExecutor = new OrderedExecutor(10, ExecutorUtil.newMDCAwareCachedThreadPool("executeInOrderTest"));
+    OrderedExecutor orderedExecutor = new OrderedExecutor(TEST_NIGHTLY ? 10 : 3, ExecutorUtil.newMDCAwareCachedThreadPool("executeInOrderTest"));
     IntBox intBox = new IntBox();
     for (int i = 0; i < 100; i++) {
       orderedExecutor.execute(1, () -> intBox.value++);
@@ -57,7 +57,7 @@ public class OrderedExecutorTest extends SolrTestCase {
   public void testLockWhenQueueIsFull() {
     final ExecutorService controlExecutor = ExecutorUtil.newMDCAwareCachedThreadPool("testLockWhenQueueIsFull_control");
     final OrderedExecutor orderedExecutor = new OrderedExecutor
-      (10, ExecutorUtil.newMDCAwareCachedThreadPool("testLockWhenQueueIsFull_test"));
+      (TEST_NIGHTLY ? 10 : 3, ExecutorUtil.newMDCAwareCachedThreadPool("testLockWhenQueueIsFull_test"));
     
     try {
       // AAA and BBB events will both depend on the use of the same lockId
@@ -89,8 +89,8 @@ public class OrderedExecutorTest extends SolrTestCase {
       // now if we release the latchAAA, AAA should be garunteed to fire first, then BBB
       latchAAA.countDown();
       try {
-        assertEquals("AAA", events.poll(120, TimeUnit.SECONDS));
-        assertEquals("BBB", events.poll(120, TimeUnit.SECONDS));
+        assertEquals("AAA", events.poll(10, TimeUnit.SECONDS));
+        assertEquals("BBB", events.poll(10, TimeUnit.SECONDS));
       } catch (InterruptedException e) {
         log.error("Interrupt polling event queue", e);
         Thread.currentThread().interrupt();
@@ -124,7 +124,7 @@ public class OrderedExecutorTest extends SolrTestCase {
                 try {
                   log.info("Worker #{} starting", lockId);
                   preBarrierLatch.countDown();
-                  barrier.await(120, TimeUnit.SECONDS);
+                  barrier.await(10, TimeUnit.SECONDS);
                   postBarrierLatch.countDown();
                 } catch (TimeoutException t) {
                   log.error("Timeout in worker# {} awaiting barrier", lockId, t);
@@ -147,7 +147,7 @@ public class OrderedExecutorTest extends SolrTestCase {
         // this latch should have fully counted down by now
         // (or with a small await for thread scheduling but no other external action)
         assertTrue("Timeout awaiting pre barrier latch",
-                   preBarrierLatch.await(120, TimeUnit.SECONDS));
+                   preBarrierLatch.await(10, TimeUnit.SECONDS));
       } catch (InterruptedException e) {
         log.error("Interrupt awwaiting pre barrier latch", e);
         Thread.currentThread().interrupt();
@@ -175,7 +175,7 @@ public class OrderedExecutorTest extends SolrTestCase {
         // and now the post-barrier latch should release immediately
         // (or with a small await for thread scheduling but no other external action)
         assertTrue("Timeout awaiting post barrier latch",
-                   postBarrierLatch.await(120, TimeUnit.SECONDS));
+                   postBarrierLatch.await(10, TimeUnit.SECONDS));
       } catch (TimeoutException t) {
         log.error("Timeout awaiting barrier", t);
         fail("barrier timed out");
@@ -194,15 +194,21 @@ public class OrderedExecutorTest extends SolrTestCase {
 
   @Test
   public void testStress() {
-    int N = random().nextInt(50) + 20;
+    int N;
+    if (TEST_NIGHTLY) {
+      N = random().nextInt(50) + 20;
+    } else {
+      N = 15;
+    }
+
     Map<Integer, Integer> base = new HashMap<>();
     Map<Integer, Integer> run = new HashMap<>();
     for (int i = 0; i < N; i++) {
       base.put(i, i);
       run.put(i, i);
     }
-    OrderedExecutor orderedExecutor = new OrderedExecutor(10, ExecutorUtil.newMDCAwareCachedThreadPool("testStress"));
-    for (int i = 0; i < 1000; i++) {
+    OrderedExecutor orderedExecutor = new OrderedExecutor(TEST_NIGHTLY ? 10 : 3, ExecutorUtil.newMDCAwareCachedThreadPool("testStress"));
+    for (int i = 0; i < (TEST_NIGHTLY ? 1000 : 100); i++) {
       int key = random().nextInt(N);
       base.put(key, base.get(key) + 1);
       orderedExecutor.execute(key, () -> run.put(key, run.get(key) + 1));
