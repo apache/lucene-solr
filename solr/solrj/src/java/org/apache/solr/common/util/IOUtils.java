@@ -19,6 +19,7 @@ package org.apache.solr.common.util;
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 
+import org.apache.solr.common.ParWork;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +32,7 @@ public class IOUtils {
         closeable.close();
       }
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       log.error("Error while closing", e);
     }
   }

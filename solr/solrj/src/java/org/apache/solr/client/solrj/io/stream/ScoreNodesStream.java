@@ -37,6 +37,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.TermsParams;
@@ -247,6 +248,7 @@ public class ScoreNodesStream extends TupleStream implements Expressible
         }
       }
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throw new IOException(e);
     }
 

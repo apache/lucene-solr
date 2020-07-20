@@ -27,6 +27,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestRecovery;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -127,6 +128,7 @@ public class SyncStrategy implements Closeable {
           shardId, peerSyncOnlyWithActive);
       success = result.isSuccess();
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       SolrException.log(log, "Sync Failed", e);
     }
     try {
@@ -146,6 +148,7 @@ public class SyncStrategy implements Closeable {
       }
       
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       SolrException.log(log, "Sync Failed", e);
     }
     
@@ -215,6 +218,7 @@ public class SyncStrategy implements Closeable {
         requestSync(node.getBaseUrl(), node.getCoreUrl(), zkLeader.getCoreUrl(), node.getCoreName(), nUpdates);
         
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         SolrException.log(log, "Error syncing replica to leader", e);
       }
     }

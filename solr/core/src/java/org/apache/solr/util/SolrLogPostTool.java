@@ -32,6 +32,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.handler.component.ShardRequest;
@@ -136,6 +137,7 @@ public class SolrLogPostTool {
         client.commit();
         CLIO.out("Committed");
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         CLIO.err("Unable to commit documents: " + e.getMessage());
         e.printStackTrace(CLIO.getErrStream());
       }

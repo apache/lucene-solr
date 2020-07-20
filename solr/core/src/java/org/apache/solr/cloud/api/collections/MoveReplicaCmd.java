@@ -25,6 +25,7 @@ import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.cloud.ActiveReplicaWatcher;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrCloseableLatch;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -231,6 +232,7 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     try {
       ocmh.addReplica(ocmh.zkStateReader.getClusterState(), addReplicasProps, addResult, null);
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       // fatal error - try rolling back
       String errorString = String.format(Locale.ROOT, "Failed to create replica for collection=%s shard=%s" +
           " on node=%s, failure=%s", coll.getName(), slice.getName(), targetNode, addResult.get("failure"));
@@ -259,6 +261,7 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       try {
         ocmh.addReplica(ocmh.zkStateReader.getClusterState(), addReplicasProps, rollback, null);
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Fatal error during MOVEREPLICA of " + replica
             + ", collection may be inconsistent!", e);
       }

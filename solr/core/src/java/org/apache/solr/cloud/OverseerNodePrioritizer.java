@@ -66,8 +66,8 @@ public class OverseerNodePrioritizer {
 
   public synchronized void prioritizeOverseerNodes(String overseerId) throws Exception {
     SolrZkClient zk = zkStateReader.getZkClient();
-    if(!zk.exists(ZkStateReader.ROLES,true))return;
-    Map m = (Map) Utils.fromJSON(zk.getData(ZkStateReader.ROLES, null, new Stat(), true));
+    if(!zk.exists(ZkStateReader.ROLES))return;
+    Map m = (Map) Utils.fromJSON(zk.getData(ZkStateReader.ROLES, null, new Stat()));
 
     List overseerDesignates = (List) m.get("overseer");
     if(overseerDesignates==null || overseerDesignates.isEmpty()) return;

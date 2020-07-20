@@ -28,6 +28,7 @@ import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.common.ParWork;
 
 public class OLSRegressionEvaluator extends RecursiveObjectEvaluator implements ManyValueWorker {
   protected static final long serialVersionUID = 1L;
@@ -76,6 +77,7 @@ public class OLSRegressionEvaluator extends RecursiveObjectEvaluator implements 
       map.put("regressionParametersStandardErrors", list(multipleLinearRegression.estimateRegressionParametersStandardErrors()));
       map.put("regressionParametersVariance", new Matrix(multipleLinearRegression.estimateRegressionParametersVariance()));
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       //Exception is thrown if the matrix is singular
     }
 

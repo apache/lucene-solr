@@ -38,7 +38,7 @@ public class OverseerModifyCollectionTest extends SolrCloudTestCase {
     configureCluster(2)
         .addConfig("conf1", configset("cloud-minimal"))
         .addConfig("conf2", configset("cloud-minimal"))
-        .configure();
+        .formatZk(true).configure();
   }
 
   @Test
@@ -72,7 +72,7 @@ public class OverseerModifyCollectionTest extends SolrCloudTestCase {
   }
   
   private String getConfigNameFromZk(String collName) throws KeeperException, InterruptedException {
-    byte[] b = zkClient().getData(ZkStateReader.getCollectionPathRoot(collName), null, null, false);
+    byte[] b = zkClient().getData(ZkStateReader.getCollectionPathRoot(collName), null, null);
     Map confData = (Map) Utils.fromJSON(b);
     return (String) confData.get(ZkController.CONFIGNAME_PROP); 
   }

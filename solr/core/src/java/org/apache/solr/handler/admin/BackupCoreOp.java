@@ -20,6 +20,7 @@ package org.apache.solr.handler.admin;
 import java.net.URI;
 import java.util.Optional;
 
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
@@ -67,6 +68,7 @@ class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
       snapShooter.validateCreateSnapshot();
       snapShooter.createSnapshot();
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Failed to backup core=" + cname + " because " + e, e);
     }

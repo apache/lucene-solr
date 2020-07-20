@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.StrUtils;
@@ -63,6 +64,7 @@ public class MemClassLoader extends ClassLoader implements AutoCloseable, Resour
           lib.loadJar();
           lib.verify();
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           log.error("Error loading runtime library", e);
         }
         count++;
@@ -79,6 +81,7 @@ public class MemClassLoader extends ClassLoader implements AutoCloseable, Resour
         lib.loadJar();
         lib.verify();
       } catch (Exception exception) {
+        ParWork.propegateInterrupt(exception);
         errors.add(exception.getMessage());
         if (exception instanceof SolrException) throw (SolrException) exception;
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Atleast one runtimeLib could not be loaded", exception);
@@ -94,6 +97,7 @@ public class MemClassLoader extends ClassLoader implements AutoCloseable, Resour
     try {
       return parentLoader.findClass(name, Object.class);
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       return loadFromRuntimeLibs(name);
     }
   }
@@ -108,6 +112,7 @@ public class MemClassLoader extends ClassLoader implements AutoCloseable, Resour
     try {
       buf = getByteBuffer(name, jarName);
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throw new ClassNotFoundException("class could not be loaded " + name + (errors.isEmpty()? "": "Some dynamic libraries could not be loaded: "+ StrUtils.join(errors, '|')), e);
     }
     if (buf == null) throw new ClassNotFoundException("Class not found :" + name);
@@ -143,6 +148,7 @@ public class MemClassLoader extends ClassLoader implements AutoCloseable, Resour
           break;
         }
       } catch (Exception exp) {
+        ParWork.propegateInterrupt(exp);
         throw new ClassNotFoundException("Unable to load class :" + name, exp);
       }
     }
@@ -156,6 +162,7 @@ public class MemClassLoader extends ClassLoader implements AutoCloseable, Resour
       try {
         lib.close();
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         log.error("Error closing lib {}", lib.getName(), e);
       }
     }
@@ -168,6 +175,7 @@ public class MemClassLoader extends ClassLoader implements AutoCloseable, Resour
       ByteBuffer buf = getByteBuffer(resource, jarName);
       if (buf == null) throw new IOException("Resource could not be found " + resource);
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throw new IOException("Resource could not be found " + resource, e);
     }
     return null;
@@ -179,6 +187,7 @@ public class MemClassLoader extends ClassLoader implements AutoCloseable, Resour
     try {
       return findClass(cname).asSubclass(expectedType);
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       if (e instanceof SolrException) {
         throw (SolrException) e;
       } else {
@@ -193,8 +202,10 @@ public class MemClassLoader extends ClassLoader implements AutoCloseable, Resour
     try {
       return findClass(cname, expectedType).getConstructor().newInstance();
     } catch (SolrException e) {
+      ParWork.propegateInterrupt(e);
       throw e;
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "error instantiating class :" + cname, e);
     }
   }

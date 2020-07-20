@@ -29,6 +29,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
 
 import com.codahale.metrics.Timer;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -84,7 +85,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
     for (String childName : childNames) {
       if (childName != null && childName.startsWith(PREFIX)) {
         try {
-          byte[] data = zookeeper.getData(dir + "/" + childName, null, null, true);
+          byte[] data = zookeeper.getData(dir + "/" + childName, null, null);
           if (data != null) {
             ZkNodeProps message = ZkNodeProps.load(data);
             if (message.containsKey(requestIdKey)) {
@@ -121,7 +122,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
         if (log.isDebugEnabled()) log.debug("Response ZK path: {} doesn't exist.", responsePath);
       }
       try {
-        zookeeper.delete(path, -1, true);
+        zookeeper.delete(path, -1);
       } catch (KeeperException.NoNodeException ignored) {
       }
     } finally {
@@ -161,7 +162,12 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
         log.debug("{} fired on path {} state {} latchEventType {}", event.getType(), event.getPath(), event.getState(), latchEventType);
       }
       if (latchEventType == null || event.getType() == latchEventType) {
-        lock.lock();
+        try {
+          lock.lockInterruptibly();
+        } catch (InterruptedException e) {
+          ParWork.propegateInterrupt(e);
+          return;
+        }
         try {
           this.event = event;
           eventReceived.signalAll();
@@ -173,7 +179,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
 
     public void await(long timeoutMs) throws InterruptedException {
       assert timeoutMs > 0;
-      lock.lock();
+      lock.lockInterruptibly();
       try {
         if (this.event != null) {
           return;
@@ -225,7 +231,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       String watchID = createResponseNode();
 
       LatchWatcher watcher = new LatchWatcher();
-      Stat stat = zookeeper.exists(watchID, watcher, true);
+      Stat stat = zookeeper.exists(watchID, watcher);
 
       // create the request node
       createRequestNode(data, watchID);
@@ -234,11 +240,11 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
         pendingResponses.incrementAndGet();
         watcher.await(timeout);
       }
-      byte[] bytes = zookeeper.getData(watchID, null, null, true);
+      byte[] bytes = zookeeper.getData(watchID, null, null);
       // create the event before deleting the node, otherwise we can get the deleted
       // event from the watcher.
       QueueEvent event =  new QueueEvent(watchID, bytes, watcher.getWatchedEvent());
-      zookeeper.delete(watchID, -1, true);
+      zookeeper.delete(watchID, -1);
       return event;
     } finally {
       time.stop();
@@ -303,7 +309,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       if (headNode != null) {
         try {
           QueueEvent queueEvent = new QueueEvent(dir + "/" + headNode, zookeeper.getData(dir + "/" + headNode,
-              null, null, true), null);
+              null, null), null);
           return queueEvent.getId();
         } catch (KeeperException.NoNodeException e) {
           // Another client removed the node first, try next

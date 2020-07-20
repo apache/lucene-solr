@@ -35,6 +35,7 @@ import org.apache.solr.client.solrj.io.stream.expr.DefaultStreamFactory;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -145,6 +146,7 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
     try {
       tupleStream = this.streamFactory.constructStream(params.get("expr"));
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       //Catch exceptions that occur while the stream is being created. This will include streaming expression parse rules.
       SolrException.log(log, e);
       @SuppressWarnings({"rawtypes"})

@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.solr.common.ParWork;
@@ -38,8 +40,8 @@ public abstract class ZkClientConnectionStrategy {
   private volatile ZkCredentialsProvider zkCredentialsToAddAutomatically;
   private volatile boolean zkCredentialsToAddAutomaticallyUsed;
 
-  private List<DisconnectedListener> disconnectedListeners = new ArrayList<>();
-  private List<ConnectedListener> connectedListeners = new ArrayList<>();
+  private Set<DisconnectedListener> disconnectedListeners = ConcurrentHashMap.newKeySet();
+  private Set<ConnectedListener> connectedListeners = ConcurrentHashMap.newKeySet();
 
   public abstract void connect(String zkServerAddress, int zkClientTimeout, Watcher watcher, ZkUpdate updater) throws IOException, InterruptedException, TimeoutException;
   public abstract void reconnect(String serverAddress, int zkClientTimeout, Watcher watcher, ZkUpdate updater) throws IOException, InterruptedException, TimeoutException;
@@ -48,17 +50,18 @@ public abstract class ZkClientConnectionStrategy {
     zkCredentialsToAddAutomaticallyUsed = false;
   }
 
-  public synchronized void disconnected() {
+  public void disconnected() {
     for (DisconnectedListener listener : disconnectedListeners) {
       try {
         listener.disconnected();
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         SolrException.log(log, "", e);
       }
     }
   }
 
-  public synchronized void connected() {
+  public void connected() {
     for (ConnectedListener listener : connectedListeners) {
       try {
         listener.connected();

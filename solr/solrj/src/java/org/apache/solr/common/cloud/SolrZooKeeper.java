@@ -95,6 +95,7 @@ public class SolrZooKeeper extends ZooKeeper {
               }
             }
           } catch (Exception e) {
+            ParWork.propegateInterrupt(e);
             throw new RuntimeException("Closing Zookeeper send channel failed.", e);
           }
         }
@@ -108,46 +109,46 @@ public class SolrZooKeeper extends ZooKeeper {
   @Override
   public void close() {
 
-    try (ParWork worker = new ParWork(this)) {
-      worker.collect( () -> {
-//        try {
-//          SolrZooKeeper.super.close();
-//        } catch (InterruptedException e) {
-//          Thread.currentThread().interrupt();
-//          throw new RuntimeException(e);
-//        }
-        RequestHeader h = new RequestHeader();
-        h.setType(ZooDefs.OpCode.closeSession);
-
+    try (ParWork worker = new ParWork(this, true)) {
+      worker.collect(() -> {
         try {
-          cnxn.submitRequest(h, null, null, null);
+          SolrZooKeeper.super.close();
         } catch (InterruptedException e) {
           ParWork.propegateInterrupt(e);
         }
-
-        ZooKeeperExposed exposed = new ZooKeeperExposed(this, cnxn);
-        exposed.setSendThreadState( ZooKeeper.States.CLOSED);
-//     /   zkcall(cnxn, "sendThread", "close", null);
-        // zkcall(cnxn, "sendThread", "close", null);
-      }); // we don't wait for close because we wait below
-      worker.collect( () -> {
-        ZooKeeperExposed exposed = new ZooKeeperExposed(this, cnxn);
-        exposed.intteruptSendThread();
-        exposed.intteruptSendThread();
       });
-      worker.collect( () -> {
-        ZooKeeperExposed exposed = new ZooKeeperExposed(this, cnxn);
-        exposed.intteruptSendThread();
-        exposed.intteruptSendThread();
-      });// we don't wait for close because we wait below
-      worker.addCollect("zkServer");
+//        RequestHeader h = new RequestHeader();
+//        h.setType(ZooDefs.OpCode.closeSession);
+//
+//        try {
+//          cnxn.submitRequest(h, null, null, null);
+//        } catch (InterruptedException e) {
+//          ParWork.propegateInterrupt(e);
+//        }
+//
+//        ZooKeeperExposed exposed = new ZooKeeperExposed(this, cnxn);
+//        exposed.setSendThreadState( ZooKeeper.States.CLOSED);
+////     /   zkcall(cnxn, "sendThread", "close", null);
+//        // zkcall(cnxn, "sendThread", "close", null);
+//      }); // we don't wait for close because we wait below
+//      worker.collect( () -> {
+//        ZooKeeperExposed exposed = new ZooKeeperExposed(this, cnxn);
+//        exposed.intteruptSendThread();
+//        exposed.intteruptSendThread();
+//      });
+//      worker.collect( () -> {
+//        ZooKeeperExposed exposed = new ZooKeeperExposed(this, cnxn);
+//        exposed.intteruptSendThread();
+//        exposed.intteruptSendThread();
+//      });// we don't wait for close because we wait below
+      worker.addCollect("zkClientClose");
 
-      worker.collect(() -> {
-        for (Thread t : spawnedThreads) {
-          t.interrupt();
-        }
-      });
-      worker.addCollect("spawnedThreads");
+//      worker.collect(() -> {
+//        for (Thread t : spawnedThreads) {
+//          t.interrupt();
+//        }
+//      });
+
 //      worker.collect(() -> {
 //        zkcall(cnxn, "sendThread", "interrupt", null);
 //        zkcall(cnxn, "eventThread", "interrupt", null);

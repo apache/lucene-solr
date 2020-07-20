@@ -41,6 +41,7 @@ import org.apache.solr.client.solrj.cloud.autoscaling.VariableBase;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
@@ -204,6 +205,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
         }
       });
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       log.warn("could not get tags from node {}", solrNode, e);
     }
   }
@@ -301,6 +303,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
           if (n != null) ctx.getTags().put(HEAPUSAGE, n.doubleValue() * 100.0d);
         }
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error getting remote info", e);
       }
     }
@@ -335,7 +338,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
 
     @Override
     public Map getZkJson(String path) throws KeeperException, InterruptedException {
-      return Utils.getJson(zkClientClusterStateProvider.getZkStateReader().getZkClient(), path, true);
+      return Utils.getJson(zkClientClusterStateProvider.getZkStateReader().getZkClient(), path);
     }
 
     /**

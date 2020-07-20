@@ -241,6 +241,7 @@ public class Http2SolrClient extends SolrClient {
 
       httpClient.start();
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       close();
       throw new RuntimeException(e);
     }
@@ -455,6 +456,7 @@ public class Http2SolrClient extends SolrClient {
                       parser, is, getMediaType(), getEncoding(), isV2ApiRequest(solrRequest));
               onComplete.onSuccess(rsp);
             } catch (Exception e) {
+              ParWork.propegateInterrupt(e);
               onComplete.onFailure(e);
             }
           } finally {
@@ -787,6 +789,7 @@ public class Http2SolrClient extends SolrClient {
       try {
         rsp = processor.processResponse(is, encoding);
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         throw new RemoteSolrException(serverBaseUrl, httpStatus, e.getMessage(), e);
       }
 
@@ -807,6 +810,7 @@ public class Http2SolrClient extends SolrClient {
             metadata = (NamedList<String>) err.get("metadata");
           }
         } catch (Exception ex) {
+          ParWork.propegateInterrupt(ex);
           log.warn("Unexpected exception", ex);
         }
         if (reason == null) {

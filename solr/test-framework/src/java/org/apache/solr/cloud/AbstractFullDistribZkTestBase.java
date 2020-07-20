@@ -125,6 +125,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     try {
       qtp.start();
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throw new RuntimeException(e);
     }
   }
@@ -307,7 +308,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
               CreateMode.PERSISTENT, true);
         } catch (KeeperException.NodeExistsException e) {
           ZkNodeProps props = ZkNodeProps.load(zkStateReader.getZkClient().getData(ZkStateReader.CLUSTER_PROPS,
-              null, null, true));
+              null, null));
           zkStateReader.getZkClient().setData(ZkStateReader.CLUSTER_PROPS, Utils.toJSON(props.plus("urlScheme", "https")), true);
         }
       }
@@ -514,6 +515,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
                 e.printStackTrace();
                 throw new RuntimeException(e);
               } catch (Exception e) {
+                ParWork.propegateInterrupt(e);
                 e.printStackTrace();
                 throw new RuntimeException(e);
               }
@@ -544,6 +546,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
                 e.printStackTrace();
                 throw new RuntimeException(e);
               } catch (Exception e) {
+                ParWork.propegateInterrupt(e);
                 e.printStackTrace();
                 throw new RuntimeException(e);
               }
@@ -571,6 +574,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
               throw new RuntimeException(e);
             } catch (Exception e) {
               e.printStackTrace();
+              ParWork.propegateInterrupt(e);
               throw new RuntimeException(e);
             }
           });
@@ -680,6 +684,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       try {
         printLayout();
       } catch (Exception e1) {
+        ParWork.propegateInterrupt(e1);
         throw new RuntimeException(e1);
       }
       throw new NotInClusterStateException(ErrorCode.SERVER_ERROR,
@@ -1009,6 +1014,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         resp = cloudClient.request(up, collection);
         return cloudClient.getMinAchievedReplicationFactor(cloudClient.getDefaultCollection(), resp);
       } catch (Exception exc) {
+        ParWork.propegateInterrupt(exc);
         Throwable rootCause = SolrException.getRootCause(exc);
         if (++numRetries <= maxRetries) {
           log.warn("ERROR: {} ... Sleeping for {} seconds before re-try ...", rootCause, waitBeforeRetry);
@@ -1548,6 +1554,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
             break;
           }
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           // if we have a problem, try the next one
           if (i == times - 1) {
             throw e;
@@ -1674,6 +1681,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         try {
           failMessage = checkShardConsistency(shard, true, true);
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           // we might hit a node we just stopped
           failMessage="hit exception:" + e.getMessage();
         }
@@ -1870,6 +1878,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       HttpSolrClient client = getHttpSolrClient(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_SOCKET_TIMEOUT_MILLIS);
       return client;
     } catch (Exception ex) {
+      ParWork.propegateInterrupt(ex);
       throw new RuntimeException(ex);
     }
   }
@@ -1882,6 +1891,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       HttpSolrClient client = getHttpSolrClient(url, connectionTimeoutMillis, socketTimeoutMillis);
       return client;
     } catch (Exception ex) {
+      ParWork.propegateInterrupt(ex);
       throw new RuntimeException(ex);
     }
   }
@@ -1893,6 +1903,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       return client;
     }
     catch (Exception ex) {
+      ParWork.propegateInterrupt(ex);
       throw new RuntimeException(ex);
     }
   }
@@ -2262,6 +2273,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       CollectionAdminRequest.deleteCollection(collectionName).process(client);
       return true;
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       // don't fail the test
       log.warn("Could not delete collection {} - ignoring", collectionName);
     }

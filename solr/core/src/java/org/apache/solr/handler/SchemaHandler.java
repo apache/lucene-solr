@@ -29,6 +29,7 @@ import java.util.Set;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -202,6 +203,7 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
       }
 
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       rsp.setException(e);
     }
   }

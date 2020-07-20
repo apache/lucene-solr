@@ -177,7 +177,14 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     }
 
     Runnable runnable = () -> {
-      shardRequestTracker.processResponses(results, shardHandler, true, "ADDREPLICA failed to create replica");
+      try {
+        shardRequestTracker.processResponses(results, shardHandler, true, "ADDREPLICA failed to create replica");
+      } catch (KeeperException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "ZooKeeper exception", e);
+      } catch (InterruptedException e) {
+        ParWork.propegateInterrupt(e);
+        throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Interrupted");
+      }
       for (CreateReplica replica : createReplicas) {
         ocmh.waitForCoreNodeName(zkStateReader, collectionName, replica.node, replica.coreName);
       }
@@ -260,6 +267,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
         try {
           ocmh.overseer.offerStateUpdate(Utils.toJSON(props));
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Exception updating Overseer state queue", e);
         }
       }

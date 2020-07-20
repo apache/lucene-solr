@@ -46,6 +46,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -323,6 +324,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
               Future<List<Edge>> future = threadPool.submit(joinRunner);
               futures.add(future);
             } catch (Exception e) {
+              ParWork.propegateInterrupt(e);
               throw new RuntimeException(e);
             }
             batchCount = 0;
@@ -362,6 +364,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
             }
           }
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           throw new RuntimeException(e);
         }
 
@@ -456,6 +459,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
           edges.add(edge);
         }
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         throw new RuntimeException(e);
       } finally {
         try {

@@ -532,7 +532,7 @@ public class TestPackages extends SolrCloudTestCase {
       //Now verify the data in ZK
       TestDistribPackageStore.assertResponseValues(1,
           () -> new MapWriterMap((Map) Utils.fromJSON(cluster.getZkClient().getData(SOLR_PKGS_PATH,
-              null, new Stat(), true))),
+              null, new Stat()))),
           Utils.makeMap(
               ":packages:test_pkg[0]:version", "0.12",
               ":packages:test_pkg[0]:files[0]", FILE1
@@ -553,7 +553,7 @@ public class TestPackages extends SolrCloudTestCase {
       //no verify the data (/packages.json) in ZK
       TestDistribPackageStore.assertResponseValues(1,
           () -> new MapWriterMap((Map) Utils.fromJSON(cluster.getZkClient().getData(SOLR_PKGS_PATH,
-              null, new Stat(), true))),
+              null, new Stat()))),
           Utils.makeMap(
               ":packages:test_pkg[1]:version", "0.13",
               ":packages:test_pkg[1]:files[0]", FILE3
@@ -577,7 +577,7 @@ public class TestPackages extends SolrCloudTestCase {
       //Verify with ZK that the data is correcy
       TestDistribPackageStore.assertResponseValues(1,
           () -> new MapWriterMap((Map) Utils.fromJSON(cluster.getZkClient().getData(SOLR_PKGS_PATH,
-              null, new Stat(), true))),
+              null, new Stat()))),
           Utils.makeMap(
               ":packages:test_pkg[0]:version", "0.13",
               ":packages:test_pkg[0]:files[0]", FILE2

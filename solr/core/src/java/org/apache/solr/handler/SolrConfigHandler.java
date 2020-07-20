@@ -49,6 +49,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -237,6 +238,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
                   log.info("Trying to update my configs");
                   SolrCore.getConfListener(req.getCore(), (ZkSolrResourceLoader) req.getCore().getResourceLoader()).run();
                 } catch (Exception e) {
+                  ParWork.propegateInterrupt(e);
                   log.error("Unable to refresh conf ", e);
                 } finally {
                   reloadLock.unlock();
@@ -388,6 +390,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
           }
         }
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         resp.setException(e);
         resp.add(CommandOperation.ERR_MSGS, singletonList(SchemaManager.getErrorStr(e)));
       }
@@ -423,6 +426,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
               try {
                 val = (Map) entry.getValue();
               } catch (Exception e1) {
+                ParWork.propegateInterrupt(e1);
                 op.addError("invalid params for key : " + key);
                 continue;
               }
@@ -585,6 +589,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
             rtl.init(new PluginInfo(info.tag, op.getDataMap()));
           }
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           op.addError(e.getMessage());
           log.error("can't load this plugin ", e);
           return overlay;
@@ -631,6 +636,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
             req.getCore().createInitInstance(info, expected, clz, "");
           }
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           log.error("Error checking plugin : ", e);
           op.addError(e.getMessage());
           return false;
@@ -699,6 +705,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
             try {
               val = Boolean.parseBoolean(val.toString());
             } catch (Exception exp) {
+              ParWork.propegateInterrupt(exp);
               op.addError(formatString(typeErr, name, typ.getSimpleName()));
               continue;
             }
@@ -706,6 +713,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
             try {
               val = Integer.parseInt(val.toString());
             } catch (Exception exp) {
+              ParWork.propegateInterrupt(exp);
               op.addError(formatString(typeErr, name, typ.getSimpleName()));
               continue;
             }

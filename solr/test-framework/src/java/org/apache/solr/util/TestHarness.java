@@ -28,6 +28,7 @@ import java.util.Map;
 import com.google.common.collect.ImmutableList;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
@@ -87,6 +88,7 @@ public class TestHarness extends BaseTestHarness {
     try {
       return new SolrConfig(solrHome.resolve(coreName), confFile);
     } catch (Exception xany) {
+      ParWork.propegateInterrupt(xany);
       throw new RuntimeException(xany);
     }
   }
@@ -280,6 +282,7 @@ public class TestHarness extends BaseTestHarness {
     } catch (SolrException e) {
       throw (SolrException)e;
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
   }

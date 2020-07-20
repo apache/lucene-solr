@@ -285,7 +285,7 @@ public class ZkCLI implements CLIO {
             stdout.println("-" + MAKEPATH + " requires one arg - the path to make");
             System.exit(1);
           }
-          zkClient.makePath(arglist.get(0).toString(), true);
+          zkClient.mkdir(arglist.get(0).toString());
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(PUT)) {
           List arglist = line.getArgList();
           if (arglist.size() != 2) {
@@ -293,7 +293,7 @@ public class ZkCLI implements CLIO {
             System.exit(1);
           }
           String path = arglist.get(0).toString();
-          if (zkClient.exists(path, true)) {
+          if (zkClient.exists(path)) {
             zkClient.setData(path, arglist.get(1).toString().getBytes(StandardCharsets.UTF_8), true);
           } else {
             zkClient.create(path, arglist.get(1).toString().getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT, true);
@@ -308,7 +308,7 @@ public class ZkCLI implements CLIO {
           String path = arglist.get(0).toString();
           InputStream is = new FileInputStream(arglist.get(1).toString());
           try {
-            if (zkClient.exists(path, true)) {
+            if (zkClient.exists(path)) {
               zkClient.setData(path, IOUtils.toByteArray(is), true);
             } else {
               zkClient.create(path, IOUtils.toByteArray(is), CreateMode.PERSISTENT, true);
@@ -323,7 +323,7 @@ public class ZkCLI implements CLIO {
             stdout.println("-" + GET + " requires one arg - the path to get");
             System.exit(1);
           }
-          byte [] data = zkClient.getData(arglist.get(0).toString(), null, null, true);
+          byte [] data = zkClient.getData(arglist.get(0).toString(), null, null);
           stdout.println(new String(data, StandardCharsets.UTF_8));
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(GET_FILE)) {
           List arglist = line.getArgList();
@@ -331,7 +331,7 @@ public class ZkCLI implements CLIO {
             stdout.println("-" + GET_FILE + "requires two args - the path to get and the file to save it to");
             System.exit(1);
           }
-          byte [] data = zkClient.getData(arglist.get(0).toString(), null, null, true);
+          byte [] data = zkClient.getData(arglist.get(0).toString(), null, null);
           FileUtils.writeByteArrayToFile(new File(arglist.get(1).toString()), data);
         } else if (line.getOptionValue(CMD).equals(UPDATEACLS)) {
           List arglist = line.getArgList();

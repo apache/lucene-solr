@@ -372,6 +372,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
           SolrException.log(log, "", e);
           throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           log.error("", e);
           throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
         }
@@ -458,10 +459,13 @@ public class RecoveryStrategy implements Runnable, Closeable {
           log.info("Replication Recovery was successful.");
           successfulRecovery = true;
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           SolrException.log(log, "Error while trying to recover", e);
+          return;
         }
 
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         SolrException.log(log, "Error while trying to recover. core=" + coreName, e);
       } finally {
         if (successfulRecovery) {
@@ -471,6 +475,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
           try {
             zkController.publish(this.coreDescriptor, Replica.State.ACTIVE);
           } catch (Exception e) {
+            ParWork.propegateInterrupt(e);
             log.error("Could not publish as ACTIVE after succesful recovery", e);
             successfulRecovery = false;
           }
@@ -502,12 +507,17 @@ public class RecoveryStrategy implements Runnable, Closeable {
             SolrException.log(log, "Recovery failed - max retries exceeded (" + retries + ").");
             try {
               recoveryFailed(core, zkController, baseUrl, coreZkNodeName, this.coreDescriptor);
+            } catch (InterruptedException e) {
+              ParWork.propegateInterrupt(e);
+              return;
             } catch (Exception e) {
+              ParWork.propegateInterrupt(e);
               SolrException.log(log, "Could not publish that recovery failed", e);
             }
             break;
           }
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           SolrException.log(log, "An error has occurred during recovery", e);
         }
 
@@ -745,8 +755,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
           log.info("Replication Recovery was successful.");
           successfulRecovery = true;
         } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          log.warn("Recovery was interrupted", e);
+          ParWork.propegateInterrupt(e);
           close = true;
         } catch (Exception e) {
           SolrException.log(log, "Error while trying to recover", e);
@@ -762,7 +771,10 @@ public class RecoveryStrategy implements Runnable, Closeable {
               zkController.startReplicationFromLeader(coreName, true);
             }
             zkController.publish(this.coreDescriptor, Replica.State.ACTIVE);
-          } catch (Exception e) {
+          } catch (InterruptedException e) {
+            ParWork.propegateInterrupt(e);
+            return;
+          }catch (Exception e) {
             log.error("Could not publish as ACTIVE after succesful recovery", e);
             successfulRecovery = false;
           }
@@ -791,7 +803,11 @@ public class RecoveryStrategy implements Runnable, Closeable {
             SolrException.log(log, "Recovery failed - max retries exceeded (" + retries + ").");
             try {
               recoveryFailed(core, zkController, baseUrl, coreZkNodeName, this.coreDescriptor);
-            } catch (Exception e) {
+            } catch(InterruptedException e) {
+              ParWork.propegateInterrupt(e);
+              return;
+            }  catch
+            (Exception e) {
               SolrException.log(log, "Could not publish that recovery failed", e);
             }
             break;
@@ -876,12 +892,12 @@ public class RecoveryStrategy implements Runnable, Closeable {
         SolrPingResponse resp = httpSolrClient.ping();
         return leaderReplica;
       } catch (IOException e) {
+        // let the recovery throttle handle pauses
         log.error("Failed to connect leader {} on recovery, try again", leaderReplica.getBaseUrl());
-        Thread.sleep(250);
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         if (e.getCause() instanceof IOException) {
           log.error("Failed to connect leader {} on recovery, try again", leaderReplica.getBaseUrl());
-          Thread.sleep(250);
         } else {
           throw new SolrException(ErrorCode.SERVER_ERROR, e);
         }
@@ -942,6 +958,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
         searchHolder.decref();
       }
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       log.debug("Error in solrcloud_debug block", e);
     }
   }

@@ -127,7 +127,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
   protected volatile static MiniSolrCloudCluster controlCluster;
   protected volatile static String schemaString;
   protected volatile static String solrconfigString;
-  protected volatile static boolean formatZk = false;
+  protected volatile static boolean formatZk = true;
 
   protected volatile static SortedMap<ServletHolder, String> extraServlets = Collections.emptySortedMap();
 
@@ -148,8 +148,8 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
     
     SolrZkClient zkClient = cluster.getZkClient();
 
-    if (!zkClient.exists("/configs/_default", true)) {
-      zkClient.uploadToZK(Paths.get(TEST_HOME()).resolve("collection1").resolve("conf"), "configs" + "/" + "_default", filenameExclusions);
+    if (!zkClient.exists("/configs/_default")) {
+      zkClient.uploadToZK(Paths.get(TEST_HOME()).resolve("collection1").resolve("conf"), "/configs" + "/" + "_default", filenameExclusions);
     }
     
     zkClient.printLayoutToStream(System.out);
@@ -157,9 +157,9 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
     
     if (schemaString != null) {
       //cloudClient.getZkStateReader().getZkClient().uploadToZK(TEST_PATH().resolve("collection1").resolve("conf").resolve(schemaString), "/configs/_default", null);
-      if (zkClient.exists("/configs/_default/schema.xml", true)) {
+      if (zkClient.exists("/configs/_default/schema.xml")) {
         zkClient.setData("/configs/_default/schema.xml", TEST_PATH().resolve("collection1").resolve("conf").resolve(schemaString).toFile(), true);
-      } else if (zkClient.exists("/configs/_default/managed-schema", true)) {
+      } else if (zkClient.exists("/configs/_default/managed-schema")) {
         byte[] data = FileUtils.readFileToByteArray(TEST_PATH().resolve("collection1").resolve("conf").resolve(schemaString).toFile());
         zkClient.setData("/configs/_default/managed-schema", data, true);
       } else {

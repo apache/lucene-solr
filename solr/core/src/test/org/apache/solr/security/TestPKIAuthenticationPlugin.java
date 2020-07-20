@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.http.Header;
 import org.apache.http.auth.BasicUserPrincipal;
 import org.apache.http.message.BasicHttpRequest;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.CoreContainer;
@@ -40,7 +41,7 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-// nocommit flakey
+@LuceneTestCase.Nightly // PublicKeyHandler is expensive blocking
 public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
 
   static class MockPKIAuthenticationPlugin extends PKIAuthenticationPlugin {

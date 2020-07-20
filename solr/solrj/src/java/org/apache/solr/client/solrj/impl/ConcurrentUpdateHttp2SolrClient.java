@@ -70,7 +70,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
 
   private boolean shutdownClient;
   private boolean shutdownExecutor;
-  private int pollQueueTime = 250;
+  private int pollQueueTime = 50;
   private int stallTime;
   private final boolean streamDeletes;
   private volatile boolean closed;
@@ -155,7 +155,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     this.runners = new LinkedList<>();
     this.streamDeletes = builder.streamDeletes;
     this.basePath = builder.baseSolrUrl;
-    this.stallTime = Integer.getInteger("solr.cloud.client.stallTime", 15000);
+    this.stallTime = Integer.getInteger("solr.cloud.client.stallTime", 0);
     if (stallTime < pollQueueTime * 2) {
       throw new RuntimeException("Invalid stallTime: " + stallTime + "ms, must be 2x > pollQueueTime " + pollQueueTime);
     }
@@ -280,6 +280,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
                     }
                   }
                 } catch (Exception exc) {
+                  ParWork.propegateInterrupt(exc);
                   // don't want to fail to report error if parsing the response fails
                   log.warn("Failed to parse error response from {} due to: ", basePath, exc);
                 } finally {
@@ -298,6 +299,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
               try {
                 consumeFully(rspBody);
               } catch (Exception e) {
+                ParWork.propegateInterrupt(e);
                 log.error("Error consuming and closing http response stream.", e);
               }
               notifyQueueAndRunnersIfEmptyQueue();

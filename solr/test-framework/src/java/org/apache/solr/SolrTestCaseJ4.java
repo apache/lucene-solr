@@ -94,6 +94,7 @@ import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.IpTables;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.AlreadyClosedException;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -301,6 +302,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       try {
         deleteCore();
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         log.error("Error deleting SolrCore.");
       }
       if (null != testExecutor) {
@@ -795,7 +797,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       CoreContainer cc = h.getCoreContainer();
       if (! cc.getCores().isEmpty() && cc.isZooKeeperAware()) {
         try {
-          cc.getZkController().getZkClient().exists("/", false);
+          cc.getZkController().getZkClient().exists("/");
         } catch (KeeperException e) {
           log.error("Testing connectivity to ZK by checking for root path failed", e);
           fail("Trying to tear down a ZK aware core container with ZK not reachable");
@@ -904,6 +906,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     } catch (XPathExpressionException e1) {
       throw new RuntimeException("XPath is invalid", e1);
     } catch (Exception e2) {
+      ParWork.propegateInterrupt(e2);
       SolrException.log(log,"REQUEST FAILED: " + req.getParamString(), e2);
       throw new RuntimeException("Exception during query", e2);
     }
@@ -1018,6 +1021,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     } catch (SolrException sex) {
       assertEquals( code, sex.code() );
     } catch (Exception e2) {
+      ParWork.propegateInterrupt(e2);
       throw new RuntimeException("Exception during query", e2);
     } finally {
       unIgnoreException(".");
@@ -1032,6 +1036,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     } catch (SolrException e) {
       assertEquals( code.code, e.code() );
     } catch (Exception e2) {
+      ParWork.propegateInterrupt(e2);
       throw new RuntimeException("Exception during query", e2);
     } finally {
       unIgnoreException(".");
@@ -1054,6 +1059,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       assertTrue("Unexpected error message. Expecting \"" + exceptionMessage + 
           "\" but got \"" + e.getMessage() + "\"", e.getMessage()!= null && e.getMessage().contains(exceptionMessage));
     } catch (Exception e2) {
+      ParWork.propegateInterrupt(e2);
       throw new RuntimeException("Exception during query", e2);
     } finally {
       unIgnoreException(".");
@@ -1264,6 +1270,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       deleteByQueryAndGetVersion("*:*", params("_version_", Long.toString(-Long.MAX_VALUE),
                                                DISTRIB_UPDATE_PARAM,DistribPhase.FROMLEADER.toString()));
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throw new RuntimeException(e);
     }
   }
@@ -1985,6 +1992,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       try {
         return new File(url.toURI());
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         throw new RuntimeException("Resource was found on classpath, but cannot be resolved to a " + 
             "normal file (maybe it is part of a JAR file): " + name);
       }

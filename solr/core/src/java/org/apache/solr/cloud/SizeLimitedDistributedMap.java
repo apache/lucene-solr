@@ -38,11 +38,11 @@ public class SizeLimitedDistributedMap extends DistributedMap {
    */
   private final OnOverflowObserver onOverflowObserver;
 
-  public SizeLimitedDistributedMap(SolrZkClient zookeeper, String dir, int maxSize) {
+  public SizeLimitedDistributedMap(SolrZkClient zookeeper, String dir, int maxSize) throws KeeperException {
     this(zookeeper, dir, maxSize, null);
   }
   
-  public SizeLimitedDistributedMap(SolrZkClient zookeeper, String dir, int maxSize, OnOverflowObserver onOverflowObserver) {
+  public SizeLimitedDistributedMap(SolrZkClient zookeeper, String dir, int maxSize, OnOverflowObserver onOverflowObserver) throws KeeperException {
     super(zookeeper, dir);
     this.maxSize = maxSize;
     this.onOverflowObserver = onOverflowObserver;
@@ -64,16 +64,16 @@ public class SizeLimitedDistributedMap extends DistributedMap {
       };
 
       for (String child : children) {
-        Stat stat = zookeeper.exists(dir + "/" + child, null, true);
+        Stat stat = zookeeper.exists(dir + "/" + child, null);
         priorityQueue.insertWithOverflow(stat.getMzxid());
       }
 
       long topElementMzxId = priorityQueue.top();
 
       for (String child : children) {
-        Stat stat = zookeeper.exists(dir + "/" + child, null, true);
+        Stat stat = zookeeper.exists(dir + "/" + child, null);
         if (stat.getMzxid() <= topElementMzxId) {
-          zookeeper.delete(dir + "/" + child, -1, true);
+          zookeeper.delete(dir + "/" + child, -1);
           if (onOverflowObserver != null) onOverflowObserver.onChildDelete(child.substring(PREFIX.length()));
         }
       }

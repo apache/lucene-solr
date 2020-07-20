@@ -167,6 +167,8 @@ public class DistributedLock extends ProtocolSupport {
             try {
                 lock();
             } catch (Exception e) {
+
+
                 log.warn("Failed to acquire lock", e);
             }
         }

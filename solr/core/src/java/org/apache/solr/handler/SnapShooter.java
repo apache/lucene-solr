@@ -33,6 +33,7 @@ import java.util.function.Consumer;
 
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.store.Directory;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
@@ -217,6 +218,7 @@ public class SnapShooter {
       try {
         snapShootDetails = createSnapshot();
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         log.error("Exception while creating snapshot", e);
         snapShootDetails = new NamedList<>();
         snapShootDetails.add("exception", e.getMessage());
@@ -281,6 +283,7 @@ public class SnapShooter {
         try {
           backupRepo.deleteDirectory(snapshotDirPath);
         } catch (Exception excDuringDelete) {
+          ParWork.propegateInterrupt(excDuringDelete);
           log.warn("Failed to delete {} after snapshot creation failed due to: {}", snapshotDirPath, excDuringDelete);
         }
       }

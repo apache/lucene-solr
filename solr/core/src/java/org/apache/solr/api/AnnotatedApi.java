@@ -34,6 +34,7 @@ import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.util.CommandOperation;
@@ -265,6 +266,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider {
         log.error("Error executing command ", ite);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, ite.getCause());
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         log.error("Error executing command : ", e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }

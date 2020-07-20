@@ -71,7 +71,7 @@ public class SolrSnapshotManager {
   public static boolean snapshotExists(SolrZkClient zkClient, String collectionName, String commitName)
       throws KeeperException, InterruptedException {
     String zkPath = getSnapshotMetaDataZkPath(collectionName, Optional.ofNullable(commitName));
-    return zkClient.exists(zkPath, true);
+    return zkClient.exists(zkPath);
   }
 
   /**
@@ -116,7 +116,7 @@ public class SolrSnapshotManager {
   public static void deleteCollectionLevelSnapshot(SolrZkClient zkClient, String collectionName, String commitName)
       throws InterruptedException, KeeperException {
     String zkPath = getSnapshotMetaDataZkPath(collectionName, Optional.of(commitName));
-    zkClient.delete(zkPath, -1, true);
+    zkClient.delete(zkPath, -1);
   }
 
   /**
@@ -136,7 +136,7 @@ public class SolrSnapshotManager {
       for (String snapshot : snapshots) {
         String path = getSnapshotMetaDataZkPath(collectionName, Optional.of(snapshot));
         try {
-          zkClient.delete(path, -1, true);
+          zkClient.delete(path, -1);
         } catch (KeeperException ex) {
           // Gracefully handle the case when the zk node doesn't exist
           if ( ex.code() != KeeperException.Code.NONODE ) {
@@ -146,7 +146,7 @@ public class SolrSnapshotManager {
       }
 
       // Delete the parent node.
-      zkClient.delete(zkPath, -1, true);
+      zkClient.delete(zkPath, -1);
     } catch (KeeperException ex) {
       // Gracefully handle the case when the zk node doesn't exist (e.g. if no snapshots were created for this collection).
       if ( ex.code() != KeeperException.Code.NONODE ) {
@@ -170,7 +170,7 @@ public class SolrSnapshotManager {
     String zkPath = getSnapshotMetaDataZkPath(collectionName, Optional.of(commitName));
     try {
       @SuppressWarnings({"unchecked"})
-      Map<String, Object> data = (Map<String, Object>)Utils.fromJSON(zkClient.getData(zkPath, null, null, true));
+      Map<String, Object> data = (Map<String, Object>)Utils.fromJSON(zkClient.getData(zkPath, null, null));
       return Optional.of(new CollectionSnapshotMetaData(data));
     } catch (KeeperException ex) {
       // Gracefully handle the case when the zk node for a specific

@@ -147,7 +147,7 @@ public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCa
     .addConfig("confFaulty", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
     .withSolrXml(SOLR_XML)
     .configure();
-    cluster.getZkClient().delete(ZkConfigManager.CONFIGS_ZKNODE + Path.SEPARATOR + "confFaulty" + Path.SEPARATOR + "solrconfig.xml", -1, true);
+    cluster.getZkClient().delete(ZkConfigManager.CONFIGS_ZKNODE + Path.SEPARATOR + "confFaulty" + Path.SEPARATOR + "solrconfig.xml", -1);
   }
 
   @AfterClass

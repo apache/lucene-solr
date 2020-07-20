@@ -273,7 +273,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     for (String kid : kids) {
       deleteThemAll(zkClient, node + "/" + kid);
     }
-    zkClient.delete(node, -1, true);
+    zkClient.delete(node, -1);
   }
 
   private void assertCountsForRepFactorAndNrtReplicas(CloudSolrClient client, String collectionName) throws Exception {

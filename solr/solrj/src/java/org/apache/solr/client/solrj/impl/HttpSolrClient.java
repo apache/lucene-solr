@@ -76,6 +76,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.V2RequestSupport;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.V2Request;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -645,6 +646,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       try {
         rsp = processor.processResponse(respBody, charsetName);
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         throw new RemoteSolrException(baseUrl, httpStatus, e.getMessage(), e);
       }
       Object error = rsp == null ? null : rsp.get("error");
@@ -663,7 +665,9 @@ public class HttpSolrClient extends BaseHttpSolrClient {
             }
             metadata = (NamedList<String>)err.get("metadata");
           }
-        } catch (Exception ex) {}
+        } catch (Exception ex) {
+          ParWork.propegateInterrupt(ex);
+        }
         if (reason == null) {
           StringBuilder msg = new StringBuilder();
           msg.append(response.getStatusLine().getReasonPhrase())

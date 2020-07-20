@@ -20,6 +20,8 @@ package org.apache.solr.client.solrj.cloud;
 
 import java.util.Objects;
 import java.util.Optional;
+
+import org.apache.solr.common.ParWork;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,6 +67,7 @@ public class ZNodeName implements Comparable<ZNodeName> {
         try {
             return Integer.parseInt(seq);
         } catch (Exception e) {
+            ParWork.propegateInterrupt(e);
             LOG.warn("Number format exception for {}", seq, e);
             return null;
         }

@@ -25,6 +25,7 @@ import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.DateMathParser;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
@@ -177,6 +178,7 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
             }
           }
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           log.warn("Exception while checking commit point's age for deletion", e);
         }
 

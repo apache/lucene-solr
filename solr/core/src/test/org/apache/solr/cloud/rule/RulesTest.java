@@ -55,6 +55,7 @@ import static org.apache.solr.common.params.CommonParams.COLLECTIONS_HANDLER_PAT
 import static org.junit.matchers.JUnitMatchers.containsString;
 
 @LuceneTestCase.Slow
+@Ignore // nocommit - this requires a slow replica placement policy
 public class RulesTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

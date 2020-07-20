@@ -414,7 +414,7 @@ public class TestPolicyCloud extends SolrCloudTestCase {
 
 
     cluster.getSolrClient().request(AutoScalingRequest.create(SolrRequest.METHOD.POST, commands));
-    Map<String, Object> json = Utils.getJson(cluster.getZkClient(), ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, true);
+    Map<String, Object> json = Utils.getJson(cluster.getZkClient(), ZkStateReader.SOLR_AUTOSCALING_CONF_PATH);
     assertEquals("full json:" + Utils.toJSONString(json), "!" + nrtPort,
         Utils.getObjectByPath(json, true, "cluster-policy[0]/port"));
     assertEquals("full json:" + Utils.toJSONString(json), "!" + pullPort,
@@ -467,7 +467,7 @@ public class TestPolicyCloud extends SolrCloudTestCase {
 
     String commands =  "{set-policy :{c1 : [{replica:1 , shard:'#EACH', port: '" + port + "'}]}}";
     cluster.getSolrClient().request(AutoScalingRequest.create(SolrRequest.METHOD.POST, commands));
-    Map<String, Object> json = Utils.getJson(cluster.getZkClient(), ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, true);
+    Map<String, Object> json = Utils.getJson(cluster.getZkClient(), ZkStateReader.SOLR_AUTOSCALING_CONF_PATH);
     assertEquals("full json:"+ Utils.toJSONString(json) , "#EACH",
         Utils.getObjectByPath(json, true, "/policies/c1[0]/shard"));
 
@@ -521,7 +521,7 @@ public class TestPolicyCloud extends SolrCloudTestCase {
       String overseerNode = OverseerTaskProcessor.getLeaderNode(cluster.getZkClient());
       cluster.getSolrClient().request(CollectionAdminRequest.addRole(overseerNode, "overseer"));
       for (int i = 0; i < 10; i++) {
-        Map<String, Object> data = Utils.getJson(cluster.getZkClient(), ZkStateReader.ROLES, true);
+        Map<String, Object> data = Utils.getJson(cluster.getZkClient(), ZkStateReader.ROLES);
         if (i >= 9 && data.isEmpty()) {
           throw new RuntimeException("NO overseer node created");
         }

@@ -92,7 +92,7 @@ public class ZkIndexSchemaReader implements OnReconnect {
 
     SchemaWatcher watcher = new SchemaWatcher(this);
     try {
-      zkClient.exists(managedSchemaPath, watcher, true);
+      zkClient.exists(managedSchemaPath, watcher);
     } catch (KeeperException e) {
       final String msg = "Error creating ZooKeeper watch for the managed schema";
       log.error(msg, e);
@@ -165,7 +165,7 @@ public class ZkIndexSchemaReader implements OnReconnect {
     synchronized (getSchemaUpdateLock()) {
       final ManagedIndexSchema oldSchema = managedIndexSchemaFactory.getSchema();
       if (expectedZkVersion == -1 || oldSchema.schemaZkVersion < expectedZkVersion) {
-        byte[] data = zkClient.getData(managedSchemaPath, watcher, stat, true);
+        byte[] data = zkClient.getData(managedSchemaPath, watcher, stat);
         if (stat.getVersion() != oldSchema.schemaZkVersion) {
           if (log.isInfoEnabled()) {
             log.info("Retrieved schema version {} from Zookeeper", stat.getVersion());

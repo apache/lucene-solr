@@ -105,14 +105,8 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
       closer.collect(triggerFactory);
       closer.collect(scheduledTriggers);
       closer.collect(() -> {
-
         try {
-          try {
-            updateLock.lockInterruptibly();
-          } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return;
-          }
+          updateLock.lock();
           updated.signalAll();
         } finally {
           updateLock.unlock();
@@ -157,7 +151,7 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
 
     // we automatically add a trigger for auto add replicas if it does not exists already
     // we also automatically add a scheduled maintenance trigger
-    while (!isClosed)  {
+    while (!isClosed() && !Thread.currentThread().isInterrupted())  {
       try {
         AutoScalingConfig autoScalingConfig = cloudManager.getDistribStateManager().getAutoScalingConfig();
         AutoScalingConfig updatedConfig = withDefaultPolicy(autoScalingConfig);
@@ -176,7 +170,7 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
         // Restore the interrupted status
         Thread.currentThread().interrupt();
         log.warn("Interrupted", e);
-        break;
+        return;
       }
       catch (IOException | KeeperException e) {
         if (e instanceof KeeperException.SessionExpiredException ||
@@ -202,14 +196,15 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
       log.info("Interrupted", e);
       return;
     } catch (Exception e)  {
+      ParWork.propegateInterrupt(e);
       log.error("Unexpected exception", e);
     }
 
-    while (true) {
+    while (true && !Thread.currentThread().isInterrupted()) {
       Map<String, AutoScaling.Trigger> copy = null;
       try {
         
-        updateLock.lockInterruptibly();
+        updateLock.lock();
         try {
           // must check for close here before we await on the condition otherwise we can
           // only be woken up on interruption
@@ -221,7 +216,7 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
           log.debug("Current znodeVersion {}, lastZnodeVersion {}", znodeVersion, lastZnodeVersion);
           
           if (znodeVersion == lastZnodeVersion) {
-            updated.await(10, TimeUnit.SECONDS);
+            updated.await(1, TimeUnit.SECONDS); // nocommit, this loop is trouble
             
             // are we closed?
             if (isClosed) {
@@ -239,8 +234,7 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
           updateLock.unlock();
         }
       } catch (InterruptedException | AlreadyClosedException e) {
-        // Restore the interrupted status
-        Thread.currentThread().interrupt();
+        ParWork.propegateInterrupt(e);
         log.info("Interrupted", e);
         return;
       }
@@ -286,6 +280,7 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
           return;
         }
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         log.error("Exception deactivating markers", e);
       }
 
@@ -336,7 +331,7 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
   }
 
   private void refreshAutoScalingConf(Watcher watcher) throws InterruptedException, IOException {
-    updateLock.lockInterruptibly();
+    updateLock.lock();
     try {
       if (isClosed) {
         return;

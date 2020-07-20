@@ -542,7 +542,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
       Stat stat = new Stat();
       try {
         // Trickily, the call to zkClient.getData fills in the stat variable
-        byte[] data = zkClient.getData(path, null, stat, true);
+        byte[] data = zkClient.getData(path, null, stat);
 
         if (stat.getEphemeralOwner() != 0) {
           writeKeyValue(json, "ephemeral", true, false);
@@ -631,7 +631,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
         String dataStrErr = null;
         Stat stat = new Stat();
         // Trickily, the call to zkClient.getData fills in the stat variable
-        byte[] data = zkClient.getData(path, null, stat, true);
+        byte[] data = zkClient.getData(path, null, stat);
         if (null != data) {
           try {
             dataStr = (new BytesRef(data)).utf8ToString();
@@ -684,7 +684,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
               String collStatePath = String.format(Locale.ROOT, "/collections/%s/state.json", collection);
               String childDataStr = null;
               try {
-                byte[] childData = zkClient.getData(collStatePath, null, null, true);
+                byte[] childData = zkClient.getData(collStatePath, null, null);
                 if (childData != null)
                   childDataStr = (new BytesRef(childData)).utf8ToString();
               } catch (KeeperException.NoNodeException nne) {

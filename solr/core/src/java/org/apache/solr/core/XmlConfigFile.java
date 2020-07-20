@@ -40,6 +40,7 @@ import net.sf.saxon.xpath.XPathFactoryImpl;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.XMLErrorLogger;
 import org.apache.solr.util.DOMUtil;
@@ -249,6 +250,7 @@ public class XmlConfigFile { // formerly simply "Config"
     } catch (SolrException e) {
       throw(e);
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       SolrException.log(log,"Error in xpath",e);
       throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Error in xpath:" + xstr+ " for " + name,e);
     }
@@ -278,6 +280,7 @@ public class XmlConfigFile { // formerly simply "Config"
     } catch (SolrException e) {
       throw(e);
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       SolrException.log(log,"Error in xpath",e);
       throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Error in xpath:" + xstr+ " for " + name,e);
     }

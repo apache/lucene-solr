@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.core.SolrResourceLoader;
@@ -182,6 +183,7 @@ public abstract class AbstractPluginLoader<T>
           }
         }
         catch (Exception ex) {
+          ParWork.propegateInterrupt(ex);
           SolrException e = new SolrException
             (ErrorCode.SERVER_ERROR,
              "Plugin init failure for " + type + 
@@ -252,6 +254,7 @@ public abstract class AbstractPluginLoader<T>
       }
 
     } catch (Exception ex) {
+      ParWork.propegateInterrupt(ex);
       SolrException e = new SolrException
         (ErrorCode.SERVER_ERROR, "Plugin init failure for " + type, ex);
       throw e;
@@ -262,6 +265,7 @@ public abstract class AbstractPluginLoader<T>
       try {
         init(pinfo.plugin, pinfo.node);
       } catch (Exception ex) {
+        ParWork.propegateInterrupt(ex);
         SolrException e = new SolrException
           (ErrorCode.SERVER_ERROR, "Plugin init failure for " + type, ex);
         throw e;

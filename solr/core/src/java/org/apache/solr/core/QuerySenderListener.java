@@ -19,6 +19,7 @@ package org.apache.solr.core;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -92,6 +93,7 @@ public class QuerySenderListener extends AbstractSolrEventListener {
         }
 
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         // do nothing... we want to continue with the other requests.
         // the failure should have already been logged.
       } finally {

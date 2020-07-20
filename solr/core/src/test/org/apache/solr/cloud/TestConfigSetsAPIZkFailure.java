@@ -107,21 +107,18 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
     final Map<String, String> oldProps = ImmutableMap.of("immutable", "true");
     setupBaseConfigSet(BASE_CONFIGSET_NAME, oldProps);
 
-    SolrZkClient zkClient = new SolrZkClient(solrCluster.getZkServer().getZkAddress(),
-        AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT, null);
-    try {
-      ZkConfigManager configManager = new ZkConfigManager(zkClient);
-      assertFalse(configManager.configExists(CONFIGSET_NAME));
+    SolrZkClient zkClient = zkTestServer.getZkClient();
 
-      Create create = new Create();
-      create.setBaseConfigSetName(BASE_CONFIGSET_NAME).setConfigSetName(CONFIGSET_NAME);
-      RemoteSolrException se = expectThrows(RemoteSolrException.class, () -> create.process(solrClient));
-      // partial creation should have been cleaned up
-      assertFalse(configManager.configExists(CONFIGSET_NAME));
-      assertEquals(SolrException.ErrorCode.SERVER_ERROR.code, se.code());
-    } finally {
-      zkClient.close();
-    }
+    ZkConfigManager configManager = new ZkConfigManager(zkClient);
+    assertFalse(configManager.configExists(CONFIGSET_NAME));
+
+    Create create = new Create();
+    create.setBaseConfigSetName(BASE_CONFIGSET_NAME).setConfigSetName(CONFIGSET_NAME);
+    RemoteSolrException se = expectThrows(RemoteSolrException.class, () -> create.process(solrClient));
+    // partial creation should have been cleaned up
+    assertFalse(configManager.configExists(CONFIGSET_NAME));
+    assertEquals(400, se.code());
+
 
     solrClient.close();
   }

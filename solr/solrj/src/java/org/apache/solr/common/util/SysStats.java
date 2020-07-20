@@ -1,5 +1,7 @@
 package org.apache.solr.common.util;
 
+import org.apache.solr.common.ParWork;
+
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
 import java.lang.management.ThreadMXBean;
@@ -25,7 +27,7 @@ public class SysStats extends Thread {
 
     public static synchronized SysStats getSysStats() {
         if (sysStats == null) {
-            sysStats = new SysStats(5000);
+            sysStats = new SysStats(10000);
         }
         return  sysStats;
     }
@@ -69,6 +71,7 @@ public class SysStats extends Thread {
             try {
                 Thread.sleep(refreshInterval);
             } catch (InterruptedException e) {
+                ParWork.propegateInterrupt(e);
                 throw new RuntimeException(e);
             }
 

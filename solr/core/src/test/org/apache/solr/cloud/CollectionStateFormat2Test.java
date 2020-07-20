@@ -28,7 +28,7 @@ public class CollectionStateFormat2Test extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(4)
+    configureCluster(4).formatZk(true)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
   }
@@ -46,10 +46,10 @@ public class CollectionStateFormat2Test extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
 
     assertTrue("State Format 2 collection path does not exist",
-        zkClient().exists(ZkStateReader.getCollectionPath(collectionName), true));
+        zkClient().exists(ZkStateReader.getCollectionPath(collectionName)));
 
     Stat stat = new Stat();
-    zkClient().getData(ZkStateReader.getCollectionPath(collectionName), null, stat, true);
+    zkClient().getData(ZkStateReader.getCollectionPath(collectionName), null, stat);
 
     DocCollection c = getCollectionState(collectionName);
 
@@ -60,7 +60,7 @@ public class CollectionStateFormat2Test extends SolrCloudTestCase {
     CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
 
     assertFalse("collection state should not exist externally",
-        zkClient().exists(ZkStateReader.getCollectionPath(collectionName), true));
+        zkClient().exists(ZkStateReader.getCollectionPath(collectionName)));
 
   }
 }

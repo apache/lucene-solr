@@ -29,14 +29,14 @@ public class MockSolrZkClient extends SolrZkClient {
   }
   
   @Override
-  public Boolean exists(final String path, boolean retryOnConnLoss)
+  public Boolean exists(final String path)
       throws KeeperException, InterruptedException {
     
     return false;
   }
   
   @Override
-  public byte[] getData(final String path, final Watcher watcher, final Stat stat, boolean retryOnConnLoss)
+  public byte[] getData(final String path, final Watcher watcher, final Stat stat)
       throws KeeperException, InterruptedException {
     return null;
   }

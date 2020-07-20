@@ -18,12 +18,9 @@
 <!-- Configuration for asynchronous logging -->
 <Configuration>
     <Appenders>
-        <Console name="STDERR" target="SYSTEM_ERR">
-            <PatternLayout>
-                <Pattern>
-                    %-4r %-5p (%t) [%X{node_name} %X{collection} %X{shard} %X{replica} %X{core} %X{trace_id}] %c{1.} %m  %notEmpty{%ex}\n
-                </Pattern>
-            </PatternLayout>
+
+        <Console name="STDERR_COLOR" target="SYSTEM_ERR">
+            <PatternLayout pattern="%style{%-4r}{yellow} %highlight{%maxLen{%-5p}{6}} %style{(%t)}{yellow,bold} [%style{%X{node_name} %X{collection} %X{shard} %X{replica} %X{core} %X{trace_id}}{cyan}] %style{%c{1.}}{cyan} %highlight{%m %notEmpty{%ex}}\n"/>
         </Console>
 
         <File name="FILE" fileName="solr-test.log" immediateFlush="false" append="false">
@@ -54,7 +51,7 @@
         <AsyncLogger name="com.google.inject.servlet" level="DEBUG"/>
 
         <AsyncRoot level="INFO">
-            <AppenderRef ref="STDERR"/>
+            <AppenderRef ref="STDERR_COLOR"/>
             <AppenderRef ref="FILE"/>
         </AsyncRoot>
     </Loggers>

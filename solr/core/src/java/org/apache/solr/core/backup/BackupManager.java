@@ -219,13 +219,13 @@ public class BackupManager {
 
 
     try {
-      if (!zkStateReader.getZkClient().exists(zkPath, true)) {
+      if (!zkStateReader.getZkClient().exists(zkPath)) {
         // Nothing to back up
         return;
       }
 
       try (OutputStream os = repository.createOutput(dest)) {
-        byte[] data = zkStateReader.getZkClient().getData(zkPath, null, null, true);
+        byte[] data = zkStateReader.getZkClient().getData(zkPath, null, null);
         os.write(data);
       }
     } catch (KeeperException | InterruptedException e) {
@@ -244,7 +244,7 @@ public class BackupManager {
         List<String> children = zkClient.getChildren(zkPath + "/" + file, null, true);
         if (children.size() == 0) {
           log.debug("Writing file {}", file);
-          byte[] data = zkClient.getData(zkPath + "/" + file, null, null, true);
+          byte[] data = zkClient.getData(zkPath + "/" + file, null, null);
           try (OutputStream os = repository.createOutput(repository.resolve(dir, file))) {
             os.write(data);
           }

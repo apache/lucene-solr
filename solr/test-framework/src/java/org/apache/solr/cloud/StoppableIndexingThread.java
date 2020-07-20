@@ -27,6 +27,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrInputDocument;
 
 public class StoppableIndexingThread extends AbstractFullDistribZkTestBase.StoppableThread {
@@ -95,6 +96,7 @@ public class StoppableIndexingThread extends AbstractFullDistribZkTestBase.Stopp
           
           cloudClient.deleteById(deleteId);
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           System.err.println("REQUEST FAILED for id=" + deleteId);
           e.printStackTrace();
           if (e instanceof SolrServerException) {
@@ -119,6 +121,7 @@ public class StoppableIndexingThread extends AbstractFullDistribZkTestBase.Stopp
           docs.clear();
         }
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         addFailed = true;
         System.err.println("REQUEST FAILED for id=" + id);
         e.printStackTrace();

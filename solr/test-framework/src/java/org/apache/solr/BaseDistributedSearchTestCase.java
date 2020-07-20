@@ -350,6 +350,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
         try {
           controlJetty = createControlJetty();
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           throw new RuntimeException(e);
         }
         controlClient = createNewSolrClient(controlJetty.getLocalPort());
@@ -378,6 +379,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
             shardsArr[finalI] = shardStr;
             sb.append(shardStr);
           } catch (Exception e) {
+            ParWork.propegateInterrupt(e);
             throw new RuntimeException(e);
           }
         });
@@ -491,6 +493,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
       }
     }
     catch (Exception ex) {
+      ParWork.propegateInterrupt(ex);
       throw new RuntimeException(ex);
     }
   }

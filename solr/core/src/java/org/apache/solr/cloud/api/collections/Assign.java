@@ -45,6 +45,7 @@ import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.cloud.rule.ReplicaAssigner;
 import org.apache.solr.cloud.rule.Rule;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -322,6 +323,7 @@ public class Assign {
           nodesList);
       return replicaPositions;
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throw new AssignmentException("Error getting replica locations : " + e.getMessage(), e);
     } finally {
       if (log.isTraceEnabled()) {
@@ -593,6 +595,10 @@ public class Assign {
       } else {
         strategy = Strategy.POLICY;
       }
+
+      // nocommit
+      // these other policies are way too slow!!
+      strategy = Strategy.LEGACY;
 
       switch (strategy) {
         case LEGACY:

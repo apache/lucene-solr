@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
@@ -137,7 +138,7 @@ public class CloudUtil {
       List<String> children = zk.getChildren("/keys/" + dir, null, true);
       for (String key : children) {
         if (key.endsWith(".der")) result.put(key, zk.getData("/keys/" + dir +
-            "/" + key, null, null, true));
+            "/" + key, null, null));
       }
     } catch (KeeperException.NoNodeException e) {
       log.info("Error fetching key names");
@@ -175,6 +176,7 @@ public class CloudUtil {
         return predicate.matches(n, c);
       });
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throw new AssertionError(message + "\n" + "Live Nodes: " + liveNodesLastSeen.get() + "\nLast available state: " + state.get(), e);
     }
   }

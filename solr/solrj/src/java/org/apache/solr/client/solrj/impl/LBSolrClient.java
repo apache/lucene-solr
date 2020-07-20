@@ -414,6 +414,7 @@ public abstract class LBSolrClient extends SolrClient {
         throw e;
       }
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throw new SolrServerException(e);
     }
 
@@ -522,6 +523,7 @@ public abstract class LBSolrClient extends SolrClient {
         }
       }
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       //Expected. The server is still down.
       zombieServer.failedPings++;
 
@@ -625,6 +627,7 @@ public abstract class LBSolrClient extends SolrClient {
           throw e;
         }
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         throw new SolrServerException(e);
       }
     }
@@ -655,6 +658,7 @@ public abstract class LBSolrClient extends SolrClient {
           throw e;
         }
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         throw new SolrServerException(e);
       }
     }

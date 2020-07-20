@@ -160,6 +160,7 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Nightly // slow way to do this
   public void testHealthCheckV2Api() throws Exception {
     V2Response res = new V2Request.Builder("/node/health").build().process(cluster.getSolrClient());
     assertEquals(0, res.getStatus());

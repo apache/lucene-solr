@@ -39,6 +39,7 @@ import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -122,6 +123,7 @@ public class SolrStream extends TupleStream {
       }
       tupleStreamParser = constructParser(client, requestParams);
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throw new IOException("params " + params, e);
     }
   }
@@ -226,6 +228,7 @@ public class SolrStream extends TupleStream {
     } catch (HandledException e) {
       throw new IOException("--> "+this.baseUrl+":"+e.getMessage());
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       //The Stream source did not provide an exception in a format that the SolrStream could propagate.
       throw new IOException("--> "+this.baseUrl+": An exception has occurred on the server, refer to server log for details.", e);
     }

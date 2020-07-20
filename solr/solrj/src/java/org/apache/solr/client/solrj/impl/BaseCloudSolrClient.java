@@ -581,6 +581,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
           NamedList<Object> rsp = getLbClient().request(lbRequest).getResponse();
           shardResponses.add(url, rsp);
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           if(e instanceof SolrException) {
             throw (SolrException) e;
           } else {
@@ -616,6 +617,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
         LBSolrClient.Rsp rsp = getLbClient().request(req);
         shardResponses.add(urlList.get(0), rsp.getResponse());
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, urlList.get(0), e);
       }
     }
@@ -932,6 +934,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
 
       }
     } catch (Exception exc) {
+      ParWork.propegateInterrupt(exc);
       exc.printStackTrace();
       Throwable rootCause = SolrException.getRootCause(exc);
       // don't do retry support for admin requests

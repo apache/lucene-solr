@@ -16,6 +16,7 @@
  */
 package org.apache.solr.client.solrj.beans;
 
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
@@ -68,6 +69,7 @@ public class DocumentObjectBinder {
       }
       return obj;
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throw new BindingException("Could not instantiate object of " + clazz, e);
     }
   }
@@ -190,6 +192,7 @@ public class DocumentObjectBinder {
           try {
             getter = setter.getDeclaringClass().getMethod(gname, (Class[]) null);
           } catch (Exception ex) {
+            ParWork.propegateInterrupt(ex);
             // no getter -- don't worry about it...
             if (type == Boolean.class) {
               gname = "is" + setter.getName().substring(3);
@@ -453,6 +456,7 @@ public class DocumentObjectBinder {
         }
       }
       catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         throw new BindingException("Exception while setting value : " + v + " on " + (field != null ? field : setter), e);
       }
     }
@@ -462,6 +466,7 @@ public class DocumentObjectBinder {
         try {
           return field.get(obj);
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           throw new BindingException("Exception while getting value: " + field, e);
         }
       } else if (getter == null) {
@@ -471,6 +476,7 @@ public class DocumentObjectBinder {
       try {
         return getter.invoke(obj, (Object[]) null);
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         throw new BindingException("Exception while getting value: " + getter, e);
       }
     }

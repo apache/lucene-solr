@@ -32,6 +32,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.solr.common.NonExistentCoreException;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.Pair;
@@ -97,6 +98,7 @@ public class TestInjection {
         Method randomMethod = LUCENE_TEST_CASE.getMethod("random");
         return (Random) randomMethod.invoke(null);
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         throw new IllegalStateException("Unable to use reflection to invoke LuceneTestCase.random()", e);
       }
     }

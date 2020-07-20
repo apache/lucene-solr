@@ -256,7 +256,7 @@ public class SolrClusterReporter extends SolrCoreContainerReporter {
       ZkNodeProps props;
       try {
         props = ZkNodeProps.load(zkClient.getData(
-            Overseer.OVERSEER_ELECT + "/leader", null, null, true));
+            Overseer.OVERSEER_ELECT + "/leader", null, null));
       } catch (KeeperException e) {
         log.warn("Could not obtain overseer's address, skipping.", e);
         return lastKnownUrl;

@@ -85,7 +85,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
           ops.add(Op.check(Paths.get(leaderPath).getParent().toString(), version));
           ops.add(Op.check(electionPath, -1));
           ops.add(Op.delete(leaderPath, -1));
-          zkClient.multi(ops, true);
+          zkClient.multi(ops);
         } catch (KeeperException e) {
           if (e instanceof NoNodeException) {
             // okay
@@ -118,7 +118,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
       }
     } catch (Exception e) {
       if (e instanceof  InterruptedException) {
-        Thread.currentThread().interrupt();
+        ParWork.propegateInterrupt(e);
       }
       log.error("Exception trying to cancel election {} {}", e.getClass().getName(), e.getMessage());
     }
@@ -149,7 +149,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
       ops.add(Op.setData(parent, null, -1));
       List<OpResult> results;
 
-      results = zkClient.multi(ops, true);
+      results = zkClient.multi(ops);
       Iterator<Op> it = ops.iterator();
       for (OpResult result : results) {
         if (result.getType() == ZooDefs.OpCode.setData) {
@@ -165,7 +165,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
         }
 
       }
-      assert leaderZkNodeParentVersion != null;
+     // assert leaderZkNodeParentVersion != null;
 
     } catch (Throwable t) {
       ParWork.propegateInterrupt(t);

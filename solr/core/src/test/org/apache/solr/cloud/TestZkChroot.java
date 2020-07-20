@@ -82,13 +82,14 @@ public class TestZkChroot extends SolrTestCaseJ4 {
       cores = CoreContainer.createAndLoad(home);
       zkClient = cores.getZkController().getZkClient();
       
-      assertTrue(zkClient.exists("/clusterstate.json", true));
-      assertFalse(zkClient.exists(chroot + "/clusterstate.json", true));
+      assertTrue(zkClient.exists("/clusterstate.json"));
+      assertFalse(zkClient.exists(chroot + "/clusterstate.json"));
       
       zkClient2 = new SolrZkClient(zkServer.getZkHost(),
           AbstractZkTestCase.TIMEOUT);
-      assertTrue(zkClient2.exists(chroot + "/clusterstate.json", true));
-      assertFalse(zkClient2.exists("/clusterstate.json", true));
+      zkClient2.start();
+      assertTrue(zkClient2.exists(chroot + "/clusterstate.json"));
+      assertFalse(zkClient2.exists("/clusterstate.json"));
     } finally {
       if (zkClient != null) zkClient.close();
       if (zkClient2 != null) zkClient2.close();
@@ -103,16 +104,16 @@ public class TestZkChroot extends SolrTestCaseJ4 {
     System.setProperty("bootstrap_conf", "false");
     System.setProperty("zkHost", zkServer.getZkHost() + chroot);
 
-    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT)) {
+    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT).start()) {
       expectThrows(ZooKeeperException.class,
           "did not get a top level exception when more then 4 updates failed",
           () -> {
         assertFalse("Path '" + chroot + "' should not exist before the test",
-            zkClient.exists(chroot, true));
+            zkClient.exists(chroot));
         cores = CoreContainer.createAndLoad(home);
       });
       assertFalse("Path shouldn't have been created",
-          zkClient.exists(chroot, true));// check the path was not created
+          zkClient.exists(chroot));// check the path was not created
     }
   }
   
@@ -120,37 +121,37 @@ public class TestZkChroot extends SolrTestCaseJ4 {
   public void testWithUploadDir() throws Exception {
     String chroot = "/foo/bar3";
     String configName = "testWithUploadDir";
-    
+
     System.setProperty("bootstrap_conf", "false");
     System.setProperty("bootstrap_confdir", home + "/collection1/conf");
     System.setProperty("collection.configName", configName);
     System.setProperty("zkHost", zkServer.getZkHost() + chroot);
 
-    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT)) {
-      assertFalse("Path '" + chroot + "' should not exist before the test",
-          zkClient.exists(chroot, true));
-      cores = CoreContainer.createAndLoad(home);
-      assertTrue(
-          "solrconfig.xml should have been uploaded to zk to the correct config directory",
-          zkClient.exists(chroot + ZkConfigManager.CONFIGS_ZKNODE + "/"
-              + configName + "/solrconfig.xml", true));
-    }
+    SolrZkClient zkClient = zkServer.getZkClient();
+    assertFalse("Path '" + chroot + "' should not exist before the test",
+            zkClient.exists(chroot));
+    cores = CoreContainer.createAndLoad(home);
+    assertTrue(
+            "solrconfig.xml should have been uploaded to zk to the correct config directory",
+            zkClient.exists(chroot + ZkConfigManager.CONFIGS_ZKNODE + "/"
+                    + configName + "/solrconfig.xml"));
+
   }
   
   @Test
   public void testInitPathExists() throws Exception {
     String chroot = "/foo/bar4";
-    
+
     System.setProperty("bootstrap_conf", "true");
     System.setProperty("zkHost", zkServer.getZkHost() + chroot);
 
-    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT)) {
-      zkClient.makePath("/foo/bar4", true);
-      assertTrue(zkClient.exists(chroot, true));
-      assertFalse(zkClient.exists(chroot + "/clusterstate.json", true));
-      
-      cores = CoreContainer.createAndLoad(home);
-      assertTrue(zkClient.exists(chroot + "/clusterstate.json", true));
-    }
+    SolrZkClient zkClient = zkServer.getZkClient();
+    zkClient.mkdir("/foo/bar4");
+    assertTrue(zkClient.exists(chroot));
+    assertFalse(zkClient.exists(chroot + "/clusterstate.json"));
+
+    cores = CoreContainer.createAndLoad(home);
+    assertTrue(zkClient.exists(chroot + "/clusterstate.json"));
+
   }
 }

@@ -34,6 +34,7 @@ import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.Pair;
@@ -205,6 +206,7 @@ public class PackageTool extends SolrCLI.ToolBase {
       log.info("Finished: {}", cmd);
 
     } catch (Exception ex) {
+      ParWork.propegateInterrupt(ex);
       ex.printStackTrace(); // We need to print this since SolrCLI drops the stack trace in favour of brevity. Package tool should surely print full stacktraces!
       throw ex;
     }

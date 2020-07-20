@@ -16,6 +16,8 @@
  */
 package org.apache.solr.client.solrj.io.stream.expr;
 
+import org.apache.solr.common.ParWork;
+
 import java.io.BufferedReader;
 import java.io.StringReader;
 import java.util.ArrayList;
@@ -57,6 +59,7 @@ public class StreamExpressionParser {
         }
       }
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throw new RuntimeException(e);
     }
 

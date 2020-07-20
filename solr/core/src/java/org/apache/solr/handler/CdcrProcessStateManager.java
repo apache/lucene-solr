@@ -64,7 +64,7 @@ class CdcrProcessStateManager extends CdcrStateManager {
     try {
       SolrZkClient zkClient = core.getCoreContainer().getZkController().getZkClient();
       watcher = this.initWatcher(zkClient);
-      this.setState(CdcrParams.ProcessState.get(zkClient.getData(this.getZnodePath(), watcher, null, true)));
+      this.setState(CdcrParams.ProcessState.get(zkClient.getData(this.getZnodePath(), watcher, null)));
     } catch (KeeperException | InterruptedException e) {
       log.warn("Failed fetching initial state", e);
     }
@@ -107,7 +107,7 @@ class CdcrProcessStateManager extends CdcrStateManager {
     try {
       zkClient.setData(this.getZnodePath(), this.getState().getBytes(), true);
       // check if nobody changed it in the meantime, and set a new watcher
-      this.setState(CdcrParams.ProcessState.get(zkClient.getData(this.getZnodePath(), watcher, null, true)));
+      this.setState(CdcrParams.ProcessState.get(zkClient.getData(this.getZnodePath(), watcher, null)));
     } catch (KeeperException | InterruptedException e) {
       log.warn("Failed synchronising new state", e);
     }
@@ -116,8 +116,8 @@ class CdcrProcessStateManager extends CdcrStateManager {
   private void createStateNode() {
     SolrZkClient zkClient = core.getCoreContainer().getZkController().getZkClient();
     try {
-      if (!zkClient.exists(this.getZnodePath(), true)) {
-        if (!zkClient.exists(this.getZnodeBase(), true)) { // Should be a no-op if the node exists
+      if (!zkClient.exists(this.getZnodePath())) {
+        if (!zkClient.exists(this.getZnodeBase())) { // Should be a no-op if the node exists
           zkClient.makePath(this.getZnodeBase(), null, CreateMode.PERSISTENT, null, false, true);
         }
         zkClient.create(this.getZnodePath(), DEFAULT_STATE.getBytes(), CreateMode.PERSISTENT, true);
@@ -162,7 +162,7 @@ class CdcrProcessStateManager extends CdcrStateManager {
       }
       SolrZkClient zkClient = core.getCoreContainer().getZkController().getZkClient();
       try {
-        CdcrParams.ProcessState state = CdcrParams.ProcessState.get(zkClient.getData(CdcrProcessStateManager.this.getZnodePath(), watcher, null, true));
+        CdcrParams.ProcessState state = CdcrParams.ProcessState.get(zkClient.getData(CdcrProcessStateManager.this.getZnodePath(), watcher, null));
         log.info("Received new CDCR process state from watcher: {} @ {}:{}", state, collectionName, shard);
         CdcrProcessStateManager.this.setState(state);
       } catch (KeeperException | InterruptedException e) {

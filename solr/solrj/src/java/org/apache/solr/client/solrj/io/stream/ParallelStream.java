@@ -32,6 +32,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.params.ModifiableSolrParams;
 
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
@@ -267,6 +268,7 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
       assert(solrStreams.size() == workers);
 
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throw new IOException(e);
     }
   }

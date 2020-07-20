@@ -21,6 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.solr.client.solrj.cloud.ShardTerms;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
@@ -62,6 +63,7 @@ public class RecoveringCoreTermWatcher implements ZkShardTerms.CoreTermWatcher {
         solrCore.getUpdateHandler().getSolrCoreState().doRecovery(solrCore.getCoreContainer(), solrCore.getCoreDescriptor());
       }
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       if (log.isInfoEnabled()) {
         log.info("Failed to watch term of core {}", coreDescriptor.getName(), e);
       }

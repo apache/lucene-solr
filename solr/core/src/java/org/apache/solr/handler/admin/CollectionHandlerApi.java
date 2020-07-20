@@ -29,6 +29,7 @@ import org.apache.solr.client.solrj.request.CollectionApiMapping.CommandMeta;
 import org.apache.solr.client.solrj.request.CollectionApiMapping.Meta;
 import org.apache.solr.client.solrj.request.CollectionApiMapping.V2EndPoint;
 import org.apache.solr.common.Callable;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.util.CommandOperation;
@@ -74,6 +75,7 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
       try {
         clusterProperties.setClusterProperties(commands.get(0).getDataMap());
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error in API", e);
       }
     });

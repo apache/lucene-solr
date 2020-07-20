@@ -250,12 +250,12 @@ public class ZkDistributedQueue implements DistributedQueue {
       int to = Math.min(from + 1000, ops.size());
       if (from < to) {
         try {
-          zookeeper.multi(ops.subList(from, to), true);
+          zookeeper.multi(ops.subList(from, to));
         } catch (KeeperException.NoNodeException e) {
           // don't know which nodes are not exist, so try to delete one by one node
           for (int j = from; j < to; j++) {
             try {
-              zookeeper.delete(ops.get(j).getPath(), -1, true);
+              zookeeper.delete(ops.get(j).getPath(), -1);
             } catch (KeeperException.NoNodeException e2) {
               if (log.isDebugEnabled()) {
                 log.debug("Can not remove node which is not exist : {}", ops.get(j).getPath());
@@ -315,7 +315,7 @@ public class ZkDistributedQueue implements DistributedQueue {
           if (maxQueueSize > 0) {
             if (offerPermits.get() <= 0 || offerPermits.getAndDecrement() <= 0) {
               // If a max queue size is set, check it before creating a new queue item.
-              Stat stat = zookeeper.exists(dir, null, true);
+              Stat stat = zookeeper.exists(dir, null);
               if (stat == null) {
                 // jump to the code below, which tries to create dir if it doesn't exist
                 throw new KeeperException.NoNodeException();
@@ -417,26 +417,19 @@ public class ZkDistributedQueue implements DistributedQueue {
    * Return the current set of children from ZK; does not change internal state.
    */
   TreeSet<String> fetchZkChildren(Watcher watcher) throws InterruptedException, KeeperException {
-    while (true) {
-      try {
-        TreeSet<String> orderedChildren = new TreeSet<>();
+    TreeSet<String> orderedChildren = new TreeSet<>();
 
-        List<String> childNames = zookeeper.getChildren(dir, watcher, true);
-        stats.setQueueLength(childNames.size());
-        for (String childName : childNames) {
-          // Check format
-          if (!childName.regionMatches(0, PREFIX, 0, PREFIX.length())) {
-            log.debug("Found child node with improper name: {}", childName);
-            continue;
-          }
-          orderedChildren.add(childName);
-        }
-        return orderedChildren;
-      } catch (KeeperException.NoNodeException e) {
-        zookeeper.makePath(dir, false, true);
-        // go back to the loop and try again
+    List<String> childNames = zookeeper.getChildren(dir, watcher, true);
+    stats.setQueueLength(childNames.size());
+    for (String childName : childNames) {
+      // Check format
+      if (!childName.regionMatches(0, PREFIX, 0, PREFIX.length())) {
+        log.warn("Found child node with improper name: {}", childName);
+        continue;
       }
+      orderedChildren.add(childName);
     }
+    return orderedChildren;
   }
 
   /**
@@ -450,7 +443,7 @@ public class ZkDistributedQueue implements DistributedQueue {
     List<String> foundChildren = new ArrayList<>();
     long waitNanos = TimeUnit.MILLISECONDS.toNanos(waitMillis);
     boolean first = true;
-    while (true) {
+    while (true && !Thread.currentThread().isInterrupted()) {
       // Trigger a refresh, but only force it if this is not the first iteration.
       firstChild(false, !first);
 
@@ -493,7 +486,7 @@ public class ZkDistributedQueue implements DistributedQueue {
         break;
       }
       try {
-        byte[] data = zookeeper.getData(dir + "/" + child, null, null, true);
+        byte[] data = zookeeper.getData(dir + "/" + child, null, null);
         result.add(new Pair<>(child, data));
       } catch (KeeperException.NoNodeException e) {
         // Another client deleted the node first, remove the in-memory and continue.
@@ -514,13 +507,13 @@ public class ZkDistributedQueue implements DistributedQueue {
    * @return the data at the head of the queue.
    */
   private byte[] firstElement() throws KeeperException, InterruptedException {
-    while (true) {
+    while (true && !Thread.currentThread().isInterrupted()) {
       String firstChild = firstChild(false, false);
       if (firstChild == null) {
         return null;
       }
       try {
-        return zookeeper.getData(dir + "/" + firstChild, null, null, true);
+        return zookeeper.getData(dir + "/" + firstChild, null, null);
       } catch (KeeperException.NoNodeException e) {
         // Another client deleted the node first, remove the in-memory and retry.
         updateLock.lockInterruptibly();
@@ -533,6 +526,7 @@ public class ZkDistributedQueue implements DistributedQueue {
         }
       }
     }
+    return null;
   }
 
   private byte[] removeFirst() throws KeeperException, InterruptedException {
@@ -543,8 +537,8 @@ public class ZkDistributedQueue implements DistributedQueue {
       }
       try {
         String path = dir + "/" + firstChild;
-        byte[] result = zookeeper.getData(path, null, null, true);
-        zookeeper.delete(path, -1, true);
+        byte[] result = zookeeper.getData(path, null, null);
+        zookeeper.delete(path, -1);
         stats.setQueueLength(knownChildren.size());
         return result;
       } catch (KeeperException.NoNodeException e) {

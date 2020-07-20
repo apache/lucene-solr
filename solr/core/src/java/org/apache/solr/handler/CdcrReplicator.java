@@ -25,6 +25,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.update.CdcrUpdateLog;
@@ -128,6 +129,7 @@ public class CdcrReplicator implements Runnable {
         log.info("Forwarded {} updates to target {}", counter, state.getTargetCollection());
       }
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       // report error and update error stats
       this.handleException(e);
     } finally {

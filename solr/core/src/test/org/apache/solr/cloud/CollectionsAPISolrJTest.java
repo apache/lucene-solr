@@ -98,7 +98,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     System.setProperty("solr.test.socketTimeout.default", "20000");
     System.setProperty("solr.so_commit_timeout.default", "20000");
     System.setProperty("solr.httpclient.defaultSoTimeout", "20000");
-    configureCluster( 4)
+    configureCluster( 4).formatZk(true)
             .addConfig("conf", configset("cloud-minimal"))
             .addConfig("conf2", configset("cloud-dynamic"))
             .configure();
@@ -130,8 +130,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     String collectionName = "solrj_default_configset";
     CollectionAdminResponse response = CollectionAdminRequest.createCollection(collectionName, 2, 2)
         .process(cluster.getSolrClient());
-    
-    cluster.waitForActiveCollection(collectionName, 2, 4);
 
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());

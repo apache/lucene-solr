@@ -27,6 +27,7 @@ import java.util.Map;
 import com.google.common.collect.ImmutableMap;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.MapSerializable;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.MapSolrParams;
@@ -157,7 +158,7 @@ public class RequestParams implements MapSerializable {
     if (loader instanceof ZkSolrResourceLoader) {
       ZkSolrResourceLoader resourceLoader = (ZkSolrResourceLoader) loader;
       try {
-        Stat stat = resourceLoader.getZkController().getZkClient().exists(resourceLoader.getConfigSetZkPath() + "/" + RequestParams.RESOURCE, null, true);
+        Stat stat = resourceLoader.getZkController().getZkClient().exists(resourceLoader.getConfigSetZkPath() + "/" + RequestParams.RESOURCE, null);
         if (log.isDebugEnabled()) {
           log.debug("latest version of {}/{} in ZK  is : {}", resourceLoader.getConfigSetZkPath(), RequestParams.RESOURCE, stat == null ? "" : stat.getVersion());
         }
@@ -197,6 +198,7 @@ public class RequestParams implements MapSerializable {
         Map m = (Map) fromJSON (in);
         return new Object[]{m, version};
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error parsing conf resource " + name, e);
       }
 

@@ -36,6 +36,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.slf4j.Logger;
@@ -197,6 +198,7 @@ public class ExecutorStream extends TupleStream implements Expressible {
       try {
         tuple = queue.take();
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         throw new RuntimeException(e);
       }
 
@@ -215,11 +217,13 @@ public class ExecutorStream extends TupleStream implements Expressible {
           }
         }
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         log.error("Executor Error: id={} expr_s={}", id, expr, e);
       } finally {
         try {
           stream.close();
         } catch (Exception e1) {
+          ParWork.propegateInterrupt(e1);
           log.error("Executor Error", e1);
         }
       }

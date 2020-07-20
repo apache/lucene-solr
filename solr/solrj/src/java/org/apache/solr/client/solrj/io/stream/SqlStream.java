@@ -35,6 +35,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -205,6 +206,7 @@ public class SqlStream extends TupleStream implements Expressible {
         }
       }
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throw new IOException(e);
     }
   }

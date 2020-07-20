@@ -111,7 +111,7 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
     String registry = "solr.core." + h.coreName;
     String key = "SEARCHER.searcher.indexVersion";
     boolean found = false;
-    int count = 30;
+    int count = 15;
     while (!found && count-- > 0) {
       h.getCoreContainer().getRequestHandler("/admin/metrics").handleRequest(
               req("prefix", "SEARCHER", "registry", registry, "compact", "true"), rsp);
@@ -134,7 +134,7 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
         assertTrue(metrics.get(key) instanceof Long);
         break;
       } else {
-        Thread.sleep(200);
+        Thread.sleep(50);
       }
     }
     if (softFail && !found) {

@@ -70,11 +70,13 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
     
     System.setProperty("zkHost", zkServer.getZkAddress());
     
-    SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT);
+    SolrZkClient zkClient = zkServer.getZkClient();
+    zkClient.start();
     zkClient.makePath("/solr", false, true);
     zkClient.close();
 
     zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
+    zkClient.start();
     zkClient.create("/protectedCreateNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
     zkClient.makePath("/protectedMakePathNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
     zkClient.create("/unprotectedCreateNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
@@ -97,6 +99,7 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
   @Test
   public void testOutOfBoxSolrZkClient() throws Exception {
     SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
+    zkClient.start();
     try {
       VMParamsZkACLAndCredentialsProvidersTest.doTest(zkClient,
           true, true, true, true, true,
@@ -109,6 +112,7 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
   @Test
   public void testOpenACLUnsafeAllover() throws Exception {
     SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT);
+    zkClient.start();
     try {
       List<String> verifiedList = new ArrayList<String>();
       assertOpenACLUnsafeAllover(zkClient, "/", verifiedList);

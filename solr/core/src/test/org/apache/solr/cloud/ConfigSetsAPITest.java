@@ -35,7 +35,7 @@ public class ConfigSetsAPITest extends SolrCloudTestCase {
     configureCluster(1) // some tests here assume 1 node
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .addConfig("cShare", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
-        .configure();
+        .formatZk(true).configure();
   }
   @After
   public void doAfter() throws Exception {

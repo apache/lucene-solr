@@ -33,6 +33,7 @@ import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.cloud.autoscaling.ScheduledTriggers;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.TimeTracker;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
@@ -109,12 +110,13 @@ public class SolrTestCase extends LuceneTestCase {
                   new TestWatcher() {
                     @Override
                     protected void failed(Throwable e, Description description) {
+                      System.out.println("TEST FAILED!");
                       failed = true;
                     }
 
                     @Override
                     protected void succeeded(Description description) {
-
+                      System.out.println("TEST Worked!");
                     }
                   });
 
@@ -368,7 +370,7 @@ public class SolrTestCase extends LuceneTestCase {
       Http2SolrClient.resetSslContextFactory();
       TestInjection.reset();
 
-      StartupLoggingUtils.shutdown();
+      StartupLoggingUtils.flushAllLoggers();
 
       checkForInterruptRequest();
 
@@ -446,6 +448,7 @@ public class SolrTestCase extends LuceneTestCase {
         interuptThreadWithNameContains = null;
       }
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       log.error("", e);
     }
   }

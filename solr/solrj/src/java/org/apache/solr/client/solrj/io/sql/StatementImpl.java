@@ -30,6 +30,7 @@ import java.util.Random;
 
 import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
 import org.apache.solr.client.solrj.io.stream.SolrStream;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
@@ -102,6 +103,7 @@ class StatementImpl implements Statement {
       String url = zkProps.getCoreUrl();
       return new SolrStream(url, params);
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throw new IOException(e);
     }
   }

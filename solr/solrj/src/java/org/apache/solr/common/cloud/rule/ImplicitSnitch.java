@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.zookeeper.KeeperException;
@@ -74,6 +75,7 @@ public class ImplicitSnitch extends Snitch {
 
       getRemoteInfo(solrNode, requestedTags, ctx);
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
   }
@@ -182,6 +184,7 @@ public class ImplicitSnitch extends Snitch {
       InetAddress address = InetAddress.getByName(host);
       return address.getHostAddress();
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       log.warn("Failed to get IP address from host [{}], with exception [{}] ", host, e);
       return null;
     }

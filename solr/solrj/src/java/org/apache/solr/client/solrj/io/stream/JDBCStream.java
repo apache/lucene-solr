@@ -48,6 +48,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParamete
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.params.StreamParams;
 
 import static org.apache.solr.common.params.CommonParams.SORT;
@@ -437,6 +438,7 @@ public class JDBCStream extends TupleStream implements Expressible {
       try {
         clazz = Class.forName(className, false, getClass().getClassLoader());
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         throw new RuntimeException(e);
       }
       final int scale = metadata.getScale(columnNumber);

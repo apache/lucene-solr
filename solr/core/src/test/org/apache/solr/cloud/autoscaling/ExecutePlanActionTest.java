@@ -163,11 +163,11 @@ public class ExecutePlanActionTest extends SolrCloudTestCase {
           super.setAsyncId(asyncId);
           String parentPath = ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH + "/xyz/execute_plan";
           try {
-            if (zkClient().exists(parentPath, true)) {
+            if (zkClient().exists(parentPath)) {
               java.util.List<String> children = zkClient().getChildren(parentPath, null, true);
               if (!children.isEmpty()) {
                 String child = children.get(0);
-                byte[] data = zkClient().getData(parentPath + "/" + child, null, null, true);
+                byte[] data = zkClient().getData(parentPath + "/" + child, null, null);
                 Map m = (Map) Utils.fromJSON(data);
                 if (m.containsKey("requestid")) {
                   znodeCreated.set(m.get("requestid").equals(asyncId));
@@ -311,7 +311,7 @@ public class ExecutePlanActionTest extends SolrCloudTestCase {
       assertTrue("did not finish processing event in time", await);
     }
     String path = ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH + "/" + triggerName + "/execute_plan";
-    assertTrue(path + " does not exist", zkClient().exists(path, true));
+    assertTrue(path + " does not exist", zkClient().exists(path));
     List<String> requests = zkClient().getChildren(path, null, true);
     assertFalse("some requests should be still present", requests.isEmpty());
 
@@ -359,7 +359,7 @@ public class ExecutePlanActionTest extends SolrCloudTestCase {
     assertFalse("finished processing event but should fail", await);
 
     String path = ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH + "/" + triggerName + "/execute_plan";
-    assertTrue(path + " does not exist", zkClient().exists(path, true));
+    assertTrue(path + " does not exist", zkClient().exists(path));
     List<String> requests = zkClient().getChildren(path, null, true);
     assertTrue("there should be no requests pending but got " + requests, requests.isEmpty());
 

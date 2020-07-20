@@ -78,7 +78,7 @@ public class TestSimDistribStateManager extends SolrTestCaseJ4 {
       if (solrZkClient != null) {
         solrZkClient.close();
       }
-      solrZkClient = new SolrZkClient(zkTestServer.getZkHost(), 30000);
+      solrZkClient = new SolrZkClient(zkTestServer.getZkHost(), 30000).start();
       stateManager = new ZkDistribStateManager(solrZkClient);
     }
     if (log.isInfoEnabled()) {
@@ -90,7 +90,7 @@ public class TestSimDistribStateManager extends SolrTestCaseJ4 {
     if (simulated) {
       return new SimDistribStateManager(root);
     } else {
-      SolrZkClient cli = new SolrZkClient(zkTestServer.getZkHost(), 30000);
+      SolrZkClient cli = new SolrZkClient(zkTestServer.getZkHost(), 30000).start();
       return new ZkDistribStateManager(cli);
     }
   }
@@ -141,10 +141,14 @@ public class TestSimDistribStateManager extends SolrTestCaseJ4 {
     assertFalse(stateManager.hasData("/removeData/foo/bar"));
     assertFalse(stateManager.hasData("/removeData/baz"));
     assertFalse(stateManager.hasData("/removeData/baz/1/2/3"));
+
+    stateManager.makePath("/removeData");
+    stateManager.makePath("/removeData/foo");
+    stateManager.makePath("/removeData/baz");
     stateManager.makePath("/removeData/foo/bar");
+    stateManager.makePath("/removeData/baz/1");
+    stateManager.makePath("/removeData/baz/1/2");
     stateManager.makePath("/removeData/baz/1/2/3");
-    assertTrue(stateManager.hasData("/removeData/foo"));
-    assertTrue(stateManager.hasData("/removeData/foo/bar"));
     assertTrue(stateManager.hasData("/removeData/baz/1/2/3"));
     try {
       stateManager.removeData("/removeData/foo", -1);

@@ -44,6 +44,7 @@ import org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 import org.apache.solr.common.params.CollectionAdminParams;
@@ -327,6 +328,7 @@ public class Policy implements MapWriter {
             return p.compare(r1, r2, false);
           });
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           try {
             Map m = Collections.singletonMap("diagnostics", (MapWriter) ew -> {
               PolicyHelper.writeNodes(ew, matrixCopy);
@@ -567,6 +569,7 @@ public class Policy implements MapWriter {
         state = cloudManager.getClusterStateProvider().getClusterState();
         log.trace("-- session created with cluster state: {}", state);
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         log.trace("-- session created, can't obtain cluster state", e);
       }
       this.znodeVersion = state != null ? state.getZNodeVersion() : -1;

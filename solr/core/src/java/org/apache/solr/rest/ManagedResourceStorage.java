@@ -227,8 +227,8 @@ public abstract class ManagedResourceStorage {
     public void configure(SolrResourceLoader loader, NamedList<String> initArgs) throws SolrException {
       // validate connectivity and the configured znode base
       try {
-        if (!zkClient.exists(znodeBase, retryOnConnLoss)) {
-          zkClient.makePath(znodeBase, retryOnConnLoss);
+        if (!zkClient.exists(znodeBase)) {
+          zkClient.mkdir(znodeBase);
         }
       } catch (Exception exc) {
         String errMsg = String.format
@@ -244,7 +244,7 @@ public abstract class ManagedResourceStorage {
     public boolean exists(String storedResourceId) throws IOException {
       final String znodePath = getZnodeForResource(storedResourceId);
       try {
-        return zkClient.exists(znodePath, retryOnConnLoss);
+        return zkClient.exists(znodePath);
       } catch (Exception e) {
         if (e instanceof IOException) {
           throw (IOException)e;
@@ -259,8 +259,8 @@ public abstract class ManagedResourceStorage {
       final String znodePath = getZnodeForResource(storedResourceId);
       byte[] znodeData = null;
       try {
-        if (zkClient.exists(znodePath, retryOnConnLoss)) {
-          znodeData = zkClient.getData(znodePath, null, null, retryOnConnLoss);
+        if (zkClient.exists(znodePath)) {
+          znodeData = zkClient.getData(znodePath, null, null);
         }
       } catch (Exception e) {
         if (e instanceof IOException) {
@@ -289,7 +289,7 @@ public abstract class ManagedResourceStorage {
         public void close() {
           byte[] znodeData = toByteArray();
           try {
-            if (zkClient.exists(znodePath, retryOnConnLoss)) {
+            if (zkClient.exists(znodePath)) {
               zkClient.setData(znodePath, znodeData, retryOnConnLoss);
               log.info("Wrote {} bytes to existing znode {}", znodeData.length, znodePath);
             } else {
@@ -326,10 +326,10 @@ public abstract class ManagedResourceStorage {
       
       // this might be overkill for a delete operation
       try {
-        if (zkClient.exists(znodePath, retryOnConnLoss)) {
+        if (zkClient.exists(znodePath)) {
           log.debug("Attempting to delete znode {}", znodePath);
-          zkClient.delete(znodePath, -1, retryOnConnLoss);
-          wasDeleted = zkClient.exists(znodePath, retryOnConnLoss);
+          zkClient.delete(znodePath, -1);
+          wasDeleted = zkClient.exists(znodePath);
           
           if (wasDeleted) {
             log.info("Deleted znode {}", znodePath);

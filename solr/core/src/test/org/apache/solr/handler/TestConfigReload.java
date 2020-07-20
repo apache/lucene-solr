@@ -80,7 +80,7 @@ public class TestConfigReload extends SolrCloudBridgeTestCase {
     Stat stat =  new Stat();
     byte[] data = null;
     try {
-      data = client.getData(resPath, null, stat, true);
+      data = client.getData(resPath, null, stat);
     } catch (KeeperException.NoNodeException e) {
       data = "{}".getBytes(StandardCharsets.UTF_8);
       log.info("creating_node {}",resPath);

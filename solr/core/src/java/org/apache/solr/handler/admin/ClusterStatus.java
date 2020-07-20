@@ -74,8 +74,8 @@ public class ClusterStatus {
 
     @SuppressWarnings({"rawtypes"})
     Map roles = null;
-    if (zkStateReader.getZkClient().exists(ZkStateReader.ROLES, true)) {
-      roles = (Map) Utils.fromJSON(zkStateReader.getZkClient().getData(ZkStateReader.ROLES, null, null, true));
+    if (zkStateReader.getZkClient().exists(ZkStateReader.ROLES)) {
+      roles = (Map) Utils.fromJSON(zkStateReader.getZkClient().getData(ZkStateReader.ROLES, null, null));
     }
 
     ClusterState clusterState = zkStateReader.getClusterState();

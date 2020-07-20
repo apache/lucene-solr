@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -340,6 +341,7 @@ public class ReplicaAssigner {
       try {
         snitches.put(c, new SnitchInfoImpl(Collections.EMPTY_MAP, (Snitch) c.getConstructor().newInstance(), cloudManager));
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error instantiating Snitch " + c.getName());
       }
     }
@@ -367,6 +369,7 @@ public class ReplicaAssigner {
           try {
             info.snitch.getTags(node, info.myTags, context);
           } catch (Exception e) {
+            ParWork.propegateInterrupt(e);
             context.exception = e;
           }
         }
@@ -436,6 +439,7 @@ public class ReplicaAssigner {
             (Snitch) Snitch.class.getClassLoader().loadClass(klas).getConstructor().newInstance() ;
         snitches.put(inst.getClass(), new SnitchInfoImpl(map, inst, cloudManager));
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
 
       }

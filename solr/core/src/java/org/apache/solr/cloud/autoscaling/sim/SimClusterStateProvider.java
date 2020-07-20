@@ -76,6 +76,7 @@ import org.apache.solr.cloud.api.collections.SplitShardCmd;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.cloud.overseer.CollectionMutator;
 import org.apache.solr.cloud.overseer.ZkWriteCommand;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -520,6 +521,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     try {
       cloudManager.getDistribStateManager().makePath(path, Utils.toJSON(id), CreateMode.EPHEMERAL, false);
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       log.warn("Exception saving overseer leader id", e);
     }
   }
@@ -1119,6 +1121,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
               return true;
             });
           } catch (Exception e) {
+            ParWork.propegateInterrupt(e);
             throw new RuntimeException(e);
           }
         }
@@ -1142,6 +1145,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
           return true;
         });
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         throw new RuntimeException(e);
       }
     });
@@ -1217,6 +1221,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       collectionsStatesRef.remove(collection);
       results.add("success", "");
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       log.warn("Exception", e);
     } finally {
       lock.unlock();
@@ -1233,6 +1238,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
         try {
           cloudManager.getDistribStateManager().removeRecursively(ZkStateReader.getCollectionPath(name), true, true);
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           log.error("Unable to delete collection state.json");
         }
       });
@@ -1385,6 +1391,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
         // this also takes care of leader election
         simAddReplica(addReplicasProps, results);
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         throw new RuntimeException(e);
       }
       
@@ -1638,6 +1645,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       collectionsStatesRef.get(collectionName).invalidate();
       results.add("success", "");
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       results.add("failure", e.toString());
     } finally {
       lock.unlock();
@@ -1663,6 +1671,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       CloudUtil.waitForState(cloudManager, CollectionAdminParams.SYSTEM_COLL, 120, TimeUnit.SECONDS,
           CloudUtil.clusterShape(1, Integer.parseInt(repFactor), false, true));
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throw new IOException(e);
     }
   }
@@ -1761,6 +1770,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
             }
           }
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           throw new IOException(e);
         } finally {
           lock.unlock();
@@ -1805,6 +1815,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
             simSetShardValue(collection, s.getName(), Variable.coreidxsize,
                 new AtomicDouble((Double)Type.CORE_IDX.convertVal(SimCloudManager.DEFAULT_IDX_SIZE_BYTES)), false, false);
           } catch (Exception e) {
+            ParWork.propegateInterrupt(e);
             throw new IOException(e);
           } finally {
             lock.unlock();
@@ -1933,6 +1944,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
               simSetShardValue(collection, sh, Variable.coreidxsize,
                   Type.CORE_IDX.convertVal(DEFAULT_DOC_SIZE_BYTES * count.get()), true, false);
             } catch (Exception e) {
+              ParWork.propegateInterrupt(e);
               throw new RuntimeException(e);
             }
           });
@@ -1970,6 +1982,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
             return freedisk;
           });
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           throw new RuntimeException(e);
         }
       });
@@ -1989,6 +2002,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
             simSetShardValue(ri.getCollection(), ri.getShard(), "SEARCHER.searcher.maxDoc", numDocs, false, false);
             simSetShardValue(ri.getCollection(), ri.getShard(), "SEARCHER.searcher.deletedDocs", 0, false, false);
           } catch (Exception e) {
+            ParWork.propegateInterrupt(e);
             throw new RuntimeException(e);
           }
         });
@@ -2530,6 +2544,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
         try {
           collectionStates.put(name, cached.getColl());
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           throw new RuntimeException("error building collection " + name + " state", e);
         }
       });

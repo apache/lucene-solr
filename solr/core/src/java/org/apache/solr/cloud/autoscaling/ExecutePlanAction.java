@@ -38,6 +38,7 @@ import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
@@ -139,6 +140,7 @@ public class ExecutePlanAction extends TriggerActionBase {
                 try {
                   cloudManager.getDistribStateManager().removeData(znode, -1);
                 } catch (Exception e) {
+                  ParWork.propegateInterrupt(e);
                   log.warn("Unexpected exception while trying to delete znode: {}", znode, e);
                 }
               }
@@ -158,6 +160,7 @@ public class ExecutePlanAction extends TriggerActionBase {
               try {
                 cloudManager.getDistribStateManager().removeData(znode, -1);
               } catch (Exception e) {
+                ParWork.propegateInterrupt(e);
                 log.warn("Unexpected exception while trying to delete znode: {}", znode, e);
               }
               throw new IOException("Task " + asyncId + " failed: " + (statusResponse != null ? statusResponse : " timed out. Operation: " + req));
@@ -182,11 +185,13 @@ public class ExecutePlanAction extends TriggerActionBase {
           Thread.currentThread().interrupt();
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "ExecutePlanAction was interrupted", e);
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
               "Unexpected exception executing operation: " + operation.getParams(), e);
         }
       }
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Unexpected exception while processing event: " + event, e);
     }
@@ -212,6 +217,7 @@ public class ExecutePlanAction extends TriggerActionBase {
           return statusResponse;
         }
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         Throwable rootCause = ExceptionUtils.getRootCause(e);
         if (rootCause instanceof IllegalStateException && rootCause.getMessage().contains("Connection pool shut down"))  {
           throw e;

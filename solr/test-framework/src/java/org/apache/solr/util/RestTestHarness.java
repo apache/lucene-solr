@@ -33,6 +33,7 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.QoSParams;
 import org.apache.solr.common.util.ObjectReleaseTracker;
@@ -216,6 +217,7 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
     try {
       return query("/update?stream.body=" + URLEncoder.encode(xml, "UTF-8"));
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throw new RuntimeException(e);
     }
   }

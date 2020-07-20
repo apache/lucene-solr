@@ -424,6 +424,7 @@ public class IndexFetcher {
       try {
         response = getLatestVersion();
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         final String errorMsg = e.toString();
         if (!Strings.isNullOrEmpty(errorMsg) && errorMsg.contains(INTERRUPT_RESPONSE_MESSAGE)) {
             log.warn("Master at: {} is not available. Index fetch failed by interrupt. Exception: {}", masterUrl, errorMsg);
@@ -707,6 +708,7 @@ public class IndexFetcher {
         ParWork.propegateInterrupt(e);
         throw new InterruptedException("Index fetch interrupted");
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         throw new SolrException(ErrorCode.SERVER_ERROR, "Index fetch failed : ", e);
       }
     } finally {
@@ -732,6 +734,7 @@ public class IndexFetcher {
           try {
             logReplicationTimeAndConfFiles(null, successfulInstall);
           } catch (Exception e) {
+            ParWork.propegateInterrupt(e);
             // this can happen on shutdown, a fetch may be running in a thread after DirectoryFactory is closed
             log.warn("Could not log failed replication details", e);
           }
@@ -759,11 +762,13 @@ public class IndexFetcher {
           core.getDirectoryFactory().remove(tmpIndexDir);
         }
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         SolrException.log(log, e);
       } finally {
         try {
           if (tmpIndexDir != null) core.getDirectoryFactory().release(tmpIndexDir);
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           SolrException.log(log, e);
         }
         try {
@@ -771,11 +776,13 @@ public class IndexFetcher {
             core.getDirectoryFactory().release(indexDir);
           }
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           SolrException.log(log, e);
         }
         try {
           if (tmpTlogDir != null) delTree(tmpTlogDir);
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           SolrException.log(log, e);
         }
       }

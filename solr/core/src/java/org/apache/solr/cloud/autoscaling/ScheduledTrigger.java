@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.params.CollectionParams;
@@ -132,6 +133,7 @@ public class ScheduledTrigger extends TriggerBase {
     try {
       return Instant.from(dateTimeFormatter.parse(startTimeStr));
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throw new TriggerValidationException("startTime", "error parsing startTime '" + startTimeStr + "': " + e.toString());
     }
   }

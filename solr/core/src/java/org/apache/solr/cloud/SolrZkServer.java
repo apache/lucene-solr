@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.zookeeper.server.ServerConfig;
 import org.apache.zookeeper.server.ZooKeeperServerMain;
@@ -123,6 +124,7 @@ public class SolrZkServer implements Closeable {
           }
           log.info("ZooKeeper Server exited.");
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           log.error("ZooKeeper Server ERROR", e);
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
         }

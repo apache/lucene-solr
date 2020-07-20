@@ -62,6 +62,7 @@ import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpRequestExecutor;
 import org.apache.http.ssl.SSLContexts;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ObjectReleaseTracker;
@@ -197,6 +198,7 @@ public class HttpClientUtil {
           try {
             interceptor.process(request, context);
           } catch (Exception e) {
+            ParWork.propegateInterrupt(e);
             log.error("", e);
           }
         }

@@ -157,7 +157,14 @@ public class ClusterState implements JSONWriter.Writable {
   public Map<String, DocCollection> getCollectionsMap()  {
     Map<String, DocCollection> result = new HashMap<>(collectionStates.size());
     for (Entry<String, CollectionRef> entry : collectionStates.entrySet()) {
-      DocCollection collection = entry.getValue().get();
+     Object  collObject = entry.getValue().get();
+      DocCollection collection = null;
+      if (collObject instanceof  CollectionRef) {
+        collection = ((CollectionRef)collObject).get();
+      } else if (collObject instanceof  DocCollection) {
+        collection = (DocCollection) collObject;
+      }
+
       if (collection != null) {
         result.put(entry.getKey(), collection);
       }

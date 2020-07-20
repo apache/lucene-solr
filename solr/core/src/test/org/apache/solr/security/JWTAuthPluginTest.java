@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Base64;
@@ -49,6 +50,7 @@ import static org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.A
 import static org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.SCOPE_MISSING;
 
 @SuppressWarnings("unchecked")
+@LuceneTestCase.Nightly // JWTVerificationkeyResolver.resolveKey when the plugin is inited will make http calls that fail and sleep and retry
 public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   private static String testHeader;
   private static String slimHeader;

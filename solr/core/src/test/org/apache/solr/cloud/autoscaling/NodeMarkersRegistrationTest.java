@@ -118,7 +118,7 @@ public class NodeMarkersRegistrationTest extends SolrCloudTestCase {
     assertTrue(listener.addedNodes.toString(), listener.addedNodes.contains(node.getNodeName()));
     // verify that a znode doesn't exist (no trigger)
     String pathAdded = ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH + "/" + node.getNodeName();
-    assertFalse("Path " + pathAdded + " was created but there are no nodeAdded triggers", zkClient().exists(pathAdded, true));
+    assertFalse("Path " + pathAdded + " was created but there are no nodeAdded triggers", zkClient().exists(pathAdded));
     listener.reset();
 
     // stop overseer
@@ -149,10 +149,10 @@ public class NodeMarkersRegistrationTest extends SolrCloudTestCase {
     try {
       timeout.waitFor("nodeLost marker to get inactive", () -> {
         try {
-          if (!zkClient().exists(pathLost, true)) {
+          if (!zkClient().exists(pathLost)) {
             throw new RuntimeException("marker " + pathLost + " should exist!");
           }
-          Map<String, Object> markerData = Utils.getJson(zkClient(), pathLost, true);
+          Map<String, Object> markerData = Utils.getJson(zkClient(), pathLost);
           markerInactive.set(markerData.getOrDefault(MARKER_STATE, MARKER_ACTIVE).equals(MARKER_INACTIVE));
           return markerInactive.get();
         } catch (KeeperException e) {
@@ -232,7 +232,7 @@ public class NodeMarkersRegistrationTest extends SolrCloudTestCase {
     assertEquals(node1.getNodeName(), listener.addedNodes.iterator().next());
     // verify that a znode exists
     pathAdded = ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH + "/" + node1.getNodeName();
-    assertTrue("Path " + pathAdded + " wasn't created", zkClient().exists(pathAdded, true));
+    assertTrue("Path " + pathAdded + " wasn't created", zkClient().exists(pathAdded));
 
     listenerEventLatch.countDown(); // let the trigger thread continue
 
@@ -253,14 +253,14 @@ public class NodeMarkersRegistrationTest extends SolrCloudTestCase {
     assertEquals(node1Name, listener.lostNodes.iterator().next());
     // verify that a znode exists
     String pathLost2 = ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH + "/" + node1Name;
-    assertTrue("Path " + pathLost2 + " wasn't created", zkClient().exists(pathLost2, true));
+    assertTrue("Path " + pathLost2 + " wasn't created", zkClient().exists(pathLost2));
 
     listenerEventLatch.countDown(); // let the trigger thread continue
 
     assertTrue(triggerFiredLatch.await(10, TimeUnit.SECONDS));
 
     // triggers don't remove markers
-    assertTrue("Path " + pathLost2 + " should still exist", zkClient().exists(pathLost2, true));
+    assertTrue("Path " + pathLost2 + " should still exist", zkClient().exists(pathLost2));
 
     listener.reset();
     events.clear();

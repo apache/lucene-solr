@@ -46,6 +46,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.params.CommonParams;
@@ -84,8 +85,8 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   volatile CountDownLatch lock = null; // used to block everything
   final int threadCount;
   boolean shutdownExecutor = false;
-  int pollQueueTime = 5;
-  int stallTime;
+  int pollQueueTime = 50;
+  int stallTime = 100;
   private final boolean streamDeletes;
   private boolean internalHttpClient;
   private volatile Integer connectionTimeout;
@@ -135,7 +136,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     this.streamDeletes = builder.streamDeletes;
     this.connectionTimeout = builder.connectionTimeoutMillis;
     this.soTimeout = builder.socketTimeoutMillis;
-    this.stallTime = Integer.getInteger("solr.cloud.client.stallTime", 15000);
+    this.stallTime = Integer.getInteger("solr.cloud.client.stallTime", 0);
     if (stallTime < pollQueueTime * 2) {
       throw new RuntimeException("Invalid stallTime: " + stallTime + "ms, must be 2x > pollQueueTime " + pollQueueTime);
     }
@@ -386,6 +387,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
                 }
               }
             } catch (Exception exc) {
+              ParWork.propegateInterrupt(exc);
               // don't want to fail to report error if parsing the response fails
               log.warn("Failed to parse error response from {} due to: ", client.getBaseURL(), exc);
             } finally {
@@ -406,6 +408,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
               Utils.consumeFully(response.getEntity());
             }
           } catch (Exception e) {
+            ParWork.propegateInterrupt(e);
             log.error("Error consuming and closing http response stream.", e);
           }
           notifyQueueAndRunnersIfEmptyQueue();

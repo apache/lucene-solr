@@ -59,6 +59,7 @@ public final class EmptyEntityResolver {
     try {
       saxFactory.setFeature(feature, enabled);
     } catch (Exception ex) {
+      ParWork.propegateInterrupt(ex);
       // ignore
     }
   }
@@ -78,6 +79,7 @@ public final class EmptyEntityResolver {
     try {
       inputFactory.setProperty(key, value);
     } catch (Exception ex) {
+      ParWork.propegateInterrupt(ex);
       // ignore
     }
   }

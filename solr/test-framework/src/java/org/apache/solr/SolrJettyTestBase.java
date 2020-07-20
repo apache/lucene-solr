@@ -29,6 +29,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.util.ExternalPaths;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
@@ -110,6 +111,10 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
     nodeProps.setProperty("coreRootDirectory", coresDir.toString());
     nodeProps.setProperty("configSetBaseDir", solrHome);
 
+
+    if (jetty != null) {
+      jetty.stop();
+    }
     jetty = new JettySolrRunner(solrHome, nodeProps, jettyConfig);
     jetty.start();
     port = jetty.getLocalPort();
@@ -192,7 +197,9 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
         if (writer != null) {
           try {
             writer.close();
-          } catch (Exception ignore){}
+          } catch (Exception ignore){
+            ParWork.propegateInterrupt(ignore);
+          }
         }
       }
       legacyExampleSolrHome = tempSolrHome.getAbsolutePath();

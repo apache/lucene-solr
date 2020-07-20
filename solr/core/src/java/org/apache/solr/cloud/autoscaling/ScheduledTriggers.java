@@ -60,6 +60,7 @@ import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,7 +80,7 @@ public class ScheduledTriggers implements Closeable {
   public static final int DEFAULT_SCHEDULED_TRIGGER_DELAY_SECONDS = 1;
   public static int DEFAULT_ACTION_THROTTLE_PERIOD_SECONDS =55;
   public static int DEFAULT_COOLDOWN_PERIOD_SECONDS = 5;
-  public static int DEFAULT_TRIGGER_CORE_POOL_SIZE = 4;
+  public static int DEFAULT_TRIGGER_CORE_POOL_SIZE = 3;
 
   static final Map<String, Object> DEFAULT_PROPERTIES = new HashMap<>();
 
@@ -102,7 +103,7 @@ public class ScheduledTriggers implements Closeable {
     }
   }
 
-  private final Map<String, TriggerWrapper> scheduledTriggerWrappers = new ConcurrentHashMap<>();
+  private final Map<String, TriggerWrapper> scheduledTriggerWrappers = new ConcurrentHashMap<>(32);
 
   /**
    * Thread pool for scheduling the triggers
@@ -221,6 +222,7 @@ public class ScheduledTriggers implements Closeable {
     try {
       st = new TriggerWrapper(newTrigger, cloudManager, queueStats);
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       if (cloudManager.isClosed()) {
         log.error("Failed to add trigger {} - closing or disconnected from data provider", newTrigger.getName(), e);
       } else {
@@ -324,6 +326,7 @@ public class ScheduledTriggers implements Closeable {
                 try {
                   action.process(event, actionContext);
                 } catch (Exception e) {
+                  ParWork.propegateInterrupt(e);
                   triggerListeners1.fireListeners(event.getSource(), event, TriggerEventProcessorStage.FAILED, action.getName(), actionContext, e, null);
                   throw new TriggerActionException(event.getSource(), action.getName(), "Error processing action for trigger event: " + event, e);
                 }
@@ -340,6 +343,7 @@ public class ScheduledTriggers implements Closeable {
             } catch (TriggerActionException e) {
               log.warn("Exception executing actions", e);
             } catch (Exception e) {
+              ParWork.propegateInterrupt(e);
               triggerListeners1.fireListeners(event.getSource(), event, TriggerEventProcessorStage.FAILED);
               log.warn("Unhandled exception executing actions", e);
             } finally {
@@ -441,6 +445,7 @@ public class ScheduledTriggers implements Closeable {
                     }
                   }
                 } catch (Exception e) {
+                  ParWork.propegateInterrupt(e);
                   if (cloudManager.isClosed())  {
                     throw e; // propagate the abort to the caller
                   }
@@ -462,6 +467,7 @@ public class ScheduledTriggers implements Closeable {
       Thread.currentThread().interrupt();
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Thread interrupted", e);
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       // we catch but don't rethrow because a failure to wait for pending tasks
       // should not keep the actions from executing
       log.error("Unexpected exception while waiting for pending tasks to finish", e);
@@ -497,11 +503,13 @@ public class ScheduledTriggers implements Closeable {
     try {
       stateManager.removeRecursively(statePath, true, true);
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       log.warn("Failed to remove state for removed trigger {}", statePath, e);
     }
     try {
       stateManager.removeRecursively(eventsPath, true, true);
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       log.warn("Failed to remove events for removed trigger {}", eventsPath, e);
     }
   }
@@ -566,10 +574,10 @@ public class ScheduledTriggers implements Closeable {
   }
 
   private class TriggerWrapper implements Runnable, Closeable {
-    AutoScaling.Trigger trigger;
-    ScheduledFuture<?> scheduledFuture;
-    TriggerEventQueue queue;
-    boolean replay;
+    final AutoScaling.Trigger trigger;
+    volatile ScheduledFuture<?> scheduledFuture;
+    final TriggerEventQueue queue;
+    volatile boolean replay;
     volatile boolean isClosed;
 
     TriggerWrapper(AutoScaling.Trigger trigger, SolrCloudManager cloudManager, Stats stats) throws IOException {
@@ -622,21 +630,27 @@ public class ScheduledTriggers implements Closeable {
               try {
                 trigger.restoreState();
               } catch (Exception e) {
+                ParWork.propegateInterrupt(e);
                 // log but don't throw - see below
                 log.error("Error restoring trigger state {}", trigger.getName(), e);
               }
               replay = false;
             }
           } catch (AlreadyClosedException e) {
-            
+            return;
+          } catch (KeeperException.NoNodeException e) {
+              log.info("No node found for {}", e.getPath());
           } catch (Exception e) {
+            ParWork.propegateInterrupt(e);
             log.error("Unexpected exception from trigger: {}", trigger.getName(), e);
+            return;
           }
           try {
             trigger.run();
           } catch (AlreadyClosedException e) {
-
+            return;
           } catch (Exception e) {
+            ParWork.propegateInterrupt(e);
             // log but do not propagate exception because an exception thrown from a scheduled operation
             // will suppress future executions
             log.error("Unexpected exception from trigger: {}", trigger.getName(), e);
@@ -736,6 +750,7 @@ public class ScheduledTriggers implements Closeable {
             try {
               listener.close();
             } catch (Exception e) {
+              ParWork.propegateInterrupt(e);
               log.warn("Exception closing old listener {}", listener.getConfig(), e);
             }
             it.remove();
@@ -755,6 +770,7 @@ public class ScheduledTriggers implements Closeable {
               try {
                 oldListener.close();
               } catch (Exception e) {
+                ParWork.propegateInterrupt(e);
                 log.warn("Exception closing old listener {}", oldListener.getConfig(), e);
               }
             } else {
@@ -766,6 +782,7 @@ public class ScheduledTriggers implements Closeable {
             try {
               listener = loader.newInstance(clazz, TriggerListener.class);
             } catch (Exception e) {
+              ParWork.propegateInterrupt(e);
               log.warn("Invalid TriggerListener class name '{}', skipping...", clazz, e);
             }
             if (listener != null) {
@@ -774,6 +791,7 @@ public class ScheduledTriggers implements Closeable {
                 listener.init();
                 listenersPerName.put(config.name, listener);
               } catch (Exception e) {
+                ParWork.propegateInterrupt(e);
                 log.warn("Error initializing TriggerListener {}", config, e);
                 IOUtils.closeQuietly(listener);
                 listener = null;
@@ -880,6 +898,7 @@ public class ScheduledTriggers implements Closeable {
           try {
             listener.onEvent(event, stage, actionName, context, error, message);
           } catch (Exception e) {
+            ParWork.propegateInterrupt(e);
             log.warn("Exception running listener {}", listener.getConfig(), e);
           }
         }

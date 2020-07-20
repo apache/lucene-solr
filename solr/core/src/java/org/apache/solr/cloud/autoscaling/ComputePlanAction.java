@@ -20,6 +20,7 @@ package org.apache.solr.cloud.autoscaling;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.*;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -180,6 +181,7 @@ public class ComputePlanAction extends TriggerActionBase {
         releasePolicySession(sessionWrapper, session);
       }
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Unexpected exception while processing event: " + event, e);
     }
@@ -212,6 +214,7 @@ public class ComputePlanAction extends TriggerActionBase {
     try {
       return Integer.parseInt(String.valueOf(o));
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       log.warn("Invalid '{}' event property: {}, using default {}", AutoScalingParams.MAX_COMPUTE_OPERATIONS, o, maxOp);
       return maxOp;
     }

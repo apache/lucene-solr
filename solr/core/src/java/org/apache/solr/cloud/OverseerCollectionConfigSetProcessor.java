@@ -26,6 +26,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.handler.component.HttpShardHandler;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
+import org.apache.zookeeper.KeeperException;
 
 /**
  * An {@link OverseerTaskProcessor} that handles:
@@ -37,7 +38,7 @@ public class OverseerCollectionConfigSetProcessor extends OverseerTaskProcessor 
    public OverseerCollectionConfigSetProcessor(ZkStateReader zkStateReader, String myId,
                                                final HttpShardHandler shardHandler,
                                                String adminPath, Stats stats, Overseer overseer,
-                                               OverseerNodePrioritizer overseerNodePrioritizer) {
+                                               OverseerNodePrioritizer overseerNodePrioritizer) throws KeeperException {
     this(
         zkStateReader,
         myId,

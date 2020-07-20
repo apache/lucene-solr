@@ -105,21 +105,18 @@ public class PackageAPI {
               return;
             }
             try {
-              synchronized (this) {
                 log.debug("Updating [{}] ... ", path);
 
                 // remake watch
                 final Watcher thisWatch = this;
                 final Stat stat = new Stat();
-                final byte[] data = zkClient.getData(path, thisWatch, stat, true);
+                final byte[] data = zkClient.getData(path, thisWatch, stat);
                 pkgs = readPkgsFromZk(data, stat);
                 packageLoader.refreshPackageConf();
-              }
             } catch (KeeperException.ConnectionLossException | KeeperException.SessionExpiredException e) {
               log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK: [{}]", e.getMessage());
             } catch (KeeperException e) {
               log.error("A ZK error has occurred", e);
-              throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
             } catch (InterruptedException e) {
               // Restore the interrupted status
               Thread.currentThread().interrupt();
@@ -127,7 +124,7 @@ public class PackageAPI {
             }
           }
 
-        }, true);
+        });
   }
 
 
@@ -136,7 +133,7 @@ public class PackageAPI {
     if (data == null || stat == null) {
       stat = new Stat();
       data = coreContainer.getZkController().getZkClient()
-          .getData(SOLR_PKGS_PATH, null, stat, true);
+          .getData(SOLR_PKGS_PATH, null, stat);
 
     }
     Packages packages = null;

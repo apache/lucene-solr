@@ -42,6 +42,7 @@ import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
 import org.apache.solr.cloud.overseer.OverseerAction;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
@@ -157,7 +158,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
     t.stop();
 
     // let's record the ephemeralOwner of the parent leader node
-    Stat leaderZnodeStat = zkStateReader.getZkClient().exists(ZkStateReader.LIVE_NODES_ZKNODE + "/" + parentShardLeader.getNodeName(), null, true);
+    Stat leaderZnodeStat = zkStateReader.getZkClient().exists(ZkStateReader.LIVE_NODES_ZKNODE + "/" + parentShardLeader.getNodeName(), null);
     if (leaderZnodeStat == null)  {
       // we just got to know the leader but its live node is gone already!
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "The shard leader node: " + parentShardLeader.getNodeName() + " is not live anymore!");
@@ -271,6 +272,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
             try {
               ocmh.commandMap.get(DELETESHARD).call(clusterState, m, new NamedList());
             } catch (Exception e) {
+              ParWork.propegateInterrupt(e);
               throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to delete already existing sub shard: " + subSlice,
                   e);
             }
@@ -519,7 +521,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
       long ephemeralOwner = leaderZnodeStat.getEphemeralOwner();
       // compare against the ephemeralOwner of the parent leader node
-      leaderZnodeStat = zkStateReader.getZkClient().exists(ZkStateReader.LIVE_NODES_ZKNODE + "/" + parentShardLeader.getNodeName(), null, true);
+      leaderZnodeStat = zkStateReader.getZkClient().exists(ZkStateReader.LIVE_NODES_ZKNODE + "/" + parentShardLeader.getNodeName(), null);
       if (leaderZnodeStat == null || ephemeralOwner != leaderZnodeStat.getEphemeralOwner()) {
         // put sub-shards in recovery_failed state
 
@@ -613,6 +615,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
     } catch (SolrException e) {
       throw e;
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       log.error("Error executing split operation for collection: {} parent shard: {}", collectionName, slice, e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, null, e);
     } finally {
@@ -733,6 +736,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
         ZkNodeProps m = new ZkNodeProps(propMap);
         ocmh.overseer.offerStateUpdate(Utils.toJSON(m));
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         // don't give up yet - just log the error, we may still be able to clean up
         log.warn("Cleanup failed after failed split of {}/{}: (slice state changes)", collectionName, parentShard, e);
       }
@@ -753,6 +757,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       try {
         ocmh.commandMap.get(DELETESHARD).call(clusterState, m, new NamedList<Object>());
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         log.warn("Cleanup failed after failed split of {}/{} : (deleting existing sub shard{})", collectionName, parentShard, subSlice, e);
       }
     }
@@ -804,6 +809,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
     try {
       fuzz = Float.parseFloat(fuzzStr);
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid numeric value of 'fuzz': " + fuzzStr);
     }
 
@@ -822,6 +828,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
           try {
             subRanges.add(DocRouter.DEFAULT.fromString(r));
           } catch (Exception e) {
+            ParWork.propegateInterrupt(e);
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Exception in parsing hexadecimal hash range: " + r, e);
           }
           if (!subRanges.get(i).isSubsetOf(range)) {
@@ -901,6 +908,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       try {
         cloudManager.getDistribStateManager().makePath(path, data, CreateMode.EPHEMERAL, true);
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         throw new SolrException(SolrException.ErrorCode.INVALID_STATE, "Can't lock parent slice for splitting (another split operation running?): " +
             collection + "/" + shard, e);
       }

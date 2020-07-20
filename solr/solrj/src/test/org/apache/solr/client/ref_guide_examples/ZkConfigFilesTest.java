@@ -71,7 +71,7 @@ public class ZkConfigFilesTest extends SolrCloudTestCase {
     assertConfigsContainOnly();
 
     // tag::zk-configset-upload[]
-    try (SolrZkClient zkClient = new SolrZkClient(zkConnectionString, ZK_TIMEOUT_MILLIS)) {
+    try (SolrZkClient zkClient = new SolrZkClient(zkConnectionString, ZK_TIMEOUT_MILLIS).start()) {
       ZkConfigManager manager = new ZkConfigManager(zkClient);
       manager.uploadConfigDir(Paths.get(localConfigSetDirectory), "nameForConfigset");
     }

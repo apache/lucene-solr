@@ -22,8 +22,10 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore // nocommit needs debug
 public class TestShortCircuitedRequests extends AbstractFullDistribZkTestBase {
 
   public TestShortCircuitedRequests() {

@@ -115,7 +115,7 @@ public class TestQueryingOnDownCollection extends SolrCloudTestCase {
 
   private void downAllReplicas() throws Exception {
     byte[] collectionState = cluster.getZkClient().getData("/collections/" + COLLECTION_NAME + "/state.json",
-        null, null, true);
+        null, null);
 
     Map<String,Map<String,?>> infectedState = (Map<String,Map<String,?>>) Utils.fromJSON(collectionState);
     Map<String, Object> shards = (Map<String, Object>) infectedState.get(COLLECTION_NAME).get("shards");

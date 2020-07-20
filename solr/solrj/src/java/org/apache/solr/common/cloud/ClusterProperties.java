@@ -96,7 +96,7 @@ public class ClusterProperties {
   @SuppressWarnings("unchecked")
   public Map<String, Object> getClusterProperties() throws IOException {
     try {
-      Map<String, Object> properties = (Map<String, Object>) Utils.fromJSON(client.getData(ZkStateReader.CLUSTER_PROPS, null, new Stat(), true));
+      Map<String, Object> properties = (Map<String, Object>) Utils.fromJSON(client.getData(ZkStateReader.CLUSTER_PROPS, null, new Stat()));
       return convertCollectionDefaultsToNestedFormat(properties);
     } catch (KeeperException.NoNodeException e) {
       return Collections.emptyMap();
@@ -162,9 +162,9 @@ public class ClusterProperties {
     for (; ; ) {
       Stat s = new Stat();
       try {
-        if (client.exists(ZkStateReader.CLUSTER_PROPS, true)) {
+        if (client.exists(ZkStateReader.CLUSTER_PROPS)) {
           @SuppressWarnings({"rawtypes"})
-          Map properties = (Map) Utils.fromJSON(client.getData(ZkStateReader.CLUSTER_PROPS, null, s, true));
+          Map properties = (Map) Utils.fromJSON(client.getData(ZkStateReader.CLUSTER_PROPS, null, s));
           if (propertyValue == null) {
             //Don't update ZK unless absolutely necessary.
             if (properties.get(propertyName) != null) {

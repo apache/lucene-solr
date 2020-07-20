@@ -123,7 +123,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     private Map<String, Object> clusterProperties = new HashMap<>();
 
     private boolean trackJettyMetrics;
-    private boolean formatZk;
+    private boolean formatZk = true;
 
     /**
      * Create a builder

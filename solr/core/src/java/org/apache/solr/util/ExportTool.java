@@ -62,6 +62,7 @@ import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.StreamingBinaryResponseParser;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.cloud.DocCollection;
@@ -165,6 +166,7 @@ public class ExportTool extends SolrCLI.ToolBase {
           try {
             sink.accept(doc);
           } catch (Exception e) {
+            ParWork.propegateInterrupt(e);
             throw new RuntimeException(e);
           }
         }
@@ -419,6 +421,7 @@ public class ExportTool extends SolrCLI.ToolBase {
             try {
               coreHandler.exportDocsFromCore();
             } catch (Exception e) {
+              ParWork.propegateInterrupt(e);
               if (output != null) output.println("Error exporting docs from : " + s);
 
             }
@@ -477,6 +480,7 @@ public class ExportTool extends SolrCLI.ToolBase {
             if (docsWritten.get() > limit) continue;
             sink.accept(doc);
           } catch (Exception e) {
+            ParWork.propegateInterrupt(e);
             if (output != null) output.println("Failed to write to file " + e.getMessage());
             failed = true;
           }

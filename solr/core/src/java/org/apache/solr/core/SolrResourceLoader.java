@@ -104,6 +104,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
     try {
       factory.setFeature(feature, enabled);
     } catch (Exception ex) {
+      ParWork.propegateInterrupt(ex);
       // ignore
     }
   }
@@ -747,6 +748,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
       throw err;
 
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
               "Error instantiating class: '" + clazz.getName() + "'", e);
     }
@@ -814,6 +816,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
             try {
               aware.inform(core);
             } catch (Exception e) {
+              ParWork.propegateInterrupt(e);
               log.error("Exception informing SolrCore", e);
             }
             waitingForCore.remove(aware);
@@ -843,6 +846,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
             try {
               r.inform(loader);
             } catch (Exception e) {
+              ParWork.propegateInterrupt(e);
               log.error("Exception informing ResourceLoader", e);
             }
             waitingForResources.remove(r);
@@ -880,10 +884,12 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
               try {
                 infoRegistry.put(imb.getName(), imb);
               } catch (Exception e) {
+                ParWork.propegateInterrupt(e);
                 SolrZkClient.checkInterrupted(e);
                 log.warn("could not register MBean '" + imb.getName() + "'.", e);
               }
             } catch (Exception e) {
+              ParWork.propegateInterrupt(e);
               log.error("Exception informing info registry", e);
             }
             infoMBeans.remove(imb);

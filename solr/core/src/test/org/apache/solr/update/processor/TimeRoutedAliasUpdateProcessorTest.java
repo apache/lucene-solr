@@ -200,7 +200,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     // for back compatibility's reasons.
     Thread.sleep(1000);
     byte[] data = cluster.getZkClient()
-        .getData(COLLECTIONS_ZKNODE + "/" + alias + TRA + "2017-10-26" + "/" + COLLECTION_PROPS_ZKNODE,null, null, true);
+        .getData(COLLECTIONS_ZKNODE + "/" + alias + TRA + "2017-10-26" + "/" + COLLECTION_PROPS_ZKNODE,null, null);
     assertNotNull(data);
     assertTrue(data.length > 0);
     @SuppressWarnings("unchecked")
@@ -772,7 +772,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
       public void process(WatchedEvent watchedEvent) {
         aliasUpdate.countDown();
       }
-    }, stat, true);
+    }, stat);
   }
 
   /**
@@ -964,7 +964,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     }
 
     // now grab the zk data so we can hack in our legacy collections..
-    byte[] data = zkStateReader.getZkClient().getData("/aliases.json", null, null, true);
+    byte[] data = zkStateReader.getZkClient().getData("/aliases.json", null, null);
 
     // some tidbits for handling zk data here are swiped from Aliases.json
     Map<String, Map> aliasMap;

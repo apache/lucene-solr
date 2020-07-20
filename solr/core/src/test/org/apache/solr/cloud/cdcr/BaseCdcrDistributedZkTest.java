@@ -144,7 +144,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
             CreateMode.PERSISTENT, true);
       } catch (KeeperException.NodeExistsException e) {
         ZkNodeProps props = ZkNodeProps.load(zkStateReader.getZkClient().getData(ZkStateReader.CLUSTER_PROPS,
-            null, null, true));
+            null, null));
         props = props.plus("urlScheme", "https");
         zkStateReader.getZkClient().setData(CLUSTER_PROPS, Utils.toJSON(props), true);
       } finally {

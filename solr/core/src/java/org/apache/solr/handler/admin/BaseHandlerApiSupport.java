@@ -32,6 +32,7 @@ import org.apache.solr.api.ApiSupport;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionApiMapping.CommandMeta;
 import org.apache.solr.client.solrj.request.CollectionApiMapping.V2EndPoint;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
@@ -119,6 +120,7 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
         } catch (SolrException e) {
           throw e;
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           throw new SolrException(BAD_REQUEST, e); //TODO BAD_REQUEST is a wild guess; should we flip the default?  fail here to investigate how this happens in tests
         } finally {
           req.setParams(params);

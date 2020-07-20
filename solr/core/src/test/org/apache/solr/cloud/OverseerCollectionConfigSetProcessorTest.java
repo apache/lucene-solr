@@ -344,7 +344,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
       return null;
     });
  
-    when(solrZkClientMock.getData(anyString(), any(), any(), anyBoolean())).thenAnswer(invocation -> {
+    when(solrZkClientMock.getData(anyString(), any(), any())).thenAnswer(invocation -> {
         byte[] data = zkClientData.get(invocation.getArgument(0));
         if (data == null || data.length == 0) {
           return null;
@@ -357,7 +357,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
       return invocation.getArgument(0);
     });
 
-    when(solrZkClientMock.exists(any(String.class), anyBoolean())).thenAnswer(invocation -> {
+    when(solrZkClientMock.exists(any(String.class))).thenAnswer(invocation -> {
       String key = invocation.getArgument(0);
       return zkClientData.containsKey(key);
     });
@@ -420,7 +420,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
             return null;
           }}).when(distribStateManagerMock).makePath(anyString());
 
-    when(solrZkClientMock.exists(any(String.class), isNull(), anyBoolean())).thenAnswer(invocation -> {
+    when(solrZkClientMock.exists(any(String.class), isNull())).thenAnswer(invocation -> {
       String key = invocation.getArgument(0);
       if (zkClientData.containsKey(key)) {
         return new Stat();

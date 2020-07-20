@@ -46,6 +46,7 @@ import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.Timer;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrInfoBean;
@@ -599,6 +600,7 @@ public class MetricUtils {
           String metricName = MetricRegistry.name(prefix, name);
           consumer.accept(metricName, gauge);
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           // didn't work, skip it...
         }
       }

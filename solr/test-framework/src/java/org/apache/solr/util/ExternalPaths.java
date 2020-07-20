@@ -16,7 +16,10 @@
  */
 package org.apache.solr.util;
 
+import org.apache.solr.common.ParWork;
+
 import java.io.File;
+import java.net.URL;
 
 
 /**
@@ -61,9 +64,16 @@ public class ExternalPaths {
       try {
         file = new File("solr/conf");
         if (!file.exists()) {
-          file = new File(ExternalPaths.class.getClassLoader().getResource("solr/conf").toURI());
+          URL resource = ExternalPaths.class.getClassLoader().getResource("solr/conf");
+          if (resource == null) {
+            // If there is no "solr/conf" in the classpath, fall back to searching from the current directory.
+            file = new File(System.getProperty("tests.src.home", "."));
+          } else {
+            file = new File(resource.toURI());
+          }
         }
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         // If there is no "solr/conf" in the classpath, fall back to searching from the current directory.
         file = new File(System.getProperty("tests.src.home", "."));
       }

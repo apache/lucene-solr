@@ -48,6 +48,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParamete
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
@@ -328,6 +329,7 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
           }
         }
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         throw new IOException(e);
       }
     } finally {
@@ -469,6 +471,7 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
     try {
       cloudSolrClient.request(request);
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throw new IOException(e);
     }
   }
@@ -504,6 +507,7 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
               }
             }
           } catch (Exception e) {
+            ParWork.propegateInterrupt(e);
             throw new IOException(e);
           }
           break OUTER;
@@ -555,6 +559,7 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
         solrStreams.add(solrStream);
       }
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throw new IOException(e);
     }
   }

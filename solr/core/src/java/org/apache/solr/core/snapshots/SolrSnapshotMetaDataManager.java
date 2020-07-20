@@ -40,6 +40,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.IOUtils;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.core.DirectoryFactory;
@@ -192,6 +193,7 @@ public class SolrSnapshotMetaDataManager {
         try {
           release(name);
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           // Suppress so we keep throwing original exception
         }
       }

@@ -37,6 +37,7 @@ import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudBridgeTestCase;
 import org.apache.solr.common.LinkedHashMapWriter;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -75,10 +76,11 @@ public class TestSolrConfigHandlerConcurrent extends SolrCloudBridgeTestCase {
           @Override
           public Object call() {
             try {
-              Thread.sleep(LuceneTestCase.random().nextInt(1000));
+              Thread.sleep(LuceneTestCase.random().nextInt(TEST_NIGHTLY ? 1000 : 50));
               invokeBulkCall((String) e.getKey(), errs, value);
             } catch (Exception e1) {
-              e1.printStackTrace();
+              ParWork.propegateInterrupt(e1);
+              return null;
             }
             return null;
           }
@@ -121,7 +123,7 @@ public class TestSolrConfigHandlerConcurrent extends SolrCloudBridgeTestCase {
 
     Set<String> errmessages = new HashSet<>();
     for(int i =1;i<2;i++){//make it  ahigher number
-      RestTestHarness publisher = randomRestTestHarness(random());
+      RestTestHarness publisher = randomRestTestHarness(LuceneTestCase.random());
       String response;
       String val1;
       String val2;

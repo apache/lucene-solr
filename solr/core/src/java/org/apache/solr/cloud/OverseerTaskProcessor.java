@@ -207,7 +207,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
           if (heads.size() < MAX_BLOCKED_TASKS) {
             //instead of reading MAX_PARALLEL_TASKS items always, we should only fetch as much as we can execute
             int toFetch = Math.min(MAX_BLOCKED_TASKS - heads.size(), MAX_PARALLEL_TASKS - runningTasksSize());
-            List<QueueEvent> newTasks = workQueue.peekTopN(toFetch, excludedTasks, 50);
+            List<QueueEvent> newTasks = workQueue.peekTopN(toFetch, excludedTasks, 10000);
             log.debug("Got {} tasks from work-queue : [{}]", newTasks.size(), newTasks);
             heads.addAll(newTasks);
           }
@@ -229,7 +229,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
               }
 // nocommit
 //              if (runningZKTasks.contains(head.getId())) {
-//                log.warn("Task found in running ZKTasks already, contining");
+//                log.warn("Task found in running ZKTasks already, continuing");
 //                continue;
 //              }
 
@@ -263,7 +263,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
                 markTaskAsRunning(head, asyncId);
                 log.debug("Marked task [{}] as running", head.getId());
               } catch (Exception e) {
-                if (e instanceof KeeperException.SessionExpiredException || e instanceof  InterruptedException) {
+                if (e instanceof KeeperException.SessionExpiredException || e instanceof InterruptedException) {
                   ParWork.propegateInterrupt(e);
                   log.error("ZooKeeper session has expired");
                   return;
@@ -272,9 +272,9 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
                 throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
               }
               if (log.isDebugEnabled()) log.debug(
-                  messageHandler.getName() + ": Get the message id:" + head.getId() + " message:" + message.toString());
+                      messageHandler.getName() + ": Get the message id:" + head.getId() + " message:" + message.toString());
               Runner runner = new Runner(messageHandler, message,
-                  operation, head, lock);
+                      operation, head, lock);
               worker.add(runner);
             }
 
@@ -283,13 +283,11 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
         } catch (InterruptedException | AlreadyClosedException e) {
           ParWork.propegateInterrupt(e);
           return;
+        }  catch (KeeperException.SessionExpiredException e) {
+          log.warn("Zookeeper expiration");
+          return;
         } catch (Exception e) {
-          SolrException.log(log, e);
-
-          if (e instanceof KeeperException.SessionExpiredException) {
-            return;
-          }
-
+          log.error("Unexpected exception", e);
         }
       }
     } finally {
@@ -394,7 +392,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
   public static String getLeaderId(SolrZkClient zkClient) throws KeeperException,InterruptedException{
     byte[] data = null;
     try {
-      data = zkClient.getData(Overseer.OVERSEER_ELECT + "/leader", null, new Stat(), true);
+      data = zkClient.getData(Overseer.OVERSEER_ELECT + "/leader", null, new Stat());
     } catch (KeeperException.NoNodeException e) {
       return null;
     }
@@ -416,7 +414,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     if (asyncId != null)
       runningMap.put(asyncId, null);
   }
-  
+
   protected class Runner implements Runnable {
     final ZkNodeProps message;
     final String operation;
@@ -452,7 +450,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
         }
 
         if (asyncId != null) {
-          if (response != null && (response.getResponse().get("failure") != null 
+          if (response != null && (response.getResponse().get("failure") != null
               || response.getResponse().get("exception") != null)) {
             failureMap.put(asyncId, OverseerSolrResponseSerializer.serialize(response));
             if (log.isDebugEnabled()) {

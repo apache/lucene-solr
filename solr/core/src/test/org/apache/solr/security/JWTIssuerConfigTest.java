@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.SolrException;
 import org.jose4j.jwk.JsonWebKeySet;
 import org.junit.Before;
@@ -39,6 +40,7 @@ import static org.apache.solr.security.JWTAuthPluginTest.testJwk;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+@LuceneTestCase.Nightly // JWTVerificationkeyResolver.resolveKey when the plugin is inited will make http calls that fail and sleep and retry
 public class JWTIssuerConfigTest {
   private JWTIssuerConfig testIssuer;
   private Map<String, Object> testIssuerConfigMap;

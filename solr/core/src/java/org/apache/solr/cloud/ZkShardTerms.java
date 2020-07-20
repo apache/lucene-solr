@@ -319,9 +319,7 @@ public class ZkShardTerms implements AutoCloseable{
     } catch (KeeperException.NoNodeException e) {
       throw e;
     } catch (Exception e) {
-      if (e instanceof  InterruptedException) {
-        Thread.currentThread().interrupt();
-      }
+      ParWork.propegateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error while saving shard term for collection: " + collection, e);
     }
     return false;
@@ -359,12 +357,13 @@ public class ZkShardTerms implements AutoCloseable{
     ShardTerms newTerms;
     try {
       Stat stat = new Stat();
-      byte[] data = zkClient.getData(znodePath, null, stat, true);
+      byte[] data = zkClient.getData(znodePath, null, stat);
       newTerms = new ShardTerms((Map<String, Long>) Utils.fromJSON(data), stat.getVersion());
     } catch (KeeperException e) {
       Thread.interrupted();
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error updating shard term for collection: " + collection, e);
     } catch (InterruptedException e) {
+      ParWork.propegateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error updating shard term for collection: " + collection, e);
     }
 
@@ -410,7 +409,7 @@ public class ZkShardTerms implements AutoCloseable{
     };
     try {
       // exists operation is faster than getData operation
-      zkClient.exists(znodePath, watcher, true);
+      zkClient.exists(znodePath, watcher);
     } catch (InterruptedException e) {
       Thread.interrupted();
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error watching shard term for collection: " + collection, e);

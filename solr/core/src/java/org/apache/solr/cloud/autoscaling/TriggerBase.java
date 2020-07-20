@@ -38,6 +38,7 @@ import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.common.AlreadyClosedException;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
@@ -75,7 +76,7 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
   protected final AtomicReference<AutoScaling.TriggerEventProcessor> processorRef = new AtomicReference<>();
   protected volatile List<TriggerAction> actions;
   protected boolean enabled;
-  protected boolean isClosed;
+  protected volatile boolean isClosed;
 
 
   protected TriggerBase(TriggerEventType eventType, String name) {
@@ -122,6 +123,7 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
         try {
           action = loader.newInstance((String)map.get("class"), TriggerAction.class, "cloud.autoscaling.");
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           log.error("", e);
           throw new TriggerValidationException("action", "exception creating action " + map + ": " + e.toString());
         }
@@ -200,17 +202,13 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
 
   @Override
   public boolean isClosed() {
-    synchronized (this) {
-      return isClosed;
-    }
+    return isClosed;
   }
 
   @Override
   public void close() throws IOException {
-    synchronized (this) {
-      isClosed = true;
-      IOUtils.closeWhileHandlingException(actions);
-    }
+    isClosed = true;
+    ParWork.close(actions);
   }
 
   @Override
@@ -265,17 +263,11 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
     byte[] data = Utils.toJSON(state);
     String path = ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH + "/" + getName();
     try {
-      if (stateManager.hasData(path)) {
         // update
-        stateManager.setData(path, data, -1);
-      } else {
-        // create
-        stateManager.createData(path, data, CreateMode.PERSISTENT);
-      }
+      stateManager.setData(path, data, -1);
       lastState = state;
-    } catch (AlreadyExistsException e) {
-      
     } catch (InterruptedException | BadVersionException | IOException | KeeperException e) {
+      ParWork.propegateInterrupt(e, true);
       log.warn("Exception updating trigger state '{}'", path, e);
     }
   }
@@ -293,6 +285,7 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
     } catch (AlreadyClosedException e) {
      
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e, true);
       log.warn("Exception getting trigger state '{}'", path, e);
     }
     if (data != null) {

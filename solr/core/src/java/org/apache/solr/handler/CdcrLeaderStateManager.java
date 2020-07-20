@@ -76,7 +76,7 @@ class CdcrLeaderStateManager extends CdcrStateManager {
   private boolean isLeaderRegistered(SolrZkClient zkClient, ClusterState clusterState)
       throws KeeperException, InterruptedException {
     // First check if the znode exists, and register the watcher at the same time
-    return zkClient.exists(this.getZnodePath(), watcher, true) != null;
+    return zkClient.exists(this.getZnodePath(), watcher) != null;
   }
 
   /**
@@ -90,7 +90,7 @@ class CdcrLeaderStateManager extends CdcrStateManager {
 
   private void checkIfIAmLeader() throws KeeperException, InterruptedException {
     SolrZkClient zkClient = core.getCoreContainer().getZkController().getZkClient();
-    ZkNodeProps props = ZkNodeProps.load(zkClient.getData(CdcrLeaderStateManager.this.getZnodePath(), null, null, true));
+    ZkNodeProps props = ZkNodeProps.load(zkClient.getData(CdcrLeaderStateManager.this.getZnodePath(), null, null));
     if (props != null) {
       CdcrLeaderStateManager.this.setAmILeader(props.get("core").equals(core.getName()));
     }

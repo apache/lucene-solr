@@ -32,6 +32,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -167,6 +168,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
           liveNodesTimestamp = System.nanoTime();
           return liveNodes;
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           log.warn("Attempt to fetch cluster state from {} failed.", baseUrl, e);
         }
       }

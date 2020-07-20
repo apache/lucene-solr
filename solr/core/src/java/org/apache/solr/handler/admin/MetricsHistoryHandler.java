@@ -277,6 +277,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
           }
         }
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         if (logMissingCollection) {
           log.warn("Error getting cluster state, keeping metrics history in memory", e);
         }
@@ -292,6 +293,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
         factory.setPersistent(true);
         logMissingCollection = true;
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         if (logMissingCollection) {
           log.info("No {} collection, keeping metrics history in memory.", CollectionAdminParams.SYSTEM_COLL);
         }
@@ -348,6 +350,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
     try {
       nodeName = LeaderElector.getNodeName(oid);
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       log.warn("Unknown format of leader id, skipping: {}", oid, e);
       return null;
     }

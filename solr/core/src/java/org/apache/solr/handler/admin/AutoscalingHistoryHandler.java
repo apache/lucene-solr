@@ -30,6 +30,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.autoscaling.SystemLogListener;
 import org.apache.solr.cloud.autoscaling.TriggerEvent;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.params.CollectionAdminParams;
@@ -132,6 +133,7 @@ public class AutoscalingHistoryHandler extends RequestHandlerBase implements Per
       QueryResponse qr = cloudSolrClient.query(collection, params);
       rsp.setAllValues(qr.getResponse());
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       if ((e instanceof SolrException) && e.getMessage().contains("Collection not found")) {
         // relatively benign
         String msg = "Collection " + collection + " does not exist.";

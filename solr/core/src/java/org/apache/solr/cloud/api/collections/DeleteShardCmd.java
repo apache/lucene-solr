@@ -36,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.overseer.OverseerAction;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
@@ -135,6 +136,7 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
           cleanupLatch.countDown();
           throw e;
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           log.warn("Error deleting replica: {}", r, e);
           cleanupLatch.countDown();
           throw e;

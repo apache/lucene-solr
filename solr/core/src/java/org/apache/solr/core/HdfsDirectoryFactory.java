@@ -376,6 +376,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
         throw new RuntimeException("Could not remove directory");
       }
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       log.error("Could not remove directory", e);
       throw new SolrException(ErrorCode.SERVER_ERROR,
           "Could not remove directory", e);

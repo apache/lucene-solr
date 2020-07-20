@@ -20,6 +20,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.SolrParams;
@@ -233,6 +234,7 @@ public class CloudInspectUtil {
         log.error("controlClient :{}\n\tcloudClient :{}", a, b);
       }
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       // swallow any exceptions, this is just useful for producing debug output,
       // and shouldn't usurp the original issue with mismatches.
       log.error("Unable to find versions for mismatched ids", e);

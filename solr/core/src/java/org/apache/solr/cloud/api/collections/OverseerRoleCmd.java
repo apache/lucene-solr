@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.cloud.OverseerNodePrioritizer;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -65,8 +66,8 @@ public class OverseerRoleCmd implements OverseerCollectionMessageHandler.Cmd {
 
     String roleName = message.getStr("role");
     boolean nodeExists = false;
-    if (nodeExists = zkClient.exists(ZkStateReader.ROLES, true)) {
-      roles = (Map) Utils.fromJSON(zkClient.getData(ZkStateReader.ROLES, null, new Stat(), true));
+    if (nodeExists = zkClient.exists(ZkStateReader.ROLES)) {
+      roles = (Map) Utils.fromJSON(zkClient.getData(ZkStateReader.ROLES, null, new Stat()));
     } else {
       roles = new LinkedHashMap<>(1);
     }
@@ -92,6 +93,7 @@ public class OverseerRoleCmd implements OverseerCollectionMessageHandler.Cmd {
       try {
         overseerPrioritizer.prioritizeOverseerNodes(ocmh.myId);
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         log.error("Error in prioritizing Overseer", e);
       }
 

@@ -29,6 +29,7 @@ import org.apache.solr.common.ParWork;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,16 +59,20 @@ public class TriggerEventQueue {
       byte[] data = Utils.toJSON(event);
       delegate.offer(data);
       return true;
+    } catch (InterruptedException e) {
+      ParWork.propegateInterrupt(e, true);
+      throw new AlreadyClosedException();
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       log.warn("Exception adding event {} to queue {}", event, triggerName, e);
       return false;
     }
   }
 
-  public TriggerEvent peekEvent() {
+  public TriggerEvent peekEvent() throws Exception {
     byte[] data;
     try {
-      while ((data = delegate.peek()) != null) {
+      while ((data = delegate.peek()) != null && !Thread.currentThread().isInterrupted()) {
         if (data.length == 0) {
           log.warn("ignoring empty data...");
           continue;
@@ -77,16 +82,19 @@ public class TriggerEventQueue {
           Map<String, Object> map = (Map<String, Object>) Utils.fromJSON(data);
           return fromMap(map);
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           log.warn("Invalid event data, ignoring: {}", new String(data, StandardCharsets.UTF_8));
           continue;
         }
       }
-    } 
-    catch (AlreadyClosedException | InterruptedException e) {
-      ParWork.propegateInterrupt(e);
-    }
-    catch (Exception e) {
-      log.warn("Exception peeking queue of trigger {}", triggerName, e);
+    } catch (InterruptedException e) {
+      ParWork.propegateInterrupt(e, true);
+      throw new AlreadyClosedException();
+    } catch (KeeperException.NoNodeException e) {
+      log.info("No node found for {}", e.getPath());
+    } catch (Exception e) {
+      log.error("Exception peeking queue of trigger {}", triggerName, e);
+      throw e;
     }
     return null;
   }
@@ -104,11 +112,16 @@ public class TriggerEventQueue {
           Map<String, Object> map = (Map<String, Object>) Utils.fromJSON(data);
           return fromMap(map);
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           log.warn("Invalid event data, ignoring: {}", new String(data, StandardCharsets.UTF_8));
           continue;
         }
       }
+    } catch (InterruptedException e) {
+      ParWork.propegateInterrupt(e, true);
+      throw new AlreadyClosedException();
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       log.warn("Exception polling queue of trigger {}", triggerName, e);
     }
     return null;

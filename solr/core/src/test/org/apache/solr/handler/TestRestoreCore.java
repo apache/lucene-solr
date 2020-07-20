@@ -117,7 +117,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
     int nDocs = usually() ? BackupRestoreUtils.indexDocs(masterClient, "collection1", docsSeed) : 0;
 
     final BackupStatusChecker backupStatus
-      = new BackupStatusChecker(masterClient, "/" + DEFAULT_TEST_CORENAME + "/replication");
+            = new BackupStatusChecker(masterClient, "/" + DEFAULT_TEST_CORENAME + "/replication");
     final String oldBackupDir = backupStatus.checkBackupSuccess();
     String snapshotName = null;
     String location;
@@ -139,13 +139,17 @@ public class TestRestoreCore extends SolrJettyTestBase {
     TestReplicationHandlerBackup.runBackupCommand(masterJetty, ReplicationHandler.CMD_BACKUP, params);
 
     if (null == snapshotName) {
-      backupStatus.waitForDifferentBackupDir(oldBackupDir, 30);
+      backupStatus.waitForDifferentBackupDir(oldBackupDir, 15);
     } else {
-      backupStatus.waitForBackupSuccess(snapshotName, 30);
+      backupStatus.waitForBackupSuccess(snapshotName, 15);
     }
 
     int numRestoreTests = nDocs > 0 ? TestUtil.nextInt(random(), 1, 5) : 1;
-
+    if (TEST_NIGHTLY) {
+      numRestoreTests = nDocs > 0 ? TestUtil.nextInt(random(), 1, 5) : 1;
+    } else {
+      numRestoreTests = 1;
+    }
     for (int attempts=0; attempts<numRestoreTests; attempts++) {
       //Modify existing index before we call restore.
 

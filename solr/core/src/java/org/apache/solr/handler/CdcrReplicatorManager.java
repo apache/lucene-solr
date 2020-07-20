@@ -37,6 +37,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
@@ -185,6 +186,7 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
           try {
             bootstrapExecutor.submit(bootstrapStatusRunnable);
           } catch (Exception e) {
+            ParWork.propegateInterrupt(e);
             log.error("Unable to submit bootstrap call to executor", e);
           }
         }
@@ -372,6 +374,7 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
           String status = response.get(RESPONSE_STATUS).toString();
           return BootstrapStatus.valueOf(status.toUpperCase(Locale.ROOT));
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           log.error("Exception submitting bootstrap request", e);
           return BootstrapStatus.UNKNOWN;
         }
@@ -408,6 +411,7 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
           }
         }
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         log.error("Exception during bootstrap status request", e);
         return BootstrapStatus.UNKNOWN;
       }

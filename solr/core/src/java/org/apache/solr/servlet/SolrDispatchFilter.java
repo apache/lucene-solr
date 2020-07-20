@@ -285,6 +285,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     if (!StringUtils.isEmpty(zkHost)) {
       int startUpZkTimeOut = Integer.getInteger("waitForZk", 10); // nocommit - zk settings
       zkClient = new SolrZkClient(zkHost, (int) TimeUnit.SECONDS.toMillis(startUpZkTimeOut));
+      zkClient.start();
     }
 
     NodeConfig nodeConfig = loadNodeConfig(zkClient, solrHome, extraProperties);
@@ -313,7 +314,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
 
         log.info("Trying solr.xml in ZooKeeper...");
 
-        byte[] data = zkClient.getData("/solr.xml", null, null, true);
+        byte[] data = zkClient.getData("/solr.xml", null, null);
         if (data == null) {
           log.error("Found solr.xml in ZooKeeper with no data in it");
           throw new SolrException(ErrorCode.SERVER_ERROR, "Found solr.xml in ZooKeeper with no data in it");
@@ -545,7 +546,6 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     // to implement isAuthenticated to simplify the check here, but that just moves the complexity to
     // multiple code paths.
     if (!requestContinues || !isAuthenticated.get()) {
-      response.flushBuffer();
       if (shouldAudit(EventType.REJECTED)) {
         cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.REJECTED, request));
       }

@@ -53,6 +53,7 @@ import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.cloud.RecoveryStrategy;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.MapSerializable;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.IOUtils;
@@ -146,6 +147,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     try {
       return new SolrConfig(loader, name, isConfigsetTrusted, substitutableProperties);
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       String resource;
       if (loader instanceof ZkSolrResourceLoader) {
         resource = name;
@@ -413,6 +415,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
       Map m = (Map) fromJSON(in);
       return new ConfigOverlay(m, version);
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error reading config overlay", e);
     } finally {
       IOUtils.closeQuietly(isr);
@@ -576,6 +579,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
         try {
           return valueOf(s.toUpperCase(Locale.ROOT));
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           log.warn("Unrecognized value for lastModFrom: {}", s, e);
           return BOGUS;
         }
@@ -609,6 +613,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
               ? Long.valueOf(ttlStr)
               : null;
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           log.warn("Ignoring exception while attempting to extract max-age from cacheControl config: {}"
               , cacheControlHeader, e);
         }

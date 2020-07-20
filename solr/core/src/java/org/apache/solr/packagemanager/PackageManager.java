@@ -88,9 +88,9 @@ public class PackageManager implements Closeable {
     try {
       Map packagesZnodeMap = null;
 
-      if (zkClient.exists(ZkStateReader.SOLR_PKGS_PATH, true) == true) {
+      if (zkClient.exists(ZkStateReader.SOLR_PKGS_PATH) == true) {
         packagesZnodeMap = (Map)getMapper().readValue(
-            new String(zkClient.getData(ZkStateReader.SOLR_PKGS_PATH, null, null, true), "UTF-8"), Map.class).get("packages");
+            new String(zkClient.getData(ZkStateReader.SOLR_PKGS_PATH, null, null), "UTF-8"), Map.class).get("packages");
         if (packagesZnodeMap != null) {
           for (Object packageName : packagesZnodeMap.keySet()) {
             List pkg = (List) packagesZnodeMap.get(packageName);

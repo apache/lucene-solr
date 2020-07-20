@@ -49,6 +49,7 @@ import org.apache.solr.client.solrj.request.IsUpdateRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.QoSParams;
@@ -537,6 +538,7 @@ public class AsyncLBHttpSolrClient extends SolrClient {
         throw e;
       }
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throw new SolrServerException(e);
     }
 
@@ -723,6 +725,7 @@ public class AsyncLBHttpSolrClient extends SolrClient {
           throw e;
         }
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         throw new SolrServerException(e);
       }
     }
@@ -752,6 +755,7 @@ public class AsyncLBHttpSolrClient extends SolrClient {
           throw e;
         }
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         throw new SolrServerException(e);
       }
     }
@@ -828,6 +832,7 @@ public class AsyncLBHttpSolrClient extends SolrClient {
         }
       }
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       //Expected. The server is still down.
       zombieServer.failedPings++;
 

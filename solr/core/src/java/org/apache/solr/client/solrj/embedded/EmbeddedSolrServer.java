@@ -39,6 +39,7 @@ import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter.BAOS;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -178,6 +179,7 @@ public class EmbeddedSolrServer extends SolrClient {
       } catch (IOException | SolrException iox) {
         throw iox;
       } catch (Exception ex) {
+        ParWork.propegateInterrupt(ex);
         throw new SolrServerException(ex);
       }
     }
@@ -258,6 +260,7 @@ public class EmbeddedSolrServer extends SolrClient {
             }
           }
         } catch (Exception ex) {
+          ParWork.propegateInterrupt(ex);
           throw new RuntimeException(ex);
         }
       }
@@ -268,6 +271,7 @@ public class EmbeddedSolrServer extends SolrClient {
     } catch (IOException | SolrException iox) {
       throw iox;
     } catch (Exception ex) {
+      ParWork.propegateInterrupt(ex);
       throw new SolrServerException(ex);
     } finally {
       if (req != null) req.close();

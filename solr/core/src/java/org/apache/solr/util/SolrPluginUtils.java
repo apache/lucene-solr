@@ -43,6 +43,7 @@ import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
@@ -938,6 +939,7 @@ public class SolrPluginUtils {
         try {
           return super.getFieldQuery(field, queryText, quoted, raw);
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           return null;
         }
       }

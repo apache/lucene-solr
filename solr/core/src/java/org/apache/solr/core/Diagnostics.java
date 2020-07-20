@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.solr.core;
+import org.apache.solr.common.ParWork;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,6 +34,7 @@ public class Diagnostics {
     try {
       callable.call(data);
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       log.error("TEST HOOK EXCEPTION", e);
     }
   }

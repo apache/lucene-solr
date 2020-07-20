@@ -40,14 +40,14 @@ public class DistributedMap {
 
   protected static final String PREFIX = "mn-";
 
-  public DistributedMap(SolrZkClient zookeeper, String dir) {
+  public DistributedMap(SolrZkClient zookeeper, String dir) throws KeeperException {
     this.dir = dir;
     this.zookeeper = zookeeper;
   }
 
 
   public void put(String trackingId, byte[] data) throws KeeperException, InterruptedException {
-    zookeeper.makePath(dir + "/" + PREFIX + trackingId, data, CreateMode.PERSISTENT, null, false, true);
+    zookeeper.mkdir(dir + "/" + PREFIX + trackingId, data);
   }
   
   /**
@@ -56,7 +56,7 @@ public class DistributedMap {
    */
   public boolean putIfAbsent(String trackingId, byte[] data) throws KeeperException, InterruptedException {
     try {
-      zookeeper.makePath(dir + "/" + PREFIX + trackingId, data, CreateMode.PERSISTENT, null, true, true);
+      zookeeper.mkdir(dir + "/" + PREFIX + trackingId, data);
       return true;
     } catch (NodeExistsException e) {
       return false;
@@ -64,16 +64,16 @@ public class DistributedMap {
   }
 
   public byte[] get(String trackingId) throws KeeperException, InterruptedException {
-    return zookeeper.getData(dir + "/" + PREFIX + trackingId, null, null, true);
+    return zookeeper.getData(dir + "/" + PREFIX + trackingId, null, null);
   }
 
   public boolean contains(String trackingId) throws KeeperException, InterruptedException {
-    return zookeeper.exists(dir + "/" + PREFIX + trackingId, true);
+    return zookeeper.exists(dir + "/" + PREFIX + trackingId);
   }
 
   public int size() throws KeeperException, InterruptedException {
     Stat stat = new Stat();
-    zookeeper.getData(dir, null, stat, true);
+    zookeeper.getData(dir, null, stat);
     return stat.getNumChildren();
   }
 
@@ -84,7 +84,7 @@ public class DistributedMap {
    */
   public boolean remove(String trackingId) throws KeeperException, InterruptedException {
     try {
-      zookeeper.delete(dir + "/" + PREFIX + trackingId, -1, true);
+      zookeeper.delete(dir + "/" + PREFIX + trackingId, -1);
     } catch (KeeperException.NoNodeException e) {
       return false;
     }
@@ -97,7 +97,7 @@ public class DistributedMap {
   public void clear() throws KeeperException, InterruptedException {
     List<String> childNames = zookeeper.getChildren(dir, null, true);
     for(String childName: childNames) {
-      zookeeper.delete(dir + "/" + childName, -1, true);
+      zookeeper.delete(dir + "/" + childName, -1);
     }
 
   }

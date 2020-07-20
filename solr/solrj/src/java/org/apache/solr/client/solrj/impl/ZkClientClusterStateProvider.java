@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.solr.common.AlreadyClosedException;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -174,6 +175,7 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
             log.info("Cluster at {} ready", zkHost);
             zkStateReader = zk;
           } catch (Exception e) {
+            ParWork.propegateInterrupt(e);
             if (zk != null) zk.close();
             // do not wrap because clients may be relying on the underlying exception being thrown
             throw e;

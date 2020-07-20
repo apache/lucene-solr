@@ -395,6 +395,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         checksum.update(buffer, 0, bytesRead);
       return checksum.getValue();
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       log.warn("Exception in finding checksum of {}", f, e);
     } finally {
       ParWork.close(fis);
@@ -530,6 +531,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           restoreStatus.add(STATUS, FAILED);
         }
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         restoreStatus.add(STATUS, FAILED);
         restoreStatus.add(EXCEPTION, e.getMessage());
         rsp.add(CMD_RESTORE_STATUS, restoreStatus);
@@ -590,6 +592,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     } catch (SolrException e) {
       throw e;
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       log.error("Exception while creating a snapshot", e);
       reportErrorOnResponse(rsp, "Error encountered while creating a snapshot: " + e.getMessage(), e);
     }
@@ -661,6 +664,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
                 long checksum = CodecUtil.retrieveChecksum(in);
                 fileMeta.put(CHECKSUM, checksum);
               } catch (Exception e) {
+                ParWork.propegateInterrupt(e);
                 //TODO Should this trigger a larger error?
                 log.warn("Could not read checksum from index file: {}", file, e);
               }
@@ -680,6 +684,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
             try {
               fileMeta.put(CHECKSUM, CodecUtil.retrieveChecksum(in));
             } catch (Exception e) {
+              ParWork.propegateInterrupt(e);
               //TODO Should this trigger a larger error?
               log.warn("Could not read checksum from index file: {}", infos.getSegmentsFileName(), e);
             }
@@ -979,6 +984,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           NamedList nl = fetcher.getDetails();
           slave.add("masterDetails", nl.get(CMD_DETAILS));
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           log.warn(
               "Exception while invoking 'details' method for replication on master ",
               e);
@@ -1088,6 +1094,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           slave.add("timeRemaining", String.valueOf(estimatedTimeRemaining) + "s");
           slave.add("downloadSpeed", NumberUtils.readableSize(downloadSpeed));
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           log.error("Exception while writing replication details: ", e);
         }
       }
@@ -1217,6 +1224,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         IndexFetchResult fetchResult = doFetch(null, false);
         if (pollListener != null) pollListener.onComplete(core, fetchResult);
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         log.error("Exception in fetching index", e);
       }
     };
@@ -1463,6 +1471,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
             snapShooter.validateCreateSnapshot();
             snapShooter.createSnapAsync(numberToKeep, (nl) -> snapShootDetails = nl);
           } catch (Exception e) {
+            ParWork.propegateInterrupt(e);
             log.error("Exception while snapshooting", e);
           }
         }

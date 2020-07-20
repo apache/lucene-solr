@@ -28,11 +28,13 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 
+@Ignore // nocommit you would want to write these props to ZK actually ...
 public class TestConfigSetProperties extends SolrTestCaseJ4 {
 
   @Rule
@@ -41,7 +43,7 @@ public class TestConfigSetProperties extends SolrTestCaseJ4 {
 
   @Test
   public void testNoConfigSetPropertiesFile() throws Exception {
-    assertNull(createConfigSetProps(null));
+    assertEquals(0, createConfigSetProps(null).size());
   }
 
   @Test

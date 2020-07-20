@@ -17,6 +17,7 @@
 package org.apache.solr.client.solrj;
 
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
@@ -73,6 +74,7 @@ public abstract class SolrResponse implements Serializable, MapWriter {
       outputStream.writeObject(response);
       return byteStream.toByteArray();
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }
   }
@@ -85,6 +87,7 @@ public abstract class SolrResponse implements Serializable, MapWriter {
       ObjectInputStream inputStream = new ObjectInputStream(byteStream);
       return (SolrResponse) inputStream.readObject();
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }
   }

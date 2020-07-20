@@ -69,36 +69,31 @@ public class TestCloudManagedSchema extends AbstractFullDistribZkTestBase {
     // Make sure the upgrade to managed schema happened
     assertEquals("Schema resource name differs from expected name", "managed-schema", collectionSchema);
 
-    SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), 30000);
-    try {
-      // Make sure "DO NOT EDIT" is in the content of the managed schema
-      String fileContent = getFileContentFromZooKeeper(zkClient, "/solr/configs/conf1/managed-schema");
-      assertTrue("Managed schema is missing", fileContent.contains("DO NOT EDIT"));
+    SolrZkClient zkClient = zkServer.getZkClient();
 
-      // Make sure the original non-managed schema is no longer in ZooKeeper
-      assertFileNotInZooKeeper(zkClient, "/solr/configs/conf1", "schema.xml");
+    // Make sure "DO NOT EDIT" is in the content of the managed schema
+    String fileContent = getFileContentFromZooKeeper(zkClient, "/solr/configs/conf1/managed-schema");
+    assertTrue("Managed schema is missing", fileContent.contains("DO NOT EDIT"));
 
-      // Make sure the renamed non-managed schema is present in ZooKeeper
-      fileContent = getFileContentFromZooKeeper(zkClient, "/solr/configs/conf1/schema.xml.bak");
-      assertTrue("schema file doesn't contain '<schema'", fileContent.contains("<schema"));
-    } finally {
-      if (zkClient != null) {
-        zkClient.close();
-      }
-    }
+    // Make sure the original non-managed schema is no longer in ZooKeeper
+    assertFileNotInZooKeeper(zkClient, "/solr/configs/conf1", "schema.xml");
+
+    // Make sure the renamed non-managed schema is present in ZooKeeper
+    fileContent = getFileContentFromZooKeeper(zkClient, "/solr/configs/conf1/schema.xml.bak");
+    assertTrue("schema file doesn't contain '<schema'", fileContent.contains("<schema"));
   }
   
   private String getFileContentFromZooKeeper(SolrZkClient zkClient, String fileName)
       throws IOException, SolrServerException, KeeperException, InterruptedException {
 
-    return (new String(zkClient.getData(fileName, null, null, true), StandardCharsets.UTF_8));
+    return (new String(zkClient.getData(fileName, null, null), StandardCharsets.UTF_8));
 
   }
   protected final void assertFileNotInZooKeeper(SolrZkClient zkClient, String parent, String fileName) throws Exception {
     List<String> kids = zkClient.getChildren(parent, null, true);
     for (String kid : kids) {
       if (kid.equalsIgnoreCase(fileName)) {
-        String rawContent = new String(zkClient.getData(fileName, null, null, true), StandardCharsets.UTF_8);
+        String rawContent = new String(zkClient.getData(fileName, null, null), StandardCharsets.UTF_8);
         fail("File '" + fileName + "' was unexpectedly found in ZooKeeper.  Content starts with '"
             + rawContent.substring(0, 100) + " [...]'");
       }

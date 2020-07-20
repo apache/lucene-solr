@@ -122,6 +122,7 @@ public class ReplicateFromLeader implements Closeable {
       if (commitVersion == null) return null;
       else return commitVersion;
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       log.warn("Cannot get commit command version from index commit point ",e);
       return null;
     }

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud.overseer;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -25,17 +26,25 @@ import java.util.Set;
 import com.google.common.collect.ImmutableSet;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
+import org.apache.solr.cloud.LeaderElector;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.api.collections.Assign;
 import org.apache.solr.cloud.api.collections.CreateCollectionCmd;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
+import org.apache.solr.common.AlreadyClosedException;
+import org.apache.solr.common.ParWork;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.RoutingRule;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -218,6 +227,27 @@ public class SliceMutator {
       // we need to use epoch time so that it's comparable across Overseer restarts
       props.put(ZkStateReader.STATE_TIMESTAMP_PROP, String.valueOf(cloudManager.getTimeSource().getEpochTimeNs()));
       Slice newSlice = new Slice(slice.getName(), slice.getReplicasCopy(), props, collectionName);
+
+      // nocommit - fix makePath, async, single node
+      try {
+        stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection
+                + "/leader_elect/" + slice.getName());
+        stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection
+                + "/leader_elect/" + slice.getName() + LeaderElector.ELECTION_NODE);
+        stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE+ "/" + collection + "/" + slice.getName()
+                + ZkStateReader.SHARD_LEADERS_ZKNODE);
+      } catch (AlreadyExistsException e) {
+        throw new AlreadyClosedException();
+      } catch (IOException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      } catch (KeeperException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      } catch (InterruptedException e) {
+        ParWork.propegateInterrupt(e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      }
+
+
       slicesCopy.put(slice.getName(), newSlice);
     }
 

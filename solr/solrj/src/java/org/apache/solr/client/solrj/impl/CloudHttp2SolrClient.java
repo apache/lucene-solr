@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 
@@ -73,6 +74,7 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
         try {
           this.stateProvider = new Http2ClusterStateProvider(builder.solrUrls, builder.httpClient);
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           throw new RuntimeException("Couldn't initialize a HttpClusterStateProvider (is/are the "
               + "Solr server(s), "  + builder.solrUrls + ", down?)", e);
         }
@@ -228,6 +230,7 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
           try {
             stateProvider = new Http2ClusterStateProvider(solrUrls, httpClient);
           } catch (Exception e) {
+            ParWork.propegateInterrupt(e);
             throw new RuntimeException("Couldn't initialize a HttpClusterStateProvider (is/are the "
                 + "Solr server(s), "  + solrUrls + ", down?)", e);
           }

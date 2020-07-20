@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
@@ -81,6 +82,7 @@ public class AutoScalingConfig implements MapWriter {
           TriggerEventProcessorStage stage = TriggerEventProcessorStage.valueOf(String.valueOf(stageName).toUpperCase(Locale.ROOT));
           stages.add(stage);
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           log.warn("Invalid stage name '{}' for '{}' in listener config, skipping it in: {}",
               stageName, name, properties);
         }
@@ -172,6 +174,7 @@ public class AutoScalingConfig implements MapWriter {
         try {
           type = TriggerEventType.valueOf(event.toUpperCase(Locale.ROOT));
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
         }
         if (type == null) {
           this.event = TriggerEventType.INVALID;
@@ -317,6 +320,7 @@ public class AutoScalingConfig implements MapWriter {
       try {
         version = (Integer)jsonMap.get(AutoScalingParams.ZK_VERSION);
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         // ignore
       }
     }

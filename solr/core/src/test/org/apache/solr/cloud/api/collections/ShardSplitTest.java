@@ -588,7 +588,7 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
       TimeOut timeOut = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
       while (!timeOut.hasTimedOut()) {
         timeOut.sleep(500);
-        if (cloudClient.getZkStateReader().getZkClient().exists(path, true)) {
+        if (cloudClient.getZkStateReader().getZkClient().exists(path)) {
           log.info("=== found lock node");
           break;
         }
@@ -604,13 +604,13 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
       }
 
       // make sure the lock still exists
-      assertTrue("lock znode expected but missing", cloudClient.getZkStateReader().getZkClient().exists(path, true));
+      assertTrue("lock znode expected but missing", cloudClient.getZkStateReader().getZkClient().exists(path));
       // let the first split proceed
       TestInjection.splitLatch.countDown();
       timeOut = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
       while (!timeOut.hasTimedOut()) {
         timeOut.sleep(500);
-        if (!cloudClient.getZkStateReader().getZkClient().exists(path, true)) {
+        if (!cloudClient.getZkStateReader().getZkClient().exists(path)) {
           break;
         }
       }

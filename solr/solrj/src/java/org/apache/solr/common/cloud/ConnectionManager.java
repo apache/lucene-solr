@@ -129,6 +129,7 @@ public class ConnectionManager implements Watcher, Closeable {
     } catch (NullPointerException e) {
       // okay
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       log.warn("Exception firing disonnectListener");
     }
   }
@@ -168,6 +169,7 @@ public class ConnectionManager implements Watcher, Closeable {
         try {
           beforeReconnect.command();
         }  catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           ParWork.propegateInterrupt("Exception running beforeReconnect command", e);
         }
       }
@@ -292,7 +294,7 @@ public class ConnectionManager implements Watcher, Closeable {
     boolean success = connectedLatch.await(waitForConnection, TimeUnit.MILLISECONDS);
     if (client.isConnected()) return;
     if (!success) {
-      throw new TimeoutException("Timeout waiting to connect to ZooKeeper");
+      throw new TimeoutException("Timeout waiting to connect to ZooKeeper " + zkServerAddress + " " + waitForConnection + "ms");
     }
 
     log.info("Client is connected to ZooKeeper");

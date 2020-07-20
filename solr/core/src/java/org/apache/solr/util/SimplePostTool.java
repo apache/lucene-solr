@@ -63,6 +63,7 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
+import org.apache.solr.common.ParWork;
 import org.apache.solr.core.XmlConfigFile;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -899,6 +900,7 @@ public class SimplePostTool {
     } catch (IOException e) {
       warn("An error occurred getting data from "+url+". Please check that Solr is running.");
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       warn("An error occurred getting data from "+url+". Message: " + e.getMessage());
     }
   }
@@ -938,6 +940,7 @@ public class SimplePostTool {
         fatal("Connection error (is Solr running at " + solrUrl + " ?): " + e);
         success = false;
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         fatal("POST failed with error " + e.getMessage());
       }
 
@@ -1275,6 +1278,7 @@ public class SimplePostTool {
       } catch (IOException e) {
         warn("IOException opening URL "+url+": "+e.getMessage());
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         throw new RuntimeException(e);
       }
       return l;

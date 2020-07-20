@@ -285,7 +285,11 @@ public class ZkStateWriter {
             }
           }
 
+        } catch (InterruptedException e) {
+          ParWork.propegateInterrupt(e);
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Interrupted", e);
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           if (e instanceof KeeperException.BadVersionException) {
             // nocommit invalidState = true;
             if (log.isDebugEnabled())
@@ -302,7 +306,7 @@ public class ZkStateWriter {
         // numUpdates = 0;
         if (c != null) {
           try {
-            reader.waitForState(c.getName(), 5, TimeUnit.SECONDS,
+            reader.waitForState(c.getName(), 15, TimeUnit.SECONDS,
                     (l, col) -> {
                       if (col != null && col.getZNodeVersion() > prevState.getZNodeVersion()) {
                         if (log.isDebugEnabled()) log.debug("Waited for ver: {}", col.getZNodeVersion());
@@ -311,7 +315,7 @@ public class ZkStateWriter {
                       return false;
                     });
           } catch (TimeoutException e) {
-            throw new RuntimeException(e);
+            log.warn("Timeout waiting to see written cluster state come back");
           }
         }
       }

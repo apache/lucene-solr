@@ -34,6 +34,7 @@ import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.LockFactory;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CachingDirectoryFactory.CloseListener;
@@ -206,6 +207,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
     } catch (FileNotFoundException | NoSuchFileException e) {
 
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       log.error("Exception deleting file", e);
     }
 

@@ -72,7 +72,7 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase{
     int nodeCount = 5;
     configureCluster(nodeCount)
        .addConfig(configName, configDir)
-       .configure();
+       .formatZk(true).configure();
     
     
     Map<String, String> collectionProperties = new HashMap<>();

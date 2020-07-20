@@ -612,6 +612,7 @@ public class SimCloudManager implements SolrCloudManager {
     try {
       simCloudManagerPool.shutdownNow();
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       // ignore
     }
     simCloudManagerPool = ParWork.getExecutorService(3, 10, 3);
@@ -735,6 +736,7 @@ public class SimCloudManager implements SolrCloudManager {
       Future<SolrResponse> rsp = simCloudManagerPool.submit(() -> simHandleSolrRequest(req));
       return rsp.get(120, TimeUnit.SECONDS); // longer then this and something is seriously wrong
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throw new IOException(e);
     }
   }
@@ -903,6 +905,7 @@ public class SimCloudManager implements SolrCloudManager {
           try {
             clusterStateProvider.simCreateCollection(new ZkNodeProps(params.toNamedList().asMap(10)), results);
           } catch (Exception e) {
+            ParWork.propegateInterrupt(e);
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
           }
           break;
@@ -911,6 +914,7 @@ public class SimCloudManager implements SolrCloudManager {
             clusterStateProvider.simDeleteCollection(params.get(CommonParams.NAME),
                 params.get(CommonAdminParams.ASYNC), results);
           } catch (Exception e) {
+            ParWork.propegateInterrupt(e);
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
           }
           break;
@@ -921,6 +925,7 @@ public class SimCloudManager implements SolrCloudManager {
           try {
             clusterStateProvider.simAddReplica(new ZkNodeProps(params.toNamedList().asMap(10)), results);
           } catch (Exception e) {
+            ParWork.propegateInterrupt(e);
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
           }
           break;
@@ -928,6 +933,7 @@ public class SimCloudManager implements SolrCloudManager {
           try {
             clusterStateProvider.simMoveReplica(new ZkNodeProps(params.toNamedList().asMap(10)), results);
           } catch (Exception e) {
+            ParWork.propegateInterrupt(e);
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
           }
           break;
@@ -950,6 +956,7 @@ public class SimCloudManager implements SolrCloudManager {
           try {
             clusterStateProvider.simCreateShard(new ZkNodeProps(params.toNamedList().asMap(10)), results);
           } catch (Exception e) {
+            ParWork.propegateInterrupt(e);
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
           }
           break;
@@ -957,6 +964,7 @@ public class SimCloudManager implements SolrCloudManager {
           try {
             clusterStateProvider.simSplitShard(new ZkNodeProps(params.toNamedList().asMap(10)), results);
           } catch (Exception e) {
+            ParWork.propegateInterrupt(e);
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
           }
           break;
@@ -964,6 +972,7 @@ public class SimCloudManager implements SolrCloudManager {
           try {
             clusterStateProvider.simDeleteShard(new ZkNodeProps(params.toNamedList().asMap(10)), results);
           } catch (Exception e) {
+            ParWork.propegateInterrupt(e);
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
           }
           break;

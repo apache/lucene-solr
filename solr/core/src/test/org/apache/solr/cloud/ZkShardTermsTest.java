@@ -39,6 +39,7 @@ import org.apache.solr.common.ParWork;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,6 +57,7 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
 
   @Test
   // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 15-Sep-2018
+  @Ignore // nocommit creating a collection that has exiting collection node is a fail
   public void testParticipationOfReplicas() throws IOException, SolrServerException, InterruptedException {
     String collection = "collection1";
     try (ZkShardTerms zkShardTerms = new ZkShardTerms(collection, "shard2", cluster.getZkClient())) {

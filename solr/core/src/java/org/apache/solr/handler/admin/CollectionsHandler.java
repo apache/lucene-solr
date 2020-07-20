@@ -303,7 +303,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
   static final Set<String> KNOWN_ROLES = ImmutableSet.of("overseer");
 
-  public static long DEFAULT_COLLECTION_OP_TIMEOUT = Long.getLong("solr.default.collection_op_timeout", 180 * 1000);
+  public static long DEFAULT_COLLECTION_OP_TIMEOUT = Long.getLong("solr.default.collection_op_timeout", 30 * 1000);
 
   public SolrResponse sendToOCPQueue(ZkNodeProps m) throws KeeperException, InterruptedException {
     return sendToOCPQueue(m, DEFAULT_COLLECTION_OP_TIMEOUT);
@@ -336,6 +336,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
             try {
               coreContainer.getZkController().clearAsyncId(asyncId);
             } catch (Exception e) {
+              ParWork.propegateInterrupt(e);
               // let the original exception bubble up
               log.error("Unable to release async ID={}", asyncId, e);
               SolrZkClient.checkInterrupted(e);
@@ -423,18 +424,17 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
   private static void createSysConfigSet(CoreContainer coreContainer) throws KeeperException, InterruptedException {
     SolrZkClient zk = coreContainer.getZkController().getZkStateReader().getZkClient();
-    ZkCmdExecutor cmdExecutor = new ZkCmdExecutor(3000);
-    cmdExecutor.ensureExists(ZkStateReader.CONFIGS_ZKNODE + "/" + CollectionAdminParams.SYSTEM_COLL, zk);
+    zk.mkdir(ZkStateReader.CONFIGS_ZKNODE + "/" + CollectionAdminParams.SYSTEM_COLL);
 
     try {
       String path = ZkStateReader.CONFIGS_ZKNODE + "/" + CollectionAdminParams.SYSTEM_COLL + "/schema.xml";
       byte[] data = IOUtils.toByteArray(CollectionsHandler.class.getResourceAsStream("/SystemCollectionSchema.xml"));
       assert data != null && data.length > 0;
-      cmdExecutor.ensureExists(path, data, CreateMode.PERSISTENT, zk);
+      zk.mkdir(path, data);
       path = ZkStateReader.CONFIGS_ZKNODE + "/" + CollectionAdminParams.SYSTEM_COLL + "/solrconfig.xml";
       data = IOUtils.toByteArray(CollectionsHandler.class.getResourceAsStream("/SystemCollectionSolrConfig.xml"));
       assert data != null && data.length > 0;
-      cmdExecutor.ensureExists(path, data, CreateMode.PERSISTENT, zk);
+      zk.mkdir(path, data);
     } catch (IOException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }
@@ -1424,6 +1424,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         try {
           new Rule(map);
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error in rule " + m, e);
         }
       }

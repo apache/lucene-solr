@@ -18,6 +18,7 @@ package org.apache.solr.util;
 
 import java.text.ParseException;
 
+import org.apache.solr.common.ParWork;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.exception.InvalidShapeException;
 import org.locationtech.spatial4j.shape.Point;
@@ -88,6 +89,7 @@ public class SpatialUtils {
     } catch (InvalidShapeException e) {
       throw e;
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throw new InvalidShapeException(e.toString(), e);
     }
   }
@@ -135,6 +137,7 @@ public class SpatialUtils {
     } catch (InvalidShapeException e) {
       throw e;
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throw new InvalidShapeException(e.toString(), e);
     }
   }

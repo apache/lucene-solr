@@ -46,6 +46,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.google.common.collect.ImmutableMap;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Base64;
 import org.slf4j.Logger;
@@ -80,6 +81,7 @@ public final class CryptoKeys {
         log.debug("verified {} ", verified);
         if (verified) return entry.getKey();
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         exception = e;
         log.debug("NOT verified  ");
       }
@@ -98,6 +100,7 @@ public final class CryptoKeys {
         log.debug("verified {} ", verified);
         if (verified) return entry.getKey();
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         exception = e;
         log.debug("NOT verified  ");
       }
@@ -241,6 +244,7 @@ public final class CryptoKeys {
       try {
         return decodeAES(base64CipherTxt, pwd, strength);
       } catch (Exception exp) {
+        ParWork.propegateInterrupt(e);
         e = exp;
       }
     }
@@ -310,6 +314,7 @@ public final class CryptoKeys {
       X509EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(Base64.base64ToByteArray(pubKey));
       return keyFactory.generatePublic(publicKeySpec);
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,e);
     }
   }
@@ -319,6 +324,7 @@ public final class CryptoKeys {
     try {
       rsaCipher = Cipher.getInstance("RSA/ECB/nopadding");
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,e);
     }
     rsaCipher.init(Cipher.DECRYPT_MODE, pubKey);
@@ -394,6 +400,7 @@ public final class CryptoKeys {
         rsaCipher.init(Cipher.ENCRYPT_MODE, privateKey);
         return rsaCipher.doFinal(buffer.array(),buffer.position(), buffer.limit());
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,e);
       }
     }

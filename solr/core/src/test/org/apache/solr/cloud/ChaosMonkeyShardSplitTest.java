@@ -254,7 +254,7 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
    */
   private SolrZkClient electNewOverseer(String address) throws KeeperException,
           InterruptedException, IOException {
-    SolrZkClient zkClient = new SolrZkClient(address, TIMEOUT);
+    SolrZkClient zkClient = zkClient();
     ZkStateReader reader = new ZkStateReader(zkClient);
     LeaderElector overseerElector = new LeaderElector(zkClient, new ZkController.ContextKey("overseer",
             "overseer"), new ConcurrentHashMap<>());

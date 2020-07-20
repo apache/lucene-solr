@@ -27,6 +27,7 @@ import com.google.common.collect.Lists;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
@@ -114,6 +115,7 @@ class MergeIndexesOp implements CoreAdminHandler.CoreAdminOp {
           processorChain.createProcessor(wrappedReq, it.rsp);
       processor.processMergeIndexes(new MergeIndexesCommand(readers, it.req));
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       // log and rethrow so that if the finally fails we don't lose the original problem
       log.error("ERROR executing merge:", e);
       throw e;

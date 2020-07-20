@@ -44,6 +44,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Slice;
@@ -364,6 +365,7 @@ public class DeepRandomStream extends TupleStream implements Expressible {
           }
         }
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         throw new IOException(e);
       }
     } finally {

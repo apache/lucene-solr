@@ -265,7 +265,7 @@ public class DeleteReplicaCmd implements Cmd {
         }
         ocmh.deleteCoreNode(collectionName, replicaName, replica, core);
       } catch (Exception e) {
-        SolrZkClient.checkInterrupted(e);
+        ParWork.propegateInterrupt(e);
         results.add("failure", "Could not complete delete " + e.getMessage());
       } finally {
         if (onComplete != null) onComplete.run();

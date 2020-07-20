@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.cloud.ActiveReplicaWatcher;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrCloseableLatch;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -221,6 +222,7 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
           cleanupLatch.countDown();
           log.warn("Error deleting replica ", e);
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           log.warn("Error deleting replica ", e);
           cleanupLatch.countDown();
           throw e;

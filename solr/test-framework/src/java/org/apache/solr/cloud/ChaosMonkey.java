@@ -32,6 +32,7 @@ import java.util.regex.Pattern;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase.CloudJettyRunner;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.Type;
@@ -197,6 +198,7 @@ public class ChaosMonkey {
             try {
               stopJetty(jetty);
             } catch (Exception e) {
+              ParWork.propegateInterrupt(e);
               throw new RuntimeException(e);
             }
           }
@@ -498,6 +500,7 @@ public class ChaosMonkey {
           } catch (InterruptedException e) {
             //
           } catch (Exception e) {
+            ParWork.propegateInterrupt(e);
             // TODO Auto-generated catch block
             e.printStackTrace();
           }
@@ -593,6 +596,7 @@ public class ChaosMonkey {
         try {
           jetty.stop();
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           log.error("error stopping jetty", e);
           throw new RuntimeException(e);
         }
@@ -614,6 +618,7 @@ public class ChaosMonkey {
         try {
           jetty.start();
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           log.error("error starting jetty", e);
           throw new RuntimeException(e);
         }

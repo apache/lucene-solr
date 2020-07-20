@@ -35,7 +35,7 @@ public class RemoteQueryErrorTest extends SolrCloudTestCase {
   public static void setupCluster() throws Exception {
     configureCluster(3)
         .addConfig("conf", configset("cloud-minimal"))
-        .configure();
+        .formatZk(true).configure();
   }
 
   // TODO add test for CloudSolrClient as well

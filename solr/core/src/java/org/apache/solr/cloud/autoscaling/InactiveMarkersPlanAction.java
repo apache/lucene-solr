@@ -31,6 +31,7 @@ import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
 import org.apache.solr.client.solrj.cloud.autoscaling.NotEmptyException;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.util.Utils;
@@ -70,6 +71,7 @@ public class InactiveMarkersPlanAction extends TriggerActionBase {
     try {
       cleanupTTL = Integer.parseInt(cleanupStr);
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throw new TriggerValidationException(getName(), TTL_PROP, "invalid value '" + cleanupStr + "': " + e.toString());
     }
     if (cleanupTTL < 0) {

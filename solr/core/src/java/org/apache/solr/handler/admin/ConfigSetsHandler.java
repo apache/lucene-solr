@@ -155,7 +155,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     SolrZkClient zkClient = coreContainer.getZkController().getZkClient();
     String configPathInZk = ZkConfigManager.CONFIGS_ZKNODE + Path.SEPARATOR + configSetName;
 
-    if (zkClient.exists(configPathInZk, true)) {
+    if (zkClient.exists(configPathInZk)) {
       throw new SolrException(ErrorCode.BAD_REQUEST,
           "The configuration " + configSetName + " already exists in zookeeper");
     }
@@ -179,7 +179,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     while ((zipEntry = zis.getNextEntry()) != null) {
       String filePathInZk = configPathInZk + "/" + zipEntry.getName();
       if (zipEntry.isDirectory()) {
-        zkClient.makePath(filePathInZk, true);
+        zkClient.mkdir(filePathInZk);
       } else {
         createZkNodeIfNotExistsAndSetData(zkClient, filePathInZk,
             IOUtils.toByteArray(zis));
@@ -202,7 +202,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
 
   private void createZkNodeIfNotExistsAndSetData(SolrZkClient zkClient,
                                                  String filePathInZk, byte[] data) throws Exception {
-    if (!zkClient.exists(filePathInZk, true)) {
+    if (!zkClient.exists(filePathInZk)) {
       zkClient.create(filePathInZk, data, CreateMode.PERSISTENT, true);
     } else {
       zkClient.setData(filePathInZk, data, true);

@@ -270,7 +270,7 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
           };
         }
         
-      };
+      }.start();
     }
     
   }

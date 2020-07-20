@@ -118,7 +118,7 @@ public class ZkConfigManager {
    */
   public Boolean configExists(String configName) throws IOException {
     try {
-      return zkClient.exists(root + ZkConfigManager.CONFIGS_ZKNODE + "/" + configName, true);
+      return zkClient.exists(root + ZkConfigManager.CONFIGS_ZKNODE + "/" + configName);
     } catch (KeeperException | InterruptedException e) {
       throw new IOException("Error checking whether config exists",
           SolrZkClient.checkInterrupted(e));
@@ -148,7 +148,7 @@ public class ZkConfigManager {
         if (children.size() == 0) {
           final String toZkFilePath = toZkPath + "/" + file;
           log.info("Copying zk node {}/{} to {}", fromZkPath, file, toZkFilePath);
-          byte[] data = zkClient.getData(root + fromZkPath + "/" + file, null, null, true);
+          byte[] data = zkClient.getData(root + fromZkPath + "/" + file, null, null);
           zkClient.makePath(toZkFilePath, data, true);
           if (copiedToZkPaths != null) copiedToZkPaths.add(toZkFilePath);
         } else {

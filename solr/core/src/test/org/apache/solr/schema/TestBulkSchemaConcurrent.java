@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudBridgeTestCase;
@@ -130,7 +131,7 @@ public class TestBulkSchemaConcurrent extends SolrCloudBridgeTestCase {
     payload = payload.replace("replaceDynamicCopyFieldDest", dynamicCopyFldDest);
     payload = payload.replace("myNewFieldTypeName", newFieldTypeName);
 
-    RestTestHarness publisher = randomRestTestHarness(random());
+    RestTestHarness publisher = randomRestTestHarness(LuceneTestCase.random());
     String response = publisher.post("/schema", SolrTestCaseJ4.json(payload));
     Map map = (Map) Utils.fromJSONString(response);
     Object errors = map.get("errors");
@@ -141,7 +142,7 @@ public class TestBulkSchemaConcurrent extends SolrCloudBridgeTestCase {
     System.out.println("Got map:" + map);
     //get another node
     Set<String> errmessages = new HashSet<>();
-    RestTestHarness harness = randomRestTestHarness(random());
+    RestTestHarness harness = randomRestTestHarness(LuceneTestCase.random());
 
     long startTime = System.nanoTime();
     long maxTimeoutMillis = TEST_NIGHTLY ? 15000 : 3000;
@@ -198,7 +199,7 @@ public class TestBulkSchemaConcurrent extends SolrCloudBridgeTestCase {
     payload = payload.replace("replaceDynamicField", dynamicFldName);
     payload = payload.replace("myNewFieldTypeName", newFieldTypeName);
 
-    RestTestHarness publisher = randomRestTestHarness(random());
+    RestTestHarness publisher = randomRestTestHarness(LuceneTestCase.random());
     String response = publisher.post("/schema", SolrTestCaseJ4.json(payload));
     Map map = (Map) Utils.fromJSONString(response);
     Object errors = map.get("errors");
@@ -209,10 +210,10 @@ public class TestBulkSchemaConcurrent extends SolrCloudBridgeTestCase {
 
     //get another node
     Set<String> errmessages = new HashSet<>();
-    RestTestHarness harness = randomRestTestHarness(random());
+    RestTestHarness harness = randomRestTestHarness(LuceneTestCase.random());
     try {
       long startTime = System.nanoTime();
-      long maxTimeoutMillis = 100000;
+      long maxTimeoutMillis = 10000;
       while (TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS) < maxTimeoutMillis) {
         errmessages.clear();
         Map m = getObj(harness, aField, "fields");
@@ -230,7 +231,7 @@ public class TestBulkSchemaConcurrent extends SolrCloudBridgeTestCase {
 
         if (errmessages.isEmpty()) break;
 
-        Thread.sleep(10);
+        Thread.sleep(150);
       }
     } finally {
       harness.close();
@@ -260,7 +261,7 @@ public class TestBulkSchemaConcurrent extends SolrCloudBridgeTestCase {
     payload = payload.replace("replaceDynamicCopyFieldDest",dynamicCopyFldDest);
     payload = payload.replace("myNewFieldTypeName", newFieldTypeName);
 
-    RestTestHarness publisher = randomRestTestHarness(random());
+    RestTestHarness publisher = randomRestTestHarness(LuceneTestCase.random());
     String response = publisher.post("/schema", SolrTestCaseJ4.json(payload));
     Map map = (Map) Utils.fromJSONString(response);
     Object errors = map.get("errors");
@@ -271,7 +272,7 @@ public class TestBulkSchemaConcurrent extends SolrCloudBridgeTestCase {
 
     //get another node
     Set<String> errmessages = new HashSet<>();
-    RestTestHarness harness = randomRestTestHarness(random());
+    RestTestHarness harness = randomRestTestHarness(LuceneTestCase.random());
     try {
       long startTime = System.nanoTime();
       long maxTimeoutMillis = 100000;

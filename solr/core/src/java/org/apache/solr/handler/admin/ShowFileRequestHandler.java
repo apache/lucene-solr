@@ -177,7 +177,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase
       ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
       params.set(CommonParams.WT, "raw");
       req.setParams(params);
-      ContentStreamBase content = new ContentStreamBase.ByteArrayStream(zkClient.getData(adminFile, null, null, true), adminFile);
+      ContentStreamBase content = new ContentStreamBase.ByteArrayStream(zkClient.getData(adminFile, null, null), adminFile);
       content.setContentType(req.getParams().get(USE_CONTENT_TYPE));
       
       rsp.add(RawResponseWriter.CONTENT, content);
@@ -305,7 +305,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase
     }
 
     // Make sure the file exists, is readable and is not a hidden file
-    if (!zkClient.exists(adminFile, true)) {
+    if (!zkClient.exists(adminFile)) {
       log.error("Can not find: {}", adminFile);
       rsp.setException(new SolrException(SolrException.ErrorCode.NOT_FOUND, "Can not find: "
           + adminFile));

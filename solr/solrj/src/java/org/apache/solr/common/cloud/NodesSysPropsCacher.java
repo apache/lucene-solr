@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.routing.PreferenceRule;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.CommonTestInjection;
@@ -79,6 +80,7 @@ public class NodesSysPropsCacher implements SolrCloseable {
               .map(r -> r.value)
               .collect(Collectors.toSet());
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           log.info("Error on parsing shards preference:{}", shardPreferences);
         }
       }
@@ -146,6 +148,7 @@ public class NodesSysPropsCacher implements SolrCloseable {
         cache.put(node, Collections.unmodifiableMap(props));
         break;
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         try {
           // 1, 4, 9
           int backOffTime = 1000 * (i+1);

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.DocCollection;
@@ -94,8 +95,8 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
     try {
       if (!operation.startsWith(CONFIGSETS_ACTION_PREFIX)) {
         throw new SolrException(ErrorCode.BAD_REQUEST,
-            "Operation does not contain proper prefix: " + operation
-                + " expected: " + CONFIGSETS_ACTION_PREFIX);
+                "Operation does not contain proper prefix: " + operation
+                        + " expected: " + CONFIGSETS_ACTION_PREFIX);
       }
       operation = operation.substring(CONFIGSETS_ACTION_PREFIX.length());
       log.info("OverseerConfigSetMessageHandler.processMessage : {}, {}", operation, message);
@@ -113,9 +114,13 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
           break;
         default:
           throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown operation:"
-              + operation);
+                  + operation);
       }
     } catch (Exception e) {
+      // interrupt not currently thrown here, but it could be - I
+      // usually like to use a utility everywhere for this reason
+      ParWork.propegateInterrupt(e);
+
       String configSetName = message.getStr(NAME);
 
       if (configSetName == null) {
@@ -223,7 +228,7 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
   private NamedList getConfigSetProperties(String path) throws IOException {
     byte[] oldPropsData = null;
     try {
-      oldPropsData = zkStateReader.getZkClient().getData(path, null, null, true);
+      oldPropsData = zkStateReader.getZkClient().getData(path, null, null);
     } catch (KeeperException.NoNodeException e) {
       log.info("no existing ConfigSet properties found");
     } catch (KeeperException | InterruptedException e) {
@@ -313,16 +318,16 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
 
     Set<String> copiedToZkPaths = new HashSet<String>();
     try {
-      configManager.copyConfigDir(baseConfigSetName, configSetName, copiedToZkPaths);
-      if (propertyData != null) {
-        try {
+      try {
+        configManager.copyConfigDir(baseConfigSetName, configSetName, copiedToZkPaths);
+        if (propertyData != null) {
           zkStateReader.getZkClient().makePath(
-              getPropertyPath(configSetName, propertyPath),
-              propertyData, CreateMode.PERSISTENT, null, false, true);
-        } catch (KeeperException | InterruptedException e) {
-          throw new IOException("Error writing new properties",
-              SolrZkClient.checkInterrupted(e));
+                  getPropertyPath(configSetName, propertyPath),
+                  propertyData, CreateMode.PERSISTENT, null, false, true);
         }
+      } catch (KeeperException | InterruptedException e) {
+        ParWork.propegateInterrupt(e);
+        throw new IOException("Error writing new properties", e);
       }
     } catch (Exception e) {
       // copying the config dir or writing the properties file may have failed.

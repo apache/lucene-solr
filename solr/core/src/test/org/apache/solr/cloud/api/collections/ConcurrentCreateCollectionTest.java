@@ -193,7 +193,7 @@ public class ConcurrentCreateCollectionTest extends SolrCloudTestCase {
      ***/
 
 
-    byte[] data = client.getZkStateReader().getZkClient().getData("/autoscaling.json", null, null, true);
+    byte[] data = client.getZkStateReader().getZkClient().getData("/autoscaling.json", null, null);
     if (log.isInfoEnabled()) {
       log.info("AUTOSCALE DATA: {}", new String(data, "UTF-8"));
     }

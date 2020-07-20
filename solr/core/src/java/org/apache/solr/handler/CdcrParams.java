@@ -16,6 +16,8 @@
  */
 package org.apache.solr.handler;
 
+import org.apache.solr.common.ParWork;
+
 import java.nio.charset.Charset;
 import java.util.Locale;
 
@@ -180,6 +182,7 @@ public class CdcrParams {
         try {
           return CdcrAction.valueOf(p.toUpperCase(Locale.ROOT));
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
         }
       }
       return null;
@@ -203,6 +206,7 @@ public class CdcrParams {
         try {
           return ProcessState.valueOf(new String(state, Charset.forName("UTF-8")).toUpperCase(Locale.ROOT));
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
         }
       }
       return null;
@@ -234,6 +238,7 @@ public class CdcrParams {
         try {
           return BufferState.valueOf(new String(state, Charset.forName("UTF-8")).toUpperCase(Locale.ROOT));
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
         }
       }
       return null;

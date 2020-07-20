@@ -342,6 +342,7 @@ public class V2HttpCall extends HttpSolrCall {
     try {
       api.call(this.solrReq, solrResp);
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       solrResp.setException(e);
     }
   }
@@ -356,6 +357,7 @@ public class V2HttpCall extends HttpSolrCall {
       try {
         api.call(solrReq, rsp);
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         rsp.setException(e);
       }
     }

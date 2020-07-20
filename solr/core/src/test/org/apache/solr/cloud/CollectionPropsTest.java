@@ -55,7 +55,7 @@ public class CollectionPropsTest extends SolrCloudTestCase {
 
     configureCluster(4)
         .withProperty(ZkStateReader.LEGACY_CLOUD, String.valueOf(useLegacyCloud))
-        .addConfig("conf", configset("cloud-minimal"))
+        .addConfig("conf", configset("cloud-minimal")).formatZk(true)
         .configure();
   }
 
@@ -172,7 +172,7 @@ public class CollectionPropsTest extends SolrCloudTestCase {
     }
     String collectionpropsInZk = null;
     try {
-      collectionpropsInZk = new String(cluster.getZkClient().getData("/collections/" + collectionName + "/collectionprops.json", null, null, true), StandardCharsets.UTF_8);
+      collectionpropsInZk = new String(cluster.getZkClient().getData("/collections/" + collectionName + "/collectionprops.json", null, null), StandardCharsets.UTF_8);
     } catch (Exception e) {
       collectionpropsInZk = "Could not get file from ZooKeeper: " + e.getMessage();
       log.error("Could not get collectionprops from ZooKeeper for assertion mesage", e);
@@ -212,7 +212,7 @@ public class CollectionPropsTest extends SolrCloudTestCase {
 
     // Delete the properties znode
     log.info("deleting props");
-    zkStateReader.getZkClient().delete("/collections/" + collectionName + "/collectionprops.json", -1, true);
+    zkStateReader.getZkClient().delete("/collections/" + collectionName + "/collectionprops.json", -1);
     assertEquals(1, watcher.waitForTrigger());
     final Map<String, String> props = watcher.getProps();
     assertTrue(props.toString(), props.isEmpty());

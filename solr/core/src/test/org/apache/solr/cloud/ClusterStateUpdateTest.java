@@ -42,7 +42,7 @@ public class ClusterStateUpdateTest extends SolrCloudTestCase  {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    configureCluster(3)
+    configureCluster(3).formatZk(true)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
   }

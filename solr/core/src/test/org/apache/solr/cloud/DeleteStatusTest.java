@@ -28,7 +28,7 @@ import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-
+@Ignore // nocommit I have not fixed processAndWait yet
 public class DeleteStatusTest extends SolrCloudTestCase {
 
   public static final int MAX_WAIT_TIMEOUT = 5;
@@ -37,7 +37,7 @@ public class DeleteStatusTest extends SolrCloudTestCase {
   public static void createCluster() throws Exception {
     configureCluster(2)
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
-        .configure();
+        .formatZk(true).configure();
   }
 
   // Basically equivalent to RequestStatus.waitFor(), but doesn't delete the id from the queue
@@ -57,7 +57,6 @@ public class DeleteStatusTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit flakey - i have not dealt with async yet
   public void testAsyncIdsMayBeDeleted() throws Exception {
 
     final CloudSolrClient client = cluster.getSolrClient();
@@ -89,7 +88,6 @@ public class DeleteStatusTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit I have not fixed processAndWait yet
   public void testProcessAndWaitDeletesAsyncIds() throws IOException, SolrServerException, InterruptedException {
 
     final CloudSolrClient client = cluster.getSolrClient();

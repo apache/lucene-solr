@@ -46,7 +46,7 @@ public class DeleteNodeTest extends SolrCloudTestCase {
     useFactory(null);
     configureCluster(6)
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-dynamic").resolve("conf"))
-        .configure();
+        .formatZk(true).configure();
   }
 
   protected String getSolrXml() {

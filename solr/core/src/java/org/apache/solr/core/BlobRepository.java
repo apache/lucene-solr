@@ -38,6 +38,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -140,6 +141,7 @@ public class BlobRepository {
           try {
             aBlob = blobCreator.call();
           } catch (Exception e) {
+            ParWork.propegateInterrupt(e);
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Blob loading failed: " + e.getMessage(), e);
           }
         }
@@ -227,6 +229,7 @@ public class BlobRepository {
         b = SimplePostTool.inputStreamToByteArray(is, MAX_JAR_SIZE);
       }
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       if (e instanceof SolrException) {
         throw (SolrException) e;
       } else {

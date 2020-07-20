@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
 import org.slf4j.Logger;
@@ -113,6 +114,7 @@ public class TransformerProvider {
         IOUtils.closeQuietly(src.getInputStream());
       }
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       log.error(getClass().getName(), "newTemplates", e);
       throw new IOException("Unable to initialize Templates '" + filename + "'", e);
     }

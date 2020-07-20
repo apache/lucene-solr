@@ -48,6 +48,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.routing.RequestReplicaListTransformerGenerator;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
@@ -186,6 +187,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         tupleStream = this.streamFactory.constructStream(streamExpression);
       }
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       // Catch exceptions that occur while the stream is being created. This will include streaming expression parse
       // rules.
       SolrException.log(log, e);

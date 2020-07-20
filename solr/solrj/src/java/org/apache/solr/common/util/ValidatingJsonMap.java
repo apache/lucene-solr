@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.solr.common.NavigableObject;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
@@ -336,6 +337,7 @@ public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
       try {
         map = fromJSON(is, includeLocation);
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error in JSON : " + resourceName, e);
       }
     } catch (IOException ioe) {

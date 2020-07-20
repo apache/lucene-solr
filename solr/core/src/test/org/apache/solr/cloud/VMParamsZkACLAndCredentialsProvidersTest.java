@@ -79,6 +79,7 @@ public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
     zkClient.close();
 
     zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
+    zkClient.start();
     zkClient.create("/protectedCreateNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
     zkClient.makePath("/protectedMakePathNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
 
@@ -88,6 +89,7 @@ public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
     clearSecuritySystemProperties();
 
     zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
+    zkClient.start();
     // Currently no credentials on ZK connection, because those same VM-params are used for adding ACLs, and here we want
     // no (or completely open) ACLs added. Therefore hack your way into being authorized for creating anyway
     zkClient.getSolrZooKeeper().addAuthInfo("digest", ("connectAndAllACLUsername:connectAndAllACLPassword")
@@ -115,6 +117,7 @@ public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
     useNoCredentials();
     
     SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
+    zkClient.start();
     try {
       doTest(zkClient,
           false, false, false, false, false,
@@ -129,6 +132,7 @@ public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
     useWrongCredentials();
     
     SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
+    zkClient.start();
     try {
       doTest(zkClient,
           false, false, false, false, false,
@@ -143,6 +147,7 @@ public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
     useAllCredentials();
 
     SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
+    zkClient.start();
     try {
       doTest(zkClient,
           true, true, true, true, true,
@@ -157,6 +162,7 @@ public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
     useReadonlyCredentials();
 
     SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
+    zkClient.start();
     try {
       doTest(zkClient,
           true, true, false, false, false,
@@ -179,7 +185,7 @@ public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
   
   protected static void doTest(SolrZkClient zkClient, String path, boolean getData, boolean list, boolean create, boolean setData, boolean delete) throws Exception {
     try {
-      zkClient.getData(path, null, null, false);
+      zkClient.getData(path, null, null);
       if (!getData) fail("NoAuthException expected ");
     } catch (NoAuthException nae) {
       if (getData) fail("No NoAuthException expected");
@@ -198,7 +204,7 @@ public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
       zkClient.create(path + "/subnode", null, CreateMode.PERSISTENT, false);
       if (!create) fail("NoAuthException expected ");
       else {
-        zkClient.delete(path + "/subnode", -1, false);
+        zkClient.delete(path + "/subnode", -1);
       }
     } catch (NoAuthException nae) {
       if (create) {
@@ -209,11 +215,12 @@ public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
     }
     
     try {
-      zkClient.makePath(path + "/subnode/subsubnode", false);
+      zkClient.mkdir(path + "/subnode");
+      zkClient.mkdir(path + "/subnode/subsubnode");
       if (!create) fail("NoAuthException expected ");
       else {
-        zkClient.delete(path + "/subnode/subsubnode", -1, false);
-        zkClient.delete(path + "/subnode", -1, false);
+        zkClient.delete(path + "/subnode/subsubnode", -1);
+        zkClient.delete(path + "/subnode", -1);
       }
     } catch (NoAuthException nae) {
       if (create) fail("No NoAuthException expected");
@@ -230,7 +237,7 @@ public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
 
     try {
       // Actually about the ACLs on /solr, but that is protected
-      zkClient.delete(path, -1, false);
+      zkClient.delete(path, -1);
       if (!delete) fail("NoAuthException expected ");
     } catch (NoAuthException nae) {
       if (delete) fail("No NoAuthException expected");

@@ -67,7 +67,7 @@ public class CollectionProperties {
   @SuppressWarnings("unchecked")
   public Map<String, String> getCollectionProperties(String collection) throws IOException {
     try {
-      return (Map<String, String>) Utils.fromJSON(client.getData(ZkStateReader.getCollectionPropsPath(collection), null, new Stat(), true));
+      return (Map<String, String>) Utils.fromJSON(client.getData(ZkStateReader.getCollectionPropsPath(collection), null, new Stat()));
     } catch (KeeperException.NoNodeException e) {
       return Collections.emptyMap();
     } catch (KeeperException | InterruptedException e) {
@@ -90,7 +90,7 @@ public class CollectionProperties {
     while (true) {
       Stat s = new Stat();
       try {
-        byte[] propData = client.getData(znodePath, null, s, true);
+        byte[] propData = client.getData(znodePath, null, s);
         if (propData != null) {
           Map<String, String> properties = (Map<String, String>) Utils.fromJSON(propData);
           if (propertyValue == null) {

@@ -20,6 +20,7 @@ package org.apache.solr.util.stats;
 import org.apache.http.config.Registry;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -61,6 +62,7 @@ public class InstrumentedPoolingHttpClientConnectionManager extends PoolingHttpC
     try {
       SolrMetricProducer.super.close();
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throw new RuntimeException("Exception closing.", e);
     }
   }

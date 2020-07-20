@@ -23,6 +23,8 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 
 import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.solr.common.ParWork;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.util.XMLErrorLogger;
 import org.apache.solr.core.SolrResourceLoader;
@@ -76,7 +78,7 @@ public class ZkSolrResourceLoader extends SolrResourceLoader implements Resource
     try {
 
       Stat stat = new Stat();
-      byte[] bytes = zkController.getZkClient().getData(file, null, stat, true);
+      byte[] bytes = zkController.getZkClient().getData(file, null, stat);
       if (bytes == null) {
 
         throw new SolrResourceNotFoundException("Can't find resource '" + resource
@@ -84,19 +86,16 @@ public class ZkSolrResourceLoader extends SolrResourceLoader implements Resource
                 + System.getProperty("user.dir"));
       }
       return new ZkByteArrayInputStream(bytes, stat);
-
-
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
-      throw new IOException("Error opening " + file, e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Interrupted while opening " + file, e);
     } catch (KeeperException.NoNodeException e) {
       throw new SolrResourceNotFoundException("Can't find resource '" + resource
               + "' in classpath or '" + configSetZkPath + "', cwd="
               + System.getProperty("user.dir"));
-    } catch (Exception e) {
-      throw new IOException("Error opening " + file, e);
+    } catch (KeeperException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error opening " + file, e);
     }
-
   }
 
   public static class ZkByteArrayInputStream extends ByteArrayInputStream{

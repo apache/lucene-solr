@@ -377,8 +377,8 @@ public class ZkTestServer implements Closeable {
           }
         }
       } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "", e);
+        ParWork.propegateInterrupt(e, true);
+        return;
       }
     }
 
@@ -461,15 +461,11 @@ public class ZkTestServer implements Closeable {
   }
 
   private void init(boolean solrFormat) throws Exception {
-
-
-
     chRootClient = new SolrZkClient(getZkHost(), AbstractZkTestCase.TIMEOUT, 30000);
+    chRootClient.start();
     if (solrFormat) {
       makeSolrZkNode();
     }
-
-
   }
 
   public String getZkHost() {
@@ -504,10 +500,10 @@ public class ZkTestServer implements Closeable {
    *           if an IO exception occurs
    */
   public void ensurePathExists(String path) throws IOException {
-    try (SolrZkClient client = new SolrZkClient(getZkHost(), 10000)) {
-      client.makePath(path, null, CreateMode.PERSISTENT, null, false, true, 0);
+    try {
+      chRootClient.makePath(path, null, CreateMode.PERSISTENT, null, false, true, 0);
     } catch (InterruptedException | KeeperException e) {
-      e.printStackTrace();
+      ParWork.propegateInterrupt(e);
       throw new IOException("Error checking path " + path, SolrZkClient.checkInterrupted(e));
     }
   }
@@ -638,19 +634,14 @@ public class ZkTestServer implements Closeable {
       writeZkMonitorFile();
     }
 
-
+    zooThread.interrupt();
     try (ParWork worker = new ParWork(this, true)) {
       worker.add("zkClients", timer, chRootClient);
       worker.add("zkServer", () -> {
         if (zkServer != null) zkServer.shutdown();
         return zkServer;
-      }, () -> {
-        if (zkServer != null) zkServer.shutdown();
-        return zkServer;
       });
     }
-
-
     startupWait = new CountDownLatch(1);
     if (zooThread != null) {
       ObjectReleaseTracker.release(zooThread);
@@ -863,7 +854,7 @@ public class ZkTestServer implements Closeable {
   }
 
   public void makeSolrZkNode() throws Exception {
-     chRootClient.mkDirs("/solr");
+     chRootClient.mkdir("/solr");
   }
 
   public void tryCleanSolrZkNode(SolrZkClient zkClient) throws Exception {
@@ -871,9 +862,7 @@ public class ZkTestServer implements Closeable {
   }
 
   void tryCleanPath(SolrZkClient zkClient, String path) throws Exception {
-    if (zkClient.exists(path, true)) {
-      zkClient.clean(path);
-    }
+    zkClient.clean(path);
   }
 
   protected void printLayout() throws Exception {

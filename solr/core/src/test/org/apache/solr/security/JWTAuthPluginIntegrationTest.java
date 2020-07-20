@@ -69,6 +69,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  */
 @SolrTestCaseJ4.SuppressSSL
 @Ignore // nocommit debug
+// JWTVerificationkeyResolver.resolveKey when the plugin is inited will make http calls that fail and sleep and retry
 public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   protected static final int NUM_SERVERS = 2;
   protected static final int NUM_SHARDS = 2;

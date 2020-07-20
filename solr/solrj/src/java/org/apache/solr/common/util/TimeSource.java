@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.solr.common.ParWork;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -193,6 +194,7 @@ public abstract class TimeSource {
           try {
             mul = Double.parseDouble(parts[1]);
           } catch (Exception e) {
+            ParWork.propegateInterrupt(e);
             log.warn("Invalid simTime specification, assuming multiplier==1.0: '{}'.", type);
           }
         }

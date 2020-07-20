@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.solr.client.solrj.io.ModelCache;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -104,6 +105,7 @@ public class ExportHandler extends SearchHandler {
     try {
       super.handleRequestBody(req, rsp);
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       rsp.setException(e);
     }
     String wt = req.getParams().get(CommonParams.WT, JSON);

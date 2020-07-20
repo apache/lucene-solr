@@ -16,12 +16,14 @@
  */
 package org.apache.solr.core;
 
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
@@ -54,22 +56,24 @@ public class ConfigSetProperties {
    */
   @SuppressWarnings({"rawtypes"})
   public static NamedList readFromResourceLoader(SolrResourceLoader loader, String name) {
-    InputStreamReader reader;
-    try {
-      reader = new InputStreamReader(loader.openResource(name), StandardCharsets.UTF_8);
+
+    try (InputStream resource = loader.openResource(name)) {
+      try (InputStreamReader reader = new InputStreamReader(resource, StandardCharsets.UTF_8)) {
+        try {
+          System.out.println("JSON:" + IOUtils.toString(reader));
+          return readFromInputStream(reader);
+        } finally {
+          ParWork.close(reader);
+        }
+      }
     } catch (SolrResourceNotFoundException ex) {
       if (log.isDebugEnabled()) {
         log.debug("Did not find ConfigSet properties, assuming default properties: {}", ex.getMessage());
       }
-      return null;
+      return new NamedList();
     } catch (Exception ex) {
+      ParWork.propegateInterrupt(ex);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to load reader for ConfigSet properties: " + name, ex);
-    }
-
-    try {
-      return readFromInputStream(reader);
-    } finally {
-      IOUtils.closeQuietly(reader);
     }
   }
 
@@ -77,12 +81,16 @@ public class ConfigSetProperties {
   public static NamedList readFromInputStream(InputStreamReader reader) {
     try {
       Object object = fromJSON(reader);
+      if (object == null) {
+        return new NamedList();
+      }
       if (!(object instanceof Map)) {
         final String objectClass = object == null ? "null" : object.getClass().getName();
         throw new SolrException(ErrorCode.SERVER_ERROR, "Invalid JSON type " + objectClass + ", expected Map");
       }
       return new NamedList((Map) object);
     } catch (Exception ex) {
+      ParWork.propegateInterrupt(ex);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to load ConfigSet properties", ex);
     } finally {
       IOUtils.closeQuietly(reader);

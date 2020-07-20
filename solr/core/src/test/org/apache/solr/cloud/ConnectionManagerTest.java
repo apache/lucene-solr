@@ -22,6 +22,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
@@ -41,7 +42,7 @@ import org.junit.Test;
 @Slow
 public class ConnectionManagerTest extends SolrTestCaseJ4 {
   
-  static final int TIMEOUT = TEST_NIGHTLY ? 3000 : 1000;
+  static final int TIMEOUT = TEST_NIGHTLY ? 3000 : 100;
   
   @Ignore
   public void testConnectionManager() throws Exception {
@@ -53,6 +54,7 @@ public class ConnectionManagerTest extends SolrTestCaseJ4 {
       server.run();
       
       SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT);
+      zkClient.start();
       ConnectionManager cm = zkClient.getConnectionManager();
       try {
         assertFalse(cm.isLikelyExpired());
@@ -82,6 +84,7 @@ public class ConnectionManagerTest extends SolrTestCaseJ4 {
       server.run();
 
       SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT);
+      zkClient.start();
       ConnectionManager cm = zkClient.getConnectionManager();
       try {
         assertFalse(cm.isLikelyExpired());
@@ -122,10 +125,12 @@ public class ConnectionManagerTest extends SolrTestCaseJ4 {
     ZkTestServer server = new ZkTestServer(zkDir);
     try {
       server.run();
-      
+
       MockZkClientConnectionStrategy strat = new MockZkClientConnectionStrategy();
       SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT, strat , null);
+      zkClient.start();
       ConnectionManager cm = zkClient.getConnectionManager();
+      cm.waitForConnected(5000);
       
       try {
         assertFalse(cm.isLikelyExpired());
@@ -133,7 +138,7 @@ public class ConnectionManagerTest extends SolrTestCaseJ4 {
                
         // reconnect -- should no longer be likely expired
         cm.process(new WatchedEvent(EventType.None, KeeperState.Expired, ""));
-        TimeOut timeout = new TimeOut(2, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+        TimeOut timeout = new TimeOut(5, TimeUnit.SECONDS, TimeSource.NANO_TIME);
         timeout.waitFor("should have thrown exception", () ->  strat.isExceptionThrow());
         assertTrue(strat.isExceptionThrow());
       } finally {
@@ -146,14 +151,14 @@ public class ConnectionManagerTest extends SolrTestCaseJ4 {
   }
   
   private static class MockZkClientConnectionStrategy extends DefaultConnectionStrategy {
-    int called = 0;
-    boolean exceptionThrown = false;
+    AtomicInteger called = new AtomicInteger();
+    volatile boolean exceptionThrown = false;
     
     @Override
     public void reconnect(final String serverAddress, final int zkClientTimeout,
         final Watcher watcher, final ZkUpdate updater) throws IOException, InterruptedException, TimeoutException {
       
-      if(called++ < 1) {
+      if(called.incrementAndGet() < 2) {
         exceptionThrown = true;
         throw new IOException("Testing");
       }

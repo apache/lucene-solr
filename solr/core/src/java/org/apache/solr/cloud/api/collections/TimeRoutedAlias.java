@@ -42,6 +42,7 @@ import java.util.stream.Collectors;
 
 import com.google.common.base.MoreObjects;
 import org.apache.solr.client.solrj.RoutedAliasTypes;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Aliases;
@@ -168,6 +169,7 @@ public class TimeRoutedAlias extends RoutedAlias {
         throw new SolrException(BAD_REQUEST, "duration must add to produce a time in the future");
       }
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throw new SolrException(BAD_REQUEST, "bad " + TimeRoutedAlias.ROUTER_INTERVAL + ", " + e, e);
     }
 
@@ -178,6 +180,7 @@ public class TimeRoutedAlias extends RoutedAlias {
           throw new SolrException(BAD_REQUEST, "duration must round or subtract to produce a time in the past");
         }
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         throw new SolrException(BAD_REQUEST, "bad " + TimeRoutedAlias.ROUTER_AUTO_DELETE_AGE + ", " + e, e);
       }
     }

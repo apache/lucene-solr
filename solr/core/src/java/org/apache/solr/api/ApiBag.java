@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.util.CommandOperation;
@@ -83,6 +84,7 @@ public class ApiBag {
     try {
       validateAndRegister(api, nameSubstitutes);
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       log.error("Unable to register plugin: {} with spec {} :", api.getClass().getName(), Utils.toJSONString(api.getSpec()), e);
       if (e instanceof RuntimeException) {
         throw (RuntimeException) e;
@@ -201,6 +203,7 @@ public class ApiBag {
       try {
         validators.put((String) cmd.getKey(), new JsonSchemaValidator((Map) cmd.getValue()));
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error in api spec", e);
       }
     }

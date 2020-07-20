@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
@@ -320,6 +321,7 @@ public class Rule {
         }
 
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         throw new IllegalArgumentException("Invalid condition : " + key + ":" + val, e);
       }
       this.val = expectedVal;

@@ -51,13 +51,13 @@ public class OverseerStatusCmd implements OverseerCollectionMessageHandler.Cmd {
     String leaderNode = OverseerTaskProcessor.getLeaderNode(zkStateReader.getZkClient());
     results.add("leader", leaderNode);
     Stat stat = new Stat();
-    zkStateReader.getZkClient().getData("/overseer/queue",null, stat, true);
+    zkStateReader.getZkClient().getData("/overseer/queue",null, stat);
     results.add("overseer_queue_size", stat.getNumChildren());
     stat = new Stat();
-    zkStateReader.getZkClient().getData("/overseer/queue-work",null, stat, true);
+    zkStateReader.getZkClient().getData("/overseer/queue-work",null, stat);
     results.add("overseer_work_queue_size", stat.getNumChildren());
     stat = new Stat();
-    zkStateReader.getZkClient().getData("/overseer/collection-queue-work",null, stat, true);
+    zkStateReader.getZkClient().getData("/overseer/collection-queue-work",null, stat);
     results.add("overseer_collection_queue_size", stat.getNumChildren());
 
     @SuppressWarnings({"rawtypes"})

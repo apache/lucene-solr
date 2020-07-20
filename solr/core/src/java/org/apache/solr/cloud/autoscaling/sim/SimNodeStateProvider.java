@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
@@ -252,6 +253,7 @@ public class SimNodeStateProvider implements NodeStateProvider, Closeable {
     try {
       stateManager.setData(ZkStateReader.ROLES, Utils.toJSON(roles), -1);
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throw new RuntimeException("Unexpected exception saving roles " + roles, e);
     }
   }

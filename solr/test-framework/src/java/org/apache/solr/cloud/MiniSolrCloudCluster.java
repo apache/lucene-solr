@@ -258,7 +258,7 @@ public class MiniSolrCloudCluster {
    MiniSolrCloudCluster(int numServers, Path baseDir, String solrXml, JettyConfig jettyConfig,
       ZkTestServer zkTestServer, Optional<String> securityJson) throws Exception {
      this(numServers, baseDir, solrXml, jettyConfig,
-         zkTestServer,securityJson, false, false);
+         zkTestServer,securityJson, false, true);
    }
   /**
    * Create a MiniSolrCloudCluster.
@@ -296,11 +296,12 @@ public class MiniSolrCloudCluster {
 
         this.zkServer.run(formatZk);
         SolrZkClient zkClient = this.zkServer.getZkClient();
+        zkClient.start();
         log.info("Using zkClient host={} to create solr.xml", zkClient.getZkServerAddress());
-        zkClient.mkDirs("/solr" + SOLR_XML, solrXml.getBytes(Charset.defaultCharset()));
+        zkClient.mkdir("/solr" + SOLR_XML, solrXml.getBytes(Charset.defaultCharset()));
 
         if (jettyConfig.sslConfig != null && jettyConfig.sslConfig.isSSLMode()) {
-          zkClient.mkDirs("/solr" + ZkStateReader.CLUSTER_PROPS,
+          zkClient.mkdir("/solr" + ZkStateReader.CLUSTER_PROPS,
                   URL_SCHEME_HTTPS.getBytes(StandardCharsets.UTF_8));
         }
         if (securityJson.isPresent()) { // configure Solr security
@@ -589,14 +590,20 @@ public class MiniSolrCloudCluster {
     return jetty;
   }
 
+  public void uploadConfigSet(Path configDir, String configName)
+          throws IOException, KeeperException, InterruptedException {
+    ZkConfigManager manager = new ZkConfigManager(zkServer.getZkClient(), "");
+    manager.uploadConfigDir(configDir, configName);
+  }
+
   /**
    * Upload a config set
    * @param configDir a path to the config set to upload
    * @param configName the name to give the configset
    */
-  public void uploadConfigSet(Path configDir, String configName)
+  public void uploadConfigSet(Path configDir, String configName, String rootZkNode)
       throws IOException, KeeperException, InterruptedException {
-    ZkConfigManager manager = new ZkConfigManager(zkServer.getZkClient(), "/solr");
+    ZkConfigManager manager = new ZkConfigManager(zkServer.getZkClient(), rootZkNode);
     manager.uploadConfigDir(configDir, configName);
   }
 

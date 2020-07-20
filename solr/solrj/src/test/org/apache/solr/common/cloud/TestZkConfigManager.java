@@ -68,7 +68,7 @@ public class TestZkConfigManager extends SolrTestCaseJ4 {
 
     zkServer.ensurePathExists("/solr");
 
-    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress("/solr"), 10000)) {
+    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress("/solr"), 10000).start()) {
 
       ZkConfigManager configManager = new ZkConfigManager(zkClient);
       assertEquals(0, configManager.listConfigs().size());
@@ -194,7 +194,7 @@ public class TestZkConfigManager extends SolrTestCaseJ4 {
     }
 
     // Client with no auth whatsoever can't even get the list of configs
-    try (SolrZkClient client = new SolrZkClient(zkServer.getZkAddress("/acl"), 10000)) {
+    try (SolrZkClient client = new SolrZkClient(zkServer.getZkAddress("/acl"), 10000).start()) {
       ZkConfigManager configManager = new ZkConfigManager(client);
       configManager.listConfigs();
       fail("Should have thrown an ACL exception");

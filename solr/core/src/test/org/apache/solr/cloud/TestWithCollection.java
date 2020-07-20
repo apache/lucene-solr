@@ -77,7 +77,7 @@ public class TestWithCollection extends SolrCloudTestCase {
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
 
-    if (zkClient().exists(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, true))  {
+    if (zkClient().exists(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH))  {
       zkClient().setData(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, "{}".getBytes(StandardCharsets.UTF_8), true);
     }
 

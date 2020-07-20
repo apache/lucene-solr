@@ -55,7 +55,7 @@ public class TestDynamicURP extends SolrCloudTestCase {
         .configure();
     SolrZkClient zkClient = cluster.getSolrClient().getZkStateReader().getZkClient();
     String path = ZkStateReader.CONFIGS_ZKNODE + "/conf/solrconfig.xml";
-    byte[] data = zkClient.getData(path, null, null, true);
+    byte[] data = zkClient.getData(path, null, null);
 
     String solrconfigStr = new String(data, StandardCharsets.UTF_8);
     zkClient.setData(path, solrconfigStr.replace("</config>",

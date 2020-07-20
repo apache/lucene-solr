@@ -41,6 +41,7 @@ import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpClientUtil.SocketFactoryRegistryProvider;
+import org.apache.solr.common.ParWork;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.CertificateUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -233,6 +234,7 @@ public class SSLTestConfig {
           }
           factory.setSslContext(builder.build());
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           throw new RuntimeException("ssl context init failure: " + e.getMessage(), e);
         }
         factory.setNeedClientAuth(isClientAuthMode());
@@ -248,6 +250,7 @@ public class SSLTestConfig {
     try {
       return CertificateUtils.getKeyStore(resource, "JKS", null, password);
     } catch (Exception ex) {
+      ParWork.propegateInterrupt(ex);
       throw new IllegalStateException("Unable to build KeyStore from resource: " + resource.getName(), ex);
     }
   }

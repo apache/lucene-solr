@@ -110,7 +110,7 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
     consumer.poll();
     // Wait for watcher being kicked off
     while (!consumer.isDirty()) {
-      Thread.sleep(250); // nocommit - dont poll
+      Thread.sleep(50); // nocommit - dont poll
     }
     // DQ still have elements in their queue, so we should not fetch elements path from Zk
     assertEquals(1, consumer.getZkStats().getQueueLength());
@@ -158,8 +158,6 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
 
     forceSessionExpire();
 
-    // Session expiry should have fired the watcher.
-    Thread.sleep(100);
     assertTrue(dq.isDirty());
     assertEquals(0, dq.watcherCount());
 
@@ -313,9 +311,9 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
   }
 
   protected String setupNewDistributedQueueZNode(String znodePath) throws Exception {
-    if (!zkClient.exists("/", true))
+    if (!zkClient.exists("/"))
       zkClient.makePath("/", false, true);
-    if (zkClient.exists(znodePath, true))
+    if (zkClient.exists(znodePath))
       zkClient.clean(znodePath);
     zkClient.makePath(znodePath, false, true);
     return znodePath;
@@ -336,13 +334,12 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
     zkServer = new ZkTestServer(createTempDir("zkData"));
     zkServer.run();
     System.setProperty("zkHost", zkServer.getZkAddress());
-    zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
+    zkClient = zkServer.getZkClient();
     assertTrue(zkClient.isConnected());
   }
 
   protected void closeZk() throws Exception {
     if (null != zkClient) {
-      zkClient.close();
       zkClient = null;
     }
     if (null != zkServer) {

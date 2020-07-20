@@ -147,6 +147,7 @@ public class TestCaffeineCache extends SolrTestCase {
   }
 
   @Test
+  @Nightly // sleepy test
   public void testMaxIdleTime() throws Exception {
     int IDLE_TIME_SEC = 1;
     CountDownLatch removed = new CountDownLatch(1);

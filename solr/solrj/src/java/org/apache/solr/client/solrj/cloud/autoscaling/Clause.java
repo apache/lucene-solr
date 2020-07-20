@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
@@ -396,6 +397,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
     } catch (IllegalArgumentException iae) {
       throw iae;
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throwExp(m, " Invalid tag : {0} "+ e.getMessage(), s);
       return null;
     }

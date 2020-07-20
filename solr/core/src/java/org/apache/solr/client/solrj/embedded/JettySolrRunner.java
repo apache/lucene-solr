@@ -151,8 +151,6 @@ public class JettySolrRunner implements Closeable {
 
   private String host;
 
-  private volatile boolean manageQtp;
-
   private volatile boolean started = false;
   private volatile String nodeName;
   private volatile boolean isClosed;
@@ -291,6 +289,7 @@ public class JettySolrRunner implements Closeable {
       try {
         proxy = new SocketProxy(0, config.sslConfig != null && config.sslConfig.isSSLMode());
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         throw new RuntimeException(e);
       }
       setProxyPort(proxy.getListenPort());
@@ -563,12 +562,13 @@ public class JettySolrRunner implements Closeable {
       }
 
       if (!server.isRunning()) {
-        if (config.portRetryTime > 0) {
-          retryOnPortBindFailure(config.portRetryTime, port);
-        } else {
+      //  if (config.portRetryTime > 0) {
+     //     retryOnPortBindFailure(config.portRetryTime, port);
+     //   } else {
           server.start();
-        }
-        boolean success = startLatch.await(5, TimeUnit.SECONDS);
+          boolean success = startLatch.await(15, TimeUnit.SECONDS);
+     //   }
+
         if (!success) {
           throw new RuntimeException("Timeout waiting for Jetty to start");
         }
@@ -617,37 +617,41 @@ public class JettySolrRunner implements Closeable {
               latch.countDown();
             } else {
               try {
-                Stat stat = zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE, this, true);
+                Stat stat = zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE, this);
                 if (stat != null) {
                   latch.countDown();
                 }
               } catch (KeeperException e) {
                 SolrException.log(log, e);
+                return;
               } catch (InterruptedException e) {
                 ParWork.propegateInterrupt(e);
+                return;
               }
             }
 
           }
         };
         try {
-          Stat stat = zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE, watcher, true);
+          Stat stat = zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE, watcher);
           if (stat == null) {
             log.info("Collections znode not found, waiting on latch");
             try {
-              boolean success = latch.await(1000, TimeUnit.MILLISECONDS);
+              boolean success = latch.await(10000, TimeUnit.MILLISECONDS);
               if (!success) {
                 log.warn("Timedout waiting to see {} node in zk", ZkStateReader.COLLECTIONS_ZKNODE);
               }
               log.info("Done waiting on latch");
             } catch (InterruptedException e) {
               ParWork.propegateInterrupt(e);
+              throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, e);
             }
           }
         } catch (KeeperException e) {
           throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, e);
         } catch (InterruptedException e) {
           ParWork.propegateInterrupt(e);
+          throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, e);
         }
 
         if (wait) {

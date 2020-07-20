@@ -61,6 +61,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.solr.analysis.TokenizerChain;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.luke.FieldFlag;
@@ -391,6 +392,7 @@ public class LukeRequestHandler extends RequestHandlerBase
                 fieldMap.add("index", "(unstored field)");
               }
             } catch (Exception ex) {
+              ParWork.propegateInterrupt(ex);
               log.warn("error reading field: {}", fieldName);
             }
           }

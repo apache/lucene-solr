@@ -17,6 +17,7 @@
 package org.apache.solr.core;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.ParWork;
 
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -62,6 +63,7 @@ public abstract class AbstractBadConfigTestBase extends SolrTestCaseJ4 {
       }
     }
     catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       if (matches(e, errString))
         return;
       throw e;

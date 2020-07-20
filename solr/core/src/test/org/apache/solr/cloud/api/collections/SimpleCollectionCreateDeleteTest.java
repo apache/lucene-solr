@@ -59,12 +59,12 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
     NamedList<Object> request = create.process(cloudClient).getResponse();
 
     if (request.get("success") != null) {
-      assertTrue(cloudClient.getZkStateReader().getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName, false));
+      assertTrue(cloudClient.getZkStateReader().getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName));
 
       CollectionAdminRequest delete = CollectionAdminRequest.deleteCollection(collectionName);
       cloudClient.request(delete);
 
-      assertFalse(cloudClient.getZkStateReader().getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName, false));
+      assertFalse(cloudClient.getZkStateReader().getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName));
       
       // currently, removing a collection does not wait for cores to be unloaded
       TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);

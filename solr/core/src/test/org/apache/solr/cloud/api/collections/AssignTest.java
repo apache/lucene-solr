@@ -82,7 +82,7 @@ public class AssignTest extends SolrTestCaseJ4 {
         return null;
       }
     );
-    when(zkClient.getData(anyString(), any(), any(), anyBoolean())).then(invocation ->
+    when(zkClient.getData(anyString(), any(), any())).then(invocation ->
         zkClientData.get(invocation.getArgument(0)));
     // TODO: fix this to be independent of ZK
     ZkDistribStateManager stateManager = new ZkDistribStateManager(zkClient);
@@ -99,7 +99,7 @@ public class AssignTest extends SolrTestCaseJ4 {
     Path zkDir = createTempDir("zkData");
     ZkTestServer server = new ZkTestServer(zkDir);
     Object fixedValue = new Object();
-    String[] collections = new String[]{"c1","c2","c3","c4","c5","c6","c7","c8","c9"};
+    String[] collections = new String[]{"c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9"};
     Map<String, ConcurrentHashMap<Integer, Object>> collectionUniqueIds = new HashMap<>();
     for (String c : collections) {
       collectionUniqueIds.put(c, new ConcurrentHashMap<>());
@@ -108,32 +108,34 @@ public class AssignTest extends SolrTestCaseJ4 {
     try {
       server.run(true);
 
-      try (SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), 10000)) {
-        assertTrue(zkClient.isConnected());
-        for (String c : collections) {
-          zkClient.makePath("/collections/" + c, true);
-        }
-        // TODO: fix this to be independent of ZK
-        ZkDistribStateManager stateManager = new ZkDistribStateManager(zkClient);
-        List<Future<?>> futures = new ArrayList<>();
-        AtomicInteger aid = new AtomicInteger();
-        for (int i = 0; i < 73; i++) {
-          futures.add(testExecutor.submit(() -> {
-            String collection = collections[LuceneTestCase.random().nextInt(collections.length)];
-            int id = aid.incrementAndGet();
-            Object val = collectionUniqueIds.get(collection).put(id, fixedValue);
-            if (val != null) {
-              fail("ZkController do not generate unique id for " + collection);
-            }
-          }));
-        }
-        for (Future<?> future : futures) {
-          future.get();
-        }
+      SolrZkClient zkClient = server.getZkClient();
+      assertTrue(zkClient.isConnected());
+      zkClient.mkdir("/collections b");
+      zkClient.mkdir("/collections");
+      for (String c : collections) {
+        zkClient.mkdir("/collections/" + c);
       }
+      // TODO: fix this to be independent of ZK
+      ZkDistribStateManager stateManager = new ZkDistribStateManager(zkClient);
+      List<Future<?>> futures = new ArrayList<>();
+      AtomicInteger aid = new AtomicInteger();
+      for (int i = 0; i < 73; i++) {
+        futures.add(testExecutor.submit(() -> {
+          String collection = collections[LuceneTestCase.random().nextInt(collections.length)];
+          int id = aid.incrementAndGet();
+          Object val = collectionUniqueIds.get(collection).put(id, fixedValue);
+          if (val != null) {
+            fail("ZkController do not generate unique id for " + collection);
+          }
+        }));
+      }
+      for (Future<?> future : futures) {
+        future.get();
+      }
+
       assertEquals(73, (long) collectionUniqueIds.values().stream()
-          .map(ConcurrentHashMap::size)
-          .reduce((m1, m2) -> m1 + m2).get());
+              .map(ConcurrentHashMap::size)
+              .reduce((m1, m2) -> m1 + m2).get());
     } finally {
       server.shutdown();
     }
@@ -146,7 +148,7 @@ public class AssignTest extends SolrTestCaseJ4 {
     Path zkDir = createTempDir("zkData");
     ZkTestServer server = new ZkTestServer(zkDir);
     server.run(true);
-    try (SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), 10000)) {
+    try (SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), 10000).start()) {
       // TODO: fix this to be independent of ZK
       ZkDistribStateManager stateManager = new ZkDistribStateManager(zkClient);
       Map<String, Slice> slices = new HashMap<>();

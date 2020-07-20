@@ -313,6 +313,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
 
   protected void printLayout() throws Exception {
     SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT);
+    zkClient.start();
     zkClient.printLayoutToStream(System.out);
     zkClient.close();
   }

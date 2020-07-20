@@ -142,8 +142,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
     public MockZKController(String zkAddress, String nodeName, List<Overseer> overseers) throws InterruptedException, TimeoutException, IOException, KeeperException {
       this.overseers = overseers;
       this.nodeName = nodeName;
-      zkClient = new SolrZkClient(zkAddress, TIMEOUT);
-
+      zkClient = server.getZkClient();
       ZkController.createClusterZkNodes(zkClient);
 
       zkStateReader = new ZkStateReader(zkClient);
@@ -157,7 +156,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
     private void deleteNode(final String path) {
 
       try {
-        zkClient.delete(path, -1, true);
+        zkClient.delete(path, -1);
       } catch (NoNodeException e) {
         // fine
         log.warn("cancelElection did not find election node to remove");
@@ -233,8 +232,8 @@ public class OverseerTest extends SolrTestCaseJ4 {
           }
 
           try {
-            zkClient.makePath("/collections/" + collection + "/leader_elect/"
-                + shardId + "/election", true);
+            zkClient.mkdir("/collections/" + collection + "/leader_elect/"
+                + shardId + "/election");
           } catch (NodeExistsException nee) {}
           ZkNodeProps props = new ZkNodeProps(ZkStateReader.BASE_URL_PROP,
               "http://" + nodeName + "/solr/", ZkStateReader.NODE_NAME_PROP,
@@ -1102,7 +1101,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
             );
         ZkDistributedQueue q = overseers.get(0).getStateUpdateQueue();
         q.offer(Utils.toJSON(m));
-        zkClient.makePath("/collections/perf" + i, true);
+        zkClient.mkdir("/collections/perf" + i);
       }
 
       for (int i = 0, j = 0, k = 0; i < MAX_STATE_CHANGES; i++, j++, k++) {
@@ -1332,7 +1331,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       q.offer(Utils.toJSON(m));
 
       Stat stat = new Stat();
-      byte[] data = zkClient.getData("/clusterstate.json", null, stat, true);
+      byte[] data = zkClient.getData("/clusterstate.json", null, stat);
       // Simulate an external modification
       zkClient.setData("/clusterstate.json", data, true);
 
@@ -1421,6 +1420,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
     if (zkClient == null) {
       SolrZkClient newZkClient = new SolrZkClient(server.getZkAddress(), AbstractZkTestCase.TIMEOUT);
+      newZkClient.start();
       Mockito.doAnswer(
           new Answer<Void>() {
             public Void answer(InvocationOnMock invocation) {

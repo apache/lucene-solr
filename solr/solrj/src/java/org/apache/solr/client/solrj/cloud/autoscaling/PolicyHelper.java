@@ -43,6 +43,7 @@ import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.common.ConditionalMapWriter;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -126,6 +127,7 @@ public class PolicyHelper {
       try {
         SESSION_WRAPPPER_REF.set(sessionWrapper = getSession(delegatingManager));
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "unable to get autoscaling policy session", e);
 
       }
@@ -365,6 +367,7 @@ public class PolicyHelper {
                   new StringWriter(), true));
         }
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         throw new RuntimeException(e);
       }
     }

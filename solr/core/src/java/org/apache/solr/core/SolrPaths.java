@@ -28,6 +28,7 @@ import java.nio.file.Paths;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 
+import org.apache.solr.common.ParWork;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -104,6 +105,7 @@ public final class SolrPaths {
           log.warn("Unable to create [{}] directory in SOLR_HOME [{}].  Features requiring this directory may fail.", USER_FILES_DIRECTORY, solrHome);
         }
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         log.warn("Unable to create [{}] directory in SOLR_HOME [{}].  Features requiring this directory may fail.",
             USER_FILES_DIRECTORY, solrHome, e);
       }

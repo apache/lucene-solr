@@ -430,6 +430,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
   private String getIndexPropertyFromPropFile(Directory dir) throws IOException {
     IndexInput input;
+    if (!Arrays.asList(dir.listAll()).contains(IndexFetcher.INDEX_PROPERTIES)) {
+      return dataDir + "index/";
+    }
     try {
       input = dir.openInput(IndexFetcher.INDEX_PROPERTIES, IOContext.DEFAULT);
     } catch (FileNotFoundException | NoSuchFileException e) {
@@ -1033,14 +1036,12 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       // cause the executor to stall so firstSearcher events won't fire
       // until after inform() has been called for all components.
       // searchExecutor must be single-threaded for this to work
-      searcherExecutor.submit(() -> {
-        latch.await();
-        return null;
-      });
+//      searcherExecutor.submit(() -> {
+//        boolean success = latch.await(250, TimeUnit.MILLISECONDS);
+//        return null;
+//      });
 
       this.updateHandler = initUpdateHandler(updateHandler);
-
-      initSearcher(prev);
 
       // Initialize the RestManager
       restManager = initRestManager();
@@ -1062,6 +1063,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       // and a SolrCoreAware MBean may have properties that depend on getting a Searcher
       // from the core.
       resourceLoader.inform(infoRegistry);
+
+      initSearcher(prev);
 
       // Allow the directory factory to report metrics
       if (directoryFactory instanceof SolrMetricProducer) {
@@ -2468,6 +2471,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       return returnSearcher ? newSearchHolder : null;
 
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       if (e instanceof RuntimeException) throw (RuntimeException) e;
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     } finally {
@@ -2505,20 +2509,20 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         }
 
 
-        if (!returnSearcher) {
-          if (waitSearcher != null) {
-            try {
-              waitSearcher[0].get(); // nocommit if we don't wait we dont know if it fails
-            } catch (Exception e) {
-              ParWork.propegateInterrupt(e);
-              throw new SolrException(ErrorCode.SERVER_ERROR, e);
-            }
-
-            if (registered.get() && currSearcherHolder != null) {
-              currSearcherHolder.decref();
-            }
-          }
-        }
+//        if (!returnSearcher) {
+//          if (waitSearcher != null) {
+//            try {
+//              waitSearcher[0].get(); // nocommit if we don't wait we dont know if it fails
+//            } catch (Exception e) {
+//              ParWork.propegateInterrupt(e);
+//              throw new SolrException(ErrorCode.SERVER_ERROR, e);
+//            }
+//
+//            if (registered.get() && currSearcherHolder != null) {
+//              currSearcherHolder.decref();
+//            }
+//          }
+//        }
       } finally {
         // we want to do this after we decrement onDeckSearchers so another thread
         // doesn't increment first and throw a false warning.
@@ -2603,6 +2607,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         }
         success = true;
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         newSearcherHolder.decref();
         // an exception in register() shouldn't be fatal.
         ParWork.propegateInterrupt(e);
@@ -3040,6 +3045,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       try {
         directoryFactory.remove(getIndexDir());
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         SolrException.log(log, "Failed to flag index dir for removal for core:" + name + " dir:" + getIndexDir());
       }
     }
@@ -3047,6 +3053,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       try {
         directoryFactory.remove(getDataDir(), true);
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         SolrException.log(log, "Failed to flag data dir for removal for core:" + name + " dir:" + getDataDir());
       }
     }
@@ -3182,6 +3189,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
               try {
                 listener.run();
               } catch (Exception e) {
+                ParWork.propegateInterrupt(e);
                 ParWork.propegateInterrupt("Error in listener ", e);
               }
             });
@@ -3205,7 +3213,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private static boolean checkStale(SolrZkClient zkClient, String zkPath, int currentVersion) {
     if (zkPath == null) return false;
     try {
-      Stat stat = zkClient.exists(zkPath, null, true);
+      Stat stat = zkClient.exists(zkPath, null);
       if (stat == null) {
         if (currentVersion > -1) return true;
         return false;

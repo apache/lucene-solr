@@ -77,12 +77,6 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
 
   }
 
-  private static SolrZkClient newSolrZkClient() {
-    assertNotNull(ZK_SERVER_ADDR);
-    // WTF is CloudConfigBuilder.DEFAULT_ZK_CLIENT_TIMEOUT private?
-    return new SolrZkClient(ZK_SERVER_ADDR, 15000);
-  }
-
   /** returns the true set of live nodes (currently in zk) as a sorted list */
   private static List<String> getTrueLiveNodesFromZk() throws Exception {
     ArrayList<String> result = new ArrayList<>(CLOUD_CLIENT.getZkStateReader().getZkClient().getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null, true));
@@ -205,7 +199,7 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
     public LiveNodeTrasher(String id, int numNodesToAdd) {
       this.id = id;
       this.numNodesToAdd = numNodesToAdd;
-      this.client = newSolrZkClient();
+      this.client = zkClient();
     }
     /** returns the number of nodes actually added w/o error */
     public Integer call() {
@@ -225,9 +219,7 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
     public int getNumAdded() {
       return numAdded;
     }
-    public void close() {
-      client.close();
-    }
+    public void close() { }
     public void stop() {
       running = false;
     }

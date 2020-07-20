@@ -20,6 +20,7 @@ package org.apache.solr.client.solrj.cloud.autoscaling;
 
 import java.util.ArrayList;
 
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 import org.apache.solr.common.util.StrUtils;
 
@@ -104,6 +105,7 @@ public class VariableBase implements Variable {
     try {
       return (Variable) implementation.getConstructor(Type.class).newInstance(t);
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throw new RuntimeException("Unable to instantiate: " + implementation.getName(), e);
     }
   }

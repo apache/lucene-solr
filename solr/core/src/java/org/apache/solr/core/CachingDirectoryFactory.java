@@ -335,6 +335,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
         try {
           removeDirectory(val);
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           log.error("closeCacheValue(CacheValue=" + cacheValue + ")", e);
 
           SolrException.log(log, "Error removing directory " + val.path + " before core close", e);
@@ -349,6 +350,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
         try {
           listener.postClose();
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           log.error("closeCacheValue(CacheValue=" + cacheValue + ")", e);
 
           ParWork.propegateInterrupt("Error executing postClose for directory", e);

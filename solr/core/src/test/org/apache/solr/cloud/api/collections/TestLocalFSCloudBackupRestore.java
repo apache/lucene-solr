@@ -65,7 +65,7 @@ public class TestLocalFSCloudBackupRestore extends AbstractCloudBackupRestoreTes
         .addConfig("confFaulty", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .withSolrXml(solrXml)
         .configure();
-    cluster.getZkClient().delete(ZkConfigManager.CONFIGS_ZKNODE + Path.SEPARATOR + "confFaulty" + Path.SEPARATOR + "solrconfig.xml", -1, true);
+    cluster.getZkClient().delete(ZkConfigManager.CONFIGS_ZKNODE + Path.SEPARATOR + "confFaulty" + Path.SEPARATOR + "solrconfig.xml", -1);
 
     boolean whitespacesInPath = random().nextBoolean();
     if (whitespacesInPath) {

@@ -28,6 +28,7 @@ import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.LinkedHashMapWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.MapWriterMap;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -410,6 +411,7 @@ public class Utils {
         try {
           return STANDARDOBJBUILDER.apply(getJSONParser(new StringReader(json))).getValStrict();
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Parse error : " + json, e);
         }
       }
@@ -656,13 +658,12 @@ public class Utils {
        *
        * @param zkClient        the zookeeper client
        * @param path            the path to the znode being read
-       * @param retryOnConnLoss whether to retry the operation automatically on connection loss, see {@link org.apache.solr.common.cloud.ZkCmdExecutor#retryOperation(ZkOperation)}
        * @return a Map if the node exists and contains valid JSON or an empty map if znode does not exist or has a null data
        */
       @SuppressWarnings({"unchecked"})
-      public static Map<String, Object> getJson (SolrZkClient zkClient, String path,boolean retryOnConnLoss) throws KeeperException, InterruptedException {
+      public static Map<String, Object> getJson (SolrZkClient zkClient, String path) throws KeeperException, InterruptedException {
         try {
-          byte[] bytes = zkClient.getData(path, null, null, retryOnConnLoss);
+          byte[] bytes = zkClient.getData(path, null, null);
           if (bytes != null && bytes.length > 0) {
             return (Map<String, Object>) Utils.fromJSON(bytes);
           }
@@ -775,6 +776,7 @@ public class Utils {
         try {
           return c.call();
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           logger.error(e.getMessage(), e);
         }
         return def;

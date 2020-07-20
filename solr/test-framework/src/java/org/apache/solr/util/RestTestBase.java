@@ -17,6 +17,7 @@
 package org.apache.solr.util;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.util.StrUtils;
@@ -145,6 +146,7 @@ abstract public class RestTestBase extends SolrJettyTestBase {
     } catch (XPathExpressionException e1) {
       throw new RuntimeException("XPath is invalid", e1);
     } catch (Exception e2) {
+      ParWork.propegateInterrupt(e2);
       SolrException.log(log, "REQUEST FAILED: " + request, e2);
       throw new RuntimeException("Exception during query", e2);
     }

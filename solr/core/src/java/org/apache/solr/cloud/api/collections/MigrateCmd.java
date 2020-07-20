@@ -27,6 +27,7 @@ import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
 import org.apache.solr.cloud.overseer.OverseerAction;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.CompositeIdRouter;
@@ -153,6 +154,7 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
         ocmh.commandMap.get(DELETE).call(zkStateReader.getClusterState(), new ZkNodeProps(props), results);
         clusterState = zkStateReader.getClusterState();
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         log.warn("Unable to clean up existing temporary collection: {}", tempSourceCollectionName, e);
       }
     }
@@ -375,6 +377,7 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
           NAME, tempSourceCollectionName);
       ocmh.commandMap.get(DELETE). call(zkStateReader.getClusterState(), new ZkNodeProps(props), results);
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       log.error("Unable to delete temporary collection: {}. Please remove it manually", tempSourceCollectionName, e);
     }
   }

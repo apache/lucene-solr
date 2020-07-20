@@ -32,6 +32,7 @@ import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 
@@ -150,6 +151,7 @@ public class ParallelListStream extends TupleStream implements Expressible {
           this.streams[streamIndex.getIndex()] = streamIndex.getTupleStream();
         }
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         throw new IOException(e);
       }
     } finally {

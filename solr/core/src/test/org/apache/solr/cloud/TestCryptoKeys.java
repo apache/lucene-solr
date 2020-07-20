@@ -71,7 +71,7 @@ public class TestCryptoKeys extends AbstractFullDistribZkTestBase {
     result = cryptoKeys.verify( pk1sig,samplefile);
     assertNull(result);
 
-    zk.makePath("/keys/exe", true);
+    zk.mkdir("/keys/exe");
     zk.create("/keys/exe/pubk1.der", readFile("cryptokeys/pubk1.der"), CreateMode.PERSISTENT, true);
     zk.create("/keys/exe/pubk2.der", readFile("cryptokeys/pubk2.der"), CreateMode.PERSISTENT, true);
     Map<String, byte[]> trustedKeys = CloudUtil.getTrustedKeys(zk, "exe");

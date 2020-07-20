@@ -215,7 +215,7 @@ public class UpdateShardHandler implements SolrInfoBean {
 
   public void close() {
     if (recoveryExecutor != null) {
-      recoveryExecutor.shutdown();
+      recoveryExecutor.shutdownNow();
     }
 
     try (ParWork closer = new ParWork(this, true)) {

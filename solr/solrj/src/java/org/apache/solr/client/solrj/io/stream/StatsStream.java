@@ -44,6 +44,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.Metric;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -227,6 +228,7 @@ public class StatsStream extends TupleStream implements Expressible  {
         NamedList response = cloudSolrClient.request(request, collection);
         getTuples(response, metrics);
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         throw new IOException(e);
       }
     } else {
@@ -244,6 +246,7 @@ public class StatsStream extends TupleStream implements Expressible  {
         NamedList response = client.request(request);
         getTuples(response, metrics);
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         throw new IOException(e);
       }
     }

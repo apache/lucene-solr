@@ -37,6 +37,7 @@ import java.util.Set;
 import com.google.common.base.Strings;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.logging.LogWatcherConfig;
@@ -126,6 +127,7 @@ public class SolrXmlConfig {
     } catch (SolrException exc) {
       throw exc;
     } catch (Exception exc) {
+      ParWork.propegateInterrupt(exc);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Could not load SOLR configuration", exc);
     }
@@ -157,6 +159,7 @@ public class SolrXmlConfig {
     } catch (SolrException exc) {
       throw exc;
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
   }

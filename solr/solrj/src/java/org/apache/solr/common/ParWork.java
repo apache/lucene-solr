@@ -739,7 +739,7 @@ public class ParWork implements Closeable {
 
   public static void close(Object object) {
     try (ParWork dw = new ParWork(object)) {
-      dw.add(object);
+      dw.add(object != null ? object.getClass().getSimpleName() : "null", object);
     }
   }
 

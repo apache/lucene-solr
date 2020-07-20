@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
@@ -40,6 +41,7 @@ import static org.apache.solr.cloud.MetricsHistoryIntegrationTest.createHistoryR
  * We test that the scheduled calls to /admin/metrics use PKI auth and therefore succeeds
  */
 @LogLevel("org.apache.solr.handler.admin=DEBUG,org.apache.solr.security=DEBUG")
+@LuceneTestCase.Nightly // this stuff is still a little slow
 public class MetricsHistoryWithAuthIntegrationTest extends SolrCloudTestCase {
 
   private static SolrCloudManager cloudManager;

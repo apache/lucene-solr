@@ -42,6 +42,7 @@ import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.NotEmptyException;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.cloud.ActionThrottle;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -609,6 +610,7 @@ public class SimDistribStateManager implements DistribStateManager {
             throw new Exception("Unknown Op: " + op);
           }
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           res.add(new OpResult.ErrorResult(KeeperException.Code.APIERROR.intValue()));
         }
       }
@@ -642,6 +644,7 @@ public class SimDistribStateManager implements DistribStateManager {
     try {
       makePath(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH);
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       // ignore
     }
     setData(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(cfg), -1);

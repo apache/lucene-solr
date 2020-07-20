@@ -50,7 +50,7 @@ public abstract class MultiSolrCloudTestCase extends SolrTestCaseJ4 {
         final MiniSolrCloudCluster cluster = new SolrCloudTestCase
             .Builder(nodesPerCluster(clusterId), createTempDir())
             .addConfig("conf", configset("cloud-dynamic"))
-            .build();
+            .formatZk(true).build();
         return cluster;
       } catch (Exception e) {
         throw new RuntimeException(e);

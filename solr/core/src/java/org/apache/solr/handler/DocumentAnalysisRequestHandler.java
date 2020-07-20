@@ -31,6 +31,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.client.solrj.request.DocumentAnalysisRequest;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.AnalysisParams;
@@ -218,6 +219,7 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
             ? getQueryTokenSet(queryValue, fieldType.getQueryAnalyzer())
             : EMPTY_BYTES_SET;
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           // ignore analysis exceptions since we are applying arbitrary text to all fields
           termsToMatch = EMPTY_BYTES_SET;
         }
@@ -227,6 +229,7 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
             AnalysisContext analysisContext = new AnalysisContext(fieldType, fieldType.getQueryAnalyzer(), EMPTY_BYTES_SET);
             fieldTokens.add("query", analyzeValue(request.getQuery(), analysisContext));
           } catch (Exception e) {
+            ParWork.propegateInterrupt(e);
             // ignore analysis exceptions since we are applying arbitrary text to all fields
           }
         }

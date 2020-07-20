@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 import java.lang.invoke.MethodHandles;
 
 import org.apache.solr.cloud.api.collections.CreateCollectionCmd;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -65,12 +66,7 @@ public class CloudConfigSetService extends ConfigSetService {
 
   @Override
   protected NamedList loadConfigSetFlags(CoreDescriptor cd, SolrResourceLoader loader) {
-    try {
       return ConfigSetProperties.readFromResourceLoader(loader, ".");
-    } catch (Exception ex) {
-      log.debug("No configSet flags", ex);
-      return null;
-    }
   }
 
   @Override
@@ -78,7 +74,7 @@ public class CloudConfigSetService extends ConfigSetService {
     String zkPath = ZkConfigManager.CONFIGS_ZKNODE + "/" + configSet + "/" + schemaFile;
     Stat stat;
     try {
-      stat = zkController.getZkClient().exists(zkPath, null, true);
+      stat = zkController.getZkClient().exists(zkPath, null);
     } catch (KeeperException e) {
       log.warn("Unexpected exception when getting modification time of {}", zkPath, e);
       return null; // debatable; we'll see an error soon if there's a real problem

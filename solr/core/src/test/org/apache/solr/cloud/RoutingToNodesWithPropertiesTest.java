@@ -49,12 +49,14 @@ import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.cloud.rule.ImplicitSnitch.SYSPROP;
 
+@Ignore // nocommit - this requires a slow replica placement policy
 public class RoutingToNodesWithPropertiesTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String PROP_NAME = SYSPROP + "zone";

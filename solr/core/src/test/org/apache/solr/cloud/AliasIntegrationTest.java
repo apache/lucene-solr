@@ -114,7 +114,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     assertEquals("collection1meta", aliases.get(0));
     assertEquals("collection2meta", aliases.get(1));
     //ensure we have the back-compat format in ZK:
-    final byte[] rawBytes = zkStateReader.getZkClient().getData(ALIASES, null, null, true);
+    final byte[] rawBytes = zkStateReader.getZkClient().getData(ALIASES, null, null);
     //noinspection unchecked
     assertTrue(((Map<String,Map<String,?>>)Utils.fromJSON(rawBytes)).get("collection").get("meta1") instanceof String);
 
@@ -188,6 +188,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     // now check that an independently constructed ZkStateReader can see what we've done.
     // i.e. the data is really in zookeeper
     try (SolrZkClient zkClient = new SolrZkClient(cluster.getZkServer().getZkAddress(), 30000)) {
+      zkClient.start();
       ZkController.createClusterZkNodes(zkClient);
       try (ZkStateReader zkStateReader2 = new ZkStateReader(zkClient)) {
         zkStateReader2.createClusterStateWatchersAndUpdate();

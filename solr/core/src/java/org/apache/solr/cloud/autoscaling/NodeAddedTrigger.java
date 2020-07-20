@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -100,6 +101,7 @@ public class NodeAddedTrigger extends TriggerBase {
     } catch (NoSuchElementException e) {
       // ignore
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       log.warn("Exception retrieving nodeLost markers", e);
     }
   }

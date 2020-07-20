@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -145,7 +146,7 @@ public  class LeaderElector {
           if (oldWatcher != null) oldWatcher.cancel();
           zkClient.getData(watchedNode,
                   watcher = new ElectionWatcher(context.leaderSeqPath, watchedNode, getSeq(context.leaderSeqPath), context),
-                  null, true);
+                  null);
           if (log.isDebugEnabled()) log.debug("Watching path {} to know if I could be the leader", watchedNode);
         } catch (KeeperException.SessionExpiredException e) {
           log.error("ZooKeeper session has expired");
@@ -323,7 +324,11 @@ public  class LeaderElector {
       if (canceled) {
         log.debug("This watcher is not active anymore {}", myNode);
         try {
-          zkClient.delete(myNode, -1, true);
+          zkClient.delete(myNode, -1);
+        } catch (AlreadyClosedException | InterruptedException e) {
+          ParWork.propegateInterrupt(e);
+          log.info("Already shutting down");
+          return;
         } catch (KeeperException.NoNodeException nne) {
           log.info("No znode found to delete at {}", myNode);
           // expected . don't do anything
@@ -336,7 +341,8 @@ public  class LeaderElector {
       try {
         // am I the next leader?
         checkIfIamLeader(context, true);
-      } catch (AlreadyClosedException e) {
+      } catch (AlreadyClosedException | InterruptedException e) {
+        ParWork.propegateInterrupt(e);
         log.info("Already shutting down");
         return;
       }  catch (Exception e) {
@@ -349,24 +355,7 @@ public  class LeaderElector {
   /**
    * Set up any ZooKeeper nodes needed for leader election.
    */
-  public void setup(final ElectionContext context) throws InterruptedException,
-          KeeperException {
-    // nocommit - already created
-    String electZKPath = context.electionPath + LeaderElector.ELECTION_NODE;
-
-    if (context instanceof OverseerElectionContext) {
-      //zkCmdExecutor.ensureExists(electZKPath, zkClient);
-    } else {
-      // we use 2 param so that replica won't create /collection/{collection} if it doesn't exist
-      ShardLeaderElectionContext slec = (ShardLeaderElectionContext) context;
-
-      ZkCmdExecutor zkCmdExecutor = new ZkCmdExecutor(3000);
-      zkCmdExecutor.ensureExists(electZKPath, (byte[])null, CreateMode.PERSISTENT, zkClient, 2);
-      zkCmdExecutor.ensureExists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + slec.collection + "/"
-              + ZkStateReader.SHARD_LEADERS_ZKNODE + (slec.shardId != null ? ("/" + slec.shardId)
-              : ""), (byte[])null, CreateMode.PERSISTENT, zkClient, 2);
-    }
-
+  public void setup(final ElectionContext context) {
     this.context = context;
   }
 
@@ -374,10 +363,7 @@ public  class LeaderElector {
    * Sort n string sequence list.
    */
   public static void sortSeqs(List<String> seqs) {
-    Collections.sort(seqs, (o1, o2) -> {
-      int i = getSeq(o1) - getSeq(o2);
-      return i == 0 ? o1.compareTo(o2) : i;
-    });
+    Collections.sort(seqs, Comparator.comparingInt(LeaderElector::getSeq).thenComparing(o -> o));
   }
 
   void retryElection(ElectionContext context, boolean joinAtHead) throws KeeperException, InterruptedException, IOException {

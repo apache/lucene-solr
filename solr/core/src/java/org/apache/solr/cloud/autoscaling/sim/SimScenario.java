@@ -66,6 +66,7 @@ import org.apache.solr.cloud.autoscaling.AutoScalingHandler;
 import org.apache.solr.cloud.autoscaling.TriggerEvent;
 import org.apache.solr.cloud.autoscaling.TriggerListener;
 import org.apache.solr.cloud.autoscaling.TriggerListenerBase;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
@@ -247,6 +248,7 @@ public class SimScenario implements AutoCloseable {
         try {
           return SimAction.valueOf(str.toUpperCase(Locale.ROOT));
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           return null;
         }
       } else {
@@ -471,6 +473,7 @@ public class SimScenario implements AutoCloseable {
               AutoScalingConfig autoscalingConfig = scenario.cluster.getDistribStateManager().getAutoScalingConfig();
               return autoscalingConfig.getZkVersion() == scenario.cluster.getOverseerTriggerThread().getProcessedZnodeVersion();
             } catch (Exception e) {
+              ParWork.propegateInterrupt(e);
               throw new RuntimeException("FAILED", e);
             }
           });
@@ -574,6 +577,7 @@ public class SimScenario implements AutoCloseable {
         try {
           scenario.cluster.request(operation);
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           log.error("Aborting - error executing suggestion {}", suggestion, e);
           break;
         }
@@ -855,6 +859,7 @@ public class SimScenario implements AutoCloseable {
         try {
           scenario.cluster.getSimClusterStateProvider().simSetShardValue(collection, shard, k, v, delta, divide);
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           throw new RuntimeException("Error setting shard value", e);
         }
       });
@@ -889,6 +894,7 @@ public class SimScenario implements AutoCloseable {
         try {
           return Condition.valueOf(p.toUpperCase(Locale.ROOT));
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           return null;
         }
       }

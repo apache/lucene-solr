@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 import com.google.common.collect.Sets;
 import org.apache.solr.client.solrj.RoutedAliasTypes;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Aliases;
@@ -264,6 +265,7 @@ public abstract class RoutedAlias {
     } catch (SolrException e) {
       throw e;
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
   }
@@ -362,6 +364,7 @@ public abstract class RoutedAlias {
         try {
           ensureCollection(targetCollectionDesc.creationCollection, coreContainer);
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           log.error("Async creation of a collection for routed Alias {} failed!", this.getAliasName(), e);
         }
       }, core);
@@ -406,6 +409,7 @@ public abstract class RoutedAlias {
     } catch (RuntimeException e) {
       throw e;
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
   }

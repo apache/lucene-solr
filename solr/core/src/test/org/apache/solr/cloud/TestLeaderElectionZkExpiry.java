@@ -72,6 +72,7 @@ public class TestLeaderElectionZkExpiry extends SolrTestCaseJ4 {
         killer.join();
         long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(15, TimeUnit.SECONDS);
         zc = new SolrZkClient(server.getZkAddress(), 10000);
+        zc.start();
         boolean found = false;
         while (System.nanoTime() < timeout) {
           try {

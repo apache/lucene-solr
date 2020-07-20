@@ -26,6 +26,7 @@ import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,6 +52,7 @@ public class ExceptionStream extends TupleStream {
     try {
       stream.open();
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       this.openException = e;
     }
   }
@@ -65,6 +67,7 @@ public class ExceptionStream extends TupleStream {
     try {
       return stream.read();
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       SolrException.log(log, e);
       return Tuple.EXCEPTION(e.getMessage(), true);
     }

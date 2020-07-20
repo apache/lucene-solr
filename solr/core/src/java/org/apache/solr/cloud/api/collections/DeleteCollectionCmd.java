@@ -98,7 +98,6 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
     final boolean deleteHistory = message.getBool(CoreAdminParams.DELETE_METRICS_HISTORY, true);
 
-    boolean removeCounterNode = true;
     try {
       // Remove the snapshots meta-data for this collection in ZK. Deleting actual index files
       // should be taken care of as part of collection delete operation.
@@ -106,7 +105,7 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       SolrSnapshotManager.cleanupCollectionLevelSnapshots(zkClient, collection);
 
       if (zkStateReader.getClusterState().getCollectionOrNull(collection) == null) {
-        if (zkStateReader.getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection, true)) {
+        if (zkStateReader.getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection)) {
           // if the collection is not in the clusterstate, but is listed in zk, do nothing, it will just
           // be removed in the finally - we cannot continue, because the below code will error if the collection
           // is not in the clusterstate
@@ -127,7 +126,9 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       params.set(CoreAdminParams.DELETE_DATA_DIR, true);
       params.set(CoreAdminParams.DELETE_METRICS_HISTORY, deleteHistory);
 
-      String asyncId = message.getStr(ASYNC);
+
+      // nocommit
+      //String asyncId = message.getStr(ASYNC);
 
       Set<String> okayExceptions = new HashSet<>(1);
       okayExceptions.add(NonExistentCoreException.class.getName());
@@ -135,17 +136,9 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
       @SuppressWarnings({"unchecked"})
       List<Replica> failedReplicas = ocmh.collectionCmd(internalMsg, params, results, null, null, okayExceptions);
-      for (Replica failedReplica : failedReplicas) {
-        boolean isSharedFS = failedReplica.getBool(ZkStateReader.SHARED_STORAGE_PROP, false) && failedReplica.get("dataDir") != null;
-        if (isSharedFS) {
-          // if the replica use a shared FS and it did not receive the unload message, then counter node should not be removed
-          // because when a new collection with same name is created, new replicas may reuse the old dataDir
-          removeCounterNode = false;
-          break;
-        }
-      }
 
     } finally {
+      log.info("Send DELETE operation to Overseer collection={}", collection);
       ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, DELETE.toLower(), NAME, collection);
       ocmh.overseer.offerStateUpdate(Utils.toJSON(m));
 
