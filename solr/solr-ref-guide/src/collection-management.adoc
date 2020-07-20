@@ -700,7 +700,7 @@ source collection.
 
 There's a number of optional parameters that determine the target collection layout. If they
 are not specified in the request then their values are copied from the source collection.
-The following parameters are currently supported (described in details in the <<create,CREATE collection>> section):
+The following parameters are currently supported (described in detail in the <<create,CREATE collection>> section):
 `numShards`, `replicationFactor`, `nrtReplicas`, `tlogReplicas`, `pullReplicas`,
 `shards`, `policy`, `createNodeSet`, `createNodeSet.shuffle`, `router.*`.
 
@@ -1257,7 +1257,7 @@ Request ID to track this action which will be <<collections-api.adoc#asynchronou
 The name of a repository to be used for the backup. If no repository is specified then the local filesystem repository will be used automatically.
 
 There's a number of optional parameters that determine the target collection layout.
-The following parameters are currently supported (described in details in the <<create,CREATE collection>> section):
+The following parameters are currently supported (described in detail in the <<create,CREATE collection>> section):
 `createNodeSet`, `createNodeSet.shuffle`.
 
 Note: for `createNodeSet` the special value of `EMPTY` is not allowed with this command.
