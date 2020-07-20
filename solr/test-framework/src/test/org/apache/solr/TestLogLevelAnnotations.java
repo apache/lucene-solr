@@ -113,6 +113,8 @@ public class TestLogLevelAnnotations extends SolrTestCaseJ4 {
     assertEquals(DEFAULT_LOG_LEVEL, LogManager.getLogger(bogus_logger_prefix).getLevel());
     assertEquals(Level.ERROR, LogManager.getLogger(bogus_logger_prefix + ".ClassLogLevel").getLevel());
     assertEquals(Level.WARN, LogManager.getLogger(bogus_logger_prefix + ".MethodLogLevel").getLevel());
+    LogLevel.Configurer.restoreLogLevels(SolrTestCaseJ4.savedClassLogLevels);
+    savedClassLogLevels.clear();
   }
   
   public void testClassLogLevels() {
