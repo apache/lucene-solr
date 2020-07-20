@@ -98,7 +98,7 @@ public class HdfsBackupRepository implements BackupRepository {
     }
 
     try {
-      this.fileSystem = FileSystem.get(this.baseHdfsPath.toUri(), this.hdfsConfig);
+      this.fileSystem = FileSystem.newInstance(this.baseHdfsPath.toUri(), this.hdfsConfig);
     } catch (IOException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }
