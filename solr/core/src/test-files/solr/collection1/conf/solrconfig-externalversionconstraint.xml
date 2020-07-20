@@ -109,6 +109,15 @@
     <processor class="solr.RunUpdateProcessorFactory" />
   </updateRequestProcessorChain>
 
+  <updateRequestProcessorChain name="external-version-failhard-allow-same-version">
+    <processor class="solr.DocBasedVersionConstraintsProcessorFactory">
+      <str name="versionField">my_version_l</str>
+      <str name="deleteVersionParam">del_version</str>
+      <bool name="rejectSameVersion">false</bool>
+    </processor>
+    <processor class="solr.RunUpdateProcessorFactory" />
+  </updateRequestProcessorChain>
+
   <updateRequestProcessorChain name="external-version-failhard-multiple">
     <!-- Uses the default behavior of failing with a 409 version conflict
          when the external version is too low.

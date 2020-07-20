@@ -87,6 +87,10 @@ import org.slf4j.LoggerFactory;
  *     <code>false</code>, but if set to <code>true</code> allows any documents written *before*
  *     this feature is enabled and which are missing the versionField to be overwritten.
  *   </li>
+ *   <li><code>rejectSameVersion</code> - This boolean parameter defaults to
+ *     <code>true</code>, but if set to <code>false</code> the update will be rejected only if
+ *     the value in the new document is less than the value in the existing document.
+ *   </li>
  *   <li><code>tombstoneConfig</code> - a list of field names to values to add to the
  *   created tombstone document. In general is not a good idea to populate tombsone documents
  *   with anything other than the minimum required fields so that it doean't match queries</li>
@@ -101,6 +105,7 @@ public class DocBasedVersionConstraintsProcessorFactory extends UpdateRequestPro
   private List<String> deleteVersionParamNames = Collections.emptyList();
   private boolean useFieldCache;
   private boolean supportMissingVersionOnOldDocs = false;
+  private boolean rejectSameVersion = true;
   private NamedList<Object> tombstoneConfig;
 
   @SuppressWarnings("unchecked")
@@ -152,7 +157,17 @@ public class DocBasedVersionConstraintsProcessorFactory extends UpdateRequestPro
       }
       supportMissingVersionOnOldDocs = ((Boolean)tmp).booleanValue();
     }
-    
+
+    // optional - defaults to true
+    tmp = args.remove("rejectSameVersion");
+    if (null != tmp) {
+      if (! (tmp instanceof Boolean) ) {
+        throw new SolrException(SERVER_ERROR,
+                                "'rejectSameVersion' must be configured as a <bool>");
+      }
+      rejectSameVersion = (Boolean) tmp;
+    }
+
     tmp = args.remove("tombstoneConfig");
     if (null != tmp) {
       if (! (tmp instanceof NamedList) ) {
@@ -173,6 +188,7 @@ public class DocBasedVersionConstraintsProcessorFactory extends UpdateRequestPro
                                                    ignoreOldUpdates,
                                                    deleteVersionParamNames,
                                                    supportMissingVersionOnOldDocs,
+                                                   rejectSameVersion,
                                                    useFieldCache,
                                                    tombstoneConfig,
                                                    req, next);

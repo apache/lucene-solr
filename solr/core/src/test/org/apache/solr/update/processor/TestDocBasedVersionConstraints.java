@@ -374,6 +374,34 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
     assertJQ(req("q","+id:aaa +name:a1"), "/response/numFound==0"); //Delete allowed
   }
 
+  public void testAllowSameVersion() throws Exception {
+    updateJ(jsonAdd(sdoc("id", "aaa", "name", "a1", "my_version_l", "1001")),
+      params("update.chain","external-version-failhard-allow-same-version"));
+    assertU(commit());
+
+    // Fail on a lower version
+    SolrException ex = expectThrows(SolrException.class, () -> {
+      updateJ(jsonAdd(sdoc("id", "aaa", "name", "X1", "my_version_l", "1000")),
+          params("update.chain","external-version-failhard-allow-same-version"));
+    });
+    assertEquals(409, ex.code());
+
+    // Verify we are still unchanged
+    assertU(commit());
+    assertJQ(req("q","+id:aaa +name:a1"), "/response/numFound==1");
+
+    // Update on the exact same version
+    updateJ(jsonAdd(sdoc("id", "aaa", "name", "Y1", "my_version_l", "1001")),
+    params("update.chain","external-version-failhard-allow-same-version"));
+    assertU(commit());
+    assertJQ(req("q","+id:aaa +name:Y1"), "/response/numFound==1");
+
+    // Update on a newer version
+    updateJ(jsonAdd(sdoc("id", "aaa", "name", "Y2", "my_version_l", "1002")),
+    params("update.chain","external-version-failhard-allow-same-version"));
+    assertU(commit());
+    assertJQ(req("q","+id:aaa +name:Y2"), "/response/numFound==1");
+  }
 
   /** 
    * Proof of concept test demonstrating how to manage and periodically cleanup
