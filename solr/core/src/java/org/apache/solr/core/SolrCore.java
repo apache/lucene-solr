@@ -1036,10 +1036,10 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       // cause the executor to stall so firstSearcher events won't fire
       // until after inform() has been called for all components.
       // searchExecutor must be single-threaded for this to work
-//      searcherExecutor.submit(() -> {
-//        boolean success = latch.await(250, TimeUnit.MILLISECONDS);
-//        return null;
-//      });
+      searcherExecutor.submit(() -> {
+        boolean success = latch.await(250, TimeUnit.MILLISECONDS);
+        return null;
+      });
 
       this.updateHandler = initUpdateHandler(updateHandler);
 
