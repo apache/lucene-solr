@@ -22,6 +22,12 @@ allprojects {
     sourceCompatibility = "11"
     targetCompatibility = "11"
 
+    // Use 'release' flag instead of 'source' and 'target'
+    tasks.withType(JavaCompile) {
+      options.compilerArgs += ["--release", "11"]
+    }
+
+    // Configure warnings.
     tasks.withType(JavaCompile) {
       options.encoding = "UTF-8"
       options.compilerArgs += [
