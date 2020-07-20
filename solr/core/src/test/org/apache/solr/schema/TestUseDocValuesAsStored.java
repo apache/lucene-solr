@@ -77,7 +77,7 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
       DocumentBuilder builder = FieldTypeXmlAdapter.getDocumentBuilder();
       InputStream stream = TestUseDocValuesAsStored.class.getResourceAsStream("/solr/collection1/conf/enumsConfig.xml");
       Document doc = builder.parse(new InputSource(IOUtils.getDecodingReader(stream, StandardCharsets.UTF_8)));
-      XPath xpath = XmlConfigFile.xpath;
+      XPath xpath = ManagedIndexSchema.getXpath();
       NodeList nodes = (NodeList)xpath.evaluate
           ("/enumsConfig/enum[@name='severity']/value", doc, XPathConstants.NODESET);
       SEVERITY = new String[nodes.getLength()];

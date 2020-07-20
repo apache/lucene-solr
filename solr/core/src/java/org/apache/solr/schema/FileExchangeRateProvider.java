@@ -165,7 +165,7 @@ public class FileExchangeRateProvider implements ExchangeRateProvider {
 
     try {
       Document doc = SafeXMLParsing.parseConfigXML(log, loader, currencyConfigFile);
-      XPath xpath = XmlConfigFile.xpath;
+      XPath xpath = ManagedIndexSchema.getXpath();
       
       // Parse exchange rates.
       NodeList nodes = (NodeList) xpath.evaluate("/currencyConfig/rates/rate", doc, XPathConstants.NODESET);

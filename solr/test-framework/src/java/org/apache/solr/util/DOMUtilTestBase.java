@@ -26,6 +26,7 @@ import javax.xml.xpath.XPathFactory;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.rest.schema.FieldTypeXmlAdapter;
+import org.apache.solr.schema.IndexSchema;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
@@ -45,7 +46,7 @@ public abstract class DOMUtilTestBase extends SolrTestCase {
   }
   
   public Node getNode( Document doc, String path ) throws Exception {
-    XPath xpath = XmlConfigFile.xpath;
+    XPath xpath = IndexSchema.getXpath();
     return (Node)xpath.evaluate(path, doc, XPathConstants.NODE);
   }
   

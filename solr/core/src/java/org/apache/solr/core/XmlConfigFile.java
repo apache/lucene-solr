@@ -38,11 +38,13 @@ import java.util.TreeSet;
 
 import net.sf.saxon.xpath.XPathFactoryImpl;
 import org.apache.commons.io.IOUtils;
+import org.apache.jute.Index;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.XMLErrorLogger;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.DOMUtil;
 import org.apache.solr.util.SystemIdResolver;
 import org.slf4j.Logger;
@@ -63,7 +65,6 @@ public class XmlConfigFile { // formerly simply "Config"
 
 
   public static final XPathFactory xpathFactory = new XPathFactoryImpl();
-  public static final XPath xpath = xpathFactory.newXPath();
 
  // public static final  TransformerFactory tfactory = TransformerFactory.newInstance();
 
@@ -198,7 +199,7 @@ public class XmlConfigFile { // formerly simply "Config"
   }
 
   public XPath getXPath() {
-    return xpath;
+    return IndexSchema.getXpath();
   }
 
   private String normalize(String path) {
@@ -210,7 +211,7 @@ public class XmlConfigFile { // formerly simply "Config"
       String xstr=normalize(path);
 
       // TODO: instead of prepending /prefix/, we could do the search rooted at /prefix...
-      Object o = xpath.evaluate(xstr, doc, type);
+      Object o = IndexSchema.getXpath().evaluate(xstr, doc, type);
       return o;
 
     } catch (XPathExpressionException e) {
@@ -226,7 +227,7 @@ public class XmlConfigFile { // formerly simply "Config"
     String xstr = normalize(path);
 
     try {
-      NodeList nodes = (NodeList)xpath.evaluate(xstr, doc, 
+      NodeList nodes = (NodeList)IndexSchema.getXpath().evaluate(xstr, doc,
                                                 XPathConstants.NODESET);
       if (nodes==null || 0 == nodes.getLength() ) {
         if (errIfMissing) {
@@ -260,7 +261,7 @@ public class XmlConfigFile { // formerly simply "Config"
     String xstr = normalize(path);
 
     try {
-      NodeList nodeList = (NodeList)xpath.evaluate(xstr, doc, XPathConstants.NODESET);
+      NodeList nodeList = (NodeList) IndexSchema.getXpath().evaluate(xstr, doc, XPathConstants.NODESET);
 
       if (null == nodeList) {
         if (errIfMissing) {

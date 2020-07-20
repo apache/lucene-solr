@@ -65,6 +65,7 @@ import java.util.zip.InflaterInputStream;
 
 import org.apache.solr.common.ParWork;
 import org.apache.solr.core.XmlConfigFile;
+import org.apache.solr.schema.IndexSchema;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -1056,7 +1057,7 @@ public class SimplePostTool {
    */
   public static NodeList getNodesFromXP(Node n, String xpath) throws XPathExpressionException {
     XPathFactory factory = XmlConfigFile.xpathFactory;
-    XPath xp = XmlConfigFile.xpath;
+    XPath xp = IndexSchema.getXpath();
     XPathExpression expr = xp.compile(xpath);
     return (NodeList) expr.evaluate(n, XPathConstants.NODESET);
   }

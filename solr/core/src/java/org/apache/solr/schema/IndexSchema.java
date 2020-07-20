@@ -16,6 +16,8 @@
  */
 package org.apache.solr.schema;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
@@ -64,6 +66,7 @@ import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.response.SchemaXmlWriter;
@@ -167,6 +170,10 @@ public class IndexSchema {
    */
   protected Map<SchemaField, Integer> copyFieldTargetCounts = new HashMap<>();
 
+  protected final static ThreadLocal<XPath> THREAD_LOCAL_XPATH= new ThreadLocal<>();
+
+  public static volatile XPath xpath;
+
   /**
    * Constructs a schema using the specified resource name and stream.
    * By default, this follows the normal config path directory searching rules.
@@ -188,6 +195,16 @@ public class IndexSchema {
     this.luceneVersion = Objects.requireNonNull(luceneVersion);
     this.loader = loader;
     this.substitutableProperties = substitutableProperties;
+  }
+
+  public static synchronized XPath getXpath() {
+    XmlConfigFile.xpathFactory.newXPath();
+    XPath xPath = THREAD_LOCAL_XPATH.get();
+    if (xPath == null) {
+      xPath = XmlConfigFile.xpathFactory.newXPath();
+      THREAD_LOCAL_XPATH.set(xPath);
+    }
+    return xPath;
   }
 
   /**

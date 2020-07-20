@@ -157,6 +157,7 @@ public class SolrXmlConfig {
         return fromConfig(solrHome, config, fromZookeeper);
       }
     } catch (SolrException exc) {
+      log.error("Exception reading config", exc);
       throw exc;
     } catch (Exception e) {
       ParWork.propegateInterrupt(e);
@@ -169,16 +170,17 @@ public class SolrXmlConfig {
   }
 
   private static void checkForIllegalConfig(XmlConfigFile config) {
-    failIfFound(config, "solr/@coreLoadThreads");
-    failIfFound(config, "solr/@persistent");
-    failIfFound(config, "solr/@sharedLib");
-    failIfFound(config, "solr/@zkHost");
-    failIfFound(config, "solr/cores");
-
-    assertSingleInstance("solrcloud", config);
-    assertSingleInstance("logging", config);
-    assertSingleInstance("logging/watcher", config);
-    assertSingleInstance("backup", config);
+    // woah! it's best if we don't do this - resource killer
+//    failIfFound(config, "solr/@coreLoadThreads");
+//    failIfFound(config, "solr/@persistent");
+//    failIfFound(config, "solr/@sharedLib");
+//    failIfFound(config, "solr/@zkHost");
+//    failIfFound(config, "solr/cores");
+//
+//    assertSingleInstance("solrcloud", config);
+//    assertSingleInstance("logging", config);
+//    assertSingleInstance("logging/watcher", config);
+//    assertSingleInstance("backup", config);
   }
 
   private static void assertSingleInstance(String section, XmlConfigFile config) {

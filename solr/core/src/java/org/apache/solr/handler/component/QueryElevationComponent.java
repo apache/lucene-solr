@@ -54,6 +54,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.ObjectArrays;
 import com.google.common.collect.Sets;
+import org.apache.jute.Index;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -85,6 +86,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.transform.ElevatedMarkerFactory;
 import org.apache.solr.response.transform.ExcludedMarkerFactory;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -391,7 +393,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
    */
   protected ElevationProvider loadElevationProvider(XmlConfigFile config) {
     Map<ElevatingQuery, ElevationBuilder> elevationBuilderMap = new LinkedHashMap<>();
-    XPath xpath = XmlConfigFile.xpath;
+    XPath xpath = IndexSchema.getXpath();
     NodeList nodes = (NodeList) config.evaluate("elevate/query", XPathConstants.NODESET);
     for (int i = 0; i < nodes.getLength(); i++) {
       Node node = nodes.item(i);

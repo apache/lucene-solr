@@ -29,6 +29,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import org.apache.commons.lang3.math.NumberUtils;
+import org.apache.jute.Index;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.EnumFieldSource;
@@ -112,7 +113,7 @@ public abstract class AbstractEnumField extends PrimitiveFieldType {
         log.debug("Reloading enums config file from {}", enumsConfigFile);
         Document doc = SafeXMLParsing.parseConfigXML(log, loader, enumsConfigFile);
         final XPathFactory xpathFactory = XmlConfigFile.xpathFactory;
-        final XPath xpath = XmlConfigFile.xpath;
+        final XPath xpath = IndexSchema.getXpath();
         final String xpathStr = String.format(Locale.ROOT, "/enumsConfig/enum[@name='%s']", enumName);
         final NodeList nodes = (NodeList) xpath.evaluate(xpathStr, doc, XPathConstants.NODESET);
         final int nodesLength = nodes.getLength();

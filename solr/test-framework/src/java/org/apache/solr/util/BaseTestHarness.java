@@ -33,11 +33,11 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.XmlConfigFile;
+import org.apache.solr.schema.IndexSchema;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
 abstract public class BaseTestHarness {
-  private static final XPath xpath = XmlConfigFile.xpath;
 
   protected final static ThreadLocal<DocumentBuilder> THREAD_LOCAL_DB = new ThreadLocal<>();
 
@@ -57,7 +57,7 @@ abstract public class BaseTestHarness {
   }
 
   public static XPath getXpath() {
-    return xpath;
+    return IndexSchema.getXpath();
   }
 
 

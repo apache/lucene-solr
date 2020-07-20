@@ -56,7 +56,6 @@ public final class FieldTypePluginLoader
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final XPath xpath = XmlConfigFile.xpath;
 
   /**
    * @param schema The schema that will be used to initialize the FieldTypes
@@ -84,6 +83,7 @@ public final class FieldTypePluginLoader
                               String name, 
                               String className,
                               Node node ) throws Exception {
+    XPath xpath = IndexSchema.getXpath();
 
     FieldType ft = loader.newInstance(className, FieldType.class, "schema.");
     ft.setTypeName(name);
@@ -200,6 +200,7 @@ public final class FieldTypePluginLoader
     if (node == null) return null;
     NamedNodeMap attrs = node.getAttributes();
     String analyzerName = DOMUtil.getAttr(attrs,"class");
+    XPath xpath = IndexSchema.getXpath();
 
     // check for all of these up front, so we can error if used in 
     // conjunction with an explicit analyzer class.
