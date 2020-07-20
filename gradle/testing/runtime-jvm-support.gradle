@@ -64,8 +64,6 @@ if (!currentJvm.javaExecutable.equals(altJvm.javaExecutable)) {
 
     // Look at Elasticsearch's code; there are caveats concerning build artifact caching
     // (we don't use it at the moment, but who knows).
-    // TODO: Any jar calls?
     // TODO: Any javadoc calls?
   }
-
 }
