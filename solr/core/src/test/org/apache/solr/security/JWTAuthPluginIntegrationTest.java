@@ -211,11 +211,11 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     
     // Now update three documents
     assertAuthMetricsMinimums(1, 1, 0, 0, 0, 0);
-    assertPkiAuthMetricsMinimums(4, 4, 0, 0, 0, 0);
+    assertPkiAuthMetricsMinimums(2, 2, 0, 0, 0, 0);
     Pair<String,Integer> result = post(baseUrl + "/" + COLLECTION + "/update?commit=true", "[{\"id\" : \"1\"}, {\"id\": \"2\"}, {\"id\": \"3\"}]", jwtTestToken);
     assertEquals(Integer.valueOf(200), result.second());
     assertAuthMetricsMinimums(4, 4, 0, 0, 0, 0);
-    assertPkiAuthMetricsMinimums(4, 4, 0, 0, 0, 0);
+    assertPkiAuthMetricsMinimums(2, 2, 0, 0, 0, 0);
     
     // First a non distributed query
     result = get(baseUrl + "/" + COLLECTION + "/query?q=*:*&distrib=false", jwtTestToken);
@@ -230,7 +230,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     // Delete
     assertEquals(200, get(baseUrl + "/admin/collections?action=DELETE&name=" + COLLECTION, jwtTestToken).second().intValue());
     assertAuthMetricsMinimums(11, 11, 0, 0, 0, 0);
-    assertPkiAuthMetricsMinimums(6, 6, 0, 0, 0, 0);
+    assertPkiAuthMetricsMinimums(4, 4, 0, 0, 0, 0);
   }
 
   private void getAndFail(String url, String token) {

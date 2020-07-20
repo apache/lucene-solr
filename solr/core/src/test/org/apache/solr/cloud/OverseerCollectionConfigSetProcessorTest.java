@@ -37,8 +37,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
-import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
+import org.apache.solr.client.solrj.cloud.VersionedData;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.cloud.Overseer.LeaderStatus;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
@@ -81,9 +80,6 @@ import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.params.CollectionAdminParams.CLUSTER;
-import static org.apache.solr.common.params.CollectionAdminParams.DEFAULTS;
-import static org.apache.solr.common.params.CollectionAdminParams.USE_LEGACY_REPLICA_ASSIGNMENT;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.anyInt;
@@ -127,7 +123,6 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   private static HttpClient httpClientMock;
   
   private static ObjectCache objectCache;
-  private static AutoScalingConfig autoScalingConfig = new AutoScalingConfig(Collections.emptyMap());
   private Map<String, byte[]> zkClientData = new HashMap<>();
   private final Map<String, ClusterState.CollectionRef> collectionsSet = new HashMap<>();
   private final List<ZkNodeProps> replicas = new ArrayList<>();
@@ -294,7 +289,6 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
 
     when(zkStateReaderMock.getZkClient()).thenReturn(solrZkClientMock);
     when(zkStateReaderMock.getClusterState()).thenReturn(clusterStateMock);
-    when(zkStateReaderMock.getAutoScalingConfig()).thenReturn(autoScalingConfig);
     when(zkStateReaderMock.getAliases()).thenReturn(Aliases.EMPTY);
 
     when(clusterStateMock.getCollection(anyString())).thenAnswer(invocation -> {
@@ -373,10 +367,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     when(cloudDataProviderMock.getClusterStateProvider()).thenReturn(clusterStateProviderMock);
     when(clusterStateProviderMock.getClusterState()).thenReturn(clusterStateMock);
     when(clusterStateProviderMock.getLiveNodes()).thenReturn(liveNodes);
-    when(clusterStateProviderMock.getClusterProperties()).thenReturn(Utils.makeMap(DEFAULTS, Utils.makeMap(CLUSTER, Utils.makeMap(USE_LEGACY_REPLICA_ASSIGNMENT, true))));
     when(cloudDataProviderMock.getDistribStateManager()).thenReturn(stateManagerMock);
     when(cloudManagerMock.getDistribStateManager()).thenReturn(distribStateManagerMock);
-    when(distribStateManagerMock.getAutoScalingConfig()).thenReturn(new AutoScalingConfig(Collections.emptyMap()));
 
     Mockito.doAnswer(
       new Answer<Void>() {
@@ -456,7 +448,6 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     when(zkControllerMock.getZkClient()).thenReturn(solrZkClientMock);
     
     when(cloudManagerMock.getDistribStateManager()).thenReturn(distribStateManagerMock);
-    when(distribStateManagerMock.getAutoScalingConfig()).thenReturn(new AutoScalingConfig(Collections.emptyMap()));
 
     Mockito.doAnswer(
       new Answer<Void>() {

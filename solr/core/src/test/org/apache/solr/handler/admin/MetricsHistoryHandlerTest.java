@@ -21,13 +21,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.cloud.autoscaling.sim.SimCloudManager;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.Pair;
@@ -45,13 +44,13 @@ import org.rrd4j.core.RrdDb;
  *
  */
 @LogLevel("org.apache.solr.cloud=DEBUG")
+@LuceneTestCase.Nightly
 public class MetricsHistoryHandlerTest extends SolrCloudTestCase {
 
   private volatile static SolrCloudManager cloudManager;
   private volatile static SolrMetricManager metricManager;
   private volatile static TimeSource timeSource;
   private volatile static SolrClient solrClient;
-  private volatile static boolean simulated;
   private volatile static int SPEED;
 
   private volatile static MetricsHistoryHandler handler;
@@ -59,40 +58,21 @@ public class MetricsHistoryHandlerTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    simulated = random().nextBoolean();
     Map<String, Object> args = new HashMap<>();
     args.put(MetricsHistoryHandler.SYNC_PERIOD_PROP, 1);
     args.put(MetricsHistoryHandler.COLLECT_PERIOD_PROP, 1);
-    if (simulated) {
-      SPEED = 50;
-      cloudManager = SimCloudManager.createCluster(1, TimeSource.get("simTime:" + SPEED));
-      // wait for defaults to be applied - due to accelerated time sometimes we may miss this
-      cloudManager.getTimeSource().sleep(10000);
-      AutoScalingConfig cfg = cloudManager.getDistribStateManager().getAutoScalingConfig();
-      assertFalse("autoscaling config is empty", cfg.isEmpty());
-      metricManager = ((SimCloudManager)cloudManager).getMetricManager();
-      solrClient = ((SimCloudManager)cloudManager).simGetSolrClient();
-      // need to register the factory here, before we start the real cluster
-      metricsHandler = new MetricsHandler(metricManager);
-      SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, SolrInfoBean.Group.node.toString(), "");
-      handler = new MetricsHistoryHandler(cloudManager.getClusterStateProvider().getLiveNodes().iterator().next(),
-          metricsHandler, solrClient, cloudManager, args);
-      handler.initializeMetrics(solrMetricsContext, CommonParams.METRICS_HISTORY_PATH);
-    }
     configureCluster(1)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
     
-    if (!simulated) {
-      cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
-      metricManager = cluster.getJettySolrRunner(0).getCoreContainer().getMetricManager();
-      solrClient = cluster.getSolrClient();
-      metricsHandler = new MetricsHandler(metricManager);
-      handler = new MetricsHistoryHandler(cluster.getJettySolrRunner(0).getNodeName(), metricsHandler, solrClient, cloudManager, args);
-      SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, SolrInfoBean.Group.node.toString(), "");
-      handler.initializeMetrics(solrMetricsContext, CommonParams.METRICS_HISTORY_PATH);
-      SPEED = 1;
-    }
+    cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
+    metricManager = cluster.getJettySolrRunner(0).getCoreContainer().getMetricManager();
+    solrClient = cluster.getSolrClient();
+    metricsHandler = new MetricsHandler(metricManager);
+    handler = new MetricsHistoryHandler(cluster.getJettySolrRunner(0).getNodeName(), metricsHandler, solrClient, cloudManager, args);
+    SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, SolrInfoBean.Group.node.toString(), "");
+    handler.initializeMetrics(solrMetricsContext, CommonParams.METRICS_HISTORY_PATH);
+    SPEED = 1;
     timeSource = cloudManager.getTimeSource();
 
     // create .system collection
@@ -107,9 +87,6 @@ public class MetricsHistoryHandlerTest extends SolrCloudTestCase {
   public static void teardown() throws Exception {
     if (handler != null) {
       handler.close();
-    }
-    if (simulated) {
-      cloudManager.close();
     }
     handler = null;
     metricsHandler = null;

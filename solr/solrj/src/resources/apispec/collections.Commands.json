@@ -76,12 +76,6 @@
           "type": "boolean",
           "description": "Controls whether or not the shard-replicas created for this collection will be assigned to the nodes specified by the nodeSet property in a sequential manner, or if the list of nodes should be shuffled prior to creating individual replicas. A 'false' value makes the results of a collection creation predictable and gives more exact control over the location of the individual shard-replicas, but 'true' can be a better choice for ensuring replicas are distributed evenly across nodes. This property is ignored if nodeSet is not also specified."
         },
-        "autoAddReplicas": {
-          "type": "boolean",
-          "description": "When set to true, enables auto addition of replicas when the number of active replicas falls below the value set for replicationFactor.",
-          "documentation": "https://lucene.apache.org/solr/guide/solrcloud-autoscaling-auto-add-replicas.html",
-          "default": "false"
-        },
         "rule": {
           "type": "array",
           "documentation": "https://lucene.apache.org/solr/guide/rule-based-replica-placement.html",
@@ -97,11 +91,6 @@
           "items": {
             "type": "string"
           }
-        },
-        "policy": {
-          "type": "string",
-          "documentation": "https://lucene.apache.org/solr/guide/solrcloud-autoscaling-policy-preferences.html",
-          "description": "Name of the collection-level policy"
         },
         "properties": {
           "type": "object",
