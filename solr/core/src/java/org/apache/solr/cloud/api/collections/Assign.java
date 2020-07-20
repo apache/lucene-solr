@@ -557,12 +557,12 @@ public class Assign {
       List snitches = (List) collection.get(SNITCH);
 
       Strategy strategy = null;
-      if ((ruleMaps == null || ruleMaps.isEmpty())) {
-        strategy = Strategy.LEGACY;
-      } else if (ruleMaps != null && !ruleMaps.isEmpty()) {
+      if (ruleMaps != null && !ruleMaps.isEmpty()) {
         strategy = Strategy.RULES;
+      } else {
+        strategy = Strategy.LEGACY;        
       }
-
+      
       switch (strategy) {
         case LEGACY:
           return new LegacyAssignStrategy();
