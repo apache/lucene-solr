@@ -335,9 +335,9 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
       IpTables.unblockAllPorts();
 
-      LogLevel.Configurer.restoreLogLevels(savedClassLogLevels);
-      savedClassLogLevels.clear();
-      StartupLoggingUtils.changeLogLevel(initialRootLogLevel);
+//      LogLevel.Configurer.restoreLogLevels(savedClassLogLevels);
+//      savedClassLogLevels.clear();
+//      StartupLoggingUtils.changeLogLevel(initialRootLogLevel);
     }
   }
   
