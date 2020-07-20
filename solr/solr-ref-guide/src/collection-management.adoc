@@ -1256,6 +1256,12 @@ Request ID to track this action which will be <<collections-api.adoc#asynchronou
 `repository`::
 The name of a repository to be used for the backup. If no repository is specified then the local filesystem repository will be used automatically.
 
+There's a number of optional parameters that determine the target collection layout.
+The following parameters are currently supported (described in details in the <<create,CREATE collection>> section):
+`createNodeSet`, `createNodeSet.shuffle`.
+
+Note: for `createNodeSet` the special value of `EMPTY` is not allowed with this command.
+
 *Override Parameters*
 
 Additionally, there are several parameters that may have been set on the original collection that can be overridden when restoring the backup:
