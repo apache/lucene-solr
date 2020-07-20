@@ -227,7 +227,7 @@ public class Overseer implements SolrCloseable {
         // we do not sure which message is bad message, therefore we will re-process node one by one
         int fallbackQueueSize = Integer.MAX_VALUE;
         ZkDistributedQueue fallbackQueue = workQueue;
-        while (!this.isClosed && !Thread.currentThread().isInterrupted()) {
+        while (!isClosed() && !Thread.currentThread().isInterrupted()) {
           if (zkStateWriter == null) {
             try {
               zkStateWriter = new ZkStateWriter(reader, stats);
@@ -283,7 +283,7 @@ public class Overseer implements SolrCloseable {
               log.warn("Solr cannot talk to ZK, exiting Overseer work queue loop", e);
               return;
             } catch (InterruptedException | AlreadyClosedException e) {
-              ParWork.propegateInterrupt(e);
+              ParWork.propegateInterrupt(e, true);
               return;
             } catch (Exception e) {
               log.error("Unexpected error in Overseer state update loop", e);
@@ -298,7 +298,7 @@ public class Overseer implements SolrCloseable {
             // We do not need to filter any nodes here cause all processed nodes are removed once we flush clusterstate
             queue = new LinkedList<>(stateUpdateQueue.peekElements(1000, 2000L, (x) -> true));
           } catch (InterruptedException | AlreadyClosedException e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propegateInterrupt(e, true);
             return;
           } catch (KeeperException.SessionExpiredException e) {
             log.error("run()", e);
@@ -309,6 +309,8 @@ public class Overseer implements SolrCloseable {
             log.error("Unexpected error in Overseer state update loop", e);
             if (!isClosed()) {
               continue;
+            } else {
+              return;
             }
           }
           try {
@@ -327,7 +329,7 @@ public class Overseer implements SolrCloseable {
                   processedNodes.clear();
                 });
               }
-              if (isClosed) break;
+              if (isClosed()) return;
               // if an event comes in the next 100ms batch it together
               queue = new LinkedList<>(stateUpdateQueue.peekElements(1000, 100, node -> !processedNodes.contains(node)));
             }
@@ -354,7 +356,7 @@ public class Overseer implements SolrCloseable {
       } finally {
         log.info("Overseer Loop exiting : {}", LeaderElector.getNodeName(myId));
 
-        if (!isClosed) {
+        if (!isClosed()) {
           Overseer.this.close();
         }
       }
@@ -527,17 +529,9 @@ public class Overseer implements SolrCloseable {
 
     @Override
     public void close() throws IOException {
-      thread.close();
-      while (isAlive()) {
-        try {
-          join(100);
-          Thread.currentThread().interrupt();
-        } catch (InterruptedException e) {
-          ParWork.propegateInterrupt(e);
-          throw new RuntimeException("Interrupted waiting to close");
-        }
-      }
       this.isClosed = true;
+      thread.close();
+      Thread.currentThread().interrupt();
     }
 
     public Closeable getThread() {
@@ -849,18 +843,21 @@ public class Overseer implements SolrCloseable {
     try (ParWork closer = new ParWork(this, true)) {
 
       closer.collect(() -> {
-        ccThread.interrupt();
+
         IOUtils.closeQuietly(ccThread);
+        ccThread.interrupt();
       });
 
       closer.collect(() -> {
-        updaterThread.interrupt();
+
         IOUtils.closeQuietly(updaterThread);
+        updaterThread.interrupt();
       });
 
       closer.collect(() -> {
-        triggerThread.interrupt();
+
         IOUtils.closeQuietly(triggerThread);
+        triggerThread.interrupt();
       });
 
       closer.addCollect("OverseerInternals");

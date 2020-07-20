@@ -183,7 +183,7 @@ public class GenericDistributedQueue implements DistributedQueue {
     } else {
       time = stats.time(dir + "_peek_wait" + wait);
     }
-    updateLock.lockInterruptibly();
+    updateLock.lock();
     try {
       long waitNanos = TimeUnit.MILLISECONDS.toNanos(wait);
       while (waitNanos > 0) {
@@ -282,7 +282,7 @@ public class GenericDistributedQueue implements DistributedQueue {
   public byte[] take() throws Exception {
     // Same as for element. Should refactor this.
     Timer.Context timer = stats.time(dir + "_take");
-    updateLock.lockInterruptibly();
+    updateLock.lock();
     try {
       while (true) {
         byte[] result = removeFirst();
@@ -379,7 +379,7 @@ public class GenericDistributedQueue implements DistributedQueue {
    * list is inherently stale.
    */
   private String firstChild(boolean remove, boolean refetchIfDirty) throws Exception {
-    updateLock.lockInterruptibly();
+    updateLock.lock();
     try {
       // We always return from cache first, the cache will be cleared if the node is not exist
       if (!knownChildren.isEmpty() && !(isDirty && refetchIfDirty)) {
@@ -453,7 +453,7 @@ public class GenericDistributedQueue implements DistributedQueue {
       // Trigger a refresh, but only force it if this is not the first iteration.
       firstChild(false, !first);
 
-      updateLock.lockInterruptibly();
+      updateLock.lock();
       try {
         for (String child : knownChildren) {
           if (acceptFilter.test(child)) {
@@ -496,7 +496,7 @@ public class GenericDistributedQueue implements DistributedQueue {
         result.add(new Pair<>(child, data.getData()));
       } catch (NoSuchElementException e) {
         // Another client deleted the node first, remove the in-memory and continue.
-        updateLock.lockInterruptibly();
+        updateLock.lock();
         try {
           knownChildren.remove(child);
         } finally {
@@ -523,7 +523,7 @@ public class GenericDistributedQueue implements DistributedQueue {
         return data != null ? data.getData() : null;
       } catch (NoSuchElementException e) {
         // Another client deleted the node first, remove the in-memory and retry.
-        updateLock.lockInterruptibly();
+        updateLock.lock();
         try {
           // Efficient only for single-consumer
           knownChildren.clear();
@@ -549,7 +549,7 @@ public class GenericDistributedQueue implements DistributedQueue {
         return result.getData();
       } catch (NoSuchElementException e) {
         // Another client deleted the node first, remove the in-memory and retry.
-        updateLock.lockInterruptibly();
+        updateLock.lock();
         try {
           // Efficient only for single-consumer
           knownChildren.clear();
@@ -562,7 +562,7 @@ public class GenericDistributedQueue implements DistributedQueue {
   }
 
   @VisibleForTesting int watcherCount() throws InterruptedException {
-    updateLock.lockInterruptibly();
+    updateLock.lock();
     try {
       return watcherCount;
     } finally {
@@ -571,7 +571,7 @@ public class GenericDistributedQueue implements DistributedQueue {
   }
 
   @VisibleForTesting boolean isDirty() throws InterruptedException {
-    updateLock.lockInterruptibly();
+    updateLock.lock();
     try {
       return isDirty;
     } finally {

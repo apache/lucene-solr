@@ -22,4 +22,4 @@ if [ ! -d "lucene-solr" ]; then
 fi
 
 
-bash /opt/solr/reference_impl/solr/bin/solr start -c -m 1g -z "localhost:2181" -p ${SOLR_PORT:-8983} -force -f
+bash /opt/solr/reference_impl/solr/bin/solr start -c -m 1g -z "localhost:2181" -p ${SOLR_PORT:-9998} -force -f

@@ -42,6 +42,7 @@
         <AsyncLogger name="org.apache.solr.cloud.Overseer" level="DEBUG"/>
         <AsyncLogger name="org.apache.solr.cloud.OverseerTaskProcessor" level="DEBUG"/>
         <AsyncLogger name="org.apache.solr.cloud.ZkDistributedQueue" level="DEBUG"/>
+        <AsyncLogger name="org.apache.solr.cloud.OverseerTaskQueue" level="DEBUG"/>
         <!-- <AsyncLogger name="org.apache.solr.common.cloud.SolrZkClient" level="DEBUG"/> -->
         <AsyncLogger name="org.apache.solr.cloud.overseer.SliceMutator" level="DEBUG"/>
         <AsyncLogger name="org.apache.solr.client.solrj.impl.LBSolrClient" level="DEBUG"/>

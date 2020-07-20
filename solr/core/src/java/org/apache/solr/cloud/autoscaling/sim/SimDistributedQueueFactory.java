@@ -115,7 +115,7 @@ public class SimDistributedQueueFactory implements DistributedQueueFactory {
     private Pair<String, byte[]> peekInternal(long wait) throws Exception {
       Preconditions.checkArgument(wait > 0);
       long waitNanos = TimeUnit.MILLISECONDS.toNanos(wait);
-      updateLock.lockInterruptibly();
+      updateLock.lock();
       try {
         while (waitNanos > 0) {
           Pair<String, byte[]> pair = queue.peek();
@@ -136,7 +136,7 @@ public class SimDistributedQueueFactory implements DistributedQueueFactory {
     @Override
     public byte[] poll() throws Exception {
       Timer.Context time = stats.time(dir + "_poll");
-      updateLock.lockInterruptibly();
+      updateLock.lock();
       try {
         Pair<String, byte[]>  pair = queue.poll();
         if (pair != null) {
@@ -154,7 +154,7 @@ public class SimDistributedQueueFactory implements DistributedQueueFactory {
     @Override
     public byte[] remove() throws Exception {
       Timer.Context time = stats.time(dir + "_remove");
-      updateLock.lockInterruptibly();
+      updateLock.lock();
       try {
         byte[] res = queue.remove().second();
         changed.signalAll();
@@ -168,7 +168,7 @@ public class SimDistributedQueueFactory implements DistributedQueueFactory {
     @Override
     public byte[] take() throws Exception {
       Timer.Context timer = stats.time(dir + "_take");
-      updateLock.lockInterruptibly();
+      updateLock.lock();
       try {
         while (true) {
           byte[] result = poll();
@@ -187,7 +187,7 @@ public class SimDistributedQueueFactory implements DistributedQueueFactory {
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void offer(byte[] data) throws Exception {
       Timer.Context time = stats.time(dir + "_offer");
-      updateLock.lockInterruptibly();
+      updateLock.lock();
       try {
         queue.offer(new Pair(String.format(Locale.ROOT, "qn-%010d", seq), data));
         seq++;
@@ -203,7 +203,7 @@ public class SimDistributedQueueFactory implements DistributedQueueFactory {
 
     @Override
     public Collection<Pair<String, byte[]>> peekElements(int max, long waitMillis, Predicate<String> acceptFilter) throws Exception {
-      updateLock.lockInterruptibly();
+      updateLock.lock();
       try {
         List<Pair<String, byte[]>> res = new LinkedList<>();
         final int maximum = max < 0 ? Integer.MAX_VALUE : max;

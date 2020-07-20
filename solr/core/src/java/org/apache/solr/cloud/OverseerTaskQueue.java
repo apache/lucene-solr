@@ -34,6 +34,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.util.Pair;
+import org.apache.solr.common.util.TimeOut;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -137,7 +139,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
 
     private final Lock lock;
     private final Condition eventReceived;
-    private WatchedEvent event;
+    private volatile WatchedEvent event;
     private Event.EventType latchEventType;
 
     LatchWatcher() {
@@ -184,7 +186,10 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
         if (this.event != null) {
           return;
         }
-        eventReceived.await(timeoutMs, TimeUnit.MILLISECONDS);
+        TimeOut timeout = new TimeOut(timeoutMs, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
+        while (this.event == null && !timeout.hasTimedOut() && !Thread.currentThread().isInterrupted()) {
+          eventReceived.await(500, TimeUnit.MILLISECONDS);
+        }
       } finally {
         lock.unlock();
       }

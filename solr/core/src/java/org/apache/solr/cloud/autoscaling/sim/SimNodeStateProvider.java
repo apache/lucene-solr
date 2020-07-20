@@ -92,7 +92,7 @@ public class SimNodeStateProvider implements NodeStateProvider, Closeable {
    * @return previous property value or null if property or node didn't exist.
    */
   public Object simUpdateNodeValue(String node, String key, Function<Object, Object> updater) throws InterruptedException {
-    lock.lockInterruptibly();
+    lock.lock();
     try {
       Map<String, Object> values = nodeValues.computeIfAbsent(node, n -> new ConcurrentHashMap<>());
       return values.put(key, updater.apply(values.get(key)));
@@ -108,7 +108,7 @@ public class SimNodeStateProvider implements NodeStateProvider, Closeable {
    * @param values values.
    */
   public void simSetNodeValues(String node, Map<String, Object> values) throws InterruptedException {
-    lock.lockInterruptibly();
+    lock.lock();
     try {
       Map<String, Object> existing = nodeValues.computeIfAbsent(node, n -> new ConcurrentHashMap<>());
       existing.clear();
@@ -131,7 +131,7 @@ public class SimNodeStateProvider implements NodeStateProvider, Closeable {
    * @param value property value
    */
   public void simSetNodeValue(String node, String key, Object value) throws InterruptedException {
-    lock.lockInterruptibly();
+    lock.lock();
     try {
       Map<String, Object> existing = nodeValues.computeIfAbsent(node, n -> new ConcurrentHashMap<>());
       if (value == null) {
@@ -156,7 +156,7 @@ public class SimNodeStateProvider implements NodeStateProvider, Closeable {
    */
   @SuppressWarnings({"unchecked"})
   public void simAddNodeValue(String node, String key, Object value) throws InterruptedException {
-    lock.lockInterruptibly();
+    lock.lock();
     try {
       Map<String, Object> values = nodeValues.computeIfAbsent(node, n -> new ConcurrentHashMap<>());
       Object existing = values.get(key);
@@ -185,7 +185,7 @@ public class SimNodeStateProvider implements NodeStateProvider, Closeable {
    */
   public void simRemoveNodeValues(String node) throws InterruptedException {
     log.debug("--removing value for {}", node);
-    lock.lockInterruptibly();
+    lock.lock();
     try {
       Map<String, Object> values = nodeValues.remove(node);
       if (values != null && values.containsKey("nodeRole")) {
@@ -203,7 +203,7 @@ public class SimNodeStateProvider implements NodeStateProvider, Closeable {
   public void simRemoveDeadNodes() throws InterruptedException {
     Set<String> myNodes = new HashSet<>(nodeValues.keySet());
     myNodes.removeAll(liveNodesSet.get());
-    lock.lockInterruptibly();
+    lock.lock();
     try {
       AtomicBoolean updateRoles = new AtomicBoolean(false);
       myNodes.forEach(n -> {

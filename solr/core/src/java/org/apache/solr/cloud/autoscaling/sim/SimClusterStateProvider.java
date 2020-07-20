@@ -326,7 +326,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    */
   @SuppressWarnings({"unchecked"})
   public void simSetClusterState(ClusterState initialState) throws Exception {
-    lock.lockInterruptibly();
+    lock.lock();
     try {
       collProperties.clear();
       colShardReplicaMap.clear();
@@ -453,7 +453,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    */
   public boolean simRemoveNode(String nodeId) throws Exception {
     ensureNotClosed();
-    lock.lockInterruptibly();
+    lock.lock();
     try {
       Set<String> collections = new HashSet<>();
       // mark every replica on that node as down
@@ -487,7 +487,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * Remove all replica information related to dead nodes.
    */
   public void simRemoveDeadNodes() throws Exception {
-    lock.lockInterruptibly();
+    lock.lock();
     try {
       Set<String> myNodes = new HashSet<>(nodeReplicaMap.keySet());
       myNodes.removeAll(liveNodes.get());
@@ -568,7 +568,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     createEphemeralLiveNode(nodeId);
     Set<String> collections = new HashSet<>();
     
-    lock.lockInterruptibly();
+    lock.lock();
     try {
       setReplicaStates(nodeId, Replica.State.RECOVERING, collections);
     } finally {
@@ -577,7 +577,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     
     cloudManager.getTimeSource().sleep(1000);
     
-    lock.lockInterruptibly();
+    lock.lock();
     try {
       setReplicaStates(nodeId, Replica.State.ACTIVE, collections);
       if (!collections.isEmpty()) {
@@ -659,7 +659,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
   @SuppressWarnings({"unchecked"})
   public void simAddReplica(String nodeId, ReplicaInfo replicaInfo, boolean runLeaderElection) throws Exception {
     ensureNotClosed();
-    lock.lockInterruptibly();
+    lock.lock();
     try {
 
       // make sure SolrCore name is unique across cluster and coreNodeName within collection
@@ -753,7 +753,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
   public void simRemoveReplica(String nodeId, String collection, String coreNodeName) throws Exception {
     ensureNotClosed();
     
-    lock.lockInterruptibly();
+    lock.lock();
     try {
       @SuppressWarnings({"unchecked"})
       final List<ReplicaInfo> replicas = nodeReplicaMap.computeIfAbsent
@@ -835,7 +835,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
   private void simRunLeaderElection(Collection<String> collections, boolean saveClusterState) throws Exception {
     ensureNotClosed();
     if (saveClusterState) {
-      lock.lockInterruptibly();
+      lock.lock();
       try {
         collections.forEach(c -> collectionsStatesRef.get(c).invalidate());
       } finally {
@@ -865,7 +865,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     log.trace("Attempting leader election ({} / {})", collection, slice);
     final AtomicBoolean stateChanged = new AtomicBoolean(Boolean.FALSE);
     
-    lock.lockInterruptibly();
+    lock.lock();
     try {
       final ClusterState state = getClusterState();
       final DocCollection col = state.getCollectionOrNull(collection);
@@ -1036,7 +1036,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
 
     ZkWriteCommand cmd = ZkWriteCommand.noop();
     
-    lock.lockInterruptibly();
+    lock.lock();
     try {
       cmd = new ClusterStateMutator(cloudManager).createCollection(clusterState, props);
       if (cmd.noop) {
@@ -1151,7 +1151,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     });
 
     // force recreation of collection states
-    lock.lockInterruptibly();
+    lock.lock();
     try {
       collectionsStatesRef.get(collectionName).invalidate();
     } finally {
@@ -1183,7 +1183,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       results.add(CoreAdminParams.REQUESTID, async);
     }
     
-    lock.lockInterruptibly();
+    lock.lock();
     try {
       collProperties.remove(collection);
       sliceProperties.remove(collection);
@@ -1232,7 +1232,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * Remove all collections.
    */
   public void simDeleteAllCollections() throws Exception {
-    lock.lockInterruptibly();
+    lock.lock();
     try {
       collectionsStatesRef.keySet().forEach(name -> {
         try {
@@ -1349,7 +1349,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     String collectionName = message.getStr(COLLECTION_PROP);
     String sliceName = message.getStr(SHARD_ID_PROP);
     ClusterState clusterState = getClusterState();
-    lock.lockInterruptibly();
+    lock.lock();
     try {
       ZkWriteCommand cmd = new CollectionMutator(cloudManager).createShard(clusterState, message);
       if (cmd.noop) {
@@ -1558,7 +1558,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       log.trace("-- switching slice states after split shard: collection={}, parent={}, subSlices={}", collectionName,
           sliceName.get(), subSlices);
     }
-    lock.lockInterruptibly();
+    lock.lock();
     try {
       Map<String, Object> sProps = sliceProperties.computeIfAbsent(collectionName, c -> new ConcurrentHashMap<>())
           .computeIfAbsent(sliceName.get(), s -> new ConcurrentHashMap<>());
@@ -1627,7 +1627,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
 
     opDelay(collectionName, CollectionParams.CollectionAction.DELETESHARD.name());
 
-    lock.lockInterruptibly();
+    lock.lock();
     try {
       sliceProperties.computeIfAbsent(collectionName, c -> new ConcurrentHashMap<>()).remove(sliceName);
       colShardReplicaMap.computeIfAbsent(collectionName, c -> new ConcurrentHashMap<>()).remove(sliceName);
@@ -1748,7 +1748,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
         }
       }
       if (!deletesPerShard.isEmpty()) {
-        lock.lockInterruptibly();
+        lock.lock();
         try {
           for (Map.Entry<String, AtomicLong> entry : deletesPerShard.entrySet()) {
             String shard = entry.getKey();
@@ -1796,7 +1796,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
           if (numDocs == null || numDocs.intValue() == 0) {
             continue;
           }
-          lock.lockInterruptibly();
+          lock.lock();
           try {
             Number indexSize = (Number)ri.getVariable(Type.CORE_IDX.metricsAttribute);
             if (indexSize != null) {
@@ -1847,7 +1847,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
 
       // XXX don't add more than 2bln docs in one request
       boolean modified = false;
-      lock.lockInterruptibly();
+      lock.lock();
       try {
         coll = getClusterState().getCollection(collection);
         Slice[] slices = coll.getActiveSlicesArr();
@@ -1989,7 +1989,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     }
     SolrParams params = req.getParams();
     if (params != null && (params.getBool(UpdateParams.OPTIMIZE, false) || params.getBool(UpdateParams.EXPUNGE_DELETES, false))) {
-      lock.lockInterruptibly();
+      lock.lock();
       try {
         coll.getSlices().forEach(s -> {
           Replica leader = s.getLeader();
@@ -2092,7 +2092,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @param properties properties to set
    */
   public void simSetClusterProperties(Map<String, Object> properties) throws Exception {
-    lock.lockInterruptibly();
+    lock.lock();
     try {
       clusterProperties.clear();
       if (properties != null) {
@@ -2111,7 +2111,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @param value property value
    */
   public void simSetClusterProperty(String key, Object value) throws Exception {
-    lock.lockInterruptibly();
+    lock.lock();
     try {
       if (value != null) {
         clusterProperties.put(key, value);
@@ -2130,7 +2130,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @param properties properties
    */
   public void simSetCollectionProperties(String coll, Map<String, Object> properties) throws Exception {
-    lock.lockInterruptibly();
+    lock.lock();
     try {
       if (properties == null) {
         collProperties.remove(coll);
@@ -2152,7 +2152,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @param value property value
    */
   public void simSetCollectionProperty(String coll, String key, String value) throws Exception {
-    lock.lockInterruptibly();
+    lock.lock();
     try {
       final Map<String, Object> props = collProperties.computeIfAbsent(coll, c -> new HashMap<>());
       if (value == null) {
@@ -2173,7 +2173,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @param properties slice properties
    */
   public void simSetSliceProperties(String coll, String slice, Map<String, Object> properties) throws Exception {
-    lock.lockInterruptibly();
+    lock.lock();
     try {
       final Map<String, Object> sliceProps = sliceProperties.computeIfAbsent
         (coll, c -> new HashMap<>()).computeIfAbsent(slice, s -> new HashMap<>());
@@ -2381,7 +2381,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
   }
 
   public Map<String, Map<String, Object>> simGetCollectionStats() throws IOException, InterruptedException {
-    lock.lockInterruptibly();
+    lock.lock();
     try {
       final Map<String, Map<String, Object>> stats = new TreeMap<>();
       ClusterState state = getClusterState();
@@ -2523,7 +2523,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
   @Override
   public ClusterState getClusterState() throws IOException {
     try {
-      lock.lockInterruptibly();
+      lock.lock();
       try {
         Map<String, DocCollection> states = getCollectionStates();
         ClusterState state = new ClusterState(0, liveNodes.get(), states);
@@ -2537,7 +2537,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
   }
 
   private Map<String, DocCollection> getCollectionStates() throws IOException, InterruptedException {
-    lock.lockInterruptibly();
+    lock.lock();
     try {
       Map<String, DocCollection> collectionStates = new HashMap<>();
       collectionsStatesRef.forEach((name, cached) -> {
