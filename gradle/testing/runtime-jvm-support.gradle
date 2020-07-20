@@ -52,17 +52,20 @@ if (!currentJvm.javaExecutable.equals(altJvm.javaExecutable)) {
   allprojects {
     // Any tests
     tasks.withType(Test) {
+      dependsOn ":altJvmWarning"
       executable = altJvm.javaExecutable
     }
 
     // Any javac compilation tasks
     tasks.withType(JavaCompile) {
+      dependsOn ":altJvmWarning"
       options.fork = true
       options.forkOptions.javaHome = altJvm.installationDirectory.asFile
     }
 
     def javadocExecutable = altJvm.jdk.get().javadocExecutable.asFile
     tasks.matching { it.name == "renderJavadoc" || it.name == "renderSiteJavadoc" }.all {
+      dependsOn ":altJvmWarning"
       executable = javadocExecutable
     }
   }
