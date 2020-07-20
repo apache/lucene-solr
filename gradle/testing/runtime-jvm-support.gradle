@@ -62,6 +62,15 @@ if (!currentJvm.javaExecutable.equals(altJvm.javaExecutable)) {
       options.forkOptions.javaHome = altJvm.installationDirectory.asFile
     }
 
+    plugins.withType(JavaPlugin) {
+      ext {
+        // there's no property 'altJvm.javadocExecutable'; retrieve 'javadoc' command file
+        javadocCmdPath = altJvm.installationDirectory.file("bin/javadoc").toString()
+      }
+      tasks.matching { it.name == "renderJavadoc" || it.name == "renderSiteJavadoc" }.all {
+        dependsOn ":altJvmWarning"
+      }
+    }
     // Look at Elasticsearch's code; there are caveats concerning build artifact caching
     // (we don't use it at the moment, but who knows).
     // TODO: Any javadoc calls?

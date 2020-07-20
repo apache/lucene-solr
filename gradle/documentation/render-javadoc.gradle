@@ -42,6 +42,11 @@ allprojects {
       srcDirSet = sourceSets.main.java;
 
       outputDir = project.javadoc.destinationDir;
+
+      // set javadoc command path when it passed via ext property
+      if (project.hasProperty("javadocCmdPath")) {
+        javadocCmdPath = project.javadocCmdPath
+      }
     }
 
     task renderSiteJavadoc(type: RenderJavadocTask) {
@@ -57,6 +62,10 @@ allprojects {
       // Place the documentation under Lucene or Solr's documentation directory.
       // docroot is defined in 'documentation.gradle'
       outputDir = project.docroot.toPath().resolve(project.relativeDocPath).toFile()
+
+      if (project.hasProperty("javadocCmdPath")) {
+        javadocCmdPath = project.javadocCmdPath
+      }
     }
   }
 }
@@ -150,6 +159,9 @@ class RenderJavadocTask extends DefaultTask {
 
   @Input
   def solrDocUrl = "${->project.solrDocUrl}"
+
+  @Input
+  def javadocCmdPath = org.gradle.internal.jvm.Jvm.current().getJavadocExecutable().toString()
   
   /** Utility method to recursively collect all tasks with same name like this one that we depend on */
   private Set findRenderTasksInDependencies() {
@@ -165,11 +177,7 @@ class RenderJavadocTask extends DefaultTask {
 
   @TaskAction
   public void render() {
-    // TODO: add 'String executable' property, much like Gradle's built-in javadoc.
-    // resolve lazily to the current JVM's javadoc executable (using the public new API).
-    // the runtime-jvm-support.gradle should then lazily modify this
-    // property if alt jvm is requested (the logic to set alt jvm should be there, not here).
-    def javadocCmd = org.gradle.internal.jvm.Jvm.current().getJavadocExecutable()
+    def javadocCmd = project.file(javadocCmdPath)
 
     def srcDirs = srcDirSet.srcDirs.findAll { dir -> dir.exists() }
     def optionsFile = project.file("${getTemporaryDir()}/javadoc-options.txt")
@@ -276,6 +284,9 @@ class RenderJavadocTask extends DefaultTask {
 
         ignoreExitValue true
       }
+    }
+    outputFile.withWriterAppend { output ->
+      output.write("\n--------\nJavadoc command path: ${javadocCmd}\n")
     }
 
     if (result.getExitValue() != 0) {
