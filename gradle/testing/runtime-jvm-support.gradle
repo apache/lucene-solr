@@ -52,7 +52,6 @@ if (!currentJvm.javaExecutable.equals(altJvm.javaExecutable)) {
   allprojects {
     // Any tests
     tasks.withType(Test) {
-      dependsOn ":altJvmWarning"
       executable = altJvm.javaExecutable
     }
 
@@ -62,17 +61,9 @@ if (!currentJvm.javaExecutable.equals(altJvm.javaExecutable)) {
       options.forkOptions.javaHome = altJvm.installationDirectory.asFile
     }
 
-    plugins.withType(JavaPlugin) {
-      ext {
-        // there's no property 'altJvm.javadocExecutable'; retrieve 'javadoc' command file
-        javadocCmdPath = altJvm.installationDirectory.file("bin/javadoc").toString()
-      }
-      tasks.matching { it.name == "renderJavadoc" || it.name == "renderSiteJavadoc" }.all {
-        dependsOn ":altJvmWarning"
-      }
+    def javadocExecutable = altJvm.jdk.get().javadocExecutable.asFile
+    tasks.matching { it.name == "renderJavadoc" || it.name == "renderSiteJavadoc" }.all {
+      executable = javadocExecutable
     }
-    // Look at Elasticsearch's code; there are caveats concerning build artifact caching
-    // (we don't use it at the moment, but who knows).
-    // TODO: Any javadoc calls?
   }
 }

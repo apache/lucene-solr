@@ -1,3 +1,5 @@
+import javax.annotation.Nullable
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -151,8 +153,10 @@ class RenderJavadocTask extends DefaultTask {
   @Input
   def solrDocUrl = "${->project.solrDocUrl}"
 
+  @Nullable
+  @Optional
   @Input
-  def javadocCmdPath = "${-> project.hasProperty("javadocCmdPath") ? project.javadocCmdPath : org.gradle.internal.jvm.Jvm.current().getJavadocExecutable().toString()}"
+  def executable
   
   /** Utility method to recursively collect all tasks with same name like this one that we depend on */
   private Set findRenderTasksInDependencies() {
@@ -168,8 +172,6 @@ class RenderJavadocTask extends DefaultTask {
 
   @TaskAction
   public void render() {
-    def javadocCmd = project.file(javadocCmdPath)
-
     def srcDirs = srcDirSet.srcDirs.findAll { dir -> dir.exists() }
     def optionsFile = project.file("${getTemporaryDir()}/javadoc-options.txt")
     
@@ -257,6 +259,18 @@ class RenderJavadocTask extends DefaultTask {
       }
     })
 
+    def javadocCmd = {
+      if (executable == null) {
+        JavaInstallationRegistry registry = project.extensions.getByType(JavaInstallationRegistry)
+        JavaInstallation currentJvm = registry.installationForCurrentVirtualMachine.get()
+        return currentJvm.jdk.get().javadocExecutable.asFile
+      } else {
+        return project.file(executable)
+      }
+    }()
+
+    logger.info("Javadoc executable used: ${javadocCmd}")
+
     def outputFile = project.file("${getTemporaryDir()}/javadoc-output.txt")
     def result
     outputFile.withOutputStream { output ->
@@ -275,9 +289,6 @@ class RenderJavadocTask extends DefaultTask {
 
         ignoreExitValue true
       }
-    }
-    outputFile.withWriterAppend { output ->
-      output.write("\n--------\nJavadoc command path: ${javadocCmd}\n")
     }
 
     if (result.getExitValue() != 0) {
