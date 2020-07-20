@@ -70,7 +70,7 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
   private final boolean useFieldCache;
 
   @SuppressWarnings({"rawtypes"})
-  private final BiPredicate<Comparable, Comparable> newUpdateComparePasses;
+  private final BiPredicate<Comparable, Comparable> acceptUpdatePredicate;
 
   private long oldSolrVersion;  // current _version_ of the doc in the index/update log
 
@@ -102,7 +102,7 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
     this.phase = DistributedUpdateProcessor.DistribPhase.parseParam(req.getParams().get(DISTRIB_UPDATE_PARAM));
     this.tombstoneConfig = tombstoneConfig;
 
-    this.newUpdateComparePasses = rejectSameVersion ? this::rejectSameVersionUpdates : this::allowSameVersionUpdates;
+    this.acceptUpdatePredicate = rejectSameVersion ? this::rejectSameVersionUpdates : this::allowSameVersionUpdates;
   }
 
   private static DistributedUpdateProcessor getDistributedUpdateProcessor(UpdateRequestProcessor next) {
@@ -301,7 +301,7 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
                 oldUserVersion.getClass() + " vs " + newUserVersion.getClass());
       }
       try {
-        if (newUpdateComparePasses.test((Comparable) newUserVersion, (Comparable) oldUserVersion)) {
+        if (newUpdateComparePasses((Comparable) newUserVersion, (Comparable) oldUserVersion, versionFieldNames[i])) {
           return true;
         }
       } catch (ClassCastException e) {
@@ -322,6 +322,20 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
       throw new SolrException(CONFLICT,
           "user version is not high enough: " + Arrays.toString(newUserVersions));
     }
+  }
+
+  /**
+   * Given two comparable user versions, returns whether the new version is acceptable
+   * to replace the old version.
+   * @param newUserVersion User-specified version on the new version of the document
+   * @param oldUserVersion User-specified version on the old version of the document
+   * @param userVersionFieldName Field name of the user versions being compared
+   * @return True if acceptable, false if not.
+   */
+  @SuppressWarnings({"unchecked"})
+  protected boolean newUpdateComparePasses(@SuppressWarnings({"rawtypes"})Comparable newUserVersion,
+                                           @SuppressWarnings({"rawtypes"})Comparable oldUserVersion, String userVersionFieldName) {
+    return acceptUpdatePredicate.test(newUserVersion, oldUserVersion);
   }
 
   @SuppressWarnings({"unchecked"})
