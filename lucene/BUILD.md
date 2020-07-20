@@ -1,5 +1,5 @@
 # Lucene Build Instructions
-
+//nocommit how do we revise this?
 ## Basic steps:
   
   0. Install OpenJDK 11 (or greater), Ant 1.8.2+, Ivy 2.2.0

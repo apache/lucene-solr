@@ -45,7 +45,7 @@ To build the HTML:
 . Run:
 +
 [source,bash]
-$ ant clean default
+$ gradlew clean buildSite
 +
 This will produce pages with a DRAFT watermark across them. While these are fine for initial DRAFT publication, see the section <<Publish the Final Guide>> for steps to produce final production-ready HTML pages.
 . The resulting Guide will be in `solr/build/solr-ref-guide`. The HTML files themselves will be in `solr/build/solr-ref-guide/html-site`.
@@ -73,7 +73,7 @@ Since the Guide has already been uploaded to SVN, you need to overwrite the exis
 Build the Guide locally with a parameter for the Guide version. This requires the same <<Pre-Requisites,pre-requisites>> from above.
 
 [source,bash]
-$ant clean default -Dsolr-guide-version=X.Y
+$gradlew clean buildSite -Dsolr-guide-version=X.Y
 
 where `X.Y` is the version you want to publish (i.e., `7.7`).
 

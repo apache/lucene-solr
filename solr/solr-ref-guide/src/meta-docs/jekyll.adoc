@@ -206,14 +206,12 @@ My content...
 
 == Building the HTML Site
 
-An Ant target `ant build-site` when run from the `solr/solr-ref-guide` directory will build the full HTML site (found in `solr/build/solr-ref-guide/html-site`).
+A Gradle target `gradlew buildSite` when run from the `installation` directory will build the full HTML site (found in `solr/solr-ref-guide/build/html-site`).
 
 This target builds the navigation for the left-hand menu, and converts all `.adoc` files to `.html`, including navigation and inter-document links.
 
 Building the HTML has several dependencies that will need to be installed on your local machine. Review the `README.adoc` file in the `solr/solr-ref-guide` directory for specific details.
 
-Using the Gradle build does not require any local dependencies. Simply use `./gradlew buildSite` to generate the HTML files using Gradle (these will be found in `solr/solr-ref-guide/build/html-site`).
-
 === Build Validation
 
-When you run `ant build-site` to build the HTML, several additional validations occur during that process. See `solr-ref-guide/tools/CheckLinksAndAnchors.java` for details of what that tool does to validate content.
+When you run `gradlew buildSite` to build the HTML, several additional validations occur during that process. See `solr-ref-guide/tools/CheckLinksAndAnchors.java` for details of what that tool does to validate content.

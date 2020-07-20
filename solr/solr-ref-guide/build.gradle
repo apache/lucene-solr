@@ -108,8 +108,6 @@ sourceSets {
     main {
         java {
             srcDirs = ['tools']
-            exclude "**/CustomizedAsciidoctorAntTask.java"
-            exclude "**/asciidoctor-antlib.xml"
         }
     }
 
