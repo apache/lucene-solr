@@ -967,9 +967,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           new ZkNodeProps(all)).getClusterStatus(rsp.getValues());
       return null;
     }),
-    UTILIZENODE_OP(UTILIZENODE, (req, rsp, h) -> {
-      return copy(req.getParams().required(), null, "node");
-    }),
     ADDREPLICAPROP_OP(ADDREPLICAPROP, (req, rsp, h) -> {
       Map<String, Object> map = copy(req.getParams().required(), null,
           COLLECTION_PROP,

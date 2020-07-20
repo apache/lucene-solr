@@ -666,19 +666,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     }
 
   }
-  public static class UtilizeNode extends AsyncCollectionAdminRequest {
-    protected String node;
-
-    public UtilizeNode(String node) {
-      super(CollectionAction.UTILIZENODE);
-      this.node = node;
-    }
-    @Override
-    public SolrParams getParams() {
-      return ((ModifiableSolrParams) super.getParams()).set(CoreAdminParams.NODE, node);
-    }
-
-  }
 
   public static MoveReplica moveReplica(String collection, String replica, String targetNode) {
     return new MoveReplica(collection, replica, targetNode);
