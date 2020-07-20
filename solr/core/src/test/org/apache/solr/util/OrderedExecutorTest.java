@@ -55,7 +55,6 @@ public class OrderedExecutorTest extends SolrTestCase {
 
   @Test
   public void testLockWhenQueueIsFull() {
-    final ExecutorService controlExecutor = ExecutorUtil.newMDCAwareCachedThreadPool("testLockWhenQueueIsFull_control");
     final OrderedExecutor orderedExecutor = new OrderedExecutor
       (TEST_NIGHTLY ? 10 : 3, ExecutorUtil.newMDCAwareCachedThreadPool("testLockWhenQueueIsFull_test"));
     
@@ -68,7 +67,7 @@ public class OrderedExecutorTest extends SolrTestCase {
       final CountDownLatch latchAAA = new CountDownLatch(1);
       orderedExecutor.execute(lockId, () -> {
           try {
-            if (latchAAA.await(120, TimeUnit.SECONDS)) {
+            if (latchAAA.await(10, TimeUnit.SECONDS)) {
               events.add("AAA");
             } else {
               events.add("AAA Timed Out");
@@ -80,7 +79,7 @@ public class OrderedExecutorTest extends SolrTestCase {
         });
       // BBB doesn't care about the latch, but because it uses the same lockId, it's blocked on AAA
       // so we execute it in a background thread...
-      controlExecutor.execute(() -> {
+      testExecutor.execute(() -> {
           orderedExecutor.execute(lockId, () -> {
               events.add("BBB");
             });
@@ -97,7 +96,6 @@ public class OrderedExecutorTest extends SolrTestCase {
         fail("interupt while trying to poll event queue");
       }
     } finally {
-      ExecutorUtil.shutdownAndAwaitTermination(controlExecutor);
       orderedExecutor.shutdownAndAwaitTermination();
     }
   }
