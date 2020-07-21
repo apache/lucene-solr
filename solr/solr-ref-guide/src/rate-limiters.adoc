@@ -28,14 +28,24 @@ request type. Indexing and search requests are mostly competing with each other 
 pronounced under high stress in production workloads.
 
 == Rate Limiter Configurations
-The default rate limiter is search rate limiter. Accordingly, it can be configured in web.xml.
+The default rate limiter is search rate limiter. Accordingly, it can be configured in web.xml under initParams for
+SolrRequestFilter.
+
+[source,xml]
+----
+<filter-name>SolrRequestFilter</filter-name>
+----
 
 ==== Maximum Number Of Concurrent Requests
 Allows setting maximum concurrent search requests at a given point in time. Default value is 10. To disable rate limiting,
 set it to Integer.MAX_VALUE
 [source,xml]
 ----
-<maxQueryRequests>15</maxQueryRequests>
+<param-name>maxQueryRequests</param-name>
+----
+[source,xml]
+----
+<param-value>15</param-value>
 ----
 
 ==== Request Slot Allocation Wait Time
@@ -45,16 +55,23 @@ the unavailability of the request slots for this rate limiter is a transient phe
 is -1, indicating no wait.
 [source,xml]
 ----
-<queryWaitForSlotAllocationInMS>100</queryWaitForSlotAllocationInMS>
+<param-name>queryWaitForSlotAllocationInMS</param-name>
+----
+[source,xml]
+----
+<param-value>100</param-value>
 ----
 
 ==== Request Expiration Time
 Time in ms after which a request will expire in the wait queue. Default value is 200 ms.
 [source,xml]
 ----
-<queryRequestExpirationTimeInMS>100</queryRequestExpirationTimeInMS>
+<param-name>queryRequestExpirationTimeInMS</param-name>
 ----
-
+[source,xml]
+----
+<param-value>200</param-value>
+----
 
 == Salient Points
 
