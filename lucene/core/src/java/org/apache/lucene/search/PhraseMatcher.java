@@ -18,6 +18,10 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
+import java.util.function.Consumer;
+
+import org.apache.lucene.index.Term;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * Base class for exact and sloppy phrase matching
@@ -95,5 +99,10 @@ abstract class PhraseMatcher {
   public float getMatchCost() {
     return matchCost;
   }
+
+  /**
+   * Collect terms from the current match
+   */
+  abstract void collectTerms(Consumer<Term> termsConsumer);
 
 }

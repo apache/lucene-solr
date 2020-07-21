@@ -24,12 +24,18 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.IOSupplier;
+import org.apache.lucene.util.IOUtils;
 
 /**
  * Contains static functions that aid the implementation of {@link Matches} and
@@ -52,6 +58,11 @@ public final class MatchesUtils {
     @Override
     public Collection<Matches> getSubMatches() {
       return Collections.emptyList();
+    }
+
+    @Override
+    public void getMatchingTerms(Consumer<Term> termsConsumer) {
+
     }
 
     @Override
@@ -98,13 +109,35 @@ public final class MatchesUtils {
       public Collection<Matches> getSubMatches() {
         return subMatches;
       }
+
+      @Override
+      public void getMatchingTerms(Consumer<Term> termsConsumer) throws IOException {
+        for (Matches matches : sm) {
+          matches.getMatchingTerms(termsConsumer);
+        }
+      }
     };
+  }
+
+  public static Matches forFieldAndTerms(Query query, String field, LeafReaderContext ctx, int doc,
+                                         IOSupplier<BytesRefIterator> termsEnum) throws IOException {
+    return forField(field,
+        terms -> DisjunctionMatchesIterator.matchingTerms(ctx, doc, field, termsEnum.get(), terms),
+        () -> DisjunctionMatchesIterator.fromTermsEnum(ctx, doc, query, field, termsEnum.get()));
+  }
+
+  public static Matches forFieldAndTerms(Query query, String field, LeafReaderContext ctx, int doc,
+                                         List<Term> termsEnum) throws IOException {
+    BytesRefIterator it = DisjunctionMatchesIterator.asBytesRefIterator(termsEnum);
+    return forField(field,
+        terms -> DisjunctionMatchesIterator.matchingTerms(ctx, doc, field, it, terms),
+        () -> DisjunctionMatchesIterator.fromTermsEnum(ctx, doc, query, field, it));
   }
 
   /**
    * Create a Matches for a single field
    */
-  public static Matches forField(String field, IOSupplier<MatchesIterator> mis) throws IOException {
+  public static Matches forField(String field, IOUtils.IOConsumer<Consumer<Term>> terms, IOSupplier<MatchesIterator> mis) throws IOException {
 
     // The indirection here, using a Supplier object rather than a MatchesIterator
     // directly, is to allow for multiple calls to Matches.getMatches() to return
@@ -137,6 +170,11 @@ public final class MatchesUtils {
       @Override
       public Collection<Matches> getSubMatches() {
         return Collections.emptyList();
+      }
+
+      @Override
+      public void getMatchingTerms(Consumer<Term> termsConsumer) throws IOException {
+        terms.accept(termsConsumer);
       }
     };
   }

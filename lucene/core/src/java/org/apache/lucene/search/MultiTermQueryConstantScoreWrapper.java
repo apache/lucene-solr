@@ -211,7 +211,7 @@ final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends
         if (terms.hasPositions() == false) {
           return super.matches(context, doc);
         }
-        return MatchesUtils.forField(query.field, () -> DisjunctionMatchesIterator.fromTermsEnum(context, doc, query, query.field, query.getTermsEnum(terms)));
+        return MatchesUtils.forFieldAndTerms(query, query.field, context, doc, () -> query.getTermsEnum(terms));
       }
 
       @Override

@@ -48,8 +48,12 @@ public class TestMultiPhraseEnum extends LuceneTestCase {
     DirectoryReader ir = DirectoryReader.open(writer);
     writer.close();
 
-    PostingsEnum p1 = getOnlyLeafReader(ir).postings(new Term("field", "foo"), PostingsEnum.POSITIONS);
-    PostingsEnum p2 = getOnlyLeafReader(ir).postings(new Term("field", "bar"), PostingsEnum.POSITIONS);
+    Term foo = new Term("field", "foo");
+    Term bar = new Term("field", "bar");
+    PhraseQuery.TermPostingsEnum p1 =
+        PhraseQuery.wrapForTerm(foo, getOnlyLeafReader(ir).postings(foo, PostingsEnum.POSITIONS));
+    PhraseQuery.TermPostingsEnum p2 =
+        PhraseQuery.wrapForTerm(bar, getOnlyLeafReader(ir).postings(bar, PostingsEnum.POSITIONS));
     PostingsEnum union = new MultiPhraseQuery.UnionPostingsEnum(Arrays.asList(p1, p2));
     
     assertEquals(-1, union.docID());
@@ -90,8 +94,12 @@ public class TestMultiPhraseEnum extends LuceneTestCase {
     DirectoryReader ir = DirectoryReader.open(writer);
     writer.close();
 
-    PostingsEnum p1 = getOnlyLeafReader(ir).postings(new Term("field", "foo"), PostingsEnum.POSITIONS);
-    PostingsEnum p2 = getOnlyLeafReader(ir).postings(new Term("field", "bar"), PostingsEnum.POSITIONS);
+    Term foo = new Term("field", "foo");
+    Term bar = new Term("field", "bar");
+    PhraseQuery.TermPostingsEnum p1 =
+        PhraseQuery.wrapForTerm(foo, getOnlyLeafReader(ir).postings(foo, PostingsEnum.POSITIONS));
+    PhraseQuery.TermPostingsEnum p2 =
+        PhraseQuery.wrapForTerm(bar, getOnlyLeafReader(ir).postings(bar, PostingsEnum.POSITIONS));
     PostingsEnum union = new MultiPhraseQuery.UnionPostingsEnum(Arrays.asList(p1, p2));
     
     assertEquals(-1, union.docID());

@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.index.Impact;
@@ -30,17 +31,19 @@ import org.apache.lucene.index.Impacts;
 import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.ImpactsSource;
 import org.apache.lucene.index.PostingsEnum;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PriorityQueue;
 
 final class ExactPhraseMatcher extends PhraseMatcher {
 
   private static class PostingsAndPosition {
-    private final PostingsEnum postings;
+    private final PhraseQuery.TermPostingsEnum postings;
     private final int offset;
     private int freq, upTo, pos;
 
-    public PostingsAndPosition(PostingsEnum postings, int offset) {
+    public PostingsAndPosition(PhraseQuery.TermPostingsEnum postings, int offset) {
       this.postings = postings;
       this.offset = offset;
     }
@@ -171,6 +174,13 @@ final class ExactPhraseMatcher extends PhraseMatcher {
   @Override
   public int endOffset() throws IOException {
     return postings[postings.length - 1].postings.endOffset();
+  }
+
+  @Override
+  void collectTerms(Consumer<Term> termsConsumer) {
+    for (PostingsAndPosition pp : postings) {
+      termsConsumer.accept(pp.postings.getTerm());
+    }
   }
 
   /**

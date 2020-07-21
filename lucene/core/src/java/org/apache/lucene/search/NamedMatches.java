@@ -25,9 +25,11 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.Term;
 
 /**
  * Utility class to help extract the set of sub queries that have matched from
@@ -65,6 +67,11 @@ public class NamedMatches implements Matches {
   @Override
   public Collection<Matches> getSubMatches() {
     return Collections.singleton(in);
+  }
+
+  @Override
+  public void getMatchingTerms(Consumer<Term> termsConsumer) throws IOException {
+    in.getMatchingTerms(termsConsumer);
   }
 
   @Override

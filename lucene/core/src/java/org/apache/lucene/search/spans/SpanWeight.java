@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
@@ -39,6 +40,9 @@ import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefHash;
+import org.apache.lucene.util.BytesRefIterator;
 
 /**
  * Expert-only.  Public for use by other weight implementations
@@ -176,9 +180,30 @@ public abstract class SpanWeight extends Weight {
     int endOffset;
   }
 
+  private void matchingTerms(LeafReaderContext context, int doc, Consumer<Term> termsConsumer) throws IOException {
+    Spans spans = getSpans(context, Postings.POSITIONS);
+    if (spans == null || spans.advance(doc) != doc) {
+      return;
+    }
+    SpanCollector collector = new SpanCollector() {
+      @Override
+      public void collectLeaf(PostingsEnum postings, int position, Term term) {
+        termsConsumer.accept(term);
+      }
+
+      @Override
+      public void reset() {
+
+      }
+    };
+    while (spans.nextStartPosition() != Spans.NO_MORE_POSITIONS) {
+      spans.collect(collector);
+    }
+  }
+
   @Override
   public Matches matches(LeafReaderContext context, int doc) throws IOException {
-    return MatchesUtils.forField(field, () -> {
+    return MatchesUtils.forField(field, terms -> matchingTerms(context, doc, terms), () -> {
       Spans spans = getSpans(context, Postings.OFFSETS);
       if (spans == null || spans.advance(doc) != doc) {
         return null;

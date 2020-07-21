@@ -21,6 +21,9 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.function.Consumer;
+
+import org.apache.lucene.index.Term;
 
 class AssertingMatches implements Matches {
 
@@ -41,6 +44,11 @@ class AssertingMatches implements Matches {
   @Override
   public Collection<Matches> getSubMatches() {
     return Collections.singleton(in);
+  }
+
+  @Override
+  public void getMatchingTerms(Consumer<Term> termsConsumer) throws IOException {
+    in.getMatchingTerms(termsConsumer);
   }
 
   @Override

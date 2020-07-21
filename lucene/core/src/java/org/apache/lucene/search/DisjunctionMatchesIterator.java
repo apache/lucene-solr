@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
@@ -55,7 +56,7 @@ final class DisjunctionMatchesIterator implements MatchesIterator {
     return fromTermsEnum(context, doc, query, field, asBytesRefIterator(terms));
   }
 
-  private static BytesRefIterator asBytesRefIterator(List<Term> terms) {
+  static BytesRefIterator asBytesRefIterator(List<Term> terms) {
     return new BytesRefIterator() {
       int i = 0;
       @Override
@@ -65,6 +66,24 @@ final class DisjunctionMatchesIterator implements MatchesIterator {
         return terms.get(i++).bytes();
       }
     };
+  }
+
+  static void matchingTerms(LeafReaderContext context, int doc, String field, BytesRefIterator terms, Consumer<Term> termsConsumer) throws IOException {
+    Objects.requireNonNull(field);
+    Terms t = context.reader().terms(field);
+    if (t == null) {
+      return;
+    }
+    TermsEnum te = t.iterator();
+    PostingsEnum reuse = null;
+    for (BytesRef term = terms.next(); term != null; term = terms.next()) {
+      if (te.seekExact(term)) {
+        PostingsEnum pe = te.postings(reuse, PostingsEnum.FREQS);
+        if (pe.advance(doc) == doc) {
+          termsConsumer.accept(new Term(field, term));
+        }
+      }
+    }
   }
 
   /**
