@@ -17,7 +17,9 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
@@ -31,6 +33,34 @@ public class OrEvaluator extends RecursiveBooleanEvaluator implements ManyValueW
     if(containedEvaluators.size() < 2){
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting at least two values but found %d",expression,containedEvaluators.size()));
     }
+  }
+
+  @Override
+  public Object doWork(Object ... values) throws IOException {
+    if(values.length < 2){
+      String message = null;
+      if(1 == values.length){
+        message = String.format(Locale.ROOT,"%s(...) only works with at least 2 values but 1 was provided", constructingFactory.getFunctionName(getClass()));
+      }
+      else{
+        message = String.format(Locale.ROOT,"%s(...) only works with at least 2 values but 0 were provided", constructingFactory.getFunctionName(getClass()));
+      }
+      throw new IOException(message);
+    }
+
+    Checker checker = constructChecker(values[0]);
+    if(Arrays.stream(values).anyMatch(result -> null == result)){
+      throw new IOException(String.format(Locale.ROOT,"Unable to check %s(...) because a null value was found", constructingFactory.getFunctionName(getClass())));
+    }
+    if(Arrays.stream(values).anyMatch(result -> !checker.isCorrectType(result))){
+      throw new IOException(String.format(Locale.ROOT,"Unable to check %s(...) of differing types [%s]", constructingFactory.getFunctionName(getClass()), Arrays.stream(values).map(item -> item.getClass().getSimpleName()).collect(Collectors.joining(","))));
+    }
+    for(int idx = 0; idx < values.length; ++idx){
+      if((Boolean)values[idx]){
+        return true;
+      }
+    }
+    return false;
   }
   
   protected Checker constructChecker(Object fromValue) throws IOException{
