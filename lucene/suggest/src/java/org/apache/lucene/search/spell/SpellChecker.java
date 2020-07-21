@@ -57,10 +57,11 @@ import org.apache.lucene.util.BytesRefIterator;
  * 
  * <pre class="prettyprint">
  *  SpellChecker spellchecker = new SpellChecker(spellIndexDirectory);
+ *  IndexWriterConfig config = new IndexWriterConfig();
  *  // To index a field of a user index:
- *  spellchecker.indexDictionary(new LuceneDictionary(my_lucene_reader, a_field));
+ *  spellchecker.indexDictionary(new LuceneDictionary(my_lucene_reader, a_field), config, true);
  *  // To index a file containing words:
- *  spellchecker.indexDictionary(new PlainTextDictionary(new File("myfile.txt")));
+ *  spellchecker.indexDictionary(new PlainTextDictionary(new File("myfile.txt")), config, true);
  *  String[] suggestions = spellchecker.suggestSimilar("misspelt", 5);
  * </pre>
  * 
