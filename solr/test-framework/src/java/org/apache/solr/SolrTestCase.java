@@ -492,15 +492,16 @@ public class SolrTestCase extends LuceneTestCase {
     System.out.println("DO FORCED INTTERUPTS");
     //  we need to filter and only do this for known threads? dont want users to count on this behavior unless necessary
     String testThread = Thread.currentThread().getName();
-    //System.out.println("test thread:" + testThread);
+    System.out.println("test thread:" + testThread);
     ThreadGroup tg = Thread.currentThread().getThreadGroup();
-    //System.out.println("test group:" + tg.getName());
+    System.out.println("test group:" + tg.getName());
     Set<Map.Entry<Thread,StackTraceElement[]>> threadSet = Thread.getAllStackTraces().entrySet();
-    //System.out.println("thread count: " + threadSet.size());
+    System.out.println("thread count: " + threadSet.size());
     for (Map.Entry<Thread,StackTraceElement[]> threadEntry : threadSet) {
       Thread thread = threadEntry.getKey();
       ThreadGroup threadGroup = thread.getThreadGroup();
       if (threadGroup != null) {
+        System.out.println("thread is " + thread.getName());
         if (threadGroup.getName().equals(tg.getName()) && !thread.getName().startsWith("SUITE") && !thread.getName().startsWith("Log4j2")) {
           interrupt(thread, nameContains);
           continue;
@@ -510,6 +511,7 @@ public class SolrTestCase extends LuceneTestCase {
       while (threadGroup != null && threadGroup.getParent() != null && !thread.getName().startsWith("SUITE") && !thread.getName().startsWith("Log4j2")) {
         threadGroup = threadGroup.getParent();
         if (threadGroup.getName().equals(tg.getName())) {
+          System.out.println("thread is " + thread.getName());
           interrupt(thread, nameContains);
           continue;
         }

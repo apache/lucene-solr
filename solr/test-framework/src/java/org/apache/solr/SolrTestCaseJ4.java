@@ -2960,6 +2960,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
           qtp.setStopTimeout((int) TimeUnit.SECONDS.toMillis(30));
           qtp.setReservedThreads(-1); // -1 auto sizes, important to keep
           // qtp.setStopTimeout((int) TimeUnit.MINUTES.toMillis(1));
+          interruptThreadsOnTearDown("ParWork", false);
     return qtp;
   }
 }
