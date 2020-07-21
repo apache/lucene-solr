@@ -39,6 +39,7 @@ import org.apache.solr.common.ParWorkExecutor;
 import org.apache.solr.common.TimeTracker;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.common.util.SysStats;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.ExternalPaths;
@@ -157,6 +158,12 @@ public class SolrTestCase extends LuceneTestCase {
   public static void setDefaultConfigDirSysPropIfNotSet() throws Exception {
     log.info("*******************************************************************");
     log.info("@BeforeClass ------------------------------------------------------");
+
+
+    if (!SysStats.getSysStats().isAlive()) {
+      SysStats.reStartSysStats();
+    }
+
     // random is expensive, you are supposed to cache it
     random = LuceneTestCase.random();
 
@@ -372,6 +379,8 @@ public class SolrTestCase extends LuceneTestCase {
 
       ExecutorUtil.shutdownAndAwaitTermination(CoreContainer.solrCoreLoadExecutor);
       CoreContainer.solrCoreLoadExecutor = null;
+
+      SysStats.getSysStats().stopMonitor();
 
       if (!failed) {
         // if the tests passed, make sure everything was closed / released

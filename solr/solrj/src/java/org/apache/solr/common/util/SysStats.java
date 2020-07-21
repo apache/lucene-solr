@@ -17,7 +17,7 @@ public class SysStats extends Thread {
     static final int PROC_COUNT = ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors();
 
     private long refreshInterval;
-    private boolean stopped;
+    private  volatile boolean stopped;
 
     private Map<Long, ThreadTime> threadTimeMap = new HashMap<Long, ThreadTime>(512);
     private ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
@@ -37,6 +37,13 @@ public class SysStats extends Thread {
         setName("CPUMonitoringThread");
         setDaemon(true);
         start();
+    }
+
+    public static synchronized void reStartSysStats() {
+        if (sysStats != null) {
+            sysStats.stopMonitor();
+        }
+        sysStats = new SysStats(10000);
     }
 
     public void doStop() {
@@ -70,9 +77,12 @@ public class SysStats extends Thread {
 
             try {
                 Thread.sleep(refreshInterval);
+                if (stopped) {
+                    return;
+                }
             } catch (InterruptedException e) {
-                ParWork.propegateInterrupt(e);
-                throw new RuntimeException(e);
+                ParWork.propegateInterrupt(e, true);
+                return;
             }
 
             for (ThreadTime threadTime : values) {
@@ -107,6 +117,7 @@ public class SysStats extends Thread {
 
     public void stopMonitor() {
         this.stopped = true;
+        this.interrupt();
     }
 
     public double getTotalUsage() {
