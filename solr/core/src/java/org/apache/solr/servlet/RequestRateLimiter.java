@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
  *
  * The control flow is as follows:
  * Handle request -- Check if slot is available -- If available, acquire slot and proceed --
- * else asynchronously queue the request
+ * else asynchronously queue the request.
  *
  * When an active request completes, a check is performed to see if there are any pending requests.
  * If there is an available pending request, process the same.
@@ -58,7 +58,7 @@ public class RequestRateLimiter {
     this.listenerQueue = new ConcurrentLinkedQueue<>();
   }
 
-  public boolean handleNewRequest(HttpServletRequest request) throws InterruptedException {
+  public boolean handleRequest(HttpServletRequest request) throws InterruptedException {
     boolean accepted = allowedConcurrentRequests.tryAcquire(rateLimiterConfig.waitForSlotAcquisition, TimeUnit.MILLISECONDS);
 
     if (!accepted) {

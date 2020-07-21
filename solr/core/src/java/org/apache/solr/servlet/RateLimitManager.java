@@ -38,7 +38,7 @@ import static org.apache.solr.common.params.CommonParams.SOLR_REQUEST_TYPE_PARAM
  */
 public class RateLimitManager {
   public final static int DEFAULT_CONCURRENT_REQUESTS= 10;
-  public final static long DEFAULT_SUSPEND_TIME_INMS = 2000;
+  public final static long DEFAULT_SUSPEND_TIME_INMS = 200;
   public final static long DEFAULT_TIMEOUT_MS = -1;
 
   private final Map<String, RequestRateLimiter> requestRateLimiterMap;
@@ -74,7 +74,7 @@ public class RateLimitManager {
       return true;
     }
 
-    return requestRateLimiter.handleNewRequest(request);
+    return requestRateLimiter.handleRequest(request);
   }
 
   // Resume a pending request from one of the registered rate limiters.
