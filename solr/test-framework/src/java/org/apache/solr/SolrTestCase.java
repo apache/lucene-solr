@@ -388,7 +388,8 @@ public class SolrTestCase extends LuceneTestCase {
       Http2SolrClient.resetSslContextFactory();
       TestInjection.reset();
 
-      StartupLoggingUtils.flushAllLoggers();
+      // nocommit
+//      /StartupLoggingUtils.flushAllLoggers();
 
       checkForInterruptRequest();
 
