@@ -158,7 +158,7 @@ public class HyphenationCompoundWordTokenFilter extends
         // we only put subwords to the token stream
         // that are longer than minPartSize
         if (partLength < this.minSubwordSize) {
-          // BOGUS/BROKEN/FUNKY/WACKO: somehow we have negative 'parts' according to the 
+          // BOGUS/BROKEN/FUNKY/WACKO: somehow we have negative 'parts' according to the
           // calculation above, and we rely upon minSubwordSize being >=0 to filter them out...
           continue;
         }
@@ -176,11 +176,10 @@ public class HyphenationCompoundWordTokenFilter extends
           } else {
             tokens.add(new CompoundToken(start, partLength));
           }
-        } else if (dictionary.contains(termAtt.buffer(), start, partLength - 1)) {
-          // check the dictionary again with a word that is one character
-          // shorter
-          // to avoid problems with genitive 's characters and other binding
-          // characters
+        } else if (partLength - 1 >= this.minSubwordSize &&
+            dictionary.contains(termAtt.buffer(), start, partLength - 1)) {
+          // check the dictionary again with last character removed to also catch terms appended with fogemorphemes
+          // (characters inserted in some languages when joining two words)
           if (this.onlyLongestMatch) {
             if (longestMatchToken != null) {
               if (longestMatchToken.txt.length() < partLength - 1) {
