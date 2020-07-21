@@ -348,4 +348,41 @@ public class TestQueryVisitor extends LuceneTestCase {
     assertThat(ex2.toString(), equalTo("AND(AND(OR(AND(TERM(f:3333),TERM(f:44444)),AND(TERM(f:1),TERM(f:61),AND(TERM(f:211))))))"));
   }
 
+  public void testMetadataSet() {
+    QueryVisitor visitor = new QueryVisitor() {
+      private final Map<String, Object> metadataStore = new HashMap<>();
+      @Override
+      public void addOrUpdateMetadata(String metadataTag, Object metadata) {
+        metadataStore.put(metadataTag, metadata);
+      }
+
+      @Override
+      public boolean addMetadata(String metadataTag, Object metadata) {
+        if (metadataStore.get(metadataTag) != null) {
+          return false;
+        }
+
+        metadataStore.put(metadataTag, metadata);
+
+        return true;
+      }
+      @Override
+      public Object getMetadata(String metadataTag) {
+        return metadataStore.get(metadataTag);
+      }
+    };
+
+    visitor.addOrUpdateMetadata("FOO_BAR1", "PROPERTY_VAL_1");
+    visitor.addOrUpdateMetadata("FOO_BAR2", 5);
+    visitor.addOrUpdateMetadata("FOO_BAR3", this);
+
+    assertEquals(visitor.getMetadata("FOO_BAR1"), "PROPERTY_VAL_1");
+    assertEquals(visitor.getMetadata("FOO_BAR2"), 5);
+    assertEquals(visitor.getMetadata("FOO_BAR3"), this);
+    assertEquals(visitor.getMetadata("FOO_BAR4"), null);
+
+    assertEquals(visitor.addMetadata("FOO_BAR5", 7.7), true);
+    assertEquals(visitor.addMetadata("FOO_BAR2", 8), false);
+    assertEquals(visitor.getMetadata("FOO_BAR2"), 5);
+  }
 }
