@@ -616,7 +616,7 @@ public class ParWork implements Closeable {
 
   public static ExecutorService getExecutorService(int corePoolSize, int maximumPoolSize, int keepAliveTime) {
     ThreadPoolExecutor exec;
-    exec = new ParWorkExecutor("ParWork", getMaxPoolSize());
+    exec = new ParWorkExecutor("ParWork-" + Thread.currentThread().getName(), getMaxPoolSize());
     return exec;
   }
 

@@ -85,6 +85,17 @@ public class ParWorkExecutor extends ThreadPoolExecutor {
         if (task == null) {
             throw new NullPointerException();
         } else {
+            if (getActiveCount() == getMaximumPoolSize() && getQueue().remainingCapacity() == 0) {
+                try {
+                    task.run();
+                } catch (Exception e) {
+                    if (e instanceof InterruptedException) {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException("Exception running task in caller thread");
+                    }
+                }
+                return CompletableFuture.completedFuture(new Object());
+            }
             RunnableFuture<Object> ftask = super.newTaskFor(task, (Object)null);
             try {
                 this.execute(ftask);
@@ -100,6 +111,17 @@ public class ParWorkExecutor extends ThreadPoolExecutor {
         if (task == null) {
             throw new NullPointerException();
         } else {
+            if (getActiveCount() == getMaximumPoolSize() && getQueue().remainingCapacity() == 0) {
+                try {
+                    task.run();
+                } catch (Exception e) {
+                    if (e instanceof InterruptedException) {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException("Exception running task in caller thread");
+                    }
+                }
+                return CompletableFuture.completedFuture(result);
+            }
             RunnableFuture<T> ftask = this.newTaskFor(task, result);
             try {
                 this.execute(ftask);
@@ -115,7 +137,20 @@ public class ParWorkExecutor extends ThreadPoolExecutor {
         if (task == null) {
             throw new NullPointerException();
         } else {
-
+            if (getActiveCount() == getMaximumPoolSize() && getQueue().remainingCapacity() == 0) {
+                T res = null;
+                try {
+                   res = task.call();
+                } catch (Exception e) {
+                   if (e instanceof InterruptedException) {
+                       Thread.currentThread().interrupt();
+                       throw new RuntimeException("Exception running task in caller thread");
+                   }
+                }
+                CompletableFuture<Object> future = new CompletableFuture<>();
+                future.complete(res);
+                return (Future<T>) future;
+            }
             RunnableFuture<T> ftask = this.newTaskFor(task);
             try {
                 this.execute(ftask);

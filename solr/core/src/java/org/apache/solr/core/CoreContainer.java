@@ -352,7 +352,7 @@ public class CoreContainer implements Closeable {
     solrMetricsContext = new SolrMetricsContext(metricManager, registryName, metricTag);
     try (ParWork work = new ParWork(this)) {
 
-      if (!Boolean.getBoolean("solr.disablePublicKeyHandler")) {
+      if (Boolean.getBoolean("solr.enablePublicKeyHandler")) {
         work.collect(() -> {
           try {
             containerHandlers.put(PublicKeyHandler.PATH, new PublicKeyHandler(cfg.getCloudConfig()));

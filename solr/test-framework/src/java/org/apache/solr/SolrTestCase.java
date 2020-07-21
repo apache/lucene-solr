@@ -197,7 +197,7 @@ public class SolrTestCase extends LuceneTestCase {
     System.setProperty("solr.clustering.enabled", "false");
     System.setProperty("solr.peerSync.useRangeVersions", String.valueOf(random().nextBoolean()));
     System.setProperty("zookeeper.nio.directBufferBytes", Integer.toString(32 * 1024 * 2));
-
+    System.setProperty("solr.disablePublicKeyHandler", "true");
 
     if (!TEST_NIGHTLY) {
       //TestInjection.randomDelayMaxInCoreCreationInSec = 2;
@@ -243,7 +243,7 @@ public class SolrTestCase extends LuceneTestCase {
       System.setProperty("solr.http2solrclient.maxpool.size", "6");
       System.setProperty("solr.http2solrclient.pool.keepalive", "5000");
 
-      System.setProperty("solr.disablePublicKeyHandler", "true");
+      System.setProperty("solr.disablePublicKeyHandler", "false");
       System.setProperty("solr.dependentupdate.timeout", "1"); // seconds
 
       System.setProperty("lucene.cms.override_core_count", "3");
@@ -377,7 +377,7 @@ public class SolrTestCase extends LuceneTestCase {
         ExecutorUtil.shutdownAndAwaitTermination(testExecutor);
         testExecutor = null;
       }
-
+      if (CoreContainer.solrCoreLoadExecutor != null) CoreContainer.solrCoreLoadExecutor.shutdownNow();
       ExecutorUtil.shutdownAndAwaitTermination(CoreContainer.solrCoreLoadExecutor);
       CoreContainer.solrCoreLoadExecutor = null;
 
