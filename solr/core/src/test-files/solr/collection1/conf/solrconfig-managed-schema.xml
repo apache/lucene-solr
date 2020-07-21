@@ -65,6 +65,8 @@
   <requestHandler name="/select" class="solr.SearchHandler">
     <bool name="httpCaching">true</bool>
   </requestHandler>
+  
+  <requestHandler name="/update-rffs" class="org.apache.solr.schema.RemoteFileField$DownloadRemoteFilesRequestHandler"/>
 
 
   <requestHandler name="/dump" class="DumpRequestHandler" initParams="a" registerPath="/solr,/v2">
