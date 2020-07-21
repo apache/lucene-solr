@@ -55,27 +55,10 @@ public class IntFieldSource extends FieldCacheSource {
     final NumericDocValues arr = getNumericDocValues(context, readerContext);
 
     return new IntDocValues(this) {
-      int lastDocID;
-
-      private int getValueForDoc(int doc) throws IOException {
-        if (doc < lastDocID) {
-          throw new IllegalArgumentException("docs were sent out-of-order: lastDocID=" + lastDocID + " vs docID=" + doc);
-        }
-        lastDocID = doc;
-        int curDocID = arr.docID();
-        if (doc > curDocID) {
-          curDocID = arr.advance(doc);
-        }
-        if (doc == curDocID) {
-          return (int) arr.longValue();
-        } else {
-          return 0;
-        }
-      }
 
       @Override
       public int intVal(int doc) throws IOException {
-        return getValueForDoc(doc);
+        return arr.advanceExact(doc) ? (int)arr.longValue() : 0;
       }
 
       @Override
@@ -85,8 +68,7 @@ public class IntFieldSource extends FieldCacheSource {
 
       @Override
       public boolean exists(int doc) throws IOException {
-        getValueForDoc(doc);
-        return arr.docID() == doc;
+        return arr.advanceExact(doc);
       }
 
       @Override
@@ -101,8 +83,8 @@ public class IntFieldSource extends FieldCacheSource {
 
           @Override
           public void fillValue(int doc) throws IOException {
-            mval.value = getValueForDoc(doc);
-            mval.exists = arr.docID() == doc;
+            mval.exists = arr.advanceExact(doc);
+            mval.value = mval.exists ? (int)arr.longValue() : 0;
           }
         };
       }

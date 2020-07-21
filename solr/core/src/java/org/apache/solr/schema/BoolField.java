@@ -250,25 +250,14 @@ public class BoolField extends PrimitiveFieldType {
 
       return new BoolDocValues(this) {
 
-        private int getOrdForDoc(int doc) throws IOException {
-          if (doc > sindex.docID()) {
-            sindex.advance(doc);
-          }
-          if (doc == sindex.docID()) {
-            return sindex.ordValue();
-          } else {
-            return -1;
-          }
-        }
-
         @Override
         public boolean boolVal(int doc) throws IOException {
-          return getOrdForDoc(doc) == trueOrd;
+          return sindex.advanceExact(doc) && sindex.ordValue() == trueOrd;
         }
 
         @Override
         public boolean exists(int doc) throws IOException {
-          return getOrdForDoc(doc) != -1;
+          return sindex.advanceExact(doc);
         }
 
         @Override
@@ -283,9 +272,7 @@ public class BoolField extends PrimitiveFieldType {
 
             @Override
             public void fillValue(int doc) throws IOException {
-              int ord = getOrdForDoc(doc);
-              mval.value = (ord == trueOrd);
-              mval.exists = (ord != -1);
+              mval.value = (mval.exists = sindex.advanceExact(doc)) && sindex.ordValue() == trueOrd;
             }
           };
         }

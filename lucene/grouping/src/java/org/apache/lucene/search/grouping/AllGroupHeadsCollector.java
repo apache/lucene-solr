@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.index.DocValuesPoolingReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.FieldComparator;
@@ -40,7 +41,7 @@ import org.apache.lucene.util.FixedBitSet;
  *
  * @lucene.experimental
  */
-@SuppressWarnings({"unchecked","rawtypes"})
+@SuppressWarnings({"rawtypes"})
 public abstract class AllGroupHeadsCollector<T> extends SimpleCollector {
 
   private final GroupSelector<T> groupSelector;
@@ -88,7 +89,6 @@ public abstract class AllGroupHeadsCollector<T> extends SimpleCollector {
     for (GroupHead groupHead : groupHeads) {
       bitSet.set(groupHead.doc);
     }
-
     return bitSet;
   }
 
@@ -161,10 +161,13 @@ public abstract class AllGroupHeadsCollector<T> extends SimpleCollector {
 
   @Override
   protected void doSetNextReader(LeafReaderContext context) throws IOException {
-    groupSelector.setNextReader(context);
-    this.context = context;
+    @SuppressWarnings("resource")
+    final LeafReaderContext singleThreadContext = //context;
+                          new DocValuesPoolingReader(context).getPoolingContext();
+    groupSelector.setNextReader(singleThreadContext);
+    this.context = singleThreadContext;
     for (GroupHead<T> head : heads.values()) {
-      head.setNextReader(context);
+      head.setNextReader(singleThreadContext);
     }
   }
 
@@ -203,6 +206,7 @@ public abstract class AllGroupHeadsCollector<T> extends SimpleCollector {
       this.docBase = docBase;
     }
 
+    
     /**
      * Called for each segment
      */
