@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class ParWorkExecutor extends ThreadPoolExecutor {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-    public static final long KEEP_ALIVE_TIME = 10;
+    public static final long KEEP_ALIVE_TIME = 1000;
     private static final int GROW_BY = 30;
 
     private final Object lock = new Object();

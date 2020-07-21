@@ -591,7 +591,7 @@ public class ParWork implements Closeable {
       }
 
       // figure out thread usage - maybe try to adjust based on current thread count
-      exec = getExecutorService(0, 30, 5);
+      exec = getExecutorService(0, Math.max(4, Runtime.getRuntime().availableProcessors() / 3), 1);
       THREAD_LOCAL_EXECUTOR.set(exec);
     }
 
@@ -606,7 +606,7 @@ public class ParWork implements Closeable {
 
   private static Integer getMaxPoolSize() {
     return Integer.getInteger("solr.maxThreadExecPoolSize",
-            (int) Math.max(6, Math.round(Runtime.getRuntime().availableProcessors())));
+            (int) Math.max(4, Math.round(Runtime.getRuntime().availableProcessors() / 3)));
   }
 
   private void handleObject(String label, AtomicReference<Throwable> exception, final TimeTracker workUnitTracker, Object object) {
