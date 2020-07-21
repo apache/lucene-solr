@@ -15,8 +15,8 @@ if [ ! -d "/opt/solr/reference_impl" ]; then
   ant ivy-bootstrap
   cd solr
   ant package -Dversion=9.0.0-miller_ref_impl
-  cp package/*miller_ref_impl/ /opt/solr
-  chmod +x /opt/solr/reference_impl/solr/bin/solr
+  cp build/*miller_ref_impl/* /opt/solr
+  chmod +x /opt/solr/bin/solr
 fi
 
 

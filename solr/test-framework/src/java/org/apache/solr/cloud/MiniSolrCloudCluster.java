@@ -699,16 +699,6 @@ public class MiniSolrCloudCluster {
       }
     }
 
-    //ZkStateReader reader = zkServer.getZkClient().getZkStateReader();
-
-//    try {
-//      reader.waitForLiveNodes(10, TimeUnit.SECONDS, (o, n) -> n.size() == 0);
-//    } catch (InterruptedException e) {
-//      Thread.currentThread().interrupt();
-//      throw new SolrException(ErrorCode.SERVER_ERROR, "interrupted");
-//    }
-   // Thread.sleep(40000);
-
     try {
       List<Callable<JettySolrRunner>> shutdowns = new ArrayList<>(jettys.size());
       for (final JettySolrRunner jetty : jettys) {

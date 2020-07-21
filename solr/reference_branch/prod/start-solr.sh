@@ -6,5 +6,5 @@ hostip=$(ip route show | awk '/default/ {print $3}')
 echo "host: $hostip"
 
 
-bash /opt/solr/reference_impl/solr/bin/solr start -c -m 1g -z "172.19.0.2:2181" -p ${SOLR_PORT:-9998} -force -f
+bash /opt/solr/bin/solr start -c -m "${SOLR_HEAP:-1g}" -z "${ZK_ADDRESS:-zookeeper:2181}" -p ${SOLR_PORT:-9998} -force -f
 
