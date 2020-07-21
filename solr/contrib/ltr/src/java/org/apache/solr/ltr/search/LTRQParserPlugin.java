@@ -57,6 +57,7 @@ import org.apache.solr.util.SolrPluginUtils;
  */
 public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAware, ManagedResourceObserver {
   public static final String NAME = "ltr";
+  public static final String ORIGINAL_RANKING = "originalRanking";
   private static Query defaultQuery = new MatchAllDocsQuery();
 
   // params for setting custom external info that features can use, like query
@@ -152,30 +153,36 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             "Must provide model in the request");
       }
+     
       LTRScoringQuery[] reRankingModels = new LTRScoringQuery[modelNames.length];
       for (int i = 0; i < modelNames.length; i++) {
-        final LTRScoringModel ltrScoringModel = mr.getModel(modelNames[i]);
-        if (ltrScoringModel == null) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-              "cannot find " + LTRQParserPlugin.MODEL + " " + modelNames[i]);
-        }
-        final String modelFeatureStoreName = ltrScoringModel.getFeatureStoreName();
-        final boolean extractFeatures = SolrQueryRequestContextUtils.isExtractingFeatures(req);
-        final String fvStoreName = SolrQueryRequestContextUtils.getFvStoreName(req);        // Check if features are requested and if the model feature store and feature-transform feature store are the same
-        final boolean featuresRequestedFromSameStore = (modelFeatureStoreName.equals(fvStoreName) || fvStoreName == null) ? extractFeatures : false;
-        if (threadManager != null) {
-          threadManager.setExecutor(req.getCore().getCoreContainer().getUpdateShardHandler().getUpdateExecutor());
-        }
-        final LTRScoringQuery scoringQuery = new LTRScoringQuery(ltrScoringModel,
-            extractEFIParams(localParams),
-            featuresRequestedFromSameStore, threadManager);
+        final LTRScoringQuery scoringQuery;
+        if (!ORIGINAL_RANKING.equals(modelNames[i])) {
+          final LTRScoringModel ltrScoringModel = mr.getModel(modelNames[i]);
+          if (ltrScoringModel == null) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                "cannot find " + LTRQParserPlugin.MODEL + " " + modelNames[i]);
+          }
+          final String modelFeatureStoreName = ltrScoringModel.getFeatureStoreName();
+          final boolean extractFeatures = SolrQueryRequestContextUtils.isExtractingFeatures(req);
+          final String fvStoreName = SolrQueryRequestContextUtils.getFvStoreName(req);        // Check if features are requested and if the model feature store and feature-transform feature store are the same
+          final boolean featuresRequestedFromSameStore = (modelFeatureStoreName.equals(fvStoreName) || fvStoreName == null) ? extractFeatures : false;
+          if (threadManager != null) {
+            threadManager.setExecutor(req.getCore().getCoreContainer().getUpdateShardHandler().getUpdateExecutor());
+          }
+          scoringQuery = new LTRScoringQuery(ltrScoringModel,
+              extractEFIParams(localParams),
+              featuresRequestedFromSameStore, threadManager);
 
-        // Enable the feature vector caching if we are extracting features, and the features
-        // we requested are the same ones we are reranking with
-        if (featuresRequestedFromSameStore) {
-          scoringQuery.setFeatureLogger( SolrQueryRequestContextUtils.getFeatureLogger(req) );
+          // Enable the feature vector caching if we are extracting features, and the features
+          // we requested are the same ones we are reranking with
+          if (featuresRequestedFromSameStore) {
+            scoringQuery.setFeatureLogger( SolrQueryRequestContextUtils.getFeatureLogger(req) );
+          }
+        }else{
+          scoringQuery = new LTRScoringQuery(null);
         }
-        
+
         // External features
         scoringQuery.setRequest(req);
         reRankingModels[i] = scoringQuery;

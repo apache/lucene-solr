@@ -65,7 +65,7 @@ public class TestLTRWithSort extends TestRerankBase {
     final SolrQuery query = new SolrQuery();
     query.setQuery("title:a1");
     query.add("fl", "*, score");
-    query.add("rows", "4");
+    query.add("rows", "8");
 
     // Normal term match
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==8");

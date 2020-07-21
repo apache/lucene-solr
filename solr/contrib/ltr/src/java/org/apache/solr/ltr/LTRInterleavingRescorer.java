@@ -62,11 +62,20 @@ public class LTRInterleavingRescorer extends LTRRescorer {
     if ((topN == 0) || (firstPassTopDocs.scoreDocs.length == 0)) {
       return firstPassTopDocs;
     }
-    final ScoreDoc[] firstPassResults = getFirstPassDocsRanked(firstPassTopDocs);
+    boolean interleavingWithOriginalRanking = rerankingQueries[1].getScoringModel() == null;
+
+    ScoreDoc[] firstPassResults = null;
+    if(interleavingWithOriginalRanking) {
+      firstPassResults = new ScoreDoc[firstPassTopDocs.scoreDocs.length];
+      System.arraycopy(firstPassTopDocs.scoreDocs, 0, firstPassResults, 0, firstPassTopDocs.scoreDocs.length);
+    }
     topN = Math.toIntExact(Math.min(topN, firstPassTopDocs.totalHits.value));
     final List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
 
-    ScoreDoc[][] reRankedPerModel = rerank(searcher,topN,firstPassResults,leaves);
+    ScoreDoc[][] reRankedPerModel = rerank(searcher,topN,getFirstPassDocsRanked(firstPassTopDocs),leaves);
+    if (interleavingWithOriginalRanking) {
+      reRankedPerModel[1] = firstPassResults;
+    }
     InterleavingResult interleaved = interleavingAlgorithm.interleave(reRankedPerModel[0], reRankedPerModel[1]);
     ScoreDoc[] interleavedResults = interleaved.getInterleavedResults();
     
@@ -80,14 +89,14 @@ public class LTRInterleavingRescorer extends LTRRescorer {
   private ScoreDoc[][] rerank(IndexSearcher searcher, int topN, ScoreDoc[] firstPassResults, List<LeafReaderContext> leaves) throws IOException {
     ScoreDoc[][] reRankedPerModel = new ScoreDoc[rerankingQueries.length][topN];
     LTRScoringQuery.ModelWeight[] modelWeights = new LTRScoringQuery.ModelWeight[rerankingQueries.length];
-    for (int i = 0; i < rerankingQueries.length; i++) {
-      modelWeights[i] = (LTRScoringQuery.ModelWeight) searcher
-          .createWeight(searcher.rewrite(rerankingQueries[i]), ScoreMode.COMPLETE, 1);
+    for (int i = 0; i < rerankingQueries.length && rerankingQueries[i].getScoringModel() != null; i++) {
+        modelWeights[i] = (LTRScoringQuery.ModelWeight) searcher
+            .createWeight(searcher.rewrite(rerankingQueries[i]), ScoreMode.COMPLETE, 1);
     }
     scoreFeatures(searcher, topN, modelWeights, firstPassResults, leaves, reRankedPerModel);
 
-    for (ScoreDoc[] reranked : reRankedPerModel) {
-      sortByScore(reranked);
+    for (int i = 0; i < rerankingQueries.length && rerankingQueries[i].getScoringModel() != null; i++) {
+      sortByScore(reRankedPerModel[i]);
     }
 
     return reRankedPerModel;
@@ -116,11 +125,15 @@ public class LTRInterleavingRescorer extends LTRRescorer {
       if (readerContext != null) {
         docBase = readerContext.docBase;
         for (int i = 0; i < modelWeights.length; i++) {
-          scorers[i] = modelWeights[i].scorer(readerContext);
+          if (modelWeights[i] != null) {
+            scorers[i] = modelWeights[i].scorer(readerContext);
+          }
         }
       }
       for (int i = 0; i < rerankingQueries.length; i++) {
-        scoreSingleHit(indexSearcher, topN, modelWeights[i], docBase, hitUpto, new ScoreDoc(hit.doc, hit.score , hit.shardIndex), docID, rerankingQueries[i], scorers[i], rerankedPerModel[i]);
+        if (modelWeights[i] != null) {
+          scoreSingleHit(indexSearcher, topN, modelWeights[i], docBase, hitUpto, new ScoreDoc(hit.doc, hit.score, hit.shardIndex), docID, rerankingQueries[i], scorers[i], rerankedPerModel[i]);
+        }
       }
       hitUpto++;
     }

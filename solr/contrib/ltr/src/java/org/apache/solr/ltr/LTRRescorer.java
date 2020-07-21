@@ -248,8 +248,12 @@ public class LTRRescorer extends Rescorer {
     final int n = ReaderUtil.subIndex(docID, leafContexts);
     final LeafReaderContext context = leafContexts.get(n);
     final int deBasedDoc = docID - context.docBase;
-    final Weight modelWeight = searcher.createWeight(searcher.rewrite(rerankModel),
-        ScoreMode.COMPLETE, 1);
+    Weight modelWeight = rerankModel.getOriginalQuery().createWeight(searcher,ScoreMode.COMPLETE,1);
+    if(rerankModel.getScoringModel()!=null){
+      modelWeight = searcher.createWeight(searcher.rewrite(rerankModel),
+          ScoreMode.COMPLETE, 1);
+    }
+
     return modelWeight.explain(context, deBasedDoc);
   }
 
