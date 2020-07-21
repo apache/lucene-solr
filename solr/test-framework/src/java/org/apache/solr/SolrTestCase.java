@@ -397,11 +397,6 @@ public class SolrTestCase extends LuceneTestCase {
       Http2SolrClient.resetSslContextFactory();
       TestInjection.reset();
 
-      // nocommit
-//      /StartupLoggingUtils.flushAllLoggers();
-
-      checkForInterruptRequest();
-
       long testTime = TimeUnit.SECONDS.convert(System.nanoTime() - testStartTime, TimeUnit.NANOSECONDS);
       if (!failed && !TEST_NIGHTLY && testTime > SOLR_TEST_TIMEOUT) {
         log.error("This test suite is too long for non @Nightly runs! Please improve it's performance, break it up, make parts of it @Nightly or make the whole suite @Nightly: "
@@ -438,10 +433,13 @@ public class SolrTestCase extends LuceneTestCase {
         // nocommit - leave this on
         fail("A " + clazz.getName() + " took too long to close: " + tooLongTime + "\n" + times);
       }
-
     }
     log.info("@AfterClass end ------------------------------------------------------");
     log.info("*******************************************************************");
+
+    StartupLoggingUtils.shutdown();
+
+    checkForInterruptRequest();
   }
 
   private static SSLTestConfig buildSSLConfig() {
@@ -471,10 +469,10 @@ public class SolrTestCase extends LuceneTestCase {
   private static void checkForInterruptRequest() {
     try {
       String interruptThread = interuptThreadWithNameContains;
-      if (interruptThread != null) {
+
         interruptThreadsOnTearDown(interruptThread, true);
         interuptThreadWithNameContains = null;
-      }
+
     } catch (Exception e) {
       ParWork.propegateInterrupt(e);
       log.error("", e);
@@ -510,7 +508,7 @@ public class SolrTestCase extends LuceneTestCase {
 
       while (threadGroup != null && threadGroup.getParent() != null && !thread.getName().startsWith("SUITE") && !thread.getName().startsWith("Log4j2")) {
         threadGroup = threadGroup.getParent();
-        if (threadGroup.getName().equals(tg.getName())) {
+        if (nameContains != null && threadGroup.getName().equals(tg.getName())) {
           System.out.println("thread is " + thread.getName());
           interrupt(thread, nameContains);
           continue;
@@ -520,7 +518,7 @@ public class SolrTestCase extends LuceneTestCase {
   }
 
   private static void interrupt(Thread thread, String nameContains) {
-    if (thread.getName().contains(nameContains)) {
+    if (nameContains != null && thread.getName().contains(nameContains)) {
       System.out.println("do interrupt on " + thread.getName());
       thread.interrupt();
     }
