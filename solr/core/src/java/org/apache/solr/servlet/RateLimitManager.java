@@ -81,7 +81,20 @@ public class RateLimitManager {
   // The current model is round robin -- iterate over the list and get a pending request and resume it.
 
   // TODO: This should be a priority queue based model
-  public void resumePendingRequest() {
+  public void resumePendingRequest(HttpServletRequest request) {
+    String typeOfRequest = request.getHeader(SOLR_REQUEST_TYPE_PARAM);
+
+    RequestRateLimiter previousRequestRateLimiter = requestRateLimiterMap.get(typeOfRequest);
+
+    if (previousRequestRateLimiter == null) {
+      // No rate limiter for this request type
+      return;
+    }
+
+    // Give preference to the previous request's rate limiter
+    if (previousRequestRateLimiter.resumePendingOperation()) {
+      return;
+    }
 
     for (Map.Entry<String, RequestRateLimiter> currentEntry : requestRateLimiterMap.entrySet()) {
       RequestRateLimiter requestRateLimiter = currentEntry.getValue();
