@@ -94,7 +94,7 @@ import org.apache.lucene.util.InPlaceMergeSorter;
  */
 @Deprecated
 public final class WordDelimiterFilter extends TokenFilter {
-  
+
   public static final int LOWER = 0x01;
   public static final int UPPER = 0x02;
   public static final int DIGIT = 0x04;
@@ -334,7 +334,7 @@ public final class WordDelimiterFilter extends TokenFilter {
       
       // word surrounded by delimiters: always output
       if (iterator.isSingleWord()) {
-        generatePart(true);
+        generatePart();
         iterator.next();
         first = false;
         return true;
@@ -367,7 +367,7 @@ public final class WordDelimiterFilter extends TokenFilter {
       
       // if we should output the word or number part
       if (shouldGenerateParts(wordType)) {
-        generatePart(false);
+        generatePart();
         buffer();
       }
         
@@ -509,22 +509,16 @@ public final class WordDelimiterFilter extends TokenFilter {
   /**
    * Generates a word/number part, updating the appropriate attributes
    *
-   * @param isSingleWord {@code true} if the generation is occurring from a single word, {@code false} otherwise
    */
-  private void generatePart(boolean isSingleWord) {
+  private void generatePart() {
     clearAttributes();
     termAttribute.copyBuffer(savedBuffer, iterator.current, iterator.end - iterator.current);
     int startOffset = savedStartOffset + iterator.current;
     int endOffset = savedStartOffset + iterator.end;
     
     if (hasIllegalOffsets) {
-      // historically this filter did this regardless for 'isSingleWord', 
-      // but we must do a sanity check:
-      if (isSingleWord && startOffset <= savedEndOffset) {
-        offsetAttribute.setOffset(startOffset, savedEndOffset);
-      } else {
-        offsetAttribute.setOffset(savedStartOffset, savedEndOffset);
-      }
+      //Since it has illegal offsets, we don't know where we start or end in relation to term, so use old offsets.
+      offsetAttribute.setOffset(savedStartOffset, savedEndOffset);
     } else {
       offsetAttribute.setOffset(startOffset, endOffset);
     }
