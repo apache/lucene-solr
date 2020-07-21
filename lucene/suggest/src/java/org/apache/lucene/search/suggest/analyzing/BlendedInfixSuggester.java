@@ -281,6 +281,10 @@ public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
 
     Integer position = Integer.MAX_VALUE;
     BytesRef term;
+    
+    //Map for storing term positions
+    Map<String,Integer> termPosMap = new HashMap<>();
+    
     // find the closest token position
     while ((term = it.next()) != null) {
 
@@ -296,11 +300,47 @@ public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
         if (p < position) {
           position = p;
         }
+        
+        //we will store position for every term passed in query
+        if (matchedTokens.contains(docTerm)) {
+          if (termPosMap.containsKey(docTerm)) {
+            if (p < termPosMap.get(docTerm)) {
+              termPosMap.put(docTerm, p);
+            }
+          } else {
+            termPosMap.put(docTerm,p);
+          }
+        } else {
+          if (termPosMap.containsKey(prefixToken)) {
+            if (p < termPosMap.get(prefixToken)) {
+              termPosMap.put(prefixToken, p);
+            }
+          } else {
+            termPosMap.put(prefixToken,p);
+          }
+        }
+      }
+    }
+    
+   //logic for multiple term suggestion scoring
+    double coefficient;
+
+    String[] queryTerms = key.toString().split(" ");
+    int start = queryTerms.length - 1;
+    int score = position;
+
+    for (int i = start; i > 0; i--) {
+      if (i - 1 <= queryTerms.length) {
+        int distance = termPosMap.get(queryTerms[i]) - termPosMap.get(queryTerms[i - 1]);
+        distance = distance < 0 ? Math.abs(distance * 3) : distance;
+        score = score + distance;
       }
     }
 
-    // create corresponding coefficient based on position
-    return calculateCoefficient(position);
+    score = score + termPosMap.get(queryTerms[0]);
+    coefficient = calculateCoefficient(score);
+    
+    return coefficient;
   }
 
   /**
