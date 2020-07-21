@@ -138,7 +138,6 @@ public class RateLimitManager {
     public RateLimitManager build() {
       RateLimitManager rateLimitManager = new RateLimitManager();
 
-      rateLimitManager.registerRequestRateLimiter(new IndexRateLimiter(config), SolrRequest.SolrRequestType.UPDATE);
       rateLimitManager.registerRequestRateLimiter(new QueryRateLimiter(config), SolrRequest.SolrRequestType.QUERY);
 
       return rateLimitManager;
