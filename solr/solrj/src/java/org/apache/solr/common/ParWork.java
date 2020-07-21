@@ -34,6 +34,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -500,10 +501,25 @@ public class ParWork implements Closeable {
               try {
 
                 sizePoolByLoad();
+                List<Future<Object>> results = new ArrayList<>(closeCalls.size());
+                for (Callable<Object> call : closeCalls) {
+                  try {
+                    Future<Object> future = executor.submit(call);
+                    results.add(future);
+                  } catch (RejectedExecutionException e) {
+                    log.warn("ParWork task was reject due to full executor, running in calling thread");
+                    try {
+                      call.call();
+                    }catch (Exception e1) {
+                      propegateInterrupt("Error running task", e1);
+                    }
+                  }
+                }
 
-                List<Future<Object>> results = executor.invokeAll(closeCalls, 8, TimeUnit.SECONDS);
+//                List<Future<Object>> results = executor.invokeAll(closeCalls, 8, TimeUnit.SECONDS);
 
                 for (Future<Object> future : results) {
+                  future.get();
                   if (!future.isDone() || future.isCancelled()) {
                     log.warn("A task did not finish isDone={} isCanceled={}", future.isDone(), future.isCancelled());
                   //  throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "A task did nor finish" +future.isDone()  + " " + future.isCancelled());

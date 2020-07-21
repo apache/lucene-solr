@@ -501,13 +501,13 @@ public class SolrTestCase extends LuceneTestCase {
       ThreadGroup threadGroup = thread.getThreadGroup();
       if (threadGroup != null) {
         System.out.println("thread is " + thread.getName());
-        if (threadGroup.getName().equals(tg.getName()) && !thread.getName().startsWith("SUITE") && !thread.getName().startsWith("Log4j2")) {
+        if (threadGroup.getName().equals(tg.getName()) && !thread.getName().startsWith("SUITE")) {
           interrupt(thread, nameContains);
           continue;
         }
       }
 
-      while (threadGroup != null && threadGroup.getParent() != null && !thread.getName().startsWith("SUITE") && !thread.getName().startsWith("Log4j2")) {
+      while (threadGroup != null && threadGroup.getParent() != null && !thread.getName().startsWith("SUITE")) {
         threadGroup = threadGroup.getParent();
         if (nameContains != null && threadGroup.getName().equals(tg.getName())) {
           System.out.println("thread is " + thread.getName());
@@ -521,6 +521,7 @@ public class SolrTestCase extends LuceneTestCase {
   private static void interrupt(Thread thread, String nameContains) {
     if (nameContains != null && thread.getName().contains(nameContains)) {
       System.out.println("do interrupt on " + thread.getName());
+      thread.interrupt();
       thread.interrupt();
     }
   }
