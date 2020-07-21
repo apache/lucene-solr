@@ -59,6 +59,7 @@ public class ConnectionManager implements Watcher, Closeable {
   private CountDownLatch connectedLatch = new CountDownLatch(1);
   private CountDownLatch disconnectedLatch = new CountDownLatch(1);
   private volatile DisconnectListener disconnectListener;
+  private volatile int lastConnectedState = 0;
 
   public void setOnReconnect(OnReconnect onReconnect) {
     this.onReconnect = onReconnect;
@@ -108,11 +109,16 @@ public class ConnectionManager implements Watcher, Closeable {
   }
 
   private void connected() {
+    if (lastConnectedState == 1) {
+      disconnected();
+    }
+
     connected = true;
     likelyExpiredState = LikelyExpiredState.NOT_EXPIRED;
     log.info("Connected, notify any wait");
     connectedLatch.countDown();
     disconnectedLatch = new CountDownLatch(1);
+    lastConnectedState = 1;
   }
 
   private void disconnected() {
@@ -132,10 +138,11 @@ public class ConnectionManager implements Watcher, Closeable {
       ParWork.propegateInterrupt(e);
       log.warn("Exception firing disonnectListener");
     }
+    lastConnectedState = 0;
   }
 
   @Override
-  public void process(WatchedEvent event) {
+  public synchronized void process(WatchedEvent event) {
     if (event.getState() == AuthFailed || event.getState() == Disconnected || event.getState() == Expired) {
       log.warn("Watcher {} name: {} got event {} path: {} type: {}", this, name, event, event.getPath(), event.getType());
     } else {
