@@ -50,6 +50,8 @@ import static org.apache.lucene.util.IOUtils.closeWhileHandlingException;
  */
 public class PackageLoader implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  public static final String LATEST = "$LATEST";
+
 
   private final CoreContainer coreContainer;
   private final Map<String, Package> packageClassLoaders = new ConcurrentHashMap<>();
@@ -288,6 +290,9 @@ public class PackageLoader implements Closeable {
 
       public String getVersion() {
         return version.version;
+      }
+      public PackageAPI.PkgVersion getPkgVersion(){
+        return version.copy();
       }
 
       @SuppressWarnings({"rawtypes"})

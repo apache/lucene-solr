@@ -95,3 +95,4 @@ asciidoctor:
     icons: "font"
     source-highlighter: "rouge"
     rouge-theme: "thankful-eyes"
+    stem:

@@ -19,7 +19,6 @@ package org.apache.solr.util;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import java.io.Console;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -44,7 +43,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -74,7 +72,6 @@ import org.apache.commons.exec.Executor;
 import org.apache.commons.exec.OS;
 import org.apache.commons.exec.environment.EnvironmentUtils;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.http.HttpEntity;
@@ -96,28 +93,14 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
-import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
-import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
-import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
-import org.apache.solr.client.solrj.cloud.autoscaling.Variable;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
-import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.cloud.autoscaling.sim.NoopDistributedQueueFactory;
-import org.apache.solr.cloud.autoscaling.sim.SimCloudManager;
-import org.apache.solr.cloud.autoscaling.sim.SimScenario;
-import org.apache.solr.cloud.autoscaling.sim.SimUtils;
-import org.apache.solr.cloud.autoscaling.sim.SnapshotCloudManager;
-import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -130,12 +113,9 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.security.Sha256AuthenticationProvider;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
 import org.noggit.CharArr;
@@ -412,8 +392,6 @@ public class SolrCLI implements CLIO {
       return new UtilsTool();
     else if ("auth".equals(toolType))
       return new AuthTool();
-    else if ("autoscaling".equals(toolType))
-      return new AutoscalingTool();
     else if ("export".equals(toolType))
       return new ExportTool();
     else if ("package".equals(toolType))
@@ -436,7 +414,6 @@ public class SolrCLI implements CLIO {
     formatter.printHelp("healthcheck", getToolOptions(new HealthcheckTool()));
     formatter.printHelp("status", getToolOptions(new StatusTool()));
     formatter.printHelp("api", getToolOptions(new ApiTool()));
-    formatter.printHelp("autoscaling", getToolOptions(new AutoscalingTool()));
     formatter.printHelp("create_collection", getToolOptions(new CreateCollectionTool()));
     formatter.printHelp("create_core", getToolOptions(new CreateCoreTool()));
     formatter.printHelp("create", getToolOptions(new CreateTool()));
@@ -857,373 +834,6 @@ public class SolrCLI implements CLIO {
       }
     }
     return result;
-  }
-
-
-  public static class AutoscalingTool extends ToolBase {
-
-    public AutoscalingTool() {
-      this(CLIO.getOutStream());
-    }
-
-    public AutoscalingTool(PrintStream stdout) {
-      super(stdout);
-    }
-
-    @Override
-    public Option[] getOptions() {
-      return new Option[] {
-          Option.builder("zkHost")
-              .argName("HOST")
-              .hasArg()
-              .required(false)
-              .desc("Address of the Zookeeper ensemble; defaults to: "+ZK_HOST)
-              .build(),
-          Option.builder("a")
-              .argName("CONFIG")
-              .hasArg()
-              .required(false)
-              .desc("Autoscaling config file, defaults to the one deployed in the cluster.")
-              .longOpt("config")
-              .build(),
-          Option.builder("s")
-              .desc("Show calculated suggestions")
-              .longOpt("suggestions")
-              .build(),
-          Option.builder("c")
-              .desc("Show ClusterState (collections layout)")
-              .longOpt("clusterState")
-              .build(),
-          Option.builder("d")
-              .desc("Show calculated diagnostics")
-              .longOpt("diagnostics")
-              .build(),
-          Option.builder("n")
-              .desc("Show sorted nodes with diagnostics")
-              .longOpt("sortedNodes")
-              .build(),
-          Option.builder("r")
-              .desc("Redact node and collection names (original names will be consistently randomized)")
-              .longOpt("redact")
-              .build(),
-          Option.builder("stats")
-              .desc("Show summarized collection & node statistics.")
-              .build(),
-          Option.builder("save")
-              .desc("Store autoscaling snapshot of the current cluster.")
-              .argName("DIR")
-              .hasArg()
-              .build(),
-          Option.builder("load")
-              .desc("Load autoscaling snapshot of the cluster instead of using the real one.")
-              .argName("DIR")
-              .hasArg()
-              .build(),
-          Option.builder("simulate")
-              .desc("Simulate execution of all suggestions.")
-              .build(),
-          Option.builder("i")
-              .desc("Max number of simulation iterations.")
-              .argName("NUMBER")
-              .hasArg()
-              .longOpt("iterations")
-              .build(),
-          Option.builder("ss")
-              .desc("Save autoscaling snapshots at each step of simulated execution.")
-              .argName("DIR")
-              .longOpt("saveSimulated")
-              .hasArg()
-              .build(),
-          Option.builder("scenario")
-              .desc("Execute a scenario from a file (and ignore all other options).")
-              .argName("FILE")
-              .hasArg()
-              .build(),
-          Option.builder("all")
-              .desc("Turn on all options to get all available information.")
-              .build()
-
-      };
-    }
-
-    @Override
-    public String getName() {
-      return "autoscaling";
-    }
-
-    protected void runImpl(CommandLine cli) throws Exception {
-      raiseLogLevelUnlessVerbose(cli);
-      if (cli.hasOption("scenario")) {
-        String data = IOUtils.toString(new FileInputStream(cli.getOptionValue("scenario")), "UTF-8");
-        try (SimScenario scenario = SimScenario.load(data)) {
-          scenario.verbose = verbose;
-          scenario.console = CLIO.getOutStream();
-          scenario.run();
-        }
-        return;
-      }
-      SnapshotCloudManager cloudManager;
-      AutoScalingConfig config = null;
-      String configFile = cli.getOptionValue("a");
-      if (configFile != null) {
-        CLIO.err("- reading autoscaling config from " + configFile);
-        config = new AutoScalingConfig(IOUtils.toByteArray(new FileInputStream(configFile)));
-      }
-      if (cli.hasOption("load")) {
-        File sourceDir = new File(cli.getOptionValue("load"));
-        CLIO.err("- loading autoscaling snapshot from " + sourceDir.getAbsolutePath());
-        cloudManager = SnapshotCloudManager.readSnapshot(sourceDir);
-        if (config == null) {
-          CLIO.err("- reading autoscaling config from the snapshot.");
-          config = cloudManager.getDistribStateManager().getAutoScalingConfig();
-        }
-      } else {
-        String zkHost = cli.getOptionValue("zkHost", ZK_HOST);
-
-        log.debug("Connecting to Solr cluster: {}", zkHost);
-        try (CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder(Collections.singletonList(zkHost), Optional.empty()).build()) {
-
-          String collection = cli.getOptionValue("collection");
-          if (collection != null)
-            cloudSolrClient.setDefaultCollection(collection);
-
-          cloudSolrClient.connect();
-          try (SolrClientCloudManager realCloudManager = new SolrClientCloudManager(NoopDistributedQueueFactory.INSTANCE, cloudSolrClient)) {
-            if (config == null) {
-              CLIO.err("- reading autoscaling config from the cluster.");
-              config = realCloudManager.getDistribStateManager().getAutoScalingConfig();
-            }
-            cloudManager = new SnapshotCloudManager(realCloudManager, config);
-          }
-        }
-      }
-      boolean redact = cli.hasOption("r");
-      if (cli.hasOption("save")) {
-        File targetDir = new File(cli.getOptionValue("save"));
-        cloudManager.saveSnapshot(targetDir, true, redact);
-        CLIO.err("- saved autoscaling snapshot to " + targetDir.getAbsolutePath());
-      }
-      HashSet<String> liveNodes = new HashSet<>(cloudManager.getClusterStateProvider().getLiveNodes());
-      boolean withSuggestions = cli.hasOption("s");
-      boolean withDiagnostics = cli.hasOption("d") || cli.hasOption("n");
-      boolean withSortedNodes = cli.hasOption("n");
-      boolean withClusterState = cli.hasOption("c");
-      boolean withStats = cli.hasOption("stats");
-      if (cli.hasOption("all")) {
-        withSuggestions = true;
-        withDiagnostics = true;
-        withSortedNodes = true;
-        withClusterState = true;
-        withStats = true;
-      }
-      // prepare to redact also host names / IPs in base_url and other properties
-      ClusterState clusterState = cloudManager.getClusterStateProvider().getClusterState();
-      RedactionUtils.RedactionContext ctx = null;
-      if (redact) {
-        ctx = SimUtils.getRedactionContext(clusterState);
-      }
-      if (!withSuggestions && !withDiagnostics) {
-        withSuggestions = true;
-      }
-      Map<String, Object> results = prepareResults(cloudManager, config, withClusterState,
-          withStats, withSuggestions, withSortedNodes, withDiagnostics);
-      if (cli.hasOption("simulate")) {
-        String iterStr = cli.getOptionValue("i", "10");
-        String saveSimulated = cli.getOptionValue("saveSimulated");
-        int iterations;
-        try {
-          iterations = Integer.parseInt(iterStr);
-        } catch (Exception e) {
-          log.warn("Invalid option 'i' value, using default 10:", e);
-          iterations = 10;
-        }
-        Map<String, Object> simulationResults = new HashMap<>();
-        simulate(cloudManager, config, simulationResults, saveSimulated, withClusterState,
-            withStats, withSuggestions, withSortedNodes, withDiagnostics, iterations, redact);
-        results.put("simulation", simulationResults);
-      }
-      String data = Utils.toJSONString(results);
-      if (redact) {
-        data = RedactionUtils.redactNames(ctx.getRedactions(), data);
-      }
-      stdout.println(data);
-    }
-
-    private Map<String, Object> prepareResults(SolrCloudManager clientCloudManager,
-                                               AutoScalingConfig config,
-                                               boolean withClusterState,
-                                               boolean withStats,
-                                               boolean withSuggestions,
-                                               boolean withSortedNodes,
-                                               boolean withDiagnostics) throws Exception {
-      Policy.Session session = config.getPolicy().createSession(clientCloudManager);
-      ClusterState clusterState = clientCloudManager.getClusterStateProvider().getClusterState();
-      List<Suggester.SuggestionInfo> suggestions = Collections.emptyList();
-      long start, end;
-      if (withSuggestions) {
-        CLIO.err("- calculating suggestions...");
-        start = TimeSource.NANO_TIME.getTimeNs();
-        suggestions = PolicyHelper.getSuggestions(config, clientCloudManager);
-        end = TimeSource.NANO_TIME.getTimeNs();
-        CLIO.err("  (took " + TimeUnit.NANOSECONDS.toMillis(end - start) + " ms)");
-      }
-      Map<String, Object> diagnostics = Collections.emptyMap();
-      if (withDiagnostics) {
-        CLIO.err("- calculating diagnostics...");
-        start = TimeSource.NANO_TIME.getTimeNs();
-        MapWriter mw = PolicyHelper.getDiagnostics(session);
-        diagnostics = new LinkedHashMap<>();
-        mw.toMap(diagnostics);
-        end = TimeSource.NANO_TIME.getTimeNs();
-        CLIO.err("  (took " + TimeUnit.NANOSECONDS.toMillis(end - start) + " ms)");
-      }
-      Map<String, Object> results = new LinkedHashMap<>();
-      if (withClusterState) {
-        Map<String, Object> map = new LinkedHashMap<>();
-        map.put("liveNodes", new TreeSet<>(clusterState.getLiveNodes()));
-        map.put("collections", clusterState.getCollectionsMap());
-        results.put("CLUSTERSTATE", map);
-      }
-      if (withStats) {
-        results.put("STATISTICS", SimUtils.calculateStats(clientCloudManager, config, verbose));
-      }
-      if (withSuggestions) {
-        results.put("SUGGESTIONS", suggestions);
-      }
-      if (!withSortedNodes) {
-        diagnostics.remove("sortedNodes");
-      }
-      if (withDiagnostics) {
-        results.put("DIAGNOSTICS", diagnostics);
-      }
-      return results;
-    }
-
-
-    private void simulate(SolrCloudManager cloudManager,
-                          AutoScalingConfig config,
-                          Map<String, Object> results,
-                          String saveSimulated,
-                          boolean withClusterState,
-                          boolean withStats,
-                          boolean withSuggestions,
-                          boolean withSortedNodes,
-                          boolean withDiagnostics, int iterations, boolean redact) throws Exception {
-      File saveDir = null;
-      if (saveSimulated != null) {
-        saveDir = new File(saveSimulated);
-        if (!saveDir.exists()) {
-          if (!saveDir.mkdirs()) {
-            throw new Exception("Unable to create 'saveSimulated' directory: " + saveDir.getAbsolutePath());
-          }
-        } else if (!saveDir.isDirectory()) {
-          throw new Exception("'saveSimulated' path exists and is not a directory! " + saveDir.getAbsolutePath());
-        }
-      }
-      int SPEED = 50;
-      SimCloudManager simCloudManager = SimCloudManager.createCluster(cloudManager, config, TimeSource.get("simTime:" + SPEED));
-      int loop = 0;
-      List<Suggester.SuggestionInfo> suggestions = Collections.emptyList();
-      Map<String, Object> intermediate = new LinkedHashMap<>();
-      results.put("intermediate", intermediate);
-      while (loop < iterations) {
-        LinkedHashMap<String, Object> perStep = new LinkedHashMap<>();
-        long start = TimeSource.NANO_TIME.getTimeNs();
-        suggestions = PolicyHelper.getSuggestions(config, simCloudManager);
-        CLIO.err("-- step " + loop + ", " + suggestions.size() + " suggestions.");
-        long end = TimeSource.NANO_TIME.getTimeNs();
-        CLIO.err("   - calculated in " + TimeUnit.NANOSECONDS.toMillis(end - start) + " ms (real time ≈ simulated time)");
-        if (suggestions.isEmpty()) {
-          break;
-        }
-        SnapshotCloudManager snapshotCloudManager = new SnapshotCloudManager(simCloudManager, config);
-        if (saveDir != null) {
-          File target = new File(saveDir, "step" + loop + "_start");
-          snapshotCloudManager.saveSnapshot(target, true, redact);
-        }
-        if (verbose) {
-          Map<String, Object> snapshot = snapshotCloudManager.getSnapshot(false, redact);
-          snapshot.remove(SnapshotCloudManager.DISTRIB_STATE_KEY);
-          snapshot.remove(SnapshotCloudManager.MANAGER_STATE_KEY);
-          perStep.put("snapshotStart", snapshot);
-        }
-        intermediate.put("step" + loop, perStep);
-        int unresolvedCount = 0;
-        start = TimeSource.NANO_TIME.getTimeNs();
-        List<Map<String, Object>> perStepOps = new ArrayList<>(suggestions.size());
-        if (withSuggestions) {
-          perStep.put("suggestions", suggestions);
-          perStep.put("opDetails", perStepOps);
-        }
-        for (Suggester.SuggestionInfo suggestion : suggestions) {
-          SolrRequest<?> operation = suggestion.getOperation();
-          if (operation == null) {
-            unresolvedCount++;
-            if (suggestion.getViolation() == null) {
-              CLIO.err("   - ignoring suggestion without violation and without operation: " + suggestion);
-            }
-            continue;
-          }
-          SolrParams params = operation.getParams();
-          if (operation instanceof V2Request) {
-            params = SimUtils.v2AdminRequestToV1Params((V2Request)operation);
-          }
-          Map<String, Object> paramsMap = new LinkedHashMap<>();
-          params.toMap(paramsMap);
-          Replica info = simCloudManager.getSimClusterStateProvider().simGetReplicaInfo(
-              params.get(CollectionAdminParams.COLLECTION), params.get("replica"));
-          if (info == null) {
-            CLIO.err("Could not find ReplicaInfo for params: " + params);
-          } else if (verbose) {
-            paramsMap.put("replicaInfo", info);
-          } else if (info.get(Variable.Type.CORE_IDX.tagName) != null) {
-            paramsMap.put(Variable.Type.CORE_IDX.tagName, info.get(Variable.Type.CORE_IDX.tagName));
-          }
-          if (withSuggestions) {
-            perStepOps.add(paramsMap);
-          }
-          try {
-            simCloudManager.request(operation);
-          } catch (Exception e) {
-            CLIO.err("Aborting - error executing suggestion " + suggestion + ": " + e);
-            Map<String, Object> error = new HashMap<>();
-            error.put("suggestion", suggestion);
-            error.put("replicaInfo", info);
-            error.put("exception", e);
-            perStep.put("error", error);
-            break;
-          }
-        }
-        end = TimeSource.NANO_TIME.getTimeNs();
-        long realTime = TimeUnit.NANOSECONDS.toMillis(end - start);
-        long simTime = realTime * SPEED;
-        CLIO.err("   - executed in " + realTime + " ms (real time), " + simTime + " ms (simulated time)");
-        if (unresolvedCount == suggestions.size()) {
-          CLIO.err("--- aborting simulation, only unresolved violations remain");
-          break;
-        }
-        if (withStats) {
-          perStep.put("statsExecutionStop", SimUtils.calculateStats(simCloudManager, config, verbose));
-        }
-        snapshotCloudManager = new SnapshotCloudManager(simCloudManager, config);
-        if (saveDir != null) {
-          File target = new File(saveDir, "step" + loop + "_stop");
-          snapshotCloudManager.saveSnapshot(target, true, redact);
-        }
-        if (verbose) {
-          Map<String, Object> snapshot = snapshotCloudManager.getSnapshot(false, redact);
-          snapshot.remove(SnapshotCloudManager.DISTRIB_STATE_KEY);
-          snapshot.remove(SnapshotCloudManager.MANAGER_STATE_KEY);
-          perStep.put("snapshotStop", snapshot);
-        }
-        loop++;
-      }
-      if (loop == iterations && !suggestions.isEmpty()) {
-        CLIO.err("### Failed to apply all suggestions in " + iterations + " steps. Remaining suggestions: " + suggestions + "\n");
-      }
-      results.put("finalState", prepareResults(simCloudManager, config, withClusterState, withStats,
-          withSuggestions, withSortedNodes, withDiagnostics));
-    }
   }
 
   /**
