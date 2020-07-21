@@ -112,6 +112,9 @@ public class SolrZooKeeper extends ZooKeeper {
     try (ParWork worker = new ParWork(this, true)) {
       worker.collect(() -> {
         try {
+          ZooKeeperExposed exposed = new ZooKeeperExposed(this, cnxn);
+          exposed.intteruptSendThread();
+//        exposed.intteruptSendThread();
           SolrZooKeeper.super.close();
         } catch (InterruptedException e) {
           ParWork.propegateInterrupt(e);
