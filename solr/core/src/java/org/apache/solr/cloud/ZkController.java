@@ -283,7 +283,7 @@ public class ZkController implements Closeable {
 
   private volatile boolean isClosed;
 
-  private final ConcurrentHashMap<String, Throwable> replicasMetTragicEvent = new ConcurrentHashMap<>(132, 0.75f, 50);
+  private final ConcurrentHashMap<String, Throwable> replicasMetTragicEvent = new ConcurrentHashMap<>(132, 0.75f, 12);
 
   @Deprecated
   // keeps track of replicas that have been asked to recover by leaders running on this node

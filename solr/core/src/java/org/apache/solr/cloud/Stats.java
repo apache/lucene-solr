@@ -36,7 +36,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 public class Stats {
   static final int MAX_STORED_FAILURES = 10;
 
-  final Map<String, Stat> stats = new ConcurrentHashMap<>();
+  final Map<String, Stat> stats = new ConcurrentHashMap<>(64);
   private volatile int queueLength;
 
   public Map<String, Stat> getStats() {

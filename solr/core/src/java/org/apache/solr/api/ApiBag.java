@@ -61,7 +61,7 @@ public class ApiBag {
   private final boolean isCoreSpecific;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final Map<String, PathTrie<Api>> apis = new ConcurrentHashMap<>();
+  private final Map<String, PathTrie<Api>> apis = new ConcurrentHashMap<>(128, 0.75f, 12);
 
   public ApiBag(boolean isCoreSpecific) {
     this.isCoreSpecific = isCoreSpecific;

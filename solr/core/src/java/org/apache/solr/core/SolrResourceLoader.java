@@ -462,7 +462,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   /*
    * A static map of short class name to fully qualified class name
    */
-  private final Map<String, String> classNameCache = new ConcurrentHashMap<>(256, 0.75f, 2048);
+  private final Map<String, String> classNameCache = new ConcurrentHashMap<>(256, 0.75f, 24);
 
   @VisibleForTesting
    void clearCache() {

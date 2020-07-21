@@ -49,10 +49,10 @@ class SolrCores implements Closeable {
 
   private volatile boolean closed;
 
-  private final Map<String, SolrCore> cores = new ConcurrentHashMap<>(64, 0.75f, 200);
+  private final Map<String, SolrCore> cores = new ConcurrentHashMap<>(64, 0.75f, 12);
 
   // These descriptors, once loaded, will _not_ be unloaded, i.e. they are not "transient".
-  private final Map<String, CoreDescriptor> residentDesciptors = new ConcurrentHashMap<>(64, 0.75f, 200);
+  private final Map<String, CoreDescriptor> residentDesciptors = new ConcurrentHashMap<>(64, 0.75f, 12);
 
   private final CoreContainer container;
 

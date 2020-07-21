@@ -39,7 +39,7 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
 
   protected final CoreContainer coreContainer;
 
-  protected final Map<String, CoreDescriptor> transientDescriptors = new ConcurrentHashMap<>(132, 0.75f, 50);
+  protected final Map<String, CoreDescriptor> transientDescriptors = new ConcurrentHashMap<>(128, 0.75f, 12);
 
   //WARNING! The _only_ place you put anything into the list of transient cores is with the putTransientCore method!
   protected volatile Map<String, SolrCore> transientCores; // For "lazily loaded" cores

@@ -165,11 +165,11 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
   private final SolrCloudManager cloudManager;
   private final TimeSource timeSource;
   private final int collectPeriod;
-  private final Map<String, List<String>> counters = new ConcurrentHashMap<>(512, 0.75f, 2048);
-  private final Map<String, List<String>> gauges = new ConcurrentHashMap<>(512, 0.75f, 2048);
+  private final Map<String, List<String>> counters = new ConcurrentHashMap<>(128, 0.75f, 4);
+  private final Map<String, List<String>> gauges = new ConcurrentHashMap<>(128, 0.75f, 4);
   private final String overseerUrlScheme;
 
-  private final Map<String, RrdDb> knownDbs = new ConcurrentHashMap<>(512, 0.75f, 2048);
+  private final Map<String, RrdDb> knownDbs = new ConcurrentHashMap<>(16, 0.75f, 4);
 
   private ScheduledThreadPoolExecutor collectService;
   private boolean logMissingCollection = true;

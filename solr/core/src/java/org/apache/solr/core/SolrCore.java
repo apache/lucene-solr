@@ -214,7 +214,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private final PluginBag<UpdateRequestProcessorFactory> updateProcessors = new PluginBag<>(UpdateRequestProcessorFactory.class, this, true);
   private final Map<String, UpdateRequestProcessorChain> updateProcessorChains;
   private final SolrCoreMetricManager coreMetricManager;
-  private final Map<String, SolrInfoBean> infoRegistry = new ConcurrentHashMap<>();
+  private final Map<String, SolrInfoBean> infoRegistry = new ConcurrentHashMap<>(256, 0.75f, 12);
   private final IndexDeletionPolicyWrapper solrDelPolicy;
   private final SolrSnapshotMetaDataManager snapshotMgr;
   private final DirectoryFactory directoryFactory;
@@ -2869,7 +2869,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    * 'wt' parameter, attempts to find that one; otherwise return the default writer.
    */
   public final QueryResponseWriter getQueryResponseWriter(SolrQueryRequest request) {
-    return getQueryResponseWriter(request.getParams().get(CommonParams.WT));
+    String wt = request.getParams().get(CommonParams.WT);
+    return getQueryResponseWriter(wt);
   }
 
 

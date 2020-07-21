@@ -69,7 +69,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   private Meter numClientErrors = new Meter();
   private Meter numTimeouts = new Meter();
   private Counter requests = new Counter();
-  private final Map<String, Counter> shardPurposes = new ConcurrentHashMap<>();
+ // private final Map<String, Counter> shardPurposes = new ConcurrentHashMap<>();
   private Timer requestTimes = new Timer();
   private Timer distribRequestTimes = new Timer();
   private Timer localRequestTimes = new Timer();
@@ -159,9 +159,9 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
     numClientErrors = solrMetricsContext.meter("clientErrors", getCategory().toString(), scope);
     numTimeouts = solrMetricsContext.meter("timeouts", getCategory().toString(), scope);
     requests = solrMetricsContext.counter("requests", getCategory().toString(), scope);
-    MetricsMap metricsMap = new MetricsMap((detail, map) ->
-        shardPurposes.forEach((k, v) -> map.put(k, v.getCount())));
-    solrMetricsContext.gauge(metricsMap, true, "shardRequests", getCategory().toString(), scope);
+//    MetricsMap metricsMap = new MetricsMap((detail, map) ->
+//        shardPurposes.forEach((k, v) -> map.put(k, v.getCount())));
+    //solrMetricsContext.gauge(metricsMap, true, "shardRequests", getCategory().toString(), scope);
     requestTimes = solrMetricsContext.timer("requestTimes", getCategory().toString(), scope);
     distribRequestTimes = solrMetricsContext.timer("requestTimes", getCategory().toString(), scope, "distrib");
     localRequestTimes = solrMetricsContext.timer("requestTimes", getCategory().toString(), scope, "local");
@@ -193,13 +193,13 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
     boolean distrib = req.getParams().getBool(CommonParams.DISTRIB,
         req.getCore() != null ? req.getCore().getCoreContainer().isZooKeeperAware() : false);
     if (req.getParams().getBool(ShardParams.IS_SHARD, false)) {
-      shardPurposes.computeIfAbsent("total", name -> new Counter()).inc();
+     // shardPurposes.computeIfAbsent("total", name -> new Counter()).inc();
       int purpose = req.getParams().getInt(ShardParams.SHARDS_PURPOSE, 0);
       if (purpose != 0) {
         String[] names = SolrPluginUtils.getRequestPurposeNames(purpose);
-        for (String n : names) {
-          shardPurposes.computeIfAbsent(n, name -> new Counter()).inc();
-        }
+//        for (String n : names) {
+//          shardPurposes.computeIfAbsent(n, name -> new Counter()).inc();
+//        }
       }
     }
     Timer.Context timer = requestTimes.time();
