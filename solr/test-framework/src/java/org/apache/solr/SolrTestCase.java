@@ -159,6 +159,7 @@ public class SolrTestCase extends LuceneTestCase {
     log.info("*******************************************************************");
     log.info("@BeforeClass ------------------------------------------------------");
 
+    interruptThreadsOnTearDown("ParWork", false);
 
     if (!SysStats.getSysStats().isAlive()) {
       SysStats.reStartSysStats();
