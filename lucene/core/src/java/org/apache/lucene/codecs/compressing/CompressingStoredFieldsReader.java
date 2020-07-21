@@ -36,6 +36,7 @@ import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.TYPE_MASK;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_CURRENT;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_OFFHEAP_INDEX;
+import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_SEPARATE_DOC_SCHEMA_FROM_DATA;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_START;
 
 import java.io.EOFException;
@@ -578,8 +579,18 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
 
     final SerializedDocument doc = document(docID);
 
+    final long[] schema;
+    if (version >= VERSION_SEPARATE_DOC_SCHEMA_FROM_DATA) {
+      schema = new long[doc.numStoredFields];
+      for (int fieldIDX = 0; fieldIDX < doc.numStoredFields; fieldIDX++) {
+        schema[fieldIDX] = doc.in.readVLong();
+      }
+    } else {
+      schema = null;
+    }
+
     for (int fieldIDX = 0; fieldIDX < doc.numStoredFields; fieldIDX++) {
-      final long infoAndBits = doc.in.readVLong();
+      final long infoAndBits = schema == null ? doc.in.readVLong() : schema[fieldIDX];
       final int fieldNumber = (int) (infoAndBits >>> TYPE_BITS);
       final FieldInfo fieldInfo = fieldInfos.fieldInfo(fieldNumber);
 

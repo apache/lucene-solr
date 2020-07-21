@@ -73,7 +73,8 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
 
   static final int VERSION_START = 1;
   static final int VERSION_OFFHEAP_INDEX = 2;
-  static final int VERSION_CURRENT = VERSION_OFFHEAP_INDEX;
+  static final int VERSION_SEPARATE_DOC_SCHEMA_FROM_DATA = 3;
+  static final int VERSION_CURRENT = VERSION_SEPARATE_DOC_SCHEMA_FROM_DATA;
 
   private final String segment;
   private FieldsIndexWriter indexWriter;
@@ -85,6 +86,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
   private final int maxDocsPerChunk;
 
   private final ByteBuffersDataOutput bufferedDocs;
+  private final ByteBuffersDataOutput bufferedDocData;
   private int[] numStoredFields; // number of stored fields
   private int[] endOffsets; // end offsets in bufferedDocs
   private int docBase; // doc ID at the beginning of the chunk
@@ -104,6 +106,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
     this.maxDocsPerChunk = maxDocsPerChunk;
     this.docBase = 0;
     this.bufferedDocs = ByteBuffersDataOutput.newResettableInstance();
+    this.bufferedDocData = ByteBuffersDataOutput.newResettableInstance();
     this.numStoredFields = new int[16];
     this.endOffsets = new int[16];
     this.numBufferedDocs = 0;
@@ -153,6 +156,8 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
     }
     this.numStoredFields[numBufferedDocs] = numStoredFieldsInDoc;
     numStoredFieldsInDoc = 0;
+    bufferedDocData.copyTo(bufferedDocs);
+    bufferedDocData.reset();
     endOffsets[numBufferedDocs] = Math.toIntExact(bufferedDocs.size());
     ++numBufferedDocs;
     if (triggerFlush()) {
@@ -211,6 +216,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
   }
 
   private void flush() throws IOException {
+    assert bufferedDocData.size() == 0;
     indexWriter.writeIndex(numBufferedDocs, fieldsStream.getFilePointer());
 
     // transform end offsets into lengths
@@ -227,7 +233,6 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
     // TODO: do we need to slice it since we already have the slices in the buffer? Perhaps
     // we should use max-block-bits restriction on the buffer itself, then we won't have to check it here.
     byte [] content = bufferedDocs.toArrayCopy();
-    bufferedDocs.reset();
 
     if (sliced) {
       // big chunk, slice it
@@ -251,7 +256,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
 
     ++numStoredFieldsInDoc;
 
-    int bits = 0;
+    int bits;
     final BytesRef bytes;
     final String string;
 
@@ -288,19 +293,19 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
     bufferedDocs.writeVLong(infoAndBits);
 
     if (bytes != null) {
-      bufferedDocs.writeVInt(bytes.length);
-      bufferedDocs.writeBytes(bytes.bytes, bytes.offset, bytes.length);
+      bufferedDocData.writeVInt(bytes.length);
+      bufferedDocData.writeBytes(bytes.bytes, bytes.offset, bytes.length);
     } else if (string != null) {
-      bufferedDocs.writeString(string);
+      bufferedDocData.writeString(string);
     } else {
       if (number instanceof Byte || number instanceof Short || number instanceof Integer) {
-        bufferedDocs.writeZInt(number.intValue());
+        bufferedDocData.writeZInt(number.intValue());
       } else if (number instanceof Long) {
-        writeTLong(bufferedDocs, number.longValue());
+        writeTLong(bufferedDocData, number.longValue());
       } else if (number instanceof Float) {
-        writeZFloat(bufferedDocs, number.floatValue());
+        writeZFloat(bufferedDocData, number.floatValue());
       } else if (number instanceof Double) {
-        writeZDouble(bufferedDocs, number.doubleValue());
+        writeZDouble(bufferedDocData, number.doubleValue());
       } else {
         throw new AssertionError("Cannot get here");
       }
@@ -460,9 +465,10 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
     if (numBufferedDocs > 0) {
       flush();
       numDirtyChunks++; // incomplete: we had to force this flush
-    } else {
-      assert bufferedDocs.size() == 0;
     }
+    assert bufferedDocs.size() == 0;
+    assert bufferedDocData.size() == 0;
+
     if (docBase != numDocs) {
       throw new RuntimeException("Wrote " + docBase + " docs, finish called with numDocs=" + numDocs);
     }
@@ -470,7 +476,6 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
     fieldsStream.writeVLong(numChunks);
     fieldsStream.writeVLong(numDirtyChunks);
     CodecUtil.writeFooter(fieldsStream);
-    assert bufferedDocs.size() == 0;
   }
 
   // bulk merge is scary: its caused corruption bugs in the past.
