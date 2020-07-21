@@ -115,8 +115,6 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   private volatile boolean closeOnDestroy = true;
 
   private RateLimitManager rateLimitManager;
-  String _suspended = "SolrDispatchFilter@" + Integer.toHexString(hashCode()) + ".SUSPENDED";
-  String _resumed = "SolrDispatchFilter@" + Integer.toHexString(hashCode()) + ".RESUMED";
 
   /**
    * Enum to define action that needs to be processed.
