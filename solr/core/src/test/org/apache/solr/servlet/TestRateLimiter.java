@@ -37,7 +37,7 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.apache.solr.servlet.RateLimitManager.DEFAULT_SUSPEND_TIME_INMS;
+import static org.apache.solr.servlet.RateLimitManager.DEFAULT_EXPIRATION_TIME_INMS;
 import static org.apache.solr.servlet.RateLimitManager.DEFAULT_TIMEOUT_MS;
 
 public class TestRateLimiter extends SolrCloudTestCase {
@@ -58,7 +58,7 @@ public class TestRateLimiter extends SolrCloudTestCase {
 
     SolrDispatchFilter solrDispatchFilter = cluster.getJettySolrRunner(0).getSolrDispatchFilter();
 
-    RequestRateLimiter.RateLimiterConfig rateLimiterConfig = new RequestRateLimiter.RateLimiterConfig(DEFAULT_SUSPEND_TIME_INMS,
+    RequestRateLimiter.RateLimiterConfig rateLimiterConfig = new RequestRateLimiter.RateLimiterConfig(DEFAULT_EXPIRATION_TIME_INMS,
         DEFAULT_TIMEOUT_MS, 5 /* allowedRequests */);
     RateLimitManager.Builder builder = new MockBuilder(new MockRequestRateLimiter(rateLimiterConfig, 5),
         new MockRequestRateLimiter(rateLimiterConfig, 5));
@@ -130,7 +130,7 @@ public class TestRateLimiter extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(INDEX_COLLECTION, 1, 1).process(client);
     cluster.waitForActiveCollection(INDEX_COLLECTION, 1, 1);
 
-    RequestRateLimiter.RateLimiterConfig rateLimiterConfig = new RequestRateLimiter.RateLimiterConfig(DEFAULT_SUSPEND_TIME_INMS,
+    RequestRateLimiter.RateLimiterConfig rateLimiterConfig = new RequestRateLimiter.RateLimiterConfig(DEFAULT_EXPIRATION_TIME_INMS,
         DEFAULT_TIMEOUT_MS, 3 /* allowedRequests */);
     CountDownLatch countDownLatch = new CountDownLatch(1);
     RateLimitManager.Builder builder = new MockBuilder(new MockBlockingRequestRateLimiter(rateLimiterConfig, 3, countDownLatch),

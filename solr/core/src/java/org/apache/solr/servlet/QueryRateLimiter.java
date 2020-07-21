@@ -20,13 +20,13 @@ package org.apache.solr.servlet;
 import javax.servlet.FilterConfig;
 
 import static org.apache.solr.servlet.RateLimitManager.DEFAULT_CONCURRENT_REQUESTS;
-import static org.apache.solr.servlet.RateLimitManager.DEFAULT_SUSPEND_TIME_INMS;
+import static org.apache.solr.servlet.RateLimitManager.DEFAULT_EXPIRATION_TIME_INMS;
 import static org.apache.solr.servlet.RateLimitManager.DEFAULT_TIMEOUT_MS;
 
 public class QueryRateLimiter extends RequestRateLimiter {
   final static String MAX_QUERY_REQUESTS = "maxQueryRequests";
   final static String QUERY_WAIT_FOR_SLOT_ALLOCATION_INMS = "queryWaitForSlotAllocationInMS";
-  final static String QUERY_REQUEST_SUSPEND_TIME_INMS = "queryRequestSuspendTimeInMS";
+  final static String QUERY_REQUEST_EXPIRATION_TIME_INMS = "queryRequestExpirationTimeInMS";
 
   public QueryRateLimiter(FilterConfig filterConfig) {
     super(constructQueryRateLimiterConfig(filterConfig));
@@ -35,8 +35,8 @@ public class QueryRateLimiter extends RequestRateLimiter {
   protected static RequestRateLimiter.RateLimiterConfig constructQueryRateLimiterConfig(FilterConfig filterConfig) {
     RequestRateLimiter.RateLimiterConfig queryRateLimiterConfig = new RequestRateLimiter.RateLimiterConfig();
 
-    queryRateLimiterConfig.requestSuspendTimeInMS = getParamAndParseLong(filterConfig, QUERY_REQUEST_SUSPEND_TIME_INMS,
-        DEFAULT_SUSPEND_TIME_INMS);
+    queryRateLimiterConfig.requestSuspendTimeInMS = getParamAndParseLong(filterConfig, QUERY_REQUEST_EXPIRATION_TIME_INMS,
+        DEFAULT_EXPIRATION_TIME_INMS);
     queryRateLimiterConfig.waitForSlotAcquisition = getParamAndParseLong(filterConfig, QUERY_WAIT_FOR_SLOT_ALLOCATION_INMS,
         DEFAULT_TIMEOUT_MS);
     queryRateLimiterConfig.allowedRequests = getParamAndParseInt(filterConfig, MAX_QUERY_REQUESTS,
