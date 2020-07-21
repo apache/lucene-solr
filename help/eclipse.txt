@@ -1,0 +1,8 @@
+Eclipse IDE workflow support
+============================
+
+Run the following:
+
+gradlew eclipse
+
+and then "Import as existing project".

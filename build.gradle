@@ -102,6 +102,7 @@ apply from: file('gradle/maven/defaults-maven.gradle')
 
 // IDE support, settings and specials.
 apply from: file('gradle/ide/intellij-idea.gradle')
+apply from: file('gradle/ide/eclipse.gradle')
 
 // Validation tasks
 apply from: file('gradle/validation/precommit.gradle')
