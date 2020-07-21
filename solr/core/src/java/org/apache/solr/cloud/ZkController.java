@@ -440,9 +440,9 @@ public class ZkController implements Closeable {
 
       @Override
       public void command() throws SessionExpiredException {
-        if (cc.isShutDown() || !zkClient.isConnected()) return;
-        log.info("ZooKeeper session re-connected ... refreshing core states after session expiration.");
         synchronized (initLock) {
+          if (cc.isShutDown() || !zkClient.isConnected()) return;
+          log.info("ZooKeeper session re-connected ... refreshing core states after session expiration.");
           try {
             // recreate our watchers first so that they exist even on any problems below
             zkStateReader.createClusterStateWatchersAndUpdate();

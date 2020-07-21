@@ -927,7 +927,13 @@ public class RecoveryStrategy implements Runnable, Closeable {
     } else {
       log.info("Replaying buffered documents.");
       // wait for replay
-      RecoveryInfo report = future.get();
+      RecoveryInfo report;
+      try {
+        report = future.get();
+      } catch (InterruptedException e) {
+        ParWork.propegateInterrupt(e);
+        throw new InterruptedException();
+      }
       if (report.failed) {
         SolrException.log(log, "Replay failed");
         throw new SolrException(ErrorCode.SERVER_ERROR, "Replay failed");
