@@ -294,7 +294,7 @@ public class HttpShardHandler extends ShardHandler {
         if (urls != null && !urls.isEmpty()) {
           MDC.put("ShardRequest.urlList", urls.toString());
         }
-        if (!HttpShardHandlerFactory.ASYNC) pending.add( completionService.submit(task) );
+        if (!HttpShardHandlerFactory.ASYNC) pending.add(completionService.submit(task));
       } finally {
         MDC.remove("ShardRequest.shards");
         MDC.remove("ShardRequest.urlList");

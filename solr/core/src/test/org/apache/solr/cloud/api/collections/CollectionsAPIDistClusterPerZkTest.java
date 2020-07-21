@@ -113,7 +113,7 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
     System.setProperty("solr.so_commit_timeout.default", "20000");
     System.setProperty("solr.httpclient.defaultSoTimeout", "20000");
 
-    configureCluster(4)
+    configureCluster(TEST_NIGHTLY ? 4 : 2)
         .addConfig("conf", configset(getConfigSet()))
         .addConfig("conf2", configset(getConfigSet()))
         .withSolrXml(TEST_PATH().resolve("solr.xml"))
@@ -183,6 +183,7 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Nightly // needs 4 nodes
   public void testCoresAreDistributedAcrossNodes() throws Exception {
     CollectionAdminRequest.createCollection("nodes_used_collection", "conf", 2, 2)
         .process(cluster.getSolrClient());

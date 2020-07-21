@@ -72,7 +72,7 @@ public class TestSimDistributedQueue extends SolrTestCaseJ4 {
 
     // should block until the background thread makes the offer
     (new QueueChangerThread(dq, 500)).start();
-    assertNotNull(dq.peek(15000));
+    assertNotNull(dq.peek(1500));
     assertNotNull(dq.remove());
     assertNull(dq.poll());
 
