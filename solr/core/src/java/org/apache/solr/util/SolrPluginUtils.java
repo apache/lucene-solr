@@ -700,7 +700,7 @@ public class SolrPluginUtils {
       int percent = checkedParseInt(spec,
           "Invalid 'mm' spec. Expecting an integer.");
       float calc = (result * percent) * (1/100f);
-      result = calc < 0 ? result + (int)calc : (int)calc;
+      result = calc < 0 ? result + (int)Math.round(calc) : (int)Math.round(calc);
     } else {
       int calc = checkedParseInt(spec, "Invalid 'mm' spec. Expecting an integer.");
       result = calc < 0 ? result + calc : calc;
