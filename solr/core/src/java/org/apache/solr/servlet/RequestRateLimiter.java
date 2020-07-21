@@ -33,6 +33,16 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Handles rate limiting for a specific request type.
+ *
+ * The control flow is as follows:
+ * Handle request -- Check if slot is available -- If available, acquire slot and proceed --
+ * else asynchronously queue the request
+ *
+ * When an active request completes, a check is performed to see if there are any pending requests.
+ * If there is an available pending request, process the same.
+ */
 public class RequestRateLimiter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
