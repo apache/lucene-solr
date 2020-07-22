@@ -184,7 +184,7 @@ public class TestMatchesIterator extends LuceneTestCase {
       Matches matches = w.matches(ctx, doc);
       if (expected[i]) {
         MatchesIterator mi = matches.getMatches(field);
-        assertNull(mi);
+        assertFalse(mi.next());
       }
       else {
         assertNull(matches);

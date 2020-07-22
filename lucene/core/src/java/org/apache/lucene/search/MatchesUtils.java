@@ -19,12 +19,12 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import org.apache.lucene.index.LeafReaderContext;
@@ -43,22 +43,63 @@ public final class MatchesUtils {
    * Indicates a match with no term positions, for example on a Point or DocValues field,
    * or a field indexed as docs and freqs only
    */
-  public static final Matches MATCH_WITH_NO_TERMS = new Matches() {
-    @Override
-    public MatchesIterator getMatches(String field) {
-      return null;
-    }
+  public static final Matches matchWithNoTerms(Query query, String... fields) {
+    return new Matches() {
+      @Override
+      public MatchesIterator getMatches(String field) {
+        return new MatchesIterator() {
+          @Override
+          public boolean next() throws IOException {
+            return false;
+          }
 
-    @Override
-    public Collection<Matches> getSubMatches() {
-      return Collections.emptyList();
-    }
+          @Override
+          public int startPosition() {
+            throw unreachable();
+          }
 
-    @Override
-    public Iterator<String> iterator() {
-      return Collections.emptyIterator();
-    }
-  };
+          @Override
+          public int endPosition() {
+            throw unreachable();
+          }
+
+          @Override
+          public int startOffset() throws IOException {
+            throw unreachable();
+          }
+
+          @Override
+          public int endOffset() throws IOException {
+            throw unreachable();
+          }
+
+          @Override
+          public MatchesIterator getSubMatches() throws IOException {
+            return null;
+          }
+
+          private AssertionError unreachable() {
+            throw new AssertionError();
+          }
+
+          @Override
+          public Query getQuery() {
+            return query;
+          }
+        };
+      }
+
+      @Override
+      public Collection<Matches> getSubMatches() {
+        return Collections.emptyList();
+      }
+
+      @Override
+      public Iterator<String> iterator() {
+        return Arrays.asList(fields).iterator();
+      }
+    };
+  }
 
   /**
    * Amalgamate a collection of {@link Matches} into a single object
@@ -67,19 +108,16 @@ public final class MatchesUtils {
     if (subMatches == null || subMatches.size() == 0) {
       return null;
     }
-    List<Matches> sm = subMatches.stream().filter(m -> m != MATCH_WITH_NO_TERMS).collect(Collectors.toList());
-    if (sm.size() == 0) {
-      return MATCH_WITH_NO_TERMS;
-    }
-    if (sm.size() == 1) {
-      return sm.get(0);
+
+    if (subMatches.size() == 1) {
+      return subMatches.get(0);
     }
 
     return new Matches() {
       @Override
       public MatchesIterator getMatches(String field) throws IOException {
-        List<MatchesIterator> subIterators = new ArrayList<>(sm.size());
-        for (Matches m : sm) {
+        List<MatchesIterator> subIterators = new ArrayList<>(subMatches.size());
+        for (Matches m : subMatches) {
           MatchesIterator it = m.getMatches(field);
           if (it != null) {
             subIterators.add(it);
@@ -91,7 +129,7 @@ public final class MatchesUtils {
       @Override
       public Iterator<String> iterator() {
         // for each sub-match, iterate its fields (it's an Iterable of the fields), and return the distinct set
-        return sm.stream().flatMap(m -> StreamSupport.stream(m.spliterator(), false)).distinct().iterator();
+        return subMatches.stream().flatMap(m -> StreamSupport.stream(m.spliterator(), false)).distinct().iterator();
       }
 
       @Override

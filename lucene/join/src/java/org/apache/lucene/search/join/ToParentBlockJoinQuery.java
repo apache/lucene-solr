@@ -195,7 +195,9 @@ public class ToParentBlockJoinQuery extends Query {
           return null;
         }
       }
-      return MatchesUtils.MATCH_WITH_NO_TERMS;
+
+      // TODO: which fields should be here?
+      return MatchesUtils.matchWithNoTerms(getQuery());
     }
   }
 

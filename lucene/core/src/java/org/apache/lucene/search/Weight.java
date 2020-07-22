@@ -17,13 +17,14 @@
 package org.apache.lucene.search;
 
 
-import java.io.IOException;
-import java.util.Arrays;
-
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.Bits;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 /**
  * Expert: Calculate query weights and build query scorers.
@@ -65,7 +66,7 @@ public abstract class Weight implements SegmentCacheable {
    * does not match the parent query
    *
    * A query match that contains no position information (for example, a Point or
-   * DocValues query) will return {@link MatchesUtils#MATCH_WITH_NO_TERMS}
+   * DocValues query) will return {@link MatchesUtils#matchWithNoTerms}
    *
    * @param context the reader's context to create the {@link Matches} for
    * @param doc     the document's id relative to the given context's reader
@@ -88,7 +89,19 @@ public abstract class Weight implements SegmentCacheable {
         return null;
       }
     }
-    return MatchesUtils.MATCH_WITH_NO_TERMS;
+
+    // Try to get the set of fields this matches applies to. Not every query will
+    // have fields (think MatchAllDocsQuery) but most should return something that
+    // is relevant and better than nothing.
+    ArrayList<String> fields = new ArrayList<>();
+    getQuery().visit(new QueryVisitor() {
+      @Override
+      public boolean acceptField(String field) {
+        return super.acceptField(field);
+      }
+    });
+
+    return MatchesUtils.matchWithNoTerms(getQuery(), fields.toArray(String[]::new));
   }
 
   /**
