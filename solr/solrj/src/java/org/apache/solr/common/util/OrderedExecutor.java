@@ -24,6 +24,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Semaphore;
 
+import org.apache.solr.common.ParWork;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ExecutorUtil;
 
 public class OrderedExecutor implements Executor {
@@ -57,8 +59,8 @@ public class OrderedExecutor implements Executor {
     try {
       sparseStripedLock.add(lockId);
     } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      return;
+      ParWork.propegateInterrupt(e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
 
     try {
@@ -91,7 +93,7 @@ public class OrderedExecutor implements Executor {
 
   /** A set of locks by a key {@code T}, kind of like Google Striped but the keys are sparse/lazy. */
   private static class SparseStripedLock<T> {
-    private ConcurrentHashMap<T, CountDownLatch> map = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<T, CountDownLatch> map = new ConcurrentHashMap<>(32);
     private final Semaphore sizeSemaphore;
 
     SparseStripedLock(int maxSize) {

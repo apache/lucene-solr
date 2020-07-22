@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.sf.saxon.trans.Err;
@@ -928,10 +929,12 @@ public class RecoveryStrategy implements Runnable, Closeable {
       // wait for replay
       RecoveryInfo report;
       try {
-        report = future.get();
+        report = future.get(10, TimeUnit.MINUTES); // nocommit - how long? make configurable too
       } catch (InterruptedException e) {
         ParWork.propegateInterrupt(e);
         throw new InterruptedException();
+      } catch (TimeoutException e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, e);
       }
       if (report.failed) {
         SolrException.log(log, "Replay failed");
