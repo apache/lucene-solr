@@ -378,9 +378,9 @@ public class HttpShardHandler extends ShardHandler {
       return null;
     } else {
 
-      while (pending.size() > 0) {
+      while (pending.size() > 0 && !Thread.currentThread().isInterrupted()) {
         try {
-          Future<ShardResponse> future = completionService.take();
+          Future<ShardResponse> future = completionService.poll(Integer.getInteger("solr.httpShardHandler.completionTimeout", 10), TimeUnit.SECONDS);
           pending.remove(future);
           ShardResponse rsp = future.get();
           if (bailOnError && rsp.getException() != null) return rsp; // if exception, return immediately
