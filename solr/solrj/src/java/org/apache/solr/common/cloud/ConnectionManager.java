@@ -265,9 +265,9 @@ public class ConnectionManager implements Watcher, Closeable {
       disconnected();
       connectionStrategy.disconnected();
     } else if (state == KeeperState.Closed) {
-      log.info("zkClient has disconnected");
-      disconnected();
-      connectionStrategy.disconnected();
+      log.info("zkClient state == closed");
+      //disconnected();
+      //connectionStrategy.disconnected();
     } else if (state == KeeperState.AuthFailed) {
       log.warn("zkClient received AuthFailed");
     }
