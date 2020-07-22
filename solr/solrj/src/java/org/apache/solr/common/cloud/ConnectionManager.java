@@ -245,7 +245,7 @@ public class ConnectionManager implements Watcher, Closeable {
 
           break;
 
-        } catch (InterruptedException e) {
+        } catch (InterruptedException | AlreadyClosedException e) {
           ParWork.propegateInterrupt(e);
           return;
         } catch (Exception e) {
