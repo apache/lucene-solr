@@ -30,8 +30,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.solr.common.ParWork;
-import org.apache.solr.common.util.ObjectReleaseTracker;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.StringUtil;

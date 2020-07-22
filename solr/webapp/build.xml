@@ -46,8 +46,7 @@
       <fileset dir="web" excludes="${exclude.from.webapp}, libs/angular-cookies.js, libs/angular-route.js, libs/angular-sanitize.js, libs/angular-utf8-base.js, libs/angular.js, libs/chosen.jquery.js"/>
       <fileset dir="${dest}/web" excludes="${exclude.from.war}"/> <!-- contribs' additions -->
     </copy>
-    <mkdir dir="${server.dir}/solr-webapp/webapp/WEB-INF/lib"/>
-    <copy todir="${server.dir}/solr-webapp/webapp/WEB-INF/lib">
+    <copy todir="${server.dir}/solr-webapp/lib/ext">
       <fileset dir="${common-solr.dir}/core/lib" excludes="${exclude.from.webapp},${common.classpath.excludes}"/>
       <fileset dir="${common-solr.dir}/solrj/lib" excludes="${exclude.from.webapp},${common.classpath.excludes}"/>
       <fileset dir="${lucene-libs}" excludes="${exclude.from.webapp},${common.classpath.excludes}" />
