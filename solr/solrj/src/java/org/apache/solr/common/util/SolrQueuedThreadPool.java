@@ -82,6 +82,10 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
     private int _lowThreadsThreshold = 1;
     private ThreadPoolBudget _budget;
 
+    public SolrQueuedThreadPool() {
+        this("solr-jetty-thread");
+    }
+
     public SolrQueuedThreadPool(String name) {
         this(10000, 15,
                 15000, -1,
