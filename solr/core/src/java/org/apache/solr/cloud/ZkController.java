@@ -420,7 +420,7 @@ public class ZkController implements Closeable {
     zkClient.getConnectionManager().setBeforeReconnect(new BeforeReconnect() {
 
       @Override
-      public void command() {
+      public synchronized void command() {
 
         try (ParWork worker = new ParWork("disconnected", true)) {
           worker.collect(overseerContexts);
