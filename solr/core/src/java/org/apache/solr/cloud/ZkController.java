@@ -1664,6 +1664,7 @@ public class ZkController implements Closeable {
         } catch (Exception e) {
           ParWork.propegateInterrupt("Error closing previous replication attempt", e);
         }
+        if (isClosed()) throw new AlreadyClosedException();
         replicateFromLeader.startReplication(switchTransactionLog);
       }
     }
