@@ -47,6 +47,7 @@ import org.apache.solr.client.solrj.routing.ReplicaListTransformer;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -392,6 +393,7 @@ public class HttpShardHandler extends ShardHandler {
             return rsp;
           }
         } catch (InterruptedException e) {
+          ParWork.propegateInterrupt(e);
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
         } catch (ExecutionException e) {
           // should be impossible... the problem with catching the exception
