@@ -862,7 +862,8 @@ public class SolrZkClient implements Closeable {
     isClosed = true;
 
     try (ParWork worker = new ParWork(this, true)) {
-      worker.add("zkClient", connManager, keeper);
+      worker.add("keeper", keeper);
+      worker.add("connectionManager", connManager);
       worker.add("zkExecutors", zkCallbackExecutor, zkConnManagerCallbackExecutor);
     }
     assert ObjectReleaseTracker.release(this);

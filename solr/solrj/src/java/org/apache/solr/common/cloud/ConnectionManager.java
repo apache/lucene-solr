@@ -56,8 +56,8 @@ public class ConnectionManager implements Watcher, Closeable {
 
   private volatile boolean isClosed = false;
 
-  private CountDownLatch connectedLatch = new CountDownLatch(1);
-  private CountDownLatch disconnectedLatch = new CountDownLatch(1);
+  private volatile CountDownLatch connectedLatch = new CountDownLatch(1);
+  private volatile CountDownLatch disconnectedLatch = new CountDownLatch(1);
   private volatile DisconnectListener disconnectListener;
   private volatile int lastConnectedState = 0;
 
@@ -287,12 +287,14 @@ public class ConnectionManager implements Watcher, Closeable {
     log.info("Close called on ZK ConnectionManager");
     this.isClosed = true;
     this.likelyExpiredState = LikelyExpiredState.EXPIRED;
-    try {
-      waitForDisconnected(5000);
-    } catch (InterruptedException e) {
-      ParWork.propegateInterrupt(e);
-    } catch (TimeoutException e) {
-      log.warn("Timeout waiting for ZooKeeper client to disconnect");
+    if (client.isConnected()) {
+      try {
+        waitForDisconnected(5000);
+      } catch (InterruptedException e) {
+        ParWork.propegateInterrupt(e);
+      } catch (TimeoutException e) {
+        log.warn("Timeout waiting for ZooKeeper client to disconnect");
+      }
     }
   }
 
@@ -320,7 +322,8 @@ public class ConnectionManager implements Watcher, Closeable {
 
   public void waitForDisconnected(long waitForDisconnected)
       throws InterruptedException, TimeoutException {
-    if (!client.isConnected()) return;
+
+    if (!client.isConnected() || lastConnectedState != 1) return;
     boolean success = disconnectedLatch.await(1000, TimeUnit.MILLISECONDS);
     if (!success) {
       throw new TimeoutException("Timeout waiting to disconnect from ZooKeeper");
