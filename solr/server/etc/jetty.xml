@@ -179,11 +179,7 @@
                  </New>
                </Item>
                <Item>
-                 <New id="InstrumentedHandler" class="com.codahale.metrics.jetty9.InstrumentedHandler">
-                   <Arg><Ref refid="solrJettyMetricRegistry"/></Arg>
-                   <Set name="handler">
-                     <New id="DefaultHandler" class="org.eclipse.jetty.server.handler.DefaultHandler"/>
-                   </Set>
+                 <New id="ShutdownHandler" class="org.eclipse.jetty.server.handler.ShutdownHandler">
                  </New>
                </Item>
              </Array>
