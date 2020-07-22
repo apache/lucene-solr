@@ -58,6 +58,8 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.routing.ReplicaListTransformer;
 import org.apache.solr.client.solrj.routing.RequestReplicaListTransformerGenerator;
+import org.apache.solr.client.solrj.util.AsyncListener;
+import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -838,6 +840,17 @@ public abstract class BaseCloudSolrClient extends SolrClient {
 
   @Override
   public NamedList<Object> request(@SuppressWarnings({"rawtypes"})SolrRequest request, String collection) throws SolrServerException, IOException {
+    return makeRequest(request, collection, null);
+  }
+
+  /**
+   * Will execute a request synchronously if asyncListener is null, asynchronously otherwise.
+   *
+   * @return A {@link NamedList} with the response if sync, or a {@link NamedList} containing a single Cancellable object if async
+   */
+  NamedList<Object> makeRequest(@SuppressWarnings({"rawtypes"}) SolrRequest request,
+                                String collection,
+                                AsyncListener<LBSolrClient.Rsp> asyncListener) throws SolrServerException, IOException {
     // the collection parameter of the request overrides that of the parameter to this method
     String requestCollection = request.getCollection();
     if (requestCollection != null) {
@@ -847,7 +860,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     }
     List<String> inputCollections =
         collection == null ? Collections.emptyList() : StrUtils.splitSmart(collection, ",", true);
-    return requestWithRetryOnStaleState(request, 0, inputCollections);
+    return requestWithRetryOnStaleState(request, 0, inputCollections, asyncListener);
   }
 
   /**
@@ -855,8 +868,10 @@ public abstract class BaseCloudSolrClient extends SolrClient {
    * there's a chance that the request will fail due to cached stale state,
    * which means the state must be refreshed from ZK and retried.
    */
-  protected NamedList<Object> requestWithRetryOnStaleState(@SuppressWarnings({"rawtypes"})SolrRequest request, int retryCount, List<String> inputCollections)
-      throws SolrServerException, IOException {
+  protected NamedList<Object> requestWithRetryOnStaleState(@SuppressWarnings({"rawtypes"})SolrRequest request,
+                                                           int retryCount,
+                                                           List<String> inputCollections,
+                                                           AsyncListener<LBSolrClient.Rsp> asyncListener) throws SolrServerException, IOException {
     connect(); // important to call this before you start working with the ZkStateReader
 
     // build up a _stateVer_ param to pass to the server containing all of the
@@ -913,9 +928,9 @@ public abstract class BaseCloudSolrClient extends SolrClient {
 
     NamedList<Object> resp = null;
     try {
-      resp = sendRequest(request, inputCollections);
+      resp = sendRequest(request, inputCollections, asyncListener);
       //to avoid an O(n) operation we always add STATE_VERSION to the last and try to read it from there
-      Object o = resp == null || resp.size() == 0 ? null : resp.get(STATE_VERSION, resp.size() - 1);
+      Object o = resp == null || resp.size() == 0 || asyncListener == null ? null : resp.get(STATE_VERSION, resp.size() - 1);
       if(o != null && o instanceof Map) {
         //remove this because no one else needs this and tests would fail if they are comparing responses
         resp.remove(resp.size()-1);
@@ -980,7 +995,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
           //it is probably not worth trying again and again because
           // the state would not have been updated
           log.info("trying request again");
-          return requestWithRetryOnStaleState(request, retryCount + 1, inputCollections);
+          return requestWithRetryOnStaleState(request, retryCount + 1, inputCollections, asyncListener);
         }
       } else {
         log.info("request was not communication error it seems");
@@ -1027,7 +1042,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       // if the state was stale, then we retry the request once with new state pulled from Zk
       if (stateWasStale) {
         log.warn("Re-trying request to collection(s) {} after stale state error from server.", inputCollections);
-        resp = requestWithRetryOnStaleState(request, retryCount+1, inputCollections);
+        resp = requestWithRetryOnStaleState(request, retryCount+1, inputCollections, asyncListener);
       } else {
         if (exc instanceof SolrException || exc instanceof SolrServerException || exc instanceof IOException) {
           throw exc;
@@ -1040,7 +1055,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     return resp;
   }
 
-  protected NamedList<Object> sendRequest(@SuppressWarnings({"rawtypes"})SolrRequest request, List<String> inputCollections)
+  protected NamedList<Object> sendRequest(@SuppressWarnings({"rawtypes"})SolrRequest request, List<String> inputCollections, AsyncListener<LBSolrClient.Rsp> asyncListener)
       throws SolrServerException, IOException {
     connect();
 
@@ -1152,8 +1167,25 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     }
 
     LBSolrClient.Req req = new LBSolrClient.Req(request, theUrlList);
-    LBSolrClient.Rsp rsp = getLbClient().request(req);
-    return rsp.getResponse();
+    LBSolrClient lbSolrClient = getLbClient();
+
+    boolean makeAsyncRequest = asyncListener != null;
+    if (makeAsyncRequest && !(lbSolrClient instanceof LBHttp2SolrClient)) {
+      log.warn("Asynchronous requests require HTTP/2 Solr client, defaulting to synchronous request.");
+      makeAsyncRequest = false;
+    }
+
+    if (makeAsyncRequest) {
+      // Make request asynchronously, wrap Cancellable in a NamedList to match return type of synchronous request
+      NamedList<Object> cancellableWrapper = new NamedList<>();
+      Cancellable cancellable = ((LBHttp2SolrClient) getLbClient()).asyncReq(req, asyncListener);
+      cancellableWrapper.add("asyncCancellable", cancellable);
+      return cancellableWrapper;
+    } else {
+      // Make request synchronously
+      LBSolrClient.Rsp rsp = getLbClient().request(req);
+      return rsp.getResponse();
+    }
   }
 
   /** Resolves the input collections to their possible aliased collections. Doesn't validate collection existence. */

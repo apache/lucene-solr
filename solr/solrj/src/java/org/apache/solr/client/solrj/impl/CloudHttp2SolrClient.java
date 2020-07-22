@@ -23,8 +23,13 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.util.AsyncListener;
+import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.NamedList;
 
 /**
  * SolrJ client class to communicate with SolrCloud using Http2SolrClient.
@@ -111,6 +116,25 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
   @Override
   protected boolean wasCommError(Throwable rootCause) {
     return false;
+  }
+
+  /**
+   * Execute an asynchronous request against a Solr server for a given collection
+   *
+   * @param request the request to execute
+   * @param collection the collection to execute the request against
+   * @param asyncListener the request listener, not null (use a no-op listener instead for async requests with no callback)
+   *
+   * @return a {@link Cancellable} allowing you to cancel execution of the async request
+   *
+   * @throws IOException If there is a low-level I/O error.
+   * @throws SolrServerException if there is an error on the server
+   */
+  public Cancellable asyncRequest(@SuppressWarnings({"rawtypes"}) SolrRequest request,
+                                  String collection,
+                                  AsyncListener<LBSolrClient.Rsp> asyncListener) throws SolrServerException, IOException {
+    NamedList<Object> cancellableWrapper = this.makeRequest(request, collection, asyncListener);
+    return (Cancellable) cancellableWrapper.get("asyncCancellable");
   }
 
   /**
