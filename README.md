@@ -44,8 +44,7 @@ comprehensive documentation, visit:
 ### Building with Gradle
 
 As of 9.0, Lucene/Solr uses [Gradle](https://gradle.org/) as the build
-system. Installatcion instructions [here](https://gradle.org/install/).
-Ant build support has been removed.
+system. Ant build support has been removed.
 
 To build Lucene and Solr, run (`./` can be omitted on Windows):
 
@@ -58,9 +57,9 @@ package can be located at:
 `solr/packaging/build/solr-*`
 
 Note that the gradle build does not create or copy binaries throughout the
-source repository (like ant build did) by default so you need to switch to the
-packaging output folder above; the rest of the instructions below remain
-identical. The packaging directory is rewritten on each build. 
+source repository so you need to switch to the packaging output folder above;
+the rest of the instructions below remain identical. The packaging directory 
+is rewritten on each build. 
 
 For development, especially when you have created test indexes etc, use
 the `./gradlew dev` task which will copy binaries to `./solr/packaging/build/dev`

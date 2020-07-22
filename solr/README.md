@@ -163,22 +163,22 @@ Instructions for Building Apache Solr from Source
    folder included on your command path. To test this, issue a "java -version" command
    from your shell (command prompt) and verify that the Java version is 11 or later.
 
-2. Install Gradle, see https://gradle.org/ The current version is 6.4.1. Installation
-   instructions are here: https://gradle.org/install/
-
-3. Download the Apache Solr distribution, linked from the above web site.
+2. Download the Apache Solr distribution, linked from the above web site.
    Unzip the distribution to a folder of your choice, e.g. C:\solr or ~/solr
    Alternately, you can obtain a copy of the latest Apache Solr source code
    directly from the GIT repository:
 
      https://lucene.apache.org/solr/community.html#version-control
 
-4. Navigate to the root of your source tree folder and issue the "./gradlew tasks" 
+3. Navigate to the root of your source tree folder and issue the `./gradlew tasks` 
    command to see the available options for building, testing, and packaging Solr.
 
-   "./gradlew assemble" will create a Solr executable. 
+   `./gradlew assemble` will create a Solr executable. 
    cd to "./solr/packaging/build/solr-9.0.0-SNAPSHOT" and run the bin/solr script
    to start Solr.
+   
+   NOTE: `gradlew` is the "Gradle Wrapper" and will automaticaly download and
+   start using the correct version of Gradle.
 
 Export control
 -------------------------------------------------
