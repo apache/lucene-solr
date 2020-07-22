@@ -479,7 +479,7 @@ public class ZkController implements Closeable {
 
 
             // we have to register as live first to pick up docs in the buffer
-            createEphemeralLiveNode(true);
+            createEphemeralLiveNode();
 
             List<CoreDescriptor> descriptors = descriptorsSupplier.get();
             // re register all descriptors
@@ -1232,7 +1232,7 @@ public class ZkController implements Closeable {
           worker.addCollect("ZkControllerInit");
         }
         // Do this last to signal we're up.
-        createEphemeralLiveNode(false);
+        createEphemeralLiveNode();
 
         //  publishAndWaitForDownStates();
       } catch (InterruptedException e) {
@@ -1379,7 +1379,7 @@ public class ZkController implements Closeable {
     return zkClient.isConnected();
   }
 
-  private void createEphemeralLiveNode(boolean deleteOnExist) {
+  private void createEphemeralLiveNode() {
 
     String nodeName = getNodeName();
     String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
@@ -1389,10 +1389,10 @@ public class ZkController implements Closeable {
    // if (zkStateReader.getClusterState().getLiveNodes().size() == 0) {
    //   DistributedLock lock = new DistributedLock(zkClient.getSolrZooKeeper(), "/cluster_lock", zkClient.getZkACLProvider().getACLsToAdd("/cluster_lock"));
    //   try {
-        log.info("get lock for creating ephem live node");
+   ///     log.info("get lock for creating ephem live node");
  //       lock.lock();
         log.info("do create ephem live node");
-        createLiveNodeImpl(nodePath, nodeAddedPath, deleteOnExist);
+        createLiveNodeImpl(nodePath, nodeAddedPath);
 //      } finally {
 //        log.info("unlock");
 //        lock.unlock();
@@ -1402,7 +1402,7 @@ public class ZkController implements Closeable {
    // }
   }
 
-  private void createLiveNodeImpl(String nodePath, String nodeAddedPath, boolean deleteOnExist) {
+  private void createLiveNodeImpl(String nodePath, String nodeAddedPath) {
     Map<String, byte[]> dataMap = new HashMap<>(2);
     Map<String, CreateMode> createModeMap = new HashMap<>(2);
     dataMap.put(nodePath, null);
@@ -1425,12 +1425,9 @@ public class ZkController implements Closeable {
       try {
         zkClient.getSolrZooKeeper().create(nodePath, null, zkClient.getZkACLProvider().getACLsToAdd(nodePath), CreateMode.EPHEMERAL);
       } catch (KeeperException.NodeExistsException e) {
-        if (deleteOnExist) {
-          zkClient.delete(nodePath, -1);
-          zkClient.getSolrZooKeeper().create(nodePath, null, zkClient.getZkACLProvider().getACLsToAdd(nodePath), CreateMode.EPHEMERAL);
-        } else {
-          throw e;
-        }
+        log.warn("Found our ephemeral live node already exists. This must be a quick restart after a hard shutdown, removing existing live node {}", nodePath);
+        zkClient.delete(nodePath, -1);
+        zkClient.getSolrZooKeeper().create(nodePath, null, zkClient.getZkACLProvider().getACLsToAdd(nodePath), CreateMode.EPHEMERAL);
       }
     } catch (Exception e) {
       ParWork.propegateInterrupt(e);
