@@ -190,6 +190,7 @@ public class ZkController implements Closeable {
 
   public final static String COLLECTION_PARAM_PREFIX = "collection.";
   public final static String CONFIGNAME_PROP = "configName";
+  private boolean shudownCalled;
 
   static class ContextKey {
 
@@ -943,6 +944,13 @@ public class ZkController implements Closeable {
   }
 
   private void init() {
+    Runtime.getRuntime().addShutdownHook(new Thread() {
+      public void run() {
+        shutdown();
+        ParWork.close(ParWork.getExecutor());
+      }
+
+    });
     synchronized (initLock) {
       log.info("making shutdown watcher for cluster");
       try {
@@ -975,99 +983,8 @@ public class ZkController implements Closeable {
               }
             }
           }
-
-          private void shutdown() {
-            Thread updaterThead = overseer.getUpdaterThread();
-            log.info("Cluster shutdown initiated");
-            if (updaterThead != null && updaterThead.isAlive()) {
-              log.info("We are the Overseer, wait for others to shutdown");
-
-              CountDownLatch latch = new CountDownLatch(1);
-              List<String> children = null;
-              try {
-                children = zkClient.getChildren("/solr" + ZkStateReader.LIVE_NODES_ZKNODE, new Watcher() {
-                  @Override
-                  public void process(WatchedEvent event) {
-                    if (Event.EventType.None.equals(event.getType())) {
-                      return;
-                    }
-                    if (event.getType() == Event.EventType.NodeChildrenChanged) {
-                      Thread updaterThead = overseer.getUpdaterThread();
-                      if (updaterThead == null || !updaterThead.isAlive()) {
-                        log.info("We were the Overseer, but it seems not anymore, shutting down");
-                        latch.countDown();
-                        return;
-                      }
-
-                      try {
-                        List<String> children = zkClient.getChildren("/solr" + ZkStateReader.LIVE_NODES_ZKNODE, this, false);
-                        if (children.size() == 1) {
-                          latch.countDown();
-                        }
-                      } catch (KeeperException e) {
-                        log.error("Exception on proper shutdown", e);
-                        return;
-                      } catch (InterruptedException e) {
-                        ParWork.propegateInterrupt(e);
-                        return;
-                      }
-                    }
-                  }
-                }, false);
-              } catch (KeeperException e) {
-                log.error("Time out waiting to see solr live nodes go down " + children.size());
-                return;
-              } catch (InterruptedException e) {
-                ParWork.propegateInterrupt(e);
-                return;
-              }
-
-              if (children.size() > 1) {
-                boolean success = false;
-                try {
-                  success = latch.await(10, TimeUnit.SECONDS);
-                } catch (InterruptedException e) {
-                  ParWork.propegateInterrupt(e);
-                  return;
-                }
-                if (!success) {
-                  log.error("Time out waiting to see solr live nodes go down " + children.size());
-                }
-              }
-            }
-
-            ParWork.getExecutor().submit(new Runnable() {
-              @Override
-              public void run() {
-                try {
-                  cc.close();
-                } catch (IOException e) {
-                  log.error("IOException on shutdown", e);
-                  return;
-                }
-                URL url = null;
-                try {
-                  url = new URL(getHostName() + ":" + getHostPort() + "/shutdown?token=" + "solrrocks");
-                } catch (MalformedURLException e) {
-                  SolrException.log(log, e);
-                  return;
-                }
-                try {
-                  HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                  connection.setRequestMethod("POST");
-                  connection.getResponseCode();
-                  log.info("Shutting down " + url + ": " + connection.getResponseCode() + " " + connection.getResponseMessage());
-                } catch (SocketException e) {
-                  SolrException.log(log, e);
-                  // Okay - the server is not running
-                } catch (IOException e) {
-                  SolrException.log(log, e);
-                  return;
-                }
-              }
-            });
-          }
         });
+
       } catch (KeeperException e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, e);
       } catch (InterruptedException e) {
@@ -1304,6 +1221,95 @@ public class ZkController implements Closeable {
       }
     };
     zkStateReader.registerLiveNodesListener(listener);
+  }
+
+  private synchronized void shutdown() {
+    if (this.shudownCalled) return;
+    this.shudownCalled = true;
+    Thread updaterThead = overseer.getUpdaterThread();
+    log.info("Cluster shutdown initiated");
+    if (updaterThead != null && updaterThead.isAlive()) {
+      log.info("We are the Overseer, wait for others to shutdown");
+
+      CountDownLatch latch = new CountDownLatch(1);
+      List<String> children = null;
+      try {
+        children = zkClient.getChildren("/solr" + ZkStateReader.LIVE_NODES_ZKNODE, new Watcher() {
+          @Override
+          public void process(WatchedEvent event) {
+            if (Event.EventType.None.equals(event.getType())) {
+              return;
+            }
+            if (event.getType() == Event.EventType.NodeChildrenChanged) {
+              Thread updaterThead = overseer.getUpdaterThread();
+              if (updaterThead == null || !updaterThead.isAlive()) {
+                log.info("We were the Overseer, but it seems not anymore, shutting down");
+                latch.countDown();
+                return;
+              }
+
+              try {
+                List<String> children = zkClient.getChildren("/solr" + ZkStateReader.LIVE_NODES_ZKNODE, this, false);
+                if (children.size() == 1) {
+                  latch.countDown();
+                }
+              } catch (KeeperException e) {
+                log.error("Exception on proper shutdown", e);
+                return;
+              } catch (InterruptedException e) {
+                ParWork.propegateInterrupt(e);
+                return;
+              }
+            }
+          }
+        }, false);
+      } catch (KeeperException e) {
+        log.error("Time out waiting to see solr live nodes go down " + children.size());
+        return;
+      } catch (InterruptedException e) {
+        ParWork.propegateInterrupt(e);
+        return;
+      }
+
+      if (children.size() > 1) {
+        boolean success = false;
+        try {
+          success = latch.await(10, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+          ParWork.propegateInterrupt(e);
+          return;
+        }
+        if (!success) {
+          log.error("Time out waiting to see solr live nodes go down " + children.size());
+        }
+      }
+    }
+
+    try {
+      cc.close();
+    } catch (IOException e) {
+      log.error("IOException on shutdown", e);
+      return;
+    }
+    URL url = null;
+    try {
+      url = new URL(getHostName() + ":" + getHostPort() + "/shutdown?token=" + "solrrocks");
+    } catch (MalformedURLException e) {
+      SolrException.log(log, e);
+      return;
+    }
+    try {
+      HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+      connection.setRequestMethod("POST");
+      connection.getResponseCode();
+      log.info("Shutting down " + url + ": " + connection.getResponseCode() + " " + connection.getResponseMessage());
+    } catch (SocketException e) {
+      SolrException.log(log, e);
+      // Okay - the server is not running
+    } catch (IOException e) {
+      SolrException.log(log, e);
+      return;
+    }
   }
 
   public void publishAndWaitForDownStates() throws KeeperException,
