@@ -21,7 +21,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ParWorkExecutor extends ThreadPoolExecutor {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     public static final long KEEP_ALIVE_TIME = 1;
-    private static final int GROW_BY = 30;
 
     private final Object lock = new Object();
 
@@ -46,130 +45,8 @@ public class ParWorkExecutor extends ThreadPoolExecutor {
             }
         });
 
-        setRejectedExecutionHandler(new RejectedExecutionHandler() {
-            private volatile Runnable last;
-            @Override
-            public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
-                throw new RejectedExecutionException();
-//                if (last == r) {
-//                    return;
-//                }
-
-//                log.warn("Task was rejected, running in caller thread name" + name + " shutdown:" + isShutdown() + " terminated:" + isTerminated() + " terminating:" + isTerminating());
-//                if (executor.isShutdown() || executor.isTerminated() || executor.isTerminating() || Thread.currentThread().isInterrupted()) {
-//                    return;
-//                }
-//
-////                synchronized (lock) {
-////                    try {
-////                        Thread.sleep(1000);
-////                    } catch (InterruptedException e) {
-////                       ParWork.propegateInterrupt(e, true);
-////                       return;
-////                    }
-//                try {
-//                executor.submit(r);
-//                last = r;
-//                } catch (Exception e) {
-//                    if (e instanceof InterruptedException) {
-//                        Thread.currentThread().interrupt();
-//                    }
-//                }
-             }
-        });
+        setRejectedExecutionHandler(new CallerRunsPolicy());
 
         allowCoreThreadTimeOut(true);
     }
-
-    public Future<?> submit(Runnable task) {
-        if (task == null) {
-            throw new NullPointerException();
-        } else {
-            if (getActiveCount() == getMaximumPoolSize() && getQueue().remainingCapacity() == 0) {
-                try {
-                    task.run();
-                } catch (Exception e) {
-                    if (e instanceof InterruptedException) {
-                        Thread.currentThread().interrupt();
-                        throw new RuntimeException("Exception running task in caller thread");
-                    }
-                }
-                return CompletableFuture.completedFuture(new Object());
-            }
-            RunnableFuture<Object> ftask = super.newTaskFor(task, (Object)null);
-            try {
-                this.execute(ftask);
-            } catch (RejectedExecutionException e) {
-                task.run();
-                return CompletableFuture.completedFuture(new Object());
-            }
-            return ftask;
-        }
-    }
-
-    public <T> Future<T> submit(Runnable task, T result) {
-        if (task == null) {
-            throw new NullPointerException();
-        } else {
-            if (getActiveCount() == getMaximumPoolSize() && getQueue().remainingCapacity() == 0) {
-                try {
-                    task.run();
-                } catch (Exception e) {
-                    if (e instanceof InterruptedException) {
-                        Thread.currentThread().interrupt();
-                        throw new RuntimeException("Exception running task in caller thread");
-                    }
-                }
-                return CompletableFuture.completedFuture(result);
-            }
-            RunnableFuture<T> ftask = this.newTaskFor(task, result);
-            try {
-                this.execute(ftask);
-            } catch (RejectedExecutionException e) {
-                ftask.run();
-                return CompletableFuture.completedFuture(result);
-            }
-            return ftask;
-        }
-    }
-
-    public <T> Future<T> submit(Callable<T> task) {
-        if (task == null) {
-            throw new NullPointerException();
-        } else {
-            if (getActiveCount() == getMaximumPoolSize() && getQueue().remainingCapacity() == 0) {
-                T res = null;
-                try {
-                   res = task.call();
-                } catch (Exception e) {
-                   if (e instanceof InterruptedException) {
-                       Thread.currentThread().interrupt();
-                       throw new RuntimeException("Exception running task in caller thread");
-                   }
-                }
-                CompletableFuture<Object> future = new CompletableFuture<>();
-                future.complete(res);
-                return (Future<T>) future;
-            }
-            RunnableFuture<T> ftask = this.newTaskFor(task);
-            try {
-                this.execute(ftask);
-            } catch (RejectedExecutionException e) {
-                ftask.run();
-                CompletableFuture<Object> future = new CompletableFuture<>();
-                future.complete(new Object());
-                return (Future<T>) future;
-            }
-            return ftask;
-        }
-    }
-
-    @Override
-    protected void afterExecute(Runnable r, Throwable t) {
-        super.afterExecute(r, t);
-//        synchronized (lock) {
-//            lock.notifyAll();
-//        }
-    }
-
 }
