@@ -223,7 +223,7 @@ public class SearchRateTriggerTest extends SolrCloudTestCase {
     SolrCloudManager cloudManager = new SolrClientCloudManager(new ZkDistributedQueueFactory(zkClient), solrClient) {
       @Override
       public NodeStateProvider getNodeStateProvider() {
-        return new SolrClientNodeStateProvider(solrClient) {
+        return new SolrClientNodeStateProvider(solrClient, null) {
           @Override
           public Map<String, Object> getNodeValues(String node, Collection<String> tags) {
             Map<String, Object> values = super.getNodeValues(node, tags);

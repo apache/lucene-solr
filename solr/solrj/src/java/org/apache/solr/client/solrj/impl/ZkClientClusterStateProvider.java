@@ -41,7 +41,7 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 
-  volatile ZkStateReader zkStateReader;
+  final ZkStateReader zkStateReader;
   private boolean closeZkStateReader = false;
   final String zkHost;
   int zkConnectTimeout = 15000;
@@ -159,30 +159,6 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
   }
   
   public ZkStateReader getZkStateReader() {
-    if (isClosed) { // quick check...
-      throw new AlreadyClosedException();
-    }
-    if (zkStateReader == null) {
-      synchronized (this) {
-        if (isClosed) { // while we were waiting for sync lock another thread may have closed
-          throw new AlreadyClosedException();
-        }
-        if (zkStateReader == null) {
-          ZkStateReader zk = null;
-          try {
-            zk = new ZkStateReader(zkHost, zkClientTimeout, zkConnectTimeout);
-            zk.createClusterStateWatchersAndUpdate();
-            log.info("Cluster at {} ready", zkHost);
-            zkStateReader = zk;
-          } catch (Exception e) {
-            ParWork.propegateInterrupt(e);
-            if (zk != null) zk.close();
-            // do not wrap because clients may be relying on the underlying exception being thrown
-            throw e;
-          }
-        }
-      }
-    }
     return zkStateReader;
   }
   
@@ -195,7 +171,6 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
         // force zkStateReader to null first so that any parallel calls drop into the synch block 
         // getZkStateReader() as soon as possible.
         final ZkStateReader zkToClose = zkStateReader;
-        zkStateReader = null;
         if (closeZkStateReader) {
           zkToClose.close();
         }

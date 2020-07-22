@@ -209,7 +209,7 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
       @Override
       public NodeStateProvider getNodeStateProvider() {
 
-        return new SolrClientNodeStateProvider(null) {
+        return new SolrClientNodeStateProvider(null, null) {
           @Override
           protected ClusterStateProvider getClusterStateProvider() {
             return delegatingClusterStateProvider;
@@ -263,7 +263,7 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
   static SolrCloudManager createCloudManagerFromDiagnostics(Map<String, Object> m) {
     List<Map> sortedNodes = (List<Map>) getObjectByPath(m, false, "diagnostics/sortedNodes");
     Set<String> liveNodes = new HashSet<>();
-    SolrClientNodeStateProvider nodeStateProvider = new SolrClientNodeStateProvider(null) {
+    SolrClientNodeStateProvider nodeStateProvider = new SolrClientNodeStateProvider(null, null) {
       @Override
       protected void readReplicaDetails() {
         for (Object o : sortedNodes) {

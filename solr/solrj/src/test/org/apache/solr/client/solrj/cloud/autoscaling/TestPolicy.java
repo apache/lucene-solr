@@ -158,7 +158,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
       }
     };
 
-    SolrClientNodeStateProvider solrClientNodeStateProvider = new SolrClientNodeStateProvider(null) {
+    SolrClientNodeStateProvider solrClientNodeStateProvider = new SolrClientNodeStateProvider(null, null) {
       @Override
       protected Map<String, Object> fetchTagValues(String node, Collection<String> tags) {
         Map<String, Object> result = new HashMap<>();
@@ -250,7 +250,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
       }
     };
 
-    SolrClientNodeStateProvider solrClientNodeStateProvider = new SolrClientNodeStateProvider(null) {
+    SolrClientNodeStateProvider solrClientNodeStateProvider = new SolrClientNodeStateProvider(null, null) {
       @Override
       protected Map<String, Object> fetchTagValues(String node, Collection<String> tags) {
         Map<String, Object> result = new HashMap<>();
@@ -343,7 +343,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
       }
     };
 
-    SolrClientNodeStateProvider solrClientNodeStateProvider = new SolrClientNodeStateProvider(null) {
+    SolrClientNodeStateProvider solrClientNodeStateProvider = new SolrClientNodeStateProvider(null, null) {
       @Override
       protected Map<String, Object> fetchTagValues(String node, Collection<String> tags) {
         Map<String, Object> result = new HashMap<>();
@@ -449,7 +449,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
       }
     };
 
-    SolrClientNodeStateProvider solrClientNodeStateProvider = new SolrClientNodeStateProvider(null) {
+    SolrClientNodeStateProvider solrClientNodeStateProvider = new SolrClientNodeStateProvider(null, null) {
       @Override
       protected Map<String, Object> fetchTagValues(String node, Collection<String> tags) {
         Map<String, Object> result = new HashMap<>();
@@ -824,7 +824,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
       }
     };
 
-    SolrClientNodeStateProvider solrClientNodeStateProvider = new SolrClientNodeStateProvider(null) {
+    SolrClientNodeStateProvider solrClientNodeStateProvider = new SolrClientNodeStateProvider(null, null) {
       @Override
       protected Map<String, Object> fetchTagValues(String node, Collection<String> tags) {
         Map<String, Object> result = new HashMap<>();

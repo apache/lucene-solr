@@ -43,6 +43,7 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
@@ -53,7 +54,9 @@ import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
 import org.apache.solr.client.solrj.cloud.autoscaling.Variable;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
@@ -382,12 +385,14 @@ public class SimScenario implements AutoCloseable {
         if (zkHost == null) {
           throw new IOException(SimAction.LOAD_SNAPSHOT + " must specify 'path' or 'zkHost'");
         } else {
-
-          try (CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder(Collections.singletonList(zkHost), Optional.empty()).build()) {
+          HttpClient client = HttpClientUtil.createClient(new ModifiableSolrParams());
+          try (CloudHttp2SolrClient cloudSolrClient = new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty()).build()) {
             cloudSolrClient.connect();
-            try (SolrClientCloudManager realCloudManager = new SolrClientCloudManager(NoopDistributedQueueFactory.INSTANCE, cloudSolrClient)) {
+            try (SolrClientCloudManager realCloudManager = new SolrClientCloudManager(NoopDistributedQueueFactory.INSTANCE, cloudSolrClient, client)) {
               snapshotCloudManager = new SnapshotCloudManager(realCloudManager, null);
             }
+          } finally {
+            HttpClientUtil.close(client);
           }
         }
       } else {

@@ -198,7 +198,7 @@ public abstract class LBSolrClient extends SolrClient {
   }
 
   public LBSolrClient(List<String> baseSolrUrls) {
-    ObjectReleaseTracker.track(this);
+    assert ObjectReleaseTracker.track(this);
     if (!baseSolrUrls.isEmpty()) {
       for (String s : baseSolrUrls) {
         ServerWrapper wrapper = createServerWrapper(s);
@@ -710,5 +710,6 @@ public abstract class LBSolrClient extends SolrClient {
 
     if (aliveCheckExecutor != null) aliveCheckExecutor.shutdownNow();
     ParWork.close(aliveCheckExecutor);
+    assert ObjectReleaseTracker.release(this);
   }
 }

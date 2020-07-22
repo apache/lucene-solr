@@ -808,34 +808,6 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
     rsp.getResponseHeader().add("zkConnected", cloudManager != null);
   }
 
-  @SuppressWarnings({"unchecked"})
-  private NamedList<Object> handleRemoteRequest(String nodeName, SolrQueryRequest req) {
-    String baseUrl = Utils.getBaseUrlForNodeName(nodeName, overseerUrlScheme);
-    String url;
-    try {
-      URL u = new URL(baseUrl);
-      u = new URL(u.getProtocol(), u.getHost(), u.getPort(), "/api/cluster/metrics/history");
-      url = u.toString();
-    } catch (MalformedURLException e) {
-      log.warn("Invalid Overseer url '{}', unable to fetch remote metrics history", baseUrl, e);
-      return null;
-    }
-    // always use javabin
-    ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
-    params.set(CommonParams.WT, "javabin");
-    url = url + "?" + params.toString();
-    try {
-      byte[] data = cloudManager.httpRequest(url, SolrRequest.METHOD.GET, null, null, HttpClientUtil.DEFAULT_CONNECT_TIMEOUT, true);
-      // response is always a NamedList
-      try (JavaBinCodec codec = new JavaBinCodec()) {
-        return (NamedList<Object>)codec.unmarshal(new ByteArrayInputStream(data));
-      }
-    } catch (IOException e) {
-      log.warn("Exception forwarding request to Overseer at {}", url, e);
-      return null;
-    }
-  }
-
   @SuppressWarnings({"unchecked", "rawtypes"})
   private void mergeRemoteRes(SolrQueryResponse rsp, NamedList<Object> remoteRes) {
     if (remoteRes == null || remoteRes.get("metrics") == null) {

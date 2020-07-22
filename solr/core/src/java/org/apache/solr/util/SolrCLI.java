@@ -103,6 +103,7 @@ import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
 import org.apache.solr.client.solrj.cloud.autoscaling.Variable;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -988,19 +989,22 @@ public class SolrCLI implements CLIO {
         String zkHost = cli.getOptionValue("zkHost", ZK_HOST);
 
         log.debug("Connecting to Solr cluster: {}", zkHost);
-        try (CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder(Collections.singletonList(zkHost), Optional.empty()).build()) {
+        try (CloudHttp2SolrClient cloudSolrClient = new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty()).build()) {
 
           String collection = cli.getOptionValue("collection");
           if (collection != null)
             cloudSolrClient.setDefaultCollection(collection);
 
           cloudSolrClient.connect();
-          try (SolrClientCloudManager realCloudManager = new SolrClientCloudManager(NoopDistributedQueueFactory.INSTANCE, cloudSolrClient)) {
+          CloseableHttpClient httpClient = getHttpClient();
+          try (SolrClientCloudManager realCloudManager = new SolrClientCloudManager(NoopDistributedQueueFactory.INSTANCE, cloudSolrClient, httpClient)) {
             if (config == null) {
               CLIO.err("- reading autoscaling config from the cluster.");
               config = realCloudManager.getDistribStateManager().getAutoScalingConfig();
             }
             cloudManager = new SnapshotCloudManager(realCloudManager, config);
+          } finally {
+            closeHttpClient(httpClient);
           }
         }
       }

@@ -63,8 +63,10 @@ import com.google.common.base.Strings;
 import org.apache.commons.io.output.StringBuilderWriter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.DistributedLock;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
@@ -251,7 +253,7 @@ public class ZkController implements Closeable {
   private volatile SolrZkClient zkClient;
   public volatile ZkStateReader zkStateReader;
   private volatile SolrCloudManager cloudManager;
-  private volatile CloudSolrClient cloudSolrClient;
+  private volatile CloudHttp2SolrClient cloudSolrClient;
 
   private final String zkServerAddress;          // example: 127.0.0.1:54062/solr
 
@@ -724,16 +726,20 @@ public class ZkController implements Closeable {
       if (cloudManager != null) {
         return cloudManager;
       }
-      cloudSolrClient = new CloudSolrClient.Builder(new ZkClientClusterStateProvider(zkStateReader))
-          .withHttpClient(cc.getUpdateShardHandler().getDefaultHttpClient())
+      cloudSolrClient = new CloudHttp2SolrClient.Builder(zkStateReader)
+          .withHttpClient(cc.getUpdateShardHandler().getUpdateOnlyHttpClient())
           .build();
       cloudManager = new SolrClientCloudManager(
           new ZkDistributedQueueFactory(zkClient),
           cloudSolrClient,
-          cc.getObjectCache());
+          cc.getObjectCache(), cc.getUpdateShardHandler().getDefaultHttpClient());
       cloudManager.getClusterStateProvider().connect();
     }
     return cloudManager;
+  }
+
+  public CloudHttp2SolrClient getCloudSolrClient() {
+    return  cloudSolrClient;
   }
 
   /**

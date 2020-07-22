@@ -55,23 +55,42 @@ import org.slf4j.LoggerFactory;
 public class SolrClientCloudManager implements SolrCloudManager {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  protected final CloudSolrClient solrClient;
+  protected final BaseCloudSolrClient solrClient;
   private final ZkDistribStateManager stateManager;
   private final DistributedQueueFactory queueFactory;
   private final ZkStateReader zkStateReader;
   private final SolrZkClient zkClient;
   private final ObjectCache objectCache;
   private final boolean closeObjectCache;
+  private final HttpClient httpClient;
   private volatile boolean isClosed;
 
-  public SolrClientCloudManager(DistributedQueueFactory queueFactory, CloudSolrClient solrClient) {
-    this(queueFactory, solrClient, null);
+  public SolrClientCloudManager(DistributedQueueFactory queueFactory, BaseCloudSolrClient solrClient) {
+    this(queueFactory, solrClient, null, null);
   }
 
-  public SolrClientCloudManager(DistributedQueueFactory queueFactory, CloudSolrClient solrClient,
+  public SolrClientCloudManager(DistributedQueueFactory queueFactory, BaseCloudSolrClient solrClient, HttpClient httpClient) {
+    this(queueFactory, solrClient, null, httpClient);
+  }
+
+  public SolrClientCloudManager(DistributedQueueFactory queueFactory, BaseCloudSolrClient solrClient,
                                 ObjectCache objectCache) {
+    this(queueFactory, solrClient, objectCache, null);
+  }
+
+  public SolrClientCloudManager(DistributedQueueFactory queueFactory, BaseCloudSolrClient solrClient,
+                                ObjectCache objectCache, HttpClient httpClient) {
     this.queueFactory = queueFactory;
     this.solrClient = solrClient;
+
+    if (httpClient == null && solrClient instanceof  CloudSolrClient) {
+      this.httpClient = ((CloudSolrClient) solrClient).getHttpClient();
+    } else if (httpClient == null) {
+      throw new IllegalArgumentException("Must specify apache httpclient with non CloudSolrServer impls");
+    } else {
+      this.httpClient = httpClient;
+    }
+
     this.zkStateReader = solrClient.getZkStateReader();
     this.zkClient = zkStateReader.getZkClient();
     this.stateManager = new ZkDistribStateManager(zkClient);
@@ -115,7 +134,7 @@ public class SolrClientCloudManager implements SolrCloudManager {
 
   @Override
   public NodeStateProvider getNodeStateProvider() {
-    return new SolrClientNodeStateProvider(solrClient);
+    return new SolrClientNodeStateProvider(solrClient, httpClient);
   }
 
   @Override
@@ -136,7 +155,7 @@ public class SolrClientCloudManager implements SolrCloudManager {
 
   @Override
   public byte[] httpRequest(String url, SolrRequest.METHOD method, Map<String, String> headers, String payload, int timeout, boolean followRedirects) throws IOException {
-    HttpClient client = solrClient.getHttpClient();
+    HttpClient client = httpClient;
     final HttpRequestBase req;
     HttpEntity entity = null;
     if (payload != null) {

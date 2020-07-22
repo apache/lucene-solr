@@ -43,6 +43,7 @@ import org.apache.lucene.util.Version;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -725,9 +726,8 @@ public class Overseer implements SolrCloseable {
     } else {
       return;
     }
-
-    try (CloudSolrClient client = new CloudSolrClient.Builder(    getCoreContainer().getZkController().getZkStateReader())
-            .withHttpClient(updateShardHandler.getDefaultHttpClient()).build()) {
+    try {
+      CloudHttp2SolrClient client = getCoreContainer().getZkController().getCloudSolrClient();
       CollectionAdminRequest.ColStatus req = CollectionAdminRequest.collectionStatus(CollectionAdminParams.SYSTEM_COLL)
           .setWithSegments(true)
           .setWithFieldInfo(true);

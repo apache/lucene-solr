@@ -31,6 +31,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
@@ -76,14 +77,16 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
 
 
 
-  private final CloudSolrClient solrClient;
+  private final BaseCloudSolrClient solrClient;
   protected final Map<String, Map<String, Map<String, List<ReplicaInfo>>>> nodeVsCollectionVsShardVsReplicaInfo = new HashMap<>();
+  private final HttpClient httpClient;
   private Map<String, Object> snitchSession = new HashMap<>();
   private Map<String, Map> nodeVsTags = new HashMap<>();
   private Map<String, String> withCollectionsMap = new HashMap<>();
 
-  public SolrClientNodeStateProvider(CloudSolrClient solrClient) {
+  public SolrClientNodeStateProvider(BaseCloudSolrClient solrClient, HttpClient httpClient) {
     this.solrClient = solrClient;
+    this.httpClient = httpClient;
     try {
       readReplicaDetails();
     } catch (IOException e) {
@@ -136,7 +139,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
 
   protected Map<String, Object> fetchTagValues(String node, Collection<String> tags) {
     AutoScalingSnitch snitch = new AutoScalingSnitch();
-    ClientSnitchCtx ctx = new ClientSnitchCtx(null, node, snitchSession, solrClient);
+    ClientSnitchCtx ctx = new ClientSnitchCtx(null, node, snitchSession, solrClient, httpClient);
     snitch.getTags(node, new HashSet<>(tags), ctx);
     return ctx.getTags();
   }
@@ -183,7 +186,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
   protected Map<String, Object> fetchReplicaMetrics(String node, Map<String, Pair<String, ReplicaInfo>> metricsKeyVsTagReplica) {
     Map<String, Object> collect = metricsKeyVsTagReplica.entrySet().stream()
         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getKey));
-    ClientSnitchCtx ctx = new ClientSnitchCtx(null, null, emptyMap(), solrClient);
+    ClientSnitchCtx ctx = new ClientSnitchCtx(null, null, emptyMap(), solrClient, httpClient);
     fetchReplicaMetrics(node, ctx, collect);
     return ctx.getTags();
 
@@ -319,7 +322,9 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     ZkClientClusterStateProvider zkClientClusterStateProvider;
-    CloudSolrClient solrClient;
+    BaseCloudSolrClient solrClient;
+
+    HttpClient httpClient;
 
     public boolean isNodeAlive(String node) {
       if (zkClientClusterStateProvider != null) {
@@ -329,9 +334,10 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     }
     public ClientSnitchCtx(SnitchInfo perSnitch,
                            String node, Map<String, Object> session,
-                           CloudSolrClient solrClient) {
+                           BaseCloudSolrClient solrClient, HttpClient httpClient) {
       super(perSnitch, node, session);
       this.solrClient = solrClient;
+      this.httpClient = httpClient;
       this.zkClientClusterStateProvider = (ZkClientClusterStateProvider) solrClient.getClusterStateProvider();
     }
 
@@ -382,7 +388,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
 
       GenericSolrRequest request = new GenericSolrRequest(SolrRequest.METHOD.POST, path, params);
       try (HttpSolrClient client = new HttpSolrClient.Builder()
-          .withHttpClient(solrClient.getHttpClient())
+          .withHttpClient(httpClient)
           .withBaseSolrUrl(url)
           .withResponseParser(new BinaryResponseParser())
           .markInternalRequest()

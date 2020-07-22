@@ -27,6 +27,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 
 /**
  * SolrJ client class to communicate with SolrCloud using Http2SolrClient.
@@ -60,6 +61,7 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
    */
   protected CloudHttp2SolrClient(Builder builder) {
     super(builder.shardLeadersOnly, builder.parallelUpdates, builder.directUpdatesToLeadersOnly);
+    assert ObjectReleaseTracker.track(this);
     this.clientIsInternal = builder.httpClient == null;
     this.myClient = (builder.httpClient == null) ? new Http2SolrClient.Builder().build() : builder.httpClient;
     if (builder.stateProvider == null) {
@@ -91,14 +93,14 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
 
   @Override
   public void close() throws IOException {
-    stateProvider.close();
-    lbClient.close();
-
-    if (clientIsInternal && myClient!=null) {
-      myClient.close();
+    try (ParWork closer = new ParWork(this, true)) {
+      closer.add("CloudHttp2SolrClient#close", stateProvider, lbClient);
+      if (clientIsInternal && myClient!=null) {
+        closer.add("http2Client", myClient);
+      }
     }
-
     super.close();
+    assert ObjectReleaseTracker.release(this);
   }
 
   public LBHttp2SolrClient getLbClient() {
@@ -176,6 +178,11 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
     public Builder(List<String> zkHosts, Optional<String> zkChroot) {
       this.zkHosts = zkHosts;
       if (zkChroot.isPresent()) this.zkChroot = zkChroot.get();
+    }
+
+    public Builder(ZkStateReader zkStateReader) {
+      ZkClientClusterStateProvider stateProvider = new ZkClientClusterStateProvider(zkStateReader, false);
+      this.stateProvider = stateProvider;
     }
 
     /**

@@ -53,6 +53,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.SolrHttpClientScheduler;
@@ -888,15 +889,15 @@ public class JettySolrRunner implements Closeable {
   }
 
   public SolrClient newClient() {
-    return new HttpSolrClient.Builder(getBaseUrl().toString()).
-            withHttpClient(getCoreContainer().getUpdateShardHandler().getDefaultHttpClient()).build();
+    return new Http2SolrClient.Builder(getBaseUrl().toString()).
+            withHttpClient(getCoreContainer().getUpdateShardHandler().getUpdateOnlyHttpClient()).build();
   }
 
   public SolrClient newClient(int connectionTimeoutMillis, int socketTimeoutMillis) {
-    return new HttpSolrClient.Builder(getBaseUrl().toString())
-        .withConnectionTimeout(connectionTimeoutMillis)
-        .withSocketTimeout(socketTimeoutMillis)
-        .withHttpClient(getCoreContainer().getUpdateShardHandler().getDefaultHttpClient())
+    return new Http2SolrClient.Builder(getBaseUrl().toString())
+        .connectionTimeout(connectionTimeoutMillis)
+        .idleTimeout(socketTimeoutMillis)
+        .withHttpClient(getCoreContainer().getUpdateShardHandler().getUpdateOnlyHttpClient())
         .build();
   }
 
