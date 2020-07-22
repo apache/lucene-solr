@@ -1286,10 +1286,12 @@ public class ZkController implements Closeable {
     }
 
     try {
-      cc.close();
-    } catch (IOException e) {
-      log.error("IOException on shutdown", e);
+      ParWork.close(cc);
+    } catch (Exception e) {
+      log.error("Exception on shutdown", e);
       return;
+    } finally {
+      ParWork.close(zkClient);
     }
     URL url = null;
     try {
@@ -1652,10 +1654,17 @@ public class ZkController implements Closeable {
     log.info("{} starting background replication from leader", coreName);
     ReplicateFromLeader replicateFromLeader = new ReplicateFromLeader(cc, coreName);
     synchronized (replicateFromLeader) { // synchronize to prevent any stop before we finish the start
-      if (replicateFromLeaders.putIfAbsent(coreName, replicateFromLeader) == null) {
+      ReplicateFromLeader prev = replicateFromLeaders.putIfAbsent(coreName, replicateFromLeader);
+      if (prev == null) {
         replicateFromLeader.startReplication(switchTransactionLog);
       } else {
         log.warn("A replicate from leader instance already exists for core {}", coreName);
+        try {
+          prev.close();
+        } catch (Exception e) {
+          ParWork.propegateInterrupt("Error closing previous replication attempt", e);
+        }
+        replicateFromLeader.startReplication(switchTransactionLog);
       }
     }
   }

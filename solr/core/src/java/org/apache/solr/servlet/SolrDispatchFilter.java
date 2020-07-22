@@ -360,10 +360,13 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     } finally {
       if (cc != null) {
         httpClient = null;
-        try {
-          ParWork.close(cc);
-        } finally {
-          ParWork.close(zkClient);
+        // we may have already shutdown via shutdown hook
+        if (!cc.isShutDown()) {
+          try {
+            ParWork.close(cc);
+          } finally {
+            ParWork.close(zkClient);
+          }
         }
       }
       GlobalTracer.get().close();
