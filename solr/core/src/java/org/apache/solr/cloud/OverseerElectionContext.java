@@ -124,11 +124,6 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
   }
 
   @Override
-  public ElectionContext copy() {
-    return new OverseerElectionContext(id, zkClient, overseer);
-  }
-
-  @Override
   public void joinedElectionFired() {
 
   }

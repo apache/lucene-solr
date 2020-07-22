@@ -159,6 +159,7 @@ public class SolrZkClient implements Closeable {
   public SolrZkClient(String zkServerAddress, int zkClientTimeout, int clientConnectTimeout,
       ZkClientConnectionStrategy strat, final OnReconnect onReconnect, BeforeReconnect beforeReconnect, ZkACLProvider zkACLProvider, IsClosed higherLevelIsClosed) {
     ObjectReleaseTracker.track(this);
+    log.info("Creating new {} instance {}", SolrZkClient.class.getSimpleName(), this);
     closeTracker = new CloseTracker();
     this.zkServerAddress = zkServerAddress;
     this.higherLevelIsClosed = higherLevelIsClosed;
@@ -188,7 +189,7 @@ public class SolrZkClient implements Closeable {
   }
 
   public SolrZkClient start() {
-
+    log.info("Starting {} instance {}", SolrZkClient.class.getSimpleName(), this);
     try {
       zkClientConnectionStrategy.connect(zkServerAddress, zkClientTimeout, wrapWatcher(connManager),
               zooKeeper -> {
@@ -857,6 +858,7 @@ public class SolrZkClient implements Closeable {
   }
 
   public void close() {
+    log.info("Closing {} instance {}", SolrZkClient.class.getSimpleName(), this);
     closeTracker.close();
     if (isClosed) return; // it's okay if we over close - same as solrcore
     isClosed = true;

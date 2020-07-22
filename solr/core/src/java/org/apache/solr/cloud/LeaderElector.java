@@ -368,17 +368,16 @@ public  class LeaderElector {
 
   void retryElection(ElectionContext context, boolean joinAtHead) throws KeeperException, InterruptedException, IOException {
     ElectionWatcher watcher = this.watcher;
-    ElectionContext ctx = context.copy();
     if (electionContexts != null) {
-      ElectionContext prevContext = electionContexts.put(contextKey, ctx);
+      ElectionContext prevContext = electionContexts.put(contextKey, context);
       if (prevContext != null) {
         prevContext.close();
       }
     }
     if (watcher != null) watcher.cancel();
     this.context.close();
-    this.context = ctx;
-    joinElection(ctx, true, joinAtHead);
+    this.context = context;
+    joinElection(context, true, joinAtHead);
   }
 
 }

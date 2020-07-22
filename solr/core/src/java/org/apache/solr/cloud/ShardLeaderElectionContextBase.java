@@ -125,7 +125,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
   }
 
   @Override
-  void runLeaderProcess(ElectionContext context, boolean weAreReplacement, int pauseBeforeStartMs)
+  synchronized void runLeaderProcess(ElectionContext context, boolean weAreReplacement, int pauseBeforeStartMs)
           throws KeeperException, InterruptedException, IOException {
     // register as leader - if an ephemeral is already there, wait to see if it goes away
 

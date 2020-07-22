@@ -230,7 +230,7 @@ public class ZkController implements Closeable {
 
   private static byte[] emptyJson = "{}".getBytes(StandardCharsets.UTF_8);
 
-  private final Map<ContextKey, ElectionContext> electionContexts = new ConcurrentHashMap<>(132, 0.75f, 50) {
+  private final Map<ContextKey, ElectionContext> electionContexts = new ConcurrentHashMap<>(64, 0.75f, 16) {
     @Override
     public ElectionContext put(ContextKey key, ElectionContext value) {
       if (ZkController.this.isClosed || cc.isShutDown()) {
@@ -240,7 +240,7 @@ public class ZkController implements Closeable {
     }
   };
 
-  private final Map<ContextKey, ElectionContext> overseerContexts = new ConcurrentHashMap<>(132, 0.75f, 50) {
+  private final Map<ContextKey, ElectionContext> overseerContexts = new ConcurrentHashMap<>(3, 0.75f, 1) {
     @Override
     public ElectionContext put(ContextKey key, ElectionContext value) {
       if (ZkController.this.isClosed || cc.isShutDown()) {
@@ -464,7 +464,7 @@ public class ZkController implements Closeable {
 
             // start the overseer first as following code may need it's processing
 
-            ElectionContext context = new OverseerElectionContext(getNodeName(), zkClient, overseer);
+            ElectionContext context = new OverseerElectionContext(getNodeName(), zkClient ,overseer);
             ElectionContext prevContext = overseerContexts.put(new ContextKey("overseer", "overseer"), context);
             if (prevContext != null) {
               prevContext.close();
@@ -1393,6 +1393,7 @@ public class ZkController implements Closeable {
    ///     log.info("get lock for creating ephem live node");
  //       lock.lock();
         log.info("do create ephem live node");
+
         createLiveNodeImpl(nodePath, nodeAddedPath);
 //      } finally {
 //        log.info("unlock");
@@ -1426,19 +1427,9 @@ public class ZkController implements Closeable {
       try {
         zkClient.getSolrZooKeeper().create(nodePath, null, zkClient.getZkACLProvider().getACLsToAdd(nodePath), CreateMode.EPHEMERAL);
       } catch (KeeperException.NodeExistsException e) {
-        log.warn("Found our ephemeral live node already exists. This must be a quick restart after a hard shutdown, removing existing live node {}", nodePath);
-        zkClient.delete(nodePath, -1);
-
-        List<String> collections = zkClient.getChildren(COLLECTIONS_ZKNODE, null, false);
-        for (String collection : collections) {
-          log.warn("Cleaning up ephemerals for leadership for  {}", collection);
-          List<String> shards = zkClient.getChildren(COLLECTIONS_ZKNODE + "/" +collection + "/leaders", null, false);
-          for (String shard : shards) {
-            zkClient.clean(COLLECTIONS_ZKNODE + "/leaders/" + shard);
-            zkClient.cleanChildren(COLLECTIONS_ZKNODE + "/leader_elect/" + shard);
-          }
-        }
-
+        log.warn("Found our ephemeral live node already exists. This must be a quick restart after a hard shutdown, waiting for it to expire {}", nodePath);
+        // TODO nocommit wait for expiration properly and try again
+        Thread.sleep(15000);
         zkClient.getSolrZooKeeper().create(nodePath, null, zkClient.getZkACLProvider().getACLsToAdd(nodePath), CreateMode.EPHEMERAL);
       }
     } catch (Exception e) {
@@ -2416,12 +2407,13 @@ public class ZkController implements Closeable {
             }
           }
         } else { // We're in the right place, now attempt to rejoin
-          overseerElector.retryElection(new OverseerElectionContext(getNodeName(), zkClient,
-              overseer), joinAtHead);
+          overseerElector.retryElection(new OverseerElectionContext(getNodeName(),
+              zkClient, overseer), joinAtHead);
           return;
         }
       } else {
-        overseerElector.retryElection(overseerElector.getContext(), joinAtHead);
+        overseerElector.retryElection(new OverseerElectionContext(getNodeName(),
+               zkClient, overseer), joinAtHead);
       }
     } catch (Exception e) {
       ParWork.propegateInterrupt(e);
