@@ -814,9 +814,7 @@ public class SimScenario implements AutoCloseable {
         values.put(key, val);
       }
       for (String node : nodes) {
-        Map<String, Object> newValues = new HashMap<>(scenario.cluster.getSimNodeStateProvider().simGetNodeValues(node));
-        newValues.putAll(values);
-        scenario.cluster.getSimNodeStateProvider().simSetNodeValues(node, newValues);
+        scenario.cluster.getSimNodeStateProvider().simSetNodeValues(node, values);
       }
     }
   }

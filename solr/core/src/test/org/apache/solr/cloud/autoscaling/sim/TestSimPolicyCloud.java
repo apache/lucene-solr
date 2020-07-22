@@ -63,9 +63,6 @@ public class TestSimPolicyCloud extends SimSolrCloudTestCase {
   @Before
   public void setupCluster() throws Exception {
     configureCluster(5, TimeSource.get("simTime:50"));
-    // reset autoscaling policy to empty
-    String commands =  "{set-cluster-policy : []}";
-    cluster.simGetSolrClient().request(AutoScalingRequest.create(SolrRequest.METHOD.POST, commands));
   }
   
   @After

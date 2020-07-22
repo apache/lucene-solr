@@ -10,7 +10,9 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 
 Bug Fixes
 ---------------------
-(No changes)
+
+* SOLR-14665: Revert SOLR-12845 adding of default autoscaling cluster policy, due to performance
+ issues. (Ishan Chattopadhyaya, Houston Putman)
 
 ==================  8.6.0 ==================
 

@@ -72,12 +72,12 @@ public class TestUtilizeNode extends SolrCloudTestCase {
 
   @Test
   public void test() throws Exception {
-    cluster.waitForAllNodes(5);
+    int REPLICATION = 2;
     String coll = "utilizenodecoll";
     CloudSolrClient cloudClient = cluster.getSolrClient();
     
     log.info("Creating Collection...");
-    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(coll, "conf1", 2, 2)
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(coll, "conf1", 2, REPLICATION)
         .setMaxShardsPerNode(2);
     cloudClient.request(create);
 
@@ -137,6 +137,10 @@ public class TestUtilizeNode extends SolrCloudTestCase {
     cloudClient.request(new CollectionAdminRequest.UtilizeNode(jettyY.getNodeName()));
 
     assertSomeReplicas("jettyY should now be utilized: ", coll, jettyY);
+    
+    assertNoReplicas("jettyX should no longer be utilized: ", coll, jettyX); 
+    
+
   }
 
   /**
