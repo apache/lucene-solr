@@ -179,10 +179,7 @@
                  </New>
                </Item>
                <Item>
-                 <New id="ShutdownHandler" class="org.eclipse.jetty.server.handler.ShutdownHandler">
-                   <Arg name="shutdownToken"><Property name="solr.jetty.shutdownToken" default="solrrocks"/></Arg>
-                   <Arg name="exitJVM">true</Arg>
-                   <Arg name="sendShutdownAtStart">true</Arg>
+                 <New id="ShutdownHandler" class="org.apache.solr.servlet.SolrShutdownHandler">
                  </New>
                </Item>
              </Array>
