@@ -264,6 +264,10 @@ public class ConnectionManager implements Watcher, Closeable {
       log.info("zkClient has disconnected");
       disconnected();
       connectionStrategy.disconnected();
+    } else if (state == KeeperState.Closed) {
+      log.info("zkClient has disconnected");
+      disconnected();
+      connectionStrategy.disconnected();
     } else if (state == KeeperState.AuthFailed) {
       log.warn("zkClient received AuthFailed");
     }
@@ -283,6 +287,13 @@ public class ConnectionManager implements Watcher, Closeable {
     log.info("Close called on ZK ConnectionManager");
     this.isClosed = true;
     this.likelyExpiredState = LikelyExpiredState.EXPIRED;
+    try {
+      waitForDisconnected(5000);
+    } catch (InterruptedException e) {
+      ParWork.propegateInterrupt(e);
+    } catch (TimeoutException e) {
+      log.warn("Timeout waiting for ZooKeeper client to disconnect");
+    }
   }
 
   private boolean isClosed() {

@@ -106,8 +106,7 @@ public class SolrZkClient implements Closeable {
 
   private final ExecutorService zkCallbackExecutor = new ParWorkExecutor("ZkCallback", 1);
 
-  private final ExecutorService zkConnManagerCallbackExecutor =
-      ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrNamedThreadFactory("zkConnectionManagerCallback"));
+  private final ExecutorService zkConnManagerCallbackExecutor =  new ParWorkExecutor("zkConnectionManagerCallback", 1);
 
   private volatile boolean isClosed = false;
   private volatile ZkClientConnectionStrategy zkClientConnectionStrategy;
