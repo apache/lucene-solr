@@ -180,9 +180,9 @@
                </Item>
                <Item>
                  <New id="ShutdownHandler" class="org.eclipse.jetty.server.handler.ShutdownHandler">
-                   <Arg name="shutdownToken" type="String"><Property name="solr.jetty.shutdownToken" default="solrrocks"/></Arg>
-                   <Arg name="exitJVM" type="Boolean"><Property name="solr.jetty.exitJVM" default="true"/></Arg>
-                   <Arg name="sendShutdownAtStart" type="Boolean"><Property name="solr.jetty.sendShutdownAtStart" default="true"/></Arg>
+                   <Arg name="shutdownToken"><Property name="solr.jetty.shutdownToken" default="solrrocks"/></Arg>
+                   <Arg name="exitJVM">true</Arg>
+                   <Arg name="sendShutdownAtStart">true</Arg>
                  </New>
                </Item>
              </Array>
