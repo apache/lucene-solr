@@ -422,6 +422,7 @@ public class ZkController implements Closeable {
       public void command() {
 
         try (ParWork worker = new ParWork("disconnected", true)) {
+          worker.collect(overseerContexts);
           worker.collect( ZkController.this.overseer);
           worker.collect(() -> {
             clearZkCollectionTerms();
@@ -1427,6 +1428,17 @@ public class ZkController implements Closeable {
       } catch (KeeperException.NodeExistsException e) {
         log.warn("Found our ephemeral live node already exists. This must be a quick restart after a hard shutdown, removing existing live node {}", nodePath);
         zkClient.delete(nodePath, -1);
+
+        List<String> collections = zkClient.getChildren(COLLECTIONS_ZKNODE, null, false);
+        for (String collection : collections) {
+          log.warn("Cleaning up ephemerals for leadership for  {}", collection);
+          List<String> shards = zkClient.getChildren(COLLECTIONS_ZKNODE + "/" +collection + "/leaders", null, false);
+          for (String shard : shards) {
+            zkClient.clean(COLLECTIONS_ZKNODE + "/leaders/" + shard);
+            zkClient.cleanChildren(COLLECTIONS_ZKNODE + "/leader_elect/" + shard);
+          }
+        }
+
         zkClient.getSolrZooKeeper().create(nodePath, null, zkClient.getZkACLProvider().getACLsToAdd(nodePath), CreateMode.EPHEMERAL);
       }
     } catch (Exception e) {

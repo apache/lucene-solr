@@ -234,11 +234,26 @@ public class ZkMaintenanceUtils {
     manager.uploadConfigDir(confPath, confName);
   }
 
-  // yeah, it's recursive :(
   public static void clean(SolrZkClient zkClient, String path) throws InterruptedException, KeeperException {
     traverseZkTree(zkClient, path, VISIT_ORDER.VISIT_POST, znode -> {
       try {
         if (!znode.equals("/")) {
+          try {
+            zkClient.delete(znode, -1);
+          } catch (KeeperException.NotEmptyException e) {
+            clean(zkClient, znode);
+          }
+        }
+      } catch (KeeperException.NoNodeException r) {
+        return;
+      }
+    });
+  }
+
+  public static void cleanChildren(SolrZkClient zkClient, String path) throws InterruptedException, KeeperException {
+    traverseZkTree(zkClient, path, VISIT_ORDER.VISIT_POST, znode -> {
+      try {
+        if (!znode.equals("/") && !znode.equals(path)) {
           try {
             zkClient.delete(znode, -1);
           } catch (KeeperException.NotEmptyException e) {

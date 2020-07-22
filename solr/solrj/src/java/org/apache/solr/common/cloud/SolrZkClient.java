@@ -985,6 +985,10 @@ public class SolrZkClient implements Closeable {
     ZkMaintenanceUtils.clean(this, path);
   }
 
+  public void cleanChildren(String path) throws InterruptedException, KeeperException {
+    ZkMaintenanceUtils.cleanChildren(this, path);
+  }
+
   public void clean(String path, Predicate<String> nodeFilter) throws InterruptedException, KeeperException {
     log.info("clean path {}" + path);
     ZkMaintenanceUtils.clean(this, path, nodeFilter);
