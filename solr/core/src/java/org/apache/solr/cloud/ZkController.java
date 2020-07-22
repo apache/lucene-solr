@@ -1296,6 +1296,9 @@ public class ZkController implements Closeable {
       log.error("Exception on shutdown", e);
       return;
     } finally {
+      if (zkClient != null) {
+        zkClient.enableCloseLock();
+      }
       ParWork.close(zkClient);
     }
     URL url = null;

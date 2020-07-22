@@ -380,6 +380,16 @@ public class SolrZkClient implements Closeable {
 
   }
 
+
+  public void enableCloseLock() {
+    closeTracker.enableCloseLock();
+  }
+
+  public void disableCloseLock() {
+    closeTracker.disableCloseLock();
+  }
+
+
   /**
    * Returns path of created node
    */

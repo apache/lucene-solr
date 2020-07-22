@@ -37,6 +37,7 @@ import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -91,6 +92,7 @@ public class TestSegmentSorting extends SolrCloudTestCase {
 
 
   // 12-Jun-2018 @Test@BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+  @Ignore // nocommit debug
   public void testSegmentTerminateEarly() throws Exception {
 
     final SegmentTerminateEarlyTestState tstes = new SegmentTerminateEarlyTestState(random());

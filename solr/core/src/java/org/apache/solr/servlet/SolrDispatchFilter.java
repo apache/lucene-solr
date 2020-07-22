@@ -285,6 +285,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     if (!StringUtils.isEmpty(zkHost)) {
       int startUpZkTimeOut = Integer.getInteger("waitForZk", 10); // nocommit - zk settings
       zkClient = new SolrZkClient(zkHost, (int) TimeUnit.SECONDS.toMillis(startUpZkTimeOut));
+      zkClient.enableCloseLock();
       zkClient.start();
     }
 
@@ -365,6 +366,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
           try {
             ParWork.close(cc);
           } finally {
+            if (zkClient != null) {
+              zkClient.disableCloseLock();
+            }
             ParWork.close(zkClient);
           }
         }

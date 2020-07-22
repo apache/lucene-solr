@@ -9,9 +9,13 @@ import java.io.PrintWriter;
 public class CloseTracker implements Closeable {
     private volatile boolean closed = false;
     private volatile String closeStack = "";
+    private volatile boolean closeLock;
 
     @Override
     public void close() {
+        if (closeLock) {
+            throw new IllegalCallerException("Attempt to close an object that is not owned");
+        }
         if (closed) {
             StringBuilderWriter sw = new StringBuilderWriter(4096);
             PrintWriter pw = new PrintWriter(sw);
@@ -29,6 +33,14 @@ public class CloseTracker implements Closeable {
 
     public boolean isClosed() {
         return closed;
+    }
+    
+    public void enableCloseLock() {
+        closeLock = true;
+    }
+
+    public void disableCloseLock() {
+        closeLock = false;
     }
 
 }
