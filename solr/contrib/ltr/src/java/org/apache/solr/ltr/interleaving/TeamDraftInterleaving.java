@@ -42,13 +42,13 @@ public class TeamDraftInterleaving implements Interleaving{
   public InterleavingResult interleave(ScoreDoc[] rerankedA, ScoreDoc[] rerankedB){
     LinkedHashSet<ScoreDoc> interleavedResults = new LinkedHashSet<>();
     ScoreDoc[] interleavedResultArray = new ScoreDoc[rerankedA.length];
-    ArrayList<Set<Integer>> interleavingPicks = new ArrayList<>(rerankedA.length);
+    ArrayList<Set<Integer>> interleavingPicks = new ArrayList<>(2);
     Set<Integer> teamA = new HashSet<>();
     Set<Integer> teamB = new HashSet<>();
     int topN = rerankedA.length;
     int indexA = 0, indexB = 0;
     
-    while(interleavedResults.size()<topN && (indexA<rerankedA.length) && (indexB<rerankedB.length)){
+    while(interleavedResults.size()<topN && indexA<rerankedA.length && indexB<rerankedB.length){
       if(teamA.size()<teamB.size() || (teamA.size()==teamB.size() && !RANDOM.nextBoolean())){
         indexA = updateIndex(interleavedResults,indexA,rerankedA);
         interleavedResults.add(rerankedA[indexA]);

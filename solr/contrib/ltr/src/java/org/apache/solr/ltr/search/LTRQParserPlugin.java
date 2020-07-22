@@ -155,9 +155,9 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
             "Must provide model in the request");
       }
      
-      LTRScoringQuery[] reRankingModels = new LTRScoringQuery[modelNames.length];
+      LTRScoringQuery[] rerankingQueries = new LTRScoringQuery[modelNames.length];
       for (int i = 0; i < modelNames.length; i++) {
-        final LTRScoringQuery scoringQuery;
+        final LTRScoringQuery rerankingQuery;
         if (!ORIGINAL_RANKING.equals(modelNames[i])) {
           final LTRScoringModel ltrScoringModel = mr.getModel(modelNames[i]);
           if (ltrScoringModel == null) {
@@ -171,36 +171,40 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
           if (threadManager != null) {
             threadManager.setExecutor(req.getCore().getCoreContainer().getUpdateShardHandler().getUpdateExecutor());
           }
-          scoringQuery = new LTRScoringQuery(ltrScoringModel,
+          rerankingQuery = new LTRScoringQuery(ltrScoringModel,
               extractEFIParams(localParams),
               featuresRequestedFromSameStore, threadManager);
 
           // Enable the feature vector caching if we are extracting features, and the features
           // we requested are the same ones we are reranking with
           if (featuresRequestedFromSameStore) {
-            scoringQuery.setFeatureLogger( SolrQueryRequestContextUtils.getFeatureLogger(req) );
+            rerankingQuery.setFeatureLogger( SolrQueryRequestContextUtils.getFeatureLogger(req) );
           }
         }else{
-          scoringQuery = new LTRScoringQuery(null);
+          rerankingQuery = new LTRScoringQuery(null);
         }
 
         // External features
-        scoringQuery.setRequest(req);
-        reRankingModels[i] = scoringQuery;
+        rerankingQuery.setRequest(req);
+        rerankingQueries[i] = rerankingQuery;
       }
 
-      SolrQueryRequestContextUtils.setScoringQuery(req, reRankingModels);
+      SolrQueryRequestContextUtils.setScoringQuery(req, rerankingQueries);
       int reRankDocs = localParams.getInt(RERANK_DOCS, DEFAULT_RERANK_DOCS);
       if (reRankDocs <= 0) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             "Must rerank at least 1 document");
       }
-      if (reRankingModels.length == 1) {
-        return new LTRQuery(reRankingModels[0], reRankDocs);
+      if (rerankingQueries.length == 1) {
+        return new LTRQuery(rerankingQueries[0], reRankDocs);
       } else {
-        return new LTRQuery(reRankingModels, reRankDocs);
+        return new LTRQuery(rerankingQueries, reRankDocs);
       }
     }
+  }
+  
+  public static boolean isOriginalRanking(LTRScoringQuery rerankingQuery){
+    return rerankingQuery.getScoringModel() == null;
   }
 
   /**
@@ -208,21 +212,21 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
    * of the documents.
    **/
   public class LTRQuery extends AbstractReRankQuery {
-    private final LTRScoringQuery[] reRankingModels;
+    private final LTRScoringQuery[] rerankingQueries;
 
-    public LTRQuery(LTRScoringQuery[] reRankingModels, int reRankDocs) {
-      super(defaultQuery, reRankDocs, new LTRInterleavingRescorer(reRankingModels));
-      this.reRankingModels = reRankingModels;
+    public LTRQuery(LTRScoringQuery[] rerankingQueries, int rerankDocs) {
+      super(defaultQuery, rerankDocs, new LTRInterleavingRescorer(rerankingQueries));
+      this.rerankingQueries = rerankingQueries;
     }
 
-    public LTRQuery(LTRScoringQuery rerankingModel, int reRankDocs) {
-      super(defaultQuery, reRankDocs, new LTRRescorer(rerankingModel));
-      this.reRankingModels = new LTRScoringQuery[]{rerankingModel};
+    public LTRQuery(LTRScoringQuery rerankingQuery, int rerankDocs) {
+      super(defaultQuery, rerankDocs, new LTRRescorer(rerankingQuery));
+      this.rerankingQueries = new LTRScoringQuery[]{rerankingQuery};
     }
 
     @Override
     public int hashCode() {
-      return 31 * classHash() + (mainQuery.hashCode() + reRankingModels.hashCode() + reRankDocs);
+      return 31 * classHash() + (mainQuery.hashCode() + rerankingQueries.hashCode() + reRankDocs);
     }
 
     @Override
@@ -232,14 +236,14 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
 
     private boolean equalsTo(LTRQuery other) {
       return (mainQuery.equals(other.mainQuery)
-          && reRankingModels.equals(other.reRankingModels) && (reRankDocs == other.reRankDocs));
+          && rerankingQueries.equals(other.rerankingQueries) && (reRankDocs == other.reRankDocs));
     }
 
     @Override
     public RankQuery wrap(Query _mainQuery) {
       super.wrap(_mainQuery);
-      for(LTRScoringQuery reRankingModel:reRankingModels){
-        reRankingModel.setOriginalQuery(_mainQuery);
+      for(LTRScoringQuery rerankingQuery: rerankingQueries){
+        rerankingQuery.setOriginalQuery(_mainQuery);
       }
       return this;
     }
@@ -247,12 +251,12 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
     @Override
     public String toString(String field) {
       return "{!ltr mainQuery='" + mainQuery.toString() + "' scoringQuery='"
-          + Arrays.toString(reRankingModels) + "' reRankDocs=" + reRankDocs + "}";
+          + Arrays.toString(rerankingQueries) + "' reRankDocs=" + reRankDocs + "}";
     }
 
     @Override
     protected Query rewrite(Query rewrittenMainQuery) throws IOException {
-      return new LTRQuery(reRankingModels, reRankDocs).wrap(rewrittenMainQuery);
+      return new LTRQuery(rerankingQueries, reRankDocs).wrap(rewrittenMainQuery);
     }
   }
 

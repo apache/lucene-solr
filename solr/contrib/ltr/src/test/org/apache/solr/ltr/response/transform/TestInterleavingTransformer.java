@@ -117,6 +117,47 @@ public class TestInterleavingTransformer extends TestRerankBase {
 
   }
 
+  @Test
+  public void interleavingTransformerWithOriginalRanking_shouldReturnInterleavingPickInTheResults() throws Exception {
+    TeamDraftInterleaving.setRANDOM(new Random(10101010));//Random Boolean Choices Generation from Seed: [0,1,1]
+    loadFeaturesAndModelsForInterleaving();
+
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("*:*");
+    query.add("fl", "*, score,interleavingPick:[interleaving]");
+    query.add("rows", "10");
+    query.add("debugQuery", "true");
+    query.add("fq", "{!terms f=title}w1"); // 1,3,4,7,8
+    query.add("rq",
+        "{!ltr model=modelA model=originalRanking reRankDocs=10 efi.user_query='w5'}");
+
+    /*
+    Doc1 = "featureB2=1.0", ScoreA(0)
+    Doc3 = "featureB2=1.0", ScoreA(0)
+    Doc4 = "featureB1=1.0", ScoreA(0)
+    Doc7 ="featureA1=1.0,featureA2=1.0,featureAB=1.0,featureB2=1.0", ScoreA(39)
+    Doc8 = "featureA1=1.0,featureB2=1.0", ScoreA(3)
+    
+    ModelARerankedList = [7,8,1,3,4]
+    OriginalRanking = [1,3,4,7,8]
+
+   
+    Random Boolean Choices Generation from Seed: [0,1,1]
+    */
+    String[] expectedInterleavingPicks = new String[]{"modelA", "originalRanking", "originalRanking", "modelA", "originalRanking"};
+    int[] expectedInterleaved = new int[]{7, 1, 3, 8, 4};
+
+    String[] tests = new String[11];
+    tests[0] = "/response/numFound/==5";
+    for (int i = 1; i <= 5; i++) {
+      tests[i] = "/response/docs/[" + (i - 1) + "]/id==\"" + expectedInterleaved[(i - 1)] + "\"";
+      tests[i + 5] = "/response/docs/[" + (i - 1) + "]/interleavingPick==" + expectedInterleavingPicks[(i - 1)];
+    }
+    assertJQ("/query" + query.toQueryString(), tests);
+
+  }
+  
+
 
   @Test
   public void interleavingTransformer_shouldBeCompatibleWithFeatureTransformer() throws Exception {
@@ -143,7 +184,12 @@ public class TestInterleavingTransformer extends TestRerankBase {
    
     Random Boolean Choices Generation from Seed: [0,1,1]
     */
-    String[] expectedFeatureVectors = new String[]{"featureA1\\=1.0\\,featureA2\\=1.0\\,featureAB\\=1.0\\,featureB2\\=1.0", "featureB2\\=1.0", "featureB2\\=1.0", "featureA1\\=1.0\\,featureB2\\=1.0", "featureB1\\=1.0"};
+    String[] expectedFeatureVectors = new String[]{
+        "featureA1\\=1.0\\,featureA2\\=1.0\\,featureAB\\=1.0\\,featureB2\\=1.0",
+        "featureB2\\=1.0",
+        "featureB2\\=1.0",
+        "featureA1\\=1.0\\,featureB2\\=1.0",
+        "featureB1\\=1.0"};
     String[] expectedInterleavingPicks = new String[]{"modelA", "modelB", "modelB", "modelA", "modelB"};
     int[] expectedInterleaved = new int[]{7, 1, 3, 8, 4};
 
@@ -155,6 +201,69 @@ public class TestInterleavingTransformer extends TestRerankBase {
       tests[i + 10] = "/response/docs/[" + (i - 1) + "]/features==" + expectedFeatureVectors[(i - 1)];
     }
     assertJQ("/query" + query.toQueryString(), tests);
+  }
+
+  @Test
+  public void interleavingTransformerWithOriginalRanking_shouldBeCompatibleWithFeatureTransformer() throws Exception {
+    TeamDraftInterleaving.setRANDOM(new Random(10101010));//Random Boolean Choices Generation from Seed: [0,1,1]
+    loadFeaturesAndModelsForInterleaving();
+
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("*:*");
+    query.add("fl", "*, score,interleavingPick:[interleaving],features:[fv format=sparse]");
+    query.add("rows", "10");
+    query.add("debugQuery", "true");
+    query.add("fq", "{!terms f=title}w1"); // 1,3,4,7,8
+    query.add("rq",
+        "{!ltr model=modelA model=originalRanking reRankDocs=10 efi.user_query='w5'}");
+
+    /*
+    Doc1 = "featureB2=1.0", ScoreA(0)
+    Doc3 = "featureB2=1.0", ScoreA(0)
+    Doc4 = "featureB1=1.0", ScoreA(0)
+    Doc7 ="featureA1=1.0,featureA2=1.0,featureAB=1.0,featureB2=1.0", ScoreA(39)
+    Doc8 = "featureA1=1.0,featureB2=1.0", ScoreA(3)
+    
+    ModelARerankedList = [7,8,1,3,4]
+    OriginalRanking = [1,3,4,7,8]
+
+   
+    Random Boolean Choices Generation from Seed: [0,1,1]
+    */
+    String[] expectedFeatureVectors = new String[]{
+        "featureA1\\=1.0\\,featureA2\\=1.0\\,featureAB\\=1.0\\,featureB2\\=1.0",
+        null,
+        null,
+        "featureA1\\=1.0\\,featureB2\\=1.0",
+        null};
+    String[] expectedInterleavingPicks = new String[]{"modelA", "originalRanking", "originalRanking", "modelA", "originalRanking"};
+    int[] expectedInterleaved = new int[]{7, 1, 3, 8, 4};
+
+    String[] tests = new String[16];
+    tests[0] = "/response/numFound/==5";
+    for (int i = 1; i <= 5; i++) {
+      tests[i] = "/response/docs/[" + (i - 1) + "]/id==\"" + expectedInterleaved[(i - 1)] + "\"";
+      tests[i + 5] = "/response/docs/[" + (i - 1) + "]/interleavingPick==" + expectedInterleavingPicks[(i - 1)];
+      if (expectedFeatureVectors[(i - 1)] != null) {
+        tests[i + 10] = "/response/docs/[" + (i - 1) + "]/features==" + expectedFeatureVectors[(i - 1)];
+      }
+    }
+    assertJQ("/query" + query.toQueryString(), tests);
+
+    int[] nullFeatureVectorIndexes = new int[]{1, 2, 4};
+    for (int index : nullFeatureVectorIndexes) {
+      TeamDraftInterleaving.setRANDOM(new Random(10101010));
+      String[] nullFeatureVectorTests = new String[1];
+      try {
+        nullFeatureVectorTests[0] = "/response/docs/[" + index + "]/features==";
+        assertJQ("/query" + query.toQueryString(), nullFeatureVectorTests);
+      } catch (Exception e) {
+        assertEquals("Path not found: /response/docs/[" + index + "]/features", e.getMessage());
+        continue;
+      }
+
+    }
+
   }
 
 }

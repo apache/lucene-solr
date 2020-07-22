@@ -28,9 +28,13 @@ import org.apache.solr.response.transform.DocTransformer;
 import org.apache.solr.response.transform.TransformerFactory;
 import org.apache.solr.util.SolrPluginUtils;
 
+import static org.apache.solr.ltr.search.LTRQParserPlugin.ORIGINAL_RANKING;
+import static org.apache.solr.ltr.search.LTRQParserPlugin.isOriginalRanking;
+
 public class LTRInterleavingTransformerFactory extends TransformerFactory {
   
   @Override
+  @SuppressWarnings({"unchecked"})
   public void init(@SuppressWarnings("rawtypes") NamedList args) {
     super.init(args);
     SolrPluginUtils.invokeSetters(this, args);
@@ -105,9 +109,12 @@ public class LTRInterleavingTransformerFactory extends TransformerFactory {
       if (rerankingQueries.length > 1 && rerankingQueries[1].getPickedInterleavingDocIds().contains(docid)) {
         rerankingQuery = rerankingQueries[1];
       }
-      doc.addField(name,rerankingQuery.getScoringModel().getName());
+      if (isOriginalRanking(rerankingQuery)) {
+        doc.addField(name, ORIGINAL_RANKING);
+      } else {
+        doc.addField(name, rerankingQuery.getScoringModel().getName());
+      }
     }
-
   }
 
 }
