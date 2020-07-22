@@ -380,7 +380,7 @@ public class HttpShardHandler extends ShardHandler {
 
       while (pending.size() > 0 && !Thread.currentThread().isInterrupted()) {
         try {
-          Future<ShardResponse> future = completionService.poll(Integer.getInteger("solr.httpShardHandler.completionTimeout", 10), TimeUnit.SECONDS);
+          Future<ShardResponse> future = completionService.poll(Integer.getInteger("solr.httpShardHandler.completionTimeout", 10000), TimeUnit.MILLISECONDS);
           pending.remove(future);
           ShardResponse rsp = future.get();
           if (bailOnError && rsp.getException() != null) return rsp; // if exception, return immediately
@@ -560,6 +560,7 @@ public class HttpShardHandler extends ShardHandler {
                 try {
                   shardLeader = zkController.getZkStateReader().getLeaderRetry(cloudDescriptor.getCollectionName(), slice.getName());
                 } catch (InterruptedException e) {
+                  ParWork.propegateInterrupt(e);
                   throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Exception finding leader for shard " + slice.getName() + " in collection "
                           + cloudDescriptor.getCollectionName(), e);
                 } catch (SolrException e) {
