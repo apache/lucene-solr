@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.CloseTracker;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.zookeeper.ClientCnxn;
@@ -46,14 +47,15 @@ import org.apache.zookeeper.proto.RequestHeader;
 @SuppressWarnings({"try"})
 public class SolrZooKeeper extends ZooKeeper {
   final Set<Thread> spawnedThreads = ConcurrentHashMap.newKeySet();
-  
+  private final CloseTracker closeTracker;
+
   // for test debug
   //static Map<SolrZooKeeper,Exception> clients = new ConcurrentHashMap<SolrZooKeeper,Exception>();
 
   public SolrZooKeeper(String connectString, int sessionTimeout,
       Watcher watcher) throws IOException {
     super(connectString, sessionTimeout, watcher);
-
+    closeTracker = new CloseTracker();
     //clients.put(this, new RuntimeException());
   }
   
@@ -108,12 +110,12 @@ public class SolrZooKeeper extends ZooKeeper {
   
   @Override
   public void close() {
-
+    closeTracker.close();
     try (ParWork worker = new ParWork(this, true)) {
       worker.collect(() -> {
         try {
           ZooKeeperExposed exposed = new ZooKeeperExposed(this, cnxn);
-          exposed.intteruptSendThread();
+          //exposed.intteruptSendThread();
 //        exposed.intteruptSendThread();
           SolrZooKeeper.super.close();
         } catch (InterruptedException e) {
