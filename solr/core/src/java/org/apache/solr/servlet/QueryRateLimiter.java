@@ -21,7 +21,7 @@ import javax.servlet.FilterConfig;
 
 import static org.apache.solr.servlet.RateLimitManager.DEFAULT_CONCURRENT_REQUESTS;
 import static org.apache.solr.servlet.RateLimitManager.DEFAULT_EXPIRATION_TIME_INMS;
-import static org.apache.solr.servlet.RateLimitManager.DEFAULT_TIMEOUT_MS;
+import static org.apache.solr.servlet.RateLimitManager.DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS;
 
 public class QueryRateLimiter extends RequestRateLimiter {
   final static String MAX_QUERY_REQUESTS = "maxQueryRequests";
@@ -38,7 +38,7 @@ public class QueryRateLimiter extends RequestRateLimiter {
     queryRateLimiterConfig.requestSuspendTimeInMS = getParamAndParseLong(filterConfig, QUERY_REQUEST_EXPIRATION_TIME_INMS,
         DEFAULT_EXPIRATION_TIME_INMS);
     queryRateLimiterConfig.waitForSlotAcquisition = getParamAndParseLong(filterConfig, QUERY_WAIT_FOR_SLOT_ALLOCATION_INMS,
-        DEFAULT_TIMEOUT_MS);
+        DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS);
     queryRateLimiterConfig.allowedRequests = getParamAndParseInt(filterConfig, MAX_QUERY_REQUESTS,
         DEFAULT_CONCURRENT_REQUESTS);
 

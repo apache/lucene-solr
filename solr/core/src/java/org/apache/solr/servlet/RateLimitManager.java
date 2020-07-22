@@ -38,8 +38,8 @@ import static org.apache.solr.common.params.CommonParams.SOLR_REQUEST_TYPE_PARAM
  */
 public class RateLimitManager {
   public final static int DEFAULT_CONCURRENT_REQUESTS= 10;
-  public final static long DEFAULT_EXPIRATION_TIME_INMS = 200;
-  public final static long DEFAULT_TIMEOUT_MS = -1;
+  public final static long DEFAULT_EXPIRATION_TIME_INMS = 300;
+  public final static long DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS = -1;
 
   private final Map<String, RequestRateLimiter> requestRateLimiterMap;
 

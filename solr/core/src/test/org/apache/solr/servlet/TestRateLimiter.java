@@ -38,7 +38,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static org.apache.solr.servlet.RateLimitManager.DEFAULT_EXPIRATION_TIME_INMS;
-import static org.apache.solr.servlet.RateLimitManager.DEFAULT_TIMEOUT_MS;
+import static org.apache.solr.servlet.RateLimitManager.DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS;
 
 public class TestRateLimiter extends SolrCloudTestCase {
   private final static String COLLECTION = "c1";
@@ -59,7 +59,7 @@ public class TestRateLimiter extends SolrCloudTestCase {
     SolrDispatchFilter solrDispatchFilter = cluster.getJettySolrRunner(0).getSolrDispatchFilter();
 
     RequestRateLimiter.RateLimiterConfig rateLimiterConfig = new RequestRateLimiter.RateLimiterConfig(DEFAULT_EXPIRATION_TIME_INMS,
-        DEFAULT_TIMEOUT_MS, 5 /* allowedRequests */);
+        DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS, 5 /* allowedRequests */);
     RateLimitManager.Builder builder = new MockBuilder(new MockRequestRateLimiter(rateLimiterConfig, 5),
         new MockRequestRateLimiter(rateLimiterConfig, 5));
     RateLimitManager rateLimitManager = builder.build();
@@ -105,9 +105,9 @@ public class TestRateLimiter extends SolrCloudTestCase {
 
       MockRequestRateLimiter mockQueryRateLimiter = (MockRequestRateLimiter) rateLimitManager.getRequestRateLimiter(SolrRequest.SolrRequestType.QUERY);
 
-      assertTrue("Incoming request count did not match. Expected >200  incoming " + mockQueryRateLimiter.incomingRequestCount.get(),
-          mockQueryRateLimiter.incomingRequestCount.get() > 25);
-      assertTrue("Incoming accepted new request count did not match. Expected 200 incoming " + mockQueryRateLimiter.acceptedNewRequestCount.get(),
+      assertTrue("Incoming request count did not match. Expected >=25  incoming " + mockQueryRateLimiter.incomingRequestCount.get(),
+          mockQueryRateLimiter.incomingRequestCount.get() >= 25);
+      assertTrue("Incoming accepted new request count did not match. Expected 25 incoming " + mockQueryRateLimiter.acceptedNewRequestCount.get(),
           mockQueryRateLimiter.acceptedNewRequestCount.get() == 25);
       assertTrue("Incoming rejected new request count did not match. Expected >0 incoming " + mockQueryRateLimiter.rejectedRequestCount.get(),
           mockQueryRateLimiter.rejectedRequestCount.get() > 0);
@@ -131,7 +131,7 @@ public class TestRateLimiter extends SolrCloudTestCase {
     cluster.waitForActiveCollection(INDEX_COLLECTION, 1, 1);
 
     RequestRateLimiter.RateLimiterConfig rateLimiterConfig = new RequestRateLimiter.RateLimiterConfig(DEFAULT_EXPIRATION_TIME_INMS,
-        DEFAULT_TIMEOUT_MS, 3 /* allowedRequests */);
+        DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS, 3 /* allowedRequests */);
     CountDownLatch countDownLatch = new CountDownLatch(1);
     RateLimitManager.Builder builder = new MockBuilder(new MockBlockingRequestRateLimiter(rateLimiterConfig, 3, countDownLatch),
         new MockRequestRateLimiter(rateLimiterConfig, 3));
@@ -187,7 +187,7 @@ public class TestRateLimiter extends SolrCloudTestCase {
 
       MockRequestRateLimiter mockIndexRateLimiter = (MockRequestRateLimiter) rateLimitManager.getRequestRateLimiter(SolrRequest.SolrRequestType.UPDATE);
 
-      assertTrue("Incoming request count did not match. Expected > 4 incoming " +  mockIndexRateLimiter.incomingRequestCount.get(),
+      assertTrue("Incoming request count did not match. Expected == 1 incoming " +  mockIndexRateLimiter.incomingRequestCount.get(),
            mockIndexRateLimiter.incomingRequestCount.get() == 1);
 
       MockRequestRateLimiter mockQueryRateLimiter = (MockRequestRateLimiter) rateLimitManager.getRequestRateLimiter(SolrRequest.SolrRequestType.QUERY);
