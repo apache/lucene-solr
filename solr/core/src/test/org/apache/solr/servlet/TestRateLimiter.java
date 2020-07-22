@@ -18,6 +18,7 @@
 package org.apache.solr.servlet;
 
 import javax.servlet.http.HttpServletRequest;
+import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -87,7 +88,11 @@ public class TestRateLimiter extends SolrCloudTestCase {
           public Boolean call() throws Exception {
             try {
               QueryResponse response = client.query(new SolrQuery("*:*"));
-              assertEquals(100, response.getResults().getNumFound());
+              HttpResponse httpResponse = (HttpResponse) response.getResponse().get("closeableResponse");
+
+              if (httpResponse == null || httpResponse.statusCode() != 503) {
+                assertEquals(100, response.getResults().getNumFound());
+              }
             } catch (Exception e) {
               throw new RuntimeException(e.getMessage());
             }

@@ -607,11 +607,16 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       switch (httpStatus) {
         //TODO: atri
 
+        case HttpStatus.SC_SERVICE_UNAVAILABLE:
+          NamedList<Object> rsp = new NamedList<>();
+          rsp.add("stream", respBody);
+          rsp.add("closeableResponse", response);
+          // Only case where stream should not be closed
+          shouldClose = false;
+          return rsp;
         case HttpStatus.SC_OK:
         case HttpStatus.SC_BAD_REQUEST:
           //TODO: atri
-        case HttpStatus.SC_SERVICE_UNAVAILABLE:
-          break;
         case HttpStatus.SC_CONFLICT:  // 409
           break;
         case HttpStatus.SC_MOVED_PERMANENTLY:
