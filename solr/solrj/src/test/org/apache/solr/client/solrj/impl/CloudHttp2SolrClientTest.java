@@ -50,6 +50,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.client.solrj.util.AsyncListener;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocument;
@@ -101,6 +102,8 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
   private static CloudHttp2SolrClient httpBasedCloudSolrClient = null;
   private static CloudHttp2SolrClient zkBasedCloudSolrClient = null;
+
+  private boolean asyncCallbackRun;
 
   @Before
   public void setupCluster() throws Exception {
@@ -1072,6 +1075,39 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     if (log.isInfoEnabled()) {
       log.info("Shards giving the response: {}", Arrays.toString(shardAddresses.toArray()));
     }
+  }
+
+  /**
+   * Tests the async request code pathway to ensure that normal requests will trigger the onSuccess callback.
+   */
+  @Test
+  public void asyncRequestTest() throws Exception {
+    final String collectionName = "asyncRequestCollection";
+
+    // Create collection
+    CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1).process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(collectionName, 2, 2);
+
+    AsyncListener callback = new AsyncListener() {
+      @Override
+      public void onSuccess(Object o) { asyncCallbackRun = true; }
+
+      @Override
+      public void onFailure(Throwable throwable) { }
+    };
+
+    QueryRequest request = new QueryRequest(); // params of the request aren't important for this test
+
+    // Test success callback runs on a "successful" request
+    asyncCallbackRun = false;
+    getRandomClient().asyncRequest(request, collectionName, callback);
+
+    // Wait for up to 500ms timeout success callback to run
+    int count = 0;
+    while (!asyncCallbackRun && ++count <= 20) {
+      Thread.sleep(25);
+    }
+    if (count == 21) { fail("Async request timed out"); }
   }
 
 }

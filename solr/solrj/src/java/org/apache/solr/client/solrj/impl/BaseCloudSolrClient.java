@@ -1178,12 +1178,12 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     if (makeAsyncRequest) {
       // Make request asynchronously, wrap Cancellable in a NamedList to match return type of synchronous request
       NamedList<Object> cancellableWrapper = new NamedList<>();
-      Cancellable cancellable = ((LBHttp2SolrClient) getLbClient()).asyncReq(req, asyncListener);
+      Cancellable cancellable = ((LBHttp2SolrClient) lbSolrClient).asyncReq(req, asyncListener);
       cancellableWrapper.add("asyncCancellable", cancellable);
       return cancellableWrapper;
     } else {
       // Make request synchronously
-      LBSolrClient.Rsp rsp = getLbClient().request(req);
+      LBSolrClient.Rsp rsp = lbSolrClient.request(req);
       return rsp.getResponse();
     }
   }
