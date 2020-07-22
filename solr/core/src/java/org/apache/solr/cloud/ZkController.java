@@ -1487,7 +1487,7 @@ public class ZkController implements Closeable {
                          boolean afterExpiration, boolean skipRecovery) throws Exception {
     MDCLoggingContext.setCoreDescriptor(cc, desc);
     try {
-      if (cc.isShutDown()) {
+      if (isClosed()) {
         throw new AlreadyClosedException();
       }
       // pre register has published our down state
@@ -1596,6 +1596,9 @@ public class ZkController implements Closeable {
         }
         boolean didRecovery
             = checkRecovery(recoverReloadedCores, isLeader, skipRecovery, collection, coreZkNodeName, shardId, core, cc, afterExpiration);
+        if (isClosed()) {
+          throw new AlreadyClosedException();
+        }
         if (!didRecovery) {
           if (isTlogReplicaAndNotLeader) {
             startReplicationFromLeader(coreName, true);

@@ -1768,7 +1768,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   @Override
   public void close() {
     this.closed = true;
-    if (executorService != null) executorService.shutdown();
+    if (executorService != null) executorService.shutdownNow();
 
     if (restoreFuture != null) {
       restoreFuture.cancel(false);
