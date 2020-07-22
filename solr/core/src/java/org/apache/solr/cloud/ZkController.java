@@ -627,6 +627,7 @@ public class ZkController implements Closeable {
       closer.collect(sysPropsCacher);
       closer.collect(cloudManager);
       closer.collect(cloudSolrClient);
+      closer.collect(replicateFromLeaders.values());
       closer.addCollect("closeGroup1");
 
       if (overseerElector != null && overseerElector.getContext() != null ) {
@@ -1653,21 +1654,21 @@ public class ZkController implements Closeable {
     if (isClosed()) throw new AlreadyClosedException();
     log.info("{} starting background replication from leader", coreName);
     ReplicateFromLeader replicateFromLeader = new ReplicateFromLeader(cc, coreName);
-    synchronized (replicateFromLeader) { // synchronize to prevent any stop before we finish the start
-      ReplicateFromLeader prev = replicateFromLeaders.putIfAbsent(coreName, replicateFromLeader);
-      if (prev == null) {
-        replicateFromLeader.startReplication(switchTransactionLog);
-      } else {
-        log.warn("A replicate from leader instance already exists for core {}", coreName);
-        try {
-          prev.close();
-        } catch (Exception e) {
-          ParWork.propegateInterrupt("Error closing previous replication attempt", e);
-        }
-        if (isClosed()) throw new AlreadyClosedException();
-        replicateFromLeader.startReplication(switchTransactionLog);
+
+    ReplicateFromLeader prev = replicateFromLeaders.putIfAbsent(coreName, replicateFromLeader);
+    if (prev == null) {
+      replicateFromLeader.startReplication(switchTransactionLog);
+    } else {
+      log.warn("A replicate from leader instance already exists for core {}", coreName);
+      try {
+        prev.close();
+      } catch (Exception e) {
+        ParWork.propegateInterrupt("Error closing previous replication attempt", e);
       }
+      if (isClosed()) throw new AlreadyClosedException();
+      replicateFromLeader.startReplication(switchTransactionLog);
     }
+
   }
 
   public void stopReplicationFromLeader(String coreName) {
