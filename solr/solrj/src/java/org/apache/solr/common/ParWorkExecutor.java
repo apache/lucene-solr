@@ -38,7 +38,12 @@ public class ParWorkExecutor extends ThreadPoolExecutor {
 
             @Override
             public Thread newThread(Runnable r) {
-                Thread t = new Thread(group, r, name + threadNumber.getAndIncrement(), 0);
+                Thread t = new Thread(group, r, name + threadNumber.getAndIncrement(), 0) {
+                    public void run() {
+                        super.run();
+                        ParWork.close(ParWork.getExecutor());
+                    }
+                };
                 t.setDaemon(true);
                 // t.setPriority(priority);
                 return t;
