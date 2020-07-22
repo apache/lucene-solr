@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Properties;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -46,10 +47,12 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.CoreDescriptor;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.solr.common.params.CommonParams.HEALTH_CHECK_HANDLER_PATH;
 
+@LuceneTestCase.Nightly// nocommit debug - can take a long time
 public class HealthCheckHandlerTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
