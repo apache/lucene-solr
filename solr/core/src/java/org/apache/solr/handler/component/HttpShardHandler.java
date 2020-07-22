@@ -381,6 +381,9 @@ public class HttpShardHandler extends ShardHandler {
       while (pending.size() > 0 && !Thread.currentThread().isInterrupted()) {
         try {
           Future<ShardResponse> future = completionService.poll(Integer.getInteger("solr.httpShardHandler.completionTimeout", 10000), TimeUnit.MILLISECONDS);
+          if (future == null) {
+            throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Timed out waiting for response from shard");
+          }
           pending.remove(future);
           ShardResponse rsp = future.get();
           if (bailOnError && rsp.getException() != null) return rsp; // if exception, return immediately
@@ -394,7 +397,7 @@ public class HttpShardHandler extends ShardHandler {
           }
         } catch (InterruptedException e) {
           ParWork.propegateInterrupt(e);
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+          throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, e);
         } catch (ExecutionException e) {
           // should be impossible... the problem with catching the exception
           // at this level is we don't know what ShardRequest it applied to

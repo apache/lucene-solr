@@ -108,6 +108,7 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CloseTracker;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
@@ -177,6 +178,7 @@ public class ZkController implements Closeable {
   private final int zkClientConnectTimeout;
   private final Supplier<List<CoreDescriptor>> descriptorsSupplier;
   private final ZkACLProvider zkACLProvider;
+  private final CloseTracker closeTracker;
   private boolean closeZkClient = false;
 
   private volatile ZkDistributedQueue overseerJobQueue;
@@ -348,6 +350,7 @@ public class ZkController implements Closeable {
    */
   public ZkController(final CoreContainer cc, SolrZkClient zkClient, CloudConfig cloudConfig, final Supplier<List<CoreDescriptor>> descriptorsSupplier)
       throws InterruptedException, TimeoutException, IOException {
+    closeTracker = new CloseTracker();
     if (cc == null) log.error("null corecontainer");
     if (cc == null) throw new IllegalArgumentException("CoreContainer cannot be null.");
     try {
@@ -615,9 +618,10 @@ public class ZkController implements Closeable {
   /**
    * Closes the underlying ZooKeeper client.
    */
-  public void close() {
+  public synchronized void close() {
     log.info("Closing ZkController");
-    assert !this.isClosed;
+    closeTracker.close();
+    this.shudownCalled = true;
 
     this.isClosed = true;
 

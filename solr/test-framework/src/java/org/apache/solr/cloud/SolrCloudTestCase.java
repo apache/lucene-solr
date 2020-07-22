@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -36,6 +37,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -276,10 +278,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   protected static volatile MiniSolrCloudCluster cluster;
 
   protected static SolrZkClient zkClient() {
-    ZkStateReader reader = cluster.getSolrClient().getZkStateReader();
-    if (reader == null)
-      cluster.getSolrClient().connect();
-    return cluster.getSolrClient().getZkStateReader().getZkClient();
+    return cluster.getZkClient();
   }
 
   /**
@@ -430,10 +429,11 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
    * Get a (reproducibly) random shard from a {@link DocCollection}
    */
   protected static Slice getRandomShard(DocCollection collection) {
+    Random random = LuceneTestCase.random();
     List<Slice> shards = new ArrayList<>(collection.getActiveSlices());
     if (shards.size() == 0)
       fail("Couldn't get random shard for collection as it has no shards!\n" + collection.toString());
-    Collections.shuffle(shards, random());
+    Collections.shuffle(shards, random);
     return shards.get(0);
   }
 
@@ -441,10 +441,11 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
    * Get a (reproducibly) random replica from a {@link Slice}
    */
   protected static Replica getRandomReplica(Slice slice) {
+    Random random = LuceneTestCase.random();
     List<Replica> replicas = new ArrayList<>(slice.getReplicas());
     if (replicas.size() == 0)
       fail("Couldn't get random replica from shard as it has no replicas!\n" + slice.toString());
-    Collections.shuffle(replicas, random());
+    Collections.shuffle(replicas, random);
     return replicas.get(0);
   }
 
@@ -452,10 +453,11 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
    * Get a (reproducibly) random replica from a {@link Slice} matching a predicate
    */
   protected static Replica getRandomReplica(Slice slice, Predicate<Replica> matchPredicate) {
+    Random random = LuceneTestCase.random();
     List<Replica> replicas = new ArrayList<>(slice.getReplicas());
     if (replicas.size() == 0)
       fail("Couldn't get random replica from shard as it has no replicas!\n" + slice.toString());
-    Collections.shuffle(replicas, random());
+    Collections.shuffle(replicas, random);
     for (Replica replica : replicas) {
       if (matchPredicate.test(replica))
         return replica;

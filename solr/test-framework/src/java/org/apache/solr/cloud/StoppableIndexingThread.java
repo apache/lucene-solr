@@ -96,7 +96,10 @@ public class StoppableIndexingThread extends AbstractFullDistribZkTestBase.Stopp
           
           cloudClient.deleteById(deleteId);
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          if (e instanceof InterruptedException) {
+            ParWork.propegateInterrupt(e);
+            return;
+          }
           System.err.println("REQUEST FAILED for id=" + deleteId);
           e.printStackTrace();
           if (e instanceof SolrServerException) {
@@ -121,7 +124,10 @@ public class StoppableIndexingThread extends AbstractFullDistribZkTestBase.Stopp
           docs.clear();
         }
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        if (e instanceof InterruptedException) {
+          ParWork.propegateInterrupt(e);
+          return;
+        }
         addFailed = true;
         System.err.println("REQUEST FAILED for id=" + id);
         e.printStackTrace();
@@ -141,6 +147,7 @@ public class StoppableIndexingThread extends AbstractFullDistribZkTestBase.Stopp
           Thread.sleep(random.nextInt(500) + 50);
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
+          return;
         }
       }
     }

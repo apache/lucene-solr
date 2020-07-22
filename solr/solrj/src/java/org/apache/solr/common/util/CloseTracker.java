@@ -13,7 +13,11 @@ public class CloseTracker implements Closeable {
     @Override
     public void close() {
         if (closed) {
-            throw new AlreadyClosedException(closeStack);
+            StringBuilderWriter sw = new StringBuilderWriter(4096);
+            PrintWriter pw = new PrintWriter(sw);
+            new ObjectReleaseTracker.ObjectTrackerException(this.getClass().getName()).printStackTrace(pw);
+            String fcloseStack = sw.toString();
+            throw new AlreadyClosedException(fcloseStack + "\nalready closed by:\n");
         }
 
         StringBuilderWriter sw = new StringBuilderWriter(4096);

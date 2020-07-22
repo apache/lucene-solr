@@ -35,6 +35,7 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.SolrParams;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 /**
  *  All base tests will be done with CloudSolrStream. Under the covers CloudSolrStream uses SolrStream so
@@ -44,6 +45,7 @@ import org.junit.Test;
 
 @LuceneTestCase.Slow
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40","Lucene41","Lucene42","Lucene45"})
+@Ignore // nocommit - debug
 public class GraphTest extends SolrCloudTestCase {
 
   private static final String COLLECTION = "collection1";

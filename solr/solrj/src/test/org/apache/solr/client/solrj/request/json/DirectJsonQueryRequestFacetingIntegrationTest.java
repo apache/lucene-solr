@@ -32,8 +32,10 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore // nocommit - debug
 public class DirectJsonQueryRequestFacetingIntegrationTest extends SolrCloudTestCase {
 
   private static final String COLLECTION_NAME = "techproducts";
