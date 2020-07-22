@@ -45,8 +45,7 @@ import org.apache.solr.request.SolrRequestInfo;
 @SuppressWarnings({"rawtypes"})
 public class ReRankCollector extends TopDocsCollector {
 
-  @SuppressWarnings({"rawtypes"})
-  final private TopDocsCollector  mainCollector;
+  final private TopDocsCollector<?> mainCollector;
   final private IndexSearcher searcher;
   final private int reRankDocs;
   final private int length;
@@ -71,11 +70,11 @@ public class ReRankCollector extends TopDocsCollector {
     Sort sort = cmd.getSort();
     if(sort == null) {
       this.sort = null;
-      this.mainCollector = TopScoreDocCollector.create(Math.max(this.reRankDocs, length), Integer.MAX_VALUE);
+      this.mainCollector = TopScoreDocCollector.create(Math.max(this.reRankDocs, length), cmd.getMinExactCount());
     } else {
       this.sort = sort = sort.rewrite(searcher);
       //scores are needed for Rescorer (regardless of whether sort needs it)
-      this.mainCollector = TopFieldCollector.create(sort, Math.max(this.reRankDocs, length), Integer.MAX_VALUE);
+      this.mainCollector = TopFieldCollector.create(sort, Math.max(this.reRankDocs, length), cmd.getMinExactCount());
     }
     this.searcher = searcher;
     this.reRankQueryRescorer = reRankQueryRescorer;
@@ -92,7 +91,7 @@ public class ReRankCollector extends TopDocsCollector {
 
   @Override
   public ScoreMode scoreMode() {
-    return sort == null || sort.needsScores() ? ScoreMode.COMPLETE : ScoreMode.COMPLETE_NO_SCORES;
+    return this.mainCollector.scoreMode();
   }
 
   @SuppressWarnings({"unchecked"})

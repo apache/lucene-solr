@@ -132,6 +132,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
   }
 
   @Override
+  @SuppressWarnings({"unchecked"})
   public void load(SolrQueryRequest req, SolrQueryResponse rsp,
       ContentStream stream, UpdateRequestProcessor processor) throws Exception {
     Parser parser = null;
@@ -243,6 +244,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
           rsp.add(stream.getName(), writer.toString());
           writer.close();
           String[] names = metadata.names();
+          @SuppressWarnings({"rawtypes"})
           NamedList metadataNL = new NamedList();
           for (int i = 0; i < names.length; i++) {
             String[] vals = metadata.getValues(names[i]);

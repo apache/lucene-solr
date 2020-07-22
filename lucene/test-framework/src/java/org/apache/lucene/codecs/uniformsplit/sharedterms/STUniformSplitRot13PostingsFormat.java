@@ -28,6 +28,7 @@ import org.apache.lucene.codecs.uniformsplit.UniformSplitRot13PostingsFormat;
 import org.apache.lucene.codecs.uniformsplit.UniformSplitTermsWriter;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.store.ByteBuffersDataOutput;
 
 /**
  *  {@link STUniformSplitPostingsFormat} with block encoding using ROT13 cypher.
@@ -49,6 +50,12 @@ public class STUniformSplitRot13PostingsFormat extends UniformSplitRot13Postings
         recordBlockEncodingCall();
         super.writeDictionary(dictionaryBuilder);
         recordDictionaryEncodingCall();
+      }
+      @Override
+      protected void writeEncodedFieldsMetadata(ByteBuffersDataOutput fieldsOutput) throws IOException {
+        recordBlockEncodingCall();
+        super.writeEncodedFieldsMetadata(fieldsOutput);
+        recordFieldsMetadataEncodingCall();
       }
     };
   }

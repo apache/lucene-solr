@@ -130,7 +130,6 @@ public abstract class RoutedAlias {
       // this next remove is checked for key because when we build from aliases.json's data it we get an
       // immutable map which would cause  UnsupportedOperationException to be thrown. This remove is here
       // to prevent this property from making it into aliases.json
-      //noinspection RedundantCollectionOperation
       if (props.containsKey("router.routerList")) {
         props.remove("router.routerList");
       }

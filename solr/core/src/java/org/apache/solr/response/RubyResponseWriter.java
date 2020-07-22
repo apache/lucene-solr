@@ -26,7 +26,7 @@ public class RubyResponseWriter implements QueryResponseWriter {
   static String CONTENT_TYPE_RUBY_UTF8="text/x-ruby;charset=UTF-8";
 
   @Override
-  public void init(NamedList n) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList n) {
     /* NOOP */
   }
   

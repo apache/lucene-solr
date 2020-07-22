@@ -61,7 +61,7 @@ public class ExternalFileFieldReloader extends AbstractSolrEventListener {
   }
 
   @Override
-  public void init(NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     cacheFieldSources(getCore().getLatestSchema());
   }
 

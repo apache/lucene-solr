@@ -1273,7 +1273,7 @@ public abstract class SolrClient implements Serializable, Closeable {
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
-  public abstract NamedList<Object> request(final SolrRequest request, String collection)
+  public abstract NamedList<Object> request(@SuppressWarnings({"rawtypes"})final SolrRequest request, String collection)
       throws SolrServerException, IOException;
 
   /**
@@ -1286,7 +1286,7 @@ public abstract class SolrClient implements Serializable, Closeable {
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
-  public final NamedList<Object> request(final SolrRequest request) throws SolrServerException, IOException {
+  public final NamedList<Object> request(@SuppressWarnings({"rawtypes"})final SolrRequest request) throws SolrServerException, IOException {
     return request(request, null);
   }
 

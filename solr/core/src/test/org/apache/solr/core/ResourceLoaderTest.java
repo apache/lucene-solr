@@ -71,11 +71,11 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
 
   }
 
+  @SuppressWarnings({"unchecked"})
   public void testAwareCompatibility() throws Exception {
     
     final Class<?> clazz1 = ResourceLoaderAware.class;
     // Check ResourceLoaderAware valid objects
-    //noinspection unchecked
     assertAwareCompatibility(clazz1, new NGramFilterFactory(map("minGramSize", "1", "maxGramSize", "2")));
     assertAwareCompatibility(clazz1, new KeywordTokenizerFactory(new HashMap<>()));
     
@@ -98,7 +98,6 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
     assertAwareCompatibility(clazz2, new JSONResponseWriter());
     
     // Make sure it throws an error for invalid objects
-    //noinspection unchecked
     invalid = new Object[] {
         new NGramFilterFactory(map("minGramSize", "1", "maxGramSize", "2")),
         "hello",   12.3f ,
@@ -201,9 +200,9 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
     
   }
 
-  @SuppressWarnings("deprecation")
+  @SuppressWarnings({"rawtypes", "deprecation"})
   public void testLoadDeprecatedFactory() throws Exception {
-    SolrResourceLoader loader = new SolrResourceLoader(Paths.get("solr/collection1"));
+    SolrResourceLoader loader = new SolrResourceLoader(Paths.get("solr/collection1").toAbsolutePath());
     // ensure we get our exception
     loader.newInstance(DeprecatedTokenFilterFactory.class.getName(), TokenFilterFactory.class, null,
         new Class[] { Map.class }, new Object[] { new HashMap<String,String>() });
@@ -215,6 +214,7 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
     clearCache();
 
     SolrResourceLoader loader = new SolrResourceLoader();
+    @SuppressWarnings({"rawtypes"})
     Class[] params = { Map.class };
     Map<String,String> args = Map.of("minGramSize", "1", "maxGramSize", "2");
     final String className = "solr.NGramTokenizerFactory";

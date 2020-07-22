@@ -32,6 +32,7 @@ import org.junit.Test;
 public class TestEmbeddedSolrServerAdminHandler extends SolrTestCaseJ4 {
 
     @Test
+    @SuppressWarnings({"rawtypes"})
     public void testPathIsAddedToContext() throws IOException, SolrServerException {
 
         final NodeConfig config = new NodeConfig.NodeConfigBuilder("testnode", TEST_PATH())

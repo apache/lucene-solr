@@ -55,11 +55,8 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
-import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.POLICY;
 import static org.apache.solr.common.cloud.DocCollection.RULE;
 import static org.apache.solr.common.cloud.DocCollection.SNITCH;
-import static org.apache.solr.common.cloud.ZkStateReader.AUTO_ADD_REPLICAS;
-import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.READ_ONLY;
@@ -72,6 +69,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM;
 import static org.apache.solr.common.params.CollectionAdminParams.ROUTER_PREFIX;
+import static org.apache.solr.common.params.CollectionAdminParams.SKIP_NODE_ASSIGNMENT;
 import static org.apache.solr.common.params.CollectionAdminParams.WITH_COLLECTION;
 
 /**
@@ -88,9 +86,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       RULE,
       SNITCH,
       REPLICATION_FACTOR,
-      MAX_SHARDS_PER_NODE,
-      AUTO_ADD_REPLICAS,
-      POLICY,
       COLL_CONF,
       WITH_COLLECTION,
       COLOCATED_WITH,
@@ -439,16 +434,13 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected String shards;
     protected String routerField;
     protected Integer numShards;
-    protected Integer maxShardsPerNode;
     protected Integer nrtReplicas;
     protected Integer pullReplicas;
     protected Integer tlogReplicas;
 
     protected Properties properties;
-    protected Boolean autoAddReplicas;
     protected String alias;
     protected String[] rule , snitch;
-    protected String withCollection;
 
     /** Constructor intended for typical use cases */
     protected Create(String collection, String config, Integer numShards, Integer numNrtReplicas, Integer numTlogReplicas, Integer numPullReplicas) { // TODO: maybe add other constructors
@@ -478,8 +470,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public Create setCreateNodeSet(String nodeSet) { this.createNodeSet = nodeSet; return this; }
     public Create setRouterName(String routerName) { this.routerName = routerName; return this; }
     public Create setRouterField(String routerField) { this.routerField = routerField; return this; }
-    public Create setMaxShardsPerNode(Integer numShards) { this.maxShardsPerNode = numShards; return this; }
-    public Create setAutoAddReplicas(boolean autoAddReplicas) { this.autoAddReplicas = autoAddReplicas; return this; }
     public Create setNrtReplicas(Integer nrtReplicas) { this.nrtReplicas = nrtReplicas; return this;}
     public Create setTlogReplicas(Integer tlogReplicas) { this.tlogReplicas = tlogReplicas; return this;}
     public Create setPullReplicas(Integer pullReplicas) { this.pullReplicas = pullReplicas; return this;}
@@ -498,11 +488,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public String getRouterName() { return  routerName; }
     public String getShards() { return  shards; }
     public Integer getNumShards() { return numShards; }
-    public Integer getMaxShardsPerNode() { return maxShardsPerNode; }
 
     public Integer getReplicationFactor() { return getNumNrtReplicas(); }
     public Integer getNumNrtReplicas() { return nrtReplicas; }
-    public Boolean getAutoAddReplicas() { return autoAddReplicas; }
     public Integer getNumTlogReplicas() {return tlogReplicas;}
     public Integer getNumPullReplicas() {return pullReplicas;}
 
@@ -556,9 +544,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       if (numShards != null) {
         params.set( ZkStateReader.NUM_SHARDS_PROP, numShards);
       }
-      if (maxShardsPerNode != null) {
-        params.set( ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode);
-      }
       if (routerName != null)
         params.set( "router.name", routerName);
       if (shards != null)
@@ -568,9 +553,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       }
       if (nrtReplicas != null) {
         params.set( ZkStateReader.NRT_REPLICAS, nrtReplicas);
-      }
-      if (autoAddReplicas != null) {
-        params.set(ZkStateReader.AUTO_ADD_REPLICAS, autoAddReplicas);
       }
       if (properties != null) {
         addProperties(params, properties);
@@ -583,23 +565,12 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       }
       if (rule != null) params.set(DocCollection.RULE, rule);
       if (snitch != null) params.set(DocCollection.SNITCH, snitch);
-      params.setNonNull(POLICY, policy);
-      params.setNonNull(WITH_COLLECTION, withCollection);
       params.setNonNull(ALIAS, alias);
       return params;
     }
 
     public Create setPolicy(String policy) {
       this.policy = policy;
-      return this;
-    }
-
-    public String getWithCollection() {
-      return withCollection;
-    }
-
-    public Create setWithCollection(String withCollection) {
-      this.withCollection = withCollection;
       return this;
     }
   }
@@ -692,19 +663,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       params.set(CollectionParams.TARGET_NODE, targetNode);
       if (parallel != null) params.set("parallel", parallel.toString());
       return params;
-    }
-
-  }
-  public static class UtilizeNode extends AsyncCollectionAdminRequest {
-    protected String node;
-
-    public UtilizeNode(String node) {
-      super(CollectionAction.UTILIZENODE);
-      this.node = node;
-    }
-    @Override
-    public SolrParams getParams() {
-      return ((ModifiableSolrParams) super.getParams()).set(CoreAdminParams.NODE, node);
     }
 
   }
@@ -1082,12 +1040,10 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
     // in common with collection creation:
     protected String configName;
-    protected Integer maxShardsPerNode;
     protected Integer replicationFactor;
     protected Integer nrtReplicas;
     protected Integer tlogReplicas;
     protected Integer pullReplicas;
-    protected Boolean autoAddReplicas;
     protected Optional<String> createNodeSet = Optional.empty();
     protected Optional<Boolean> createNodeSetShuffle = Optional.empty();
     protected Properties properties;
@@ -1135,9 +1091,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public Restore setConfigName(String config) { this.configName = config; return this; }
     public String getConfigName()  { return configName; }
 
-    public Integer getMaxShardsPerNode() { return maxShardsPerNode; }
-    public Restore setMaxShardsPerNode(int maxShardsPerNode) { this.maxShardsPerNode = maxShardsPerNode; return this; }
-
     public Integer getReplicationFactor() { return replicationFactor; }
     public Restore setReplicationFactor(Integer replicationFactor) { this.replicationFactor = replicationFactor; return this; }
 
@@ -1149,9 +1102,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
     public Integer getPullReplicas() { return pullReplicas; }
     public Restore setPullReplicas(Integer pullReplicas) { this.pullReplicas = pullReplicas; return this; }
-
-    public Boolean getAutoAddReplicas() { return autoAddReplicas; }
-    public Restore setAutoAddReplicas(boolean autoAddReplicas) { this.autoAddReplicas = autoAddReplicas; return this; }
 
     public Properties getProperties() {
       return properties;
@@ -1167,9 +1117,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       params.set(CoreAdminParams.NAME, backupName);
       params.set(CoreAdminParams.BACKUP_LOCATION, location); //note: optional
       params.set("collection.configName", configName); //note: optional
-      if (maxShardsPerNode != null) {
-        params.set( ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode);
-      }
       if (replicationFactor != null && nrtReplicas != null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             "Cannot set both replicationFactor and nrtReplicas as they mean the same thing");
@@ -1185,9 +1132,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       }
       if (tlogReplicas != null) {
         params.set(ZkStateReader.TLOG_REPLICAS, tlogReplicas);
-      }
-      if (autoAddReplicas != null) {
-        params.set(ZkStateReader.AUTO_ADD_REPLICAS, autoAddReplicas);
       }
       if (properties != null) {
         addProperties(params, properties);
@@ -2106,6 +2050,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected Properties properties;
     protected Replica.Type type;
     protected Integer nrtReplicas, tlogReplicas, pullReplicas;
+    protected Boolean skipNodeAssignment;
     protected String createNodeSet;
 
     private AddReplica(String collection, String shard, String routeKey, Replica.Type type) {
@@ -2138,6 +2083,11 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
     public AddReplica setNode(String node) {
       this.node = node;
+      return this;
+    }
+
+    public AddReplica setSkipNodeAssignment(Boolean skipNodeAssignment) {
+      this.skipNodeAssignment = skipNodeAssignment;
       return this;
     }
 
@@ -2235,6 +2185,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       }
       if (node != null) {
         params.add(CoreAdminParams.NODE, node);
+      }
+      if (skipNodeAssignment != null) {
+        params.add(SKIP_NODE_ASSIGNMENT, String.valueOf(skipNodeAssignment));
       }
       if (instanceDir != null)  {
         params.add(CoreAdminParams.INSTANCE_DIR, instanceDir);

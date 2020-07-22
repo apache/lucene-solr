@@ -29,7 +29,7 @@ public class PHPResponseWriter implements QueryResponseWriter {
   private String contentType = CONTENT_TYPE_PHP_UTF8;
 
   @Override
-  public void init(NamedList namedList) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList namedList) {
     String contentType = (String) namedList.get("content-type");
     if (contentType != null) {
       this.contentType = contentType;
@@ -58,7 +58,7 @@ class PHPWriter extends JSONWriter {
   }
   
   @Override
-  public void writeNamedList(String name, NamedList val) throws IOException {
+  public void writeNamedList(String name, @SuppressWarnings({"rawtypes"})NamedList val) throws IOException {
     writeNamedListAsMapMangled(name,val);
   }
 
@@ -78,7 +78,7 @@ class PHPWriter extends JSONWriter {
   }
 
   @Override
-  public void writeArray(String name, List l) throws IOException {
+  public void writeArray(String name, @SuppressWarnings({"rawtypes"})List l) throws IOException {
     writeArray(name,l.iterator());
   }
 

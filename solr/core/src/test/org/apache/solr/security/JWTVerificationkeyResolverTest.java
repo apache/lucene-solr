@@ -65,9 +65,11 @@ public class JWTVerificationkeyResolverTest extends SolrTestCaseJ4 {
   private KeyHolder k4;
   private KeyHolder k5;
   private List<JsonWebKey> keysToReturnFromSecondJwk;
+  @SuppressWarnings({"rawtypes"})
   private Iterator refreshSequenceForSecondJwk;
 
   @Before
+  @SuppressWarnings({"unchecked"})
   public void setUp() throws Exception {
     super.setUp();
     k1 = new KeyHolder("k1");

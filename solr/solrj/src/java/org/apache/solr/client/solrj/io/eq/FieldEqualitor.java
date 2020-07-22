@@ -73,9 +73,12 @@ public class FieldEqualitor implements StreamEqualitor {
       .withExpression(toExpression(factory).toString());
   }
   
+  @SuppressWarnings({"unchecked"})
   public boolean test(Tuple leftTuple, Tuple rightTuple) {
 
+    @SuppressWarnings({"rawtypes"})
     Comparable leftComp = (Comparable)leftTuple.get(leftFieldName);
+    @SuppressWarnings({"rawtypes"})
     Comparable rightComp = (Comparable)rightTuple.get(rightFieldName);
     
     if(leftComp == rightComp){ return true; } // if both null then they are equal. if both are same ref then are equal

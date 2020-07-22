@@ -35,7 +35,7 @@ import org.apache.lucene.util.mutable.MutableValue;
 public class ValueSourceGroupSelector extends GroupSelector<MutableValue> {
 
   private final ValueSource valueSource;
-  private final Map<?, ?> context;
+  private final Map<Object, Object> context;
 
   private Set<MutableValue> secondPassGroups;
 
@@ -44,7 +44,7 @@ public class ValueSourceGroupSelector extends GroupSelector<MutableValue> {
    * @param valueSource the ValueSource to group by
    * @param context     a context map for the ValueSource
    */
-  public ValueSourceGroupSelector(ValueSource valueSource, Map<?, ?> context) {
+  public ValueSourceGroupSelector(ValueSource valueSource, Map<Object, Object> context) {
     this.valueSource = valueSource;
     this.context = context;
   }

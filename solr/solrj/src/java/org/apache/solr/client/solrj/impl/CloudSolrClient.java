@@ -135,7 +135,7 @@ public class CloudSolrClient extends BaseCloudSolrClient {
    * @deprecated since Solr 8.0
    */
   @Deprecated
-  public RouteResponse condenseResponse(NamedList response, int timeMillis) {
+  public RouteResponse condenseResponse(@SuppressWarnings({"rawtypes"})NamedList response, int timeMillis) {
     return condenseResponse(response, timeMillis, RouteResponse::new);
   }
 

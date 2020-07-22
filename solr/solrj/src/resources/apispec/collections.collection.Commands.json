@@ -24,7 +24,7 @@
       "properties": {
         "replica": {
           "type": "string",
-          "description": "The name of the replica to move. Either this parameter or shard is required."
+          "description": "The name of the replica to move. Either this parameter or shard + sourceNode is required, this parameter takes precedence."
         },
         "shard": {
           "type": "string",
@@ -32,7 +32,7 @@
         },
         "sourceNode": {
           "type": "string",
-          "description": "The name of the node that contains the replica."
+          "description": "The name of the node that contains the replica. Either this parameter or replica is required. If replica is specified, this parameter is ignored."
         },
         "targetNode": {
           "type": "string",
@@ -46,7 +46,7 @@
         "timeout": {
           "type": "integer",
           "default": 600,
-          "description": "Timeout to wait for replica to become active. For very large replicas this may need to be increased."
+          "description": "Number of seconds to wait for replica to become active before failing. For very large replicas this may need to be increased to ensure the old replica is deleted. Ignored for hdfs replicas."
         },
         "inPlaceMove": {
           "type": "boolean",

@@ -161,7 +161,7 @@ INFO  - 2017-07-27 12:48:59.289; org.apache.solr.client.solrj.impl.ZkClientClust
 Uploading /solr-{solr-docs-version}.0/server/solr/configsets/sample_techproducts_configs/conf for config techproducts to ZooKeeper at localhost:9983
 
 Creating new collection 'techproducts' using command:
-http://localhost:8983/solr/admin/collections?action=CREATE&name=techproducts&numShards=2&replicationFactor=2&maxShardsPerNode=2&collection.configName=techproducts
+http://localhost:8983/solr/admin/collections?action=CREATE&name=techproducts&numShards=2&replicationFactor=2&collection.configName=techproducts
 
 {
   "responseHeader":{
@@ -553,7 +553,7 @@ INFO  - 2017-07-27 15:07:46.191; org.apache.solr.client.solrj.impl.ZkClientClust
 Uploading /{solr-docs-version}.0/server/solr/configsets/_default/conf for config films to ZooKeeper at localhost:9983
 
 Creating new collection 'films' using command:
-http://localhost:7574/solr/admin/collections?action=CREATE&name=films&numShards=2&replicationFactor=2&maxShardsPerNode=2&collection.configName=films
+http://localhost:7574/solr/admin/collections?action=CREATE&name=films&numShards=2&replicationFactor=2&collection.configName=films
 
 {
   "responseHeader":{

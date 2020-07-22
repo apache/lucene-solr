@@ -206,7 +206,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     try {
       super.search(query, collector);
     } catch (TimeLimitingCollector.TimeExceededException | ExitableDirectoryReader.ExitingReaderException x) {
-      log.warn("Query: [{}]; {}", query, x.getMessage());
+      log.warn("Query: [{}]; ", query, x);
       qr.setPartialResults(true);
     } catch (EarlyTerminatingCollectorException etce) {
       if (collector instanceof DelegatingCollector) {
@@ -2157,7 +2157,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       };
 
       final SolrQueryResponse rsp = new SolrQueryResponse();
-      SolrRequestInfo.clearRequestInfo();
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
       try {
         cacheList[i].warm(this, old.cacheList[i]);

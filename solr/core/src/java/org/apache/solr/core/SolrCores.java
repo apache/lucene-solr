@@ -17,7 +17,6 @@
 package org.apache.solr.core;
 
 import com.google.common.collect.Lists;
-import org.apache.http.annotation.Experimental;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.logging.MDCLoggingContext;
@@ -210,28 +209,6 @@ class SolrCores {
     }
     return set;
   }
-
-  /** This method is currently experimental.
-   *
-   * @return a Collection of the names that a specific core object is mapped to, there are more than one.
-   */
-  @Experimental
-  List<String> getNamesForCore(SolrCore core) {
-    List<String> lst = new ArrayList<>();
-
-    synchronized (modifyLock) {
-      for (Map.Entry<String, SolrCore> entry : cores.entrySet()) {
-        if (core == entry.getValue()) {
-          lst.add(entry.getKey());
-        }
-      }
-      if (getTransientCacheHandler() != null) {
-        lst.addAll(getTransientCacheHandler().getNamesForCore(core));
-      }
-    }
-    return lst;
-  }
-
   /**
    * Gets a list of all cores, loaded and unloaded 
    *

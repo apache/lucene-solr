@@ -1523,6 +1523,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
     assertEquals(msg + " stats max", val, stats.getMax());
   }
 
+  @SuppressWarnings({"rawtypes"})
   private List<RangeFacet> createExpectedRange(String key, int start, int end,
                                                int gap, int... values) {
     List<RangeFacet> expectedRanges = new ArrayList<>();
@@ -1541,7 +1542,8 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
   public static class ComparablePivotField extends PivotField {
 
     public ComparablePivotField(String f, Object v, int count,
-                                List<PivotField> pivot,  Map<String,Integer> queryCounts, List<RangeFacet> ranges) {
+                                List<PivotField> pivot,  Map<String,Integer> queryCounts,
+                                @SuppressWarnings({"rawtypes"})List<RangeFacet> ranges) {
       super(f, v, count, pivot, null, queryCounts, ranges);
     }
 
@@ -1570,9 +1572,9 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
         if (other.getFacetRanges() != null) return false;
       } else {
         if (getFacetRanges().size() != other.getFacetRanges().size()) return false;
-        for (RangeFacet entry : getFacetRanges()) {
+        for (@SuppressWarnings({"rawtypes"})RangeFacet entry : getFacetRanges()) {
           boolean found = false;
-          for (RangeFacet otherRange : other.getFacetRanges()) {
+          for (@SuppressWarnings({"rawtypes"})RangeFacet otherRange : other.getFacetRanges()) {
             if (otherRange.getName().equals(entry.getName())) {
               found = true;
 
@@ -1580,7 +1582,9 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
               if (!entry.getStart().equals(otherRange.getStart()))  return false;
               if (!entry.getEnd().equals(otherRange.getEnd()))  return false;
 
+              @SuppressWarnings({"unchecked"})
               List<RangeFacet.Count> myCounts = entry.getCounts();
+              @SuppressWarnings({"unchecked"})
               List<RangeFacet.Count> otherRangeCounts = otherRange.getCounts();
               if ( (myCounts == null && otherRangeCounts != null)
                   || (myCounts != null && otherRangeCounts == null)
@@ -1606,10 +1610,20 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
       }
       return true;
     }
+
+    @Override
+    public int hashCode() {
+      throw new UnsupportedOperationException("Calling hashCode in ComparablePivotField");
+    }
   }
   
   public static class UnorderedEqualityArrayList<T> extends ArrayList<T> {
-    
+
+    @Override
+    public int hashCode() {
+      throw new UnsupportedOperationException("Calling hashCode in UnorderedEqualityArrayList");
+    }
+
     @Override
     public boolean equals(Object o) {
       boolean equal = false;
@@ -1659,9 +1673,9 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
         }
       }
       if (compare == 0) {
-        for (RangeFacet entry : o1.getFacetRanges()) {
+        for (@SuppressWarnings({"rawtypes"})RangeFacet entry : o1.getFacetRanges()) {
           boolean found = false;
-          for (RangeFacet otherRangeFacet : o2.getFacetRanges()) {
+          for (@SuppressWarnings({"rawtypes"})RangeFacet otherRangeFacet : o2.getFacetRanges()) {
             if (otherRangeFacet.getName().equals(entry.getName()))  {
               found = true;
             }

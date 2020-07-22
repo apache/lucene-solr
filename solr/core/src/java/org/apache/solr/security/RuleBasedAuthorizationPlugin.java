@@ -16,14 +16,10 @@
  */
 package org.apache.solr.security;
 
-import java.lang.invoke.MethodHandles;
 import java.security.Principal;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.handler.admin.SecurityConfHandler.getMapValue;
 
@@ -32,23 +28,33 @@ import static org.apache.solr.handler.admin.SecurityConfHandler.getMapValue;
  * mapping in the security.json configuration
  */
 public class RuleBasedAuthorizationPlugin extends RuleBasedAuthorizationPluginBase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
   private final Map<String, Set<String>> usersVsRoles = new HashMap<>();
+  private boolean useShortName;
 
   @Override
   public void init(Map<String, Object> initInfo) {
     super.init(initInfo);
     Map<String, Object> map = getMapValue(initInfo, "user-role");
     for (Object o : map.entrySet()) {
-      Map.Entry e = (Map.Entry) o;
-      String roleName = (String) e.getKey();
+      @SuppressWarnings("unchecked")
+      Map.Entry<String, ?> e = (Map.Entry<String, ?>) o;
+      String roleName = e.getKey();
       usersVsRoles.put(roleName, Permission.readValueAsSet(map, roleName));
+    }
+    useShortName = Boolean.parseBoolean(initInfo.getOrDefault("useShortName", Boolean.FALSE).toString());
+  }
+
+  @Override
+  public Set<String> getUserRoles(AuthorizationContext context) {
+    if (useShortName) {
+      return usersVsRoles.get(context.getUserName());
+    } else {
+      return getUserRoles(context.getUserPrincipal());
     }
   }
 
   /**
-   * Look up user's role from the explicit user-role mapping
+   * Look up user's role from the explicit user-role mapping.
    *
    * @param principal the user Principal from the request
    * @return set of roles as strings

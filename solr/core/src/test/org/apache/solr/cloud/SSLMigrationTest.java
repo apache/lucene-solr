@@ -123,6 +123,7 @@ public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
         .toLowerCase(Locale.ROOT), "name", "urlScheme", "val", value);
     @SuppressWarnings("unchecked")
     SolrParams params = new MapSolrParams(m);
+    @SuppressWarnings({"rawtypes"})
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
     

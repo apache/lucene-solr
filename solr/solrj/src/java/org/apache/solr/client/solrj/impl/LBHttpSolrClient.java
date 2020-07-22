@@ -80,11 +80,11 @@ public class LBHttpSolrClient extends LBSolrClient {
    */
   @Deprecated
   public static class Req extends LBSolrClient.Req {
-    public Req(SolrRequest request, List<String> servers) {
+    public Req(@SuppressWarnings({"rawtypes"})SolrRequest request, List<String> servers) {
       super(request, servers);
     }
 
-    public Req(SolrRequest request, List<String> servers, Integer numServersToTry) {
+    public Req(@SuppressWarnings({"rawtypes"})SolrRequest request, List<String> servers, Integer numServersToTry) {
       super(request, servers, numServersToTry);
     }
   }

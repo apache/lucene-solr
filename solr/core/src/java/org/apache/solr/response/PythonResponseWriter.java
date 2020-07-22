@@ -26,7 +26,7 @@ public class PythonResponseWriter implements QueryResponseWriter {
   static String CONTENT_TYPE_PYTHON_ASCII="text/x-python;charset=US-ASCII";
 
   @Override
-  public void init(NamedList n) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList n) {
     /* NOOP */
   }
   

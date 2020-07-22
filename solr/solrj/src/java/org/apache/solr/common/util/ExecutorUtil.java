@@ -184,9 +184,11 @@ public class ExecutorUtil {
       final String submitterContextStr = ctxStr.length() <= MAX_THREAD_NAME_LEN ? ctxStr : ctxStr.substring(0, MAX_THREAD_NAME_LEN);
       final Exception submitterStackTrace = enableSubmitterStackTrace ? new Exception("Submitter stack trace") : null;
       final List<InheritableThreadLocalProvider> providersCopy = providers;
+      @SuppressWarnings({"rawtypes"})
       final ArrayList<AtomicReference> ctx = providersCopy.isEmpty() ? null : new ArrayList<>(providersCopy.size());
       if (ctx != null) {
         for (int i = 0; i < providers.size(); i++) {
+          @SuppressWarnings({"rawtypes"})
           AtomicReference reference = new AtomicReference();
           ctx.add(reference);
           providersCopy.get(i).store(reference);

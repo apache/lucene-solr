@@ -67,7 +67,6 @@ public class SolrCloudReportersTest extends SolrCloudTestCase {
     cluster.uploadConfigSet(Paths.get(TEST_PATH().toString(), "configsets", "minimal", "conf"), "test");
 
     CollectionAdminRequest.createCollection("test_collection", "test", 2, 2)
-        .setMaxShardsPerNode(4)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("test_collection", 2, 4);
     
@@ -169,7 +168,6 @@ public class SolrCloudReportersTest extends SolrCloudTestCase {
     cluster.uploadConfigSet(Paths.get(TEST_PATH().toString(), "configsets", "minimal", "conf"), "test");
 
     CollectionAdminRequest.createCollection("test_collection", "test", 2, 2)
-        .setMaxShardsPerNode(4)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("test_collection", 2, 4);
     waitForState("Expected test_collection with 2 shards and 2 replicas", "test_collection", clusterShape(2, 4));

@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.security.Principal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -34,8 +35,6 @@ import org.apache.solr.common.util.CommandOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.Arrays.asList;
-import static java.util.Collections.unmodifiableMap;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.solr.handler.admin.SecurityConfHandler.getListValue;
@@ -47,37 +46,39 @@ public abstract class RuleBasedAuthorizationPluginBase implements AuthorizationP
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final Map<String, WildCardSupportMap> mapping = new HashMap<>();
-  private final List<Permission> permissions = new ArrayList<>();
 
-
-  private static class WildCardSupportMap extends HashMap<String, List<Permission>> {
+  // Doesn't implement Map because we violate the contracts of put() and get()
+  private static class WildCardSupportMap {
     final Set<String> wildcardPrefixes = new HashSet<>();
+    final Map<String, List<Permission>> delegate = new HashMap<>();
 
-    @Override
     public List<Permission> put(String key, List<Permission> value) {
       if (key != null && key.endsWith("/*")) {
         key = key.substring(0, key.length() - 2);
         wildcardPrefixes.add(key);
       }
-      return super.put(key, value);
+      return delegate.put(key, value);
     }
 
-    @Override
-    public List<Permission> get(Object key) {
-      List<Permission> result = super.get(key);
+    public List<Permission> get(String key) {
+      List<Permission> result = delegate.get(key);
       if (key == null || result != null) return result;
-      if (!wildcardPrefixes.isEmpty()) {
-        for (String s : wildcardPrefixes) {
-          if (key.toString().startsWith(s)) {
-            List<Permission> l = super.get(s);
-            if (l != null) {
-              result = result == null ? new ArrayList<>() : new ArrayList<>(result);
-              result.addAll(l);
-            }
+
+      for (String s : wildcardPrefixes) {
+        if (key.startsWith(s)) {
+          List<Permission> wildcardPermissions = delegate.get(s);
+          if (wildcardPermissions != null) {
+            if (result == null) result = new ArrayList<>();
+            result.addAll(wildcardPermissions);
           }
         }
       }
+
       return result;
+    }
+
+    public Set<String> keySet() {
+      return delegate.keySet();
     }
   }
 
@@ -109,8 +110,7 @@ public abstract class RuleBasedAuthorizationPluginBase implements AuthorizationP
     return flag.rsp;
   }
 
-  private MatchStatus checkCollPerm(Map<String, List<Permission>> pathVsPerms,
-                                    AuthorizationContext context) {
+  private MatchStatus checkCollPerm(WildCardSupportMap pathVsPerms, AuthorizationContext context) {
     if (pathVsPerms == null) return MatchStatus.NO_PERMISSIONS_FOUND;
 
     if (log.isTraceEnabled()) {
@@ -131,7 +131,6 @@ public abstract class RuleBasedAuthorizationPluginBase implements AuthorizationP
     if (permissions == null || permissions.isEmpty()) {
       return MatchStatus.NO_PERMISSIONS_FOUND;
     }
-    Principal principal = context.getUserPrincipal();
 
     log.trace("Following perms are associated with this collection and path: [{}]", permissions);
     final Permission governingPermission = findFirstGoverningPermission(permissions, context);
@@ -145,7 +144,7 @@ public abstract class RuleBasedAuthorizationPluginBase implements AuthorizationP
       log.debug("Found perm [{}] to govern resource [{}]", governingPermission, context.getResource());
     }
 
-    return determineIfPermissionPermitsPrincipal(principal, governingPermission);
+    return determineIfPermissionPermitsPrincipal(context, governingPermission);
   }
 
   private Permission findFirstGoverningPermission(List<Permission> permissions, AuthorizationContext context) {
@@ -216,11 +215,12 @@ public abstract class RuleBasedAuthorizationPluginBase implements AuthorizationP
     return true;
   }
 
-  private MatchStatus determineIfPermissionPermitsPrincipal(Principal principal, Permission governingPermission) {
+  private MatchStatus determineIfPermissionPermitsPrincipal(AuthorizationContext context, Permission governingPermission) {
     if (governingPermission.role == null) {
       log.debug("Governing permission [{}] has no role; permitting access", governingPermission);
       return MatchStatus.PERMITTED;
     }
+    Principal principal = context.getUserPrincipal();
     if (principal == null) {
       log.debug("Governing permission [{}] has role, but request principal cannot be identified; forbidding access", governingPermission);
       return MatchStatus.USER_REQUIRED;
@@ -229,7 +229,7 @@ public abstract class RuleBasedAuthorizationPluginBase implements AuthorizationP
       return MatchStatus.PERMITTED;
     }
 
-    Set<String> userRoles = getUserRoles(principal);
+    Set<String> userRoles = getUserRoles(context);
     for (String role : governingPermission.role) {
       if (userRoles != null && userRoles.contains(role)) {
         log.debug("Governing permission [{}] allows access to role [{}]; permitting access", governingPermission, role);
@@ -259,10 +259,12 @@ public abstract class RuleBasedAuthorizationPluginBase implements AuthorizationP
   }
 
   @Override
+  @SuppressWarnings({"unchecked"})
   public void init(Map<String, Object> initInfo) {
     mapping.put(null, new WildCardSupportMap());
+    @SuppressWarnings({"rawtypes"})
     List<Map> perms = getListValue(initInfo, "permissions");
-    for (Map o : perms) {
+    for (@SuppressWarnings({"rawtypes"})Map o : perms) {
       Permission p;
       try {
         p = Permission.load(o);
@@ -270,7 +272,6 @@ public abstract class RuleBasedAuthorizationPluginBase implements AuthorizationP
         log.error("Invalid permission ", exp);
         continue;
       }
-      permissions.add(p);
       add2Mapping(p);
     }
   }
@@ -278,14 +279,22 @@ public abstract class RuleBasedAuthorizationPluginBase implements AuthorizationP
   //this is to do optimized lookup of permissions for a given collection/path
   private void add2Mapping(Permission permission) {
     for (String c : permission.collections) {
-      WildCardSupportMap m = mapping.get(c);
-      if (m == null) mapping.put(c, m = new WildCardSupportMap());
+      WildCardSupportMap m = mapping.computeIfAbsent(c, k -> new WildCardSupportMap());
       for (String path : permission.path) {
         List<Permission> perms = m.get(path);
         if (perms == null) m.put(path, perms = new ArrayList<>());
         perms.add(permission);
       }
     }
+  }
+
+  /**
+   * Finds user roles
+   * @param context the authorization context to load roles from
+   * @return set of roles as strings or empty set if no roles are found
+   */
+  public Set<String> getUserRoles(AuthorizationContext context) {
+    return getUserRoles(context.getUserPrincipal());
   }
 
   /**
@@ -328,12 +337,11 @@ public abstract class RuleBasedAuthorizationPluginBase implements AuthorizationP
     return latestConf;
   }
 
-  private static final Map<String, AutorizationEditOperation> ops = unmodifiableMap(asList(AutorizationEditOperation.values()).stream().collect(toMap(AutorizationEditOperation::getOperationName, identity())));
+  private static final Map<String, AutorizationEditOperation> ops = Arrays.stream(AutorizationEditOperation.values()).collect(toMap(AutorizationEditOperation::getOperationName, identity()));
 
 
   @Override
   public ValidatingJsonMap getSpec() {
     return Utils.getSpec("cluster.security.RuleBasedAuthorization").getSpec();
-
   }
 }

@@ -40,7 +40,7 @@ public class WFSTLookupFactory extends LookupFactory {
   private static final String FILENAME = "wfst.bin";
 
   @Override
-  public Lookup create(NamedList params, SolrCore core) {
+  public Lookup create(@SuppressWarnings({"rawtypes"})NamedList params, SolrCore core) {
     boolean exactMatchFirst = params.get(EXACT_MATCH_FIRST) != null
     ? Boolean.valueOf(params.get(EXACT_MATCH_FIRST).toString())
     : true;

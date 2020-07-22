@@ -17,6 +17,8 @@
 package org.apache.solr.client.solrj.io;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
@@ -52,16 +54,19 @@ public class Tuple implements Cloneable, MapWriter {
    * Tuple fields.
    * @deprecated use {@link #getFields()} instead of this public field.
    */
+  @Deprecated
   public Map<Object, Object> fields = new HashMap<>(2);
   /**
    * External serializable field names.
    * @deprecated use {@link #getFieldNames()} instead of this public field.
    */
+  @Deprecated
   public List<String> fieldNames;
   /**
    * Mapping of external field names to internal tuple field names.
    * @deprecated use {@link #getFieldLabels()} instead of this public field.
    */
+  @Deprecated
   public Map<String, String> fieldLabels;
 
   public Tuple() {
@@ -91,6 +96,10 @@ public class Tuple implements Cloneable, MapWriter {
       throw new RuntimeException("must have a matching number of key-value pairs");
     }
     for (int i = 0; i < fields.length; i += 2) {
+      // skip empty entries
+      if (fields[i] == null) {
+        continue;
+      }
       put(fields[i], fields[i + 1]);
     }
   }
@@ -151,6 +160,7 @@ public class Tuple implements Cloneable, MapWriter {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   public List<Boolean> getBools(Object key) {
     return (List<Boolean>) this.fields.get(key);
   }
@@ -171,6 +181,7 @@ public class Tuple implements Cloneable, MapWriter {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   public List<Date> getDates(Object key) {
     List<String> vals = (List<String>) this.fields.get(key);
     if (vals == null) return null;
@@ -197,14 +208,17 @@ public class Tuple implements Cloneable, MapWriter {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   public List<String> getStrings(Object key) {
     return (List<String>)this.fields.get(key);
   }
 
+  @SuppressWarnings({"unchecked"})
   public List<Long> getLongs(Object key) {
     return (List<Long>)this.fields.get(key);
   }
 
+  @SuppressWarnings({"unchecked"})
   public List<Double> getDoubles(Object key) {
     return (List<Double>)this.fields.get(key);
   }
@@ -221,6 +235,7 @@ public class Tuple implements Cloneable, MapWriter {
    * @deprecated use {@link #getFields()} instead.
    */
   @Deprecated(since = "8.6.0")
+  @SuppressWarnings({"rawtypes"})
   public Map getMap() {
     return this.fields;
   }
@@ -252,18 +267,21 @@ public class Tuple implements Cloneable, MapWriter {
     this.fieldNames = fieldNames;
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public List<Map> getMaps(Object key) {
     return (List<Map>) this.fields.get(key);
   }
 
-  public void setMaps(Object key, List<Map> maps) {
+  public void setMaps(Object key, @SuppressWarnings({"rawtypes"})List<Map> maps) {
     this.fields.put(key, maps);
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public Map<String, Map> getMetrics() {
     return (Map<String, Map>) this.fields.get(StreamParams.METRICS);
   }
 
+  @SuppressWarnings({"rawtypes"})
   public void setMetrics(Map<String, Map> metrics) {
     this.fields.put(StreamParams.METRICS, metrics);
   }
@@ -317,5 +335,16 @@ public class Tuple implements Cloneable, MapWriter {
       tuple.put(StreamParams.EOF, true);
     }
     return tuple;
+  }
+
+  /**
+   * Create a new empty tuple marked as EXCEPTION and optionally EOF.
+   * @param t exception - full stack trace will be used as an exception message
+   * @param eof if true the tuple will be marked as EOF
+   */
+  public static Tuple EXCEPTION(Throwable t, boolean eof) {
+    StringWriter sw = new StringWriter();
+    t.printStackTrace(new PrintWriter(sw));
+    return EXCEPTION(sw.toString(), eof);
   }
 }

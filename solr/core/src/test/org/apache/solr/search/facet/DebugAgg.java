@@ -50,7 +50,7 @@ class DebugAgg extends AggValueSource {
     }
 
     @Override
-    public void init(NamedList args) {
+    public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     }
   }
 

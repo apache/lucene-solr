@@ -17,7 +17,6 @@
 package org.apache.solr.handler.dataimport;
 
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.handler.dataimport.config.Entity;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -65,7 +64,7 @@ public class TestMailEntityProcessor extends AbstractDataImportHandlerTestCase {
     paramMap.put("processAttachement", "false");
     DataImporter di = new DataImporter();
     di.loadAndInit(getConfigFromMap(paramMap));
-    Entity ent = di.getConfig().getEntities().get(0);
+    @SuppressWarnings({"unchecked"})
     RequestInfo rp = new RequestInfo(null, createMap("command", "full-import"), null);
     SolrWriterImpl swi = new SolrWriterImpl();
     di.runCmd(rp, swi);
@@ -80,7 +79,7 @@ public class TestMailEntityProcessor extends AbstractDataImportHandlerTestCase {
     paramMap.put("processAttachement", "false");
     DataImporter di = new DataImporter();
     di.loadAndInit(getConfigFromMap(paramMap));
-    Entity ent = di.getConfig().getEntities().get(0);
+    @SuppressWarnings({"unchecked"})
     RequestInfo rp = new RequestInfo(null, createMap("command", "full-import"), null);
     SolrWriterImpl swi = new SolrWriterImpl();
     di.runCmd(rp, swi);
@@ -96,7 +95,7 @@ public class TestMailEntityProcessor extends AbstractDataImportHandlerTestCase {
     paramMap.put("exclude", ".*grandchild.*");
     DataImporter di = new DataImporter();
     di.loadAndInit(getConfigFromMap(paramMap));
-    Entity ent = di.getConfig().getEntities().get(0);
+    @SuppressWarnings({"unchecked"})
     RequestInfo rp = new RequestInfo(null, createMap("command", "full-import"), null);
     SolrWriterImpl swi = new SolrWriterImpl();
     di.runCmd(rp, swi);
@@ -112,7 +111,7 @@ public class TestMailEntityProcessor extends AbstractDataImportHandlerTestCase {
     paramMap.put("include", ".*grandchild.*");
     DataImporter di = new DataImporter();
     di.loadAndInit(getConfigFromMap(paramMap));
-    Entity ent = di.getConfig().getEntities().get(0);
+    @SuppressWarnings({"unchecked"})
     RequestInfo rp = new RequestInfo(null, createMap("command", "full-import"), null);
     SolrWriterImpl swi = new SolrWriterImpl();
     di.runCmd(rp, swi);
@@ -129,7 +128,7 @@ public class TestMailEntityProcessor extends AbstractDataImportHandlerTestCase {
     paramMap.put("include", ".*grandchild.*");
     DataImporter di = new DataImporter();
     di.loadAndInit(getConfigFromMap(paramMap));
-    Entity ent = di.getConfig().getEntities().get(0);
+    @SuppressWarnings({"unchecked"})
     RequestInfo rp = new RequestInfo(null, createMap("command", "full-import"), null);
     SolrWriterImpl swi = new SolrWriterImpl();
     di.runCmd(rp, swi);
@@ -138,6 +137,7 @@ public class TestMailEntityProcessor extends AbstractDataImportHandlerTestCase {
 
   @Test
   @Ignore("Needs a Mock Mail Server to work")
+  @SuppressWarnings({"unchecked"})
   public void testFetchTimeSince() throws ParseException {
     paramMap.put("folders", "top1/child11");
     paramMap.put("recurse", "true");
@@ -145,7 +145,6 @@ public class TestMailEntityProcessor extends AbstractDataImportHandlerTestCase {
     paramMap.put("fetchMailsSince", "2008-12-26 00:00:00");
     DataImporter di = new DataImporter();
     di.loadAndInit(getConfigFromMap(paramMap));
-    Entity ent = di.getConfig().getEntities().get(0);
     RequestInfo rp = new RequestInfo(null, createMap("command", "full-import"), null);
     SolrWriterImpl swi = new SolrWriterImpl();
     di.runCmd(rp, swi);

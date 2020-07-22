@@ -398,7 +398,7 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
     try {
       SolrQueryResponse rsp = h.queryAndResponse("", req);
       NamedList<Object> facetQueries = (NamedList<Object>) ((NamedList<Object>) rsp.getValues().get("facet_counts")).get("facet_queries");
-      NamedList<Object> facetIntervals = (NamedList<Object>) ((NamedList<Object>) (NamedList<Object>) ((NamedList<Object>) rsp.getValues().get("facet_counts"))
+      NamedList<Object> facetIntervals = (NamedList<Object>) ((NamedList<Object>) ((NamedList<Object>) rsp.getValues().get("facet_counts"))
           .get("facet_intervals")).get(field);
       assertEquals("Responses don't have the same number of facets: \n" + facetQueries + "\n" + facetIntervals,
           facetQueries.size(), getCountDistinctIntervals(facetIntervals));

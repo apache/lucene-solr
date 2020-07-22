@@ -46,6 +46,7 @@ public class GroupOperation implements ReduceOperation {
   private UUID operationNodeId = UUID.randomUUID();
   
   private PriorityQueue<Tuple> priorityQueue;
+  @SuppressWarnings({"rawtypes"})
   private Comparator comp;
   private StreamComparator streamComparator;
   private int size;
@@ -75,6 +76,7 @@ public class GroupOperation implements ReduceOperation {
     init(streamComparator, size);
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private void init(StreamComparator streamComparator, int size) {
     this.size = size;
     this.streamComparator = streamComparator;
@@ -104,14 +106,18 @@ public class GroupOperation implements ReduceOperation {
       });
   }
 
+  @SuppressWarnings({"unchecked"})
   public Tuple reduce() {
+    @SuppressWarnings({"rawtypes"})
     LinkedList ll = new LinkedList();
     while(priorityQueue.size() > 0) {
       ll.addFirst(priorityQueue.poll().getFields());
       //This will clear priority queue and so it will be ready for the next group.
     }
 
-    List<Map> list = new ArrayList(ll);
+    @SuppressWarnings({"rawtypes"})
+    List<Map> list = new ArrayList<>(ll);
+    @SuppressWarnings({"rawtypes"})
     Map groupHead = list.get(0);
     Tuple tuple = new Tuple(groupHead);
     tuple.put("group", list);

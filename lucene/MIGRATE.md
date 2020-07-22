@@ -287,3 +287,9 @@ TopDocsCollector shall no longer return an empty TopDocs for malformed arguments
 Rather, an IllegalArgumentException shall be thrown. This is introduced for better
 defence and to ensure that there is no bubbling up of errors when Lucene is
 used in multi level applications
+
+## Assumption of data consistency between different data-structures sharing the same field name
+
+Sorting on a numeric field that is indexed with both doc values and points may use an
+optimization to skip non-competitive documents. This optimization relies on the assumption
+that the same data is stored in these points and doc values.

@@ -37,6 +37,7 @@ import static org.mockito.Mockito.when;
 public class TestHttpServletCarrier extends SolrTestCaseJ4 {
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void test() {
     SolrTestCaseJ4.assumeWorkingMockito();
     HttpServletRequest req = mock(HttpServletRequest.class);

@@ -56,7 +56,7 @@ public class FunctionQuery extends Query {
   protected class FunctionWeight extends Weight {
     protected final IndexSearcher searcher;
     protected final float boost;
-    protected final Map context;
+    protected final Map<Object, Object> context;
 
     public FunctionWeight(IndexSearcher searcher, float boost) throws IOException {
       super(FunctionQuery.this);

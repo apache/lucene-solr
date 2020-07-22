@@ -86,7 +86,7 @@ public class GroupingSearch {
    * @param groupFunction      The function to group by specified as {@link ValueSource}
    * @param valueSourceContext The context of the specified groupFunction
    */
-  public GroupingSearch(ValueSource groupFunction, Map<?, ?> valueSourceContext) {
+  public GroupingSearch(ValueSource groupFunction, Map<Object, Object> valueSourceContext) {
     this(new ValueSourceGroupSelector(groupFunction, valueSourceContext), null);
   }
 

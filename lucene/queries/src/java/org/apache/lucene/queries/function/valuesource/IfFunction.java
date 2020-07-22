@@ -43,7 +43,7 @@ public class IfFunction extends BoolFunction {
   }
 
   @Override
-  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
     final FunctionValues ifVals = ifSource.getValues(context, readerContext);
     final FunctionValues trueVals = trueSource.getValues(context, readerContext);
     final FunctionValues falseVals = falseSource.getValues(context, readerContext);
@@ -142,7 +142,7 @@ public class IfFunction extends BoolFunction {
   }
 
   @Override
-  public void createWeight(Map context, IndexSearcher searcher) throws IOException {
+  public void createWeight(Map<Object, Object> context, IndexSearcher searcher) throws IOException {
     ifSource.createWeight(context, searcher);
     trueSource.createWeight(context, searcher);
     falseSource.createWeight(context, searcher);

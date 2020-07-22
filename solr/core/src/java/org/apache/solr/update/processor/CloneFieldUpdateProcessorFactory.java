@@ -227,7 +227,7 @@ public class CloneFieldUpdateProcessorFactory
    * "source" and "dest" init params do <em>not</em> exist.
    */
   @SuppressWarnings("unchecked")
-  private void initSimpleRegexReplacement(NamedList args) {
+  private void initSimpleRegexReplacement(@SuppressWarnings({"rawtypes"})NamedList args) {
     // The syntactic sugar for the case where there is only one regex pattern for source and the same pattern
     // is used for the destination pattern...
     //

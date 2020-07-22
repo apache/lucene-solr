@@ -45,6 +45,7 @@ class JsonQueryConverter {
 
   // when isQParser==true, "val" is a query object of the form {query_type:{param1:val1, param2:val2}}
   // when isQParser==false, "val" is a parameter on an existing qparser (which could be a simple parameter like 42, or a sub-query)
+  @SuppressWarnings({"unchecked"})
   private void buildLocalParams(StringBuilder builder, Object val, boolean isQParser, Map<String, String[]> additionalParams) {
     if (!isQParser && !(val instanceof Map)) {
       // val is value of a query parser, and it is not a map
@@ -136,6 +137,7 @@ class JsonQueryConverter {
               throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
                   "Error when parsing json query, value of query field should not be a list, found : " + entry.getValue());
             }
+            @SuppressWarnings({"rawtypes"})
             List l = (List) entry.getValue();
             for (Object subVal : l) {
               builder.append(key).append("=");

@@ -253,7 +253,7 @@ public interface FacetParams {
   /**
    * <p>
    * Multivalued string indicating what rules should be applied to determine 
-   * when the the ranges generated for date faceting should be inclusive or 
+   * when the ranges generated for date faceting should be inclusive or 
    * exclusive of their end points.
    * </p>
    * <p>
@@ -312,7 +312,7 @@ public interface FacetParams {
   /**
    * <p>
    * Multivalued string indicating what rules should be applied to determine 
-   * when the the ranges generated for numeric faceting should be inclusive or 
+   * when the ranges generated for numeric faceting should be inclusive or 
    * exclusive of their end points.
    * </p>
    * <p>

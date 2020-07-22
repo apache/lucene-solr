@@ -913,6 +913,7 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
    *                 (regular or containing atomic update Maps)
    *                 or one of the {@link TestInPlaceUpdatesStandalone#HARDCOMMIT} or {@link TestInPlaceUpdatesStandalone#SOFTCOMMIT} sentinal objects.
    */
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void checkReplay(final String valField, Object... commands) throws Exception {
     
     HashMap<Integer, DocInfo> model = new LinkedHashMap<>();

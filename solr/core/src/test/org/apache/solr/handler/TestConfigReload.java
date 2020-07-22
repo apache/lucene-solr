@@ -114,6 +114,7 @@ public class TestConfigReload extends AbstractFullDistribZkTestBase {
     assertEquals(StrUtils.formatString("tried these servers {0} succeeded only in {1} ", urls, succeeded) , urls.size(), succeeded.size());
   }
 
+  @SuppressWarnings({"rawtypes"})
   private LinkedHashMapWriter getAsMap(String uri) throws Exception {
     HttpGet get = new HttpGet(uri) ;
     HttpEntity entity = null;

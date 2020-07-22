@@ -60,7 +60,6 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
-import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.common.AlreadyClosedException;
@@ -99,7 +98,6 @@ import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CloseHook;
@@ -298,6 +296,7 @@ public class ZkController implements Closeable {
    * @param cloudConfig configuration for this controller. TODO: possibly redundant with CoreContainer
    * @param descriptorsSupplier a supplier of the current core descriptors. used to know which cores to re-register on reconnect
    */
+  @SuppressWarnings({"unchecked"})
   public ZkController(final CoreContainer cc, String zkServerAddress, int zkClientConnectTimeout, CloudConfig cloudConfig, final Supplier<List<CoreDescriptor>> descriptorsSupplier)
       throws InterruptedException, TimeoutException, IOException {
 
@@ -896,13 +895,8 @@ public class ZkController implements Closeable {
     cmdExecutor.ensureExists(ZkStateReader.LIVE_NODES_ZKNODE, zkClient);
     cmdExecutor.ensureExists(ZkStateReader.COLLECTIONS_ZKNODE, zkClient);
     cmdExecutor.ensureExists(ZkStateReader.ALIASES, zkClient);
-    cmdExecutor.ensureExists(ZkStateReader.SOLR_AUTOSCALING_EVENTS_PATH, zkClient);
-    cmdExecutor.ensureExists(ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH, zkClient);
-    cmdExecutor.ensureExists(ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH, zkClient);
-    cmdExecutor.ensureExists(ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH, zkClient);
     byte[] emptyJson = "{}".getBytes(StandardCharsets.UTF_8);
     cmdExecutor.ensureExists(ZkStateReader.SOLR_SECURITY_CONF_PATH, emptyJson, CreateMode.PERSISTENT, zkClient);
-    cmdExecutor.ensureExists(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, emptyJson, CreateMode.PERSISTENT, zkClient);
     bootstrapDefaultConfigSet(zkClient);
   }
 
@@ -1043,29 +1037,6 @@ public class ZkController implements Closeable {
         }
         i++;
       }
-
-      // retrieve current trigger config - if there are no nodeLost triggers
-      // then don't create markers
-      boolean createNodes = false;
-      try {
-        createNodes = zkStateReader.getAutoScalingConfig().hasTriggerForEvents(TriggerEventType.NODELOST);
-      } catch (KeeperException | InterruptedException e1) {
-        log.warn("Unable to read autoscaling.json", e1);
-      }
-      if (createNodes) {
-        byte[] json = Utils.toJSON(Collections.singletonMap("timestamp", getSolrCloudManager().getTimeSource().getEpochTimeNs()));
-        for (String n : oldNodes) {
-          String path = ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH + "/" + n;
-
-          try {
-            zkClient.create(path, json, CreateMode.PERSISTENT, true);
-          } catch (KeeperException.NodeExistsException e) {
-            // someone else already created this node - ignore
-          } catch (KeeperException | InterruptedException e1) {
-            log.warn("Unable to register nodeLost path for {}", n, e1);
-          }
-        }
-      }
       return false;
     };
     zkStateReader.registerLiveNodesListener(listener);
@@ -1151,18 +1122,9 @@ public class ZkController implements Closeable {
     }
     String nodeName = getNodeName();
     String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
-    String nodeAddedPath = ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH + "/" + nodeName;
     log.info("Register node as live in ZooKeeper:{}", nodePath);
     List<Op> ops = new ArrayList<>(2);
     ops.add(Op.create(nodePath, null, zkClient.getZkACLProvider().getACLsToAdd(nodePath), CreateMode.EPHEMERAL));
-    // if there are nodeAdded triggers don't create nodeAdded markers
-    boolean createMarkerNode = zkStateReader.getAutoScalingConfig().hasTriggerForEvents(TriggerEventType.NODEADDED);
-    if (createMarkerNode && !zkClient.exists(nodeAddedPath, true)) {
-      // use EPHEMERAL so that it disappears if this node goes down
-      // and no other action is taken
-      byte[] json = Utils.toJSON(Collections.singletonMap("timestamp", TimeSource.NANO_TIME.getEpochTimeNs()));
-      ops.add(Op.create(nodeAddedPath, json, zkClient.getZkACLProvider().getACLsToAdd(nodeAddedPath), CreateMode.EPHEMERAL));
-    }
     zkClient.multi(ops, true);
   }
 
@@ -1172,11 +1134,9 @@ public class ZkController implements Closeable {
     }
     String nodeName = getNodeName();
     String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
-    String nodeAddedPath = ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH + "/" + nodeName;
     log.info("Remove node as live in ZooKeeper:{}", nodePath);
     List<Op> ops = new ArrayList<>(2);
     ops.add(Op.delete(nodePath, -1));
-    ops.add(Op.delete(nodeAddedPath, -1));
 
     try {
       zkClient.multi(ops, true);
@@ -2266,8 +2226,10 @@ public class ZkController implements Closeable {
     try {
       byte[] data = zkClient.getData(ZkStateReader.ROLES, null, new Stat(), true);
       if (data == null) return;
+      @SuppressWarnings({"rawtypes"})
       Map roles = (Map) Utils.fromJSON(data);
       if (roles == null) return;
+      @SuppressWarnings({"rawtypes"})
       List nodeList = (List) roles.get("overseer");
       if (nodeList == null) return;
       if (nodeList.contains(getNodeName())) {
@@ -2331,6 +2293,7 @@ public class ZkController implements Closeable {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   Set<OnReconnect> getCurrentOnReconnectListeners() {
     HashSet<OnReconnect> clonedListeners;
     synchronized (reconnectListeners) {
@@ -2388,8 +2351,7 @@ public class ZkController implements Closeable {
         Stat stat = zkClient.exists(resourceLocation, null, true);
         v = stat.getVersion();
       } catch (Exception e) {
-        log.error(e.getMessage());
-
+        log.error("Exception during ZooKeeper node checking ", e);
       }
       if (log.isInfoEnabled()) {
         log.info(StrUtils.formatString("%s zkVersion= %d %s %d", errMsg, resourceLocation, znodeVersion));
@@ -2676,7 +2638,7 @@ public class ZkController implements Closeable {
       Thread.currentThread().interrupt();
       log.debug("Publish node as down was interrupted.");
     } catch (KeeperException e) {
-      log.warn("Could not publish node as down: {}", e.getMessage());
+      log.warn("Could not publish node as down: ", e);
     }
   }
 
@@ -2692,6 +2654,7 @@ public class ZkController implements Closeable {
         }
         registeredSearcher.decref();
       } else  {
+        @SuppressWarnings({"rawtypes"})
         Future[] waitSearcher = new Future[1];
         if (log.isInfoEnabled()) {
           log.info("No registered searcher found for core: {}, waiting until a searcher is registered before publishing as active", core.getName());

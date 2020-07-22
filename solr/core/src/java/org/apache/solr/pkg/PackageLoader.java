@@ -19,12 +19,22 @@ package org.apache.solr.pkg;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
@@ -40,6 +50,8 @@ import static org.apache.lucene.util.IOUtils.closeWhileHandlingException;
  */
 public class PackageLoader implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  public static final String LATEST = "$LATEST";
+
 
   private final CoreContainer coreContainer;
   private final Map<String, Package> packageClassLoaders = new ConcurrentHashMap<>();
@@ -64,6 +76,7 @@ public class PackageLoader implements Closeable {
     return packageClassLoaders.get(key);
   }
 
+  @SuppressWarnings({"unchecked"})
   public Map<String, Package> getPackages() {
     return Collections.EMPTY_MAP;
   }
@@ -157,6 +170,10 @@ public class PackageLoader implements Closeable {
       return deleted;
     }
 
+    public Set<String> allVersions() {
+      return myVersions.keySet();
+    }
+
 
     private synchronized void updateVersions(List<PackageAPI.PkgVersion> modified) {
       for (PackageAPI.PkgVersion v : modified) {
@@ -209,11 +226,15 @@ public class PackageLoader implements Closeable {
       return latest == null ? null : myVersions.get(latest);
     }
 
+    public Version getVersion(String version) {
+      return myVersions.get(version);
+    }
+
     public Version getLatest(String lessThan) {
       if (lessThan == null) {
         return getLatest();
       }
-      String latest = findBiggest(lessThan, new ArrayList(sortedVersions));
+      String latest = findBiggest(lessThan, new ArrayList<>(sortedVersions));
       return latest == null ? null : myVersions.get(latest);
     }
 
@@ -270,7 +291,11 @@ public class PackageLoader implements Closeable {
       public String getVersion() {
         return version.version;
       }
+      public PackageAPI.PkgVersion getPkgVersion(){
+        return version.copy();
+      }
 
+      @SuppressWarnings({"rawtypes"})
       public Collection getFiles() {
         return Collections.unmodifiableList(version.files);
       }
@@ -293,9 +318,12 @@ public class PackageLoader implements Closeable {
     }
   }
   static class PackageResourceLoader extends SolrResourceLoader {
+    List<Path> paths;
+
 
     PackageResourceLoader(String name, List<Path> classpath, Path instanceDir, ClassLoader parent) {
       super(name, classpath, instanceDir, parent);
+      this.paths = classpath;
     }
 
     @Override
@@ -318,6 +346,11 @@ public class PackageLoader implements Closeable {
     @Override
     public  <T> void addToInfoBeans(T obj) {
       //do not do anything. It should be handled externally
+    }
+
+    @Override
+    public InputStream openResource(String resource) {
+      return getClassLoader().getResourceAsStream(resource);
     }
   }
 

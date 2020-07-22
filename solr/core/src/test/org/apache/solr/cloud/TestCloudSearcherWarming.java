@@ -141,7 +141,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
 
     String collectionName = "testPeersyncFailureReplicationSuccess";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, 1, 1)
-        .setCreateNodeSet(cluster.getJettySolrRunner(0).getNodeName()).setMaxShardsPerNode(2);
+        .setCreateNodeSet(cluster.getJettySolrRunner(0).getNodeName());
     create.process(solrClient);
 
     waitForState("The collection should have 1 shard and 1 replica", collectionName, clusterShape(1, 1));
@@ -311,7 +311,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
 
   public static class SleepingSolrEventListener implements SolrEventListener {
     @Override
-    public void init(NamedList args) {
+    public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
       // No-Op
     }
 

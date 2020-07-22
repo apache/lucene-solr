@@ -16,9 +16,7 @@
  */
 package org.apache.solr.handler.admin;
 
-import java.io.File;
-import java.io.IOException;
-
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockFactory;
 import org.apache.solr.SolrTestCaseJ4;
@@ -35,7 +33,8 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+import java.io.File;
+import java.io.IOException;
 
 public class CoreMergeIndexesAdminHandlerTest extends SolrTestCaseJ4 {
   
@@ -74,6 +73,7 @@ public class CoreMergeIndexesAdminHandlerTest extends SolrTestCaseJ4 {
     final File workDir = createTempDir().toFile();
 
     final CoreContainer cores = h.getCoreContainer();
+    cores.getAllowPaths().add(workDir.toPath());
 
     try (final CoreAdminHandler admin = new CoreAdminHandler(cores);
          SolrCore core = cores.getCore("collection1")) {

@@ -75,6 +75,7 @@ public class TestConcatenateGraphFilter extends BaseTokenStreamTestCase {
     builder.add(new CharsRef("mykeyword"), new CharsRef("mysynonym"), true);
     Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, true);
     tokenizer.setReader(new StringReader("mykeyword"));
+    @SuppressWarnings("deprecation")
     SynonymFilter filter = new SynonymFilter(tokenizer, builder.build(), true);
     ConcatenateGraphFilter stream = new ConcatenateGraphFilter(filter);
     assertTokenStreamContents(stream, new String[] {"mykeyword", "mysynonym"}, null, null, new int[] { 1, 0 });
@@ -87,6 +88,7 @@ public class TestConcatenateGraphFilter extends BaseTokenStreamTestCase {
     Tokenizer tokenStream = new MockTokenizer(MockTokenizer.WHITESPACE, true);
     String input = "mykeyword another keyword";
     tokenStream.setReader(new StringReader(input));
+    @SuppressWarnings("deprecation")
     SynonymFilter filter = new SynonymFilter(tokenStream, builder.build(), true);
     ConcatenateGraphFilter stream = new ConcatenateGraphFilter(filter, SEP_LABEL, false, 100);
     String[] expectedOutputs = new String[2];
@@ -145,6 +147,7 @@ public class TestConcatenateGraphFilter extends BaseTokenStreamTestCase {
     }
     MockTokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, true);
     tokenizer.setReader(new StringReader(valueBuilder.toString()));
+    @SuppressWarnings("deprecation")
     SynonymFilter filter = new SynonymFilter(tokenizer, builder.build(), true);
 
     int count;

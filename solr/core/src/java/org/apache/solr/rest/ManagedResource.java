@@ -205,7 +205,9 @@ public abstract class ManagedResource {
             "Stored data for "+resourceId+" is not a valid JSON object!");
       }
 
+      @SuppressWarnings({"unchecked"})
       Map<String,Object> jsonMap = (Map<String,Object>)data;
+      @SuppressWarnings({"unchecked"})
       Map<String,Object> initArgsMap = (Map<String,Object>)jsonMap.get(INIT_ARGS_JSON_FIELD);
       managedInitArgs = new NamedList<>(initArgsMap);
       log.info("Loaded initArgs {} for {}", managedInitArgs, resourceId);

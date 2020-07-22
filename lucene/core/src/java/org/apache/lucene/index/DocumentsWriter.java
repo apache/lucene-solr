@@ -137,7 +137,7 @@ final class DocumentsWriter implements Closeable, Accountable {
       final FieldInfos.Builder infos = new FieldInfos.Builder(globalFieldNumberMap);
       return new DocumentsWriterPerThread(indexCreatedVersionMajor,
           segmentNameSupplier.get(), directoryOrig,
-          directory, config, infoStream, deleteQueue, infos,
+          directory, config, deleteQueue, infos,
           pendingNumDocs, enableTestPoints);
     });
     this.pendingNumDocs = pendingNumDocs;

@@ -105,6 +105,7 @@ public class IndexFingerprint implements MapSerializable {
     }
   }
   
+  @SuppressWarnings({"unchecked"})
   public static IndexFingerprint getFingerprint(SolrIndexSearcher searcher, LeafReaderContext ctx, Long maxVersion)
       throws IOException {
     SchemaField versionField = VersionInfo.getAndCheckVersionField(searcher.getSchema());

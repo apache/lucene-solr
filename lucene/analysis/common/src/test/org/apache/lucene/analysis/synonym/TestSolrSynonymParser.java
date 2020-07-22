@@ -30,6 +30,7 @@ import org.apache.lucene.analysis.en.EnglishAnalyzer;
  * Tests parser for the Solr synonyms format
  * @lucene.experimental
  */
+@Deprecated
 public class TestSolrSynonymParser extends BaseSynonymParserTestCase {
   
   /** Tests some simple examples from the solr wiki */

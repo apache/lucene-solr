@@ -208,6 +208,7 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
     private javax.security.auth.login.Configuration baseConfig;
 
     // the com.sun.security.jgss appNames
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private Set<String> initiateAppNames = new HashSet(
       Arrays.asList("com.sun.security.jgss.krb5.initiate", "com.sun.security.jgss.initiate"));
 

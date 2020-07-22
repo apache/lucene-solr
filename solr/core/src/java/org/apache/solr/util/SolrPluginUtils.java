@@ -323,6 +323,7 @@ public class SolrPluginUtils {
    * @return The debug info
    * @throws java.io.IOException if there was an IO error
    */
+  @SuppressWarnings({"rawtypes"})
   public static NamedList doStandardDebug(
           SolrQueryRequest req,
           String userQuery,
@@ -339,12 +340,13 @@ public class SolrPluginUtils {
   }
 
 
+  @SuppressWarnings({"unchecked"})
   public static void doStandardQueryDebug(
           SolrQueryRequest req,
           String userQuery,
           Query query,
           boolean dbgQuery,
-          NamedList dbg)
+          @SuppressWarnings({"rawtypes"})NamedList dbg)
   {
     if (dbgQuery) {
       /* userQuery may have been pre-processed .. expose that */
@@ -360,12 +362,13 @@ public class SolrPluginUtils {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   public static void doStandardResultsDebug(
           SolrQueryRequest req,
           Query query,
           DocList results,
           boolean dbgResults,
-          NamedList dbg) throws IOException
+          @SuppressWarnings({"rawtypes"})NamedList dbg) throws IOException
   {
     if (dbgResults) {
       SolrIndexSearcher searcher = req.getSearcher();
@@ -844,7 +847,7 @@ public class SolrPluginUtils {
    * {@code resultIds} is.  {@code resultIds} comes from {@link ResponseBuilder#resultIds}.  If the doc key
    * isn't in {@code resultIds} then it is ignored.
    * Note: most likely you will call {@link #removeNulls(Map.Entry[], NamedList)} sometime after calling this. */
-  public static void copyNamedListIntoArrayByDocPosInResponse(NamedList namedList, Map<Object, ShardDoc> resultIds,
+  public static void copyNamedListIntoArrayByDocPosInResponse(@SuppressWarnings({"rawtypes"})NamedList namedList, Map<Object, ShardDoc> resultIds,
                                                               Map.Entry<String, Object>[] destArr) {
     assert resultIds.size() == destArr.length;
     for (int i = 0; i < namedList.size(); i++) {

@@ -29,7 +29,8 @@ import org.apache.solr.SolrTestCase;
  */
 public class SolrDocumentTest extends SolrTestCase
 {
-  public void testSimple() 
+  @SuppressWarnings({"unchecked"})
+  public void testSimple()
   {
     Float fval = 10.01f;
     Boolean bval = Boolean.TRUE;
@@ -93,7 +94,7 @@ public class SolrDocumentTest extends SolrTestCase
     try { doc.getFieldValuesMap().putAll( null );        fail( "should be unsupported!" ); } catch( UnsupportedOperationException ex ){}
     try { doc.getFieldValuesMap().values();              fail( "should be unsupported!" ); } catch( UnsupportedOperationException ex ){}
     try { doc.getFieldValuesMap().remove( "key" );       fail( "should be unsupported!" ); } catch( UnsupportedOperationException ex ){}
-    try { doc.getFieldValueMap().put( "key", Collections.EMPTY_LIST ); fail( "should be unsupported!" ); } catch( UnsupportedOperationException ex ){}
+    try { doc.getFieldValueMap().put( "key", Collections.emptyList() ); fail( "should be unsupported!" ); } catch( UnsupportedOperationException ex ){}
 
     assertEquals( null, doc.getFieldValueMap().get( "aaa" ) );
     doc.setField( "aaa", "bbb" );
@@ -127,8 +128,10 @@ public class SolrDocumentTest extends SolrTestCase
     doc.clear();
     assertEquals( 0, doc.getFieldNames().size() );
     
+    @SuppressWarnings({"rawtypes"})
     Iterable iter = new Iterable() {
       @Override
+      @SuppressWarnings({"rawtypes"})
       public Iterator iterator() {
         return c0.iterator();
       }

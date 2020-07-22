@@ -35,7 +35,6 @@ import com.google.common.annotations.VisibleForTesting;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -109,12 +108,9 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
       ZkStateReader.PULL_REPLICAS,
       ZkStateReader.TLOG_REPLICAS,
       ZkStateReader.REPLICATION_FACTOR,
-      ZkStateReader.MAX_SHARDS_PER_NODE,
       "shards",
-      Policy.POLICY,
       CollectionAdminParams.CREATE_NODE_SET_PARAM,
-      CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM,
-      ZkStateReader.AUTO_ADD_REPLICAS
+      CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM
   );
 
   private final OverseerCollectionMessageHandler ocmh;
@@ -242,7 +238,6 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
     Integer numTlog = message.getInt(ZkStateReader.TLOG_REPLICAS, coll.getNumTlogReplicas());
     Integer numPull = message.getInt(ZkStateReader.PULL_REPLICAS, coll.getNumPullReplicas());
     int numShards = message.getInt(ZkStateReader.NUM_SHARDS_PROP, coll.getActiveSlices().size());
-    int maxShardsPerNode = message.getInt(ZkStateReader.MAX_SHARDS_PER_NODE, coll.getMaxShardsPerNode());
     DocRouter router = coll.getRouter();
     if (router == null) {
       router = DocRouter.DEFAULT;
@@ -320,7 +315,6 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
         }
       }
 
-      propMap.put(ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode);
       propMap.put(CommonAdminParams.WAIT_FOR_FINAL_STATE, true);
       if (rf != null) {
         propMap.put(ZkStateReader.REPLICATION_FACTOR, rf);

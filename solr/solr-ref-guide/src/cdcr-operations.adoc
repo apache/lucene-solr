@@ -16,6 +16,14 @@
 // specific language governing permissions and limitations
 // under the License.
 
+[WARNING]
+.CDCR is deprecated
+====
+This feature (in its current form) is deprecated and will likely be removed in 9.0.
+
+See <<cross-data-center-replication-cdcr.adoc#cross-data-center-replication-cdcr,Cross Data Center Replication>> for more details.
+====
+
 == Monitoring
 
 . Network and disk space monitoring are essential. Ensure that the system has plenty of available storage to queue up changes if there is a disconnect between the Source and Target. A network outage between the two data centers can cause your disk usage to grow. Some tips:

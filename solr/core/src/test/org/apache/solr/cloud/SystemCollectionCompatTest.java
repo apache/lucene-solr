@@ -90,7 +90,6 @@ public class SystemCollectionCompatTest extends SolrCloudTestCase {
     // put .system replicas on other nodes that the overseer
     CollectionAdminRequest.createCollection(CollectionAdminParams.SYSTEM_COLL, null, 1, 2)
         .setCreateNodeSet(String.join(",", nodes))
-        .setMaxShardsPerNode(2)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(CollectionAdminParams.SYSTEM_COLL,  1, 2);
     // send a dummy doc to the .system collection
@@ -180,6 +179,7 @@ public class SystemCollectionCompatTest extends SolrCloudTestCase {
     }
     assertNotNull(overseerNode);
     LogWatcherConfig watcherCfg = new LogWatcherConfig(true, null, "WARN", 100);
+    @SuppressWarnings({"rawtypes"})
     LogWatcher watcher = LogWatcher.newRegisteredLogWatcher(watcherCfg, null);
 
     watcher.reset();

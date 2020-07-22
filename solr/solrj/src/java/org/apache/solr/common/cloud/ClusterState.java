@@ -219,6 +219,7 @@ public class ClusterState implements JSONWriter.Writable {
     if (bytes == null || bytes.length == 0) {
       return new ClusterState(liveNodes, Collections.<String, DocCollection>emptyMap());
     }
+    @SuppressWarnings({"unchecked"})
     Map<String, Object> stateMap = (Map<String, Object>) Utils.fromJSON(bytes);
     return createFromCollectionMap(version, stateMap, liveNodes);
   }
@@ -227,6 +228,7 @@ public class ClusterState implements JSONWriter.Writable {
     Map<String,CollectionRef> collections = new LinkedHashMap<>(stateMap.size());
     for (Entry<String, Object> entry : stateMap.entrySet()) {
       String collectionName = entry.getKey();
+      @SuppressWarnings({"unchecked"})
       DocCollection coll = collectionFromObjects(collectionName, (Map<String,Object>)entry.getValue(), version);
       collections.put(collectionName, new CollectionRef(coll));
     }
@@ -239,6 +241,7 @@ public class ClusterState implements JSONWriter.Writable {
     Map<String,Object> props;
     Map<String,Slice> slices;
 
+    @SuppressWarnings({"unchecked"})
     Map<String, Object> sliceObjs = (Map<String, Object>) objs.get(DocCollection.SHARDS);
     if (sliceObjs == null) {
       // legacy format from 4.0... there was no separate "shards" level to contain the collection shards.
@@ -258,6 +261,7 @@ public class ClusterState implements JSONWriter.Writable {
       // back compat with Solr4.4
       router = DocRouter.getDocRouter((String)routerObj);
     } else {
+      @SuppressWarnings({"rawtypes"})
       Map routerProps = (Map)routerObj;
       router = DocRouter.getDocRouter((String) routerProps.get("name"));
     }

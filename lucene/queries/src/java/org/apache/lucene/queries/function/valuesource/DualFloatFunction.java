@@ -51,7 +51,7 @@ public abstract class DualFloatFunction extends ValueSource {
   }
 
   @Override
-  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
     final FunctionValues aVals =  a.getValues(context, readerContext);
     final FunctionValues bVals =  b.getValues(context, readerContext);
     return new FloatDocValues(this) {
@@ -75,7 +75,7 @@ public abstract class DualFloatFunction extends ValueSource {
   }
 
   @Override
-  public void createWeight(Map context, IndexSearcher searcher) throws IOException {
+  public void createWeight(Map<Object, Object> context, IndexSearcher searcher) throws IOException {
     a.createWeight(context,searcher);
     b.createWeight(context,searcher);
   }

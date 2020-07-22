@@ -107,13 +107,13 @@ public class WithinPrefixTreeQuery extends AbstractVisitingPrefixTreeQuery {
       throw new IllegalArgumentException("distErr must be > 0");
     SpatialContext ctx = grid.getSpatialContext();
     if (shape instanceof Point) {
-      return ctx.makeCircle((Point)shape, distErr);
+      return ctx.getShapeFactory().circle((Point)shape, distErr);
     } else if (shape instanceof Circle) {
       Circle circle = (Circle) shape;
       double newDist = circle.getRadius() + distErr;
       if (ctx.isGeo() && newDist > 180)
         newDist = 180;
-      return ctx.makeCircle(circle.getCenter(), newDist);
+      return ctx.getShapeFactory().circle(circle.getCenter(), newDist);
     } else {
       Rectangle bbox = shape.getBoundingBox();
       double newMinX = bbox.getMinX() - distErr;
@@ -139,7 +139,7 @@ public class WithinPrefixTreeQuery extends AbstractVisitingPrefixTreeQuery {
         newMinY = Math.max(newMinY, ctx.getWorldBounds().getMinY());
         newMaxY = Math.min(newMaxY, ctx.getWorldBounds().getMaxY());
       }
-      return ctx.makeRectangle(newMinX, newMaxX, newMinY, newMaxY);
+      return ctx.getShapeFactory().rect(newMinX, newMaxX, newMinY, newMaxY);
     }
   }
 

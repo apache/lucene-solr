@@ -115,7 +115,9 @@ subprojects {
       ArrayDeque<ResolvedDependency> queue = new ArrayDeque<>()
       configurations.jarValidation.extendsFrom.each { conf ->
         if (excludeRules) {
-          conf = configurations.detachedConfiguration().extendsFrom(conf)
+          conf = conf.copyRecursive()
+          conf.canBeResolved = true
+          conf.canBeConsumed = true
           conf.excludeRules = excludeRules
         }
         if (conf.canBeResolved) {

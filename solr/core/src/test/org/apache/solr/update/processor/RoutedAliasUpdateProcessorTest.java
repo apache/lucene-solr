@@ -326,6 +326,7 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
 
   void assertUpdateResponse(UpdateResponse rsp) {
     // use of TolerantUpdateProcessor can cause non-thrown "errors" that we need to check for
+    @SuppressWarnings({"rawtypes"})
     List errors = (List) rsp.getResponseHeader().get("errors");
     assertTrue("Expected no errors: " + errors,errors == null || errors.isEmpty());
   }

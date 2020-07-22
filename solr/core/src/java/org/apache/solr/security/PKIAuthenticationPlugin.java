@@ -195,6 +195,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
           .execute(new HttpGet(uri), HttpClientUtil.createNewHttpClientRequestContext());
       entity  = rsp.getEntity();
       byte[] bytes = EntityUtils.toByteArray(entity);
+      @SuppressWarnings({"rawtypes"})
       Map m = (Map) Utils.fromJSON(bytes);
       String key = (String) m.get("key");
       if (key == null) {

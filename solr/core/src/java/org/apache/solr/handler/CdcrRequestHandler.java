@@ -58,19 +58,18 @@ import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
-import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.CdcrUpdateLog;
 import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.VersionInfo;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -108,7 +107,9 @@ import static org.apache.solr.handler.admin.CoreAdminHandler.RUNNING;
  * Known limitations: The source and target clusters must have the same topology. Replication between clusters
  * with a different number of shards will likely results in an inconsistent index.
  * </p>
+ * @deprecated since 8.6
  */
+@Deprecated(since = "8.6")
 public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAware {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -133,6 +134,8 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
   @Override
   public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     super.init(args);
+
+    log.warn("CDCR (in its current form) is deprecated as of 8.6 and shall be removed in 9.0. See SOLR-14022 for details.");
 
     if (args != null) {
       // Configuration of the Update Log Synchronizer
@@ -775,12 +778,6 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
         solrParams.set(ReplicationHandler.TLOG_FILES, false);
 
         success = replicationHandler.doFetch(solrParams, false).getSuccessful();
-
-        // this is required because this callable can race with HttpSolrCall#destroy
-        // which clears the request info.
-        // Applying buffered updates fails without the following line because LogReplayer
-        // also tries to set request info and fails with AssertionError
-        SolrRequestInfo.clearRequestInfo();
 
         Future<UpdateLog.RecoveryInfo> future = ulog.applyBufferedUpdates();
         if (future == null) {

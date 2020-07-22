@@ -45,6 +45,7 @@ public class BinaryResponseParser extends ResponseParser {
   }
 
   @Override
+  @SuppressWarnings({"unchecked"})
   public NamedList<Object> processResponse(InputStream body, String encoding) {
     try {
       return (NamedList<Object>) createCodec().unmarshal(body);

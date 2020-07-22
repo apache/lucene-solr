@@ -22,17 +22,38 @@ allprojects {
     sourceCompatibility = "11"
     targetCompatibility = "11"
 
+    // Use 'release' flag instead of 'source' and 'target'
+    tasks.withType(JavaCompile) {
+      options.compilerArgs += ["--release", "11"]
+    }
+
+    // Configure warnings.
     tasks.withType(JavaCompile) {
       options.encoding = "UTF-8"
       options.compilerArgs += [
-        "-Xlint",
         "-Xlint:-deprecation",
         "-Xlint:-serial",
-
+        "-Xlint:cast",
+        "-Xlint:classfile",
+        "-Xlint:dep-ann",
+        "-Xlint:divzero",
+        "-Xlint:empty",
+        "-Xlint:fallthrough",
+        "-Xlint:finally",
+        "-Xlint:options",
+        "-Xlint:overrides",
+        "-Xlint:path",
+        "-Xlint:processing",
+        "-Xlint:rawtypes",
+        "-Xlint:static",
+        "-Xlint:try",
+        "-Xlint:unchecked",
+        "-Xlint:varargs",
         "-Xdoclint:all/protected",
         "-Xdoclint:-missing",
         "-Xdoclint:-accessibility",
         "-proc:none",  // proc:none was added because of LOG4J2-1925 / JDK-8186647
+        "-Werror",
       ]
     }
   }

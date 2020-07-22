@@ -58,6 +58,7 @@ import static java.math.RoundingMode.CEILING;
  * coordinates in lat/lon decimal degrees.  The accuracy is about a centimeter (1.042cm).
  */
 // TODO once LLP & LLDVF are out of Lucene Sandbox, we should be able to javadoc reference them.
+@SuppressWarnings({"rawtypes"})
 public class LatLonPointSpatialField extends AbstractSpatialFieldType implements SchemaAware {
   private IndexSchema schema;
 

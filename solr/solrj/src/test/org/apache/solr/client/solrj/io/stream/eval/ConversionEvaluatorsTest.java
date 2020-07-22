@@ -42,6 +42,7 @@ public class ConversionEvaluatorsTest {
   StreamFactory factory;
   Map<String, Object> values;
 
+  @SuppressWarnings({"unchecked"})
   public ConversionEvaluatorsTest() {
     super();
 
@@ -69,6 +70,7 @@ public class ConversionEvaluatorsTest {
       evaluator = factory.constructEvaluator("convert(inches, yards, 3)");
       StreamContext streamContext = new StreamContext();
       evaluator.setStreamContext(streamContext);
+      @SuppressWarnings({"rawtypes"})
       Tuple tuple = new Tuple(new HashMap());
       evaluator.evaluate(tuple);
       assertTrue(false);
@@ -79,41 +81,41 @@ public class ConversionEvaluatorsTest {
 
   @Test
   public void testInches() throws Exception {
-    testFunction("convert(inches, centimeters, 2)", (double)(2*2.54));
-    testFunction("convert(inches, meters, 2)", (double)(2*0.0254));
-    testFunction("convert(inches, millimeters, 2)", (double)(2*25.40));
+    testFunction("convert(inches, centimeters, 2)", (2*2.54));
+    testFunction("convert(inches, meters, 2)", (2*0.0254));
+    testFunction("convert(inches, millimeters, 2)", (2*25.40));
   }
 
   @Test
   public void testYards() throws Exception {
-    testFunction("convert(yards, meters, 2)", (double)(2*.91));
-    testFunction("convert(yards, kilometers, 2)", (double)(2*.00091));
+    testFunction("convert(yards, meters, 2)", (2*.91));
+    testFunction("convert(yards, kilometers, 2)", (2*.00091));
   }
 
   @Test
   public void testMiles() throws Exception {
-    testFunction("convert(miles, kilometers, 2)", (double)(2*1.61));
+    testFunction("convert(miles, kilometers, 2)", (2*1.61));
   }
 
   @Test
   public void testMillimeters() throws Exception {
-    testFunction("convert(millimeters, inches, 2)", (double)(2*.039));
+    testFunction("convert(millimeters, inches, 2)", (2*.039));
   }
 
   @Test
   public void testCentimeters() throws Exception {
-    testFunction("convert(centimeters, inches, 2)", (double)(2*.39));
+    testFunction("convert(centimeters, inches, 2)", (2*.39));
   }
 
   @Test
   public void testMeters() throws Exception {
-    testFunction("convert(meters, feet, 2)", (double)(2*3.28));
+    testFunction("convert(meters, feet, 2)", (2*3.28));
   }
 
   @Test
   public void testKiloMeters() throws Exception {
-    testFunction("convert(kilometers, feet, 2)", (double)(2*3280.8));
-    testFunction("convert(kilometers, miles, 2)", (double)(2*.62));
+    testFunction("convert(kilometers, feet, 2)", (2*3280.8));
+    testFunction("convert(kilometers, miles, 2)", (2*.62));
   }
 
   public void testFunction(String expression, Number expected) throws Exception {

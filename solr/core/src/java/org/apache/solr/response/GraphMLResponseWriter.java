@@ -34,7 +34,7 @@ import org.apache.solr.request.SolrQueryRequest;
 
 public class GraphMLResponseWriter implements QueryResponseWriter {
 
-  public void init(NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     /* NOOP */
   }
 
@@ -94,7 +94,7 @@ public class GraphMLResponseWriter implements QueryResponseWriter {
 
         printWriter.write("<node id=\""+ xmlEscape(id)+"\"");
 
-        List<String> outfields = new ArrayList();
+        List<String> outfields = new ArrayList<>();
         Iterator<Object> keys = tuple.getFields().keySet().iterator();
         while(keys.hasNext()) {
           String key = String.valueOf(keys.next());

@@ -118,6 +118,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
 
 
   @Test
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void testHashPartition() throws Exception {
 
 
@@ -303,7 +304,9 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
   }
 
 
-  private void assertNoOverLap(Set setA, Set setB) throws Exception {
+  private void assertNoOverLap(@SuppressWarnings({"rawtypes"})Set setA,
+                               @SuppressWarnings({"rawtypes"})Set setB) throws Exception {
+    @SuppressWarnings({"rawtypes"})
     Iterator it =  setA.iterator();
     while(it.hasNext()) {
       Object o = it.next();

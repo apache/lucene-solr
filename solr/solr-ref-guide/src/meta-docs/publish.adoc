@@ -116,4 +116,4 @@ You can use your favourite git client to merge master into branch `production`. 
 . Note: If there are other changes staged, you will see those as well if you merge `master` into `production`
 . Click the "Merge" button on the PR
 
-The ordinary Solr release process will update the `LUCENE_LATEST_RELEASE` property of the website, which will ensure that Ref Guide URLs without a version in the path (e.g. `/solr/guide/mypage.adoc`) will automatically redirect to the latest Guide.
+The ordinary Solr release process will update the `LUCENE_LATEST_RELEASE` property of the website, which will ensure that Ref Guide URLs without a version in the path (e.g., `/solr/guide/mypage.adoc`) will automatically redirect to the latest Guide.

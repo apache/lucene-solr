@@ -251,9 +251,11 @@ public class Lucene86PointsWriter extends PointsWriter implements Closeable {
     }
     finished = true;
     metaOut.writeInt(-1);
-    CodecUtil.writeFooter(metaOut);
     CodecUtil.writeFooter(indexOut);
     CodecUtil.writeFooter(dataOut);
+    metaOut.writeLong(indexOut.getFilePointer());
+    metaOut.writeLong(dataOut.getFilePointer());
+    CodecUtil.writeFooter(metaOut);
   }
 
   @Override
