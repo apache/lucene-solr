@@ -339,6 +339,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
           timeSlept ++;
         } catch (InterruptedException ignored) {
           ParWork.propegateInterrupt(ignored);
+          break;
         }
       }
     }

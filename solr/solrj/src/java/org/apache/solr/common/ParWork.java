@@ -598,7 +598,7 @@ public class ParWork implements Closeable {
     }
   }
 
-  public static synchronized ExecutorService getExecutor() {
+  public static ExecutorService getExecutor() {
      // if (executor != null) return executor;
     ExecutorService exec = THREAD_LOCAL_EXECUTOR.get();
     if (exec == null) {
@@ -607,7 +607,7 @@ public class ParWork implements Closeable {
       }
 
       // figure out thread usage - maybe try to adjust based on current thread count
-      exec = getExecutorService(0, Math.max(4, Runtime.getRuntime().availableProcessors() / 3), 1);
+      exec = getExecutorService(0, Math.max(4, Runtime.getRuntime().availableProcessors() / 3), 5000);
       THREAD_LOCAL_EXECUTOR.set(exec);
     }
 
