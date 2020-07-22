@@ -1336,7 +1336,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     } catch (IOException e) {
       log.error("Exception reading versions from log",e);
     } catch (InterruptedException e) {
-      log.warn("Exception reading log", e);
+      ParWork.propegateInterrupt(e);
     } finally {
       if (logReader != null) logReader.close();
     }
@@ -2037,7 +2037,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       } catch (TimeoutException e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, e);
       } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
+        ParWork.propegateInterrupt(e);
         throw new SolrException(ErrorCode.SERVER_ERROR, e);
       }
 

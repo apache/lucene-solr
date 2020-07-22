@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler;
 
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -103,8 +104,7 @@ class CdcrReplicatorScheduler {
       try {
         replicatorsPool.awaitTermination(60, TimeUnit.SECONDS);
       } catch (InterruptedException e) {
-        log.warn("Thread interrupted while waiting for CDCR replicator threadpool close.");
-        Thread.currentThread().interrupt();
+        ParWork.propegateInterrupt(e);
       } finally {
         scheduler.shutdownNow();
         isStarted = false;

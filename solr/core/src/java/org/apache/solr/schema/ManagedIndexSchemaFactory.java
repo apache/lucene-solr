@@ -26,6 +26,7 @@ import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.AlreadyClosedException;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -141,9 +142,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
         loadedResource = managedSchemaResourceName;
         warnIfNonManagedSchemaExists();
       } catch (InterruptedException e) {
-        // Restore the interrupted status
-        Thread.currentThread().interrupt();
-        log.warn("", e);
+        ParWork.propegateInterrupt(e);
       } catch (KeeperException.NoNodeException e) {
         log.info("The schema is configured as managed, but managed schema resource {} not found - loading non-managed schema {} instead"
             , managedSchemaResourceName, resourceName);
@@ -232,8 +231,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
         try {
           exists = zkLoader.getZkController().pathExists(nonManagedSchemaPath);
         } catch (InterruptedException e) {
-          Thread.currentThread().interrupt(); // Restore the interrupted status
-          log.warn("", e); // Log as warning and suppress the exception 
+          ParWork.propegateInterrupt(e);
         } catch (KeeperException e) {
           // log as warning and suppress the exception
           log.warn("Error checking for the existence of the non-managed schema {}", resourceName, e);
@@ -419,9 +417,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
         log.error(msg, e);
         throw new SolrException(ErrorCode.SERVER_ERROR, msg, e);
       } catch (InterruptedException e) {
-        // Restore the interrupted status
-        Thread.currentThread().interrupt();
-        log.warn("", e);
+        ParWork.propegateInterrupt(e);
       }
     } else {
       this.zkIndexSchemaReader = null;

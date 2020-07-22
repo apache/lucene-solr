@@ -541,6 +541,7 @@ public class SimplePostTool {
         Thread.sleep(delay * 1000);
         filesPosted++;
       } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
         throw new RuntimeException(e);
       }
     }
@@ -655,6 +656,7 @@ public class SimplePostTool {
       } catch (IOException e) {
         warn("Caught exception when trying to open connection to "+u+": "+e.getMessage());
       } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
         throw new RuntimeException(e);
       }
     }

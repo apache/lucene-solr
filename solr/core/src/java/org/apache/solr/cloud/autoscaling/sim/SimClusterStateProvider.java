@@ -1209,7 +1209,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
                   try {
                     cloudManager.getSimNodeStateProvider().simSetNodeValue(n, "cores", cores.intValue() - 1);
                   } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
+                    ParWork.propegateInterrupt(e);
                     throw new RuntimeException("interrupted");
                   }
                 }
@@ -2532,6 +2532,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
         lock.unlock();
       }
     } catch (InterruptedException e) {
+      ParWork.propegateInterrupt(e);
       throw new IOException(e);
     }
   }

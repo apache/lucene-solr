@@ -520,9 +520,7 @@ public class ZkController implements Closeable {
               parWork.addCollect("reconnectListeners");
             }
           } catch (InterruptedException e) {
-            log.warn("ConnectionManager interrupted", e);
-            // Restore the interrupted status
-            Thread.currentThread().interrupt();
+            ParWork.propegateInterrupt(e);
             throw new ZooKeeperException(
                     SolrException.ErrorCode.SERVER_ERROR, "", e);
           } catch (SessionExpiredException e) {
@@ -1023,6 +1021,7 @@ public class ZkController implements Closeable {
                   success = latch.await(10, TimeUnit.SECONDS);
                 } catch (InterruptedException e) {
                   ParWork.propegateInterrupt(e);
+                  return;
                 }
                 if (!success) {
                   log.error("Time out waiting to see solr live nodes go down " + children.size());
@@ -1231,9 +1230,7 @@ public class ZkController implements Closeable {
 
         //  publishAndWaitForDownStates();
       } catch (InterruptedException e) {
-        // Restore the interrupted status
-        Thread.currentThread().interrupt();
-        log.error("Interrupted", e);
+        ParWork.propegateInterrupt(e);
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
                 "", e);
       } catch (KeeperException e) {
@@ -1530,8 +1527,7 @@ public class ZkController implements Closeable {
           startReplicationFromLeader(coreName, false);
         }
       } catch (InterruptedException e) {
-        // Restore the interrupted status
-        Thread.currentThread().interrupt();
+        ParWork.propegateInterrupt(e);
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
       } catch (KeeperException | IOException e) {
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
@@ -2065,7 +2061,7 @@ public class ZkController implements Closeable {
           return false;
         });
       } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
+        ParWork.propegateInterrupt(e);
         throw new SolrException(ErrorCode.SERVER_ERROR, "Could not get shard id for core: " + cd.getName());
       }
     } catch (TimeoutException e1) {
@@ -2129,8 +2125,7 @@ public class ZkController implements Closeable {
       log.error("", e);
       throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
     } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      log.error("", e);
+      ParWork.propegateInterrupt(e);
       throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
     } catch (NotInClusterStateException e) {
       // make the stack trace less verbose
@@ -2319,8 +2314,7 @@ public class ZkController implements Closeable {
     try {
       return asyncIdsMap.putIfAbsent(asyncId, new byte[0]);
     } catch (InterruptedException e) {
-      log.error("Interrupted cleaning asyncId={}", asyncId, e);
-      Thread.currentThread().interrupt();
+      ParWork.propegateInterrupt(e);
       throw new RuntimeException(e);
     }
   }
@@ -2335,8 +2329,7 @@ public class ZkController implements Closeable {
     try {
       return asyncIdsMap.remove(asyncId);
     } catch (InterruptedException e) {
-      log.error("Interrupted cleaning asyncId={}", asyncId, e);
-      Thread.currentThread().interrupt();
+      ParWork.propegateInterrupt(e);
       throw new RuntimeException(e);
     }
   }
@@ -2701,7 +2694,8 @@ public class ZkController implements Closeable {
       } catch (KeeperException e) {
         //ignore , it is not a big deal
       } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
+        ParWork.propegateInterrupt(e);
+        return;
       }
 
       boolean resetWatcher = false;
@@ -2756,9 +2750,11 @@ public class ZkController implements Closeable {
       }
     } catch (KeeperException e) {
       log.error("failed to set watcher for conf dir {} ", zkDir);
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       log.error("failed to set watcher for conf dir {} ", zkDir);
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }
   }
 
@@ -2875,7 +2871,7 @@ public class ZkController implements Closeable {
     } catch (AlreadyClosedException e) {
       log.info("Not publishing node as DOWN because a resource required to do so is already closed.");
     } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
+      ParWork.propegateInterrupt(e);
       log.debug("Publish node as down was interrupted.");
     }
   }

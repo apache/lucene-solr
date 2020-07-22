@@ -33,6 +33,7 @@ import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.beans.Package;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -118,9 +119,7 @@ public class PackageAPI {
             } catch (KeeperException e) {
               log.error("A ZK error has occurred", e);
             } catch (InterruptedException e) {
-              // Restore the interrupted status
-              Thread.currentThread().interrupt();
-              log.warn("Interrupted", e);
+              ParWork.propegateInterrupt(e);
             }
           }
 
@@ -392,6 +391,7 @@ public class PackageAPI {
         try {
           Thread.sleep(10);
         } catch (InterruptedException e) {
+          ParWork.propegateInterrupt(e);
         }
         try {
           pkgs = readPkgsFromZk(null, null);

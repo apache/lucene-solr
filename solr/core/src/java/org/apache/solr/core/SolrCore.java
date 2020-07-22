@@ -1421,7 +1421,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       try {
         Thread.sleep(milliSleep);
       } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
+        ParWork.propegateInterrupt(e);
         throw new SolrException(ErrorCode.SERVER_ERROR,
             "Caught InterruptedException whilst waiting for core " + getName() + " to close: "
                 + e.getMessage(), e);
@@ -3231,7 +3231,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     } catch (KeeperException e) {
       log.error("error refreshing solrconfig ", e);
     } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
+      ParWork.propegateInterrupt(e);
     }
     return false;
   }

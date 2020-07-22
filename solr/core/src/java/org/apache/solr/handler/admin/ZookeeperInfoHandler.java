@@ -40,6 +40,7 @@ import java.util.regex.Pattern;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.OnReconnect;
@@ -561,8 +562,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
         writeKeyValue(json, "warning", e.toString(), false);
         log.warn("Keeper Exception", e);
       } catch (InterruptedException e) {
-        writeKeyValue(json, "warning", e.toString(), false);
-        log.warn("InterruptedException", e);
+        ParWork.propegateInterrupt(e);
       }
 
       if (stat.getNumChildren() > 0) {
@@ -594,7 +594,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
           writeError(500, e.toString());
           return false;
         } catch (InterruptedException e) {
-          writeError(500, e.toString());
+          ParWork.propegateInterrupt(e);
           return false;
         } catch (IllegalArgumentException e) {
           // path doesn't exist (must have been removed)
@@ -768,7 +768,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
         writeError(500, e.toString());
         return false;
       } catch (InterruptedException e) {
-        writeError(500, e.toString());
+        ParWork.propegateInterrupt(e);
         return false;
       }
       return true;

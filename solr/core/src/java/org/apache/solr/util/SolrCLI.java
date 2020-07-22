@@ -686,7 +686,7 @@ public class SolrCLI implements CLIO {
                 , getUrl, exc.getMessage());
           try {
             Thread.sleep(10);
-          } catch (InterruptedException ie) { Thread.interrupted(); }
+          } catch (InterruptedException ie) { Thread.currentThread().interrupt(); throw new RuntimeException(exc);}
 
           // retry using recursion with one-less attempt available
           json = getJson(httpClient, getUrl, attempts, false);
@@ -1313,7 +1313,8 @@ public class SolrCLI implements CLIO {
           try {
             Thread.sleep(2000L);
           } catch (InterruptedException interrupted) {
-            timeout = 0; // stop looping
+            ParWork.propegateInterrupt(interrupted);
+            break;
           }
         }
       }
@@ -3424,7 +3425,8 @@ public class SolrCLI implements CLIO {
           try {
             Thread.sleep(2000);
           } catch (InterruptedException ie) {
-            Thread.interrupted();
+            ParWork.propegateInterrupt(ie);
+            return;
           }
           liveNodes = cloudClient.getZkStateReader().getClusterState().getLiveNodes();
           numLiveNodes = (liveNodes != null) ? liveNodes.size() : 0;
@@ -3522,8 +3524,7 @@ public class SolrCLI implements CLIO {
         try {
           handler.waitFor(3000);
         } catch (InterruptedException ie) {
-          // safe to ignore ...
-          Thread.interrupted();
+          ParWork.propegateInterrupt(ie);
         }
         if (handler.hasResult() && handler.getExitValue() != 0) {
           throw new Exception("Failed to start Solr using command: "+startCmd+" Exception : "+handler.getException());
@@ -4020,6 +4021,7 @@ public class SolrCLI implements CLIO {
             log.debug("Solr still up. Waiting before trying again to see if it was stopped");
             Thread.sleep(1000L);
           } catch (InterruptedException interrupted) {
+            ParWork.propegateInterrupt(interrupted);
             timeout = 0; // stop looping
           }
         } catch (Exception se) {

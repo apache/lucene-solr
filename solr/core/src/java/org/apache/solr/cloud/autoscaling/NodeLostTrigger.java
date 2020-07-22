@@ -88,6 +88,7 @@ public class NodeLostTrigger extends TriggerBase {
             return;
           }
         } catch (InterruptedException | IOException | KeeperException e) {
+          ParWork.propegateInterrupt(e);
           log.debug("-- ignoring marker {} state due to error", markerPath, e);
         }
         // don't add nodes that have since came back

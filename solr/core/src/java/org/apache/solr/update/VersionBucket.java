@@ -16,6 +16,8 @@
  */
 package org.apache.solr.update;
 
+import org.apache.solr.common.ParWork;
+
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
@@ -68,6 +70,7 @@ public class VersionBucket {
         wait(millis);
       }
     } catch (InterruptedException e) {
+      ParWork.propegateInterrupt(e);
       throw new RuntimeException(e);
     }
   }

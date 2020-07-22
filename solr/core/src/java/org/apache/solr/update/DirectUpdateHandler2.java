@@ -748,7 +748,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
        try {
         waitSearcher[0].get();
       } catch (InterruptedException | ExecutionException e) {
-        SolrException.log(log,e);
+         ParWork.propegateInterrupt(e);
       }
     }
   }

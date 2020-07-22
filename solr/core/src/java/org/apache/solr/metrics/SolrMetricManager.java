@@ -1012,6 +1012,7 @@ public class SolrMetricManager {
         throw new Exception("Could not obtain lock to modify reporters registry: " + registry);
       }
     } catch (InterruptedException e) {
+      ParWork.propegateInterrupt(e);
       throw new Exception("Interrupted while trying to obtain lock to modify reporters registry: " + registry);
     }
     try {
@@ -1053,6 +1054,7 @@ public class SolrMetricManager {
         return false;
       }
     } catch (InterruptedException e) {
+      ParWork.propegateInterrupt(e);
       log.warn("Interrupted while trying to obtain lock to modify reporters registry: {}", registry);
       return false;
     }
@@ -1151,6 +1153,7 @@ public class SolrMetricManager {
         return Collections.emptyMap();
       }
     } catch (InterruptedException e) {
+      ParWork.propegateInterrupt(e);
       log.warn("Interrupted while trying to obtain lock to modify reporters registry: {}", registry);
       return Collections.emptyMap();
     }

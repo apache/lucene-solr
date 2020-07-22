@@ -551,7 +551,7 @@ public class SolrCmdDistributor implements Closeable {
         leaderProps = new ZkCoreNodeProps(zkStateReader.getLeaderRetry(
             collection, shardId));
       } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
+        ParWork.propegateInterrupt(e);
         return false;
       } catch (Exception e) {
         // we retry with same info

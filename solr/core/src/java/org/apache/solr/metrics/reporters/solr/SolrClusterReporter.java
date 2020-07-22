@@ -31,6 +31,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.solr.cloud.LeaderElector;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.core.CoreContainer;
@@ -261,7 +262,7 @@ public class SolrClusterReporter extends SolrCoreContainerReporter {
         log.warn("Could not obtain overseer's address, skipping.", e);
         return lastKnownUrl;
       } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
+        ParWork.propegateInterrupt(e);
         return lastKnownUrl;
       }
       if (props == null) {

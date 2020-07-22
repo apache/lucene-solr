@@ -193,8 +193,7 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
       } catch (IOException | SolrServerException | SolrException e) {
         log.warn("Unable to instantiate the log reader for target collection {}", state.getTargetCollection(), e);
       } catch (InterruptedException e) {
-        log.warn("Thread interrupted while instantiate the log reader for target collection {}", state.getTargetCollection(), e);
-        Thread.currentThread().interrupt();
+        ParWork.propegateInterrupt(e);
       }
     }
   }
@@ -269,8 +268,7 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
               targetCollection, shard, leaderCoreUrl);
         }
       } catch (InterruptedException e) {
-        log.error("Interrupted while closing BootstrapStatusRunnable", e);
-        Thread.currentThread().interrupt();
+        ParWork.propegateInterrupt(e);
       }
     }
 
@@ -296,7 +294,7 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
                   BOOTSTRAP_TIMEOUT_SECONDS - timeOut.timeLeft(TimeUnit.SECONDS), BOOTSTRAP_RETRY_DELAY_MS);
               timeOut.sleep(BOOTSTRAP_RETRY_DELAY_MS);
             } catch (InterruptedException e) {
-              Thread.currentThread().interrupt();
+              ParWork.propegateInterrupt(e);
             }
           } else if (status == BootstrapStatus.COMPLETED) {
             log.info("CDCR bootstrap successful in {} seconds", BOOTSTRAP_TIMEOUT_SECONDS - timeOut.timeLeft(TimeUnit.SECONDS));
@@ -347,7 +345,7 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
           }
         }
       } catch (InterruptedException e) {
-        log.info("Bootstrap thread interrupted");
+        ParWork.propegateInterrupt(e);
         state.reportError(CdcrReplicatorState.ErrorType.INTERNAL);
         Thread.currentThread().interrupt();
       } catch (IOException | SolrServerException | SolrException e) {

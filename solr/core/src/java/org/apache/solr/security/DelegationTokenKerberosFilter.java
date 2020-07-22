@@ -42,6 +42,7 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.authentication.server.AuthenticationHandler;
 import org.apache.hadoop.security.token.delegation.web.DelegationTokenAuthenticationFilter;
 import org.apache.hadoop.security.token.delegation.web.HttpUserGroupInformation;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkACLProvider;
@@ -72,6 +73,7 @@ public class DelegationTokenKerberosFilter extends DelegationTokenAuthentication
         conf.getServletContext().setAttribute("signer.secret.provider.zookeeper.curator.client",
             getCuratorClient(zkClient));
       } catch (InterruptedException | KeeperException e) {
+        ParWork.propegateInterrupt(e);
         throw new ServletException(e);
       }
     }

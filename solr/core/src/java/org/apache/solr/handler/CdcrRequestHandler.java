@@ -44,6 +44,7 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkShardTerms;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -422,7 +423,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
         }
       }
     } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
+      ParWork.propegateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Error while requesting shard's checkpoints", e);
     } catch (ExecutionException e) {
@@ -530,7 +531,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
         logReader.next();
         lastProcessedVersion = Math.min(lastProcessedVersion, logReader.getLastVersion());
       } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
+        ParWork.propegateInterrupt(e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
             "Error while fetching the last processed version", e);
       } catch (IOException e) {
@@ -653,8 +654,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
           try {
             bootstrapFuture.get();
           } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            log.warn("Bootstrap was interrupted", e);
+            ParWork.propegateInterrupt(e);
           } catch (ExecutionException e) {
             log.error("Bootstrap operation failed", e);
           }
@@ -711,7 +711,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
           rsp.add(RESPONSE_STATUS, FAILED);
         }
       } catch (InterruptedException e) {
-        // should not happen?
+        ParWork.propegateInterrupt(e);
       } catch (ExecutionException e) {
         rsp.add(RESPONSE_STATUS, FAILED);
         rsp.add(RESPONSE, e);

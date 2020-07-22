@@ -341,7 +341,7 @@ public class ZkShardTerms implements AutoCloseable{
       }
 
     } catch (InterruptedException e) {
-      Thread.interrupted();
+      ParWork.propegateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Error creating shard term node in Zookeeper for collection: " + collection, e);
     } catch (KeeperException e) {
@@ -411,7 +411,7 @@ public class ZkShardTerms implements AutoCloseable{
       // exists operation is faster than getData operation
       zkClient.exists(znodePath, watcher);
     } catch (InterruptedException e) {
-      Thread.interrupted();
+      ParWork.propegateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error watching shard term for collection: " + collection, e);
     }
   }

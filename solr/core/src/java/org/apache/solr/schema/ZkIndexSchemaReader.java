@@ -20,6 +20,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.cloud.ZkSolrResourceLoader;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -98,9 +99,7 @@ public class ZkIndexSchemaReader implements OnReconnect {
       log.error(msg, e);
       throw new ZooKeeperException(ErrorCode.SERVER_ERROR, msg, e);
     } catch (InterruptedException e) {
-      // Restore the interrupted status
-      Thread.currentThread().interrupt();
-      log.warn("", e);
+      ParWork.propegateInterrupt(e);
     }
     
     return watcher;
@@ -140,9 +139,7 @@ public class ZkIndexSchemaReader implements OnReconnect {
         log.error("", e);
         throw new ZooKeeperException(ErrorCode.SERVER_ERROR, "", e);
       } catch (InterruptedException e) {
-        // Restore the interrupted status
-        Thread.currentThread().interrupt();
-        log.warn("", e);
+        ParWork.propegateInterrupt(e);
       }
     }
 

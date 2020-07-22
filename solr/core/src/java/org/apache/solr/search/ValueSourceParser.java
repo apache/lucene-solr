@@ -45,6 +45,7 @@ import org.apache.lucene.search.spell.LevenshteinDistance;
 import org.apache.lucene.search.spell.NGramDistance;
 import org.apache.lucene.search.spell.StringDistance;
 import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrRequestInfo;
@@ -165,6 +166,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         try {
           Thread.sleep(ms);
         } catch (InterruptedException e) {
+          ParWork.propegateInterrupt(e);
           throw new RuntimeException(e);
         }
         return source;

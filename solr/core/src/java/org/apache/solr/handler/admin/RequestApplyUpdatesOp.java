@@ -19,6 +19,7 @@ package org.apache.solr.handler.admin;
 
 import java.util.concurrent.Future;
 
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -57,7 +58,7 @@ class RequestApplyUpdatesOp implements CoreAdminHandler.CoreAdminOp {
       it.rsp.add("core", cname);
       it.rsp.add("status", "BUFFER_APPLIED");
     } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
+      ParWork.propegateInterrupt(e);
       CoreAdminOperation.log().warn("Recovery was interrupted", e);
     } catch (Exception e) {
       if (e instanceof SolrException)

@@ -384,7 +384,7 @@ class SolrCores implements Closeable {
           try {
             Thread.sleep(250);
           } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+            ParWork.propegateInterrupt(e);
             throw new RuntimeException(e);
           }
         }
@@ -410,7 +410,7 @@ class SolrCores implements Closeable {
             try {
               pendingCoreOps.wait(500);
             } catch (InterruptedException e) {
-              Thread.currentThread().interrupt();
+              ParWork.propegateInterrupt(e);
               throw new RuntimeException(e);
             }
           }
@@ -485,7 +485,7 @@ class SolrCores implements Closeable {
           try {
             loadingSignal.wait(1000);
           } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+            ParWork.propegateInterrupt(e);
             return;
           }
         }
@@ -506,7 +506,7 @@ class SolrCores implements Closeable {
           try {
             loadingSignal.wait(1000);
           } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+            ParWork.propegateInterrupt(e);
             return;
           }
         }

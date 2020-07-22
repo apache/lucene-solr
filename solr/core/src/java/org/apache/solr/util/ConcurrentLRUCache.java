@@ -18,6 +18,7 @@ package org.apache.solr.util;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.util.Cache;
 import org.apache.solr.common.util.TimeSource;
 
@@ -877,7 +878,9 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
           long waitTimeMs =  c.maxIdleTimeNs != Long.MAX_VALUE ? TimeUnit.MILLISECONDS.convert(c.maxIdleTimeNs, TimeUnit.NANOSECONDS) : 0L;
           try {
             this.wait(waitTimeMs);
-          } catch (InterruptedException e) {}
+          } catch (InterruptedException e) {
+            ParWork.propegateInterrupt(e);
+          }
         }
         if (stop) break;
         c = cache.get();

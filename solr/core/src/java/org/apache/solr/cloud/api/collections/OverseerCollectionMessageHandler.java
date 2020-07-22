@@ -570,7 +570,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
         error = "Timeout waiting for collection state.";
       throw new ZkController.NotInClusterStateException(ErrorCode.SERVER_ERROR, error);
     } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
+      ParWork.propegateInterrupt(e);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Interrupted");
     }
 
@@ -593,7 +593,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       String error = "Timeout waiting for new shard.";
       throw new ZkController.NotInClusterStateException(ErrorCode.SERVER_ERROR, error);
     } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
+      ParWork.propegateInterrupt(e);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Interrupted");
     }
   }
@@ -731,7 +731,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
         error = "Timeout waiting for collection state.";
       throw new SolrException(ErrorCode.SERVER_ERROR, error);
     } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
+      ParWork.propegateInterrupt(e);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Interrupted");
     }
     return result.get();

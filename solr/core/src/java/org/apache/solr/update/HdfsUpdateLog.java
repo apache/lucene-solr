@@ -32,6 +32,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
 import org.apache.hadoop.ipc.RemoteException;
 import org.apache.lucene.util.BytesRef;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.IOUtils;
@@ -150,7 +151,8 @@ public class HdfsUpdateLog extends UpdateLog {
           try {
             Thread.sleep(5000);
           } catch (InterruptedException e1) {
-            Thread.interrupted();
+            ParWork.propegateInterrupt(e);
+            break;
           }
           continue;
         }

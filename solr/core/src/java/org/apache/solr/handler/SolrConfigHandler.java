@@ -857,10 +857,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
                 failedList.size(), concurrentTasks.size() + 1, prop, expectedVersion, maxWaitSecs, failedList));
 
     } catch (InterruptedException ie) {
-      log.warn(formatString(
-          "Core  was interrupted . trying to set the property {1} to version {2} to propagate to {3} replicas for collection {4}",
-          prop, expectedVersion, concurrentTasks.size(), collection));
-      Thread.currentThread().interrupt();
+      ParWork.propegateInterrupt(ie);
     } finally {
       ExecutorUtil.shutdownAndAwaitTermination(parallelExecutor);
     }

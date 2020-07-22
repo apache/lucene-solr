@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.routing.ReplicaListTransformer;
 import org.apache.solr.client.solrj.util.ClientUtils;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -188,6 +189,7 @@ class CloudReplicaSource implements ReplicaSource {
         try {
           shardLeader = zkStateReader.getLeaderRetry(collectionName, sliceName);
         } catch (InterruptedException e) {
+          ParWork.propegateInterrupt(e);
           throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE,
               "Exception finding leader for shard " + sliceName + " in collection "
                   + collectionName, e);

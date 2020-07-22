@@ -464,7 +464,7 @@ public class ScheduledTriggers implements Closeable {
         }
       }
     } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
+      ParWork.propegateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Thread interrupted", e);
     } catch (Exception e) {
       ParWork.propegateInterrupt(e);

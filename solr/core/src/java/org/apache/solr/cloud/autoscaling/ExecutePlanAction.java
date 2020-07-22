@@ -182,7 +182,7 @@ public class ExecutePlanAction extends TriggerActionBase {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
               "Unexpected exception executing operation: " + operation.getParams(), e);
         } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
+          ParWork.propegateInterrupt(e);
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "ExecutePlanAction was interrupted", e);
         } catch (Exception e) {
           ParWork.propegateInterrupt(e);

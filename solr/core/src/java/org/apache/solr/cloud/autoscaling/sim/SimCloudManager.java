@@ -1047,7 +1047,7 @@ public class SimCloudManager implements SolrCloudManager {
       try {
         return inner.call();
       } catch (InterruptedException ignored) {
-        log.warn("Callable interupted", ignored);
+        ParWork.propegateInterrupt(ignored);
         throw ignored;
       } catch (Throwable t) {
         // be forgiving of errors that occured as a result of interuption, even if

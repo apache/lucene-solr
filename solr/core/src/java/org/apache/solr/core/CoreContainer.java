@@ -929,7 +929,7 @@ public class CoreContainer implements Closeable {
             try {
               future.get();
             } catch (InterruptedException e) {
-              Thread.currentThread().interrupt();
+              ParWork.propegateInterrupt(e);
             } catch (ExecutionException e) {
               log.error("Error waiting for SolrCore to be loaded on startup", e.getCause());
             }

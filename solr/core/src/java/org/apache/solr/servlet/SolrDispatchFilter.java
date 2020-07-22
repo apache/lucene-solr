@@ -387,6 +387,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         try {
           init.await();
         } catch (InterruptedException e) { //well, no wait then
+          ParWork.propegateInterrupt(e);
         }
         final String msg = "Error processing the request. CoreContainer is either not initialized or shutting down.";
         if (cores == null || cores.isShutDown()) {

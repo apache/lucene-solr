@@ -168,8 +168,7 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
         // somebody else has changed the configuration so we must retry
       } catch (InterruptedException e) {
         // Restore the interrupted status
-        Thread.currentThread().interrupt();
-        log.warn("Interrupted", e);
+        ParWork.propegateInterrupt(e);
         return;
       }
       catch (IOException | KeeperException e) {
@@ -191,9 +190,7 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
     } catch (IOException e) {
       log.error("IO error: [{}]", e);
     } catch (InterruptedException | AlreadyClosedException e) {
-      // Restore the interrupted status
-      Thread.currentThread().interrupt();
-      log.info("Interrupted", e);
+      ParWork.propegateInterrupt(e);
       return;
     } catch (Exception e)  {
       ParWork.propegateInterrupt(e);
@@ -235,7 +232,6 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
         }
       } catch (InterruptedException | AlreadyClosedException e) {
         ParWork.propegateInterrupt(e);
-        log.info("Interrupted", e);
         return;
       }
      
@@ -320,9 +316,7 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
       } catch (IOException e) {
         log.warn("IO Error: [{}]", e);
       } catch (InterruptedException | AlreadyClosedException e) {
-        // Restore the interrupted status
-        Thread.currentThread().interrupt();
-        log.warn("Interrupted", e);
+        ParWork.propegateInterrupt(e);
       } catch (Exception e)  {
         log.error("Unexpected exception", e);
       }

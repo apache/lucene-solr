@@ -40,6 +40,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.LockFactory;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.store.blockcache.CustomBufferedIndexInput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,8 +81,8 @@ public class HdfsDirectory extends BaseDirectory {
         try {
           Thread.sleep(5000);
         } catch (InterruptedException e) {
-          Thread.interrupted();
-          // continue
+          ParWork.propegateInterrupt(e);
+          return;
         }
       }
     }

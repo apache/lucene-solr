@@ -22,6 +22,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 
 /** @lucene.internal */
@@ -62,7 +63,7 @@ public class TimedVersionBucket extends VersionBucket {
         condition.awaitNanos(nanosTimeout);
       }
     } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
+      ParWork.propegateInterrupt(e);
       throw new RuntimeException(e);
     }
   }
@@ -71,7 +72,7 @@ public class TimedVersionBucket extends VersionBucket {
     try {
       return lock.tryLock(lockTimeoutMs, TimeUnit.MILLISECONDS);
     } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
+      ParWork.propegateInterrupt(e);
       throw new RuntimeException(e);
     }
   }

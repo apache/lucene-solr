@@ -144,7 +144,7 @@ public class CloudUtil {
       log.info("Error fetching key names");
       return Collections.EMPTY_MAP;
     } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
+      ParWork.propegateInterrupt(e);
       throw new SolrException(ErrorCode.SERVER_ERROR,"Unable to read crypto keys",e );
     } catch (KeeperException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR,"Unable to read crypto keys",e );

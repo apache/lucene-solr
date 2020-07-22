@@ -71,6 +71,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       try {
         Thread.sleep(250);
       } catch (InterruptedException e) {
+        ParWork.propegateInterrupt(e);
         log.error("Interrupted while waiting for overseer queue to drain before shutdown!");
       }
     }

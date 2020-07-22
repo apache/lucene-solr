@@ -260,7 +260,7 @@ public class Overseer implements SolrCloseable {
                       fallbackQueue.poll();
                     }
                   } catch (InterruptedException e1) {
-                    ParWork.propegateInterrupt(e1);
+                    ParWork.propegateInterrupt(e);
                     return;
                   } catch (Exception e1) {
                     exp.addSuppressed(e1);

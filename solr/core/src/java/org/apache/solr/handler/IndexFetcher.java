@@ -946,7 +946,7 @@ public class IndexFetcher {
         try {
           waitSearcher[0].get();
         } catch (InterruptedException | ExecutionException e) {
-          SolrException.log(log, e);
+          ParWork.propegateInterrupt(e);
         }
       }
       commitPoint = searcher.get().getIndexReader().getIndexCommit();

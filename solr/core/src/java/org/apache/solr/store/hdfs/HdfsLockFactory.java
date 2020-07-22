@@ -30,6 +30,7 @@ import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.LockReleaseFailedException;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.util.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,7 +77,8 @@ public class HdfsLockFactory extends LockFactory {
           try {
             Thread.sleep(5000);
           } catch (InterruptedException e1) {
-            Thread.interrupted();
+            ParWork.propegateInterrupt(e);
+            break;
           }
           continue;
         }

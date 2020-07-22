@@ -87,7 +87,7 @@ public class ZkSolrResourceLoader extends SolrResourceLoader implements Resource
       }
       return new ZkByteArrayInputStream(bytes, stat);
     } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
+      ParWork.propegateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Interrupted while opening " + file, e);
     } catch (KeeperException.NoNodeException e) {
       throw new SolrResourceNotFoundException("Can't find resource '" + resource

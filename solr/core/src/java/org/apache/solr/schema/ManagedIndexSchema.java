@@ -277,7 +277,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     } catch (InterruptedException ie) {
       log.warn("Core {} was interrupted waiting for schema version {} to propagate to {} replicas for collection {}"
           , localCoreNodeName, schemaZkVersion, concurrentTasks.size(), collection);
-      Thread.currentThread().interrupt();
+      ParWork.propegateInterrupt(ie);
     } finally {
       if (!parallelExecutor.isShutdown())
         parallelExecutor.shutdown();

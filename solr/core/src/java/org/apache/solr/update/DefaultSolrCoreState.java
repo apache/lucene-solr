@@ -400,7 +400,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
         try {
           recoveryFuture.get(10, TimeUnit.MINUTES);
         } catch (InterruptedException e) {
-          SolrZkClient.checkInterrupted(e);
+          ParWork.propegateInterrupt(e);
           throw new SolrException(ErrorCode.SERVER_ERROR, e);
         } catch (ExecutionException e) {
           throw new SolrException(ErrorCode.SERVER_ERROR, e);

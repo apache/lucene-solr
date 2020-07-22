@@ -27,6 +27,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.apache.commons.io.FileExistsException;
+import org.apache.solr.common.ParWork;
 
 /**
  *
@@ -80,7 +81,8 @@ public class FileUtils {
           // Pause 5 msec
           Thread.sleep(5);
         } catch (InterruptedException ie) {
-          Thread.currentThread().interrupt();
+          ParWork.propegateInterrupt(ie);
+          break;
         }
       }
     }

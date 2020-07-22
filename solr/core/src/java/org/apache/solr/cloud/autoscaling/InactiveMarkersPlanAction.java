@@ -137,7 +137,7 @@ public class InactiveMarkersPlanAction extends TriggerActionBase {
           log.trace(" -- keep {}, delta={}, ttl={}, active={}", markerPath, delta, cleanupTTL, activeMarker);
         }
       } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
+        ParWork.propegateInterrupt(e);
         return;
       } catch (IOException | KeeperException e) {
         log.warn("Could not cleanup marker at {}, skipping... ({}}", markerPath, e.getMessage());

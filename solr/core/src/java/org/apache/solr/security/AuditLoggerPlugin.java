@@ -40,6 +40,7 @@ import com.codahale.metrics.Timer;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -175,8 +176,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
       try {
         queue.put(event);
       } catch (InterruptedException e) {
-        log.warn("Interrupted while waiting to insert AuditEvent into blocking queue");
-        Thread.currentThread().interrupt();
+        ParWork.propegateInterrupt(e);
       }
     } else {
       if (!queue.offer(event)) {
@@ -205,8 +205,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
         numLogged.mark();
         totalTime.inc(timer.stop());
       } catch (InterruptedException e) {
-        log.warn("Interrupted while waiting for next audit log event");
-        Thread.currentThread().interrupt();
+        ParWork.propegateInterrupt(e);
       } catch (Exception ex) {
         log.error("Exception when attempting to audit log asynchronously", ex);
         numErrors.mark();
@@ -338,7 +337,9 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
           }
           Thread.sleep(1000);
           timeSlept ++;
-        } catch (InterruptedException ignored) {}
+        } catch (InterruptedException ignored) {
+          ParWork.propegateInterrupt(ignored);
+        }
       }
     }
   }

@@ -334,7 +334,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
       log.warn("Could not obtain overseer's address, skipping.", e);
       return null;
     } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
+      ParWork.propegateInterrupt(e);
       return null;
     } catch (KeeperException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);

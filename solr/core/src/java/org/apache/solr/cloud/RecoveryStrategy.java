@@ -368,8 +368,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
         try {
           doRecovery(core);
         } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          SolrException.log(log, "", e);
+          ParWork.propegateInterrupt(e);
           throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
         } catch (Exception e) {
           ParWork.propegateInterrupt(e);
@@ -539,7 +538,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
             Thread.sleep(startingRecoveryDelayMilliSeconds);
           }
         } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
+          ParWork.propegateInterrupt(e);
           log.warn("Recovery was interrupted.", e);
           close = true;
         }
@@ -690,7 +689,8 @@ public class RecoveryStrategy implements Runnable, Closeable {
         try {
           Thread.sleep(waitForUpdatesWithStaleStatePauseMilliSeconds);
         } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
+          ParWork.propegateInterrupt(e);
+          throw new SolrException(ErrorCode.SERVER_ERROR, e);
         }
 
         // first thing we just try to sync
@@ -754,9 +754,9 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
           log.info("Replication Recovery was successful.");
           successfulRecovery = true;
-        } catch (InterruptedException e) {
-          ParWork.propegateInterrupt(e);
-          close = true;
+        } catch (InterruptedException | AlreadyClosedException e) {
+          ParWork.propegateInterrupt(e, true);
+          return;
         } catch (Exception e) {
           SolrException.log(log, "Error while trying to recover", e);
         }
@@ -831,9 +831,8 @@ public class RecoveryStrategy implements Runnable, Closeable {
             Thread.sleep(startingRecoveryDelayMilliSeconds);
           }
         } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          log.warn("Recovery was interrupted.", e);
-          close = true;
+          ParWork.propegateInterrupt(e, true);
+          return;
         }
       }
 
