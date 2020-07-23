@@ -359,7 +359,7 @@ public class ZkStateReader implements SolrCloseable {
               public void command() {
                 ZkStateReader.this.createClusterStateWatchersAndUpdate();
               }
-            }).start();
+            });
 
     this.configManager = new ZkConfigManager(zkClient);
     this.closeClient = true;
@@ -411,8 +411,9 @@ public class ZkStateReader implements SolrCloseable {
 
   @SuppressWarnings({"unchecked"})
   public synchronized void createClusterStateWatchersAndUpdate() {
-
-    zkClient.start();
+    if (closeClient) {
+      zkClient.start();
+    }
 
     log.info("createClusterStateWatchersAndUpdate");
     CountDownLatch latch = new CountDownLatch(1);
