@@ -152,11 +152,12 @@ public class ZkContainer implements Closeable {
             Thread.sleep(10000);
           }
         }
-        log.info("init zkController");
+        if (log.isDebugEnabled()) {
+          log.debug("create zkController");
+        }
         zkController = new ZkController(cc, zkClient, config, descriptorsSupplier);
-        log.info("start zkController");
 
-        if (log.isDebugEnabled()) log.debug("done zkController init");
+        if (log.isDebugEnabled()) log.debug("done zkController create");
       } catch (InterruptedException e) {
         ParWork.propegateInterrupt(e);
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,

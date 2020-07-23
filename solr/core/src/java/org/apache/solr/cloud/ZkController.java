@@ -367,9 +367,9 @@ public class ZkController implements Closeable {
 
       this.zkServerAddress = zkClient.getZkServerAddress();
       this.localHostPort = cloudConfig.getSolrHostPort();
-      log.info("normalize hostname {}", cloudConfig.getHost());
+      if (log.isDebugEnabled()) log.debug("normalize hostname {}", cloudConfig.getHost());
       this.hostName = normalizeHostName(cloudConfig.getHost());
-      log.info("generate node name");
+      if (log.isDebugEnabled()) log.debug("generate node name");
       this.nodeName = generateNodeName(this.hostName, Integer.toString(this.localHostPort), localHostContext);
       log.info("node name={}", nodeName);
       MDCLoggingContext.setNode(nodeName);
@@ -799,12 +799,12 @@ public class ZkController implements Closeable {
       }
       host = hostaddress;
     } else {
-      log.info("remove host scheme");
+      if (log.isDebugEnabled()) log.debug("remove host scheme");
       if (URLUtil.hasScheme(host)) {
         host = URLUtil.removeScheme(host);
       }
     }
-    log.info("return host {}", host);
+    if (log.isDebugEnabled()) log.debug("return host {}", host);
     return host;
   }
 
@@ -1097,7 +1097,7 @@ public class ZkController implements Closeable {
         });
         this.baseURL = zkStateReader.getBaseUrlForNodeName(this.nodeName);
 
-        log.info("create watchers");
+        log.info("call zkStateReader#createClusterStateWatchersAndUpdate");
         zkStateReader.createClusterStateWatchersAndUpdate();
 
 
