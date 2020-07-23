@@ -52,7 +52,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 
-import org.apache.commons.collections.map.CaseInsensitiveMap;
+import org.apache.commons.collections4.map.CaseInsensitiveMap;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.hadoop.classification.InterfaceAudience;
@@ -1489,8 +1489,7 @@ public class FileUtil {
                                                 Path targetDir,
                                                 Map<String, String> callerEnv) throws IOException {
     // Replace environment variables, case-insensitive on Windows
-    @SuppressWarnings("unchecked")
-    Map<String, String> env = Shell.WINDOWS ? new CaseInsensitiveMap(callerEnv) :
+    Map<String, String> env = Shell.WINDOWS ? new CaseInsensitiveMap<>(callerEnv) :
         callerEnv;
     String[] classPathEntries = inputClassPath.split(File.pathSeparator);
     for (int i = 0; i < classPathEntries.length; ++i) {
