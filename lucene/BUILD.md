@@ -2,20 +2,20 @@
 
 ## Basic steps:
   
-  0. Install OpenJDK 11 (or greater), Gradle 6.4.1
+  0. Install OpenJDK 11 (or greater)
   1. Download Lucene/Solr from Apache and unpack it
   2. Connect to the top-level of your installation (parent of the lucene top-level directory)
   3. Install JavaCC (optional)
   4. Run gradle
 
-## Step 0) Set up your development environment (OpenJDK 11 or greater, Gradle 6.4.1)
+## Step 0) Set up your development environment (OpenJDK 11 or greater)
 
 We'll assume that you know how to get and set up the JDK - if you
 don't, then we suggest starting at https://www.oracle.com/java/ and learning
 more about Java, before returning to this README. Lucene runs with
 Java 11 and later.
 
-Lucene uses Gradle for build control.  Specifically, you MUST use Gradle 6.4.1.
+Lucene uses [Gradle](https://gradle.org/) for build control; and includes Gradle wrapper script to download the correct version of it.
 
 NOTE: When Solr moves to a Top Level Project, it will no longer
 be necessary to download Solr to build Lucene. You can track
@@ -24,16 +24,7 @@ progress at: https://issues.apache.org/jira/browse/SOLR-14497
 NOTE: Lucene changed from Ant to Gradle as of release 9.0. Prior releases
 still use Ant.
 
-Gradle is implemented in groovy and uses configuration files with the
-extension ".gradle".  You can get Gradle at:
-
-  https://gradle.org/
-
-You'll need to install Gradle, see:
-
-  https://gradle.org/install/
-
-## Step 1) Download Lucene from Apache
+## Step 1) Download/Checkout Lucene source code
 
 We'll assume you already did this, or you wouldn't be reading this
 file.  However, you might have received this file by some alternate
@@ -46,6 +37,10 @@ See the note above for why it is necessary currently to download Solr
 
 Download either a zip or a tarred/gzipped version of the archive, and
 uncompress it into a directory of your choice.
+
+Or you can directly checkout the source code from GitHub:
+
+  https://github.com/apache/lucene-solr
 
 ## Step 2) From the command line, change (cd) into the top-level directory of your Lucene/Solr installation
 
@@ -80,4 +75,3 @@ Please join the Lucene-User mailing list by visiting this site:
 Please post suggestions, questions, corrections or additions to this
 document to the lucene-user mailing list.
 
-Copyright (c) 2001-2020 The Apache Software Foundation.  All rights reserved.
