@@ -104,10 +104,10 @@ public class SortField {
   // Used for 'sortMissingFirst/Last'
   protected Object missingValue = null;
 
-  // For numeric sort fields, if true, indicates that the same data has been
-  // indexed with doc values and points, which allows to use sort optimization
-  // and skip non-competitive documents.
-  private boolean skipNonCompetitiveDocs = false;
+  // For numeric sort fields, if true, indicates the DocValues and Point fields
+  // with the same name have the exactly same data indexed.
+  // This allows to use them to optimize sort and skip non-competitive documents.
+  private boolean canUsePoints = false;
 
   /** Creates a sort by terms in the given field with the type of term
    * values explicitly given.
@@ -406,12 +406,12 @@ public class SortField {
    * that these fields have the same name.
    * This allows to use sort optimization and skip non-competitive documents.
    */
-  public void setSkipNonCompetitiveDocs() {
-    this.skipNonCompetitiveDocs = true;
+  public void setCanUsePoints() {
+    this.canUsePoints = true;
   }
 
-  public boolean getSkipNonCompetitiveDocs() {
-    return skipNonCompetitiveDocs;
+  public boolean getCanUsePoints() {
+    return canUsePoints;
   }
 
   /** Returns true if <code>o</code> is equal to this.  If a
@@ -428,7 +428,6 @@ public class SortField {
       && other.reverse == this.reverse
       && Objects.equals(this.comparatorSource, other.comparatorSource)
       && Objects.equals(this.missingValue, other.missingValue)
-      && other.skipNonCompetitiveDocs == this.skipNonCompetitiveDocs
     );
   }
 
@@ -437,7 +436,7 @@ public class SortField {
    *  implement hashCode (unless a singleton is always used). */
   @Override
   public int hashCode() {
-    return Objects.hash(field, type, reverse, comparatorSource, missingValue, skipNonCompetitiveDocs);
+    return Objects.hash(field, type, reverse, comparatorSource, missingValue);
   }
 
   private Comparator<BytesRef> bytesComparator = Comparator.naturalOrder();

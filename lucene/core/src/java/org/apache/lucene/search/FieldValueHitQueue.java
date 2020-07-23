@@ -136,7 +136,7 @@ public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> ext
     for (int i = 0; i < numComparators; ++i) {
       SortField field = fields[i];
       reverseMul[i] = field.reverse ? -1 : 1;
-      if (i == 0 && field.getSkipNonCompetitiveDocs() && filterNonCompetitiveDocs) {
+      if (i == 0 && field.getCanUsePoints() && filterNonCompetitiveDocs) {
         // try to rewrite the 1st comparator to the comparator that can skip non-competitive documents
         // skipping functionality is beneficial only for the 1st comparator
         comparators[i] = FilteringFieldComparator.wrapToFilteringComparator(field.getComparator(size, i),

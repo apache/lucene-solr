@@ -50,7 +50,7 @@ public class TestFieldSortOptimizationSkipping extends LuceneTestCase {
     final IndexReader reader = DirectoryReader.open(writer);
     IndexSearcher searcher = new IndexSearcher(reader);
     final SortField sortField = new SortField("my_field", SortField.Type.LONG);
-    sortField.setSkipNonCompetitiveDocs();
+    sortField.setCanUsePoints();
     final Sort sort = new Sort(sortField);
     final int numHits = 3;
     final int totalHitsThreshold = 3;
@@ -98,7 +98,7 @@ public class TestFieldSortOptimizationSkipping extends LuceneTestCase {
       assertTrue(topDocs.totalHits.value < numDocs);
     }
 
-    { // test that by default (if we don't set sortField.setSkipNonCompetitiveDocs()), the optimization is not run
+    { // test that by default (if we don't set sortField.setCanUsePoints()), the optimization is not run
       final SortField sortField2 = new SortField("my_field", SortField.Type.LONG);
       final Sort sort2 = new Sort(sortField2);
       final TopFieldCollector collector = TopFieldCollector.create(sort2, numHits, null, totalHitsThreshold);
@@ -132,7 +132,7 @@ public class TestFieldSortOptimizationSkipping extends LuceneTestCase {
     final IndexReader reader = DirectoryReader.open(writer);
     IndexSearcher searcher = new IndexSearcher(reader);
     final SortField sortField = new SortField("my_field", SortField.Type.LONG);
-    sortField.setSkipNonCompetitiveDocs();
+    sortField.setCanUsePoints();
     final Sort sort = new Sort(sortField);
     final int numHits = 3;
     final int totalHitsThreshold = 3;
@@ -174,7 +174,7 @@ public class TestFieldSortOptimizationSkipping extends LuceneTestCase {
     { // test that optimization is not run when missing value setting of SortField is competitive
       final SortField sortField = new SortField("my_field", SortField.Type.LONG);
       sortField.setMissingValue(0L); // set a competitive missing value
-      sortField.setSkipNonCompetitiveDocs();
+      sortField.setCanUsePoints();
       final Sort sort = new Sort(sortField);
       final TopFieldCollector collector = TopFieldCollector.create(sort, numHits, null, totalHitsThreshold);
       searcher.search(new MatchAllDocsQuery(), collector);
@@ -185,7 +185,7 @@ public class TestFieldSortOptimizationSkipping extends LuceneTestCase {
     { // test that optimization is run when missing value setting of SortField is NOT competitive
       final SortField sortField = new SortField("my_field", SortField.Type.LONG);
       sortField.setMissingValue(100L); // set a NON competitive missing value
-      sortField.setSkipNonCompetitiveDocs();
+      sortField.setCanUsePoints();
       final Sort sort = new Sort(sortField);
       final TopFieldCollector collector = TopFieldCollector.create(sort, numHits, null, totalHitsThreshold);
       searcher.search(new MatchAllDocsQuery(), collector);
@@ -218,7 +218,7 @@ public class TestFieldSortOptimizationSkipping extends LuceneTestCase {
 
     { // test that sorting on a single field with equal values uses the optimization
       final SortField sortField = new SortField("my_field1", SortField.Type.INT);
-      sortField.setSkipNonCompetitiveDocs();
+      sortField.setCanUsePoints();
       final Sort sort = new Sort(sortField);
       final TopFieldCollector collector = TopFieldCollector.create(sort, numHits, null, totalHitsThreshold);
       searcher.search(new MatchAllDocsQuery(), collector);
@@ -234,7 +234,7 @@ public class TestFieldSortOptimizationSkipping extends LuceneTestCase {
     { // test that sorting on a single field with equal values and after parameter uses the optimization
       final int afterValue = 100;
       final SortField sortField = new SortField("my_field1", SortField.Type.INT);
-      sortField.setSkipNonCompetitiveDocs();
+      sortField.setCanUsePoints();
       final Sort sort = new Sort(sortField);
       FieldDoc after = new FieldDoc(10, Float.NaN, new Integer[] {afterValue});
       final TopFieldCollector collector = TopFieldCollector.create(sort, numHits, after, totalHitsThreshold);
@@ -250,7 +250,7 @@ public class TestFieldSortOptimizationSkipping extends LuceneTestCase {
 
     { // test that sorting on main field with equal values + another field for tie breaks doesn't use optimization
       final SortField sortField1 = new SortField("my_field1", SortField.Type.INT);
-      sortField1.setSkipNonCompetitiveDocs();
+      sortField1.setCanUsePoints();
       final SortField sortField2 = new SortField("my_field2", SortField.Type.INT);
       final Sort sort = new Sort(sortField1, sortField2);
       final TopFieldCollector collector = TopFieldCollector.create(sort, numHits, null, totalHitsThreshold);
@@ -286,7 +286,7 @@ public class TestFieldSortOptimizationSkipping extends LuceneTestCase {
     final IndexReader reader = DirectoryReader.open(writer);
     IndexSearcher searcher = new IndexSearcher(reader);
     final SortField sortField = new SortField("my_field", SortField.Type.FLOAT);
-    sortField.setSkipNonCompetitiveDocs();
+    sortField.setCanUsePoints();
     final Sort sort = new Sort(sortField);
     final int numHits = 3;
     final int totalHitsThreshold = 3;

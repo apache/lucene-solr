@@ -111,7 +111,7 @@ Optimizations
   instructs Lucene to skip non-competitive documents whenever possible. For numeric
   sort fields the skipping functionality works when the same field is indexed both
   with doc values and points. To indicate that the same data is stored in these points
-  and doc values SortField#setCanSkipNonCompetitiveDocs method should be used.
+  and doc values SortField#setCanUsePoints method should be used.
   (Mayya Sharipova, Jim Ferenczi, Adrien Grand)
 
 Bug Fixes
