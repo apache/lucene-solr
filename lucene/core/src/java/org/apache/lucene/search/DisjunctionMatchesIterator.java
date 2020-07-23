@@ -180,7 +180,6 @@ final class DisjunctionMatchesIterator implements MatchesIterator {
   }
 
   private final PriorityQueue<MatchesIterator> queue;
-
   private boolean started = false;
 
   private DisjunctionMatchesIterator(List<MatchesIterator> matches) throws IOException {
@@ -192,6 +191,8 @@ final class DisjunctionMatchesIterator implements MatchesIterator {
             (a.startPosition() == b.startPosition() && a.endPosition() == b.endPosition());
       }
     };
+
+    // Only place iterators that have at least one element on the priority queue.
     for (MatchesIterator mi : matches) {
       if (mi.next()) {
         queue.add(mi);
@@ -201,10 +202,12 @@ final class DisjunctionMatchesIterator implements MatchesIterator {
 
   @Override
   public boolean next() throws IOException {
-    if (started == false) {
-      return started = true;
+    if (!started) {
+      started = true;
+      return queue.size() > 0;
     }
-    if (queue.top().next() == false) {
+
+    if (!queue.top().next()) {
       queue.pop();
     }
     if (queue.size() > 0) {
