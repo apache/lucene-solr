@@ -46,6 +46,7 @@ import org.apache.solr.util.ExternalPaths;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -53,6 +54,7 @@ import org.junit.Test;
  *
  * Snippets surrounded by "tag" and "end" comments are extracted and used in the Solr Reference Guide.
  */
+@Ignore // nocommit debug - flakey test
 public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
 
   private static final int NUM_INDEXED_DOCUMENTS = 3;
