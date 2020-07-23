@@ -59,14 +59,19 @@ public class RequestRateLimiter {
   }
 
   public boolean handleRequest(HttpServletRequest request) throws InterruptedException {
+
+    if (!rateLimiterConfig.isEnabled) {
+      return true;
+    }
+
     boolean accepted = allowedConcurrentRequests.tryAcquire(rateLimiterConfig.waitForSlotAcquisition, TimeUnit.MILLISECONDS);
 
     if (!accepted) {
       AsyncContext asyncContext = request.startAsync();
       AsyncListener asyncListener = buildAsyncListener();
 
-      if (rateLimiterConfig.requestSuspendTimeInMS > 0) {
-        asyncContext.setTimeout(rateLimiterConfig.requestSuspendTimeInMS);
+      if (rateLimiterConfig.requestExpirationTimeInMS > 0) {
+        asyncContext.setTimeout(rateLimiterConfig.requestExpirationTimeInMS);
       }
 
       asyncContext.addListener(asyncListener);
@@ -113,8 +118,10 @@ public class RequestRateLimiter {
         }
 
         HttpServletResponse servletResponse = ((HttpServletResponse)asyncEvent.getSuppliedResponse());
+        String responseMessage = "Too many requests for this request type." +
+            "Please try after some time or increase the quota for this request type";
 
-        servletResponse.setContentType("APPLICATION/OCTET-STREAM");
+        /*servletResponse.setContentType("APPLICATION/OCTET-STREAM");
         servletResponse.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
 
         String responseMessage = "Too many requests for this request type." +
@@ -122,7 +129,8 @@ public class RequestRateLimiter {
 
         servletResponse.getWriter().write(responseMessage);
         servletResponse.getWriter().flush();
-        servletResponse.getWriter().close();
+        servletResponse.getWriter().close();*/
+        servletResponse.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE, responseMessage);
 
         asyncContext.complete();
       }
@@ -159,15 +167,27 @@ public class RequestRateLimiter {
     return defaultValue;
   }
 
+  static boolean getParamAndParseBoolean(FilterConfig config, String parameterName, boolean defaultValue) {
+    String tempBuffer = config.getInitParameter(parameterName);
+
+    if (tempBuffer != null) {
+      return Boolean.parseBoolean(tempBuffer);
+    }
+
+    return defaultValue;
+  }
+
   static class RateLimiterConfig {
-    public long requestSuspendTimeInMS;
+    public boolean isEnabled;
+    public long requestExpirationTimeInMS;
     public long waitForSlotAcquisition;
     public int allowedRequests;
 
     public RateLimiterConfig() { }
 
-    public RateLimiterConfig(long requestSuspendTimeInMS, long waitForSlotAcquisition, int allowedRequests) {
-      this.requestSuspendTimeInMS = requestSuspendTimeInMS;
+    public RateLimiterConfig(boolean isEnabled, long requestExpirationTimeInMS, long waitForSlotAcquisition, int allowedRequests) {
+      this.isEnabled = isEnabled;
+      this.requestExpirationTimeInMS = requestExpirationTimeInMS;
       this.waitForSlotAcquisition = waitForSlotAcquisition;
       this.allowedRequests = allowedRequests;
     }

@@ -24,6 +24,7 @@ import static org.apache.solr.servlet.RateLimitManager.DEFAULT_EXPIRATION_TIME_I
 import static org.apache.solr.servlet.RateLimitManager.DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS;
 
 public class QueryRateLimiter extends RequestRateLimiter {
+  final static String IS_QUERY_RATE_LIMITER_ENABLED = "isQueryRateLimiterEnabled";
   final static String MAX_QUERY_REQUESTS = "maxQueryRequests";
   final static String QUERY_WAIT_FOR_SLOT_ALLOCATION_INMS = "queryWaitForSlotAllocationInMS";
   final static String QUERY_REQUEST_EXPIRATION_TIME_INMS = "queryRequestExpirationTimeInMS";
@@ -35,7 +36,8 @@ public class QueryRateLimiter extends RequestRateLimiter {
   protected static RequestRateLimiter.RateLimiterConfig constructQueryRateLimiterConfig(FilterConfig filterConfig) {
     RequestRateLimiter.RateLimiterConfig queryRateLimiterConfig = new RequestRateLimiter.RateLimiterConfig();
 
-    queryRateLimiterConfig.requestSuspendTimeInMS = getParamAndParseLong(filterConfig, QUERY_REQUEST_EXPIRATION_TIME_INMS,
+    queryRateLimiterConfig.isEnabled = getParamAndParseBoolean(filterConfig, IS_QUERY_RATE_LIMITER_ENABLED, false);
+    queryRateLimiterConfig.requestExpirationTimeInMS = getParamAndParseLong(filterConfig, QUERY_REQUEST_EXPIRATION_TIME_INMS,
         DEFAULT_EXPIRATION_TIME_INMS);
     queryRateLimiterConfig.waitForSlotAcquisition = getParamAndParseLong(filterConfig, QUERY_WAIT_FOR_SLOT_ALLOCATION_INMS,
         DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS);

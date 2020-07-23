@@ -36,9 +36,19 @@ SolrRequestFilter.
 <filter-name>SolrRequestFilter</filter-name>
 ----
 
+==== Enable Query Rate Limiter
+Controls enabling of query rate limiter. Default value is false.
+[source,xml]
+----
+<param-name>isQueryRateLimiterEnabled</param-name>
+----
+[source,xml]
+----
+<param-value>true</param-value>
+----
+
 ==== Maximum Number Of Concurrent Requests
-Allows setting maximum concurrent search requests at a given point in time. Default value is 10. To disable rate limiting,
-set it to Integer.MAX_VALUE
+Allows setting maximum concurrent search requests at a given point in time. Default value is 10.
 [source,xml]
 ----
 <param-name>maxQueryRequests</param-name>

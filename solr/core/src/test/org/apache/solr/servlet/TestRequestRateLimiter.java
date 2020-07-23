@@ -18,7 +18,6 @@
 package org.apache.solr.servlet;
 
 import javax.servlet.http.HttpServletRequest;
-import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -41,7 +40,7 @@ import org.junit.Test;
 import static org.apache.solr.servlet.RateLimitManager.DEFAULT_EXPIRATION_TIME_INMS;
 import static org.apache.solr.servlet.RateLimitManager.DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS;
 
-public class TestRateLimiter extends SolrCloudTestCase {
+public class TestRequestRateLimiter extends SolrCloudTestCase {
   private final static String COLLECTION = "c1";
 
   @BeforeClass
@@ -59,7 +58,7 @@ public class TestRateLimiter extends SolrCloudTestCase {
 
     SolrDispatchFilter solrDispatchFilter = cluster.getJettySolrRunner(0).getSolrDispatchFilter();
 
-    RequestRateLimiter.RateLimiterConfig rateLimiterConfig = new RequestRateLimiter.RateLimiterConfig(DEFAULT_EXPIRATION_TIME_INMS,
+    RequestRateLimiter.RateLimiterConfig rateLimiterConfig = new RequestRateLimiter.RateLimiterConfig(true, DEFAULT_EXPIRATION_TIME_INMS,
         DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS, 5 /* allowedRequests */);
     RateLimitManager.Builder builder = new MockBuilder(new MockRequestRateLimiter(rateLimiterConfig, 5),
         new MockRequestRateLimiter(rateLimiterConfig, 5));
@@ -88,9 +87,8 @@ public class TestRateLimiter extends SolrCloudTestCase {
           public Boolean call() throws Exception {
             try {
               QueryResponse response = client.query(new SolrQuery("*:*"));
-              HttpResponse httpResponse = (HttpResponse) response.getResponse().get("closeableResponse");
 
-              if (httpResponse == null || httpResponse.statusCode() != 503) {
+              if (response.getResults().getNumFound() > 0) {
                 assertEquals(100, response.getResults().getNumFound());
               }
             } catch (Exception e) {
@@ -135,7 +133,7 @@ public class TestRateLimiter extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(INDEX_COLLECTION, 1, 1).process(client);
     cluster.waitForActiveCollection(INDEX_COLLECTION, 1, 1);
 
-    RequestRateLimiter.RateLimiterConfig rateLimiterConfig = new RequestRateLimiter.RateLimiterConfig(DEFAULT_EXPIRATION_TIME_INMS,
+    RequestRateLimiter.RateLimiterConfig rateLimiterConfig = new RequestRateLimiter.RateLimiterConfig(true, DEFAULT_EXPIRATION_TIME_INMS,
         DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS, 3 /* allowedRequests */);
     CountDownLatch countDownLatch = new CountDownLatch(1);
     RateLimitManager.Builder builder = new MockBuilder(new MockBlockingRequestRateLimiter(rateLimiterConfig, 3, countDownLatch),
