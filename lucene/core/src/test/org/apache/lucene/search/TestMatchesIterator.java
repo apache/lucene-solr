@@ -179,18 +179,22 @@ public class TestMatchesIterator extends LuceneTestCase {
     assertEquals(expected.length, pos);
   }
 
-  private void checkNoPositionsMatches(Query q, String field, boolean[] expected) throws IOException {
+  private void checkNoPositionsMatches(Query q, boolean[] expected, String... expectedFields) throws IOException {
     Weight w = searcher.createWeight(searcher.rewrite(q), ScoreMode.COMPLETE, 1);
     for (int i = 0; i < expected.length; i++) {
       LeafReaderContext ctx = searcher.leafContexts.get(ReaderUtil.subIndex(i, searcher.leafContexts));
       int doc = i - ctx.docBase;
       Matches matches = w.matches(ctx, doc);
       if (expected[i]) {
-        MatchesIterator mi = matches.getMatches(field);
-        assertFalse(mi.next());
+        String[] actualFields = StreamSupport.stream(matches.spliterator(), false).toArray(String[]::new);
+        assertArrayEquals("Referenced fields not equal: " +
+            Arrays.toString(expected) + ", but was: " + Arrays.toString(actualFields),
+            expectedFields, actualFields);
 
-        String [] actualFields = StreamSupport.stream(matches.spliterator(), false).toArray(String[]::new);
-        assertArrayEquals(new String [] { field }, actualFields);
+        for (String field : expectedFields) {
+          MatchesIterator mi = matches.getMatches(field);
+          assertFalse(mi.next());
+        }
       }
       else {
         assertNull(matches);
@@ -435,7 +439,7 @@ public class TestMatchesIterator extends LuceneTestCase {
   public void testTermQueryNoPositions() throws IOException {
     for (String field : new String[]{ FIELD_DOCS_ONLY, FIELD_FREQS }) {
       Query q = new TermQuery(new Term(field, "w1"));
-      checkNoPositionsMatches(q, field, new boolean[]{ true, true, true, true, false });
+      checkNoPositionsMatches(q, new boolean[]{ true, true, true, true, false }, field);
     }
   }
 
@@ -464,8 +468,22 @@ public class TestMatchesIterator extends LuceneTestCase {
           .add(new TermQuery(new Term(field, "w1")), BooleanClause.Occur.SHOULD)
           .add(new TermQuery(new Term(field, "w3")), BooleanClause.Occur.SHOULD)
           .build();
-      checkNoPositionsMatches(q, field, new boolean[]{ true, true, true, true, false });
+      checkNoPositionsMatches(q, new boolean[]{ true, true, true, true, false }, field);
     }
+  }
+
+  /**
+   * Verify that all referenced fields are returned in matches, even if they don't
+   * carry positions (so the position iterator is empty).
+   */
+  public void testDisjunctionNoPositionsMultifieldQuery() throws IOException {
+    Query q = new BooleanQuery.Builder()
+        .add(new TermQuery(new Term(FIELD_DOCS_ONLY, "w1")), BooleanClause.Occur.MUST)
+        .add(new TermQuery(new Term(FIELD_FREQS, "w3")), BooleanClause.Occur.MUST)
+        .build();
+    checkNoPositionsMatches(q, new boolean[]{ true, true, false, true, false },
+        FIELD_DOCS_ONLY,
+        FIELD_FREQS);
   }
 
   public void testReqOpt() throws IOException {
@@ -489,7 +507,7 @@ public class TestMatchesIterator extends LuceneTestCase {
           .add(new TermQuery(new Term(field, "w1")), BooleanClause.Occur.SHOULD)
           .add(new TermQuery(new Term(field, "w3")), BooleanClause.Occur.MUST)
           .build();
-      checkNoPositionsMatches(q, field, new boolean[]{ true, true, false, true, false });
+      checkNoPositionsMatches(q, new boolean[]{ true, true, false, true, false }, field);
     }
   }
 
@@ -530,7 +548,7 @@ public class TestMatchesIterator extends LuceneTestCase {
               .setMinimumNumberShouldMatch(2)
               .build(), BooleanClause.Occur.SHOULD)
           .build();
-      checkNoPositionsMatches(q, field, new boolean[]{ true, true, true, true, false });
+      checkNoPositionsMatches(q, new boolean[]{ true, true, true, true, false }, field);
     }
   }
 
@@ -554,7 +572,7 @@ public class TestMatchesIterator extends LuceneTestCase {
           .add(new TermQuery(new Term(field, "w3")), BooleanClause.Occur.SHOULD)
           .add(new TermQuery(new Term(field, "zz")), BooleanClause.Occur.MUST_NOT)
           .build();
-      checkNoPositionsMatches(q, field, new boolean[]{ true, false, false, true, false });
+      checkNoPositionsMatches(q, new boolean[]{ true, false, false, true, false }, field);
     }
   }
 
@@ -578,7 +596,7 @@ public class TestMatchesIterator extends LuceneTestCase {
           .add(new TermQuery(new Term(field, "w3")), BooleanClause.Occur.MUST)
           .add(new TermQuery(new Term(field, "w4")), BooleanClause.Occur.MUST)
           .build();
-      checkNoPositionsMatches(q, field, new boolean[]{ true, false, false, true, false });
+      checkNoPositionsMatches(q, new boolean[]{ true, false, false, true, false }, field);
     }
   }
 
@@ -615,7 +633,7 @@ public class TestMatchesIterator extends LuceneTestCase {
   public void testWildcardsNoPositions() throws IOException {
     for (String field : new String[]{ FIELD_FREQS, FIELD_DOCS_ONLY }) {
       Query q = new PrefixQuery(new Term(field, "x"));
-      checkNoPositionsMatches(q, field, new boolean[]{ false, false, true, false, false });
+      checkNoPositionsMatches(q, new boolean[]{ false, false, true, false, false }, field);
     }
   }
 
@@ -636,7 +654,7 @@ public class TestMatchesIterator extends LuceneTestCase {
   public void testSynonymQueryNoPositions() throws IOException {
     for (String field : new String[]{ FIELD_FREQS, FIELD_DOCS_ONLY }) {
       Query q = new SynonymQuery.Builder(field).addTerm(new Term(field, "w1")).addTerm(new Term(field, "w2")).build();
-      checkNoPositionsMatches(q, field, new boolean[]{ true, true, true, true, false });
+      checkNoPositionsMatches(q, new boolean[]{ true, true, true, true, false }, field);
     }
   }
 
