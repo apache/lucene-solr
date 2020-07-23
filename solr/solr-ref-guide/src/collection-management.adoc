@@ -1262,27 +1262,10 @@ The following parameters are currently supported (described in detail in the <<c
 
 Note: for `createNodeSet` the special value of `EMPTY` is not allowed with this command.
 
-*Override Parameters*
+*Overridable Parameters*
 
-Additionally, there are several parameters that may have been set on the original collection that can be overridden when restoring the backup:
-
-`collection.configName`::
-Defines the name of the configurations to use for this collection. These must already be stored in ZooKeeper. If not provided, Solr will default to the collection name as the configuration name.
-
-`replicationFactor`::
-The number of replicas to be created for each shard.
-
-`nrtReplicas`::
-The number of NRT (Near-Real-Time) replicas to create for this collection. This type of replica maintains a transaction log and updates its index locally. This parameter behaves the same way as setting replicationFactor parameter.
-
-`tlogReplicas`::
-The number of TLOG replicas to create for this collection. This type of replica maintains a transaction log but only updates its index via replication from a leader. See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,Types of Replicas>> for more information about replica types.
-
-`pullReplicas`::
-The number of PULL replicas to create for this collection. This type of replica does not maintain a transaction log and only updates its index via replication from a leader. This type is not eligible to become a leader and should not be the only type of replicas in the collection. See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,Types of Replicas>> for more information about replica types.
-
-`property._name_=_value_`::
-Set core property _name_ to _value_. See the section <<defining-core-properties.adoc#defining-core-properties,Defining core.properties>> for details on supported properties and values.
+Additionally, there are several parameters that may have been set on the original collection that can be overridden when restoring the backup (described in detail in the <<create,CREATE collection>> section):
+`collection.configName`, `replicationFactor`, `nrtReplicas`, `tlogReplicas`, `pullReplicas`, `property._name_=_value_`.
 
 [[rebalanceleaders]]
 == REBALANCELEADERS: Rebalance Leaders
