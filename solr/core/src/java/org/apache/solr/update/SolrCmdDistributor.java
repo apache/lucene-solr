@@ -250,7 +250,9 @@ public class SolrCmdDistributor implements Closeable {
         return;
       }
 
-      if (!(req.cmd instanceof CommitUpdateCommand) && (!(req.cmd instanceof DeleteUpdateCommand) || (req.cmd instanceof DeleteUpdateCommand && ((DeleteUpdateCommand)req.cmd).query != null))) {
+      if (req.cmd instanceof  CommitUpdateCommand || req.cmd instanceof  DeleteUpdateCommand &&  ((DeleteUpdateCommand)req.cmd).query != null) {
+        // commit or delete by query
+      } else {
         phaser.register();
       }
 
@@ -265,56 +267,43 @@ public class SolrCmdDistributor implements Closeable {
         @Override
         public void onFailure(Throwable t) {
           log.warn("Error sending distributed update", t);
-          boolean success = false;
-          try {
-            Error error = new Error();
-            error.t = t;
-            error.req = req;
-            if (t instanceof SolrException) {
-              error.statusCode = ((SolrException) t).code();
-            }
+          arrive(req);
 
-            if (checkRetry(error)) {
-              log.info("Retrying distrib update on error: {}", t.getMessage());
-              submit(req);
-              success = true;
-            } else {
-              arrive(req);
-              allErrors.add(error);
-            }
-          } finally {
-            if (!success) {
-              arrive(req);
-            }
+          Error error = new Error();
+          error.t = t;
+          error.req = req;
+          if (t instanceof SolrException) {
+            error.statusCode = ((SolrException) t).code();
           }
+
+          if (checkRetry(error)) {
+            log.info("Retrying distrib update on error: {}", t.getMessage());
+            submit(req);
+          } else {
+            allErrors.add(error);
+          }
+
         }});
     } catch (Exception e) {
-      boolean success = false;
-     try {
-       log.warn("Error sending distributed update", e);
-       Error error = new Error();
-       error.t = e;
-       error.req = req;
-       if (e instanceof SolrException) {
-         error.statusCode = ((SolrException) e).code();
-       }
-       if (checkRetry(error)) {
-         submit(req);
-         success = true;
-       } else {
-         allErrors.add(error);
-       }
-     } finally {
-       if (!success) {
-         arrive(req);
-
-       }
-     }
+      log.warn("Error sending distributed update", e);
+      Error error = new Error();
+      error.t = e;
+      error.req = req;
+      if (e instanceof SolrException) {
+        error.statusCode = ((SolrException) e).code();
+      }
+      if (checkRetry(error)) {
+        submit(req);
+      } else {
+        allErrors.add(error);
+      }
     }
   }
 
   private void arrive(Req req) {
-    if (!(req.cmd instanceof CommitUpdateCommand) && (!(req.cmd instanceof DeleteUpdateCommand) || (req.cmd instanceof DeleteUpdateCommand && ((DeleteUpdateCommand)req.cmd).query != null))) {
+    if (req.cmd instanceof  CommitUpdateCommand || req.cmd instanceof  DeleteUpdateCommand &&  ((DeleteUpdateCommand)req.cmd).query != null) {
+      // commit or delete by query
+    } else {
       phaser.arriveAndDeregister();
     }
   }
