@@ -1088,9 +1088,9 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1).process(cluster.getSolrClient());
     cluster.waitForActiveCollection(collectionName, 2, 2);
 
-    AsyncListener callback = new AsyncListener() {
+    AsyncListener<LBHttp2SolrClient.Rsp> callback = new AsyncListener<>() {
       @Override
-      public void onSuccess(Object o) { asyncCallbackRun = true; }
+      public void onSuccess(LBHttp2SolrClient.Rsp rsp) { asyncCallbackRun = true; }
 
       @Override
       public void onFailure(Throwable throwable) { }
