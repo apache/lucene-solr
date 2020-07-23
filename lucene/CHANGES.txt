@@ -134,6 +134,8 @@ Bug fixes
 
 Other
 
+* LUCENE-9312: Allow gradle builds against arbitrary JVMs. (Tomoko Uchida, Dawid Weiss)
+
 * LUCENE-9391: Upgrade HPPC to 0.8.2. (Haoyu Zhai)
 
 * LUCENE-8768: Fix Javadocs build in Java 11. (Namgyu Kim)
@@ -156,6 +158,10 @@ Other
 API Changes
 ---------------------
 (No changes)
+
+* LUCENE-9437: Lucene's facet module's DocValuesOrdinalsReader.decode method
+  is now public, making it easier for applications to decode facet
+  ordinals into their corresponding labels (Ankur)
 
 New Features
 ---------------------
