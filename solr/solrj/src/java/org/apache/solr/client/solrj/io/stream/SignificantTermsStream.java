@@ -319,13 +319,11 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
           }
         }
 
-        @SuppressWarnings({"rawtypes"})
-        List<Map> maps = new ArrayList<>();
+        List<Map<String, Object>> maps = new ArrayList<>();
 
         for(Map.Entry<String, int[]> entry : mergeFreqs.entrySet()) {
           int[] freqs = entry.getValue();
-          @SuppressWarnings({"rawtypes"})
-          Map map = new HashMap();
+          Map<String, Object> map = new HashMap<>();
           map.put("term", entry.getKey());
           map.put("background", freqs[0]);
           map.put("foreground", freqs[1]);
@@ -338,7 +336,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
 
         Collections.sort(maps, new ScoreComp());
         List<Tuple> tuples = new ArrayList<>();
-        for (@SuppressWarnings({"rawtypes"})Map map : maps) {
+        for (Map<String, Object> map : maps) {
           if (tuples.size() == numTerms) break;
           tuples.add(new Tuple(map));
         }

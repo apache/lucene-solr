@@ -33,7 +33,8 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.apache.commons.collections.map.MultiValueMap;
+import org.apache.commons.collections4.MultiValuedMap;
+import org.apache.commons.collections4.multimap.HashSetValuedHashMap;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
 import org.apache.solr.common.NavigableObject;
@@ -141,12 +142,13 @@ public class PackageManager implements Closeable {
    * Get a list of packages that have their plugins deployed as cluster level plugins.
    * The returned packages also contain the "pluginMeta" from "clusterprops.json" as custom data. 
    */
-  @SuppressWarnings("unchecked")
   public Map<String, SolrPackageInstance> getPackagesDeployedAsClusterLevelPlugins() {
-    Map<String, String> packageVersions = new HashMap<String, String>();
-    MultiValueMap packagePlugins = new MultiValueMap(); // map of package name to multiple values of pluginMeta (Map<String, String>)
-    Map<String, Object> result = (Map<String, Object>) Utils.executeGET(solrClient.getHttpClient(),
+    Map<String, String> packageVersions = new HashMap<>();
+    MultiValuedMap<String, PluginMeta> packagePlugins = new HashSetValuedHashMap<>(); // map of package name to multiple values of pluginMeta (Map<String, String>)
+    @SuppressWarnings({"unchecked"})
+    Map<String, Object> result =  (Map<String, Object>)Utils.executeGET(solrClient.getHttpClient(),
         solrBaseUrl + PackageUtils.CLUSTERPROPS_PATH, Utils.JSONCONSUMER);
+    @SuppressWarnings({"unchecked"})
     Map<String, Object> clusterPlugins = (Map<String, Object>) result.getOrDefault("plugin", Collections.emptyMap());
     for (String key: clusterPlugins.keySet()) {
       // Map<String, String> pluginMeta = (Map<String, String>) clusterPlugins.get(key);
@@ -167,7 +169,7 @@ public class PackageManager implements Closeable {
       if (Strings.isNullOrEmpty(packageName) == false && // There can be an empty key, storing the version here
           packageVersions.get(packageName) != null) { // null means the package was undeployed from this package before
         ret.put(packageName, getPackageInstance(packageName, packageVersions.get(packageName)));
-        ret.get(packageName).setCustomData(packagePlugins.getCollection(packageName));
+        ret.get(packageName).setCustomData(packagePlugins.get(packageName));
       }
     }
     return ret;
