@@ -158,6 +158,8 @@ Other Changes
 
 * SOLR-14637: Update CloudSolrClient examples to remove deprecated method. (Andras Salamon via Eric Pugh)
 
+* SOLR-14676: Update commons-collections to 4.4 and use it in Solr (Erick Erickson)
+
 ==================  8.6.0 ==================
 
 Consult the lucene/CHANGES.txt file for additional, low level, changes in this release.
