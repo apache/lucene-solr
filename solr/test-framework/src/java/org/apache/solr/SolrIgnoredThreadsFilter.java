@@ -80,7 +80,7 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
     if (threadName.startsWith("ScheduledTrigger")) {
       return true;
     }
-    if (threadName.contains("-SendThread") || threadName.startsWith("NIOWorkerThread") || threadName.startsWith("ZkCallback")) {
+    if (threadName.startsWith("NIOWorkerThread") || threadName.startsWith("EventThread")) {
       return true;
     }
 

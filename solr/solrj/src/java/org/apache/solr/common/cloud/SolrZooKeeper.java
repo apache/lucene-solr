@@ -35,6 +35,7 @@ import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.CloseTracker;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.zookeeper.ClientCnxn;
 import org.apache.zookeeper.Watcher;
@@ -110,18 +111,31 @@ public class SolrZooKeeper extends ZooKeeper {
   
   @Override
   public void close() {
+    if (closeTracker.isClosed()) {
+      return;
+    }
     closeTracker.close();
-    try (ParWork worker = new ParWork(this, true)) {
-      worker.collect(() -> {
-        try {
-          ZooKeeperExposed exposed = new ZooKeeperExposed(this, cnxn);
-          //exposed.intteruptSendThread();
-//        exposed.intteruptSendThread();
-          SolrZooKeeper.super.close();
-        } catch (InterruptedException e) {
-          ParWork.propegateInterrupt(e);
-        }
-      });
+    try {
+      SolrZooKeeper.super.close();
+    } catch (InterruptedException e) {
+      ParWork.propegateInterrupt(e);
+    }
+             ZooKeeperExposed exposed = new ZooKeeperExposed(this, cnxn);
+     //exposed.intteruptSendThread();
+  //  exposed.interruptEventThread();
+   // exposed.interruptSendThread();
+//    try (ParWork worker = new ParWork(this, true)) {
+//      worker.collect(() -> {
+//        try {
+//          ZooKeeperExposed exposed = new ZooKeeperExposed(this, cnxn);
+//          //exposed.intteruptSendThread();
+//
+//          SolrZooKeeper.super.close(5000);
+//          exposed.interruptEventThread();
+//        } catch (InterruptedException e) {
+//          ParWork.propegateInterrupt(e);
+//        }
+//      });
 //        RequestHeader h = new RequestHeader();
 //        h.setType(ZooDefs.OpCode.closeSession);
 //
@@ -146,7 +160,7 @@ public class SolrZooKeeper extends ZooKeeper {
 //        exposed.intteruptSendThread();
 //        exposed.intteruptSendThread();
 //      });// we don't wait for close because we wait below
-      worker.addCollect("zkClientClose");
+     // worker.addCollect("zkClientClose");
 
 //      worker.collect(() -> {
 //        for (Thread t : spawnedThreads) {
@@ -168,7 +182,6 @@ public class SolrZooKeeper extends ZooKeeper {
 ////        zkcall(cnxn, "eventThread", "join", 10l);
 //      });
 //      worker.addCollect("zkClientClose");
-    }
   }
 
   private void zkcall(final ClientCnxn cnxn, String field, String meth, Object arg) {

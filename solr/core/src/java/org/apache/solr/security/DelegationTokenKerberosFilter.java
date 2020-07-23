@@ -236,7 +236,7 @@ public class DelegationTokenKerberosFilter extends DelegationTokenAuthentication
 
       // In theory the credentials to add could change here if zookeeper hasn't been initialized
       ZkCredentialsProvider credentialsProvider =
-        zkClient.getZkClientConnectionStrategy().getZkCredentialsToAddAutomatically();
+        zkClient.getConnectionManager().getZkCredentialsToAddAutomatically();
       for (ZkCredentialsProvider.ZkCredentials zkCredentials : credentialsProvider.getCredentials()) {
         ret.add(new AuthInfo(zkCredentials.getScheme(), zkCredentials.getAuth()));
       }

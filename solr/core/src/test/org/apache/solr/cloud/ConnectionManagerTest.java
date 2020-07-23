@@ -27,9 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.ConnectionManager;
-import org.apache.solr.common.cloud.DefaultConnectionStrategy;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeOut;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.zookeeper.WatchedEvent;
@@ -114,60 +112,6 @@ public class ConnectionManagerTest extends SolrTestCaseJ4 {
       }
     } finally {
       server.shutdown();
-    }
-  }
-  
-  @Test
-  public void testReconnectWhenZkDisappeared() throws Exception {
-
-    // setup a SolrZkClient to do some getBaseUrlForNodeName testing
-    Path zkDir = createTempDir("zkData");
-    ZkTestServer server = new ZkTestServer(zkDir);
-    try {
-      server.run();
-
-      MockZkClientConnectionStrategy strat = new MockZkClientConnectionStrategy();
-      SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT, strat , null);
-      zkClient.start();
-      ConnectionManager cm = zkClient.getConnectionManager();
-      cm.waitForConnected(5000);
-      
-      try {
-        assertFalse(cm.isLikelyExpired());
-        assertTrue(cm.isConnectedAndNotClosed());
-               
-        // reconnect -- should no longer be likely expired
-        cm.process(new WatchedEvent(EventType.None, KeeperState.Expired, ""));
-        TimeOut timeout = new TimeOut(5, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-        timeout.waitFor("should have thrown exception", () ->  strat.isExceptionThrow());
-        assertTrue(strat.isExceptionThrow());
-      } finally {
-        cm.close();
-        zkClient.close();
-      }
-    } finally {
-      server.shutdown();
-    }
-  }
-  
-  private static class MockZkClientConnectionStrategy extends DefaultConnectionStrategy {
-    AtomicInteger called = new AtomicInteger();
-    volatile boolean exceptionThrown = false;
-    
-    @Override
-    public void reconnect(final String serverAddress, final int zkClientTimeout,
-        final Watcher watcher, final ZkUpdate updater) throws IOException, InterruptedException, TimeoutException {
-      
-      if(called.incrementAndGet() < 2) {
-        exceptionThrown = true;
-        throw new IOException("Testing");
-      }
-      
-      super.reconnect(serverAddress, zkClientTimeout, watcher, updater);
-    }
-    
-    public boolean isExceptionThrow() {
-      return exceptionThrown;
     }
   }
 }

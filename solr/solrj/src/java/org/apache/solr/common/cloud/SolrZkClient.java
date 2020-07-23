@@ -47,6 +47,7 @@ import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -99,17 +100,16 @@ public class SolrZkClient implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final int zkClientConnectTimeout;
   private final CloseTracker closeTracker;
+  private final ZkCredentialsProvider zkCredentialsToAddAutomatically;
 
-  private volatile ConnectionManager connManager;
-
-  private volatile SolrZooKeeper keeper;
+  private final ConnectionManager connManager;
 
   private final ExecutorService zkCallbackExecutor = new ParWorkExecutor("ZkCallback", 1);
 
   private final ExecutorService zkConnManagerCallbackExecutor =  new ParWorkExecutor("zkConnectionManagerCallback", 1);
 
   private volatile boolean isClosed = false;
-  private volatile ZkClientConnectionStrategy zkClientConnectionStrategy;
+
   private volatile int zkClientTimeout;
   private volatile ZkACLProvider zkACLProvider;
   private volatile String zkServerAddress;
@@ -127,56 +127,40 @@ public class SolrZkClient implements Closeable {
   public SolrZkClient() {
     closeTracker = new CloseTracker();
     zkClientConnectTimeout = 0;
+    zkCredentialsToAddAutomatically = null;
+    connManager = null;
   }
 
   public SolrZkClient(String zkServerAddress, int zkClientTimeout) {
-    this(zkServerAddress, zkClientTimeout, new DefaultConnectionStrategy(), null);
+    this(zkServerAddress, zkClientTimeout, DEFAULT_CLIENT_CONNECT_TIMEOUT);
   }
 
   public SolrZkClient(String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout) {
-    this(zkServerAddress, zkClientTimeout, zkClientConnectTimeout, new DefaultConnectionStrategy(), null);
+    this(zkServerAddress, zkClientTimeout, zkClientConnectTimeout, null);
   }
 
-  public SolrZkClient(String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout, OnReconnect onReonnect) {
-    this(zkServerAddress, zkClientTimeout, zkClientConnectTimeout, new DefaultConnectionStrategy(), onReonnect);
+  public SolrZkClient(String zkServerAddress, int zkClientTimeout,  int zkClientConnectTimeout, final OnReconnect onReconnect) {
+    this(zkServerAddress, zkClientTimeout, zkClientConnectTimeout, onReconnect, null);
   }
 
-  public SolrZkClient(String zkServerAddress, int zkClientTimeout,
-      ZkClientConnectionStrategy strat, final OnReconnect onReconnect) {
-    this(zkServerAddress, zkClientTimeout, DEFAULT_CLIENT_CONNECT_TIMEOUT, strat, onReconnect);
+  public SolrZkClient(String zkServerAddress, int zkClientTimeout, int clientConnectTimeout, final OnReconnect onReconnect, BeforeReconnect beforeReconnect) {
+    this(zkServerAddress, zkClientTimeout, clientConnectTimeout, onReconnect, beforeReconnect, null, null);
   }
 
-  public SolrZkClient(String zkServerAddress, int zkClientTimeout, int clientConnectTimeout,
-      ZkClientConnectionStrategy strat, final OnReconnect onReconnect) {
-    this(zkServerAddress, zkClientTimeout, clientConnectTimeout, strat, onReconnect, null, null, null);
-  }
-
-  public SolrZkClient(String zkServerAddress, int zkClientTimeout, int clientConnectTimeout,
-      ZkClientConnectionStrategy strat, final OnReconnect onReconnect, BeforeReconnect beforeReconnect) {
-    this(zkServerAddress, zkClientTimeout, clientConnectTimeout, strat, onReconnect, beforeReconnect, null, null);
-  }
-
-  public SolrZkClient(String zkServerAddress, int zkClientTimeout, int clientConnectTimeout,
-      ZkClientConnectionStrategy strat, final OnReconnect onReconnect, BeforeReconnect beforeReconnect, ZkACLProvider zkACLProvider, IsClosed higherLevelIsClosed) {
+  public SolrZkClient(String zkServerAddress, int zkClientTimeout, int clientConnectTimeout, final OnReconnect onReconnect, BeforeReconnect beforeReconnect, ZkACLProvider zkACLProvider, IsClosed higherLevelIsClosed) {
     ObjectReleaseTracker.track(this);
     log.info("Creating new {} instance {}", SolrZkClient.class.getSimpleName(), this);
     closeTracker = new CloseTracker();
     this.zkServerAddress = zkServerAddress;
     this.higherLevelIsClosed = higherLevelIsClosed;
-    if (strat == null) {
-      this.zkClientConnectionStrategy = new DefaultConnectionStrategy();
-    } else {
-      this.zkClientConnectionStrategy = strat;
 
-    }
 
     this.zkClientTimeout = zkClientTimeout;
     this.zkClientConnectTimeout = clientConnectTimeout;
 
-    if (!zkClientConnectionStrategy.hasZkCredentialsToAddAutomatically()) {
-      ZkCredentialsProvider zkCredentialsToAddAutomatically = createZkCredentialsToAddAutomatically();
-      zkClientConnectionStrategy.setZkCredentialsToAddAutomatically(zkCredentialsToAddAutomatically);
-    }
+
+    zkCredentialsToAddAutomatically = createZkCredentialsToAddAutomatically();
+
 
     if (zkACLProvider == null) {
       this.zkACLProvider = createZkACLProvider();
@@ -185,39 +169,21 @@ public class SolrZkClient implements Closeable {
     }
 
     connManager = new ConnectionManager("ZooKeeperConnection Watcher:"
-        + zkServerAddress, this, zkServerAddress, strat, onReconnect, beforeReconnect);
+        + zkServerAddress, this, zkServerAddress, zkClientTimeout, onReconnect, beforeReconnect);
   }
 
   public SolrZkClient start() {
     log.info("Starting {} instance {}", SolrZkClient.class.getSimpleName(), this);
     try {
-      zkClientConnectionStrategy.connect(zkServerAddress, zkClientTimeout, wrapWatcher(connManager),
-              zooKeeper -> {
-                SolrZooKeeper oldKeeper = keeper;
-                keeper = zooKeeper;
-                try {
-                  closeKeeper(oldKeeper);
-                } finally {
-                  if (isClosed) {
-                    // we may have been closed
-                    closeKeeper(SolrZkClient.this.keeper);
-                  }
-                }
-              });
-
+      connManager.start();
       connManager.waitForConnected(this.zkClientConnectTimeout);
-    } catch (Exception e) {
+    } catch (TimeoutException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, e);
+    } catch (InterruptedException e) {
       ParWork.propegateInterrupt(e);
-      try (ParWork closer = new ParWork(this, true)) {
-        zkConnManagerCallbackExecutor.shutdownNow();
-        zkCallbackExecutor.shutdownNow();
-        closer.collect(zkConnManagerCallbackExecutor);
-        closer.collect(zkCallbackExecutor);
-        closer.collect(connManager);
-        closer.collect(keeper);
-        closer.addCollect("zkClientCloseOnException");
-      }
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, e);
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, e);
     }
     return this;
   }
@@ -228,10 +194,6 @@ public class SolrZkClient implements Closeable {
 
   public ConnectionManager getConnectionManager() {
     return connManager;
-  }
-
-  public ZkClientConnectionStrategy getZkClientConnectionStrategy() {
-    return zkClientConnectionStrategy;
   }
 
   public static final String ZK_CRED_PROVIDER_CLASS_NAME_VM_PARAM_NAME = "zkCredentialsProvider";
@@ -246,7 +208,7 @@ public class SolrZkClient implements Closeable {
         log.warn("VM param zkCredentialsProvider does not point to a class implementing ZkCredentialsProvider and with a non-arg constructor", t);
       }
     }
-    log.debug("Using default ZkCredentialsProvider");
+    log.info("Using default ZkCredentialsProvider");
     return new DefaultZkCredentialsProvider();
   }
 
@@ -270,11 +232,13 @@ public class SolrZkClient implements Closeable {
    * Returns true if client is connected
    */
   public boolean isConnected() {
+    ZooKeeper keeper = connManager.getKeeper();
     return keeper != null && keeper.getState() == ZooKeeper.States.CONNECTED;
   }
 
   public void delete(final String path, final int version)
       throws InterruptedException, KeeperException {
+      ZooKeeper keeper = connManager.getKeeper();
       keeper.delete(path, version);
   }
 
@@ -308,6 +272,7 @@ public class SolrZkClient implements Closeable {
    */
   public Stat exists(final String path, final Watcher watcher)
       throws KeeperException, InterruptedException {
+      ZooKeeper keeper = connManager.getKeeper();
       return keeper.exists(path, wrapWatcher(watcher));
 
   }
@@ -317,6 +282,7 @@ public class SolrZkClient implements Closeable {
    */
   public Boolean exists(final String path)
       throws KeeperException, InterruptedException {
+      ZooKeeper keeper = connManager.getKeeper();
       return keeper.exists(path, null) != null;
   }
 
@@ -325,6 +291,7 @@ public class SolrZkClient implements Closeable {
    */
   public List<String> getChildren(final String path, final Watcher watcher, boolean retryOnConnLoss)
       throws KeeperException, InterruptedException {
+      ZooKeeper keeper = connManager.getKeeper();
       return keeper.getChildren(path, wrapWatcher(watcher));
   }
 
@@ -333,6 +300,7 @@ public class SolrZkClient implements Closeable {
    */
   public byte[] getData(final String path, final Watcher watcher, final Stat stat)
       throws KeeperException, InterruptedException {
+      ZooKeeper keeper = connManager.getKeeper();
       return keeper.getData(path, wrapWatcher(watcher), stat);
   }
 
@@ -341,6 +309,7 @@ public class SolrZkClient implements Closeable {
    */
   public Stat setData(final String path, final byte data[], final int version, boolean retryOnConnLoss)
       throws KeeperException, InterruptedException {
+      ZooKeeper keeper = connManager.getKeeper();
       return keeper.setData(path, data, version);
   }
 
@@ -397,6 +366,7 @@ public class SolrZkClient implements Closeable {
       final CreateMode createMode, boolean retryOnConnLoss) throws KeeperException,
       InterruptedException {
       List<ACL> acls = zkACLProvider.getACLsToAdd(path);
+      ZooKeeper keeper = connManager.getKeeper();
       return keeper.create(path, data, acls, createMode);
   }
 
@@ -508,6 +478,7 @@ public class SolrZkClient implements Closeable {
         bytes = data;
         if (!retryOnConnLoss) retry = false;
       }
+      ZooKeeper keeper = connManager.getKeeper();
       try {
         keeper.create(currentPath, bytes, zkACLProvider.getACLsToAdd(currentPath), mode);
       } catch (NoAuthException e) {
@@ -625,6 +596,7 @@ public class SolrZkClient implements Closeable {
       if (log.isDebugEnabled()) log.debug("makepath {}", makePath + " data: " + (data == null ? "none" : data.length + "b"));
 
       assert getZkACLProvider() != null;
+      ZooKeeper keeper = connManager.getKeeper();
       assert keeper != null;
       keeper.create(makePath, data, getZkACLProvider().getACLsToAdd(makePath), createMode,
               (resultCode, zkpath, context, name) -> {
@@ -675,6 +647,7 @@ public class SolrZkClient implements Closeable {
 
   public void data(String path, byte[] data) throws KeeperException {
     try {
+      ZooKeeper keeper = connManager.getKeeper();
       keeper.setData(path, data, -1);
     } catch (InterruptedException e) {
       ParWork.propegateInterrupt(e);
@@ -705,6 +678,7 @@ public class SolrZkClient implements Closeable {
 //    }
     String createdPath;
     try {
+      ZooKeeper keeper = connManager.getKeeper();
       createdPath = keeper.create(path, data, getZkACLProvider().getACLsToAdd(path), createMode);
     } catch (IllegalArgumentException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, path, e);
@@ -743,6 +717,7 @@ public class SolrZkClient implements Closeable {
     List<OpResult> results;
 
     try {
+      ZooKeeper keeper = connManager.getKeeper();
       results = keeper.multi(ops);
     } catch (KeeperException e) {
       results = e.getResults();
@@ -870,13 +845,11 @@ public class SolrZkClient implements Closeable {
   public void close() {
     log.info("Closing {} instance {}", SolrZkClient.class.getSimpleName(), this);
     closeTracker.close();
-    if (isClosed) return; // it's okay if we over close - same as solrcore
     isClosed = true;
 
     try (ParWork worker = new ParWork(this, true)) {
-      worker.add("keeper", keeper);
-      worker.add("connectionManager", connManager);
       worker.add("zkExecutors", zkCallbackExecutor, zkConnManagerCallbackExecutor);
+      worker.add("connectionManager", connManager);
     }
     assert ObjectReleaseTracker.release(this);
   }
@@ -885,27 +858,9 @@ public class SolrZkClient implements Closeable {
     return isClosed || (higherLevelIsClosed != null && higherLevelIsClosed.isClosed());
   }
 
-  /**
-   * Allows package private classes to update volatile ZooKeeper.
-   */
-  void updateKeeper(SolrZooKeeper keeper) throws InterruptedException {
-   SolrZooKeeper oldKeeper = this.keeper;
-   this.keeper = keeper;
-   if (oldKeeper != null) {
-     oldKeeper.close();
-   }
-   // we might have been closed already
-   if (isClosed) this.keeper.close();
-  }
-
   public SolrZooKeeper getSolrZooKeeper() {
-    return keeper;
-  }
-
-  private void closeKeeper(SolrZooKeeper keeper) {
-    if (keeper != null) {
-      keeper.close();
-    }
+    ZooKeeper keeper = connManager.getKeeper();
+    return (SolrZooKeeper) keeper;
   }
 
   /**
@@ -946,6 +901,7 @@ public class SolrZkClient implements Closeable {
   public String getConfig() {
     try {
       Stat stat = new Stat();
+      ZooKeeper keeper = connManager.getKeeper();
       keeper.sync(ZooDefs.CONFIG_NODE, null, null);
       byte[] data = keeper.getConfig(false, stat);
       if (data == null || data.length == 0) {
@@ -969,6 +925,7 @@ public class SolrZkClient implements Closeable {
    * @param retryOnConnLoss true if the command should be retried on connection loss
    */
   public Stat setACL(String path, List<ACL> acls, boolean retryOnConnLoss) throws InterruptedException, KeeperException  {
+      ZooKeeper keeper = connManager.getKeeper();
       return keeper.setACL(path, acls, -1);
   }
 

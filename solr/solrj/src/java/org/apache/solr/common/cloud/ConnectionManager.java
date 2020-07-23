@@ -17,7 +17,10 @@
 package org.apache.solr.common.cloud;
 
 import java.io.Closeable;
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -25,12 +28,14 @@ import java.util.concurrent.TimeoutException;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.TimeOut;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.KeeperState;
+import org.apache.zookeeper.ZooKeeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,14 +47,15 @@ public class ConnectionManager implements Watcher, Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final String name;
+  private final int zkTimeout;
 
   private volatile boolean connected = false;
-
-  private final ZkClientConnectionStrategy connectionStrategy;
 
   private final String zkServerAddress;
 
   private final SolrZkClient client;
+
+  private volatile SolrZooKeeper keeper;
 
   private volatile OnReconnect onReconnect;
   private volatile BeforeReconnect beforeReconnect;
@@ -61,12 +67,30 @@ public class ConnectionManager implements Watcher, Closeable {
   private volatile DisconnectListener disconnectListener;
   private volatile int lastConnectedState = 0;
 
+  private volatile ZkCredentialsProvider zkCredentialsToAddAutomatically;
+  private volatile boolean zkCredentialsToAddAutomaticallyUsed;
+
+//  private Set<ZkClientConnectionStrategy.DisconnectedListener> disconnectedListeners = ConcurrentHashMap.newKeySet();
+//  private Set<ZkClientConnectionStrategy.ConnectedListener> connectedListeners = ConcurrentHashMap.newKeySet();
+
   public void setOnReconnect(OnReconnect onReconnect) {
     this.onReconnect = onReconnect;
   }
 
   public void setBeforeReconnect(BeforeReconnect beforeReconnect) {
     this.beforeReconnect = beforeReconnect;
+  }
+
+  public ZooKeeper getKeeper() {
+    return keeper;
+  }
+
+  public void setZkCredentialsToAddAutomatically(ZkCredentialsProvider zkCredentialsToAddAutomatically) {
+    this.zkCredentialsToAddAutomatically = zkCredentialsToAddAutomatically;
+  }
+
+  public ZkCredentialsProvider getZkCredentialsToAddAutomatically() {
+    return this.zkCredentialsToAddAutomatically;
   }
 
   // Track the likely expired state
@@ -99,13 +123,14 @@ public class ConnectionManager implements Watcher, Closeable {
 
   private volatile LikelyExpiredState likelyExpiredState = LikelyExpiredState.EXPIRED;
 
-  public ConnectionManager(String name, SolrZkClient client, String zkServerAddress, ZkClientConnectionStrategy strat, OnReconnect onConnect, BeforeReconnect beforeReconnect) {
+  public ConnectionManager(String name, SolrZkClient client, String zkServerAddress, int zkTimeout, OnReconnect onConnect, BeforeReconnect beforeReconnect) {
     this.name = name;
     this.client = client;
-    this.connectionStrategy = strat;
     this.zkServerAddress = zkServerAddress;
     this.onReconnect = onConnect;
     this.beforeReconnect = beforeReconnect;
+    this.zkTimeout = zkTimeout;
+    assert ObjectReleaseTracker.track(this);
   }
 
   private void connected() {
@@ -115,10 +140,18 @@ public class ConnectionManager implements Watcher, Closeable {
 
     connected = true;
     likelyExpiredState = LikelyExpiredState.NOT_EXPIRED;
-    log.info("Connected, notify any wait");
-    connectedLatch.countDown();
     disconnectedLatch = new CountDownLatch(1);
     lastConnectedState = 1;
+    log.info("Connected, notify any wait");
+    connectedLatch.countDown();
+//    for (ConnectedListener listener : connectedListeners) {
+//      try {
+//        listener.connected();
+//      } catch (Exception e) {
+//        ParWork.propegateInterrupt(e);
+//      }
+//    }
+
   }
 
   private void disconnected() {
@@ -141,6 +174,18 @@ public class ConnectionManager implements Watcher, Closeable {
     lastConnectedState = 0;
   }
 
+  public void start() throws IOException {
+    updatezk();
+  }
+
+  private synchronized void updatezk() throws IOException {
+    if (keeper != null) {
+      keeper.close();
+    }
+    SolrZooKeeper zk = createSolrZooKeeper(zkServerAddress, zkTimeout, this);
+    keeper = zk;
+  }
+
   @Override
   public synchronized void process(WatchedEvent event) {
     if (event.getState() == AuthFailed || event.getState() == Disconnected || event.getState() == Expired) {
@@ -161,7 +206,6 @@ public class ConnectionManager implements Watcher, Closeable {
     if (state == KeeperState.SyncConnected) {
       log.info("zkClient has connected");
       connected();
-      connectionStrategy.connected();
     } else if (state == Expired) {
       if (isClosed()) {
         return;
@@ -176,8 +220,24 @@ public class ConnectionManager implements Watcher, Closeable {
         try {
           beforeReconnect.command();
         }  catch (Exception e) {
-          ParWork.propegateInterrupt(e);
           ParWork.propegateInterrupt("Exception running beforeReconnect command", e);
+          if (e instanceof  InterruptedException || e instanceof AlreadyClosedException) {
+            return;
+          }
+        }
+      }
+
+      if (keeper != null) {
+        // if there was a problem creating the new SolrZooKeeper
+        // or if we cannot run our reconnect command, close the keeper
+        // our retry loop will try to create one again
+        try {
+          keeper. close();
+        } catch (Exception e) {
+          ParWork.propegateInterrupt("Exception closing keeper after hitting exception", e);
+          if (e instanceof  InterruptedException || e instanceof AlreadyClosedException) {
+            return;
+          }
         }
       }
 
@@ -186,75 +246,41 @@ public class ConnectionManager implements Watcher, Closeable {
         // try again to create a new connection.
         log.info("Running reconnect strategy");
         try {
-          connectionStrategy.reconnect(zkServerAddress,
-              client.getZkClientTimeout(), this,
-              new ZkClientConnectionStrategy.ZkUpdate() {
-                @Override
-                public void update(SolrZooKeeper keeper) {
-                  try {
-                    waitForConnected(1000);
+          updatezk();
+          try {
+            waitForConnected(1000);
 
-                    try {
-                      client.updateKeeper(keeper);
-                    } catch (InterruptedException e) {
-                      ParWork.propegateInterrupt(e);
-                      return;
-                    } catch (Exception e) {
-                      log.error("$ZkClientConnectionStrategy.ZkUpdate.update(SolrZooKeeper=" + keeper + ")", e);
-                      SolrException exp = new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-                      try {
-                        closeKeeper(keeper);
-                      } catch (Exception e1) {
-                        log.error("$ZkClientConnectionStrategy.ZkUpdate.update(SolrZooKeeper=" + keeper + ")", e1);
-                        ParWork.propegateInterrupt(e);
-                        exp.addSuppressed(e1);
-                      }
-
-                      throw exp;
-                    }
-
-                    if (onReconnect != null) {
-                      onReconnect.command();
-                    }
-
-                  } catch (InterruptedException e) {
-                    ParWork.propegateInterrupt(e);
-                    return;
-                  } catch (Exception e1) {
-                    log.error("Exception updating zk instance", e1);
-                    SolrException exp = new SolrException(SolrException.ErrorCode.SERVER_ERROR, e1);
-
-                    // if there was a problem creating the new SolrZooKeeper
-                    // or if we cannot run our reconnect command, close the keeper
-                    // our retry loop will try to create one again
-                    try {
-                      closeKeeper(keeper);
-                    } catch (Exception e) {
-                      ParWork.propegateInterrupt(e);
-                      exp.addSuppressed(e);
-                    }
-
-                    throw exp;
-                  }
-
-                  if (log.isDebugEnabled()) {
-                    log.debug("$ZkClientConnectionStrategy.ZkUpdate.update(SolrZooKeeper) - end");
-                  }
+            if (onReconnect != null) {
+              try {
+                onReconnect.command();
+              } catch (Exception e) {
+                SolrException exp = new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+                ParWork.propegateInterrupt("$ZkClientConnectionStrategy.ZkUpdate.update(SolrZooKeeper=" + keeper + ")", e);
+                if (e instanceof InterruptedException || e instanceof AlreadyClosedException) {
+                  return;
                 }
-              });
+                throw exp;
+              }
+            }
+          } catch (InterruptedException | AlreadyClosedException e) {
+            ParWork.propegateInterrupt(e);
+            return;
+          } catch (Exception e1) {
+            log.error("Exception updating zk instance", e1);
+            SolrException exp = new SolrException(SolrException.ErrorCode.SERVER_ERROR, e1);
+            throw exp;
+          }
 
-          break;
-
-        } catch (InterruptedException | AlreadyClosedException e) {
-          ParWork.propegateInterrupt(e);
+          if (log.isDebugEnabled()) {
+            log.debug("$ZkClientConnectionStrategy.ZkUpdate.update(SolrZooKeeper) - end");
+          }
+        } catch (AlreadyClosedException e) {
           return;
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
-          if (e instanceof  InterruptedException) {
-            return;
-          }
           SolrException.log(log, "", e);
-          log.info("Could not connect due to error, trying again");
+          log.info("Could not connect due to error, trying again ..");
+          ParWork.close(keeper);
+          break;
         }
 
       } while (!isClosed() && !client.isClosed());
@@ -263,7 +289,6 @@ public class ConnectionManager implements Watcher, Closeable {
     } else if (state == KeeperState.Disconnected) {
       log.info("zkClient has disconnected");
       disconnected();
-      connectionStrategy.disconnected();
     } else if (state == KeeperState.Closed) {
       log.info("zkClient state == closed");
       //disconnected();
@@ -283,19 +308,21 @@ public class ConnectionManager implements Watcher, Closeable {
 
   // we use a volatile rather than sync
   // to avoid possible deadlock on shutdown
-  public void close() {
+  public synchronized void close() {
     log.info("Close called on ZK ConnectionManager");
     this.isClosed = true;
     this.likelyExpiredState = LikelyExpiredState.EXPIRED;
-    if (client.isConnected()) {
-      try {
-        waitForDisconnected(5000);
-      } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
-      } catch (TimeoutException e) {
-        log.warn("Timeout waiting for ZooKeeper client to disconnect");
-      }
-    }
+
+    keeper.close();
+//
+//    try {
+//      waitForDisconnected(5000);
+//    } catch (InterruptedException e) {
+//      ParWork.propegateInterrupt(e);
+//    } catch (TimeoutException e) {
+//      throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, e);
+//    }
+    assert ObjectReleaseTracker.release(this);
   }
 
   private boolean isClosed() {
@@ -340,8 +367,27 @@ public class ConnectionManager implements Watcher, Closeable {
 
   }
 
-  private void closeKeeper(SolrZooKeeper keeper) {
-    keeper.close();
+  protected SolrZooKeeper createSolrZooKeeper(final String serverAddress, final int zkClientTimeout,
+                                              final Watcher watcher) throws IOException {
+    SolrZooKeeper result = new SolrZooKeeper(serverAddress, zkClientTimeout, watcher);
+
+    if (zkCredentialsToAddAutomatically != null) {
+      for (ZkCredentialsProvider.ZkCredentials zkCredentials : zkCredentialsToAddAutomatically.getCredentials()) {
+        result.addAuthInfo(zkCredentials.getScheme(), zkCredentials.getAuth());
+      }
+    }
+
+    return result;
   }
+
+
+  public interface DisconnectedListener {
+    void disconnected();
+  }
+
+  public interface ConnectedListener {
+    void connected();
+  }
+
 
 }

@@ -1,5 +1,6 @@
 package org.apache.zookeeper;
 
+import org.apache.solr.common.ParWork;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,14 +16,24 @@ public class ZooKeeperExposed {
         this.clientCnxn = clientCnxn;
     }
 
-    public void setSendThreadState(ZooKeeper.States closed) {
+    public void setSendThreadState() {
         clientCnxn.state = ZooKeeper.States.CLOSED;
         clientCnxn.eventThread.queueEventOfDeath();
     }
 
-    public void intteruptSendThread() {
+    public void interruptSendThread() {
         clientCnxn.sendThread.interrupt();
-        clientCnxn.eventThread.interrupt();
+    }
+
+    public void interruptEventThread() {
+    //    while (clientCnxn.eventThread.isAlive()) {
+           clientCnxn.eventThread.interrupt();
+//            try {
+//                clientCnxn.eventThread.join(5000);
+//            } catch (InterruptedException e) {
+//               // ParWork.propegateInterrupt(e);
+//            }
+     //   }
     }
 //    @Override
 //    public void injectSessionExpiration() {

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.common.cloud;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -350,14 +351,15 @@ public class ZkStateReader implements SolrCloseable {
 
   public ZkStateReader(String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout) {
     closeTracker = new CloseTracker();
+
     this.zkClient = new SolrZkClient(zkServerAddress, zkClientTimeout, zkClientConnectTimeout,
-        // on reconnect, reload cloud info
-        new OnReconnect() {
-          @Override
-          public void command() {
-            ZkStateReader.this.createClusterStateWatchersAndUpdate();
-          }
-        }).start();
+            // on reconnect, reload cloud info
+            new OnReconnect() {
+              @Override
+              public void command() {
+                ZkStateReader.this.createClusterStateWatchersAndUpdate();
+              }
+            }).start();
 
     this.configManager = new ZkConfigManager(zkClient);
     this.closeClient = true;
@@ -411,6 +413,7 @@ public class ZkStateReader implements SolrCloseable {
   public synchronized void createClusterStateWatchersAndUpdate() {
 
     zkClient.start();
+
     log.info("createClusterStateWatchersAndUpdate");
     CountDownLatch latch = new CountDownLatch(1);
 

@@ -74,7 +74,7 @@ public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
     setSecuritySystemProperties();
 
     SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(),
-        AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT, null, null, null);
+        AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT);
     zkClient.makePath("/solr", false, true);
     zkClient.close();
 
