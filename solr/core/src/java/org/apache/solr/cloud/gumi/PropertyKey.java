@@ -21,4 +21,8 @@ package org.apache.solr.cloud.gumi;
  * A property key used by plugins to request values from Solr
  */
 public interface PropertyKey {
+  /**
+   * @return the target of this {@link PropertyKey}, i.e. from where the corresponding {@link PropertyValue} should be obtained.
+   */
+  PropertyKeyTarget getPropertyKeyTarget();
 }

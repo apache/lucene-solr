@@ -18,13 +18,7 @@
 package org.apache.solr.cloud.gumi;
 
 /**
- * A key for a given system property on a target {@link Node}.
+ * Key for requesting disk space info from a given {@link Node}).
  */
-public interface SystemPropertyPropertyKey extends PropertyKey {
-
-  /**
-   * @return the name of the system property on the target {@link Node} this property key is going to ask to retrieve.
-   * This is the value passed into {@link PropertyKeyFactory#createSystemPropertyKey(PropertyKeyTarget, String)}.
-   */
-  String getSystemPropertyName();
+public interface DiskInfoPropertyKey extends PropertyKey {
 }

@@ -18,13 +18,13 @@
 package org.apache.solr.cloud.gumi;
 
 /**
- * A key for a given system property on a target {@link Node}.
+ * A key for a given metric on a target {@link Node}.
  */
-public interface SystemPropertyPropertyKey extends PropertyKey {
+public interface MetricPropertyKey extends PropertyKey {
 
   /**
-   * @return the name of the system property on the target {@link Node} this property key is going to ask to retrieve.
-   * This is the value passed into {@link PropertyKeyFactory#createSystemPropertyKey(PropertyKeyTarget, String)}.
+   * @return the name of the metric on the target {@link Node} this property key is going to ask to retrieve.
+   * This is the value passed into {@link PropertyKeyFactory#createMetricKey}.
    */
-  String getSystemPropertyName();
+  String getMetricName();
 }

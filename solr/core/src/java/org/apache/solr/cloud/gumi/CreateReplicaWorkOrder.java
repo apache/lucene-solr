@@ -20,8 +20,8 @@ package org.apache.solr.cloud.gumi;
 /**
  * Work order returned from the plugin to Solr to get a replica created.
  * Even though the interface is empty, it doesn't mean the implementation will be :-)
- * The plugin creates the instances using {@link WorkOrderFactory#createWorkOrderCreateReplica(Request, ReplicaType, String, int, Node)}
- * and does pass the reauired parameters. Adding getter methods here might be useful (for logging in the plugin, because
+ * The plugin creates the instances using {@link WorkOrderFactory#createWorkOrderCreateReplica}
+ * and does pass the required parameters. Adding getter methods here might be useful (for logging in the plugin, because
  * hopefully the implementation doesn't need to inspect the instances it created to know what to do with them....)
  * TODO I'll edit this comment at some point of course, it will hopefully not make it as is to the actual branch
  */

@@ -18,13 +18,9 @@
 package org.apache.solr.cloud.gumi;
 
 /**
- * A key for a given system property on a target {@link Node}.
+ * This empty interface represents the entire SolrCloud cluster in case {@link PropertyKey}'s need to be specified with
+ * a global cluster target (for example if there are global cluster metrics that need to be retrieved).
+ * If not used or doesn't make sense, should be removed.
  */
-public interface SystemPropertyPropertyKey extends PropertyKey {
-
-  /**
-   * @return the name of the system property on the target {@link Node} this property key is going to ask to retrieve.
-   * This is the value passed into {@link PropertyKeyFactory#createSystemPropertyKey(PropertyKeyTarget, String)}.
-   */
-  String getSystemPropertyName();
+public interface Cluster extends PropertyKeyTarget {
 }

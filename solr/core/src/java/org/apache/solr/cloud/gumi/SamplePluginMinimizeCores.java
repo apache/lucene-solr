@@ -36,7 +36,7 @@ import com.google.common.collect.TreeMultimap;
 public class SamplePluginMinimizeCores implements GumiPlugin {
 
   public List<WorkOrder> computePlacement(Topo clusterTopo, List<Request> placementRequests, PropertyKeyFactory propertyFactory,
-                                          WorkOrderFactory workOrderFactory) throws GumiException {
+                                          PropertyKeyFetcher propertyFetcher, WorkOrderFactory workOrderFactory) throws GumiException {
     // This plugin only supports Creating a collection, and only one collection. Real code would be different...
     if (placementRequests.size() != 1 ||  !(placementRequests.get(0) instanceof CreateCollectionRequest)) {
       throw new GumiException("This plugin only supports creating collections");
@@ -52,20 +52,21 @@ public class SamplePluginMinimizeCores implements GumiPlugin {
     }
 
     // Will have one WorkOrder for creating the collection and then one per replica
-    List<WorkOrder> workToDo = new ArrayList<>(1 + totalReplicasPerShard * reqCreateCollection.getShardCount());
+    List<WorkOrder> workToDo = new ArrayList<>(1 + totalReplicasPerShard * reqCreateCollection.getShardNames().size());
 
     // First need a work order to create the collection
     NewCollectionWorkOrder newCollection = workOrderFactory.createWorkOrderNewCollection(reqCreateCollection,
-        reqCreateCollection.getCollectionName(), reqCreateCollection.getShardCount());
+        reqCreateCollection.getCollectionName(), reqCreateCollection.getShardNames());
     workToDo.add(newCollection);
 
     // Get number of cores on each Node
     TreeMultimap<Integer, Node> nodesByCores = TreeMultimap.create(Comparator.naturalOrder(), Ordering.arbitrary());
 
     // Get the number of cores on each node and sort the nodes by increasing number of cores
-    final CoresCountPropertyKey coresCountPropertyKey = propertyFactory.createCoreCountKey();
     for (Node node : clusterTopo.getLiveNodes()) {
-      Map<PropertyKey, PropertyValue> propMap = node.getProperties(Collections.singleton(coresCountPropertyKey));
+      // TODO: redo this. It is potentially less efficient to call propertyFetcher.getProperties() multiple times rather than once
+      final CoresCountPropertyKey coresCountPropertyKey = propertyFactory.createCoreCountKey(node);
+      Map<PropertyKey, PropertyValue> propMap = propertyFetcher.fetchProperties(Collections.singleton(coresCountPropertyKey));
       PropertyValue returnedValue = propMap.get(coresCountPropertyKey);
       if (returnedValue == null) {
         throw new GumiException("Can't get number of cores in " + node);
@@ -77,7 +78,7 @@ public class SamplePluginMinimizeCores implements GumiPlugin {
     // Now place all replicas of all shards on nodes, by placing on nodes with the smallest number of cores and taking
     // into account replicas placed during this computation. Note for each shard we must place on different nodes but
     // when moving to the next shard should use the newly sorted order.
-    for (int shardIndex = 0; shardIndex < reqCreateCollection.getShardCount(); shardIndex++) {
+    for (String shardName : reqCreateCollection.getShardNames()) {
       // Capture a list for assignment order based on the sort order of the treemap to put replicas on nodes with less
       // cores first. We only need totalReplicasPerShard nodes. Need to capture the pair in order to update the treemap
       // as we go. TODO I guess and hope there's a more elegant way to do that but it's getting late here.
@@ -88,11 +89,11 @@ public class SamplePluginMinimizeCores implements GumiPlugin {
       }
 
       placeForReplicaType(reqCreateCollection, nodeEntriesToAssign, workOrderFactory, workToDo,
-          shardIndex, reqCreateCollection.getNRTReplicationFactor(), ReplicaType.NRT, nodesByCores);
+          shardName, reqCreateCollection.getNRTReplicationFactor(), ReplicaType.NRT, nodesByCores);
       placeForReplicaType(reqCreateCollection, nodeEntriesToAssign, workOrderFactory, workToDo,
-          shardIndex, reqCreateCollection.getTLOGReplicationFactor(), ReplicaType.TLOG, nodesByCores);
+          shardName, reqCreateCollection.getTLOGReplicationFactor(), ReplicaType.TLOG, nodesByCores);
       placeForReplicaType(reqCreateCollection, nodeEntriesToAssign, workOrderFactory, workToDo,
-          shardIndex, reqCreateCollection.getPULLReplicationFactor(), ReplicaType.PULL, nodesByCores);
+          shardName, reqCreateCollection.getPULLReplicationFactor(), ReplicaType.PULL, nodesByCores);
     }
 
     return workToDo;
@@ -103,7 +104,7 @@ public class SamplePluginMinimizeCores implements GumiPlugin {
    */
   private void placeForReplicaType(CreateCollectionRequest reqCreateCollection, ArrayList<Map.Entry<Integer, Node>> nodeEntriesToAssign,
                                    WorkOrderFactory workOrderFactory, List<WorkOrder> workToDo,
-                                   int shardIndex, int countReplicas, ReplicaType replicaType,
+                                   String shardName, int countReplicas, ReplicaType replicaType,
                                    TreeMultimap<Integer, Node> nodesByCores) {
     for (int replica = 0; replica < countReplicas; replica++) {
       final Map.Entry<Integer, Node> entry = nodeEntriesToAssign.remove(0);
@@ -111,7 +112,7 @@ public class SamplePluginMinimizeCores implements GumiPlugin {
       final Integer coreCount = entry.getKey();
 
       CreateReplicaWorkOrder createReplica = workOrderFactory.createWorkOrderCreateReplica(reqCreateCollection,
-          replicaType, reqCreateCollection.getCollectionName(), shardIndex, node);
+          replicaType, reqCreateCollection.getCollectionName(), shardName, node);
 
       workToDo.add(createReplica);
 

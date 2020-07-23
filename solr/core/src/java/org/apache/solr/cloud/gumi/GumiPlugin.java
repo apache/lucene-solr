@@ -18,7 +18,6 @@
 package org.apache.solr.cloud.gumi;
 
 import java.util.List;
-import java.util.Set;
 
 /**
  * Implemented by external plugins to control replica placement and movement on the search cluster (as well as other things
@@ -30,11 +29,13 @@ public interface GumiPlugin {
   /**
    * @param clusterTopo initial state of the cluster
    * @param placementRequests requests for placing new data, moving or removing data on the cluster. These are ordered
-   * @param propertyFactory Factory used by the plugin to build instances of {@link PropertyKey} to request properties
-   *                        in for example {@link Node#getProperties(Set)}.
+   * @param propertyFactory Factory used by the plugin to build instances of {@link PropertyKey} to resolve properties
+   *                        to their values.
+   * @param propertyFetcher Allows resolving {@link PropertyKey}'s to {@link PropertyValue}'s by contacting the
+   *                        relevant {@link PropertyKeyTarget} defined in each {@link PropertyKey}.
    * @param workOrderFactory Factory in used to create instances of {@link WorkOrder} to return computed decisions.
    * @return work orders to be executed (in order) and that will lead to satisfying all of the placement requests.
    */
   List<WorkOrder> computePlacement(Topo clusterTopo, List<Request> placementRequests, PropertyKeyFactory propertyFactory,
-                                   WorkOrderFactory workOrderFactory) throws GumiException, InterruptedException;
+                                   PropertyKeyFetcher propertyFetcher, WorkOrderFactory workOrderFactory) throws GumiException, InterruptedException;
 }

@@ -17,8 +17,10 @@
 
 package org.apache.solr.cloud.gumi;
 
+import java.util.Set;
+
 /**
- * <p>Request for creating a new collection with a given number of shards and replication factor for various replica types.</p>
+ * <p>Request for creating a new collection with a given set of shards and replication factor for various replica types.</p>
  *
  * Note there is no need at this stage to allow the request to convey each shard hash range for example, this can be handled
  * by the Solr side implementation without needing the plugin to worry about it.
@@ -27,7 +29,7 @@ package org.apache.solr.cloud.gumi;
 public interface CreateCollectionRequest extends Request {
   String getCollectionName();
 
-  int getShardCount();
+  Set<String> getShardNames();
 
   int getNRTReplicationFactor();
   int getTLOGReplicationFactor();

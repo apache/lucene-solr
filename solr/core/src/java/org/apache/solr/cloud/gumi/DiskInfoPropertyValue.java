@@ -17,14 +17,28 @@
 
 package org.apache.solr.cloud.gumi;
 
-/**
- * A key for a given system property on a target {@link Node}.
- */
-public interface SystemPropertyPropertyKey extends PropertyKey {
+public interface DiskInfoPropertyValue extends PropertyValue {
+
+  @Override
+  DiskInfoPropertyKey getKey();
 
   /**
-   * @return the name of the system property on the target {@link Node} this property key is going to ask to retrieve.
-   * This is the value passed into {@link PropertyKeyFactory#createSystemPropertyKey(PropertyKeyTarget, String)}.
+   * Total disk size of the partition in which cores are stored on the {@link Node}) from which this instance was obtained.
    */
-  String getSystemPropertyName();
+  int getTotalSizeGB();
+
+  /**
+   * Free disk size of the partition in which cores are stored on the {@link Node}) from which this instance was obtained.
+   */
+  int getFreeSizeGB();
+
+  /**
+   * Type of disk hardware used for the partition in which cores are stored on the {@link Node}) from which this instance
+   * was obtained.
+   */
+  DiskType getDiskType();
+
+  enum DiskType {
+    SSD, ROTATIONAL;
+  }
 }

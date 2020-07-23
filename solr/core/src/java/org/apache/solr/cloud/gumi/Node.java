@@ -17,19 +17,12 @@
 
 package org.apache.solr.cloud.gumi;
 
-import java.util.Map;
-import java.util.Set;
-
 /**
  * Representation of a SolrCloud node or server in the SolrCloud cluster.
  */
-public interface Node {
+public interface Node extends PropertyKeyTarget {
   /**
-   * Retrieves the properties from the {@link Node} and returns those that are defined.
-   * @param props the properties to retrieve
-   * @return a map whose keys are the requested property keys and the values are the requested property values, when such
-   *    values are defined on the {@link Node}. If there's not value for a given key, it will not appear in the map. The
-   *    returned value will never be {@code null} but may be an empty map.
+   * TODO Do we need a node name?
    */
-  Map<PropertyKey, PropertyValue> getProperties(Set<PropertyKey> props);
+  String getNodeName();
 }

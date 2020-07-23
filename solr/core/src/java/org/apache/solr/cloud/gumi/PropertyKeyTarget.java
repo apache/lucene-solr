@@ -18,13 +18,11 @@
 package org.apache.solr.cloud.gumi;
 
 /**
- * A key for a given system property on a target {@link Node}.
+ * Getting the {@link PropertyValue} for a {@link PropertyKey} involves a "resolution" of that key in a certain context.
+ * Depending on the type of the key, the context can be the whole {@link Cluster}, a {@link Node}, a {@link SolrCollection},
+ * a {@link Shard} or a {@link Replica}. Not all {@link PropertyKey}'s make sense for all {@link PropertyKeyTarget}'s of course.<p>
+ *
+ * This is an empty marker interface that identifies the possible targets for which a {@link PropertyKey} is defined.
  */
-public interface SystemPropertyPropertyKey extends PropertyKey {
-
-  /**
-   * @return the name of the system property on the target {@link Node} this property key is going to ask to retrieve.
-   * This is the value passed into {@link PropertyKeyFactory#createSystemPropertyKey(PropertyKeyTarget, String)}.
-   */
-  String getSystemPropertyName();
+public interface PropertyKeyTarget {
 }

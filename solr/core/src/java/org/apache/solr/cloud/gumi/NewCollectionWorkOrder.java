@@ -17,11 +17,13 @@
 
 package org.apache.solr.cloud.gumi;
 
+import java.util.Set;
+
 /**
  * A work order for the bookkeeping work required for collection creation before it is possible to create replicas.
  */
 public interface NewCollectionWorkOrder extends WorkOrder {
   String getCollectionName();
 
-  int getShardCount();
+  Set<String> getShardNames();
 }

@@ -18,13 +18,19 @@
 package org.apache.solr.cloud.gumi;
 
 /**
- * A key for a given system property on a target {@link Node}.
+ * A {@link PropertyValue} representing a metric on the target {@link Node}.
  */
-public interface SystemPropertyPropertyKey extends PropertyKey {
+public interface MetricPropertyValue extends PropertyValue {
 
   /**
-   * @return the name of the system property on the target {@link Node} this property key is going to ask to retrieve.
-   * This is the value passed into {@link PropertyKeyFactory#createSystemPropertyKey(PropertyKeyTarget, String)}.
+   * Strongly typed property key retrieval corresponding to that property value.
    */
-  String getSystemPropertyName();
+  @Override
+  MetricPropertyKey getKey();
+
+  /**
+   * Returns the metric value from the {@link PropertyKeyTarget} on which it was retrieved.
+   * TODO: what type should the metric be? Maybe offer multiple getters for different java types and have each metric implement the right one and throw from the wrong ones? This avoids casting...
+   */
+  Double getMetricValue();
 }

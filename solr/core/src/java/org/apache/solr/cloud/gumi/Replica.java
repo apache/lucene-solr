@@ -23,12 +23,13 @@ package org.apache.solr.cloud.gumi;
  * plugin wants to add a replica it goes through {@link WorkOrderFactory#createWorkOrderCreateReplica}).
  * TODO is there an elegant way to have this type also used by the plugin to add replicas? (insisting on elegant)
  */
-public interface Replica {
+public interface Replica extends PropertyKeyTarget {
   Shard getShard();
 
   ReplicaType getType();
+  ReplicaState getState();
 
   // TODO: needed? Different?
-  String replicaName();
-  String coreName();
+  String getReplicaName();
+  String getCoreName();
 }

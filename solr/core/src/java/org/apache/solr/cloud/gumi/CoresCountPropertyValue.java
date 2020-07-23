@@ -23,7 +23,7 @@ public interface CoresCountPropertyValue extends PropertyValue {
   CoresCountPropertyKey getKey();
 
   /**
-   * Returns the number of cores on the {@link Node}) it was obtained from.
+   * Returns the number of cores on the {@link Node}) this instance was obtained from.
    */
   int getCoresCount();
 }

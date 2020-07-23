@@ -26,7 +26,7 @@ import java.util.Optional;
  */
 public interface WorkOrder {
   /**
-   * <p>When it makes sense (it might not for "maintenance" {@link WorkOrder}'s for example not directly linked to a specific
+   * <p>When it makes sense (it might not be the case for "maintenance" {@link WorkOrder}'s for example not directly linked to a specific
    * {@link Request}), returns the {@link Request} that triggered the creation of this {@link WorkOrder}.</p>
    * TODO Decide if this is really needed, because if it's optional it might better be removed
    */

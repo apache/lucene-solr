@@ -29,7 +29,7 @@ import java.util.List;
 public class SamplePluginRandomPlacement implements GumiPlugin {
 
   public List<WorkOrder> computePlacement(Topo clusterTopo, List<Request> placementRequests, PropertyKeyFactory propertyFactory,
-                                          WorkOrderFactory workOrderFactory) throws GumiException {
+                                          PropertyKeyFetcher propertyFetcher, WorkOrderFactory workOrderFactory) throws GumiException {
     // This plugin only supports Creating a collection, and only one collection. Real code would be different...
     if (placementRequests.size() != 1 ||  !(placementRequests.get(0) instanceof CreateCollectionRequest)) {
       throw new GumiException("This plugin only supports creating collections");
@@ -45,25 +45,25 @@ public class SamplePluginRandomPlacement implements GumiPlugin {
     }
 
     // Will have one WorkOrder for creating the collection and then one per replica
-    List<WorkOrder> workToDo = new ArrayList<>(1 + totalReplicasPerShard * reqCreateCollection.getShardCount());
+    List<WorkOrder> workToDo = new ArrayList<>(1 + totalReplicasPerShard * reqCreateCollection.getShardNames().size());
 
     // First need a work order to create the collection
     NewCollectionWorkOrder newCollection = workOrderFactory.createWorkOrderNewCollection(reqCreateCollection,
-        reqCreateCollection.getCollectionName(), reqCreateCollection.getShardCount());
+        reqCreateCollection.getCollectionName(), reqCreateCollection.getShardNames());
     workToDo.add(newCollection);
 
     // Now place randomly all replicas of all shards on available nodes
-    for (int shardIndex = 0; shardIndex < reqCreateCollection.getShardCount(); shardIndex++) {
+    for (String shardName : reqCreateCollection.getShardNames()) {
       // Shuffle the nodes for each shard so that replicas for a shard are placed on distinct yet random nodes
       ArrayList<Node> nodesToAssign = new ArrayList<>(clusterTopo.getLiveNodes());
       Collections.shuffle(nodesToAssign);
 
       placeForReplicaType(reqCreateCollection, nodesToAssign, workOrderFactory, workToDo,
-          shardIndex, reqCreateCollection.getNRTReplicationFactor(), ReplicaType.NRT);
+          shardName, reqCreateCollection.getNRTReplicationFactor(), ReplicaType.NRT);
       placeForReplicaType(reqCreateCollection, nodesToAssign, workOrderFactory, workToDo,
-          shardIndex, reqCreateCollection.getTLOGReplicationFactor(), ReplicaType.TLOG);
+          shardName, reqCreateCollection.getTLOGReplicationFactor(), ReplicaType.TLOG);
       placeForReplicaType(reqCreateCollection, nodesToAssign, workOrderFactory, workToDo,
-          shardIndex, reqCreateCollection.getPULLReplicationFactor(), ReplicaType.PULL);
+          shardName, reqCreateCollection.getPULLReplicationFactor(), ReplicaType.PULL);
     }
 
     return workToDo;
@@ -74,11 +74,11 @@ public class SamplePluginRandomPlacement implements GumiPlugin {
    */
   private void placeForReplicaType(CreateCollectionRequest reqCreateCollection, ArrayList<Node> nodesToAssign,
                                    WorkOrderFactory workOrderFactory, List<WorkOrder> workToDo,
-                                   int shardIndex, int countReplicas, ReplicaType replicaType) {
+                                   String shardName, int countReplicas, ReplicaType replicaType) {
     for (int replica = 0; replica < countReplicas; replica++) {
       Node node = nodesToAssign.remove(0);
       CreateReplicaWorkOrder createReplica = workOrderFactory.createWorkOrderCreateReplica(reqCreateCollection,
-          replicaType, reqCreateCollection.getCollectionName(), shardIndex, node);
+          replicaType, reqCreateCollection.getCollectionName(), shardName, node);
 
       workToDo.add(createReplica);
     }

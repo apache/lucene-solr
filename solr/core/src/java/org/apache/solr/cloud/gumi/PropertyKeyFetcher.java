@@ -17,14 +17,16 @@
 
 package org.apache.solr.cloud.gumi;
 
-/**
- * A key for a given system property on a target {@link Node}.
- */
-public interface SystemPropertyPropertyKey extends PropertyKey {
+import java.util.Map;
+import java.util.Set;
 
+public interface PropertyKeyFetcher {
   /**
-   * @return the name of the system property on the target {@link Node} this property key is going to ask to retrieve.
-   * This is the value passed into {@link PropertyKeyFactory#createSystemPropertyKey(PropertyKeyTarget, String)}.
+   * Retrieves the properties from their configured {@link PropertyKeyTarget}'s and returns those that are defined.
+   * @param props the properties to retrieve
+   * @return a map whose keys are the requested property keys and the values are the requested property values, when such
+   *    values are defined on the {@link PropertyKeyTarget}. If there's not value for a given key, it will not appear in
+   *    the returned map. The returned value will never be {@code null} but may be an empty map.
    */
-  String getSystemPropertyName();
+  Map<PropertyKey, PropertyValue> fetchProperties(Set<PropertyKey> props);
 }

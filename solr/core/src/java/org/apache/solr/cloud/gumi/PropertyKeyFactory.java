@@ -18,17 +18,46 @@
 package org.apache.solr.cloud.gumi;
 
 /**
- * Factory used by the plugin to create property keys to request property values from Solr
+ * Factory used by the plugin to create property keys to request property values from Solr.<p>
+ *
+ * Note there currently exist sub-interfaces of {@link PropertyKey} for all the keys. This is for initial readability,
+ * but is not required. Some of the interfaces are empty, and even those that can return the values used to build the
+ * keys are not really required, the plugin code can keep track in other ways of what is what.
+ * Leaving it this way for now but very tempted to have all the factory methods simply return a {@link PropertyKey} instead.<p>
+ *
+ * Building of a {@link PropertyKey} requires specifying the target (context) from which the value of that key should be
+ * obtained. This is done by specifying the appropriate {@link PropertyKeyTarget}.<br>
+ * When only a single type of target is acceptable, the corresponding parameter name indicates its type (for example
+ * <code>node</code>). It seemed better to be consistent in the type of the target parameter rather than use a more
+ * specific type in some cases (e.g. use {@link Node} rather than {@link PropertyKeyTarget} when a property can only be
+ * built for nodes).
  */
 public interface PropertyKeyFactory {
   /**
-   * Returns a property key allowing to request the number of cores. There are no parameters for this key.
+   * Returns a property key to request the number of cores on a {@link Node}.
    */
-  CoresCountPropertyKey createCoreCountKey();
+  CoresCountPropertyKey createCoreCountKey(PropertyKeyTarget node);
 
   /**
-   * Returns a property key allowing to request the value of a system property (sorry property used twice in two different
-   * contexts). The parameter is the name of the system property to retrieve.
+   * Returns a property key to request disk related info.
    */
-  SystemPropertyPropertyKey createSystemPropertyKey(String systemPropertyName);
+  DiskInfoPropertyKey createDiskInfoKey(PropertyKeyTarget node);
+
+  /**
+   * Returns a property key to request the value of a system property on a {@link Node}.
+   * @param systemPropertyName the name of the system property to retrieve.
+   */
+  SystemPropertyPropertyKey createSystemPropertyKey(PropertyKeyTarget node, String systemPropertyName);
+
+  /**
+   * Returns a property key to request the value of a metric.<p>
+   *
+   * Not all metrics make sense everywhere, but metrics can be applied to different objects. For example
+   * <code>SEARCHER.searcher.indexCommitSize</code> would make sense for a given replica of a given shard of a given collection,
+   * and possibly in other contexts.<p>
+   *
+   * @param metricSource The registry of the metric. For example a specific {@link Replica}.
+   * @param metricName for example <code>SEARCHER.searcher.indexCommitSize</code>.
+   */
+  MetricPropertyKey createMetricKey(PropertyKeyTarget metricSource, String metricName);
 }

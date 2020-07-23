@@ -17,18 +17,21 @@
 
 package org.apache.solr.cloud.gumi;
 
+import java.util.Set;
+
 public interface WorkOrderFactory {
   /**
    * Creates a {@link WorkOrder} for adding a new collection (does not add any replica)
    */
-  NewCollectionWorkOrder createWorkOrderNewCollection(Request request, String CollectionName, int shardCount);
+  NewCollectionWorkOrder createWorkOrderNewCollection(Request request, String CollectionName, Set<String> shardNames);
 
   /**
-   * Creates a {@link WorkOrder} for adding a replica to an existing collection or a collection for which a
-   * {@link NewCollectionWorkOrder} was already added.
+   * Creates a {@link WorkOrder} for adding a replica to an existing shard of an existing collection or a to a yet to
+   * exist shard for a yet to exit collection for which a {@link NewCollectionWorkOrder} was already added (+ possibly other
+   * combinations: the collection might exist but the shard not yet b.
    *
-   * @param shardIndex 0 based shard number. TODO: likely needs to be reworked when looking at adding replicas to existing collection/shard
+   * @param shardName 0 based shard number. TODO: likely needs to be reworked when looking at adding replicas to existing collection/shard
    */
   CreateReplicaWorkOrder createWorkOrderCreateReplica(Request request, ReplicaType replicaType, String CollectionName,
-                                                      int shardIndex, Node targetNode);
+                                                      String shardName, Node targetNode);
 }

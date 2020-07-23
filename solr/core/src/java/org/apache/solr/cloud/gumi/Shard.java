@@ -22,11 +22,8 @@ import java.util.Set;
 /**
  * Shard in a {@link SolrCollection}, i.e. a subset of the data indexed in that collection.
  */
-public interface Shard {
-  /**
-   * 0 numbered index of the {@link Shard} in the {@link SolrCollection}.
-   */
-  int getShardIndex();
+public interface Shard extends PropertyKeyTarget {
+  String getShardName();
 
   Set<Replica> getReplicas();
 }
