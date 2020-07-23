@@ -1296,7 +1296,7 @@ public class ZkController implements Closeable {
       return;
     } finally {
       if (zkClient != null) {
-        zkClient.enableCloseLock();
+        zkClient.disableCloseLock();
       }
       ParWork.close(zkClient);
     }

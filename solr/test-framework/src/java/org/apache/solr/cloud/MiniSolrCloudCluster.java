@@ -654,49 +654,49 @@ public class MiniSolrCloudCluster {
    */
   public void shutdown() throws Exception {
     if (zkServer.getZkClient().isConnected()) {
-      try {
-        log.info("creating cluster shutdown zk node");
-
-        zkServer.getZkClient().mkdirs("/solr" + ZkController.CLUSTER_SHUTDOWN);
-        zkServer.getZkClient().printLayout();
-        zkServer.getZkClient().printLayoutToStream(System.out);
-
-        CountDownLatch latch = new CountDownLatch(1);
-        List<String> children = zkServer.getZkClient().getChildren("/solr" + ZkStateReader.LIVE_NODES_ZKNODE, new Watcher() {
-          @Override
-          public void process(WatchedEvent event) {
-            if (Event.EventType.None.equals(event.getType())) {
-              return;
-            }
-            if (event.getType() == Event.EventType.NodeChildrenChanged) {
-              try {
-                List<String> children = zkServer.getZkClient().getChildren("/solr" + ZkStateReader.LIVE_NODES_ZKNODE, this, false);
-                if (children.size() == 0) {
-                  latch.countDown();
-                }
-              } catch (KeeperException e) {
-                log.error("Exception on proper shutdown", e);
-                return;
-              } catch (InterruptedException e) {
-                ParWork.propegateInterrupt(e);
-                return;
-              }
-            }
-          }
-        }, false);
-
-        if (children.size() > 0) {
-          boolean success = latch.await(10, TimeUnit.SECONDS);
-          if (!success) {
-            throw new TimeoutException("Time out waiting to see solr live nodes go down " + children.size());
-          }
-        }
-
-      } catch (KeeperException.NodeExistsException e) {
-        log.info("Shutdown zk node already exists");
-      } catch (Exception e) {
-        log.error("Exception on proper shutdown", e);
-      }
+//      try {
+//        log.info("creating cluster shutdown zk node");
+//
+//        zkServer.getZkClient().mkdirs("/solr" + ZkController.CLUSTER_SHUTDOWN);
+//        zkServer.getZkClient().printLayout();
+//        zkServer.getZkClient().printLayoutToStream(System.out);
+//
+//        CountDownLatch latch = new CountDownLatch(1);
+//        List<String> children = zkServer.getZkClient().getChildren("/solr" + ZkStateReader.LIVE_NODES_ZKNODE, new Watcher() {
+//          @Override
+//          public void process(WatchedEvent event) {
+//            if (Event.EventType.None.equals(event.getType())) {
+//              return;
+//            }
+//            if (event.getType() == Event.EventType.NodeChildrenChanged) {
+//              try {
+//                List<String> children = zkServer.getZkClient().getChildren("/solr" + ZkStateReader.LIVE_NODES_ZKNODE, this, false);
+//                if (children.size() == 0) {
+//                  latch.countDown();
+//                }
+//              } catch (KeeperException e) {
+//                log.error("Exception on proper shutdown", e);
+//                return;
+//              } catch (InterruptedException e) {
+//                ParWork.propegateInterrupt(e);
+//                return;
+//              }
+//            }
+//          }
+//        }, false);
+//
+//        if (children.size() > 0) {
+//          boolean success = latch.await(10, TimeUnit.SECONDS);
+//          if (!success) {
+//            throw new TimeoutException("Time out waiting to see solr live nodes go down " + children.size());
+//          }
+//        }
+//
+//      } catch (KeeperException.NodeExistsException e) {
+//        log.info("Shutdown zk node already exists");
+//      } catch (Exception e) {
+//        log.error("Exception on proper shutdown", e);
+//      }
     }
 
     try {
