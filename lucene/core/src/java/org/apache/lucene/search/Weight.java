@@ -97,7 +97,8 @@ public abstract class Weight implements SegmentCacheable {
     getQuery().visit(new QueryVisitor() {
       @Override
       public boolean acceptField(String field) {
-        return super.acceptField(field);
+        fields.add(field);
+        return false;
       }
     });
 

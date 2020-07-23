@@ -26,6 +26,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.StreamSupport;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -187,6 +188,9 @@ public class TestMatchesIterator extends LuceneTestCase {
       if (expected[i]) {
         MatchesIterator mi = matches.getMatches(field);
         assertFalse(mi.next());
+
+        String [] actualFields = StreamSupport.stream(matches.spliterator(), false).toArray(String[]::new);
+        assertArrayEquals(new String [] { field }, actualFields);
       }
       else {
         assertNull(matches);
