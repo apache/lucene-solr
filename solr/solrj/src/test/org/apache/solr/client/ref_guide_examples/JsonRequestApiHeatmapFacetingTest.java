@@ -32,6 +32,7 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -43,6 +44,7 @@ import org.junit.Test;
  * The test was duplicated here as the community has previously decided that it's best to keep all buildable ref-guide
  * snippets together in the same package.
  */
+@Ignore // nocommit debug - flakey test
 public class JsonRequestApiHeatmapFacetingTest extends SolrCloudTestCase {
   private static final String COLLECTION_NAME = "spatialdata";
   private static final String CONFIG_NAME = "spatialdata_config";
