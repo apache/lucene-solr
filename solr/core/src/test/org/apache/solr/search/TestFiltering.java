@@ -406,12 +406,12 @@ public class TestFiltering extends SolrTestCaseJ4 {
 
   @Test
   public void testRandomFiltering() throws Exception {
-    int indexIter=5 * RANDOM_MULTIPLIER;
-    int queryIter=250 * RANDOM_MULTIPLIER;
+    int indexIter=(TEST_NIGHTLY ? 5 : 2) * RANDOM_MULTIPLIER;
+    int queryIter=(TEST_NIGHTLY ? 250 : 25) * RANDOM_MULTIPLIER;
     Model model = new Model();
 
     for (int iiter = 0; iiter<indexIter; iiter++) {
-      model.indexSize = random().nextInt(40 * RANDOM_MULTIPLIER) + 1;
+      model.indexSize = random().nextInt((TEST_NIGHTLY ? 40 : 15) * RANDOM_MULTIPLIER) + 1;
       clearIndex();
 
       for (int i=0; i<model.indexSize; i++) {
