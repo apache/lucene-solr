@@ -11,7 +11,7 @@
     solrcloud, \
     legacy-scaling-and-distribution, \
     circuit-breakers, \
-    rate-limiting, \
+    rate-limiters, \
     solr-plugins, \
     the-well-configured-solr-instance, \
     monitoring-solr, \
