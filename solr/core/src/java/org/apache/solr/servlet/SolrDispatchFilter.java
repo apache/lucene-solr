@@ -338,6 +338,10 @@ public class SolrDispatchFilter extends BaseSolrFilter {
           metricManager = null;
         }
       }
+
+      if (rateLimitManager != null) {
+        rateLimitManager.close();
+      }
     } finally {
       if (cc != null) {
         httpClient = null;

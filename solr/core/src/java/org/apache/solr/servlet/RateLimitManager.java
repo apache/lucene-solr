@@ -120,6 +120,13 @@ public class RateLimitManager {
     requestRateLimiter.decrementConcurrentRequests();
   }
 
+  public void close() {
+
+    for (RequestRateLimiter requestRateLimiter : requestRateLimiterMap.values()) {
+      requestRateLimiter.close();
+    }
+  }
+
   public void registerRequestRateLimiter(RequestRateLimiter requestRateLimiter, SolrRequest.SolrRequestType requestType) {
     requestRateLimiterMap.put(requestType.toString(), requestRateLimiter);
   }

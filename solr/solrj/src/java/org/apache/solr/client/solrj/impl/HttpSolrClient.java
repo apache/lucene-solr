@@ -605,12 +605,6 @@ public class HttpSolrClient extends BaseHttpSolrClient {
 
       // handle some http level checks before trying to parse the response
       switch (httpStatus) {
-        case HttpStatus.SC_SERVICE_UNAVAILABLE:
-          NamedList<Object> rsp = new NamedList<>();
-          rsp.add("stream", respBody);
-          rsp.add("response", response);
-          shouldClose = false;
-          return rsp;
         case HttpStatus.SC_OK:
         case HttpStatus.SC_BAD_REQUEST:
         case HttpStatus.SC_CONFLICT:  // 409
@@ -644,6 +638,12 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       if (procCt != null) {
         String procMimeType = ContentType.parse(procCt).getMimeType().trim().toLowerCase(Locale.ROOT);
         if (!procMimeType.equals(mimeType)) {
+          if (isUnmatchedErrorCode(mimeType, httpStatus)) {
+            throw new RemoteSolrException(baseUrl, httpStatus, "non ok status: " + httpStatus
+                  + ", message:" + response.getStatusLine().getReasonPhrase(),
+                  null);
+          }
+
           // unexpected mime type
           String msg = "Expected mime type " + procMimeType + " but got " + mimeType + ".";
           Charset exceptionCharset = charset != null? charset : FALLBACK_CHARSET;
@@ -718,6 +718,15 @@ public class HttpSolrClient extends BaseHttpSolrClient {
         Utils.consumeFully(entity);
       }
     }
+  }
+
+  // When raising an error from an async context that is managing a request, mime types can be unmatched
+  private boolean isUnmatchedErrorCode(String mimeType, int httpStatus) {
+    if (mimeType.equalsIgnoreCase("text/html") && httpStatus == HttpStatus.SC_SERVICE_UNAVAILABLE) {
+      return true;
+    }
+
+    return false;
   }
   
   // -------------------------------------------------------------------

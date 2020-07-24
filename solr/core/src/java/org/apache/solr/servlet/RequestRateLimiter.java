@@ -105,6 +105,16 @@ public class RequestRateLimiter {
     allowedConcurrentRequests.release();
   }
 
+  public void close() {
+    while (!waitQueue.isEmpty()) {
+      AsyncContext asyncContext = waitQueue.poll();
+
+      asyncContext.complete();
+    }
+
+    listenerQueue.clear();
+  }
+
   private AsyncListener buildAsyncListener() {
     return new AsyncListener() {
       @Override
@@ -124,7 +134,7 @@ public class RequestRateLimiter {
         String responseMessage = "Too many requests for this request type." +
             "Please try after some time or increase the quota for this request type";
 
-        servletResponse.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE, responseMessage);
+        servletResponse.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
 
         asyncContext.complete();
       }
