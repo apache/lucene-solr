@@ -22,9 +22,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
+import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.SortedSetFieldSource;
 import org.apache.lucene.search.SortField;
@@ -38,9 +42,43 @@ import org.apache.solr.uninverting.UninvertingReader.Type;
 
 public class StrField extends PrimitiveFieldType {
 
+  protected static final String MAX_DOC_VALUES_BYTES_ARGNAME = "maxDocValuesBytes";
+  public static final int DEFAULT_MAX_DOC_VALUES_BYTES = 32766;
+
+  private int maxDocValuesBytes = DEFAULT_MAX_DOC_VALUES_BYTES;
+
   @Override
   protected void init(IndexSchema schema, Map<String,String> args) {
+    String maxDocValuesBytesStr = args.remove(MAX_DOC_VALUES_BYTES_ARGNAME);
+    if (maxDocValuesBytesStr != null) {
+      maxDocValuesBytes = Integer.parseInt(maxDocValuesBytesStr);
+      if (maxDocValuesBytes < 0) {
+        maxDocValuesBytes = Integer.MAX_VALUE;
+      }
+      if (maxDocValuesBytes > DEFAULT_MAX_DOC_VALUES_BYTES) {
+        if (!on(falseProperties, INDEXED)) {
+          throw new IllegalArgumentException("\"indexed\" should be explicitly set to \"false\" where "
+              + MAX_DOC_VALUES_BYTES_ARGNAME+" > "+DEFAULT_MAX_DOC_VALUES_BYTES +" for fieldType \""+getTypeName());
+        }
+      }
+    }
     super.init(schema, args);
+  }
+
+  static IndexableField getDocValuesField(SchemaField field, int maxDocValuesBytes, Object value) {
+    final BytesRef bytes = getBytesRef(value);
+    if (bytes.length > maxDocValuesBytes) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+        "field " + field.getName() + " exceeds maxDocValuesBytes=" +
+        maxDocValuesBytes + " (length=" + bytes.length + ")");
+    }
+    if (maxDocValuesBytes > DEFAULT_MAX_DOC_VALUES_BYTES) {
+      return new BinaryDocValuesField(field.getName(), bytes);
+    } else if (field.multiValued()) {
+      return new SortedSetDocValuesField(field.getName(), bytes);
+    } else {
+      return new SortedDocValuesField(field.getName(), bytes);
+    }
   }
 
   @Override
@@ -48,13 +86,7 @@ public class StrField extends PrimitiveFieldType {
     IndexableField fval = createField(field, value);
 
     if (field.hasDocValues()) {
-      IndexableField docval;
-      final BytesRef bytes = getBytesRef(value);
-      if (field.multiValued()) {
-        docval = new SortedSetDocValuesField(field.getName(), bytes);
-      } else {
-        docval = new SortedDocValuesField(field.getName(), bytes);
-      }
+      IndexableField docval = getDocValuesField(field, maxDocValuesBytes, value);
 
       // Only create a list of we have 2 values...
       if (fval != null) {
@@ -80,6 +112,24 @@ public class StrField extends PrimitiveFieldType {
   @Override
   public boolean isUtf8Field() {
     return true;
+  }
+
+  @Override
+  public DocValuesRefIterator getDocValuesRefIterator(LeafReader reader, SchemaField schemaField) throws IOException {
+    final String fieldName = schemaField.getName();
+    if (maxDocValuesBytes > DEFAULT_MAX_DOC_VALUES_BYTES) {
+      final BinaryDocValues bdv = DocValues.getBinary(reader, fieldName);
+      if (schemaField.multiValued()) {
+        return new MultiBinaryDocValuesRefIterator(bdv);
+      } else {
+        return new BinaryDocValuesRefIterator(bdv);
+      }
+    } else if (schemaField.multiValued()) {
+      return new SortedSetDocValuesRefIterator(DocValues.getSortedSet(reader, fieldName));
+    } else {
+      //SortedDocValues is a subclass of BinaryDocValues
+      return new BinaryDocValuesRefIterator(DocValues.getSorted(reader, fieldName));
+    }
   }
 
   @Override

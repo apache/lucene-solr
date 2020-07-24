@@ -38,6 +38,11 @@
   <fieldType name="boolean" class="solr.BoolField"/>
   <fieldType name="string" class="solr.StrField"/>
 
+  <!-- below will use Sorted or SortedSet docValues, size limit 32766 -->
+  <fieldType name="text" class="solr.TextField" useDocValuesAsStored="true" />
+  <!-- below will use BinaryDocValues; 196606 = 32768 * MAX_CHARS_PER_CODEPOINT(2) * MAX_UTF8_BYTES_PER_CHAR(3) -->
+  <fieldType name="text_bdv" class="solr.TextField" maxDocValuesBytes="196606"/>
+
   <fieldType name="uuid" class="solr.UUIDField"/>
 
 
@@ -78,6 +83,8 @@
   <field name="longdv" type="long" indexed="false" stored="false" docValues="true"/>
   <field name="datedv" type="date" indexed="false" stored="false" docValues="true"/>
   <field name="stringdv" type="string" indexed="false" stored="false" docValues="true"/>
+  <field name="textdv" type="text" indexed="false" stored="false" docValues="true"/>
+  <field name="textbdv" type="text_bdv" indexed="false" stored="false" docValues="true"/>
   <field name="booleandv" type="boolean" indexed="false" stored="false" docValues="true" />
   <field name="sortabledv" type="text_gen_sort" indexed="true" stored="true" multiValued="false" />
   <field name="sortabledv_udvas" type="text_gen_sort" indexed="true" stored="true" multiValued="false" useDocValuesAsStored="true" />

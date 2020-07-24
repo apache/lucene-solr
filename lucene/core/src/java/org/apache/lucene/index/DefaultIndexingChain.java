@@ -21,6 +21,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +29,7 @@ import java.util.Objects;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.NormsConsumer;
@@ -36,6 +38,7 @@ import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PointsFormat;
 import org.apache.lucene.codecs.PointsWriter;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -506,6 +509,17 @@ final class DefaultIndexingChain extends DocConsumer {
       }
     } else {
       verifyUnIndexedFieldType(fieldName, fieldType);
+      DocValuesType tokenDVType = fieldType.tokenDocValuesType();
+      switch (tokenDVType) {
+        case NONE:
+          break;
+        case SORTED_SET:
+          fp = getOrAddField(fieldName, fieldType, false);
+          fp.tokenizedDocValuesOnly(docID, field);
+          break;
+        default:
+          throw new UnsupportedOperationException("unsupported tokenDocValuesType: \""+tokenDVType+"\"; supported types: "+SUPPORTED_TOKEN_DV_TYPES);
+      }
     }
 
     // Add stored fields:
@@ -774,6 +788,8 @@ final class DefaultIndexingChain extends DocConsumer {
     info.setIndexOptions(indexOptions);
   }
 
+  private static final EnumSet<DocValuesType> SUPPORTED_TOKEN_DV_TYPES = EnumSet.of(DocValuesType.NONE, DocValuesType.SORTED_SET);
+
   /** NOTE: not static: accesses at least docState, termsHash. */
   private final class PerField implements Comparable<PerField> {
 
@@ -790,6 +806,9 @@ final class DefaultIndexingChain extends DocConsumer {
 
     // Non-null if this field ever had points in this segment:
     PointValuesWriter pointValuesWriter;
+
+    // Mutable field to be reused for passing token terms to dvWriter
+    SortedSetDocValuesField tokenizedDVField;
 
     /** We use this to know when a PerField is seen for the
      *  first time in the current document. */
@@ -852,6 +871,44 @@ final class DefaultIndexingChain extends DocConsumer {
       termsHashPerField.finish();
     }
 
+    public void tokenizedDocValuesOnly(int docID, IndexableField field) throws IOException {
+      // nocommit: this code is derived from (and is largely identical to) the code in invert(int, IndexableField, boolean).
+      // nocommit: consider refactoring to remove redundancy?
+      final String fieldName = field.name();
+
+      if (tokenizedDVField == null) {
+        // NOTE: there is only one supported tokenizedDVType: SORTED_SET
+        tokenizedDVField = new SortedSetDocValuesField(fieldName, new BytesRef(BytesRef.EMPTY_BYTES));
+      }
+
+      /*
+       * To assist people in tracking down problems in analysis components, we wish to write the field name to the infostream
+       * when we fail. We expect some caller to eventually deal with the real exception, so we don't want any 'catch' clauses,
+       * but rather a finally that takes note of the problem.
+       */
+      boolean succeededInProcessingField = false;
+      try (TokenStream stream = tokenStream = field.tokenStream(analyzer, tokenStream)) {
+        // reset the TokenStream to the first token
+        stream.reset();
+        final TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
+
+        while (stream.incrementToken()) {
+          tokenizedDVField.setBytesValue(termAtt.getBytesRef());
+          indexDocValue(docID, this, DocValuesType.SORTED_SET, tokenizedDVField);
+        }
+
+        // trigger streams to perform end-of-stream operations
+        stream.end();
+
+        /* if there is an exception coming through, we won't set this to true here:*/
+        succeededInProcessingField = true;
+      } finally {
+        if (!succeededInProcessingField && infoStream.isEnabled("DW")) {
+          infoStream.message("DW", "An exception was thrown while processing field " + fieldInfo.name);
+        }
+      }
+    }
+
     /** Inverts one field for one document; first is true
      *  if this is the first time we are seeing this field
      *  name in this document. */
@@ -872,6 +929,18 @@ final class DefaultIndexingChain extends DocConsumer {
       }
 
       final boolean analyzed = fieldType.tokenized() && analyzer != null;
+      final DocValuesType tokenDVType = field.fieldType().tokenDocValuesType();
+      switch (tokenDVType) {
+        case NONE:
+          break;
+        case SORTED_SET:
+          if (tokenizedDVField == null) {
+            tokenizedDVField = new SortedSetDocValuesField(field.name(), new BytesRef(BytesRef.EMPTY_BYTES));
+          }
+          break;
+        default:
+          throw new UnsupportedOperationException("unsupported tokenDocValuesType: \""+tokenDVType+"\"; supported types: "+SUPPORTED_TOKEN_DV_TYPES);
+      }
         
       /*
        * To assist people in tracking down problems in analysis components, we wish to write the field name to the infostream
@@ -935,7 +1004,13 @@ final class DefaultIndexingChain extends DocConsumer {
           // corrupt and should not be flushed to a
           // new segment:
           try {
-            termsHashPerField.add(invertState.termAttribute.getBytesRef(), docID);
+            final BytesRef term = invertState.termAttribute.getBytesRef();
+            termsHashPerField.add(term, docID);
+            if (tokenDVType != DocValuesType.NONE) {
+              // NOTE: currently only supports SORTED_SET
+              tokenizedDVField.setBytesValue(term);
+              indexDocValue(docID, this, tokenDVType, tokenizedDVField);
+             }
           } catch (MaxBytesLengthExceededException e) {
             byte[] prefix = new byte[30];
             BytesRef bigTerm = invertState.termAttribute.getBytesRef();

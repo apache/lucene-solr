@@ -221,9 +221,13 @@ public class TestJsonFacets extends SolrTestCaseHS {
   public void indexSimple(Client client) throws Exception {
     client.deleteByQuery("*:*", null);
     client.add(sdoc("id", "1", "cat_s", "A", "where_s", "NY", "num_d", "4", "num_i", "2",
+        "facet_txt", "a b c d", "facet_txt", "e f g",
+        "facet_t", "a b c d e f g",
         "num_is", "4", "num_is", "2",
         "val_b", "true", "sparse_s", "one"), null);
     client.add(sdoc("id", "2", "cat_s", "B", "where_s", "NJ", "num_d", "-9", "num_i", "-5",
+        "facet_txt", "a b c d", "facet_txt", "e f g",
+        "facet_t", "a b c d e f g",
         "num_is", "-9", "num_is", "-5",
         "val_b", "false"), null);
     client.add(sdoc("id", "3"), null);
@@ -235,6 +239,8 @@ public class TestJsonFacets extends SolrTestCaseHS {
         "sparse_s", "two"),null);
     client.commit();
     client.add(sdoc("id", "6", "cat_s", "B", "where_s", "NY", "num_d", "-5", "num_i", "-5",
+        "facet_txt", "a b c d", "facet_txt", "e f g",
+        "facet_t", "a b c d e f g",
         "num_is", "-5"),null);
     client.commit();
   }
@@ -282,12 +288,15 @@ public class TestJsonFacets extends SolrTestCaseHS {
     // it should behave the same as any attempt (using any method) at faceting on
     // and "indexed=false docValues=false" field...
     for (String f : Arrays.asList("where_s_not_indexed_sS",
+                                  "facet_txt_multi_not_uninvert",
+                                  "facet_t_single_not_uninvert",
                                   "where_s_multi_not_uninvert",
                                   "where_s_single_not_uninvert")) {
       SolrQueryRequest request = req("rows", "0", "q", "num_i:[* TO 2]", "json.facet",
                                      "{x: {type:terms, field:'"+f+"'}}");
       if (FacetField.FacetMethod.DEFAULT_METHOD == FacetField.FacetMethod.DVHASH
-          && !f.contains("multi")) {
+          && !f.contains("multi")
+          && !f.startsWith("facet_t")) { // b/c DVs on analyzed text, all are effectively multivalued, from faceting perspective
         // DVHASH is (currently) weird...
         //
         // it's ignored for multi valued fields -- but for single valued fields, it explicitly
@@ -324,7 +333,37 @@ public class TestJsonFacets extends SolrTestCaseHS {
                , "facets/x=={buckets:[ {val:NY, count:2} , {val:NJ, count:1} ]}"
                );
     }
-   
+    if (FacetField.FacetMethod.DEFAULT_METHOD != FacetField.FacetMethod.DVHASH) {
+      // DVHASH cannot be used for multivalued fields, as determined by fieldInfos.
+      // so from DVHASH's faceting perspective, all tokenized fields are multi-valued, and will break
+      for (String f : Arrays.asList("facet_t",
+                                    "facet_txt",
+                                    "facet_txt_multi_not_uninvert_dv",
+                                    "facet_t_single_not_uninvert_dv")) {
+        assertJQ(req("rows", "0", "q", "num_i:[* TO 2]", "json.facet",
+                     "{x: {type:terms, field:'"+f+"'}}")
+                 , "response/numFound==3"
+                 , "facets/count==3"
+                 , "facets/x=={buckets:[ {val:b, count:3} , {val:c, count:3} , {val:d, count:3} , {val:e, count:3} , {val:f, count:3} , {val:g, count:3} ]}"
+                 );
+      }
+      String f = "facet_stxt_multi_not_uninvert_dv";
+      assertJQ(req("rows", "0", "q", "num_i:[* TO 2]", "json.facet",
+                   "{x: {type:terms, field:'"+f+"'}}")
+               , "response/numFound==3"
+               , "facets/count==3"
+               , "facets/x=={buckets:[ {val:'a b c d', count:3} , {val:'e f g', count:3} ]}"
+               );
+    }
+    {
+      String f = "facet_st_single_not_uninvert_dv";
+      assertJQ(req("rows", "0", "q", "num_i:[* TO 2]", "json.facet",
+                   "{x: {type:terms, field:'"+f+"'}}")
+               , "response/numFound==3"
+               , "facets/count==3"
+               , "facets/x=={buckets:[ {val:'a b c d e f g', count:3} ]}"
+               );
+    }
     // faceting on an "uninvertible=false docValues=false" field should be possible
     // when using method:enum w/sort:index
     //

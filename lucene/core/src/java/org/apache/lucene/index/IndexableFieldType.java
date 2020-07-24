@@ -100,6 +100,12 @@ public interface IndexableFieldType {
   public DocValuesType docValuesType();
 
   /**
+   * DocValues {@link DocValuesType}: how the field's analyzed token values will be indexed
+   * into docValues.
+   */
+  public DocValuesType tokenDocValuesType();
+
+  /**
    * If this is positive (representing the number of point dimensions), the field is indexed as a point.
    */
   public int pointDimensionCount();

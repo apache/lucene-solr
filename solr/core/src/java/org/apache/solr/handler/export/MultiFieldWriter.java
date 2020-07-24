@@ -31,6 +31,8 @@ import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.handler.export.StringFieldWriter.DocValuesRefIteratorCache;
+import org.apache.solr.schema.DocValuesRefIterator;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 
@@ -41,16 +43,19 @@ class MultiFieldWriter extends FieldWriter {
   private boolean numeric;
   private CharsRefBuilder cref = new CharsRefBuilder();
   private final LongFunction<Object> bitsToValue;
+  private final DocValuesRefIteratorCache dvRefIterCache;
 
-  public MultiFieldWriter(String field, FieldType fieldType, SchemaField schemaField, boolean numeric) {
+  public MultiFieldWriter(String field, FieldType fieldType, SchemaField schemaField, boolean numeric, int nLeaves) {
     this.field = field;
     this.fieldType = fieldType;
     this.schemaField = schemaField;
     this.numeric = numeric;
     if (this.fieldType.isPointField()) {
       bitsToValue = bitsToValue(fieldType);
+      dvRefIterCache = null;
     } else {
       bitsToValue = null;
+      dvRefIterCache = new DocValuesRefIteratorCache(schemaField, fieldType, nLeaves);
     }
   }
 
@@ -65,8 +70,21 @@ class MultiFieldWriter extends FieldWriter {
             }
           });
       return true;
+    } else if (fieldType.isUtf8Field()) {
+      DocValuesRefIterator vals = dvRefIterCache.getDocValuesRefIterator(sortDoc.docId, reader, sortDoc.ord);
+      if (!vals.advanceExact(sortDoc.docId)) return false;
+      out.put(this.field,
+          (IteratorWriter) w -> {
+            BytesRef ref;
+            while((ref = vals.nextRef()) != null) {
+              fieldType.indexedToReadable(ref, cref);
+              w.add(cref.toString());
+            }
+          });
+      return true;
     } else {
       SortedSetDocValues vals = DocValues.getSortedSet(reader, this.field);
+      // nocommit: vals is used once; prefer advanceExact(int) rather than advance(int)?
       if (vals.advance(sortDoc.docId) != sortDoc.docId) return false;
       out.put(this.field,
           (IteratorWriter) w -> {
@@ -83,7 +101,6 @@ class MultiFieldWriter extends FieldWriter {
     }
 
   }
-
 
   static LongFunction<Object> bitsToValue(FieldType fieldType) {
     switch (fieldType.getNumberType()) {

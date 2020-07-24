@@ -42,6 +42,7 @@ public final class SchemaField extends FieldProperties implements IndexableField
   private static final String DEFAULT_VALUE = "default";
 
   final String name;
+  private final DocValuesType tokenDocValuesType;
   final FieldType type;
   final int properties;
   final String defaultValue;
@@ -77,6 +78,11 @@ public final class SchemaField extends FieldProperties implements IndexableField
     this.type = type;
     this.properties = properties;
     this.defaultValue = defaultValue;
+    if ((properties & (DOC_VALUES | TOKENIZED))==(DOC_VALUES | TOKENIZED)) {
+      this.tokenDocValuesType = type.getAnalyzedDocValuesType();
+    } else {
+      this.tokenDocValuesType = DocValuesType.NONE;
+    }
     
     // initialize with the required property flag
     required = (properties & REQUIRED) !=0;
@@ -430,6 +436,11 @@ public final class SchemaField extends FieldProperties implements IndexableField
   @Override
   public DocValuesType docValuesType() {
     return DocValuesType.NONE;
+  }
+
+  @Override
+  public DocValuesType tokenDocValuesType() {
+    return tokenDocValuesType;
   }
 
   @Override

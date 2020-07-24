@@ -99,6 +99,25 @@ For text fields, applicable when querying with <<the-standard-query-parser.adoc#
 +
 Use `false` for field types with query analyzers including filters that can match docs when some tokens are missing, e.g., <<filter-descriptions.adoc#shingle-filter,Shingle Filter>>.
 
+`analyzedDocValues`::
+For text fields. If `true`, SortedSet docValues associated directly with the configured field will be generated from post-analysis terms at index time. This can be useful, e.g., for the "facet on everything" use case, or for sorting on normalized (single-token analyzed) versions of the input field.
+
+NOTE: `analyzedDocValues` defaults to `true` for TextField, but has no effect if `docValues=false`.
+
+`maxDocValuesBytes`::
+For text fields. Declares a maximum supported byte length for "value-access"-type docValues (e.g., for `useDocValuesAsStored`, export, streaming expressions, functions, and atomic updates). The default value of 32766 is the maximum number of bytes for terms in the terms dictionary. This value may be set arbitrarily higher to signal the fieldType to use an internal docValues representation that supports larger field values. If configured, lower values will also be enforced. The value `-1` is interpreted as "no limit". Setting this value explicitly implies `useDocValuesAsStored=true`
+
+`dvSortType` / `dvSortSuffix` / `maxCharsForDocValues`::
+For text fields. Optional args that provide finer-grained control over how field values are handled for the purpose of sorting. `maxCharsForDocValues` sets a maximum number of characters that will be recorded in docValues at index time for the purpose of sorting. `dvSortType` and `dvSortSuffix` are mutually exclusive, and allow the specification of an explicitly declared fieldType or dynamic field (respectively) that will be used to mediate read- and write-access to docValues used for sorting for this field. This can be used, e.g., to do case normalization for the purpose of sort over a field with non-normalized input.
+
+NOTE: when delegating to an _analyzed_ `dvSortType` or `dvSortSuffix`, `maxCharsForDocValues` should be set, if desired, directly on the delegate fieldType.
+
+`dvStoredType` / `dvStoredSuffix`::
+For text fields. Optional, mutually exclusive args that allow the explicit declaration of a fieldType or dynamic field (respectively) that will be used to mediate read- and write-access to docValues used for value-access against this field (e.g., for `useDocValuesAsStored`, export, streaming expressions, functions, and atomic updates).
+
+`dvPurpose`::
+An "expert" argument, and entirely optional. May be used to disable "polyField" behavior on some polyFields (currently only TextField), by declaring a specific purpose. This could for example be used to set `dvPurpose=sort` on a fieldType specified as a `dvSortType` by another field (see above). Explicitly configuring this arg implies `docValues=true`.
+
 [[docvaluesformat]]
 `docValuesFormat`::
 Defines a custom `DocValuesFormat` to use for fields of this type. This requires that a schema-aware codec, such as the `SchemaCodecFactory`, has been configured in `solrconfig.xml`.

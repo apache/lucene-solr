@@ -42,7 +42,7 @@ public class TestFieldResource extends SolrRestletTestBase {
             "/response/lst[@name='field']/bool[@name='large'] = 'false'",
             "/response/lst[@name='field']/bool[@name='required'] = 'false'",
             "/response/lst[@name='field']/bool[@name='tokenized'] = 'true'",
-            "/response/lst[@name='field']/bool[@name='useDocValuesAsStored'] = 'true'");
+            "/response/lst[@name='field']/bool[@name='useDocValuesAsStored'] = 'false'");
   }
 
   @Test

@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
@@ -38,7 +39,12 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedSetDocValuesField;
+import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.DocValuesIterator;
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.BooleanClause;
@@ -61,6 +67,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
+import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.Version;
 import org.apache.solr.analysis.SolrAnalyzer;
 import org.apache.solr.analysis.TokenizerChain;
@@ -280,7 +287,7 @@ public abstract class FieldType extends FieldProperties {
    *
    */
   public IndexableField createField(SchemaField field, Object value) {
-    if (!field.indexed() && !field.stored()) {
+    if (!field.indexed() && !field.stored() && field.tokenDocValuesType() == DocValuesType.NONE) {
       if (log.isTraceEnabled())
         log.trace("Ignoring unindexed/unstored field: {}", field);
       return null;
@@ -486,6 +493,259 @@ public abstract class FieldType extends FieldProperties {
    * @see SchemaField#isUninvertible()
    */
   public abstract UninvertingReader.Type getUninversionType(SchemaField sf);
+
+  private static class RefIteratorEntry {
+    private final int idx;
+    private final DocValuesRefIterator iter;
+    private RefIteratorEntry(int idx, DocValuesRefIterator iter) {
+      this.idx = idx;
+      this.iter = iter;
+    }
+  }
+  /**
+   * For cases where DVs are drawn from different fields. e.g., SortableTextField DVs can
+   * be used in most cases as stored fields, but when maxCharsForDocValues is exceeded, should
+   * be superseded by TextField "stored"-ish DocValues.
+   */
+  protected static class UnionDocValuesRefIterator extends DocValuesRefIterator {
+
+    private final PriorityQueue<RefIteratorEntry> queue;
+    private final DocValuesRefIterator[] backing;
+    private RefIteratorEntry top;
+    private Long cachedCost;
+
+    protected UnionDocValuesRefIterator(DocValuesRefIterator[] backing) {
+      final Supplier<RefIteratorEntry> s = new Supplier<RefIteratorEntry>() {
+        int i = 0;
+        @Override
+        public RefIteratorEntry get() {
+          return new RefIteratorEntry(i, backing[i++]);
+        }
+      };
+      queue = new PriorityQueue<RefIteratorEntry>(backing.length, s) {
+        @Override
+        protected boolean lessThan(RefIteratorEntry a, RefIteratorEntry b) {
+          final int docA = a.iter.docID();
+          final int docB = b.iter.docID();
+          try {
+            return docA < docB || (docA == docB && a.iter.advanceExact(docA) && (a.idx < b.idx || !b.iter.advanceExact(docB)));
+          } catch (IOException ex) {
+            // we're advancing to where we already are, so should never throw exception.
+            throw new AssertionError(ex);
+          }
+        }
+      };
+      top = queue.top();
+      this.backing = backing;
+    }
+
+    @Override
+    public BytesRef nextRef() throws IOException {
+      return top.iter.nextRef();
+    }
+
+    @Override
+    public boolean advanceExact(int target) throws IOException {
+      if (target < top.iter.docID()) {
+        throw new IllegalStateException("out of order");
+      }
+      boolean ret = false;
+      do {
+        if (top.iter.advanceExact(target)) {
+          ret = true;
+        }
+      } while ((top = queue.updateTop()).iter.docID() < target);
+      return ret;
+    }
+
+    @Override
+    public int docID() {
+      return top.iter.docID();
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      final int target = docID() + 1;
+      do {
+        top.iter.advance(target);
+      } while ((top = queue.updateTop()).iter.docID() < target);
+      return top.iter.docID();
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      // nocommit: is it possible that the "out of order" logic could be different for the "union" case?
+      // nocommit: particularly if interleaving calls to advance(int) and advanceExact(int)?
+      if (target < top.iter.docID()) {
+        throw new IllegalStateException("out of order");
+      }
+      while (top.iter.docID() < target) {
+        top.iter.advance(target);
+        top = queue.updateTop();
+      }
+      return top.iter.docID();
+    }
+
+    @Override
+    public long cost() {
+      if (cachedCost != null) {
+        return cachedCost;
+      }
+      long ret = Long.MIN_VALUE;
+      for (DocValuesRefIterator sub : backing) {
+        final long subCost = sub.cost();
+        if (subCost > ret) {
+          ret = subCost;
+        }
+      }
+      cachedCost = ret;
+      return ret;
+    }
+  }
+
+  protected static abstract class WrappedDocValuesRefIterator<T extends DocValuesIterator> extends DocValuesRefIterator {
+
+    protected final T backing;
+
+    protected WrappedDocValuesRefIterator(T backing) {
+      this.backing = backing;
+    }
+
+    @Override
+    public int docID() {
+      return backing.docID();
+    }
+
+    @Override
+    public long cost() {
+      return backing.cost();
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      return backing.nextDoc();
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      return backing.advance(target);
+    }
+
+    @Override
+    public boolean advanceExact(int target) throws IOException {
+      return backing.advanceExact(target);
+    }
+  }
+
+  protected static class BinaryDocValuesRefIterator extends WrappedDocValuesRefIterator<BinaryDocValues> {
+
+    protected boolean advanced = false;
+
+    protected BinaryDocValuesRefIterator(BinaryDocValues backing) {
+      super(backing);
+    }
+
+    @Override
+    public BytesRef nextRef() throws IOException {
+      if (advanced) {
+        return _nextRef();
+      } else {
+        return null;
+      }
+    }
+
+    protected BytesRef _nextRef() throws IOException {
+      advanced = false;
+      return backing.binaryValue();
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      advanced = true;
+      return super.nextDoc();
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      advanced = true;
+      return super.advance(target);
+    }
+
+    @Override
+    public boolean advanceExact(int target) throws IOException {
+      advanced = true;
+      return super.advanceExact(target);
+    }
+  }
+
+  protected static class MultiBinaryDocValuesRefIterator extends BinaryDocValuesRefIterator {
+
+    protected MultiBinaryDocValuesRefIterator(BinaryDocValues backing) {
+      super(backing);
+    }
+
+    private BytesRef multiRef = null;
+    private int offset = 0;
+    private int docTermLimit = -1;
+
+    @Override
+    public BytesRef nextRef() throws IOException {
+      if (advanced) {
+        multiRef = _nextRef();
+        offset = multiRef.offset;
+        docTermLimit = offset + multiRef.length;
+      } else if (offset >= docTermLimit) {
+        return null;
+      }
+      offset = advance(multiRef, offset);
+      return multiRef;
+    }
+
+    public static int advance(BytesRef input, int offset) {
+      byte[] bs = input.bytes;
+      byte b = bs[offset++];
+      int i = b & 0x7F;
+      for (int shift = 7; (b & 0x80) != 0; shift += 7) {
+        b = bs[offset++];
+        i |= (b & 0x7F) << shift;
+      }
+      input.offset = offset;
+      input.length = i;
+      return offset + i;
+    }
+  }
+
+  protected static class SortedSetDocValuesRefIterator extends WrappedDocValuesRefIterator<SortedSetDocValues> {
+
+    protected SortedSetDocValuesRefIterator(SortedSetDocValues backing) {
+      super(backing);
+    }
+
+    @Override
+    public BytesRef nextRef() throws IOException {
+      final long ord = backing.nextOrd();
+      if (ord == SortedSetDocValues.NO_MORE_ORDS) {
+        return null;
+      } else {
+        return backing.lookupOrd(ord);
+      }
+    }
+  }
+
+  /**
+   * Abstraction to give the {@link FieldType} control over how strictly-ref-based docValues are retrieved. The return
+   * type intentionally abstracts away term ord, effectively limiting this to use cases where term ords are
+   * not required. Note that the returned docValues may actually be stored across different lucene fields (e.g. when
+   * different docValues configurations are required to serve different purposes).
+   *
+   * @param reader - local reader
+   * @param schemaField - for the top-level field abstraction
+   * @return - an iterator over BytesRefs representing the values associated with this top-level field
+   * @throws IOException - e.g., if something goes wrong reading from the index
+   */
+  public DocValuesRefIterator getDocValuesRefIterator(LeafReader reader, SchemaField schemaField) throws IOException {
+    throw new UnsupportedOperationException("only implemented where fieldType.isUtf8Field()==true (class="+getClass()+")");
+  }
 
   /**
    * Default analyzer for types that only produce 1 verbatim token...
@@ -1013,6 +1273,10 @@ public abstract class FieldType extends FieldProperties {
     } else {
       return MultiTermQuery.CONSTANT_SCORE_REWRITE;
     }
+  }
+
+  public DocValuesType getAnalyzedDocValuesType() {
+    return DocValuesType.NONE;
   }
 
   /**

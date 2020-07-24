@@ -117,6 +117,8 @@ public class TestExportWriter extends SolrTestCaseJ4 {
                  "floatdv","2.1",
                  "intdv", "1",
                  "stringdv", "hello world",
+                 "textdv", "hello world textdv",
+                 "textbdv", "hello world textbdv",
                  "longdv", "323223232323",
                  "doubledv","2344.345",
                  "intdv_m","100",
@@ -155,12 +157,14 @@ public class TestExportWriter extends SolrTestCaseJ4 {
         "longdv_m", "343332"));
 
     assertU(commit());
-    assertU(adoc("id","2", "floatdv","2.1", "intdv", "2", "stringdv", "hello world", "longdv", "323223232323","doubledv","2344.344"));
+    assertU(adoc("id","2", "floatdv","2.1", "intdv", "2", "stringdv", "hello world", "textdv", "hello world textdv", "textbdv", "hello world textbdv", "longdv", "323223232323","doubledv","2344.344"));
     assertU(commit());
     assertU(adoc("id","3",
         "floatdv","2.1",
         "intdv", "3",
         "stringdv", "chello world",
+        "textdv", "chello world textdv",
+        "textbdv", "chello world textbdv",
         "longdv", "323223232323",
         "doubledv","2344.346",
         "intdv_m","100",
@@ -185,6 +189,8 @@ public class TestExportWriter extends SolrTestCaseJ4 {
         "floatdv","2.1",
         "intdv", "10000000",
         "stringdv", "chello \"world\"",
+        "textdv", "chello \"world\" textdv",
+        "textbdv", "chello \"world\" textbdv",
         "longdv", "323223232323",
         "doubledv","2344.346",
         "intdv_m","100",
@@ -418,12 +424,12 @@ public class TestExportWriter extends SolrTestCaseJ4 {
   private void testSortingOutput() throws Exception {
 
     //Test single value DocValue output
-    String s =  h.query(req("q", "id:1", "qt", "/export", "fl", "floatdv,intdv,stringdv,longdv,doubledv", "sort", "intdv asc"));
+    String s =  h.query(req("q", "id:1", "qt", "/export", "fl", "floatdv,intdv,stringdv,textdv,textbdv,longdv,doubledv", "sort", "intdv asc"));
 
-    assertJsonEquals(s, "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":1, \"docs\":[{\"floatdv\":2.1,\"intdv\":1,\"stringdv\":\"hello world\",\"longdv\":323223232323,\"doubledv\":2344.345}]}}");
+    assertJsonEquals(s, "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":1, \"docs\":[{\"floatdv\":2.1,\"intdv\":1,\"stringdv\":\"hello world\",\"textdv\":\"hello world textdv\",,\"textbdv\":\"hello world textbdv\",\"longdv\":323223232323,\"doubledv\":2344.345}]}}");
 
     //Test null value string:
-    s = h.query(req("q", "id:7", "qt", "/export", "fl", "floatdv,intdv,stringdv,longdv,doubledv", "sort", "intdv asc"));
+    s = h.query(req("q", "id:7", "qt", "/export", "fl", "floatdv,intdv,stringdv,textdv,textbdv,longdv,doubledv", "sort", "intdv asc"));
 
     assertJsonEquals(s, "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":1, \"docs\":[{\"floatdv\":2.1,\"intdv\":7,\"longdv\":323223232323,\"doubledv\":2344.345}]}}");
 

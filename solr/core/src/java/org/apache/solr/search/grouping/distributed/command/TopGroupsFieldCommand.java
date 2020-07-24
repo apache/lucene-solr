@@ -39,6 +39,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.Grouping;
 import org.apache.solr.search.grouping.Command;
 
 /**
@@ -153,7 +154,7 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
           v, groupSort, withinGroupSort, maxDocPerGroup, needMaxScore
       );
     } else {
-      secondPassCollector = new TopGroupsCollector<>(new TermGroupSelector(field.getName()),
+      secondPassCollector = new TopGroupsCollector<>(new TermGroupSelector(Grouping.getSortFieldName(field)),
           firstPhaseGroups, groupSort, withinGroupSort, maxDocPerGroup, needMaxScore
       );
     }

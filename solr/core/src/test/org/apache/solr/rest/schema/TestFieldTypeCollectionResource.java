@@ -24,15 +24,25 @@ public class TestFieldTypeCollectionResource extends SolrRestletTestBase {
   public void testGetAllFieldTypes() throws Exception {
     assertQ("/schema/fieldtypes?indent=on&wt=xml",
             "(/response/arr[@name='fieldTypes']/lst/str[@name='name'])[1] = 'HTMLstandardtok'",
-            "(/response/arr[@name='fieldTypes']/lst/str[@name='name'])[2] = 'HTMLwhitetok'",
-            "(/response/arr[@name='fieldTypes']/lst/str[@name='name'])[3] = 'boolean'");
+            "(/response/arr[@name='fieldTypes']/lst/str[@name='name'])[2] = 'HTMLstandardtok_dvSort'",
+            "(/response/arr[@name='fieldTypes']/lst/str[@name='name'])[3] = 'HTMLstandardtok_dvStored'",
+            "(/response/arr[@name='fieldTypes']/lst/str[@name='name'])[4] = 'HTMLwhitetok'",
+            "(/response/arr[@name='fieldTypes']/lst/str[@name='name'])[5] = 'HTMLwhitetok_dvSort'",
+            "(/response/arr[@name='fieldTypes']/lst/str[@name='name'])[6] = 'HTMLwhitetok_dvStored'",
+            "(/response/arr[@name='fieldTypes']/lst/str[@name='name'])[7] = 'boolean'",
+            "(/response/arr[@name='fieldTypes']/lst/str[@name='name'])[8] = 'booleans'");
   }
 
   @Test
   public void testJsonGetAllFieldTypes() throws Exception {
     assertJQ("/schema/fieldtypes?indent=on",
              "/fieldTypes/[0]/name=='HTMLstandardtok'",
-             "/fieldTypes/[1]/name=='HTMLwhitetok'",
-             "/fieldTypes/[2]/name=='boolean'");
+             "/fieldTypes/[1]/name=='HTMLstandardtok_dvSort'",
+             "/fieldTypes/[2]/name=='HTMLstandardtok_dvStored'",
+             "/fieldTypes/[3]/name=='HTMLwhitetok'",
+             "/fieldTypes/[4]/name=='HTMLwhitetok_dvSort'",
+             "/fieldTypes/[5]/name=='HTMLwhitetok_dvStored'",
+             "/fieldTypes/[6]/name=='boolean'",
+             "/fieldTypes/[7]/name=='booleans'");
   }
 }

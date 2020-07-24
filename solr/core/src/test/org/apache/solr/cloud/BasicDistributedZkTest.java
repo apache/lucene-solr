@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -108,6 +109,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   String i1="a_i1";
   String tlong = "other_tl1";
   String tsort="t_sortable";
+  String tdv="text_dv";
 
   String oddField="oddField_s";
   String missingField="ignore_exception__missing_but_valid_field_t";
@@ -441,14 +443,22 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     testStopAndStartCoresInOneInstance();
   }
 
+  private static final Set<String> NINES = new HashSet<>(Arrays.asList("the"));
+  private static final Set<String> FIVES = new HashSet<>(Arrays.asList("dog", "fox", "jumped", "lazy", "over", "quick"));
+  private static final Set<String> TWOS = new HashSet<>(Arrays.asList("all", "for", "men", "now"));
+  private static final Set<String> ONES = new HashSet<>(Arrays.asList("An", "Great", "aid", "and", "are",
+      "blind.", "brown", "but", "by", "come", "country.", "cow", "eggs", "ends", "eye", "good", "horses", "how",
+      "is", "kings", "learned", "lesson", "making", "no", "not", "of", "on", "only", "pass", "performed,", "perseverance.",
+      "shall", "strength,", "their", "this", "time", "to", "too", "up", "wall,", "whole", "works", "world"));
   private void testSortableTextFaceting() throws Exception {
     SolrQuery query = new SolrQuery("*:*");
     query.addFacetField(tsort);
+    query.addFacetField(tdv);
     query.setFacetMissing(false);
     QueryResponse resp = queryServer(query);
     List<FacetField> ffs = resp.getFacetFields();
     for (FacetField ff : ffs) {
-      if (ff.getName().equals(tsort) == false) continue;
+      if (ff.getName().equals(tsort)) {
       for (FacetField.Count count : ff.getValues()) {
         long num = count.getCount();
         switch (count.getName()) {
@@ -468,6 +478,29 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
           default:
             fail("No case for facet '" + ff.getName() + "'");
 
+        }
+      }
+      } else if (ff.getName().equals(tdv)) {
+        // regular text field (with dv) facets over tokenized terms
+        for (FacetField.Count count : ff.getValues()) {
+          long num = count.getCount();
+          String term = count.getName();
+          switch ((int)num) {
+            case 9:
+              assertTrue("Should have "+num+" docs for "+term, NINES.contains(term));
+              break;
+            case 5:
+              assertTrue("Should have "+num+" docs for "+term, FIVES.contains(term));
+              break;
+            case 2:
+              assertTrue("Should have "+num+" docs for "+term, TWOS.contains(term));
+              break;
+            case 1:
+              assertTrue("Should have "+num+" docs for "+term, ONES.contains(term));
+              break;
+            default:
+              fail("No case for facet count '" + num + "' (term '"+term+"')");
+          }
         }
       }
     }

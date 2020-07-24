@@ -62,7 +62,8 @@ public class SchemaVersionSpecificBehaviorTest extends SolrTestCaseJ4 {
           
           // 1.6: useDocValuesAsStored defaults to true
           assertEquals(f + " field's type has wrong useDocValuesAsStored for ver=" + ver,
-                       ( v < 1.6F ? false : true), 
+                       ( v < 1.6F ? false :
+                       ! (field.getType() instanceof TextField)),
                        field.useDocValuesAsStored());
           
           // uninvertable defaults to true (for now)

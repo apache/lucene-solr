@@ -35,7 +35,7 @@ import org.apache.solr.common.SolrException;
  * @see org.apache.solr.update.processor.NestedUpdateProcessorFactory
  * @since 8.0
  */
-public class NestPathField extends SortableTextField {
+public class NestPathField extends TextField {
 
   @Override
   public void setArgs(IndexSchema schema, Map<String, String> args) {
@@ -43,6 +43,7 @@ public class NestPathField extends SortableTextField {
     args.putIfAbsent("omitTermFreqAndPositions", "true");
     args.putIfAbsent("omitNorms", "true");
     args.putIfAbsent("maxCharsForDocValues", "-1");
+    args.putIfAbsent(DOC_VALUES_PURPOSE_ARGNAME, "sort");
     super.setArgs(schema, args);
 
     // CustomAnalyzer is easy to use

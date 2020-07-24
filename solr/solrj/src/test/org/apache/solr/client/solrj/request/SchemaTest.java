@@ -535,7 +535,7 @@ public class SchemaTest extends RestTestBase {
     SchemaResponse.FieldTypesResponse currentFieldTypesResponse = fieldTypesRequest.process(getSolrClient());
     assertEquals(0, currentFieldTypesResponse.getStatus());
     List<FieldTypeRepresentation> currentFieldTypes = currentFieldTypesResponse.getFieldTypes();
-    assertEquals(initialFieldTypes.size() + 1, currentFieldTypes.size());
+    assertEquals(initialFieldTypes.size() + 3, currentFieldTypes.size()); // +3 because TextField is now a polyField
 
     Map<String, Object> fieldAttributes = new LinkedHashMap<>();
     String fieldName = "accuracyField";

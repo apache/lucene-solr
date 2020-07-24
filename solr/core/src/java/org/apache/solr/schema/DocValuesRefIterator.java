@@ -14,20 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.index;
+package org.apache.solr.schema;
 
 import java.io.IOException;
 
-import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.index.DocValuesIterator;
+import org.apache.lucene.util.BytesRef;
 
-public abstract class DocValuesIterator extends DocIdSetIterator {
-
-  /** Advance the iterator to exactly {@code target} and return whether
-   *  {@code target} has a value.
-   *  {@code target} must be greater than or equal to the current
-   *  {@link #docID() doc ID} and must be a valid doc ID, ie. &ge; 0 and
-   *  &lt; {@code maxDoc}.
-   *  After this method returns, {@link #docID()} returns {@code target}. */
-  public abstract boolean advanceExact(int target) throws IOException;
-
+public abstract class DocValuesRefIterator extends DocValuesIterator {
+  /**
+   * Serially returns each BytesRef value represented by DocValues for the
+   * current document. null return value indicates no further values.
+   */
+  public abstract BytesRef nextRef() throws IOException;
 }

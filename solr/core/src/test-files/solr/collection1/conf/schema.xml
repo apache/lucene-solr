@@ -522,6 +522,7 @@
   <field name="uuid" type="uuid" stored="true"/>
   <field name="name" type="nametext" indexed="true" stored="true"/>
   <field name="text" type="text" indexed="true" stored="false"/>
+  <field name="text_dv" type="nametext" indexed="true" stored="false" docValues="true"/>
   <field name="subject" type="text" indexed="true" stored="true"/>
   <field name="title" type="nametext" indexed="true" stored="true"/>
   <field name="weight" type="float" indexed="true" stored="true" multiValued="false"/>
@@ -846,6 +847,8 @@
   <dynamicField name="*_dates_p"     type="pdate"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
   <dynamicField name="*_date_ni_p"   type="pdate"    indexed="false"  stored="true" docValues="true" multiValued="false"/>
   <dynamicField name="*_dates_ni_p"  type="pdate"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
+
+  <copyField source="t_sortable" dest="text_dv"/>
 
   <copyField source="single_i_dvn" dest="copy_single_i_dvn"/>
   <copyField source="single_d_dvn" dest="copy_single_d_dvn"/>

@@ -41,6 +41,7 @@ public class FieldType implements IndexableFieldType  {
   private IndexOptions indexOptions = IndexOptions.NONE;
   private boolean frozen;
   private DocValuesType docValuesType = DocValuesType.NONE;
+  private DocValuesType tokenDocValuesType = DocValuesType.NONE;
   private int dimensionCount;
   private int indexDimensionCount;
   private int dimensionNumBytes;
@@ -59,6 +60,7 @@ public class FieldType implements IndexableFieldType  {
     this.omitNorms = ref.omitNorms();
     this.indexOptions = ref.indexOptions();
     this.docValuesType = ref.docValuesType();
+    this.tokenDocValuesType = ref.tokenDocValuesType();
     this.dimensionCount = ref.pointDimensionCount();
     this.indexDimensionCount = ref.pointIndexDimensionCount();
     this.dimensionNumBytes = ref.pointNumBytes();
@@ -456,6 +458,32 @@ public class FieldType implements IndexableFieldType  {
       throw new NullPointerException("DocValuesType must not be null");
     }
     docValuesType = type;
+  }
+
+  /**
+   * {@inheritDoc}
+   * <p>
+   * The default is <code>NONE</code> (no docValues)
+   * @see #setTokenDocValuesType(DocValuesType)
+   */
+  @Override
+  public DocValuesType tokenDocValuesType() {
+    return tokenDocValuesType;
+  }
+
+  /**
+   * Sets the field's DocValuesType
+   * @param type per-token DocValues type, or NONE if no per-token DocValues should be stored.
+   * @throws IllegalStateException if this FieldType is frozen against
+   *         future modifications.
+   * @see #tokenDocValuesType()
+   */
+  public void setTokenDocValuesType(DocValuesType type) {
+    checkIfFrozen();
+    if (type == null) {
+      throw new NullPointerException("DocValuesType must not be null");
+    }
+    tokenDocValuesType = type;
   }
 
   @Override

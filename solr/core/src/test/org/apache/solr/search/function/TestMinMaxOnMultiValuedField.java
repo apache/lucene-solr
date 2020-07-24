@@ -384,15 +384,16 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
               req("q","*:*", "fl", "field(val_is_ndv_p,'max')"),
               SolrException.ErrorCode.BAD_REQUEST);
     
-    // useful error if min/max is unsupported for fieldtype
-    assertQEx("no error mentioning field name when asking for max on type that doesn't support it",
-              "cat_length",
-              req("q","*:*", "fl", "field(cat_length,'max')"),
-              SolrException.ErrorCode.BAD_REQUEST);
-    assertQEx("no error mentioning type when asking for max on type that doesn't support it",
-              "text_length",
-              req("q","*:*", "fl", "field(cat_length,'max')"),
-              SolrException.ErrorCode.BAD_REQUEST);
+    // useful error if min/max is unsupported for fieldtype (nocommit: delete below 2; TextField now supports getSingleValueSource)
+//    assertQEx("no error mentioning field name when asking for max on type that doesn't support it",
+//              "cat_length",
+//              req("q","*:*", "fl", "field(cat_length,'max')"),
+//              SolrException.ErrorCode.BAD_REQUEST);
+//    assertQEx("no error mentioning type when asking for max on type that doesn't support it",
+//              "text_length",
+//              req("q","*:*", "fl", "field(cat_length,'max')"),
+//              SolrException.ErrorCode.BAD_REQUEST);
+
     // type supports, but field doesn't have docValues
     assertQEx("no error mentioning field name when asking for max on a non-dv str field",
               "cat",
