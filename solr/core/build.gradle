@@ -59,6 +59,7 @@ dependencies {
   api 'commons-cli:commons-cli'
   api 'commons-codec:commons-codec'
   api 'commons-collections:commons-collections'
+  api 'org.apache.commons:commons-collections4'
 
   implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-smile'
 

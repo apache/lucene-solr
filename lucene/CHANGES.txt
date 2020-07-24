@@ -159,6 +159,10 @@ API Changes
 ---------------------
 (No changes)
 
+* LUCENE-9437: Lucene's facet module's DocValuesOrdinalsReader.decode method
+  is now public, making it easier for applications to decode facet
+  ordinals into their corresponding labels (Ankur)
+
 New Features
 ---------------------
 
