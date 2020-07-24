@@ -143,7 +143,9 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+
+* SOLR-11656: TLOG replication doesn't work properly after rebalancing leaders. (Yuki Yano via
+  Erick Erickson)
 
 Other Changes
 ---------------------
