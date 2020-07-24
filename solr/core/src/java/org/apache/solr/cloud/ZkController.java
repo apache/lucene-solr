@@ -2238,6 +2238,20 @@ public class ZkController implements Closeable {
       electionContexts.put(contextKey, context);
 
       elect.retryElection(context, params.getBool(REJOIN_AT_HEAD_PROP, false));
+
+      try (SolrCore core = cc.getCore(coreName)) {
+        Replica.Type replicaType = core.getCoreDescriptor().getCloudDescriptor().getReplicaType();
+        if (replicaType == Type.TLOG) {
+          String leaderUrl = getLeader(core.getCoreDescriptor().getCloudDescriptor(), cloudConfig.getLeaderVoteWait());
+          String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
+          if (!leaderUrl.equals(ourUrl)) {
+            // restart the replication thread to ensure the replication is running in each new replica
+            // especially if previous role is "leader" (i.e., no replication thread)
+            stopReplicationFromLeader(coreName);
+            startReplicationFromLeader(coreName, false);
+          }
+        }
+      }
     } catch (Exception e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to rejoin election", e);
     } finally {
