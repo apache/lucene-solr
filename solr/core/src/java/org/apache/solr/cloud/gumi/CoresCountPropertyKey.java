@@ -22,9 +22,6 @@ package org.apache.solr.cloud.gumi;
  * (most likely getting properties from a given {@link Node}).
  */
 public interface CoresCountPropertyKey extends PropertyKey {
-  /*
-   * Nothing here because requesting number of cores does not have parameters. If it ends up having parameters (such
-   * as "loaded cores", "all cores" etc.) getters will be added here to retrieve these values that would have been passed
-   * to the corresponding factory method.
-   */
+  @Override
+  Node getPropertyKeyTarget();
 }

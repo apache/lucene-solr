@@ -21,4 +21,6 @@ package org.apache.solr.cloud.gumi;
  * Key for requesting disk space info from a given {@link Node}).
  */
 public interface DiskInfoPropertyKey extends PropertyKey {
+  @Override
+  Node getPropertyKeyTarget();
 }

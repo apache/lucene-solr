@@ -18,7 +18,8 @@
 package org.apache.solr.cloud.gumi;
 
 /**
- * A {@link PropertyValue} representing a metric on the target {@link Node}.
+ * A {@link PropertyValue} representing a metric on the target {@link PropertyKeyTarget}.
+ * Note there might be overlap with {@link SystemLoadPropertyValue} (only applicable to {@link Node}'s), may need to clarify.
  */
 public interface MetricPropertyValue extends PropertyValue {
 

@@ -17,8 +17,6 @@
 
 package org.apache.solr.cloud.gumi;
 
-import java.util.List;
-
 /**
  * Exception thrown by a {@link GumiPlugin} when it is unable to compute placement for whatever reason (except an
  * {@link InterruptedException} that {@link GumiPlugin#computePlacement}

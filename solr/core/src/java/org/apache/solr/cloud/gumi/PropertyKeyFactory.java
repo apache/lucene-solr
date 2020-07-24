@@ -21,33 +21,31 @@ package org.apache.solr.cloud.gumi;
  * Factory used by the plugin to create property keys to request property values from Solr.<p>
  *
  * Note there currently exist sub-interfaces of {@link PropertyKey} for all the keys. This is for initial readability,
- * but is not required. Some of the interfaces are empty, and even those that can return the values used to build the
+ * but is not required. Some of the interfaces are empty, and even those that return the values used to build the
  * keys are not really required, the plugin code can keep track in other ways of what is what.
  * Leaving it this way for now but very tempted to have all the factory methods simply return a {@link PropertyKey} instead.<p>
  *
  * Building of a {@link PropertyKey} requires specifying the target (context) from which the value of that key should be
  * obtained. This is done by specifying the appropriate {@link PropertyKeyTarget}.<br>
- * When only a single type of target is acceptable, the corresponding parameter name indicates its type (for example
- * <code>node</code>). It seemed better to be consistent in the type of the target parameter rather than use a more
- * specific type in some cases (e.g. use {@link Node} rather than {@link PropertyKeyTarget} when a property can only be
- * built for nodes).
+ * For clarity, when only a single type of target is acceptable, the corresponding subtype of {@link PropertyKeyTarget} is used instead
+ * (for example {@link Node}).
  */
 public interface PropertyKeyFactory {
   /**
    * Returns a property key to request the number of cores on a {@link Node}.
    */
-  CoresCountPropertyKey createCoreCountKey(PropertyKeyTarget node);
+  CoresCountPropertyKey createCoreCountKey(Node node);
 
   /**
-   * Returns a property key to request disk related info.
+   * Returns a property key to request disk related info on a {@link Node}.
    */
-  DiskInfoPropertyKey createDiskInfoKey(PropertyKeyTarget node);
+  DiskInfoPropertyKey createDiskInfoKey(Node node);
 
   /**
    * Returns a property key to request the value of a system property on a {@link Node}.
    * @param systemPropertyName the name of the system property to retrieve.
    */
-  SystemPropertyPropertyKey createSystemPropertyKey(PropertyKeyTarget node, String systemPropertyName);
+  SystemPropertyPropertyKey createSystemPropertyKey(Node node, String systemPropertyName);
 
   /**
    * Returns a property key to request the value of a metric.<p>
@@ -60,4 +58,9 @@ public interface PropertyKeyFactory {
    * @param metricName for example <code>SEARCHER.searcher.indexCommitSize</code>.
    */
   MetricPropertyKey createMetricKey(PropertyKeyTarget metricSource, String metricName);
+
+  /**
+   * Returns a property key to access system load data on a {@link Node}.
+   */
+  SystemLoadPropertyKey createSystemLoadKey(Node node);
 }

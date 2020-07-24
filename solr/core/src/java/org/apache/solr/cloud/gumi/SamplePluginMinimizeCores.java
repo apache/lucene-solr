@@ -26,6 +26,7 @@ import java.util.Map;
 
 import com.google.common.collect.Ordering;
 import com.google.common.collect.TreeMultimap;
+import org.apache.solr.common.util.SuppressForbidden;
 
 /**
  * Implements placing replicas to minimize number of cores per {@link Node}, while not placing two replicas of the same
@@ -35,6 +36,7 @@ import com.google.common.collect.TreeMultimap;
  */
 public class SamplePluginMinimizeCores implements GumiPlugin {
 
+  @SuppressForbidden(reason = "Ordering.arbitrary() has no Comparator equivalent. Reuse > copy.")
   public List<WorkOrder> computePlacement(Topo clusterTopo, List<Request> placementRequests, PropertyKeyFactory propertyFactory,
                                           PropertyKeyFetcher propertyFetcher, WorkOrderFactory workOrderFactory) throws GumiException {
     // This plugin only supports Creating a collection, and only one collection. Real code would be different...

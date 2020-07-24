@@ -21,10 +21,12 @@ package org.apache.solr.cloud.gumi;
  * A key for a given system property on a target {@link Node}.
  */
 public interface SystemPropertyPropertyKey extends PropertyKey {
+  @Override
+  Node getPropertyKeyTarget();
 
   /**
    * @return the name of the system property on the target {@link Node} this property key is going to ask to retrieve.
-   * This is the value passed into {@link PropertyKeyFactory#createSystemPropertyKey(PropertyKeyTarget, String)}.
+   * This is the value passed into {@link PropertyKeyFactory#createSystemPropertyKey}.
    */
   String getSystemPropertyName();
 }

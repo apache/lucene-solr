@@ -22,7 +22,8 @@ package org.apache.solr.cloud.gumi;
  */
 public interface PropertyKey {
   /**
-   * @return the target of this {@link PropertyKey}, i.e. from where the corresponding {@link PropertyValue} should be obtained.
+   * @return the target of this {@link PropertyKey}, i.e. from where the corresponding {@link PropertyValue} should be
+   * (or was) obtained.
    */
   PropertyKeyTarget getPropertyKeyTarget();
 }

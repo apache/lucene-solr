@@ -20,6 +20,7 @@ package org.apache.solr.cloud.gumi;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 
 /**
  * Implements random placement for new collection creation while preventing two replicas of same shard from being placed on same node.
@@ -56,7 +57,7 @@ public class SamplePluginRandomPlacement implements GumiPlugin {
     for (String shardName : reqCreateCollection.getShardNames()) {
       // Shuffle the nodes for each shard so that replicas for a shard are placed on distinct yet random nodes
       ArrayList<Node> nodesToAssign = new ArrayList<>(clusterTopo.getLiveNodes());
-      Collections.shuffle(nodesToAssign);
+      Collections.shuffle(nodesToAssign, new Random());
 
       placeForReplicaType(reqCreateCollection, nodesToAssign, workOrderFactory, workToDo,
           shardName, reqCreateCollection.getNRTReplicationFactor(), ReplicaType.NRT);
