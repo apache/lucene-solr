@@ -40,6 +40,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+// Tamped down for non Nightly runs as this test generates a large amount of garbage
 public class TestNumericTerms64 extends SolrTestCase {
   // distance of entries
   private static long distance;
@@ -54,12 +55,12 @@ public class TestNumericTerms64 extends SolrTestCase {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
-    noDocs = atLeast(4096);
+    noDocs = atLeast(TEST_NIGHTLY ? 4096 : 256);
     distance = (1L << 60) / noDocs;
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
         newIndexWriterConfig(new MockAnalyzer(random()))
-        .setMaxBufferedDocs(TestUtil.nextInt(random(), 100, 1000))
+        .setMaxBufferedDocs(TestUtil.nextInt(random(), TEST_NIGHTLY ? 100 : 990, 1000))
         .setMergePolicy(newLogMergePolicy()));
 
     final LegacyFieldType storedLong = new LegacyFieldType(LegacyLongField.TYPE_NOT_STORED);
@@ -127,7 +128,7 @@ public class TestNumericTerms64 extends SolrTestCase {
     String field="field"+precisionStep;
     // 10 random tests, the index order is ascending,
     // so using a reverse sort field should retun descending documents
-    int num = TestUtil.nextInt(random(), 10, 20);
+    int num = TestUtil.nextInt(random(), 10, TEST_NIGHTLY ? 20 : 14);
     for (int i = 0; i < num; i++) {
       long lower=(long)(random().nextDouble()*noDocs*distance)+startOffset;
       long upper=(long)(random().nextDouble()*noDocs*distance)+startOffset;

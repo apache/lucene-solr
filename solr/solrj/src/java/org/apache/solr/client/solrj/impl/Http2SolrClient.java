@@ -66,6 +66,7 @@ import org.apache.solr.common.params.QoSParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.Base64;
+import org.apache.solr.common.util.CloseTracker;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
@@ -123,12 +124,11 @@ public class Http2SolrClient extends SolrClient {
   private static final List<String> errPath = Arrays.asList("metadata", "error-class");
   private final Map<String, String> headers;
   private final SolrHttpClientScheduler scheduler;
+  private final CloseTracker closeTracker;
 
   private volatile HttpClient httpClient;
   private volatile Set<String> queryParams = Collections.emptySet();
   private int idleTimeout;
-  volatile String closed = null;
-
   private volatile ResponseParser parser = new BinaryResponseParser();
   private volatile RequestWriter requestWriter = new BinaryRequestWriter();
   private final Set<HttpListenerFactory> listenerFactory = ConcurrentHashMap.newKeySet();
@@ -141,6 +141,7 @@ public class Http2SolrClient extends SolrClient {
   private volatile SolrQueuedThreadPool httpClientExecutor;
 
   protected Http2SolrClient(String serverBaseUrl, Builder builder) {
+    closeTracker = new CloseTracker();
     if (serverBaseUrl != null)  {
       if (!serverBaseUrl.equals("/") && serverBaseUrl.endsWith("/")) {
         serverBaseUrl = serverBaseUrl.substring(0, serverBaseUrl.length() - 1);
@@ -165,7 +166,6 @@ public class Http2SolrClient extends SolrClient {
     } else {
       httpClient = builder.http2SolrClient.httpClient;
     }
-    httpClient.setScheduler(scheduler);
     assert ObjectReleaseTracker.track(this);
   }
 
@@ -229,7 +229,6 @@ public class Http2SolrClient extends SolrClient {
     httpClientExecutor.setMinThreads(3);
     httpClient.setIdleTimeout(idleTimeout);
     try {
-     // httpClientExecutor.start();
       httpClient.setExecutor(httpClientExecutor);
       httpClient.setStrictEventOrdering(false);
       httpClient.setConnectBlocking(false);
@@ -238,7 +237,7 @@ public class Http2SolrClient extends SolrClient {
       httpClient.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, AGENT));
       httpClient.setIdleTimeout(idleTimeout);
       if (builder.connectionTimeout != null) httpClient.setConnectTimeout(builder.connectionTimeout);
-
+      httpClient.setScheduler(scheduler);
       httpClient.start();
     } catch (Exception e) {
       ParWork.propegateInterrupt(e);
@@ -249,13 +248,7 @@ public class Http2SolrClient extends SolrClient {
   }
 
   public void close() {
-    if (this.closed != null) {
-      throw new AlreadyClosedException("Already closed! " + this.closed);
-    }
-    StringWriter sw = new StringWriter();
-    PrintWriter pw = new PrintWriter(sw);
-    new AlreadyClosedException("Already closed at: ").printStackTrace(pw);
-    this.closed = sw.toString();
+    closeTracker.close();
 
     if (httpClientExecutor != null) {
       try {
@@ -433,9 +426,6 @@ public class Http2SolrClient extends SolrClient {
     Request req = makeRequest(solrRequest, collection);
     final ResponseParser parser = solrRequest.getResponseParser() == null
         ? this.parser: solrRequest.getResponseParser();
-    if (this.closed != null) {
-      throw new AlreadyClosedException();
-    }
     if (onComplete != null) {
       // This async call only suitable for indexing since the response size is limited by 5MB
       req.onRequestQueued(asyncTracker.queuedListener).send(new BufferingResponseListener(5 * 1024 * 1024) {
@@ -895,9 +885,6 @@ public class Http2SolrClient extends SolrClient {
     }
 
     public synchronized void waitForComplete() {
-      if (Http2SolrClient.this.closed != null) {
-        throw new IllegalStateException("Already closed! " + Http2SolrClient.this.closed );
-      }
       if (log.isDebugEnabled()) log.debug("Before wait for outstanding requests registered: {} arrived: {}", phaser.getRegisteredParties(), phaser.getArrivedParties());
 
       int arrival = phaser.arriveAndAwaitAdvance();

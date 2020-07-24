@@ -81,7 +81,7 @@ public class HttpShardHandler extends ShardHandler {
   private Set<ShardResponse> asyncPending;
   private Set<Future<ShardResponse>> pending;
   private Map<String,List<String>> shardToURLs;
-  private Http2SolrClient solrClient;
+  private final Http2SolrClient solrClient;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -264,6 +264,7 @@ public class HttpShardHandler extends ShardHandler {
           if (urls.size() <= 1) {
             String url = urls.get(0);
             srsp.setShardAddress(url);
+            assert solrClient != null;
             try (SolrClient client = new Builder(url).withHttpClient(solrClient).markInternalRequest().build()) {
               ssr.nl = client.request(req);
             }

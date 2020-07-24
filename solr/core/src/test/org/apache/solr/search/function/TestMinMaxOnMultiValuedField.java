@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
@@ -40,6 +41,7 @@ import org.junit.BeforeClass;
  * Tests the behavior of <code>field(foo,min|max)</code> on numerious types of multivalued 'foo' fields,
  * as well as the beahvior of sorting on <code>foo asc|desc</code> to implicitly choose the min|max.
  */
+@LuceneTestCase.Nightly // this test generates a lot of garbage
 @SuppressCodecs({"SimpleText"}) // see TestSortedSetSelector
 public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
 

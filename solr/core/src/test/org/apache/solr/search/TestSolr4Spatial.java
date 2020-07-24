@@ -20,6 +20,7 @@ import java.text.ParseException;
 import java.util.Arrays;
 
 import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
@@ -40,6 +41,7 @@ import org.locationtech.spatial4j.shape.Rectangle;
  * Test Solr 4's new spatial capabilities from the new Lucene spatial module. Don't thoroughly test it here because
  * Lucene spatial has its own tests.  Some of these tests were ported from Solr 3 spatial tests.
  */
+@LuceneTestCase.Nightly // this test generates a lot of garbage
 public class TestSolr4Spatial extends SolrTestCaseJ4 {
 
   private final String fieldName;
