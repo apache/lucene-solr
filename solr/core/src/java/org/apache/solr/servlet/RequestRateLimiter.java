@@ -121,15 +121,6 @@ public class RequestRateLimiter {
         String responseMessage = "Too many requests for this request type." +
             "Please try after some time or increase the quota for this request type";
 
-        /*servletResponse.setContentType("APPLICATION/OCTET-STREAM");
-        servletResponse.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
-
-        String responseMessage = "Too many requests for this request type." +
-            "Please try after some time or increase the quota for this request type";
-
-        servletResponse.getWriter().write(responseMessage);
-        servletResponse.getWriter().flush();
-        servletResponse.getWriter().close();*/
         servletResponse.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE, responseMessage);
 
         asyncContext.complete();
