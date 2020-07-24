@@ -16,6 +16,9 @@
  */
 package org.apache.solr.search.stats;
 
+import org.apache.lucene.util.LuceneTestCase;
+
+@LuceneTestCase.Nightly // this test can be slow in parallel tests - measure beforeClass - test - afterClass, not just test
 public class TestExactSharedStatsCache extends TestBaseStatsCache {
 
   @Override

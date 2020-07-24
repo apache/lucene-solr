@@ -18,6 +18,7 @@ package org.apache.solr.ltr.feature;
 
 import java.util.LinkedHashMap;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.model.LinearModel;
@@ -25,7 +26,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-
+@LuceneTestCase.Nightly
 public class TestRankingFeature extends TestRerankBase {
 
   @Before

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.ltr.model;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
 import org.junit.After;
@@ -24,6 +25,7 @@ import org.junit.Test;
 
 import static org.hamcrest.core.StringContains.containsString;
 
+@LuceneTestCase.Nightly
 public class TestMultipleAdditiveTreesModel extends TestRerankBase {
 
   @Before

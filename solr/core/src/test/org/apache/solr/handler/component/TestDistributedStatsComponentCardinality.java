@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 
@@ -45,6 +46,7 @@ import org.slf4j.LoggerFactory;
 @Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-9062")
 @LogLevel("org.eclipse.jetty.client.HttpConnection=DEBUG")
+@LuceneTestCase.Nightly // this test can take a long time, perhaps due to schema, or maybe numeric fields?
 public class TestDistributedStatsComponentCardinality extends BaseDistributedSearchTestCase {
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -71,7 +73,7 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
     fixShardCount(TEST_NIGHTLY ? 7 : random().nextInt(3) + 1);
 
     handle.put("maxScore", SKIPVAL);
-    NUM_DOCS = TestUtil.nextInt(random(), TEST_NIGHTLY ? 10000 : 1000, TEST_NIGHTLY ? 15000 : 1500);
+    NUM_DOCS = TestUtil.nextInt(random(), TEST_NIGHTLY ? 10000 : 300, TEST_NIGHTLY ? 15000 : 450);
     MAX_LONG = TestUtil.nextLong(random(), 0, NUM_DOCS * BIG_PRIME);
     MIN_LONG = MAX_LONG - (((long)NUM_DOCS-1) * BIG_PRIME);
   }

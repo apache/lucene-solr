@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search.stats;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -24,6 +25,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Test;
 
 // See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows machines occasionally
+@LuceneTestCase.Nightly // this test can be slow in parallel tests - measure beforeClass - test - afterClass, not just test
 public class TestDefaultStatsCache extends BaseDistributedSearchTestCase {
   private int docId = 0;
   

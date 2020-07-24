@@ -33,6 +33,7 @@ import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.DFISimilarity;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
 import org.apache.solr.common.SolrDocumentList;
@@ -53,6 +54,7 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.common.util.Utils.fromJSONString;
 
 
+@LuceneTestCase.Nightly // expensive test, uses 100
 public class TestBulkSchemaAPI extends RestTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

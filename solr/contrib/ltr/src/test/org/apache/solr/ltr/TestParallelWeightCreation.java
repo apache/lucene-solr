@@ -16,9 +16,11 @@
  */
 package org.apache.solr.ltr;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.junit.Test;
 
+@LuceneTestCase.Nightly
 public class TestParallelWeightCreation extends TestRerankBase{
 
   @Test

@@ -19,6 +19,7 @@ package org.apache.solr;
 import java.io.IOException;
 import java.util.List;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -44,6 +45,7 @@ import static org.hamcrest.CoreMatchers.containsString;
  */
 @Slow
 @SuppressPointFields(bugUrl="https://issues.apache.org/jira/browse/SOLR-10844")
+@LuceneTestCase.Nightly // this test can be slow in parallel tests - measure beforeClass - test - afterClass, not just test
 public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
 
   public TestDistributedGrouping() {

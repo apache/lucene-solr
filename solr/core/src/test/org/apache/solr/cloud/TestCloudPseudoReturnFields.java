@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -50,6 +51,7 @@ import org.junit.BeforeClass;
  * @see TestPseudoReturnFields 
  * @see TestRandomFlRTGCloud
  */
+@LuceneTestCase.Nightly // this test can be slow in parallel tests - measure beforeClass - test - afterClass, not just test
 public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
   
   private static final String DEBUG_LABEL = MethodHandles.lookup().lookupClass().getName();

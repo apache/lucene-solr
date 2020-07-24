@@ -17,6 +17,7 @@
 package org.apache.solr.handler.dataimport;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.DirectXmlRequest;
@@ -40,6 +41,7 @@ import java.util.Properties;
  *
  * @since solr 1.4
  */
+@LuceneTestCase.Nightly
 public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCase {
   private static final String CONF_DIR = "dih/solr/collection1/conf/";
   private static final String ROOT_DIR = "dih/solr/";

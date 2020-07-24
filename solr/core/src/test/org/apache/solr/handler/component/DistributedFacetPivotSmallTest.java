@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 
 import junit.framework.AssertionFailedError;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.PivotField;
@@ -35,6 +36,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.junit.Test;
 
+@LuceneTestCase.Nightly // can be a slow test - measure full test time, beforeClass + test + afterClass
 public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCase {
 
   public DistributedFacetPivotSmallTest() {
@@ -49,7 +51,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
     // NOTE: we use the literal (4 character) string "null" as a company name
     // to help ensure there isn't any bugs where the literal string is treated as if it 
     // were a true NULL value.
-    index(id, 19, "place_t", "cardiff dublin", "company_t", "microsoft polecat", "price_ti", "15");
+    index(id, 19, "place_t", "cardiff dublin", "company_t", "microsoft polecat", "price_ti", "1TestDistributedMissingSort5");
     index(id, 20, "place_t", "dublin", "company_t", "polecat microsoft null", "price_ti", "19",
           // this is the only doc to have solo_* fields, therefore only 1 shard has them
           // TODO: add enum field - blocked by SOLR-6682

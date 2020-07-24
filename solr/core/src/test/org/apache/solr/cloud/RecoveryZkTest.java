@@ -76,7 +76,7 @@ public class RecoveryZkTest extends SolrCloudTestCase {
 
     // start a couple indexing threads
     
-    int[] maxDocList = new int[] {300, 700, 1200, 1350, 3000};
+    int[] maxDocList = new int[] {25, 55};
     int[] maxDocNightlyList = new int[] {3000, 7000, 12000, 30000, 45000, 60000};
     
     int maxDoc;
@@ -98,7 +98,12 @@ public class RecoveryZkTest extends SolrCloudTestCase {
     indexThread2.start();
 
     // give some time to index...
-    int[] waitTimes = new int[] {200, 2000, 3000};
+    int[] waitTimes;
+    if (TEST_NIGHTLY) {
+      waitTimes = new int[]{1000, 2000, 5000};
+    } else {
+      waitTimes = new int[]{250, 350, 500};
+    }
     Thread.sleep(waitTimes[random().nextInt(waitTimes.length - 1)]);
      
     // bring shard replica down

@@ -1826,7 +1826,7 @@ public class CoreContainer implements Closeable {
 
     core.unloadOnClose(cd, deleteIndexDir, deleteDataDir, deleteInstanceDir);
     if (close) {
-      core.close();
+      core.closeAndWait();
     }
   }
 

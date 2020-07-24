@@ -19,6 +19,7 @@ package org.apache.solr.handler.component;
 import java.io.File;
 import java.util.*;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.LuceneTestCase.SuppressTempFileChecks;
 import org.apache.solr.SolrTestCaseJ4;
@@ -42,6 +43,7 @@ import org.junit.Test;
  */
 @Slow
 @SuppressTempFileChecks(bugUrl = "https://issues.apache.org/jira/browse/SOLR-1877 Spellcheck IndexReader leak bug?")
+@LuceneTestCase.Nightly // this test can be slow in parallel tests - measure beforeClass - test - afterClass, not just test
 public class SpellCheckComponentTest extends SolrTestCaseJ4 {
   static String rh = "/spellCheckCompRH";
 

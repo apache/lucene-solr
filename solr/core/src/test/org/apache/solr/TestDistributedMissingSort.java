@@ -16,6 +16,7 @@
  */
 package org.apache.solr;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.junit.Test;
@@ -24,6 +25,7 @@ import org.junit.Test;
  * Tests sortMissingFirst and sortMissingLast in distributed sort
  */
 @Slow
+@LuceneTestCase.Nightly // can be a slow test - measure full test time, beforeClass + test + afterClass
 public class TestDistributedMissingSort extends BaseDistributedSearchTestCase {
 
   public TestDistributedMissingSort() {

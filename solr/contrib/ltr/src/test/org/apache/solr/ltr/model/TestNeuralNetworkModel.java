@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.search.Explanation;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.norm.IdentityNormalizer;
@@ -32,6 +33,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+@LuceneTestCase.Nightly
 public class TestNeuralNetworkModel extends TestRerankBase {
 
   public static LTRScoringModel createNeuralNetworkModel(String name, List<Feature> features,

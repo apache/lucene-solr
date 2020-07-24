@@ -52,7 +52,7 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
     params.set(HttpClientUtil.PROP_SO_TIMEOUT, 10000);
     httpClient = HttpClientUtil.createClient(params);
     this.serverProvider = serverProvider;
-    ObjectReleaseTracker.track(this);
+    assert ObjectReleaseTracker.track(this);
   }
   
   public String getBaseURL() {
@@ -238,6 +238,6 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
   @Override
   public void close() throws IOException {
     HttpClientUtil.close(httpClient);
-    ObjectReleaseTracker.release(this);
+    assert ObjectReleaseTracker.release(this);
   }
 }

@@ -2095,9 +2095,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       }
 
       synchronized (searcherLock) {
-        if (isClosed() || (getCoreContainer() != null && getCoreContainer().isShutDown())) { // if we start new searchers after close we won't close them
-          throw new SolrCoreState.CoreIsClosedException();
-        }
+//        if (isClosed() || (getCoreContainer() != null && getCoreContainer().isShutDown())) { // if we start new searchers after close we won't close them
+//          throw new SolrCoreState.CoreIsClosedException();
+//        }
 
         newestSearcher = realtimeSearcher;
         if (newestSearcher != null) {
@@ -2266,15 +2266,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     // it may take some time to open an index.... we may need to make
     // sure that two threads aren't trying to open one at the same time
     // if it isn't necessary.
-    if (isClosed || coreContainer.isShutDown()) {
-      throw new AlreadyClosedException();
-    }
     synchronized (searcherLock) {
-
-      if (isClosed()) { // if we start new searchers after close we won't close them
-        throw new SolrCoreState.CoreIsClosedException();
-      }
-
       for (;;) { // this loop is so w can retry in the event that we exceed maxWarmingSearchers
         // see if we can return the current searcher
         if (_searcher != null && !forceNew) {
@@ -2320,6 +2312,11 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         }
 
         // At this point, we know we need to open a new searcher...
+
+        if (isClosed()) { // if we start new searchers after close we won't close them
+          throw new SolrCoreState.CoreIsClosedException();
+        }
+
         // first: increment count to signal other threads that we are
         // opening a new searcher.
         onDeckSearchers.incrementAndGet();

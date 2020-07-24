@@ -45,6 +45,12 @@ import org.junit.Test;
  */
 public class DistributedTermsComponentTest extends BaseDistributedSearchTestCase {
 
+  public DistributedTermsComponentTest() {
+    if (!TEST_NIGHTLY) {
+      fixShardCount(2);
+    }
+  }
+
   @Test
   public void test() throws Exception {
     Random random = random();

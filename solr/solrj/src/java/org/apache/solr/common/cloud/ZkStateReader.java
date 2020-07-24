@@ -48,6 +48,7 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.Callable;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrCloseable;
@@ -1559,10 +1560,10 @@ public class ZkStateReader implements SolrCloseable {
   public static DocCollection getCollectionLive(ZkStateReader zkStateReader, String coll) {
     try {
       return zkStateReader.fetchCollectionState(coll, null);
+    } catch (KeeperException.SessionExpiredException | InterruptedException e) {
+      ParWork.propegateInterrupt(e);
+      throw new AlreadyClosedException("Could not load collection from ZK: " + coll, e);
     } catch (KeeperException e) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Could not load collection from ZK: " + coll, e);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
       throw new SolrException(ErrorCode.BAD_REQUEST, "Could not load collection from ZK: " + coll, e);
     }
   }
