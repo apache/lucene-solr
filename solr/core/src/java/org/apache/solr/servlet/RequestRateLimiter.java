@@ -91,7 +91,9 @@ public class RequestRateLimiter {
         return true;
       }
       catch (IllegalStateException x) {
-        log.warn(x.getMessage());
+        if (log.isWarnEnabled()) {
+          log.warn(x.getMessage());
+        }
       }
     }
 
