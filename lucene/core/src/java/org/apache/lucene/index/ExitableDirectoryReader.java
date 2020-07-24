@@ -43,7 +43,7 @@ public class ExitableDirectoryReader extends FilterDirectoryReader {
   public static class ExitingReaderException extends RuntimeException {
 
     /** Constructor **/
-    ExitingReaderException(String msg) {
+    public ExitingReaderException(String msg) {
       super(msg);
     }
   }
