@@ -17,6 +17,7 @@
 
 package org.apache.solr.common.cloud.sdk;
 
+import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.util.SimpleMap;
 
 import java.util.function.Consumer;

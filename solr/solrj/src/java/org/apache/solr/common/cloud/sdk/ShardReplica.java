@@ -21,9 +21,7 @@ import org.apache.solr.common.cloud.Replica;
 
 /** replica of a shard */
 public interface ShardReplica {
-  /**
-   * Name of this replica
-   */
+  /** Name of this replica */
   String name();
 
   /**
@@ -31,15 +29,10 @@ public interface ShardReplica {
    */
   String shardName();
 
-  /**
-   * collection which it belongs to
-   * @return
-   */
+  /** collection which it belongs to */
   String collectionName();
 
-  /**
-   * Name of the node where this replica is present
-   */
+  /** Name of the node where this replica is present */
   SolrNode node();
 
   /** Name of the core where this is hosted */
