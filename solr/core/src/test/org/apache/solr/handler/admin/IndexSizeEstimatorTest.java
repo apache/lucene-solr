@@ -94,7 +94,7 @@ public class IndexSizeEstimatorTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // there is some race here - the fieldsBySize can come back empty rarely
+  @Ignore // .;llthere is some race here - the fieldsBySize can come back empty rarely
   public void testEstimator() throws Exception {
     JettySolrRunner jetty = cluster.getRandomJetty(random());
     String randomCoreName = jetty.getCoreContainer().getAllCoreNames().iterator().next();
