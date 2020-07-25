@@ -34,6 +34,7 @@ import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.NoLockFactory;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrIgnoredThreadsFilter;
@@ -59,6 +60,7 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
         QuickPatchThreadsFilter.class,
         BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
+@LuceneTestCase.Nightly
 public class HdfsDirectoryFactoryTest extends SolrTestCaseJ4 {
   private static MiniDFSCluster dfsCluster;
   
