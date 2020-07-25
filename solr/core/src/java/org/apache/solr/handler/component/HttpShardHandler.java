@@ -381,9 +381,11 @@ public class HttpShardHandler extends ShardHandler {
 
       while (pending.size() > 0 && !Thread.currentThread().isInterrupted()) {
         try {
-          Future<ShardResponse> future = completionService.poll(Integer.getInteger("solr.httpShardHandler.completionTimeout", 10000), TimeUnit.MILLISECONDS);
+          Future<ShardResponse> future = completionService.poll(Integer.getInteger("solr.httpShardHandler.completionTimeout", 15000), TimeUnit.MILLISECONDS);
           if (future == null) {
-            throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Timed out waiting for response from shard");
+            log.warn("Timed out waiting for response from shard");
+            // nocommit
+            continue;
           }
           pending.remove(future);
           ShardResponse rsp = future.get();

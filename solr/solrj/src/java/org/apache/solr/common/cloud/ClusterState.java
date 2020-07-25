@@ -141,7 +141,11 @@ public class ClusterState implements JSONWriter.Writable {
    * because the semantics of how collection list is loaded have changed in SOLR-6629.
    */
   public DocCollection getCollectionOrNull(String collectionName, boolean allowCached) {
-    CollectionRef ref = collectionStates.get(collectionName);
+    Object collObject = collectionStates.get(collectionName);
+    if (collObject instanceof  DocCollection) {
+      return (DocCollection) collObject;
+    }
+    CollectionRef ref = (CollectionRef) collObject;
     return ref == null ? null : ref.get(allowCached);
   }
 

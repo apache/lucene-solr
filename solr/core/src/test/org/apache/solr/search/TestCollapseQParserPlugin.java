@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -35,6 +36,7 @@ import org.junit.Test;
 
 import static org.hamcrest.core.StringContains.containsString;
 
+@LuceneTestCase.Nightly // slow test, thread leak?
 public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
