@@ -63,18 +63,18 @@ public final class BKDRadixSelector {
    */
   public BKDRadixSelector(BKDConfig config, int maxPointsSortInHeap, Directory tempDir, String tempFileNamePrefix) {
     this.config = config;
+    this.maxPointsSortInHeap = maxPointsSortInHeap;
+    this.tempDir = tempDir;
+    this.tempFileNamePrefix = tempFileNamePrefix;
     // Selection and sorting is done in a given dimension. In case the value of the dimension are equal
     // between two points we tie break first using the data-only dimensions and if those are still equal
     // we tie-break on the docID. Here we account for all bytes used in the process.
     this.bytesSorted = config.bytesPerDim + (config.numDims - config.numIndexDims) * config.bytesPerDim + Integer.BYTES;
-    this.maxPointsSortInHeap = maxPointsSortInHeap;
-    int numberOfPointsOffline = MAX_SIZE_OFFLINE_BUFFER / config.bytesPerDoc;
+    final int numberOfPointsOffline = MAX_SIZE_OFFLINE_BUFFER / config.bytesPerDoc;
     this.offlineBuffer = new byte[numberOfPointsOffline * config.bytesPerDoc];
     this.partitionBucket = new int[bytesSorted];
     this.histogram = new long[HISTOGRAM_SIZE];
     this.scratch = new byte[bytesSorted];
-    this.tempDir = tempDir;
-    this.tempFileNamePrefix = tempFileNamePrefix;
   }
 
   /**

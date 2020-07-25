@@ -134,6 +134,7 @@ public class BKDWriter implements Closeable {
     // creates temp files doesn't need crazy try/finally/sucess logic:
     this.tempDir = new TrackingDirectoryWrapper(tempDir);
     this.tempFileNamePrefix = tempFileNamePrefix;
+    this.maxMBSortInHeap = maxMBSortInHeap;
     
     this.totalPointCount = totalPointCount;
     this.maxDoc = maxDoc;
@@ -159,7 +160,6 @@ public class BKDWriter implements Closeable {
           + maxPointsSortInHeap + ", but this is less than maxPointsInLeafNode=" + config.maxPointsInLeafNode + "; "
           + "either increase maxMBSortInHeap or decrease maxPointsInLeafNode");
     }
-    this.maxMBSortInHeap = maxMBSortInHeap;
   }
 
   private static void verifyParams(double maxMBSortInHeap, long totalPointCount) {
