@@ -32,8 +32,4 @@ public interface SolrCollection {
    */
   String configSet();
 
-  /**Iterate through all replicas
-   */
-  void forEachReplica(Consumer<ShardReplica> consumer);
-
 }
