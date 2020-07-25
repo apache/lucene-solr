@@ -17,6 +17,7 @@
 package org.apache.solr.client.solrj;
 
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.RequestWriter;
@@ -37,8 +38,8 @@ public class SolrExampleXMLTest extends SolrExampleTests {
   public SolrClient createNewSolrClient() {
     try {
       String url = jetty.getBaseUrl().toString() + "/collection1";
-      HttpSolrClient client = getHttpSolrClient(url, DEFAULT_CONNECTION_TIMEOUT);
-      client.setUseMultiPartPost(random().nextBoolean());
+      Http2SolrClient client = getHttpSolrClient(url, DEFAULT_CONNECTION_TIMEOUT);
+      //client.setUseMultiPartPost(random().nextBoolean());
       client.setParser(new XMLResponseParser());
       client.setRequestWriter(new RequestWriter());
       return client;

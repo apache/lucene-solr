@@ -36,7 +36,9 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.BaseCloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.StreamingUpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.cloud.DocCollection;
@@ -285,16 +287,9 @@ public class SolrCloudExampleTest extends SolrCloudBridgeTestCase {
     return ret;
   }
 
-  private Map getAsMap(CloudSolrClient cloudClient, String uri) throws Exception {
-    HttpGet get = new HttpGet(uri);
-    HttpEntity entity = null;
-    try {
-      entity = cloudClient.getLbClient().getHttpClient().execute(get).getEntity();
-      String response = EntityUtils.toString(entity, StandardCharsets.UTF_8);
-      return (Map) fromJSONString(response);
-    } finally {
-      EntityUtils.consumeQuietly(entity);
-    }
+  private Map getAsMap(CloudHttp2SolrClient cloudClient, String uri) throws Exception {
+    Http2SolrClient.SimpleResponse resp = Http2SolrClient.GET(uri, cloudClient.getHttpClient());
+    return (Map) fromJSONString(resp.asString);
   }
 
 }

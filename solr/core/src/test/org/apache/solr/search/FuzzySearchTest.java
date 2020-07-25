@@ -23,6 +23,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -34,7 +35,7 @@ import org.junit.Test;
 @LuceneTestCase.Slow
 public class FuzzySearchTest extends SolrCloudTestCase {
   private final static String COLLECTION = "c1";
-  private CloudSolrClient client;
+  private CloudHttp2SolrClient client;
 
   @BeforeClass
   public static void setupCluster() throws Exception {

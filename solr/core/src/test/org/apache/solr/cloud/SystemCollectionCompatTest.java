@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
@@ -169,7 +170,7 @@ public class SystemCollectionCompatTest extends SolrCloudTestCase {
   @Test
   public void testBackCompat() throws Exception {
     CollectionAdminRequest.OverseerStatus status = new CollectionAdminRequest.OverseerStatus();
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     CollectionAdminResponse adminResponse = status.process(solrClient);
     NamedList<Object> response = adminResponse.getResponse();
     String leader = (String) response.get("leader");

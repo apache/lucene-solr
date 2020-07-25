@@ -26,6 +26,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -213,7 +214,7 @@ public class ChaosMonkeySafeLeaderWithPullReplicasTest extends AbstractFullDistr
       zkServer.run(false);
     }
 
-    try (CloudSolrClient client = createCloudClient("collection1")) {
+    try (CloudHttp2SolrClient client = createCloudClient("collection1")) {
         createCollection(null, "testcollection", 1, 1, 100, client, null, "_default");
 
     }

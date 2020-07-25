@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
 
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.LukeRequest;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
@@ -82,7 +83,7 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
     TestSolrConfigHandler.reqhandlertests(writeHarness, testServerBaseUrl , cloudClient);
   }
 
-  public static String getRandomServer(CloudSolrClient cloudClient, String collName) {
+  public static String getRandomServer(CloudHttp2SolrClient cloudClient, String collName) {
     DocCollection coll = cloudClient.getZkStateReader().getClusterState().getCollection(collName);
     List<String> urls = new ArrayList<>();
     for (Slice slice : coll.getSlices()) {

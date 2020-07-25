@@ -37,6 +37,7 @@ import org.apache.hadoop.hdfs.protocol.HdfsConstants.SafeModeAction;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
@@ -182,7 +183,7 @@ public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCa
 
   protected void testConfigBackupOnly(String configName, String collectionName) throws Exception {
     String backupName = "configonlybackup";
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
 
     CollectionAdminRequest.Backup backup = CollectionAdminRequest.backupCollection(collectionName, backupName)
         .setRepositoryName(getBackupRepoName())

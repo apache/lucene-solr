@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.cloud.CloudTestUtils;
 import org.apache.solr.cloud.Overseer;
@@ -221,7 +222,7 @@ public class NodeAddedTriggerIntegrationTest extends SolrCloudTestCase {
 
   @Test
   public void testNodeAddedTrigger() throws Exception {
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     CloudTestUtils.assertAutoScalingRequest
       (cloudManager,
        "{" +

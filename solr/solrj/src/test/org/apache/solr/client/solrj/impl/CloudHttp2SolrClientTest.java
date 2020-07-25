@@ -270,7 +270,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
       params.add("q", "id:" + id);
       params.add("distrib", "false");
       QueryRequest queryRequest = new QueryRequest(params);
-      try (HttpSolrClient solrClient = getHttpSolrClient(url)) {
+      try (Http2SolrClient solrClient = getHttpSolrClient(url)) {
         QueryResponse queryResponse = queryRequest.process(solrClient);
         SolrDocumentList docList = queryResponse.getResults();
         assertTrue(docList.getNumFound() == 1);
@@ -316,7 +316,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
         params.add("q", "id:" + id);
         params.add("distrib", "false");
         QueryRequest queryRequest = new QueryRequest(params);
-        try (HttpSolrClient solrClient = getHttpSolrClient(url)) {
+        try (Http2SolrClient solrClient = getHttpSolrClient(url)) {
           QueryResponse queryResponse = queryRequest.process(solrClient);
           SolrDocumentList docList = queryResponse.getResults();
           assertTrue(docList.getNumFound() == 1);
@@ -572,7 +572,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
       SolrServerException, IOException {
 
     NamedList<Object> resp;
-    try (HttpSolrClient client = getHttpSolrClient(baseUrl + "/"+ collectionName, 15000, 60000)) {
+    try (Http2SolrClient client = getHttpSolrClient(baseUrl + "/"+ collectionName, 15000, 60000)) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("qt", "/admin/mbeans");
       params.set("stats", "true");
@@ -707,7 +707,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     BaseHttpSolrClient.RemoteSolrException sse = null;
 
     final String url = r.getStr(ZkStateReader.BASE_URL_PROP) + "/" + COLLECTION;
-    try (HttpSolrClient solrClient = getHttpSolrClient(url)) {
+    try (Http2SolrClient solrClient = getHttpSolrClient(url)) {
 
       if (log.isInfoEnabled()) {
         log.info("should work query, result {}", solrClient.query(q));

@@ -37,7 +37,9 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -64,9 +66,9 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
   private static final String COLLECTION_NAME = DEBUG_LABEL + "_collection";
   
   /** A basic client for operations at the cloud level, default collection will be set */
-  private static CloudSolrClient CLOUD_CLIENT;
+  private static CloudHttp2SolrClient CLOUD_CLIENT;
   /** One client per node */
-  private static final List<HttpSolrClient> CLIENTS = Collections.synchronizedList(new ArrayList<>(5));
+  private static final List<Http2SolrClient> CLIENTS = Collections.synchronizedList(new ArrayList<>(5));
 
   /** Always included in fl so we can vet what doc we're looking at */
   private static final FlValidator ID_VALIDATOR = new SimpleFieldValueValidator("id");
@@ -155,7 +157,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
 
   @AfterClass
   private static void afterClass() throws Exception {
-    for (HttpSolrClient client : CLIENTS) {
+    for (Http2SolrClient client : CLIENTS) {
       client.close();
     }
     CLIENTS.clear();

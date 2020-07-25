@@ -33,6 +33,7 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.CloudTestUtils;
@@ -127,7 +128,7 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
 
   @Test
   public void testAboveSearchRate() throws Exception {
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     String COLL1 = "aboveRate_collection";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(COLL1,
         "conf", 1, 2);
@@ -279,7 +280,7 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
 
   @Test
   public void testBelowSearchRate() throws Exception {
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     String COLL1 = "belowRate_collection";
     // replicationFactor == 2
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(COLL1,
@@ -510,7 +511,7 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
   @Test
   @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13163") 
   public void testDeleteNode() throws Exception {
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     String COLL1 = "deleteNode_collection";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(COLL1,
         "conf", 1, 2);

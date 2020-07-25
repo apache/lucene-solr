@@ -36,6 +36,7 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -188,7 +189,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     // similarly we want both triggers to fire
     triggerFiredLatch = new CountDownLatch(2);
 
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
 
     // first trigger
     String setTriggerCommand = "{" +
@@ -330,7 +331,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
   @Test
   public void testContinueTriggersOnOverseerRestart() throws Exception  {
     CollectionAdminRequest.OverseerStatus status = new CollectionAdminRequest.OverseerStatus();
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     CollectionAdminResponse adminResponse = status.process(solrClient);
     NamedList<Object> response = adminResponse.getResponse();
     String leader = (String) response.get("leader");
@@ -451,7 +452,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
   @Ignore // nocommit - debug
   public void testEventQueue() throws Exception {
     waitForSeconds = 1;
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     String setTriggerCommand = "{" +
         "'set-trigger' : {" +
         "'name' : 'node_added_triggerEQ'," +
@@ -567,7 +568,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
 
   @Test
   public void testListeners() throws Exception {
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     String setTriggerCommand = "{" +
         "'set-trigger' : {" +
         "'name' : 'node_added_triggerL'," +

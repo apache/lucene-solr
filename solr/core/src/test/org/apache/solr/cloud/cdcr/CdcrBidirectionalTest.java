@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 import com.google.common.collect.ImmutableMap;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -65,7 +66,7 @@ public class CdcrBidirectionalTest extends SolrTestCaseJ4 {
           .withProperty("solr.directoryFactory", "solr.StandardDirectoryFactory")
           .setMaxShardsPerNode(2)
           .process(cluster1.getSolrClient());
-      CloudSolrClient cluster1SolrClient = cluster1.getSolrClient();
+      CloudHttp2SolrClient cluster1SolrClient = cluster1.getSolrClient();
       cluster1SolrClient.setDefaultCollection("cdcr-cluster1");
 
       cluster2.uploadConfigSet(configset("cdcr-cluster2"), "cdcr-cluster2");
@@ -73,7 +74,7 @@ public class CdcrBidirectionalTest extends SolrTestCaseJ4 {
           .withProperty("solr.directoryFactory", "solr.StandardDirectoryFactory")
           .setMaxShardsPerNode(2)
           .process(cluster2.getSolrClient());
-      CloudSolrClient cluster2SolrClient = cluster2.getSolrClient();
+      CloudHttp2SolrClient cluster2SolrClient = cluster2.getSolrClient();
       cluster2SolrClient.setDefaultCollection("cdcr-cluster2");
 
       UpdateRequest req = null;
@@ -231,7 +232,7 @@ public class CdcrBidirectionalTest extends SolrTestCaseJ4 {
     }
   }
 
-  private String getDocFieldValue(CloudSolrClient clusterSolrClient, String query, String match, String field) throws Exception {
+  private String getDocFieldValue(CloudHttp2SolrClient clusterSolrClient, String query, String match, String field) throws Exception {
     TimeOut waitTimeOut = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     while (!waitTimeOut.hasTimedOut()) {
       clusterSolrClient.commit();

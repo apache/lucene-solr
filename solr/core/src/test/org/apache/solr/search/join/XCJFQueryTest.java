@@ -25,6 +25,7 @@ import java.util.Locale;
 
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -147,7 +148,7 @@ public class XCJFQueryTest extends SolrCloudTestCase {
     }
     try {
       // now we need to re-upload our config , now that we know a valid solr url for the cluster.
-      CloudSolrClient client = cluster.getSolrClient();
+      CloudHttp2SolrClient client = cluster.getSolrClient();
       ((ZkClientClusterStateProvider) client.getClusterStateProvider()).uploadConfig(configset("xcjf"), "xcjf");
       // reload the cores with the updated whitelisted solr url config.
       CollectionAdminRequest.Reload.reloadCollection("products").process(client);
@@ -227,7 +228,7 @@ public class XCJFQueryTest extends SolrCloudTestCase {
     }
     try {
       // now we need to re-upload our config , now that we know a valid solr url for the cluster.
-      CloudSolrClient client = cluster.getSolrClient();
+      CloudHttp2SolrClient client = cluster.getSolrClient();
       ((ZkClientClusterStateProvider) client.getClusterStateProvider()).uploadConfig(configset("xcjf"), "xcjf");
       // reload the cores with the updated whitelisted solr url config.
       CollectionAdminRequest.Reload.reloadCollection("products").process(client);

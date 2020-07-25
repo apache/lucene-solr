@@ -53,7 +53,9 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
@@ -167,8 +169,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   String missingField = "ignore_exception__missing_but_valid_field_t";
   protected int sliceCount;
 
-  protected volatile CloudSolrClient controlClientCloud;  // cloud version of the control client
-  protected volatile CloudSolrClient cloudClient;
+  protected volatile CloudHttp2SolrClient controlClientCloud;  // cloud version of the control client
+  protected volatile CloudHttp2SolrClient cloudClient;
   protected final List<SolrClient> coreClients = Collections.synchronizedList(new ArrayList<>());
   
   protected final List<CloudJettyRunner> cloudJettys = Collections.synchronizedList(new ArrayList<>());
@@ -369,8 +371,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     return false;
   }
   
-  protected CloudSolrClient createCloudClient(String defaultCollection) {
-    CloudSolrClient client = getCloudSolrClient(zkServer.getZkAddress(), random().nextBoolean());
+  protected CloudHttp2SolrClient createCloudClient(String defaultCollection) {
+    CloudHttp2SolrClient client = getCloudSolrClient(zkServer.getZkAddress(), random().nextBoolean());
     if (defaultCollection != null) client.setDefaultCollection(defaultCollection);
     return client;
   }
@@ -382,7 +384,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     controlJetty = createJetty(controlJettyDir, useJettyDataDir ? getDataDir(testDir
         + "/control/data") : null);
     controlJetty.start();
-    try (CloudSolrClient client = createCloudClient("control_collection")) {
+    try (CloudHttp2SolrClient client = createCloudClient("control_collection")) {
       assertEquals(0, CollectionAdminRequest
           .createCollection("control_collection", "_default", 1, 1)
         //  .setCreateNodeSet(controlJetty.getNodeName())
@@ -661,7 +663,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     cloudClient.getZkStateReader().waitForLiveNodes(30, TimeUnit.SECONDS, SolrCloudTestCase.containsLiveNode(j.getNodeName()));
   }
 
-  protected void waitForActiveReplicaCount(CloudSolrClient client, String collection, int expectedNumReplicas) throws TimeoutException, NotInClusterStateException {
+  protected void waitForActiveReplicaCount(CloudHttp2SolrClient client, String collection, int expectedNumReplicas) throws TimeoutException, NotInClusterStateException {
     log.info("Waiting to see {} active replicas in collection: {}", expectedNumReplicas, collection);
     AtomicInteger nReplicas = new AtomicInteger();
     try {
@@ -1004,7 +1006,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
   @SuppressWarnings("rawtypes")
-  protected static int sendDocsWithRetry(CloudSolrClient cloudClient, String collection, List<SolrInputDocument> batch, int minRf, int maxRetries, int waitBeforeRetry) throws Exception {
+  protected static int sendDocsWithRetry(CloudHttp2SolrClient cloudClient, String collection, List<SolrInputDocument> batch, int minRf, int maxRetries, int waitBeforeRetry) throws Exception {
     UpdateRequest up = new UpdateRequest();
     up.add(batch);
     NamedList resp = null;
@@ -1875,7 +1877,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       // setup the server...
       String baseUrl = buildUrl(port);
       String url = baseUrl + (baseUrl.endsWith("/") ? "" : "/") + coreName;
-      HttpSolrClient client = getHttpSolrClient(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_SOCKET_TIMEOUT_MILLIS);
+      Http2SolrClient client = getHttpSolrClient(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_SOCKET_TIMEOUT_MILLIS);
       return client;
     } catch (Exception ex) {
       ParWork.propegateInterrupt(ex);
@@ -1888,7 +1890,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       // setup the server...
       String baseUrl = buildUrl(port);
       String url = baseUrl + (baseUrl.endsWith("/") ? "" : "/") + coreName;
-      HttpSolrClient client = getHttpSolrClient(url, connectionTimeoutMillis, socketTimeoutMillis);
+      Http2SolrClient client = getHttpSolrClient(url, connectionTimeoutMillis, socketTimeoutMillis);
       return client;
     } catch (Exception ex) {
       ParWork.propegateInterrupt(ex);
@@ -1899,7 +1901,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   protected SolrClient createNewSolrClient(String collection, String baseUrl) {
     try {
       // setup the server...
-      HttpSolrClient client = getHttpSolrClient(baseUrl + "/" + collection, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_SOCKET_TIMEOUT_MILLIS);
+      Http2SolrClient client = getHttpSolrClient(baseUrl + "/" + collection, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_SOCKET_TIMEOUT_MILLIS);
       return client;
     }
     catch (Exception ex) {
@@ -1976,9 +1978,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     }
   }
   
-  private CloudSolrClient commonCloudSolrClient;
+  private CloudHttp2SolrClient commonCloudSolrClient;
 
-  protected CloudSolrClient getCommonCloudSolrClient() {
+  protected CloudHttp2SolrClient getCommonCloudSolrClient() {
     synchronized (this) {
       if (commonCloudSolrClient == null) {
         commonCloudSolrClient = getCloudSolrClient(zkServer.getZkAddress(), random().nextBoolean());
@@ -2015,7 +2017,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     throw new RuntimeException("Could not find a live node for collection:" + collection);
   }
 
- public static void waitForNon403or404or503(HttpSolrClient collectionClient)
+ public static void waitForNon403or404or503(Http2SolrClient collectionClient)
       throws Exception {
     SolrException exp = null;
     final TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
@@ -2106,7 +2108,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     ZkCoreNodeProps coreProps = new ZkCoreNodeProps(replica);
     String coreName = coreProps.getCoreName();
     boolean reloadedOk = false;
-    try (HttpSolrClient client = getHttpSolrClient(coreProps.getBaseUrl())) {
+    try (Http2SolrClient client = getHttpSolrClient(coreProps.getBaseUrl())) {
       CoreAdminResponse statusResp = CoreAdminRequest.getStatus(coreName, client);
       long leaderCoreStartTime = statusResp.getStartTime(coreName).getTime();
 
@@ -2267,7 +2269,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
    * Logs a WARN if collection can't be deleted, but does not fail or throw an exception
    * @return true if success, else false
    */
-  protected static boolean attemptCollectionDelete(CloudSolrClient client, String collectionName) {
+  protected static boolean attemptCollectionDelete(CloudHttp2SolrClient client, String collectionName) {
     // try to clean up
     try {
       CollectionAdminRequest.deleteCollection(collectionName).process(client);

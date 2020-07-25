@@ -47,7 +47,7 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
   public void test404ViaHttp() throws Exception {
     SolrClient client = getSolrClient();
     QueryRequest request = new QueryRequest(params("file",
-                                                   "does-not-exist-404.txt"));
+            "does-not-exist-404.txt"));
     request.setPath("/admin/file");
     SolrException e = expectThrows(SolrException.class, () -> request.process(client));
     assertEquals(404, e.code());
@@ -64,11 +64,11 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
     SolrCore core = h.getCore();
     SolrQueryResponse rsp = new SolrQueryResponse();
     core.execute(core.getRequestHandler("/admin/file"),
-        req("file", "does-not-exist-404.txt"), rsp);
+            req("file", "does-not-exist-404.txt"), rsp);
     assertNotNull("no exception in response", rsp.getException());
     assertTrue("wrong type of exception: " + rsp.getException().getClass(),
-        rsp.getException() instanceof SolrException);
-    assertEquals(404, ((SolrException)rsp.getException()).code());
+            rsp.getException() instanceof SolrException);
+    assertEquals(404, ((SolrException) rsp.getException()).code());
   }
 
   public void testDirList() throws SolrServerException, IOException {
@@ -77,7 +77,7 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
     QueryRequest request = new QueryRequest();
     request.setPath("/admin/file");
     QueryResponse resp = request.process(client);
-    assertEquals(0,resp.getStatus());
+    assertEquals(0, resp.getStatus());
     assertTrue(((NamedList) resp.getResponse().get("files")).size() > 0);//some files
   }
 
@@ -114,4 +114,5 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
     //request.process(client); but we don't have a NamedList response
     assertTrue(readFile.get());
   }
+
 }

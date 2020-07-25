@@ -188,8 +188,13 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
           return;
         }
         TimeOut timeout = new TimeOut(timeoutMs, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
-        while (this.event == null && !timeout.hasTimedOut() && !Thread.currentThread().isInterrupted()) {
-          eventReceived.await(500, TimeUnit.MILLISECONDS);
+        while (this.event == null && !timeout.hasTimedOut()) {
+          try {
+            eventReceived.await(500, TimeUnit.MILLISECONDS);
+          } catch (InterruptedException e) {
+            ParWork.propegateInterrupt(e);
+            throw e;
+          }
         }
       } finally {
         lock.unlock();

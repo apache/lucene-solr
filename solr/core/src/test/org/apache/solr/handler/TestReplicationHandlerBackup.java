@@ -44,6 +44,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.util.FileUtils;
 import org.junit.After;
@@ -84,7 +85,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     try {
       // setup the client...
       final String baseUrl = buildUrl(port, context);
-      HttpSolrClient client = getHttpSolrClient(baseUrl, 15000, 60000);
+      Http2SolrClient client = getHttpSolrClient(baseUrl, 15000, 60000);
       return client;
     }
     catch (Exception ex) {

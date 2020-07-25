@@ -33,6 +33,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.io.SolrClientCache;
@@ -866,7 +867,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     JettySolrRunner runner = runners.get(0);
     String url = runner.getBaseUrl().toString();
 
-    HttpSolrClient client = getHttpSolrClient(url);
+    Http2SolrClient client = getHttpSolrClient(url);
     ModifiableSolrParams params = new ModifiableSolrParams();
 
 

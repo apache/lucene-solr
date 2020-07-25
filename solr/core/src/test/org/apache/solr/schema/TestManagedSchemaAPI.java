@@ -23,6 +23,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -58,7 +59,7 @@ public class TestManagedSchemaAPI extends SolrCloudTestCase {
   }
 
   private void testReloadAndAddSimple(String collection) throws IOException, SolrServerException {
-    CloudSolrClient cloudClient = cluster.getSolrClient();
+    CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
 
     String fieldName = "myNewField";
     addStringField(fieldName, collection, cloudClient);
@@ -76,7 +77,7 @@ public class TestManagedSchemaAPI extends SolrCloudTestCase {
   }
 
   private void testAddFieldAndDocument(String collection) throws IOException, SolrServerException {
-    CloudSolrClient cloudClient = cluster.getSolrClient();
+    CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
 
     String fieldName = "myNewField1";
     addStringField(fieldName, collection, cloudClient);
@@ -88,7 +89,7 @@ public class TestManagedSchemaAPI extends SolrCloudTestCase {
     cloudClient.request(ureq, collection);;
   }
 
-  private void addStringField(String fieldName, String collection, CloudSolrClient cloudClient) throws IOException, SolrServerException {
+  private void addStringField(String fieldName, String collection, CloudHttp2SolrClient cloudClient) throws IOException, SolrServerException {
     Map<String, Object> fieldAttributes = new LinkedHashMap<>();
     fieldAttributes.put("name", fieldName);
     fieldAttributes.put("type", "string");
@@ -101,7 +102,7 @@ public class TestManagedSchemaAPI extends SolrCloudTestCase {
   }
 
   private void testModifyField(String collection) throws IOException, SolrServerException {
-    CloudSolrClient cloudClient = cluster.getSolrClient();
+    CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
 
     SolrInputDocument doc = new SolrInputDocument("id", "3");
     cloudClient.add(collection, doc);

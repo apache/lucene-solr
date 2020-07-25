@@ -44,6 +44,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.CloudTestUtils.AutoScalingRequest;
@@ -379,7 +380,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
           exampleSolrHomeDir.isDirectory());
   
       if ("techproducts".equals(exampleName)) {
-        HttpSolrClient solrClient = getHttpSolrClient("http://localhost:" + bindPort + "/solr/" + exampleName);
+        Http2SolrClient solrClient = getHttpSolrClient("http://localhost:" + bindPort + "/solr/" + exampleName);
         try{
           SolrQuery query = new SolrQuery("*:*");
           QueryResponse qr = solrClient.query(query);

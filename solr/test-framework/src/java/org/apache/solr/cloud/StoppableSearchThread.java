@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.ParWork;
 import org.slf4j.Logger;
@@ -32,12 +33,12 @@ import org.slf4j.LoggerFactory;
 class StoppableSearchThread extends AbstractFullDistribZkTestBase.StoppableThread {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final CloudSolrClient cloudClient;
+  private final CloudHttp2SolrClient cloudClient;
   private volatile boolean stop = false;
   protected final AtomicInteger queryFails = new AtomicInteger();
   private String[] QUERIES = new String[] {"to come","their country","aid","co*"};
 
-  public StoppableSearchThread(CloudSolrClient cloudClient) {
+  public StoppableSearchThread(CloudHttp2SolrClient cloudClient) {
     super("StoppableSearchThread");
     this.cloudClient = cloudClient;
     setDaemon(true);

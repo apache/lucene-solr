@@ -32,6 +32,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -106,7 +107,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
   }
 
   public void testSuggestionsWithPayload() throws Exception {
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     String COLLNAME = "testSuggestionsWithPayload.COLL";
     CollectionAdminResponse adminResponse = CollectionAdminRequest.createCollection(COLLNAME, CONFIGSET_NAME, 1, 2)
         .setMaxShardsPerNode(4)
@@ -139,7 +140,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
   }
   public void testDiagnosticsWithPayload() throws Exception {
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     String COLLNAME = "testDiagnosticsWithPayload.COLL";
     CollectionAdminResponse adminResponse = CollectionAdminRequest.createCollection(COLLNAME, CONFIGSET_NAME, 1, 2)
         .setMaxShardsPerNode(4)
@@ -161,7 +162,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
 
   @Test
   public void testSuspendTrigger() throws Exception {
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     String suspendEachCommand = "{\n" +
         "\t\"suspend-trigger\" : {\n" +
         "\t\t\"name\" : \"" + Policy.EACH + "\"\n" +
@@ -323,7 +324,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
 
   @Test
   public void test() throws Exception {
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     String setTriggerCommand = "{" +
         "'set-trigger' : {" +
         "'name' : 'node_lost_trigger'," +
@@ -467,7 +468,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
 
   @Test
   public void testErrorHandling() throws Exception {
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
 
     String setClusterPolicyCommand = "{" +
         " 'set-cluster-policy': [" +
@@ -489,7 +490,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
 
   @Test
   public void testValidation() throws Exception {
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
 
     // unknown trigger properties
     String setTriggerCommand = "{" +
@@ -605,7 +606,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
 
   @Test
   public void testPolicyAndPreferences() throws Exception {
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     // add multiple policies
     String setPolicyCommand =  "{'set-policy': {" +
         "    'xyz':[" +
@@ -739,7 +740,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
   // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 17-Aug-2018
   @Ignore // nocommit flakey
   public void testReadApi() throws Exception  {
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     // first trigger
     String setTriggerCommand = "{" +
         "'set-trigger' : {" +
@@ -920,7 +921,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
   @Test
   public void testConcurrentUpdates() throws Exception {
     int COUNT = 50;
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     CountDownLatch updateLatch = new CountDownLatch(COUNT * 2);
     Runnable r = () -> {
       for (int i = 0; i < COUNT; i++) {
@@ -975,7 +976,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
 
   @Test
   public void testDeleteUsedPolicy() throws Exception {
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     // add multiple policies
     String setPolicyCommand = "{'set-policy': {" +
         "    'nodelete':[" +
@@ -1000,7 +1001,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
 
   @Test
   public void testSetProperties() throws Exception {
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     String setPropertiesCommand = "{\n" +
         "\t\"set-properties\" : {\n" +
         "\t\t\"pqr\" : \"abc\"\n" +
@@ -1077,7 +1078,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
   }
 
   public void testUpdatePolicy() throws IOException, SolrServerException {
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     String setPropertiesCommand = "{'set-cluster-policy': [" +
         "{'cores': '<4','node': '#ANY'}]}";
     solrClient.request(AutoScalingRequest.create(SolrRequest.METHOD.POST, setPropertiesCommand));

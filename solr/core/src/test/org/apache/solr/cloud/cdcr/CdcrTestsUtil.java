@@ -27,7 +27,9 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -50,46 +52,46 @@ import org.slf4j.LoggerFactory;
 public class CdcrTestsUtil extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  protected static void cdcrRestart(CloudSolrClient client) throws SolrServerException, IOException {
+  protected static void cdcrRestart(CloudHttp2SolrClient client) throws SolrServerException, IOException {
     cdcrStop(client);
     cdcrStart(client);
   }
 
-  protected static void cdcrStart(CloudSolrClient client) throws SolrServerException, IOException {
+  protected static void cdcrStart(CloudHttp2SolrClient client) throws SolrServerException, IOException {
     QueryResponse response = invokeCdcrAction(client, CdcrParams.CdcrAction.START);
     assertEquals("started", ((NamedList) response.getResponse().get("status")).get("process"));
   }
 
-  protected static void cdcrStop(CloudSolrClient client) throws SolrServerException, IOException {
+  protected static void cdcrStop(CloudHttp2SolrClient client) throws SolrServerException, IOException {
     QueryResponse response = invokeCdcrAction(client, CdcrParams.CdcrAction.STOP);
     assertEquals("stopped", ((NamedList) response.getResponse().get("status")).get("process"));
   }
 
-  protected static void cdcrEnableBuffer(CloudSolrClient client) throws IOException, SolrServerException {
+  protected static void cdcrEnableBuffer(CloudHttp2SolrClient client) throws IOException, SolrServerException {
     QueryResponse response = invokeCdcrAction(client, CdcrParams.CdcrAction.ENABLEBUFFER);
     assertEquals("enabled", ((NamedList) response.getResponse().get("status")).get("buffer"));
   }
 
-  protected static void cdcrDisableBuffer(CloudSolrClient client) throws IOException, SolrServerException {
+  protected static void cdcrDisableBuffer(CloudHttp2SolrClient client) throws IOException, SolrServerException {
     QueryResponse response = invokeCdcrAction(client, CdcrParams.CdcrAction.DISABLEBUFFER);
     assertEquals("disabled", ((NamedList) response.getResponse().get("status")).get("buffer"));
   }
 
-  protected static QueryResponse invokeCdcrAction(CloudSolrClient client, CdcrParams.CdcrAction action) throws IOException, SolrServerException {
+  protected static QueryResponse invokeCdcrAction(CloudHttp2SolrClient client, CdcrParams.CdcrAction action) throws IOException, SolrServerException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(CommonParams.QT, "/cdcr");
     params.set(CommonParams.ACTION, action.toLower());
     return client.query(params);
   }
 
-  protected static QueryResponse getCdcrQueue(CloudSolrClient client) throws SolrServerException, IOException {
+  protected static QueryResponse getCdcrQueue(CloudHttp2SolrClient client) throws SolrServerException, IOException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(CommonParams.QT, "/cdcr");
     params.set(CommonParams.ACTION, CdcrParams.QUEUES);
     return client.query(params);
   }
 
-  protected static Object getFingerPrintMaxVersion(CloudSolrClient client, String shardNames, int numDocs) throws SolrServerException, IOException, InterruptedException {
+  protected static Object getFingerPrintMaxVersion(CloudHttp2SolrClient client, String shardNames, int numDocs) throws SolrServerException, IOException, InterruptedException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(CommonParams.QT, "/get");
     params.set("fingerprint", true);
@@ -109,15 +111,15 @@ public class CdcrTestsUtil extends SolrTestCaseJ4 {
     return null;
   }
 
-  protected static long waitForClusterToSync(long numDocs, CloudSolrClient clusterSolrClient) throws Exception {
+  protected static long waitForClusterToSync(long numDocs, CloudHttp2SolrClient clusterSolrClient) throws Exception {
     return waitForClusterToSync((int) numDocs, clusterSolrClient, "*:*");
   }
 
-  protected static long waitForClusterToSync(int numDocs, CloudSolrClient clusterSolrClient) throws Exception {
+  protected static long waitForClusterToSync(int numDocs, CloudHttp2SolrClient clusterSolrClient) throws Exception {
     return waitForClusterToSync(numDocs, clusterSolrClient, "*:*");
   }
 
-  protected static long waitForClusterToSync(int numDocs, CloudSolrClient clusterSolrClient, String query) throws Exception {
+  protected static long waitForClusterToSync(int numDocs, CloudHttp2SolrClient clusterSolrClient, String query) throws Exception {
     long start = System.nanoTime();
     QueryResponse response = null;
     while (System.nanoTime() - start <= TimeUnit.NANOSECONDS.convert(120, TimeUnit.SECONDS)) {
@@ -131,7 +133,7 @@ public class CdcrTestsUtil extends SolrTestCaseJ4 {
     return response != null ? response.getResults().getNumFound() : 0;
   }
 
-  protected static boolean assertShardInSync(String collection, String shard, CloudSolrClient client) throws IOException, SolrServerException {
+  protected static boolean assertShardInSync(String collection, String shard, CloudHttp2SolrClient client) throws IOException, SolrServerException {
     TimeOut waitTimeOut = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     DocCollection docCollection = client.getZkStateReader().getClusterState().getCollection(collection);
     Slice correctSlice = null;
@@ -144,14 +146,14 @@ public class CdcrTestsUtil extends SolrTestCaseJ4 {
     assertNotNull(correctSlice);
 
     long leaderDocCount;
-    try (HttpSolrClient leaderClient = new HttpSolrClient.Builder(correctSlice.getLeader().getCoreUrl()).withHttpClient(client.getHttpClient()).build()) {
+    try (Http2SolrClient leaderClient = new Http2SolrClient.Builder(correctSlice.getLeader().getCoreUrl()).withHttpClient(client.getHttpClient()).build()) {
       leaderDocCount = leaderClient.query(new SolrQuery("*:*").setParam("distrib", "false")).getResults().getNumFound();
     }
 
     while (!waitTimeOut.hasTimedOut()) {
       int replicasInSync = 0;
       for (Replica replica : correctSlice.getReplicas()) {
-        try (HttpSolrClient leaderClient = new HttpSolrClient.Builder(replica.getCoreUrl()).withHttpClient(client.getHttpClient()).build()) {
+        try (Http2SolrClient leaderClient = new Http2SolrClient.Builder(replica.getCoreUrl()).withHttpClient(client.getHttpClient()).build()) {
           long replicaDocCount = leaderClient.query(new SolrQuery("*:*").setParam("distrib", "false")).getResults().getNumFound();
           if (replicaDocCount == leaderDocCount) replicasInSync++;
         }
@@ -163,7 +165,7 @@ public class CdcrTestsUtil extends SolrTestCaseJ4 {
     return false;
   }
 
-  public static void indexRandomDocs(Integer start, Integer count, CloudSolrClient solrClient) throws Exception {
+  public static void indexRandomDocs(Integer start, Integer count, CloudHttp2SolrClient solrClient) throws Exception {
     // ADD operation on cluster 1
     int docs = 0;
     if (count == 0) {
@@ -182,12 +184,12 @@ public class CdcrTestsUtil extends SolrTestCaseJ4 {
     }
   }
 
-  public static void indexRandomDocs(Integer count, CloudSolrClient solrClient) throws Exception {
+  public static void indexRandomDocs(Integer count, CloudHttp2SolrClient solrClient) throws Exception {
     indexRandomDocs(0, count, solrClient);
   }
 
   public static void index(MiniSolrCloudCluster cluster, String collection, SolrInputDocument doc, boolean doCommit) throws IOException, SolrServerException {
-    CloudSolrClient client = createCloudClient(cluster, collection);
+    CloudHttp2SolrClient client = createCloudClient(cluster, collection);
     try {
       client.add(doc);
       if (doCommit) {
@@ -204,8 +206,8 @@ public class CdcrTestsUtil extends SolrTestCaseJ4 {
     index(cluster, collection, doc, false);
   }
 
-  public static CloudSolrClient createCloudClient(MiniSolrCloudCluster cluster, String defaultCollection) {
-    CloudSolrClient server = getCloudSolrClient(cluster.getZkServer().getZkAddress(), random().nextBoolean());
+  public static CloudHttp2SolrClient createCloudClient(MiniSolrCloudCluster cluster, String defaultCollection) {
+    CloudHttp2SolrClient server = getCloudSolrClient(cluster.getZkServer().getZkAddress(), random().nextBoolean());
     if (defaultCollection != null) server.setDefaultCollection(defaultCollection);
     return server;
   }

@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -162,7 +163,7 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
     cluster.waitForActiveCollection(COLLECTION_NAME, 1, 1);
 
 
-    CloudSolrClient client = cluster.getSolrClient();
+    CloudHttp2SolrClient client = cluster.getSolrClient();
     client.setDefaultCollection(COLLECTION_NAME);
 
     // splitting an empty collection by prefix should still work (i.e. fall back to old method of just dividing the hash range

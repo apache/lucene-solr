@@ -34,8 +34,10 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
@@ -110,7 +112,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
    * @return the name of the new collection
    */
   public static String createAndSetNewDefaultCollection() throws Exception {
-    final CloudSolrClient cloudClient = cluster.getSolrClient();
+    final CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
     final String name = "test_collection_" + NAME_COUNTER.getAndIncrement();
     CollectionAdminRequest.createCollection(name, "_default", 2, 2).setMaxShardsPerNode(5)
                  .process(cloudClient);
@@ -120,7 +122,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
   
   @Test
   public void testBasicUpdates() throws Exception {
-    final CloudSolrClient cloudClient = cluster.getSolrClient();
+    final CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
     final String collectionName = createAndSetNewDefaultCollection();
     
     // add a doc, update it, and delete it
@@ -163,7 +165,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
 
   @Nightly
   public void testThatCantForwardToLeaderFails() throws Exception {
-    final CloudSolrClient cloudClient = cluster.getSolrClient();
+    final CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
     final String collectionName = "test_collection_" + NAME_COUNTER.getAndIncrement();
     cloudClient.setDefaultCollection(collectionName);
     
@@ -213,7 +215,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
         }
         
         // create client to send our updates to...
-        try (HttpSolrClient indexClient = getHttpSolrClient(indexingUrl)) {
+        try (Http2SolrClient indexClient = getHttpSolrClient(indexingUrl)) {
           
           // Sanity check: we should be able to send a bunch of updates that work right now...
           for (int i = 0; i < 100; i++) {
@@ -250,7 +252,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
   
   /**  NOTE: uses the cluster's CloudSolrClient and asumes default collection has been set */
   private void addTwoDocsInOneRequest(String docIdA, String docIdB) throws Exception {
-    final CloudSolrClient cloudClient = cluster.getSolrClient();
+    final CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
 
     assertEquals(0, cloudClient.add(sdocs(sdoc("id", docIdA),
                                           sdoc("id", docIdB))).getStatus());
@@ -264,7 +266,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
 
   /**  NOTE: uses the cluster's CloudSolrClient and asumes default collection has been set */
   private void addUpdateDelete(String docId) throws Exception {
-    final CloudSolrClient cloudClient = cluster.getSolrClient();
+    final CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
 
     // add the doc, confirm we can query it...
     assertEquals(0, cloudClient.add(sdoc("id", docId, "content_t", "originalcontent")).getStatus());
@@ -302,7 +304,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
 
 
   public long testIndexQueryDeleteHierarchical() throws Exception {
-    final CloudSolrClient cloudClient = cluster.getSolrClient();
+    final CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
     final String collectionName = createAndSetNewDefaultCollection();
     
     // index
@@ -382,7 +384,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
   
   
   public void testIndexingOneDocPerRequestWithHttpSolrClient() throws Exception {
-    final CloudSolrClient cloudClient = cluster.getSolrClient();
+    final CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
     final String collectionName = createAndSetNewDefaultCollection();
     
     final int numDocs = atLeast(TEST_NIGHTLY ? 50 : 15);
@@ -399,7 +401,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
   }
   
   public void testIndexingBatchPerRequestWithHttpSolrClient() throws Exception {
-    final CloudSolrClient cloudClient = cluster.getSolrClient();
+    final CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
     final String collectionName = createAndSetNewDefaultCollection();
 
     final int numDocsPerBatch = atLeast(5);
@@ -458,7 +460,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
 
   @Nightly
   public void testConcurrentIndexing() throws Exception {
-    final CloudSolrClient cloudClient = cluster.getSolrClient();
+    final CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
     final String collectionName = createAndSetNewDefaultCollection();
 
     final int numDocs = atLeast(50);
@@ -501,11 +503,11 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
       final Slice slice = entry.getValue();
       log.info("Checking: {} -> {}", shardName, slice);
       final Replica leader = entry.getValue().getLeader();
-      try (HttpSolrClient leaderClient = getHttpSolrClient(leader.getCoreUrl())) {
+      try (Http2SolrClient leaderClient = getHttpSolrClient(leader.getCoreUrl())) {
         final SolrDocumentList leaderResults = leaderClient.query(perReplicaParams).getResults();
         log.debug("Shard {}: Leader results: {}", shardName, leaderResults);
         for (Replica replica : slice) {
-          try (HttpSolrClient replicaClient = getHttpSolrClient(replica.getCoreUrl())) {
+          try (Http2SolrClient replicaClient = getHttpSolrClient(replica.getCoreUrl())) {
             final SolrDocumentList replicaResults = replicaClient.query(perReplicaParams).getResults();
             if (log.isDebugEnabled()) {
               log.debug("Shard {}: Replica ({}) results: {}", shardName, replica.getCoreName(), replicaResults);

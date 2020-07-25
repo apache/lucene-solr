@@ -30,6 +30,7 @@ import java.util.Set;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -99,7 +100,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
   @Test
   @Ignore // nocommit debug
   public void testCollectionCreateSearchDelete() throws Exception {
-    final CloudSolrClient client = cluster.getSolrClient();
+    final CloudHttp2SolrClient client = cluster.getSolrClient();
     final String collectionName = "testcollection";
 
     assertNotNull(cluster.getZkServer());
@@ -186,7 +187,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
   public void testCollectionCreateWithoutCoresThenDelete() throws Exception {
 
     final String collectionName = "testSolrCloudCollectionWithoutCores";
-    final CloudSolrClient client = cluster.getSolrClient();
+    final CloudHttp2SolrClient client = cluster.getSolrClient();
 
     assertNotNull(cluster.getZkServer());
     assertFalse(cluster.getJettySolrRunners().isEmpty());
@@ -211,7 +212,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
   public void testStopAllStartAll() throws Exception {
 
     final String collectionName = "testStopAllStartAllCollection";
-    final CloudSolrClient client = cluster.getSolrClient();
+    final CloudHttp2SolrClient client = cluster.getSolrClient();
 
     assertNotNull(cluster.getZkServer());
     List<JettySolrRunner> jettys = new ArrayList<>(cluster.getJettySolrRunners()); // make a copy

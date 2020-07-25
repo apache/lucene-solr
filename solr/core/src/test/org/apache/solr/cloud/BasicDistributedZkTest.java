@@ -50,6 +50,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -581,7 +582,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     for (Slice slice : dColl.getActiveSlices()) {
       long sliceDocCount = -1;
       for (Replica rep : slice.getReplicas()) {
-        try (HttpSolrClient one = getHttpSolrClient(rep.getCoreUrl())) {
+        try (Http2SolrClient one = getHttpSolrClient(rep.getCoreUrl())) {
           SolrQuery query = new SolrQuery("*:*");
           query.setDistrib(false);
           QueryResponse resp = one.query(query);
@@ -928,7 +929,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     String collection = elements[elements.length - 1];
     String urlString = url.toString();
     urlString = urlString.substring(0, urlString.length() - collection.length() - 1);
-    try (HttpSolrClient client = getHttpSolrClient(urlString, 15000, 60000)) {
+    try (Http2SolrClient client = getHttpSolrClient(urlString, 15000, 60000)) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       //params.set("qt", "/admin/metrics?prefix=UPDATE.updateHandler&registry=solr.core." + collection);
       params.set("qt", "/admin/metrics");
@@ -1016,7 +1017,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
         .getCollection(oneInstanceCollection2).getLeader("shard1"));
     
     // now test that unloading a core gets us a new leader
-    try (HttpSolrClient unloadClient = getHttpSolrClient(jettys.get(0).getBaseUrl().toString(), 15000, 60000)) {
+    try (Http2SolrClient unloadClient = getHttpSolrClient(jettys.get(0).getBaseUrl().toString(), 15000, 60000)) {
       Unload unloadCmd = new Unload(true);
       unloadCmd.setCoreName(props.getCoreName());
 
@@ -1147,7 +1148,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
       List<SolrClient> collectionClients, final String baseUrl, final int num,
       final String shardId) {
     Callable call = () -> {
-      try (HttpSolrClient client = getHttpSolrClient(baseUrl)) {
+      try (Http2SolrClient client = getHttpSolrClient(baseUrl)) {
         // client.setConnectionTimeout(15000);
         Create createCmd = new Create();
         createCmd.setRoles("none");
@@ -1300,7 +1301,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   protected SolrClient createNewSolrClient(String collection, String baseUrl) {
     try {
       // setup the server...
-      HttpSolrClient client = getHttpSolrClient(baseUrl + "/" + collection);
+      Http2SolrClient client = getHttpSolrClient(baseUrl + "/" + collection);
 
       return client;
     }
@@ -1312,7 +1313,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   protected SolrClient createNewSolrClient(String collection, String baseUrl, int connectionTimeoutMillis, int socketTimeoutMillis) {
     try {
       // setup the server...
-      HttpSolrClient client = getHttpSolrClient(baseUrl + "/" + collection, connectionTimeoutMillis, socketTimeoutMillis);
+      Http2SolrClient client = getHttpSolrClient(baseUrl + "/" + collection, connectionTimeoutMillis, socketTimeoutMillis);
 
       return client;
     }

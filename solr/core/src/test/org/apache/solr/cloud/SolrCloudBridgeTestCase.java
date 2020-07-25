@@ -43,7 +43,9 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
@@ -84,7 +86,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
   protected static String COLLECTION = "collection1";
   protected static String  DEFAULT_COLLECTION = COLLECTION;
 
-  protected static CloudSolrClient cloudClient;
+  protected static CloudHttp2SolrClient cloudClient;
   
   protected static final String SHARD1 = "shard1";
   
@@ -123,7 +125,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
   
   protected final List<SolrClient> clients = new ArrayList<>();
   protected volatile static boolean createControl;
-  protected volatile static CloudSolrClient controlClient;
+  protected volatile static CloudHttp2SolrClient controlClient;
   protected volatile static MiniSolrCloudCluster controlCluster;
   protected volatile static String schemaString;
   protected volatile static String solrconfigString;
@@ -581,7 +583,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
     ZkCoreNodeProps coreProps = new ZkCoreNodeProps(replica);
     String coreName = coreProps.getCoreName();
     boolean reloadedOk = false;
-    try (HttpSolrClient client = getHttpSolrClient(coreProps.getBaseUrl())) {
+    try (Http2SolrClient client = getHttpSolrClient(coreProps.getBaseUrl())) {
       CoreAdminResponse statusResp = CoreAdminRequest.getStatus(coreName, client);
       long leaderCoreStartTime = statusResp.getStartTime(coreName).getTime();
 

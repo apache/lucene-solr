@@ -35,6 +35,7 @@ import java.util.TreeSet;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -547,7 +548,7 @@ public class JdbcTest extends SolrCloudTestCase {
         assertFalse(rs.next());
       }
 
-      CloudSolrClient solrClient = cluster.getSolrClient();
+      CloudHttp2SolrClient solrClient = cluster.getSolrClient();
       solrClient.connect();
       ZkStateReader zkStateReader = solrClient.getZkStateReader();
 

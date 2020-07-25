@@ -25,7 +25,9 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -136,7 +138,7 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
 
     DocCollection state = getCollectionState(targetCollection);
     Replica replica = state.getReplicas().get(0);
-    try (HttpSolrClient collectionClient = getHttpSolrClient(replica.getCoreUrl())) {
+    try (Http2SolrClient collectionClient = getHttpSolrClient(replica.getCoreUrl())) {
 
       SolrQuery solrQuery = new SolrQuery("*:*");
       assertEquals("DocCount on target collection does not match", 0, collectionClient.query(solrQuery).getResults().getNumFound());
@@ -184,12 +186,12 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
 
   static class Indexer extends Thread {
     final int seconds;
-    final CloudSolrClient cloudClient;
+    final CloudHttp2SolrClient cloudClient;
     final String splitKey;
     int splitKeyCount = 0;
     final int bitSep;
 
-    public Indexer(CloudSolrClient cloudClient, String splitKey, int bitSep, int seconds) {
+    public Indexer(CloudHttp2SolrClient cloudClient, String splitKey, int bitSep, int seconds) {
       this.seconds = seconds;
       this.cloudClient = cloudClient;
       this.splitKey = splitKey;

@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -74,7 +75,7 @@ public class TestCloudCollectionsListeners extends SolrCloudTestCase {
   // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 17-Aug-2018
   public void testSimpleCloudCollectionsListener() throws Exception {
 
-    CloudSolrClient client = cluster.getSolrClient();
+    CloudHttp2SolrClient client = cluster.getSolrClient();
 
     Map<Integer, Set<String>> oldResults = new HashMap<>();
     Map<Integer, Set<String>> newResults = new HashMap<>();
@@ -135,7 +136,7 @@ public class TestCloudCollectionsListeners extends SolrCloudTestCase {
   // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 23-Aug-2018
   public void testCollectionDeletion() throws Exception {
 
-    CloudSolrClient client = cluster.getSolrClient();
+    CloudHttp2SolrClient client = cluster.getSolrClient();
 
     CollectionAdminRequest.createCollection("testcollection1", "config", 4, 1)
         .processAndWait(client, MAX_WAIT_TIMEOUT);
@@ -199,7 +200,7 @@ public class TestCloudCollectionsListeners extends SolrCloudTestCase {
   @Test
   // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 17-Aug-2018
   public void testWatchesWorkForBothStateFormats() throws Exception {
-    CloudSolrClient client = cluster.getSolrClient();
+    CloudHttp2SolrClient client = cluster.getSolrClient();
 
     Map<Integer, Set<String>> oldResults = new HashMap<>();
     Map<Integer, Set<String>> newResults = new HashMap<>();

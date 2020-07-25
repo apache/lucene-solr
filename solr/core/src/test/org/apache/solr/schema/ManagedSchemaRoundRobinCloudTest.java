@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
@@ -61,7 +62,7 @@ public class ManagedSchemaRoundRobinCloudTest extends SolrCloudTestCase {
 
   @Test
   public void testAddFieldsRoundRobin() throws Exception {
-    List<HttpSolrClient> clients = new ArrayList<>(NUM_SHARDS);
+    List<Http2SolrClient> clients = new ArrayList<>(NUM_SHARDS);
     try {
       for (int shardNum = 0 ; shardNum < NUM_SHARDS ; ++shardNum) {
         clients.add(getHttpSolrClient(cluster.getJettySolrRunners().get(shardNum).getBaseUrl().toString()));

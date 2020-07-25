@@ -44,7 +44,9 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
@@ -367,7 +369,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     String nodeName = (String) response._get("success[0]/key", null);
     String corename = (String) response._get(asList("success", nodeName, "core"), null);
 
-    try (HttpSolrClient coreclient = getHttpSolrClient(cluster.getSolrClient().getZkStateReader().getBaseUrlForNodeName(nodeName))) {
+    try (Http2SolrClient coreclient = getHttpSolrClient(cluster.getSolrClient().getZkStateReader().getBaseUrlForNodeName(nodeName))) {
       CoreAdminResponse status = CoreAdminRequest.getStatus(corename, coreclient);
       assertEquals(collectionName, status._get(asList("status", corename, "cloud", "collection"), null));
       assertNotNull(status._get(asList("status", corename, "cloud", "shard"), null));
@@ -787,7 +789,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   @Test
   @Ignore // nocommit debug
   public void testDeleteAliasedCollection() throws Exception {
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     String collectionName1 = "aliasedCollection1";
     String collectionName2 = "aliasedCollection2";
     CollectionAdminRequest.createCollection(collectionName1, "conf", 1, 1).process(solrClient);
@@ -866,7 +868,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     });
   }
 
-  private void assertDoc(CloudSolrClient solrClient, String collection, String id) throws Exception {
+  private void assertDoc(CloudHttp2SolrClient solrClient, String collection, String id) throws Exception {
     QueryResponse rsp = solrClient.query(collection, params(CommonParams.Q, "*:*"));
     assertEquals(rsp.toString(), 1, rsp.getResults().getNumFound());
     SolrDocument sdoc = rsp.getResults().get(0);

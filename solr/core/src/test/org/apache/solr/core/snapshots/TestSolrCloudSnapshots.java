@@ -31,6 +31,7 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.ListSnapshots;
@@ -82,7 +83,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
 
   @Test
   public void testSnapshots() throws Exception {
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     String collectionName = "SolrCloudSnapshots";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, "conf1", NUM_SHARDS, NUM_REPLICAS);
     create.process(solrClient);

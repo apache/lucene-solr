@@ -52,6 +52,7 @@ import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.impl.BaseCloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -150,7 +151,7 @@ public class MiniSolrCloudCluster {
   private final boolean externalZkServer;
   private final List<JettySolrRunner> jettys = new CopyOnWriteArrayList<>();
   private final Path baseDir;
-  private final CloudSolrClient solrClient;
+  private final CloudHttp2SolrClient solrClient;
   private final JettyConfig jettyConfig;
   private final boolean trackJettyMetrics;
 
@@ -727,7 +728,7 @@ public class MiniSolrCloudCluster {
     return baseDir;
   }
 
-  public CloudSolrClient getSolrClient() {
+  public CloudHttp2SolrClient getSolrClient() {
     return solrClient;
   }
 
@@ -735,9 +736,8 @@ public class MiniSolrCloudCluster {
     return solrZkClient;
   }
   
-  protected CloudSolrClient buildSolrClient() {
-    return new Builder(Collections.singletonList(zkServer.getZkHost()), Optional.of("/solr"))
-            .withSocketTimeout(Integer.getInteger("socketTimeout", Integer.getInteger("solr.test.socketTimeout.default", 30000))).withConnectionTimeout(Integer.getInteger("solr.connect_timeout.default", 15000)).build();
+  protected CloudHttp2SolrClient buildSolrClient() {
+    return new CloudHttp2SolrClient.Builder(Collections.singletonList(zkServer.getZkHost()), Optional.of("/solr")).build();
   }
 
   private static String getHostContextSuitableForServletContext(String ctx) {

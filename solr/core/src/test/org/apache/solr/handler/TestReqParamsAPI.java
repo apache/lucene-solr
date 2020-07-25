@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.function.Predicate;
 
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
@@ -79,7 +80,7 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
   }
 
   private void testReqParams() throws Exception {
-    CloudSolrClient cloudClient = cluster.getSolrClient();
+    CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
     DocCollection coll = cloudClient.getZkStateReader().getClusterState().getCollection(COLL_NAME);
     List<String> urls = new ArrayList<>();
     for (Slice slice : coll.getSlices()) {

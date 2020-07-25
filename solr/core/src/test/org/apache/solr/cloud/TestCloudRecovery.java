@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -109,7 +110,7 @@ public class TestCloudRecovery extends SolrCloudTestCase {
     TestInjection.skipIndexWriterCommitOnClose = true;
     UpdateLog.testing_logReplayFinishHook = countReplayLog::incrementAndGet;
 
-    CloudSolrClient cloudClient = cluster.getSolrClient();
+    CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
     cloudClient.add(COLLECTION, sdoc("id", "1"));
     cloudClient.add(COLLECTION, sdoc("id", "2"));
     cloudClient.add(COLLECTION, sdoc("id", "3"));
@@ -176,7 +177,7 @@ public class TestCloudRecovery extends SolrCloudTestCase {
     TestInjection.skipIndexWriterCommitOnClose = true;
     UpdateLog.testing_logReplayFinishHook = countReplayLog::incrementAndGet;
 
-    CloudSolrClient cloudClient = cluster.getSolrClient();
+    CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
     cloudClient.add(COLLECTION, sdoc("id", "1000"));
     cloudClient.add(COLLECTION, sdoc("id", "1001"));
     for (int i = 0; i < 10; i++) {

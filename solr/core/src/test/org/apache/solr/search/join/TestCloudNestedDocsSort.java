@@ -28,6 +28,7 @@ import java.util.Set;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -45,7 +46,7 @@ import org.junit.Test;
 public class TestCloudNestedDocsSort extends SolrCloudTestCase {
 
   private static ArrayList<String> vals = new ArrayList<>();
-  private static CloudSolrClient client;
+  private static CloudHttp2SolrClient client;
   private static int maxDocs;
   private static String matchingParent;
   private static String matchingChild;

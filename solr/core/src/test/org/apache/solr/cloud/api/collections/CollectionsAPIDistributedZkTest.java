@@ -17,6 +17,7 @@
 package org.apache.solr.cloud.api.collections;
 
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -160,7 +161,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
   public void testReadOnlyCollection() throws Exception {
     int NUM_DOCS = 10;
     final String collectionName = "readOnlyTest";
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
 
     CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2)
             .process(solrClient);

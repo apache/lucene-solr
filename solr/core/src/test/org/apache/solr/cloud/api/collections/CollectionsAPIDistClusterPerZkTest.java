@@ -24,6 +24,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
@@ -406,7 +407,7 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
         for (Replica replica : shard) {
           ZkCoreNodeProps coreProps = new ZkCoreNodeProps(replica);
           CoreStatus coreStatus;
-          try (HttpSolrClient server = getHttpSolrClient(coreProps.getBaseUrl())) {
+          try (Http2SolrClient server = getHttpSolrClient(coreProps.getBaseUrl())) {
             coreStatus = CoreAdminRequest.getCoreStatus(coreProps.getCoreName(), false, server);
           }
           long before = coreStatus.getCoreStartTime().getTime();
@@ -489,7 +490,7 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
     newReplica = grabNewReplica(response, getCollectionState(collectionName));
     assertNotNull(newReplica);
 
-    try (HttpSolrClient coreclient = getHttpSolrClient(newReplica.getStr(ZkStateReader.BASE_URL_PROP))) {
+    try (Http2SolrClient coreclient = getHttpSolrClient(newReplica.getStr(ZkStateReader.BASE_URL_PROP))) {
       CoreAdminResponse status = CoreAdminRequest.getStatus(newReplica.getStr("core"), coreclient);
       NamedList<Object> coreStatus = status.getCoreStatus(newReplica.getStr("core"));
       String instanceDirStr = (String) coreStatus.get("instanceDir");

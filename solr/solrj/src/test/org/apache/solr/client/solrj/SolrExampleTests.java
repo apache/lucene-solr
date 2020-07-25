@@ -41,6 +41,7 @@ import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.embedded.SolrExampleStreamingHttp2Test;
 import org.apache.solr.client.solrj.embedded.SolrExampleStreamingTest.ErrorTrackingConcurrentUpdateSolrClient;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
@@ -287,7 +288,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     if (jetty != null) {
       // check system wide system handler + "/admin/info/system"
       String url = jetty.getBaseUrl().toString();
-      try (HttpSolrClient adminClient = getHttpSolrClient(url)) {
+      try (Http2SolrClient adminClient = getHttpSolrClient(url)) {
         SolrQuery q = new SolrQuery();
         q.set("qt", "/admin/info/system");
         QueryResponse rsp = adminClient.query(q);
@@ -696,30 +697,32 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
   @Test
   public void testUpdateRequestWithParameters() throws Exception {
     SolrClient client = createNewSolrClient();
-    
-    client.deleteByQuery("*:*");
-    client.commit();
-    
-    SolrInputDocument doc = new SolrInputDocument();
-    doc.addField("id", "id1");
-    
-    UpdateRequest req = new UpdateRequest();
-    req.setParam("overwrite", "false");
-    req.add(doc);
-    client.request(req);
-    client.request(req);
-    client.commit();
-    
-    SolrQuery query = new SolrQuery();
-    query.setQuery("*:*");
-    QueryResponse rsp = client.query(query);
-    
-    SolrDocumentList out = rsp.getResults();
-    assertEquals(2, out.getNumFound());
-    if (!(client instanceof EmbeddedSolrServer)) {
-      /* Do not close in case of using EmbeddedSolrServer,
-       * as that would close the CoreContainer */
-      client.close();
+    try {
+      client.deleteByQuery("*:*");
+      client.commit();
+
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", "id1");
+
+      UpdateRequest req = new UpdateRequest();
+      req.setParam("overwrite", "false");
+      req.add(doc);
+      client.request(req);
+      client.request(req);
+      client.commit();
+
+      SolrQuery query = new SolrQuery();
+      query.setQuery("*:*");
+      QueryResponse rsp = client.query(query);
+
+      SolrDocumentList out = rsp.getResults();
+      assertEquals(2, out.getNumFound());
+    } finally {
+      if (!(client instanceof EmbeddedSolrServer)) {
+        /* Do not close in case of using EmbeddedSolrServer,
+         * as that would close the CoreContainer */
+        client.close();
+      }
     }
   }
   

@@ -33,6 +33,7 @@ import java.util.Random;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
@@ -90,7 +91,7 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
                                   "schema-docValuesJoin.xml")
         .process(cluster.getSolrClient());
 
-    CloudSolrClient client = cluster.getSolrClient();
+    CloudHttp2SolrClient client = cluster.getSolrClient();
     client.setDefaultCollection(people);
   }
   

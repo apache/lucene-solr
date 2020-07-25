@@ -32,7 +32,9 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudBridgeTestCase;
 import org.apache.solr.common.LinkedHashMapWriter;
@@ -192,21 +194,13 @@ public class TestSolrConfigHandlerConcurrent extends SolrCloudBridgeTestCase {
 
   }
 
-  public static LinkedHashMapWriter getAsMap(String uri, CloudSolrClient cloudClient) throws Exception {
-    HttpGet get = new HttpGet(uri) ;
-    HttpEntity entity = null;
+  public static LinkedHashMapWriter getAsMap(String uri, CloudHttp2SolrClient cloudClient) throws Exception {
+    String response = Http2SolrClient.GET(uri, cloudClient.getHttpClient()).asString;
     try {
-      entity = cloudClient.getLbClient().getHttpClient().execute(get).getEntity();
-      String response = EntityUtils.toString(entity, StandardCharsets.UTF_8);
-      try {
-        return (LinkedHashMapWriter) Utils.MAPWRITEROBJBUILDER.apply(new JSONParser(new StringReader(response))).getVal();
-      } catch (JSONParser.ParseException e) {
-        log.error(response,e);
-        throw e;
-      }
-    } finally {
-      EntityUtils.consumeQuietly(entity);
-      get.releaseConnection();
+      return (LinkedHashMapWriter) Utils.MAPWRITEROBJBUILDER.apply(new JSONParser(new StringReader(response))).getVal();
+    } catch (JSONParser.ParseException e) {
+      log.error(response, e);
+      throw e;
     }
   }
 }

@@ -26,6 +26,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -53,11 +54,11 @@ public class TestNamedUpdateProcessors extends AbstractFullDistribZkTestBase {
 
     String blobName = "colltest";
 
-    HttpSolrClient randomClient = (HttpSolrClient) clients.get(random().nextInt(clients.size()));
+    Http2SolrClient randomClient = (Http2SolrClient) clients.get(random().nextInt(clients.size()));
     String baseURL = randomClient.getBaseURL();
 
     final String solrClientUrl = baseURL.substring(0, baseURL.lastIndexOf('/'));
-    TestBlobHandler.createSystemCollection(getHttpSolrClient(solrClientUrl, randomClient.getHttpClient()));
+    TestBlobHandler.createSystemCollection(getHttpSolrClient(solrClientUrl, randomClient));
 
     TestBlobHandler.postAndCheck(cloudClient, baseURL.substring(0, baseURL.lastIndexOf('/')), blobName, TestDynamicLoading.generateZip(RuntimeUrp.class), 1);
 

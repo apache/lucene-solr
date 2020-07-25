@@ -24,11 +24,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.solr.BaseDistributedSearchTestCase;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -210,7 +207,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     log.info("Collection has disappeared - collection:{}", collection);
   }
 
-  static void waitForNewLeader(CloudSolrClient cloudClient, String shardName, Replica oldLeader, TimeOut timeOut)
+  static void waitForNewLeader(CloudHttp2SolrClient cloudClient, String shardName, Replica oldLeader, TimeOut timeOut)
       throws Exception {
     log.info("Will wait for a node to become leader for {} secs", timeOut.timeLeft(SECONDS));
     ZkStateReader zkStateReader = cloudClient.getZkStateReader();

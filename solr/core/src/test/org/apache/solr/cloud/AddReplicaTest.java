@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.LinkedHashSet;
 
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -71,7 +72,7 @@ public class AddReplicaTest extends SolrCloudTestCase {
   public void testAddMultipleReplicas() throws Exception  {
 
     String collection = "testAddMultipleReplicas";
-    CloudSolrClient cloudClient = cluster.getSolrClient();
+    CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collection, "conf1", 1, 1);
     create.setMaxShardsPerNode(2);
@@ -143,7 +144,7 @@ public class AddReplicaTest extends SolrCloudTestCase {
     
     String collection = "addreplicatest_coll";
 
-    CloudSolrClient cloudClient = cluster.getSolrClient();
+    CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collection, "conf1", 2, 1);
     create.setMaxShardsPerNode(2);

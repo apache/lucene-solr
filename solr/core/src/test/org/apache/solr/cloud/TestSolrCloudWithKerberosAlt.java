@@ -28,6 +28,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -127,7 +128,7 @@ public class TestSolrCloudWithKerberosAlt extends SolrCloudTestCase {
   }
 
   private void testCollectionCreateSearchDelete() throws Exception {
-    CloudSolrClient client = cluster.getSolrClient();
+    CloudHttp2SolrClient client = cluster.getSolrClient();
     CollectionAdminRequest.createCollection(collectionName, configName, numShards, numReplicas)
         .setMaxShardsPerNode(maxShardsPerNode)
         .process(client);

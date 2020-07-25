@@ -80,8 +80,10 @@ import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
+import org.apache.solr.client.solrj.impl.LBHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.client.solrj.util.ClientUtils;
@@ -2392,14 +2394,12 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * Tests that do not wish to have any randomized behavior should use the 
    * {@link org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
    */ 
-  public static CloudSolrClient getCloudSolrClient(String zkHost, boolean shardLeadersOnly) {
+  public static CloudHttp2SolrClient getCloudSolrClient(String zkHost, boolean shardLeadersOnly) {
     if (shardLeadersOnly) {
-      return new CloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty())
-          .sendUpdatesOnlyToShardLeaders()
+      return new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
           .build();
     }
-    return new CloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty())
-        .sendUpdatesToAllReplicasInShard()
+    return new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
         .build();
   }
 
@@ -2430,18 +2430,12 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * Tests that do not wish to have any randomized behavior should use the 
    * {@link org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
    */ 
-  public static CloudSolrClient getCloudSolrClient(String zkHost, boolean shardLeadersOnly, int connectionTimeoutMillis, int socketTimeoutMillis) {
+  public static CloudHttp2SolrClient getCloudSolrClient(String zkHost, boolean shardLeadersOnly, int connectionTimeoutMillis, int socketTimeoutMillis) {
     if (shardLeadersOnly) {
-      return new CloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty())
-          .sendUpdatesOnlyToShardLeaders()
-          .withConnectionTimeout(connectionTimeoutMillis)
-          .withSocketTimeout(socketTimeoutMillis)
+      return new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
           .build();
     }
-    return new CloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty())
-        .sendUpdatesToAllReplicasInShard()
-        .withConnectionTimeout(connectionTimeoutMillis)
-        .withSocketTimeout(socketTimeoutMillis)
+    return new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
         .build();
   }
   
@@ -2531,11 +2525,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * Tests that do not wish to have any randomized behavior should use the 
    * {@link org.apache.solr.client.solrj.impl.LBHttpSolrClient.Builder} class directly
    */ 
-  public static LBHttpSolrClient getLBHttpSolrClient(HttpClient client, String... solrUrls) {
-    return new LBHttpSolrClient.Builder()
-        .withHttpClient(client)
-        .withBaseSolrUrls(solrUrls)
-        .build();
+  public static LBHttp2SolrClient getLBHttpSolrClient(Http2SolrClient client, String... solrUrls) {
+    return new LBHttp2SolrClient(client, solrUrls);
   }
   
   /**
@@ -2558,10 +2549,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * Tests that do not wish to have any randomized behavior should use the 
    * {@link org.apache.solr.client.solrj.impl.LBHttpSolrClient.Builder} class directly
    */ 
-  public static LBHttpSolrClient getLBHttpSolrClient(String... solrUrls) throws MalformedURLException {
-    return new LBHttpSolrClient.Builder()
-        .withBaseSolrUrls(solrUrls)
-        .build();
+  public static LBHttp2SolrClient getLBHttpSolrClient(String... solrUrls) throws MalformedURLException {
+    return new LBHttp2SolrClient(solrUrls);
   }
   
   /**
@@ -2569,11 +2558,11 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * Tests that do not wish to have any randomized behavior should use the 
    * {@link org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
    */ 
-  public static HttpSolrClient getHttpSolrClient(String url, HttpClient httpClient, ResponseParser responseParser, boolean compression) {
-    return new Builder(url)
+  public static Http2SolrClient getHttpSolrClient(String url, Http2SolrClient httpClient, ResponseParser responseParser, boolean compression) {
+    return new Http2SolrClient.Builder(url)
         .withHttpClient(httpClient)
-        .withResponseParser(responseParser)
-        .allowCompression(compression)
+       // .withResponseParser(responseParser) // nocommit
+       // .allowCompression(compression) // nocommit
         .build();
   }
   
@@ -2582,10 +2571,10 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * Tests that do not wish to have any randomized behavior should use the 
    * {@link org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
    */ 
-  public static HttpSolrClient getHttpSolrClient(String url, HttpClient httpClient, ResponseParser responseParser) {
-    return new Builder(url)
+  public static Http2SolrClient getHttpSolrClient(String url, Http2SolrClient httpClient, ResponseParser responseParser) {
+    return new Http2SolrClient.Builder(url)
         .withHttpClient(httpClient)
-        .withResponseParser(responseParser)
+     //   .withResponseParser(responseParser) // nocommit
         .build();
   }
   
@@ -2594,8 +2583,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * Tests that do not wish to have any randomized behavior should use the 
    * {@link org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
    */ 
-  public static HttpSolrClient getHttpSolrClient(String url, HttpClient httpClient) {
-    return new Builder(url)
+  public static Http2SolrClient getHttpSolrClient(String url, Http2SolrClient httpClient) {
+    return new Http2SolrClient.Builder(url)
         .withHttpClient(httpClient)
         .build();
   }
@@ -2605,10 +2594,9 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * Tests that do not wish to have any randomized behavior should use the 
    * {@link org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
    */ 
-  public static HttpSolrClient getHttpSolrClient(String url, HttpClient httpClient, int connectionTimeoutMillis) {
-    return new Builder(url)
+  public static Http2SolrClient getHttpSolrClient(String url, Http2SolrClient httpClient, int connectionTimeoutMillis) {
+    return new Http2SolrClient. Builder(url)
         .withHttpClient(httpClient)
-        .withConnectionTimeout(connectionTimeoutMillis)
         .build();
   }
 
@@ -2617,8 +2605,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * Tests that do not wish to have any randomized behavior should use the 
    * {@link org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
    */ 
-  public static HttpSolrClient getHttpSolrClient(String url) {
-    return new Builder(url)
+  public static Http2SolrClient getHttpSolrClient(String url) {
+    return new Http2SolrClient.Builder(url)
         .build();
   }
   
@@ -2627,9 +2615,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * Tests that do not wish to have any randomized behavior should use the 
    * {@link org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
    */ 
-  public static HttpSolrClient getHttpSolrClient(String url, int connectionTimeoutMillis) {
-    return new Builder(url)
-        .withConnectionTimeout(connectionTimeoutMillis)
+  public static Http2SolrClient getHttpSolrClient(String url, int connectionTimeoutMillis) {
+    return new Http2SolrClient.Builder(url)
         .build();
   }
   
@@ -2638,10 +2625,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * Tests that do not wish to have any randomized behavior should use the 
    * {@link org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
    */ 
-  public static HttpSolrClient getHttpSolrClient(String url, int connectionTimeoutMillis, int socketTimeoutMillis) {
-    return new Builder(url)
-        .withConnectionTimeout(connectionTimeoutMillis)
-        .withSocketTimeout(socketTimeoutMillis)
+  public static Http2SolrClient getHttpSolrClient(String url, int connectionTimeoutMillis, int socketTimeoutMillis) {
+    return new Http2SolrClient.Builder(url)
         .build();
   }
 

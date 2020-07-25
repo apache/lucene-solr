@@ -25,6 +25,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
@@ -94,15 +95,15 @@ public class TestLocalFSCloudBackupRestore extends AbstractCloudBackupRestoreTes
   @Test 
   public void test() throws Exception {
     super.test();
-    
-    CloudSolrClient solrClient = cluster.getSolrClient();
+
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
 
     errorBackup(solrClient);
     
     erroRestore(solrClient);
   }
 
-  private void erroRestore(CloudSolrClient solrClient) throws SolrServerException, IOException {
+  private void erroRestore(CloudHttp2SolrClient solrClient) throws SolrServerException, IOException {
     String backupName = BACKUPNAME_PREFIX + testSuffix;
     CollectionAdminRequest.Restore restore = CollectionAdminRequest.restoreCollection(getCollectionName()+"boo", backupName)
         .setLocation(backupLocation)
@@ -119,7 +120,7 @@ public class TestLocalFSCloudBackupRestore extends AbstractCloudBackupRestoreTes
     }
   }
 
-  private void errorBackup(CloudSolrClient solrClient)
+  private void errorBackup(CloudHttp2SolrClient solrClient)
       throws SolrServerException, IOException {
     CollectionAdminRequest.Backup backup = CollectionAdminRequest.backupCollection(getCollectionName(), "poisionedbackup")
         .setLocation(getBackupLocation());

@@ -31,6 +31,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -76,7 +77,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
   @Test
   public void testSolrJAPICalls() throws Exception {
 
-    final CloudSolrClient client = cluster.getSolrClient();
+    final CloudHttp2SolrClient client = cluster.getSolrClient();
 
     RequestStatusState state = CollectionAdminRequest.createCollection("testasynccollectioncreation","conf1",1,1)
         .processAndWait(client, MAX_TIMEOUT_SECONDS);
@@ -107,7 +108,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
     }
     
     final String collection = "testAsyncOperations";
-    final CloudSolrClient client = cluster.getSolrClient();
+    final CloudHttp2SolrClient client = cluster.getSolrClient();
 
     RequestStatusState state = CollectionAdminRequest.createCollection(collection,"conf1",1,1)
         .setRouterName("implicit")

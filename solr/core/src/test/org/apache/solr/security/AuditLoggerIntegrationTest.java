@@ -46,6 +46,7 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
@@ -235,7 +236,7 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
   @Test
   public void authValid() throws Exception {
     setupCluster(false, null, true);
-    final CloudSolrClient client = testHarness.get().cluster.getSolrClient();
+    final CloudHttp2SolrClient client = testHarness.get().cluster.getSolrClient();
     final CallbackReceiver receiver = testHarness.get().receiver;
 
     { // valid READ requests: #1 with, and #2 without, (valid) Authentication
@@ -268,7 +269,7 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
   @Test
   public void authFailures() throws Exception {
     setupCluster(false, null, true);
-    final CloudSolrClient client = testHarness.get().cluster.getSolrClient();
+    final CloudHttp2SolrClient client = testHarness.get().cluster.getSolrClient();
     final CallbackReceiver receiver = testHarness.get().receiver;
 
     { // invalid request: Authenticated user not allowed to CREATE w/o Authorization

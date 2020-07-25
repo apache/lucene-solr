@@ -36,22 +36,24 @@ import java.util.SortedMap;
 
 abstract public class RestTestBase extends SolrJettyTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  protected static RestTestHarness restTestHarness;
+  protected static volatile RestTestHarness restTestHarness;
 
   @AfterClass
-  public static void cleanUpHarness() throws IOException {
+  public synchronized static void cleanUpHarness() throws IOException {
     if (restTestHarness != null) {
       restTestHarness.close();
     }
     restTestHarness = null;
   }
 
-  public static void createJettyAndHarness
+  public synchronized static void createJettyAndHarness
       (String solrHome, String configFile, String schemaFile, String context,
        boolean stopAtShutdown, SortedMap<ServletHolder,String> extraServlets) throws Exception {
 
     createAndStartJetty(solrHome, configFile, schemaFile, context, stopAtShutdown, extraServlets);
-
+    if (restTestHarness != null) {
+      restTestHarness.close();
+    }
     restTestHarness = new RestTestHarness(() -> jetty.getBaseUrl().toString() + "/" + DEFAULT_TEST_CORENAME);
   }
 

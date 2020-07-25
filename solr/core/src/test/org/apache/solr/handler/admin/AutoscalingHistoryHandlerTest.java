@@ -28,6 +28,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -64,7 +65,7 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
 
   private static CountDownLatch actionFiredLatch;
   private static CountDownLatch listenerFiredLatch;
-  private static CloudSolrClient solrClient;
+  private static CloudHttp2SolrClient solrClient;
   private static String PREFIX = AutoscalingHistoryHandlerTest.class.getSimpleName();
   private static String COLL_NAME = PREFIX + "_collection";
   private static String systemCollNode;

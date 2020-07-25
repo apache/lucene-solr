@@ -30,6 +30,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -150,7 +151,7 @@ public class SplitShardTest extends SolrCloudTestCase {
   }
 
 
-  CloudSolrClient createCollection(String collectionName, int repFactor) throws Exception {
+  CloudHttp2SolrClient createCollection(String collectionName, int repFactor) throws Exception {
 
       CollectionAdminRequest
           .createCollection(collectionName, "conf", 1, repFactor)
@@ -159,13 +160,13 @@ public class SplitShardTest extends SolrCloudTestCase {
 
     cluster.waitForActiveCollection(collectionName, 1, repFactor);
 
-    CloudSolrClient client = cluster.getSolrClient();
+    CloudHttp2SolrClient client = cluster.getSolrClient();
     client.setDefaultCollection(collectionName);
     return client;
   }
 
 
-  long getNumDocs(CloudSolrClient client) throws Exception {
+  long getNumDocs(CloudHttp2SolrClient client) throws Exception {
     String collectionName = client.getDefaultCollection();
     DocCollection collection = client.getZkStateReader().getClusterState().getCollection(collectionName);
     Collection<Slice> slices = collection.getSlices();
@@ -198,7 +199,7 @@ public class SplitShardTest extends SolrCloudTestCase {
   }
 
   void doLiveSplitShard(String collectionName, int repFactor, int nThreads) throws Exception {
-    final CloudSolrClient client = createCollection(collectionName, repFactor);
+    final CloudHttp2SolrClient client = createCollection(collectionName, repFactor);
 
     final ConcurrentHashMap<String,Long> model = new ConcurrentHashMap<>();  // what the index should contain
     final AtomicBoolean doIndex = new AtomicBoolean(true);

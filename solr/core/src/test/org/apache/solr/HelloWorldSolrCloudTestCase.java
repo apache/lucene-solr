@@ -17,6 +17,7 @@
 package org.apache.solr;
 
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -77,7 +78,7 @@ public class HelloWorldSolrCloudTestCase extends SolrCloudTestCase {
   @Test
   public void testHighestScoring() throws Exception {
     final SolrQuery solrQuery = new SolrQuery("q", "*:*", "fl", "id,popularity_i", "sort", "popularity_i desc", "rows", "1");
-    final CloudSolrClient cloudSolrClient = cluster.getSolrClient();
+    final CloudHttp2SolrClient cloudSolrClient = cluster.getSolrClient();
     final QueryResponse rsp = cloudSolrClient.query(COLLECTION, solrQuery);
     assertEquals(1, rsp.getResults().size());
     assertEquals("1", rsp.getResults().get(0).getFieldValue(id));
@@ -86,7 +87,7 @@ public class HelloWorldSolrCloudTestCase extends SolrCloudTestCase {
   @Test
   public void testLowestScoring() throws Exception {
     final SolrQuery solrQuery = new SolrQuery("q", "*:*", "fl", "id,popularity_i", "sort", "popularity_i asc", "rows", "1");
-    final CloudSolrClient cloudSolrClient = cluster.getSolrClient();
+    final CloudHttp2SolrClient cloudSolrClient = cluster.getSolrClient();
     final QueryResponse rsp = cloudSolrClient.query(COLLECTION, solrQuery);
     assertEquals(1, rsp.getResults().size());
     assertEquals("1", rsp.getResults().get(0).getFieldValue(id));

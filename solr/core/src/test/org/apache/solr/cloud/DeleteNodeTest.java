@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
@@ -55,7 +56,7 @@ public class DeleteNodeTest extends SolrCloudTestCase {
 
   @Test
   public void test() throws Exception {
-    CloudSolrClient cloudClient = cluster.getSolrClient();
+    CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
     String coll = "deletenodetest_coll";
     ClusterState state = cloudClient.getZkStateReader().getClusterState();
     Set<String> liveNodes = state.getLiveNodes();

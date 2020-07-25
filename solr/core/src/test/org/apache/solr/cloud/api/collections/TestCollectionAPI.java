@@ -29,6 +29,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -69,7 +70,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   @Test
   @ShardsFixed(num = 2)
   public void test() throws Exception {
-    try (CloudSolrClient client = createCloudClient(null)) {
+    try (CloudHttp2SolrClient client = createCloudClient(null)) {
       CollectionAdminRequest.Create req;
       if (useTlogReplicas()) {
         req = CollectionAdminRequest.createCollection(COLLECTION_NAME, "_default",2, 0, 1, 1);
@@ -110,7 +111,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   }
 
   private void testCollectionCreationTooManyShards() throws Exception {
-    try (CloudSolrClient client = createCloudClient(null)) {
+    try (CloudHttp2SolrClient client = createCloudClient(null)) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CREATE.toString());
       params.set("name", "collection_too_many");
@@ -133,13 +134,13 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     }
   }
 
-  private void assertMissingCollection(CloudSolrClient client, String collectionName) throws Exception {
+  private void assertMissingCollection(CloudHttp2SolrClient client, String collectionName) throws Exception {
     ClusterState clusterState = client.getZkStateReader().getClusterState();
     assertNull(clusterState.getCollectionOrNull(collectionName));
   }
 
   private void testModifyCollection() throws Exception {
-    try (CloudSolrClient client = createCloudClient(null)) {
+    try (CloudHttp2SolrClient client = createCloudClient(null)) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.MODIFYCOLLECTION.toString());
       params.set("collection", COLLECTION_NAME);
@@ -197,7 +198,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   }
 
   private void testReplicationFactorValidaton() throws Exception {
-    try (CloudSolrClient client = createCloudClient(null)) {
+    try (CloudHttp2SolrClient client = createCloudClient(null)) {
       //Test that you can't specify both replicationFactor and nrtReplicas
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CREATE.toString());
@@ -240,7 +241,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     String configSet = "delete_config";
 
     final String collection = "deleted_collection";
-    try (CloudSolrClient client = createCloudClient(null)) {
+    try (CloudHttp2SolrClient client = createCloudClient(null)) {
       copyConfigUp(TEST_PATH().resolve("configsets"), "cloud-minimal", configSet, client.getZkHost());
 
       ModifiableSolrParams params = new ModifiableSolrParams();
@@ -276,7 +277,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     zkClient.delete(node, -1);
   }
 
-  private void assertCountsForRepFactorAndNrtReplicas(CloudSolrClient client, String collectionName) throws Exception {
+  private void assertCountsForRepFactorAndNrtReplicas(CloudHttp2SolrClient client, String collectionName) throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
     params.set("collection", collectionName);
@@ -296,7 +297,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
 
   private void clusterStatusWithCollectionAndShard() throws IOException, SolrServerException {
 
-    try (CloudSolrClient client = createCloudClient(null)) {
+    try (CloudHttp2SolrClient client = createCloudClient(null)) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
       params.set("collection", COLLECTION_NAME);
@@ -321,7 +322,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   }
 
   private void clusterStatusWithCollectionAndMultipleShards() throws IOException, SolrServerException {
-    try (CloudSolrClient client = createCloudClient(null)) {
+    try (CloudHttp2SolrClient client = createCloudClient(null)) {
       final CollectionAdminRequest.ClusterStatus request = new CollectionAdminRequest.ClusterStatus();
       request.setCollectionName(COLLECTION_NAME);
       request.setShardName(SHARD1 + "," + SHARD2);
@@ -345,7 +346,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
 
 
   private void listCollection() throws IOException, SolrServerException {
-    try (CloudSolrClient client = createCloudClient(null)) {
+    try (CloudHttp2SolrClient client = createCloudClient(null)) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.LIST.toString());
       SolrRequest request = new QueryRequest(params);
@@ -363,7 +364,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
 
   private void clusterStatusNoCollection() throws Exception {
 
-    try (CloudSolrClient client = createCloudClient(null)) {
+    try (CloudHttp2SolrClient client = createCloudClient(null)) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
       SolrRequest request = new QueryRequest(params);
@@ -385,7 +386,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   }
 
   private void clusterStatusWithCollection() throws IOException, SolrServerException {
-    try (CloudSolrClient client = createCloudClient(null)) {
+    try (CloudHttp2SolrClient client = createCloudClient(null)) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
       params.set("collection", COLLECTION_NAME);
@@ -407,7 +408,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
 
   private void clusterStatusZNodeVersion() throws Exception {
     String cname = "clusterStatusZNodeVersion";
-    try (CloudSolrClient client = createCloudClient(null)) {
+    try (CloudHttp2SolrClient client = createCloudClient(null)) {
       setV2(CollectionAdminRequest.createCollection(cname, "_default", 1, 1).setMaxShardsPerNode(1)).process(client);
       assertV2CallsCount();
 
@@ -462,7 +463,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   }
 
   private void clusterStatusWithRouteKey() throws IOException, SolrServerException {
-    try (CloudSolrClient client = createCloudClient(DEFAULT_COLLECTION)) {
+    try (CloudHttp2SolrClient client = createCloudClient(DEFAULT_COLLECTION)) {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", "a!123"); // goes to shard2. see ShardRoutingTest for details
       client.add(doc);
@@ -492,7 +493,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   }
 
   private void clusterStatusAliasTest() throws Exception  {
-    try (CloudSolrClient client = createCloudClient(null)) {
+    try (CloudHttp2SolrClient client = createCloudClient(null)) {
       // create an alias named myalias
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CREATEALIAS.toString());
@@ -562,7 +563,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   }
 
   private void clusterStatusRolesTest() throws Exception  {
-    try (CloudSolrClient client = createCloudClient(null)) {
+    try (CloudHttp2SolrClient client = createCloudClient(null)) {
       client.connect();
       Replica replica = client.getZkStateReader().getLeaderRetry(DEFAULT_COLLECTION, SHARD1);
 
@@ -593,7 +594,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   }
 
   private void clusterStatusBadCollectionTest() throws Exception {
-    try (CloudSolrClient client = createCloudClient(null)) {
+    try (CloudHttp2SolrClient client = createCloudClient(null)) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
       params.set("collection", "bad_collection_name");
@@ -611,7 +612,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   }
 
   private void replicaPropTest() throws Exception {
-    try (CloudSolrClient client = createCloudClient(null)) {
+    try (CloudHttp2SolrClient client = createCloudClient(null)) {
       client.connect();
       Map<String, Slice> slices = client.getZkStateReader().getClusterState().getCollection(COLLECTION_NAME).getSlicesMap();
       List<String> sliceList = new ArrayList<>(slices.keySet());
@@ -891,7 +892,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   }
 
   private void testClusterStateMigration() throws Exception {
-    try (CloudSolrClient client = createCloudClient(null)) {
+    try (CloudHttp2SolrClient client = createCloudClient(null)) {
       client.connect();
 
       CollectionAdminRequest.createCollection("testClusterStateMigration","_default",1,1).setStateFormat(1).process(client);
@@ -916,7 +917,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   }
   
   private void testCollectionCreationCollectionNameValidation() throws Exception {
-    try (CloudSolrClient client = createCloudClient(null)) {
+    try (CloudHttp2SolrClient client = createCloudClient(null)) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CREATE.toString());
       params.set("name", "invalid@name#with$weird%characters");
@@ -936,7 +937,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   }
   
   private void testCollectionCreationShardNameValidation() throws Exception {
-    try (CloudSolrClient client = createCloudClient(null)) {
+    try (CloudHttp2SolrClient client = createCloudClient(null)) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CREATE.toString());
       params.set("name", "valid_collection_name");
@@ -959,7 +960,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   }
   
   private void testAliasCreationNameValidation() throws Exception{
-    try (CloudSolrClient client = createCloudClient(null)) {
+    try (CloudHttp2SolrClient client = createCloudClient(null)) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CREATEALIAS.toString());
       params.set("name", "invalid@name#with$weird%characters");
@@ -980,7 +981,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   }
 
   private void testShardCreationNameValidation() throws Exception {
-    try (CloudSolrClient client = createCloudClient(null)) {
+    try (CloudHttp2SolrClient client = createCloudClient(null)) {
       client.connect();
       // Create a collection w/ implicit router
       ModifiableSolrParams params = new ModifiableSolrParams();
@@ -1013,7 +1014,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   }
 
   // Expects the map will have keys, but blank values.
-  private Map<String, String> getProps(CloudSolrClient client, String collectionName, String replicaName, String... props)
+  private Map<String, String> getProps(CloudHttp2SolrClient client, String collectionName, String replicaName, String... props)
       throws KeeperException, InterruptedException {
 
     ClusterState clusterState = client.getZkStateReader().getClusterState();
@@ -1028,7 +1029,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     }
     return propMap;
   }
-  private void missingParamsError(CloudSolrClient client, ModifiableSolrParams origParams)
+  private void missingParamsError(CloudHttp2SolrClient client, ModifiableSolrParams origParams)
       throws IOException, SolrServerException {
 
     SolrRequest request;
@@ -1058,7 +1059,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     ZkTestServer.putConfig("badconf", zkClient, "/solr", ZkTestServer.SOLRHOME, "schema-minimal.xml", "schema.xml");
     zkClient.close();
 
-    try (CloudSolrClient client = createCloudClient(null)) {
+    try (CloudHttp2SolrClient client = createCloudClient(null)) {
       // first, try creating a collection with badconf
       BaseHttpSolrClient.RemoteSolrException rse = expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> {
           CollectionAdminResponse rsp = CollectionAdminRequest.createCollection

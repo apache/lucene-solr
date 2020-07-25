@@ -31,6 +31,7 @@ import java.util.Set;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.NoMergePolicy;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
@@ -60,6 +61,7 @@ import static org.hamcrest.core.StringContains.containsString;
 /**
  * Tests the in-place updates (docValues updates) for a standalone Solr instance.
  */
+@LuceneTestCase.Nightly // can be a slow test, > 20 seconds
 public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
   private static SolrClient client;
 

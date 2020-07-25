@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.CloudTestUtils;
@@ -90,7 +91,7 @@ public class ConcurrentCreateCollectionTest extends SolrCloudTestCase {
     final int unbalancedSize = 1; // the number of replicas to create first
     final boolean stopNode = false;  // only applicable when startUnbalanced==true... stops a node during first collection creation, then restarts
 
-    final CloudSolrClient client = cluster.getSolrClient();
+    final CloudHttp2SolrClient client = cluster.getSolrClient();
 
 
     if (startUnbalanced) {

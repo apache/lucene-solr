@@ -27,6 +27,8 @@ import java.util.concurrent.TimeUnit;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudBridgeTestCase;
 import org.apache.solr.common.LinkedHashMapWriter;
@@ -118,15 +120,8 @@ public class TestConfigReload extends SolrCloudBridgeTestCase {
   }
 
   private LinkedHashMapWriter getAsMap(String uri) throws Exception {
-    HttpGet get = new HttpGet(uri) ;
-    HttpEntity entity = null;
-    try {
-      entity = cloudClient.getLbClient().getHttpClient().execute(get).getEntity();
-      String response = EntityUtils.toString(entity, StandardCharsets.UTF_8);
-      return (LinkedHashMapWriter) Utils.MAPWRITEROBJBUILDER.apply(Utils.getJSONParser(new StringReader(response))).getVal();
-    } finally {
-      EntityUtils.consumeQuietly(entity);
-    }
+    Http2SolrClient.SimpleResponse resp = Http2SolrClient.GET(uri, cloudClient.getHttpClient());
+    return (LinkedHashMapWriter) Utils.MAPWRITEROBJBUILDER.apply(Utils.getJSONParser(new StringReader(resp.asString))).getVal();
   }
 
 

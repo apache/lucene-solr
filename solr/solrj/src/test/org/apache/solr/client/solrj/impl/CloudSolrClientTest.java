@@ -100,7 +100,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   private static final int TIMEOUT = 30;
   private static final int NODE_COUNT = 3;
 
-  private static CloudSolrClient httpBasedCloudSolrClient = null;
+  private static CloudHttp2SolrClient httpBasedCloudSolrClient = null;
 
   @Before
   public void setupCluster() throws Exception {
@@ -110,7 +110,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
     final List<String> solrUrls = new ArrayList<>();
     solrUrls.add(cluster.getJettySolrRunner(0).getBaseUrl().toString());
-    httpBasedCloudSolrClient = new CloudSolrClient.Builder(solrUrls).build();
+    httpBasedCloudSolrClient = new CloudHttp2SolrClient.Builder(solrUrls).build();
   }
 
   
@@ -136,7 +136,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   /**
    * Randomly return the cluster's ZK based CSC, or HttpClusterProvider based CSC.
    */
-  private CloudSolrClient getRandomClient() {
+  private CloudHttp2SolrClient getRandomClient() {
     return random().nextBoolean()? cluster.getSolrClient(): httpBasedCloudSolrClient;
   }
 
@@ -188,7 +188,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(COLLECTION2, "conf", 2, 1).process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION2, 2, 2);
 
-    CloudSolrClient client = getRandomClient();
+    CloudHttp2SolrClient client = getRandomClient();
     SolrInputDocument doc = new SolrInputDocument("id", "1", "title_s", "my doc");
     client.add(COLLECTION, doc);
     client.commit(COLLECTION);
@@ -258,7 +258,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       params.add("q", "id:" + id);
       params.add("distrib", "false");
       QueryRequest queryRequest = new QueryRequest(params);
-      try (HttpSolrClient solrClient = getHttpSolrClient(url)) {
+      try (Http2SolrClient solrClient = getHttpSolrClient(url)) {
         QueryResponse queryResponse = queryRequest.process(solrClient);
         SolrDocumentList docList = queryResponse.getResults();
         assertTrue(docList.getNumFound() == 1);
@@ -304,7 +304,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         params.add("q", "id:" + id);
         params.add("distrib", "false");
         QueryRequest queryRequest = new QueryRequest(params);
-        try (HttpSolrClient solrClient = getHttpSolrClient(url)) {
+        try (Http2SolrClient solrClient = getHttpSolrClient(url)) {
           QueryResponse queryResponse = queryRequest.process(solrClient);
           SolrDocumentList docList = queryResponse.getResults();
           assertTrue(docList.getNumFound() == 1);
@@ -431,7 +431,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   }
 
   @SuppressWarnings("deprecation")
-  private void queryWithShardsPreferenceRules(CloudSolrClient cloudClient,
+  private void queryWithShardsPreferenceRules(CloudHttp2SolrClient cloudClient,
                                               boolean useShardsPreference,
                                               String collectionName)
       throws Exception
@@ -511,7 +511,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     queryReplicaType(getRandomClient(), Replica.Type.NRT, collectionName);
   }
 
-  private void queryReplicaType(CloudSolrClient cloudClient,
+  private void queryReplicaType(CloudHttp2SolrClient cloudClient,
                                           Replica.Type typeToQuery,
                                           String collectionName)
       throws Exception
@@ -558,7 +558,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       SolrServerException, IOException {
 
     NamedList<Object> resp;
-    try (HttpSolrClient client = getHttpSolrClient(baseUrl + "/"+ collectionName, 15000, 60000)) {
+    try (Http2SolrClient client = getHttpSolrClient(baseUrl + "/"+ collectionName, 15000, 60000)) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("qt", "/admin/mbeans");
       params.set("stats", "true");
@@ -693,7 +693,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     BaseHttpSolrClient.RemoteSolrException sse = null;
 
     final String url = r.getStr(ZkStateReader.BASE_URL_PROP) + "/" + COLLECTION;
-    try (HttpSolrClient solrClient = getHttpSolrClient(url)) {
+    try (Http2SolrClient solrClient = getHttpSolrClient(url)) {
 
       if (log.isInfoEnabled()) {
         log.info("should work query, result {}", solrClient.query(q));
@@ -835,7 +835,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   public void testInitializationWithSolrUrls() throws Exception {
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1).process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION, 2, 2);
-    CloudSolrClient client = httpBasedCloudSolrClient;
+    CloudHttp2SolrClient client = httpBasedCloudSolrClient;
     SolrInputDocument doc = new SolrInputDocument("id", "1", "title_s", "my doc");
     client.add(COLLECTION, doc);
     client.commit(COLLECTION);
@@ -844,7 +844,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
   @Test
   public void testCollectionDoesntExist() throws Exception {
-    CloudSolrClient client = getRandomClient();
+    CloudHttp2SolrClient client = getRandomClient();
     SolrInputDocument doc = new SolrInputDocument("id", "1", "title_s", "my doc");
     SolrException ex = expectThrows(SolrException.class, () -> client.add("boguscollectionname", doc));
     assertEquals("Collection not found: boguscollectionname", ex.getMessage());
@@ -965,7 +965,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         .processAndWait(cluster.getSolrClient(), TIMEOUT);
   }
 
-  private void queryWithPreferReplicaTypes(CloudSolrClient cloudClient,
+  private void queryWithPreferReplicaTypes(CloudHttp2SolrClient cloudClient,
                                            String preferReplicaTypes,
                                            boolean preferLocalShards,
                                            String collectionName)

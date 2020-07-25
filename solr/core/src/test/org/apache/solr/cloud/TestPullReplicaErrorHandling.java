@@ -34,6 +34,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -153,13 +154,13 @@ public void testCantConnectToPullReplica() throws Exception {
       proxy.close();
       for (int i = 1; i <= 10; i ++) {
         addDocs(10 + i);
-        try (HttpSolrClient leaderClient = getHttpSolrClient(s.getLeader().getCoreUrl())) {
+        try (Http2SolrClient leaderClient = getHttpSolrClient(s.getLeader().getCoreUrl())) {
           assertNumDocs(10 + i, leaderClient);
         }
       }
 
       SolrServerException e = expectThrows(SolrServerException.class, () -> {
-        try(HttpSolrClient pullReplicaClient = getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
+        try(Http2SolrClient pullReplicaClient = getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
           pullReplicaClient.query(new SolrQuery("*:*")).getResults().getNumFound();
         }
       });
@@ -177,7 +178,7 @@ public void testCantConnectToPullReplica() throws Exception {
       proxy.reopen();
     }
     
-    try (HttpSolrClient pullReplicaClient = getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
+    try (Http2SolrClient pullReplicaClient = getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
       assertNumDocs(20, pullReplicaClient);
     }
   }
@@ -194,12 +195,12 @@ public void testCantConnectToPullReplica() throws Exception {
     SocketProxy proxy = getProxyForReplica(s.getLeader());
     try {
       // wait for replication
-      try (HttpSolrClient pullReplicaClient = getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
+      try (Http2SolrClient pullReplicaClient = getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
         assertNumDocs(10, pullReplicaClient);
       }
       proxy.close();
       expectThrows(SolrException.class, ()->addDocs(1));
-      try (HttpSolrClient pullReplicaClient = getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
+      try (Http2SolrClient pullReplicaClient = getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
         assertNumDocs(10, pullReplicaClient);
       }
       assertNumDocs(10, cluster.getSolrClient());
@@ -226,7 +227,7 @@ public void testCantConnectToPullReplica() throws Exception {
     addDocs(10);
     DocCollection docCollection = assertNumberOfReplicas(numShards, 0, numShards, false, true);
     Slice s = docCollection.getSlices().iterator().next();
-    try (HttpSolrClient pullReplicaClient = getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
+    try (Http2SolrClient pullReplicaClient = getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
       assertNumDocs(10, pullReplicaClient);
     }
     addDocs(20);
@@ -236,7 +237,7 @@ public void testCantConnectToPullReplica() throws Exception {
     waitForState("Expecting node to be disconnected", collectionName, activeReplicaCount(1, 0, 0));
     addDocs(40);
     waitForState("Expecting node to be disconnected", collectionName, activeReplicaCount(1, 0, 1));
-    try (HttpSolrClient pullReplicaClient = getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
+    try (Http2SolrClient pullReplicaClient = getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
       assertNumDocs(40, pullReplicaClient);
     }
   }

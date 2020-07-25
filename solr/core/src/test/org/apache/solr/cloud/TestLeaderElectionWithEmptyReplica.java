@@ -24,7 +24,9 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -60,7 +62,7 @@ public class TestLeaderElectionWithEmptyReplica extends SolrCloudTestCase {
 
   @Test
   public void test() throws Exception {
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     solrClient.setDefaultCollection(COLLECTION_NAME);
     for (int i=0; i<10; i++)  {
       SolrInputDocument doc = new SolrInputDocument();
@@ -106,12 +108,12 @@ public class TestLeaderElectionWithEmptyReplica extends SolrCloudTestCase {
     assertEquals("Indexed documents not found", 10, response.getResults().getNumFound());
   }
 
-  private static int assertConsistentReplicas(CloudSolrClient cloudClient, Slice shard) throws SolrServerException, IOException {
+  private static int assertConsistentReplicas(CloudHttp2SolrClient cloudClient, Slice shard) throws SolrServerException, IOException {
     long numFound = Long.MIN_VALUE;
     int count = 0;
     for (Replica replica : shard.getReplicas()) {
-      HttpSolrClient client = new HttpSolrClient.Builder(replica.getCoreUrl())
-          .withHttpClient(cloudClient.getLbClient().getHttpClient()).build();
+      Http2SolrClient client = new Http2SolrClient.Builder(replica.getCoreUrl())
+          .withHttpClient(cloudClient.getHttpClient()).build();
       QueryResponse response = client.query(new SolrQuery("q", "*:*", "distrib", "false"));
 //      log.info("Found numFound={} on replica: {}", response.getResults().getNumFound(), replica.getCoreUrl());
       if (numFound == Long.MIN_VALUE)  {

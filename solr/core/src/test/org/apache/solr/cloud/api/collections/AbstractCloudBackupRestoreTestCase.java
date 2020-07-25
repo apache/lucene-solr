@@ -32,7 +32,9 @@ import java.util.TreeMap;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.ClusterProp;
@@ -136,7 +138,7 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
       }
     }
 
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     create.process(solrClient);
 
     indexDocs(getCollectionName(), false);
@@ -175,7 +177,7 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
       create.setMaxShardsPerNode((int)Math.ceil(NUM_SHARDS * (replFactor + numTlogReplicas + numPullReplicas) / cluster.getJettySolrRunners().size())); //just to assert it survives the restoration
     }
 
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     create.process(solrClient);
 
     indexDocs(getCollectionName(), false);
@@ -236,7 +238,7 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     }
 
     String backupName = "invalidbackuprequest";
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
 
     ClusterProp req = CollectionAdminRequest.setClusterProperty(CoreAdminParams.BACKUP_LOCATION, "/location/does/not/exist");
     assertEquals(0, req.process(solrClient).getStatus());
@@ -282,7 +284,7 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
       docs.add(doc);
     }
 
-    CloudSolrClient client = cluster.getSolrClient();
+    CloudHttp2SolrClient client = cluster.getSolrClient();
     client.add(collectionName, docs); //batch
     client.commit(collectionName);
 
@@ -295,7 +297,7 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     String backupLocation = getBackupLocation();
     String backupName = BACKUPNAME_PREFIX + testSuffix;
 
-    CloudSolrClient client = cluster.getSolrClient();
+    CloudHttp2SolrClient client = cluster.getSolrClient();
     DocCollection backupCollection = client.getZkStateReader().getClusterState().getCollection(collectionName);
 
     Map<String, Integer> origShardToDocCount = getShardToDocCountMap(client, backupCollection);
@@ -441,11 +443,11 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     // TODO Find the applicable core.properties on the file system but how?
   }
 
-  private Map<String, Integer> getShardToDocCountMap(CloudSolrClient client, DocCollection docCollection) throws SolrServerException, IOException {
+  private Map<String, Integer> getShardToDocCountMap(CloudHttp2SolrClient client, DocCollection docCollection) throws SolrServerException, IOException {
     Map<String,Integer> shardToDocCount = new TreeMap<>();
     for (Slice slice : docCollection.getActiveSlices()) {
       String shardName = slice.getName();
-      try (HttpSolrClient leaderClient = new HttpSolrClient.Builder(slice.getLeader().getCoreUrl()).withHttpClient(client.getHttpClient()).build()) {
+      try (Http2SolrClient leaderClient = new Http2SolrClient.Builder(slice.getLeader().getCoreUrl()).withHttpClient(client.getHttpClient()).build()) {
         long docsInShard = leaderClient.query(new SolrQuery("*:*").setParam("distrib", "false"))
             .getResults().getNumFound();
         shardToDocCount.put(shardName, (int) docsInShard);

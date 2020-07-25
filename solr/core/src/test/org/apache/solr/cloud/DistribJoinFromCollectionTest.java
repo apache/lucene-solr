@@ -27,6 +27,7 @@ import java.util.Set;
 
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -133,7 +134,7 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase{
       throws SolrServerException, IOException, InterruptedException {
     // verify the join with fromIndex works
     final String fromQ = "match_s:c^2";
-    CloudSolrClient client = cluster.getSolrClient();
+    CloudHttp2SolrClient client = cluster.getSolrClient();
     {
     final String joinQ = "{!join " + anyScoreMode(isScoresTest)
                    + "from=join_s fromIndex=" + fromColl + 

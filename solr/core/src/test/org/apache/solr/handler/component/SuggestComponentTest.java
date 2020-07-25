@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.component;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
@@ -26,6 +27,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 
+@LuceneTestCase.Nightly // can be a slow test, > 20 seconds
 public class SuggestComponentTest extends SolrTestCaseJ4 {
 
   private static final String rh = "/suggest";

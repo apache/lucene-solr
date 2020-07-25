@@ -25,6 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
@@ -72,7 +73,7 @@ public class CreateCollectionCleanupTest extends SolrCloudTestCase {
 
   @Test
   public void testCreateCollectionCleanup() throws Exception {
-    final CloudSolrClient cloudClient = cluster.getSolrClient();
+    final CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
     String collectionName = "foo";
     assertThat(CollectionAdminRequest.listCollections(cloudClient), not(hasItem(collectionName)));
     // Create a collection that would fail
@@ -97,7 +98,7 @@ public class CreateCollectionCleanupTest extends SolrCloudTestCase {
   @Test
   @Ignore // nocommit - still working on async
   public void testAsyncCreateCollectionCleanup() throws Exception {
-    final CloudSolrClient cloudClient = cluster.getSolrClient();
+    final CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
     String collectionName = "foo2";
     assertThat(CollectionAdminRequest.listCollections(cloudClient), not(hasItem(collectionName)));
     

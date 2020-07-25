@@ -24,6 +24,7 @@ import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.SolrInputDocument;
@@ -81,7 +82,7 @@ public class TestTrackingShardHandlerFactory extends AbstractFullDistribZkTestBa
     assertNotNull(coreAdminRequests);
     assertEquals("Unexpected number of core admin requests were found", 2, coreAdminRequests.size());
 
-    CloudSolrClient client = cloudClient;
+    CloudHttp2SolrClient client = cloudClient;
 
     client.setDefaultCollection(collectionName);
         /*

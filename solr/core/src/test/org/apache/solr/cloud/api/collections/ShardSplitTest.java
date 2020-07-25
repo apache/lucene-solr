@@ -43,6 +43,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -262,8 +263,8 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
     long numFound = Long.MIN_VALUE;
     int count = 0;
     for (Replica replica : shard.getReplicas()) {
-      HttpSolrClient client = new HttpSolrClient.Builder(replica.getCoreUrl())
-              .withHttpClient(cloudClient.getLbClient().getHttpClient()).build();
+      Http2SolrClient client = new Http2SolrClient.Builder(replica.getCoreUrl())
+              .withHttpClient(cloudClient.getHttpClient()).build();
       QueryResponse response = client.query(new SolrQuery("q", "*:*", "distrib", "false"));
       log.info("Found numFound={} on replica: {}", response.getResults().getNumFound(), replica.getCoreUrl());
       if (numFound == Long.MIN_VALUE)  {
@@ -963,7 +964,7 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
 
     ZkCoreNodeProps shard1_0 = getLeaderUrlFromZk(DEFAULT_COLLECTION, SHARD1_0);
     QueryResponse response;
-    try (HttpSolrClient shard1_0Client = getHttpSolrClient(shard1_0.getCoreUrl())) {
+    try (Http2SolrClient shard1_0Client = getHttpSolrClient(shard1_0.getCoreUrl())) {
       response = shard1_0Client.query(query);
     }
     long shard10Count = response.getResults().getNumFound();
@@ -971,7 +972,7 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
     ZkCoreNodeProps shard1_1 = getLeaderUrlFromZk(
             DEFAULT_COLLECTION, SHARD1_1);
     QueryResponse response2;
-    try (HttpSolrClient shard1_1Client = getHttpSolrClient(shard1_1.getCoreUrl())) {
+    try (Http2SolrClient shard1_1Client = getHttpSolrClient(shard1_1.getCoreUrl())) {
       response2 = shard1_1Client.query(query);
     }
     long shard11Count = response2.getResults().getNumFound();
@@ -993,7 +994,7 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
     for (Replica replica : slice.getReplicas()) {
       String coreUrl = new ZkCoreNodeProps(replica).getCoreUrl();
       QueryResponse response;
-      try (HttpSolrClient client = getHttpSolrClient(coreUrl)) {
+      try (Http2SolrClient client = getHttpSolrClient(coreUrl)) {
         response = client.query(query);
       }
       numFound[c++] = response.getResults().getNumFound();

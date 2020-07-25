@@ -28,6 +28,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.util.ExternalPaths;
@@ -124,12 +125,17 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
 
   @After
   public synchronized void afterClass() throws Exception {
-    if (client != null) client.close();
-    client = null;
+
   }
 
   @AfterClass
   public static void afterSolrJettyTestBase() throws Exception {
+    try {
+      client.close();
+      client = null;
+    } catch (NullPointerException e) {
+      // okay
+    }
     if (jetty != null) {
       jetty.stop();
       jetty = null;
@@ -153,7 +159,7 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
     try {
       // setup the client...
       final String url = jetty.getBaseUrl().toString() + "/" + "collection1";
-      final HttpSolrClient client = getHttpSolrClient(url, DEFAULT_CONNECTION_TIMEOUT);
+      final Http2SolrClient client = getHttpSolrClient(url, DEFAULT_CONNECTION_TIMEOUT);
       return client;
     } catch (final Exception ex) {
       throw new RuntimeException(ex);

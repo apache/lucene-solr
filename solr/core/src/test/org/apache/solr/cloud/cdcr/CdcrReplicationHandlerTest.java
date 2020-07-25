@@ -32,6 +32,7 @@ import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -127,7 +128,7 @@ public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
   @Test
   @ShardsFixed(num = 2)
   public void testPartialReplicationWithTruncatedTlog() throws Exception {
-    CloudSolrClient client = createCloudClient(SOURCE_COLLECTION);
+    CloudHttp2SolrClient client = createCloudClient(SOURCE_COLLECTION);
     List<CloudJettyRunner> slaves = this.getShardToSlaveJetty(SOURCE_COLLECTION, SHARD1);
 
     try {

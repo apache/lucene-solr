@@ -25,6 +25,7 @@ import java.util.TreeMap;
 
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.cloud.SolrCloudBridgeTestCase;
 import org.apache.solr.common.SolrException;
@@ -154,7 +155,7 @@ public class TestCloudSchemaless extends SolrCloudBridgeTestCase {
       assertEquals(ErrorCode.BAD_REQUEST, ErrorCode.getErrorCode(ex.code()));
 
       ex = expectThrows(SolrException.class,  () -> {
-        CloudSolrClient cloudSolrClient = cloudClient;
+        CloudHttp2SolrClient cloudSolrClient = cloudClient;
         cloudSolrClient.add(docs);
         cloudSolrClient.commit();
       });

@@ -44,7 +44,7 @@ public class CloudSolrClientRetryTest extends SolrCloudTestCase {
   @Test
   public void testRetry() throws Exception {
     String collectionName = "testRetry";
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     CollectionAdminRequest.createCollection(collectionName, 1, 1)
         .process(solrClient);
 

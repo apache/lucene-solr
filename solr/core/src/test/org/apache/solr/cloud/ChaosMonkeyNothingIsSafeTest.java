@@ -26,6 +26,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -130,12 +131,12 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
   }
 
   @Override
-  protected CloudSolrClient createCloudClient(String defaultCollection) {
+  protected CloudHttp2SolrClient createCloudClient(String defaultCollection) {
     return this.createCloudClient(defaultCollection, this.clientSoTimeout);
   }
   
-  protected CloudSolrClient createCloudClient(String defaultCollection, int socketTimeout) {
-    CloudSolrClient client = getCloudSolrClient(zkServer.getZkAddress(), random().nextBoolean(), DEFAULT_CONNECTION_TIMEOUT, socketTimeout);
+  protected CloudHttp2SolrClient createCloudClient(String defaultCollection, int socketTimeout) {
+    CloudHttp2SolrClient client = getCloudSolrClient(zkServer.getZkAddress(), random().nextBoolean(), DEFAULT_CONNECTION_TIMEOUT, socketTimeout);
     if (defaultCollection != null) client.setDefaultCollection(defaultCollection);
     return client;
   }
@@ -149,7 +150,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
     clientSoTimeout = 5000;
 
     boolean testSuccessful = false;
-    try  (CloudSolrClient ourCloudClient = createCloudClient(DEFAULT_COLLECTION)) {
+    try  (CloudHttp2SolrClient ourCloudClient = createCloudClient(DEFAULT_COLLECTION)) {
       handle.clear();
       handle.put("timestamp", SKIPVAL);
       ZkStateReader zkStateReader = cloudClient.getZkStateReader();
@@ -175,7 +176,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       
       if (runFullThrottle) {
         ftIndexThread = 
-            new FullThrottleStoppableIndexingThread(cloudClient.getHttpClient(),controlClient, cloudClient, clients, "ft1", true, this.clientSoTimeout);
+            new FullThrottleStoppableIndexingThread(controlClient, cloudClient, clients, "ft1", true, this.clientSoTimeout);
         ftIndexThread.start();
       }
       
@@ -269,7 +270,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
        // restartZk(1000 * (5 + random().nextInt(4)));
       }
 
-      try (CloudSolrClient client = createCloudClient("collection1", 30000)) {
+      try (CloudHttp2SolrClient client = createCloudClient("collection1", 30000)) {
           createCollection(null, "testcollection",
               1, 1, 1, client, null, "_default");
 

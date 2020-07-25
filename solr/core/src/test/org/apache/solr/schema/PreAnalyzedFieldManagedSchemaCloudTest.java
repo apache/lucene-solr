@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
@@ -53,7 +54,7 @@ public class PreAnalyzedFieldManagedSchemaCloudTest extends SolrCloudTestCase {
   }
 
   private void addField(Map<String,Object> field) throws Exception {
-    CloudSolrClient client = cluster.getSolrClient();
+    CloudHttp2SolrClient client = cluster.getSolrClient();
     UpdateResponse addFieldResponse = new SchemaRequest.AddField(field).process(client, COLLECTION);
     assertNotNull(addFieldResponse);
     assertEquals(0, addFieldResponse.getStatus());

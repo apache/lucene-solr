@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -93,7 +94,7 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
   private boolean haveCollection(String alias, String collection) {
     // separated into separate lines to make it easier to track down an NPE that occurred once
     // 3000 runs if it shows up again...
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     ZkStateReader zkStateReader = solrClient.getZkStateReader();
     Aliases aliases = zkStateReader.getAliases();
     Map<String, List<String>> collectionAliasListMap = aliases.getCollectionAliasListMap();

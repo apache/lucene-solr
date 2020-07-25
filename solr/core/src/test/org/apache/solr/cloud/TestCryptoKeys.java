@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Map;
 
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.LinkedHashMapWriter;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -98,11 +99,11 @@ public class TestCryptoKeys extends AbstractFullDistribZkTestBase {
     }
 
 
-    HttpSolrClient randomClient = (HttpSolrClient) clients.get(random().nextInt(clients.size()));
+    Http2SolrClient randomClient = (Http2SolrClient) clients.get(random().nextInt(clients.size()));
     String baseURL = randomClient.getBaseURL();
     baseURL = baseURL.substring(0, baseURL.lastIndexOf('/'));
 
-    TestBlobHandler.createSystemCollection(getHttpSolrClient(baseURL, randomClient.getHttpClient()));
+    TestBlobHandler.createSystemCollection(getHttpSolrClient(baseURL, randomClient));
 
     ByteBuffer jar = TestDynamicLoading.getFileContent("runtimecode/runtimelibs.jar.bin");
     String blobName = "signedjar";

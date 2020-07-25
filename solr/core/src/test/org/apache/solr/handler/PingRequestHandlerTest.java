@@ -23,6 +23,7 @@ import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.SolrPing;
@@ -172,7 +173,7 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
 
     MiniSolrCloudCluster miniCluster = new MiniSolrCloudCluster(NUM_SERVERS, createTempDir(), buildJettyConfig("/solr"));
 
-    final CloudSolrClient cloudSolrClient = miniCluster.getSolrClient();
+    final CloudHttp2SolrClient cloudSolrClient = miniCluster.getSolrClient();
 
     try {
       assertNotNull(miniCluster.getZkServer());

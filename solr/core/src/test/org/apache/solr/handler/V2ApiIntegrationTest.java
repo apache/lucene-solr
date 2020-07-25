@@ -28,6 +28,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
@@ -161,7 +162,7 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
 
   @Test
   public void testCollectionsApi() throws Exception {
-    CloudSolrClient client = cluster.getSolrClient();
+    CloudHttp2SolrClient client = cluster.getSolrClient();
     Map result = resAsMap(client, new V2Request.Builder("/c/"+COLL_NAME+"/get/_introspect").build());
     assertEquals("/c/collection1/get", Utils.getObjectByPath(result, true, "/spec[0]/url/paths[0]"));
     result = resAsMap(client, new V2Request.Builder("/collections/"+COLL_NAME+"/get/_introspect").build());
@@ -179,7 +180,7 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
         .build());
   }
 
-  private Map resAsMap(CloudSolrClient client, V2Request request) throws SolrServerException, IOException {
+  private Map resAsMap(CloudHttp2SolrClient client, V2Request request) throws SolrServerException, IOException {
     NamedList<Object> rsp = client.request(request);
     return rsp.asMap(100);
   }

@@ -29,6 +29,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseCloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.SolrException;
@@ -287,7 +288,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
 
   private void doForceLeader(String collectionName, String shard) throws IOException, SolrServerException {
     CollectionAdminRequest.ForceLeader forceLeader = CollectionAdminRequest.forceLeaderElection(collectionName, shard);
-    try(CloudSolrClient cloudClient = getCloudSolrClient(zkServer.getZkAddress(), random().nextBoolean())) {
+    try(CloudHttp2SolrClient cloudClient = getCloudSolrClient(zkServer.getZkAddress(), random().nextBoolean())) {
       cloudClient.request(forceLeader);
     }
   }

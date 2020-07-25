@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -91,7 +92,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
   @Test
   public void testRepFactor1LeaderStartup() throws Exception {
 
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
 
     String collectionName = "testRepFactor1LeaderStartup";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, 1, 1)
@@ -138,7 +139,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
   @Test
   public void testPeersyncFailureReplicationSuccess() throws Exception {
 
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
 
     String collectionName = "testPeersyncFailureReplicationSuccess";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, 1, 1)

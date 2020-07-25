@@ -20,6 +20,7 @@ package org.apache.solr.cloud;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.Replica;
@@ -59,7 +60,7 @@ public class TestPrepRecovery extends SolrCloudTestCase {
   @Test
   @Ignore // nocommit debug
   public void testLeaderUnloaded() throws Exception {
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
 
     String collectionName = "testLeaderUnloaded";
     CollectionAdminRequest.createCollection(collectionName, 1, 2)
@@ -94,7 +95,7 @@ public class TestPrepRecovery extends SolrCloudTestCase {
 
   @Test
   public void testLeaderNotResponding() throws Exception {
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
 
     String collectionName = "testLeaderNotResponding";
     CollectionAdminRequest.createCollection(collectionName, 1, 1)

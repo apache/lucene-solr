@@ -21,6 +21,7 @@ import static org.apache.solr.SolrTestCaseJ4.getHttpSolrClient;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.junit.Test;
@@ -39,16 +40,14 @@ public class SolrExceptionTest extends SolrTestCase {
     // this is a very simple test and most of the test should be considered verified 
     // if the compiler won't let you by without the try/catch
     boolean gotExpectedError = false;
-    CloseableHttpClient httpClient = null;
+
     try {
       // switched to a local address to avoid going out on the net, ns lookup issues, etc.
       // set a 1ms timeout to let the connection fail faster.
-      httpClient = HttpClientUtil.createClient(null);
-      try (HttpSolrClient client = getHttpSolrClient("http://" + SolrTestCaseJ4.DEAD_HOST_1 + "/solr/", httpClient, 1)) {
+      try (Http2SolrClient client = getHttpSolrClient("http://" + SolrTestCaseJ4.DEAD_HOST_1 + "/solr/", 1)) {
         SolrQuery query = new SolrQuery("test123");
         client.query(query);
       }
-      httpClient.close();
     } catch (SolrServerException sse) {
       gotExpectedError = true;
       /***
@@ -56,8 +55,6 @@ public class SolrExceptionTest extends SolrTestCase {
               //If one is using OpenDNS, then you don't get UnknownHostException, instead you get back that the query couldn't execute
               || (sse.getRootCause().getClass() == SolrException.class && ((SolrException) sse.getRootCause()).code() == 302 && sse.getMessage().equals("Error executing query")));
       ***/
-    } finally {
-      if (httpClient != null) HttpClientUtil.close(httpClient);
     }
     assertTrue(gotExpectedError);
   }

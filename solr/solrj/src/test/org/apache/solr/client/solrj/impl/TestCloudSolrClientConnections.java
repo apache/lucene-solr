@@ -39,7 +39,7 @@ public class TestCloudSolrClientConnections extends SolrTestCaseJ4 {
     MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(0, createTempDir(), buildJettyConfig("/solr"));
     try {
 
-      CloudSolrClient client = cluster.getSolrClient();
+      CloudHttp2SolrClient client = cluster.getSolrClient();
       CollectionAdminRequest.List listReq = new CollectionAdminRequest.List();
 
       SolrException e = expectThrows(SolrException.class, () -> client.request(listReq));
@@ -66,7 +66,7 @@ public class TestCloudSolrClientConnections extends SolrTestCaseJ4 {
 
     MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(0, createTempDir(), buildJettyConfig("/solr"));
     try {
-      CloudSolrClient client = cluster.getSolrClient();
+      CloudHttp2SolrClient client = cluster.getSolrClient();
       SolrException e = expectThrows(SolrException.class, () -> {
         ((ZkClientClusterStateProvider)client.getClusterStateProvider()).uploadConfig(configPath, "testconfig");
       });

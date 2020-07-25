@@ -24,6 +24,7 @@ import java.util.Map;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrException;
@@ -52,7 +53,7 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
   @ShardsFixed(num = 4)
   public void test() throws Exception {
 
-    try (CloudSolrClient client = createCloudClient(null)) {
+    try (CloudHttp2SolrClient client = createCloudClient(null)) {
       // Mix up a bunch of different combinations of shards and replicas in order to exercise boundary cases.
       // shards, replicationfactor, maxreplicaspernode
       int shards = random().nextInt(7);
@@ -69,7 +70,7 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
 
   private void listCollection() throws IOException, SolrServerException {
 
-    try (CloudSolrClient client = createCloudClient(null)) {
+    try (CloudHttp2SolrClient client = createCloudClient(null)) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.LIST.toString());
       SolrRequest request = new QueryRequest(params);
@@ -86,7 +87,7 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
 
   private void clusterAssignPropertyTest() throws Exception {
 
-    try (CloudSolrClient client = createCloudClient(null)) {
+    try (CloudHttp2SolrClient client = createCloudClient(null)) {
       client.connect();
       try {
         doPropertyAction(client,
@@ -186,7 +187,7 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
     }
   }
 
-  private void verifyLeaderAssignment(CloudSolrClient client, String collectionName)
+  private void verifyLeaderAssignment(CloudHttp2SolrClient client, String collectionName)
       throws InterruptedException, KeeperException {
     String lastFailMsg = "";
     for (int idx = 0; idx < 300; ++idx) { // Keep trying while Overseer writes the ZK state for up to 30 seconds.
@@ -220,7 +221,7 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
     fail(lastFailMsg);
   }
 
-  private void addProperty(CloudSolrClient client, String... paramsIn) throws IOException, SolrServerException {
+  private void addProperty(CloudHttp2SolrClient client, String... paramsIn) throws IOException, SolrServerException {
     assertTrue("paramsIn must be an even multiple of 2, it is: " + paramsIn.length, (paramsIn.length % 2) == 0);
     ModifiableSolrParams params = new ModifiableSolrParams();
     for (int idx = 0; idx < paramsIn.length; idx += 2) {

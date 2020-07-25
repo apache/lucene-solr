@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.LinkedHashMapWriter;
 import org.apache.solr.common.MapWriter;
@@ -197,7 +198,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         errorMessages.get(0).toString().contains(expectedErrorMessage));
   }
 
-  public static void reqhandlertests(RestTestHarness writeHarness, String testServerBaseUrl, CloudSolrClient cloudSolrClient) throws Exception {
+  public static void reqhandlertests(RestTestHarness writeHarness, String testServerBaseUrl, CloudHttp2SolrClient cloudSolrClient) throws Exception {
     String payload = "{\n" +
         "'create-requesthandler' : { 'name' : '/x', 'class': 'org.apache.solr.handler.DumpRequestHandler' , 'startup' : 'lazy'}\n" +
         "}";
@@ -553,11 +554,11 @@ public class TestSolrConfigHandler extends RestTestBase {
   }
 
   public static LinkedHashMapWriter testForResponseElement(RestTestHarness harness,
-                                           String testServerBaseUrl,
-                                           String uri,
-                                           CloudSolrClient cloudSolrClient, List<String> jsonPath,
-                                           Object expected,
-                                           long maxTimeoutSeconds) throws Exception {
+                                                           String testServerBaseUrl,
+                                                           String uri,
+                                                           CloudHttp2SolrClient cloudSolrClient, List<String> jsonPath,
+                                                           Object expected,
+                                                           long maxTimeoutSeconds) throws Exception {
 
     boolean success = false;
     long startTime = System.nanoTime();

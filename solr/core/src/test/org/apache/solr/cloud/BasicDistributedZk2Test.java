@@ -26,6 +26,7 @@ import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -169,7 +170,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
 
     SolrQuery query = new SolrQuery("*:*");
 
-    try (HttpSolrClient qclient = getHttpSolrClient(baseUrl + "/onenodecollection" + "core")) {
+    try (Http2SolrClient qclient = getHttpSolrClient(baseUrl + "/onenodecollection" + "core")) {
 
       // it might take a moment for the proxy node to see us in their cloud state
       waitForNon403or404or503(qclient);
@@ -185,7 +186,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
       assertEquals(docs - 1, results.getResults().getNumFound());
     }
     
-    try (HttpSolrClient qclient = getHttpSolrClient(baseUrl + "/onenodecollection")) {
+    try (Http2SolrClient qclient = getHttpSolrClient(baseUrl + "/onenodecollection")) {
       QueryResponse results = qclient.query(query);
       assertEquals(docs - 1, results.getResults().getNumFound());
 
@@ -376,7 +377,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     checkShardConsistency(true, false);
     
     // try a backup command
-    try(final HttpSolrClient client = getHttpSolrClient((String) shardToJetty.get(SHARD2).get(0).info.get("base_url"))) {
+    try(final Http2SolrClient client = getHttpSolrClient((String) shardToJetty.get(SHARD2).get(0).info.get("base_url"))) {
       final String backupName = "the_backup";
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("qt", ReplicationHandler.PATH);

@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
@@ -50,7 +51,7 @@ public class SchemaApiFailureTest extends SolrCloudTestCase {
   @Test
   // commented 4-Sep-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 23-Aug-2018
   public void testAddTheSameFieldTwice() throws Exception {
-    CloudSolrClient client = cluster.getSolrClient();
+    CloudHttp2SolrClient client = cluster.getSolrClient();
     SchemaRequest.Update fieldAddition = new SchemaRequest.AddField
         (Utils.makeMap("name","myfield", "type","string"));
     SchemaResponse.UpdateResponse updateResponse = fieldAddition.process(client, COLLECTION);

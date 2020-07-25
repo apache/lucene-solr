@@ -59,6 +59,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -112,7 +113,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       + File.separator;
 
   JettySolrRunner masterJetty, slaveJetty, repeaterJetty;
-  HttpSolrClient masterClient, slaveClient, repeaterClient;
+  Http2SolrClient masterClient, slaveClient, repeaterClient;
   SolrInstance master = null, slave = null, repeater = null;
 
   static String context = "/solr";
@@ -187,11 +188,11 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     return jetty;
   }
 
-  static HttpSolrClient createNewSolrClient(int port) {
+  static Http2SolrClient createNewSolrClient(int port) {
     try {
       // setup the client...
       final String baseUrl = buildUrl(port) + "/" + DEFAULT_TEST_CORENAME;
-      HttpSolrClient client = getHttpSolrClient(baseUrl, 15000, 90000);
+      Http2SolrClient client = getHttpSolrClient(baseUrl, 15000, 90000);
       return client;
     }
     catch (Exception ex) {
@@ -280,7 +281,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     params.set("qt","/admin/cores");
     QueryRequest req = new QueryRequest(params);
 
-    try (HttpSolrClient adminClient = adminClient(s)) {
+    try (Http2SolrClient adminClient = adminClient(s)) {
       NamedList<Object> res = adminClient.request(req);
       assertNotNull("null response from server", res);
       return res;
@@ -288,7 +289,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
   }
 
-  private HttpSolrClient adminClient(SolrClient client) {
+  private Http2SolrClient adminClient(SolrClient client) {
     String adminUrl = ((HttpSolrClient)client).getBaseURL().replace("/collection1", "");
     return getHttpSolrClient(adminUrl);
   }
@@ -1702,7 +1703,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     final long sleepInterval = 200;
     long timeSlept = 0;
 
-    try (HttpSolrClient adminClient = adminClient(client)) {
+    try (Http2SolrClient adminClient = adminClient(client)) {
       SolrParams p = params("action", "status", "core", "collection1");
       while (timeSlept < timeout) {
         QueryRequest req = new QueryRequest(p);

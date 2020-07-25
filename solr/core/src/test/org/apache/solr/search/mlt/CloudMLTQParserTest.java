@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -43,7 +44,7 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
     .addConfig("conf", configset("cloud-dynamic"))
     .configure();
     
-    final CloudSolrClient client = cluster.getSolrClient();
+    final CloudHttp2SolrClient client = cluster.getSolrClient();
 
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
         .processAndWait(client, DEFAULT_TIMEOUT);

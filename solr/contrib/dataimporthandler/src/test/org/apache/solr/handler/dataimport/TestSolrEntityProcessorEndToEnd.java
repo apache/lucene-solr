@@ -33,6 +33,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.After;
@@ -306,7 +307,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
       sidl.add(sd);
     }
 
-    try (HttpSolrClient solrServer = getHttpSolrClient(getSourceUrl(), 15000, 30000)) {
+    try (Http2SolrClient solrServer = getHttpSolrClient(getSourceUrl(), 15000, 30000)) {
       solrServer.add(sidl);
       solrServer.commit(true, true);
     }

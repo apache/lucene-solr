@@ -22,6 +22,7 @@ import java.util.List;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -42,7 +43,7 @@ public class CdcrOpsAndBoundariesTest extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   MiniSolrCloudCluster target, source;
-  CloudSolrClient sourceSolrClient, targetSolrClient;
+  CloudHttp2SolrClient sourceSolrClient, targetSolrClient;
   private static String SOURCE_COLLECTION = "cdcr-source";
   private static String TARGET_COLLECTION = "cdcr-target";
   private static String ALL_Q = "*:*";

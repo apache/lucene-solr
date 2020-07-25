@@ -26,6 +26,7 @@ import org.apache.http.HttpRequestInterceptor;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
@@ -113,7 +114,7 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
   }
 
   public void collectionCreateSearchDeleteTwice() throws Exception {
-    final CloudSolrClient client = cluster.getSolrClient();
+    final CloudHttp2SolrClient client = cluster.getSolrClient();
 
     for (int i = 0 ; i < 2 ; ++i) {
       // create collection

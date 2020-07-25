@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.Random;
 
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
@@ -56,8 +57,8 @@ class SegmentTerminateEarlyTestState {
     this.rand = rand;
   }
   
-  void addDocuments(CloudSolrClient cloudSolrClient,
-      int numCommits, int numDocsPerCommit, boolean optimize) throws Exception {
+  void addDocuments(CloudHttp2SolrClient cloudSolrClient,
+                    int numCommits, int numDocsPerCommit, boolean optimize) throws Exception {
     for (int cc = 1; cc <= numCommits; ++cc) {
       for (int nn = 1; nn <= numDocsPerCommit; ++nn) {
         ++numDocs;
@@ -91,7 +92,7 @@ class SegmentTerminateEarlyTestState {
     }
   }
 
-  void queryTimestampDescending(CloudSolrClient cloudSolrClient) throws Exception {
+  void queryTimestampDescending(CloudHttp2SolrClient cloudSolrClient) throws Exception {
     TestSegmentSorting.assertFalse(maxTimestampDocKeys.isEmpty());
     TestSegmentSorting.assertTrue("numDocs="+numDocs+" is not even", (numDocs%2)==0);
     final Long oddFieldValue = (long) (maxTimestampDocKeys.iterator().next().intValue() % 2);
@@ -117,7 +118,7 @@ class SegmentTerminateEarlyTestState {
         rsp.getResponseHeader().get(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY));
   }
 
-  void queryTimestampDescendingSegmentTerminateEarlyYes(CloudSolrClient cloudSolrClient) throws Exception {
+  void queryTimestampDescendingSegmentTerminateEarlyYes(CloudHttp2SolrClient cloudSolrClient) throws Exception {
     TestSegmentSorting.assertFalse(maxTimestampDocKeys.isEmpty());
     TestSegmentSorting.assertTrue("numDocs="+numDocs+" is not even", (numDocs%2)==0);
     final Long oddFieldValue = (long) (maxTimestampDocKeys.iterator().next().intValue() % 2);
@@ -167,7 +168,7 @@ class SegmentTerminateEarlyTestState {
     }
   }
 
-  void queryTimestampDescendingSegmentTerminateEarlyNo(CloudSolrClient cloudSolrClient) throws Exception {
+  void queryTimestampDescendingSegmentTerminateEarlyNo(CloudHttp2SolrClient cloudSolrClient) throws Exception {
     TestSegmentSorting.assertFalse(maxTimestampDocKeys.isEmpty());
     TestSegmentSorting.assertTrue("numDocs="+numDocs+" is not even", (numDocs%2)==0);
     final Long oddFieldValue = (long) (maxTimestampDocKeys.iterator().next().intValue() % 2);
@@ -214,7 +215,7 @@ class SegmentTerminateEarlyTestState {
     }
   }
 
-  void queryTimestampDescendingSegmentTerminateEarlyYesGrouped(CloudSolrClient cloudSolrClient) throws Exception {
+  void queryTimestampDescendingSegmentTerminateEarlyYesGrouped(CloudHttp2SolrClient cloudSolrClient) throws Exception {
     TestSegmentSorting.assertFalse(maxTimestampDocKeys.isEmpty());
     TestSegmentSorting.assertTrue("numDocs="+numDocs+" is not even", (numDocs%2)==0);
     final Long oddFieldValue = (long) (maxTimestampDocKeys.iterator().next().intValue() % 2);
@@ -244,7 +245,7 @@ class SegmentTerminateEarlyTestState {
         Boolean.TRUE.equals(rsp.getResponseHeader().get(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY)));
   }
 
-  void queryTimestampAscendingSegmentTerminateEarlyYes(CloudSolrClient cloudSolrClient) throws Exception {
+  void queryTimestampAscendingSegmentTerminateEarlyYes(CloudHttp2SolrClient cloudSolrClient) throws Exception {
     TestSegmentSorting.assertFalse(minTimestampDocKeys.isEmpty());
     TestSegmentSorting.assertTrue("numDocs="+numDocs+" is not even", (numDocs%2)==0);
     final Long oddFieldValue = (long) (minTimestampDocKeys.iterator().next().intValue() % 2);

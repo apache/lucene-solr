@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.SolrCloudAuthTestCase;
@@ -63,7 +64,7 @@ public class PKIAuthenticationIntegrationTest extends SolrCloudAuthTestCase {
 
   @Test
   public void testPkiAuth() throws Exception {
-    HttpClient httpClient = cluster.getSolrClient().getHttpClient();
+    HttpClient httpClient = HttpClientUtil.createClient(null);
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       String baseUrl = jetty.getBaseUrl().toString();
       verifySecurityStatus(httpClient, baseUrl + "/admin/authorization", "authorization/class", MockAuthorizationPlugin.class.getName(), 20);

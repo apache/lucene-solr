@@ -31,7 +31,9 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -77,9 +79,9 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
   private static final String COLLECTION_NAME = "test_col";
   
   /** A basic client for operations at the cloud level, default collection will be set */
-  private static CloudSolrClient CLOUD_CLIENT;
+  private static CloudHttp2SolrClient CLOUD_CLIENT;
   /** one HttpSolrClient for each server */
-  private static List<HttpSolrClient> NODE_CLIENTS;
+  private static List<Http2SolrClient> NODE_CLIENTS;
 
   @BeforeClass
   public static void createMiniSolrCloudCluster() throws Exception {
@@ -109,11 +111,11 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
         .process(CLOUD_CLIENT);
     
     if (NODE_CLIENTS != null) {
-      for (HttpSolrClient client : NODE_CLIENTS) {
+      for (Http2SolrClient client : NODE_CLIENTS) {
         client.close();
       }
     }
-    NODE_CLIENTS = new ArrayList<HttpSolrClient>(numServers);
+    NODE_CLIENTS = new ArrayList<Http2SolrClient>(numServers);
     
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       String jettyURL = jetty.getBaseUrl();
@@ -132,7 +134,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
   @AfterClass
   public static void afterClass() throws IOException {
     if (NODE_CLIENTS != null) {
-      for (HttpSolrClient client : NODE_CLIENTS) {
+      for (Http2SolrClient client : NODE_CLIENTS) {
         client.close();
       }
     }

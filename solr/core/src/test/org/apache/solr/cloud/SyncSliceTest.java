@@ -21,6 +21,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -113,7 +114,7 @@ public class SyncSliceTest extends SolrCloudBridgeTestCase {
    // baseUrl = baseUrl.substring(0, baseUrl.length() - "collection1".length());
     
     // we only set the connect timeout, not so timeout
-    try (HttpSolrClient baseClient = getHttpSolrClient(baseUrl, 10000)) {
+    try (Http2SolrClient baseClient = getHttpSolrClient(baseUrl, 10000)) {
       baseClient.request(request);
     }
 

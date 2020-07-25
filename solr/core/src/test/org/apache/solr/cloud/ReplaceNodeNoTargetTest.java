@@ -25,7 +25,9 @@ import java.util.Set;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
@@ -64,12 +66,12 @@ public class ReplaceNodeNoTargetTest extends SolrCloudTestCase {
       log.info("total_jettys: {}", cluster.getJettySolrRunners().size());
     }
 
-    CloudSolrClient cloudClient = cluster.getSolrClient();
+    CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
     Set<String> liveNodes = cloudClient.getZkStateReader().getClusterState().getLiveNodes();
     ArrayList<String> l = new ArrayList<>(liveNodes);
     Collections.shuffle(l, random());
     String node2bdecommissioned = l.get(0);
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     String setClusterPolicyCommand = "{" +
         " 'set-cluster-policy': [" +
         "      {'replica':'<5', 'shard': '#EACH', 'node': '#ANY'}]}";
@@ -114,10 +116,10 @@ public class ReplaceNodeNoTargetTest extends SolrCloudTestCase {
   /**
    * Given a cloud client and a nodename, build an HTTP client for that node, and ask it for it's core status
    */
-  private CoreAdminResponse getCoreStatusForNamedNode(final CloudSolrClient cloudClient,
+  private CoreAdminResponse getCoreStatusForNamedNode(final CloudHttp2SolrClient cloudClient,
                                                       final String nodeName) throws Exception {
     
-    try (HttpSolrClient coreclient = getHttpSolrClient
+    try (Http2SolrClient coreclient = getHttpSolrClient
          (cloudClient.getZkStateReader().getBaseUrlForNodeName(nodeName))) {
       return CoreAdminRequest.getStatus(null, coreclient);
     }

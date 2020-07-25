@@ -33,6 +33,7 @@ import java.util.Map;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -176,7 +177,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
 
   @Before
   public void clean() throws IOException, SolrServerException {
-    CloudSolrClient client = cluster.getSolrClient();
+    CloudHttp2SolrClient client = cluster.getSolrClient();
     client.deleteByQuery("*:*");
     client.commit();
     resetFields(fieldsToTestSingle);
@@ -196,7 +197,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
     // For this test, I want to insure that there are shards that do _not_ have a doc with any of the DV_only 
     // fields, see SOLR-5260. So I'll add exactly 1 document to a 4 shard collection.
 
-    CloudSolrClient client = cluster.getSolrClient();
+    CloudHttp2SolrClient client = cluster.getSolrClient();
 
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", "1");
@@ -238,7 +239,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
   // We should be able to sort thing with missing first/last and that are _NOT_ present at all on one server.
   @Test
   public void testGroupingSorting() throws IOException, SolrServerException {
-    CloudSolrClient client = cluster.getSolrClient();
+    CloudHttp2SolrClient client = cluster.getSolrClient();
 
     // The point of these is to have at least one shard w/o the value. 
     // While getting values for each of these fields starts _out_ random, each successive
@@ -263,7 +264,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
 
   }
 
-  private void checkSortOrder(CloudSolrClient client, List<FieldProps> props, String sortDir, String[] order, String[] orderBool) throws IOException, SolrServerException {
+  private void checkSortOrder(CloudHttp2SolrClient client, List<FieldProps> props, String sortDir, String[] order, String[] orderBool) throws IOException, SolrServerException {
     for (FieldProps prop : props) {
       final SolrQuery solrQuery = new SolrQuery("q", "*:*", "rows", "100");
       solrQuery.setSort(prop.getName(), "asc".equals(sortDir) ? SolrQuery.ORDER.asc : SolrQuery.ORDER.desc);
@@ -290,7 +291,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", 4);
     docs.add(doc);
-    CloudSolrClient client = cluster.getSolrClient();
+    CloudHttp2SolrClient client = cluster.getSolrClient();
 
     new UpdateRequest()
         .add(docs)
@@ -353,7 +354,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
       }
     }
 
-    CloudSolrClient client = cluster.getSolrClient();
+    CloudHttp2SolrClient client = cluster.getSolrClient();
 
     new UpdateRequest()
         .add(docs)

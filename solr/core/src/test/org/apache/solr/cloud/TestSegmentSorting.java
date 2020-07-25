@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest.Field;
@@ -73,7 +74,7 @@ public class TestSegmentSorting extends SolrCloudTestCase {
   public void createCollection() throws Exception {
 
     final String collectionName = testName.getMethodName();
-    final CloudSolrClient cloudSolrClient = cluster.getSolrClient();
+    final CloudHttp2SolrClient cloudSolrClient = cluster.getSolrClient();
     
     final Map<String, String> collectionProperties = new HashMap<>();
     collectionProperties.put(CoreDescriptor.CORE_CONFIG, "solrconfig-sortingmergepolicyfactory.xml");
@@ -96,7 +97,7 @@ public class TestSegmentSorting extends SolrCloudTestCase {
   public void testSegmentTerminateEarly() throws Exception {
 
     final SegmentTerminateEarlyTestState tstes = new SegmentTerminateEarlyTestState(random());
-    final CloudSolrClient cloudSolrClient = cluster.getSolrClient();
+    final CloudHttp2SolrClient cloudSolrClient = cluster.getSolrClient();
 
     // add some documents, then optimize to get merged-sorted segments
     tstes.addDocuments(cloudSolrClient, 10, 10, true);
@@ -126,7 +127,7 @@ public class TestSegmentSorting extends SolrCloudTestCase {
   // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 26-Mar-2018
   public void testAtomicUpdateOfSegmentSortField() throws Exception {
 
-    final CloudSolrClient cloudSolrClient = cluster.getSolrClient();
+    final CloudHttp2SolrClient cloudSolrClient = cluster.getSolrClient();
     final String updateField = SegmentTerminateEarlyTestState.TIMESTAMP_FIELD;
 
     // sanity check that updateField is in fact a DocValues only field, meaning it

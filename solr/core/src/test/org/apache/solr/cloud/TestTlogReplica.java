@@ -26,8 +26,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
@@ -44,7 +46,9 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -165,9 +169,9 @@ public class TestTlogReplica extends SolrCloudTestCase {
             2,    // numShards
             4,    // tlogReplicas
             100); // maxShardsPerNode
-        HttpGet createCollectionGet = new HttpGet(url);
-        HttpResponse httpResponse = cluster.getSolrClient().getHttpClient().execute(createCollectionGet);
-        assertEquals(200, httpResponse.getStatusLine().getStatusCode());
+
+        Http2SolrClient.SimpleResponse resp = Http2SolrClient.GET(url, cluster.getSolrClient().getHttpClient());
+        assertEquals(200,  resp.status);
         cluster.waitForActiveCollection(collectionName, 2, 8);
         break;
       case 2:
@@ -178,11 +182,10 @@ public class TestTlogReplica extends SolrCloudTestCase {
             2,    // numShards
             4,    // tlogReplicas
             100); // maxShardsPerNode
-        HttpPost createCollectionPost = new HttpPost(url);
-        createCollectionPost.setHeader("Content-type", "application/json");
-        createCollectionPost.setEntity(new StringEntity(requestBody));
-        httpResponse = cluster.getSolrClient().getHttpClient().execute(createCollectionPost);
-        assertEquals(200, httpResponse.getStatusLine().getStatusCode());
+
+        Http2SolrClient.SimpleResponse resp2 = Http2SolrClient.POST(url, cluster.getSolrClient().getHttpClient(), requestBody.getBytes("UTF-8"), "application/json");
+
+        assertEquals(200, resp2.status);
         cluster.waitForActiveCollection(collectionName, 2, 8);
         break;
     }
@@ -231,14 +234,14 @@ public class TestTlogReplica extends SolrCloudTestCase {
     cluster.getSolrClient().commit(collectionName);
 
     Slice s = docCollection.getSlices().iterator().next();
-    try (HttpSolrClient leaderClient = getHttpSolrClient(s.getLeader().getCoreUrl())) {
+    try (Http2SolrClient leaderClient = getHttpSolrClient(s.getLeader().getCoreUrl())) {
       assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
 
     TimeOut t = new TimeOut(REPLICATION_TIMEOUT_SECS, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     for (Replica r:s.getReplicas(EnumSet.of(Replica.Type.TLOG))) {
       //TODO: assert replication < REPLICATION_TIMEOUT_SECS
-      try (HttpSolrClient tlogReplicaClient = getHttpSolrClient(r.getCoreUrl())) {
+      try (Http2SolrClient tlogReplicaClient = getHttpSolrClient(r.getCoreUrl())) {
         while (true) {
           try {
             assertEquals("Replica " + r.getName() + " not up to date after 10 seconds",
@@ -284,7 +287,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     assertNumberOfReplicas(0, 3, 0, true, true);
   }
 
-  private void addReplicaToShard(String shardName, Replica.Type type) throws ClientProtocolException, IOException, SolrServerException {
+  private void addReplicaToShard(String shardName, Replica.Type type) throws ClientProtocolException, IOException, SolrServerException, InterruptedException, ExecutionException, TimeoutException {
     switch (random().nextInt(3)) {
       case 0: // Add replica with SolrJ
         CollectionAdminResponse response = CollectionAdminRequest.addReplicaToShard(collectionName, shardName, type).process(cluster.getSolrClient());
@@ -296,9 +299,8 @@ public class TestTlogReplica extends SolrCloudTestCase {
             collectionName,
             shardName,
             type);
-        HttpGet addReplicaGet = new HttpGet(url);
-        HttpResponse httpResponse = cluster.getSolrClient().getHttpClient().execute(addReplicaGet);
-        assertEquals(200, httpResponse.getStatusLine().getStatusCode());
+        Http2SolrClient.SimpleResponse resp = Http2SolrClient.GET(url, cluster.getSolrClient().getHttpClient());
+        assertEquals(200, resp.status);
         break;
       case 2:// Add replica with V2 API
         url = String.format(Locale.ROOT, "%s/____v2/c/%s/shards",
@@ -307,11 +309,10 @@ public class TestTlogReplica extends SolrCloudTestCase {
         String requestBody = String.format(Locale.ROOT, "{add-replica:{shard:%s, type:%s}}",
             shardName,
             type);
-        HttpPost addReplicaPost = new HttpPost(url);
-        addReplicaPost.setHeader("Content-type", "application/json");
-        addReplicaPost.setEntity(new StringEntity(requestBody));
-        httpResponse = cluster.getSolrClient().getHttpClient().execute(addReplicaPost);
-        assertEquals(200, httpResponse.getStatusLine().getStatusCode());
+
+        Http2SolrClient.SimpleResponse resp2 = Http2SolrClient.POST(url, cluster.getSolrClient().getHttpClient(), requestBody.getBytes("UTF-8"), "application/json");
+
+        assertEquals(200, resp2.status);
         break;
     }
   }
@@ -332,19 +333,19 @@ public class TestTlogReplica extends SolrCloudTestCase {
       .setMaxShardsPerNode(100)
       .process(cluster.getSolrClient());
     DocCollection docCollection = assertNumberOfReplicas(numNrtReplicas, numReplicas, 0, false, true);
-    HttpClient httpClient = cluster.getSolrClient().getHttpClient();
+    Http2SolrClient httpClient = cluster.getSolrClient().getHttpClient();
     int id = 0;
     Slice slice = docCollection.getSlice("shard1");
     List<String> ids = new ArrayList<>(slice.getReplicas().size());
     for (Replica rAdd:slice.getReplicas()) {
-      try (HttpSolrClient client = getHttpSolrClient(rAdd.getCoreUrl(), httpClient)) {
+      try (Http2SolrClient client = getHttpSolrClient(rAdd.getCoreUrl(), httpClient)) {
         client.add(new SolrInputDocument("id", String.valueOf(id), "foo_s", "bar"));
       }
       SolrDocument docCloudClient = cluster.getSolrClient().getById(collectionName, String.valueOf(id));
       assertNotNull(docCloudClient);
       assertEquals("bar", docCloudClient.getFieldValue("foo_s"));
       for (Replica rGet:slice.getReplicas()) {
-        try (HttpSolrClient client = getHttpSolrClient(rGet.getCoreUrl(), httpClient)) {
+        try (Http2SolrClient client = getHttpSolrClient(rGet.getCoreUrl(), httpClient)) {
           SolrDocument doc = client.getById(String.valueOf(id));
           assertEquals("bar", doc.getFieldValue("foo_s"));
         }
@@ -354,7 +355,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     }
     SolrDocumentList previousAllIdsResult = null;
     for (Replica rAdd:slice.getReplicas()) {
-      try (HttpSolrClient client = getHttpSolrClient(rAdd.getCoreUrl(), httpClient)) {
+      try (Http2SolrClient client = getHttpSolrClient(rAdd.getCoreUrl(), httpClient)) {
         SolrDocumentList allIdsResult = client.getById(ids);
         if (previousAllIdsResult != null) {
           assertTrue(compareSolrDocumentList(previousAllIdsResult, allIdsResult));
@@ -378,7 +379,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "1", "foo", "bar"));
     cluster.getSolrClient().commit(collectionName);
     Slice s = docCollection.getSlices().iterator().next();
-    try (HttpSolrClient leaderClient = getHttpSolrClient(s.getLeader().getCoreUrl())) {
+    try (Http2SolrClient leaderClient = getHttpSolrClient(s.getLeader().getCoreUrl())) {
       assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
 
@@ -473,7 +474,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
   public void testOnlyLeaderIndexes() throws Exception {
     createAndWaitForCollection(1, 0, 2, 0);
 
-    CloudSolrClient cloudClient = cluster.getSolrClient();
+    CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
     new UpdateRequest()
         .add(sdoc("id", "1"))
         .add(sdoc("id", "2"))
@@ -540,7 +541,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
   public void testRecovery() throws Exception {
     createAndWaitForCollection(1, 0, 2, 0);
 
-    CloudSolrClient cloudClient = cluster.getSolrClient();
+    CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
     new UpdateRequest()
         .add(sdoc("id", "3"))
         .add(sdoc("id", "4"))
@@ -639,7 +640,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
 
   public void testDeleteById() throws Exception{
     createAndWaitForCollection(1,0,2,0);
-    CloudSolrClient cloudClient = cluster.getSolrClient();
+    CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
     new UpdateRequest()
         .deleteByQuery("*:*")
         .commit(cluster.getSolrClient(), collectionName);
@@ -662,7 +663,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
 
   public void testBasicLeaderElection() throws Exception {
     createAndWaitForCollection(1,0,2,0);
-    CloudSolrClient cloudClient = cluster.getSolrClient();
+    CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
     new UpdateRequest()
         .deleteByQuery("*:*")
         .commit(cluster.getSolrClient(), collectionName);
@@ -795,7 +796,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
       if (!r.isActive(cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes())) {
         continue;
       }
-      try (HttpSolrClient replicaClient = getHttpSolrClient(r.getCoreUrl())) {
+      try (Http2SolrClient replicaClient = getHttpSolrClient(r.getCoreUrl())) {
         while (true) {
           try {
             assertEquals("Replica " + r.getName() + " not up to date after " + timeout + " seconds",
@@ -892,7 +893,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
   private List<SolrCore> getSolrCore(boolean isLeader) {
     List<SolrCore> rs = new ArrayList<>();
 
-    CloudSolrClient cloudClient = cluster.getSolrClient();
+    CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
     DocCollection docCollection = cloudClient.getZkStateReader().getClusterState().getCollection(collectionName);
 
     for (JettySolrRunner solrRunner : cluster.getJettySolrRunners()) {
@@ -928,7 +929,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
 
   private List<JettySolrRunner> getSolrRunner(boolean isLeader) {
     List<JettySolrRunner> rs = new ArrayList<>();
-    CloudSolrClient cloudClient = cluster.getSolrClient();
+    CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
     DocCollection docCollection = cloudClient.getZkStateReader().getClusterState().getCollection(collectionName);
     for (JettySolrRunner solrRunner : cluster.getJettySolrRunners()) {
       if (solrRunner.getCoreContainer() == null) continue;

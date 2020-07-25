@@ -40,6 +40,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -150,8 +151,9 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       }
 
       // avoid bad connection races due to shutdown
-      cluster.getSolrClient().getHttpClient().getConnectionManager().closeExpiredConnections();
-      cluster.getSolrClient().getHttpClient().getConnectionManager().closeIdleConnections(1, TimeUnit.MILLISECONDS);
+      // nocommit
+     // cluster.getSolrClient().getHttpClient().getConnectionManager().closeExpiredConnections();
+     // cluster.getSolrClient().getHttpClient().getConnectionManager().closeIdleConnections(1, TimeUnit.MILLISECONDS);
       
       BaseHttpSolrClient.RemoteSolrException exp = expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> {
         cluster.getSolrClient().request(genericReq);
@@ -204,7 +206,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
 
       CollectionAdminRequest.Reload reload = CollectionAdminRequest.reloadCollection(COLLECTION);
 
-      try (HttpSolrClient solrClient = getHttpSolrClient(baseUrl)) {
+      try (Http2SolrClient solrClient = getHttpSolrClient(baseUrl)) {
         expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> solrClient.request(reload));
         reload.setMethod(SolrRequest.METHOD.POST);
         expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> solrClient.request(reload));

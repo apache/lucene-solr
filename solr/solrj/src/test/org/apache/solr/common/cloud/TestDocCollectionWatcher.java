@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -111,7 +112,7 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
   @Test
   public void testStateWatcherChecksCurrentStateOnRegister() throws Exception {
 
-    CloudSolrClient client = cluster.getSolrClient();
+    CloudHttp2SolrClient client = cluster.getSolrClient();
     CollectionAdminRequest.createCollection("currentstate", "config", 1, 1)
       .processAndWait(client, MAX_WAIT_TIMEOUT);
 
@@ -141,7 +142,7 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
   @Test
   public void testWaitForStateChecksCurrentState() throws Exception {
 
-    CloudSolrClient client = cluster.getSolrClient();
+    CloudHttp2SolrClient client = cluster.getSolrClient();
     CollectionAdminRequest.createCollection("waitforstate", "config", 1, 1)
       .processAndWait(client, MAX_WAIT_TIMEOUT);
 
@@ -175,7 +176,7 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
 
   @Test
   public void testPredicateFailureTimesOut() throws Exception {
-    CloudSolrClient client = cluster.getSolrClient();
+    CloudHttp2SolrClient client = cluster.getSolrClient();
     expectThrows(TimeoutException.class, () -> {
       client.waitForState("nosuchcollection", 1, TimeUnit.SECONDS,
                           ((liveNodes, collectionState) -> false));
@@ -190,7 +191,7 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
   @Ignore // nocommit debug
   public void testWaitForStateWatcherIsRetainedOnPredicateFailure() throws Exception {
 
-    CloudSolrClient client = cluster.getSolrClient();
+    CloudHttp2SolrClient client = cluster.getSolrClient();
     CollectionAdminRequest.createCollection("falsepredicate", "config", 1, 1)
       .processAndWait(client, MAX_WAIT_TIMEOUT);
 
@@ -238,7 +239,7 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
 
   @Test
   public void testWatcherIsRemovedAfterTimeout() throws Exception {
-    CloudSolrClient client = cluster.getSolrClient();
+    CloudHttp2SolrClient client = cluster.getSolrClient();
     assertTrue("There should be no watchers for a non-existent collection!",
                client.getZkStateReader().getStateWatchers("no-such-collection").isEmpty());
 
@@ -255,7 +256,7 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
 
   @Test
   public void testDeletionsTriggerWatches() throws Exception {
-    final CloudSolrClient client = cluster.getSolrClient();
+    final CloudHttp2SolrClient client = cluster.getSolrClient();
     CollectionAdminRequest.createCollection("tobedeleted", "config", 1, 1).process(client);
       
     client.waitForState("tobedeleted", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
@@ -272,7 +273,7 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
   @Test
   public void testWatchesWorkForStateFormat1() throws Exception {
 
-    final CloudSolrClient client = cluster.getSolrClient();
+    final CloudHttp2SolrClient client = cluster.getSolrClient();
 
     Future<Boolean> future = waitInBackground("stateformat1", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
                                               (c) -> (null != c) );

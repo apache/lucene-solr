@@ -56,12 +56,28 @@ import org.apache.solr.client.solrj.SolrClient;
  * @since solr 8.0
  */
 public class LBHttp2SolrClient extends LBSolrClient {
-  private Http2SolrClient httpClient;
+  private final Http2SolrClient httpClient;
+  private final boolean closeClient;
 
   public LBHttp2SolrClient(Http2SolrClient httpClient, String... baseSolrUrls) {
     super(Arrays.asList(baseSolrUrls));
+    assert httpClient != null;
     this.httpClient = httpClient;
+    this.closeClient = false;
   }
+
+
+  public LBHttp2SolrClient(String... baseSolrUrls) {
+    super(Arrays.asList(baseSolrUrls));
+
+
+    httpClient = new Http2SolrClient.Builder()
+            // .withResponseParser(responseParser) // nocommit
+            // .allowCompression(compression) // nocommit
+            .build();
+    closeClient = true;
+  }
+
   @Override
   protected SolrClient getClient(String baseUrl) {
     return httpClient;
@@ -70,5 +86,8 @@ public class LBHttp2SolrClient extends LBSolrClient {
   @Override
   public void close() {
     super.close();
+    if (closeClient) {
+      httpClient.close();
+    }
   }
 }

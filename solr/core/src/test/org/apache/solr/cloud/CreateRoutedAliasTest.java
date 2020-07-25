@@ -35,7 +35,9 @@ import org.apache.http.util.EntityUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.api.collections.TimeRoutedAlias;
 import org.apache.solr.common.cloud.Aliases;
@@ -348,7 +350,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
   }
 
   private void assertSuccess(HttpUriRequest msg) throws IOException {
-    CloseableHttpClient httpClient = (CloseableHttpClient) cluster.getSolrClient().getHttpClient();
+    CloseableHttpClient httpClient = HttpClientUtil.createClient(null);
     try (CloseableHttpResponse response = httpClient.execute(msg)) {
       if (200 != response.getStatusLine().getStatusCode()) {
         System.err.println(EntityUtils.toString(response.getEntity()));
@@ -358,7 +360,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
   }
 
   private void assertFailure(HttpUriRequest msg, String expectedErrorSubstring) throws IOException {
-    CloseableHttpClient httpClient = (CloseableHttpClient) cluster.getSolrClient().getHttpClient();
+    CloseableHttpClient httpClient = HttpClientUtil.createClient(null);
     try (CloseableHttpResponse response = httpClient.execute(msg)) {
       assertEquals(400, response.getStatusLine().getStatusCode());
       String entity = EntityUtils.toString(response.getEntity());

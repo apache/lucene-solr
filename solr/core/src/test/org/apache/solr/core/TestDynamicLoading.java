@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.handler.TestBlobHandler;
@@ -57,7 +58,7 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
     boolean success = false;
 
 
-    HttpSolrClient randomClient = (HttpSolrClient) clients.get(random().nextInt(clients.size()));
+    Http2SolrClient randomClient = (Http2SolrClient) clients.get(random().nextInt(clients.size()));
     String baseURL = randomClient.getBaseURL();
     baseURL = baseURL.substring(0, baseURL.lastIndexOf('/'));
     String payload = "{\n" +
@@ -92,7 +93,7 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
     assertTrue(map.toString(), map.get("msg").toString().contains(".system collection not available"));
 
 
-    TestBlobHandler.createSystemCollection(getHttpSolrClient(baseURL, randomClient.getHttpClient()));
+    TestBlobHandler.createSystemCollection(getHttpSolrClient(baseURL, randomClient));
 
     map = TestSolrConfigHandler.getRespMap("/test1", client);
 

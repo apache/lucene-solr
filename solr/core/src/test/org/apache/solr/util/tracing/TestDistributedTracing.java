@@ -30,6 +30,7 @@ import io.opentracing.mock.MockTracer;
 import net.bytebuddy.implementation.bind.annotation.IgnoreForBinding;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -76,7 +77,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
 
   @Test
   public void test() throws IOException, SolrServerException, TimeoutException, InterruptedException {
-    CloudSolrClient cloudClient = cluster.getSolrClient();
+    CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
     List<MockSpan> allSpans = getFinishedSpans();
 
     cloudClient.add(COLLECTION, sdoc("id", "1"));

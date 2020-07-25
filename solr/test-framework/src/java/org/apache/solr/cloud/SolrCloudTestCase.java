@@ -43,11 +43,14 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreStatus;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.CollectionStatePredicate;
 import org.apache.solr.common.cloud.DocCollection;
@@ -242,7 +245,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
       JettyConfig jettyConfig = jettyConfigBuilder.withExecutor(qtp).build();
       MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(nodeCount, baseDir, solrxml, jettyConfig,
           null, securityJson, trackJettyMetrics, formatZk);
-      CloudSolrClient client = cluster.getSolrClient();
+      CloudHttp2SolrClient client = cluster.getSolrClient();
       for (Config config : configs) {
         ((ZkClientClusterStateProvider)client.getClusterStateProvider()).uploadConfig(config.path, config.name);
       }
@@ -472,10 +475,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
    * This assumes that the replica is hosted on a live node.
    */
   protected static CoreStatus getCoreStatus(Replica replica) throws IOException, SolrServerException {
-    JettySolrRunner jetty = cluster.getReplicaJetty(replica);
-    try (HttpSolrClient client = getHttpSolrClient(jetty.getBaseUrl().toString(), cluster.getSolrClient().getHttpClient())) {
-      return CoreAdminRequest.getCoreStatus(replica.getCoreName(), client);
-    }
+    return CoreAdminRequest.getCoreStatus(replica.getCoreName(), cluster.getSolrClient().getHttpClient());
   }
 
   protected NamedList waitForResponse(Predicate<NamedList> predicate, SolrRequest request, int intervalInMillis, int numRetries, String messageOnFail) {
@@ -489,6 +489,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
       } catch (RuntimeException rte) {
         throw rte;
       } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         throw new RuntimeException("error executing request", e);
       }
     }

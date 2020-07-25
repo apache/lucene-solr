@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -52,7 +53,7 @@ public class MetricTriggerTest extends SolrCloudTestCase {
         .configure();
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(DEFAULT_TEST_COLLECTION_NAME,
         "conf", 1, 1);
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     create.setMaxShardsPerNode(1);
     create.process(solrClient);
     cluster.waitForActiveCollection(DEFAULT_TEST_COLLECTION_NAME, 1, 1);

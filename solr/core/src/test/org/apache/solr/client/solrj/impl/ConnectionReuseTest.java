@@ -74,7 +74,7 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
         // currently only testing with 1 thread
         return getConcurrentUpdateSolrClient(url.toString() + "/" + COLLECTION, httpClient, 6, 1);
       case 1:
-        return getHttpSolrClient(url + "/" + COLLECTION, httpClient);
+        return getHttpSolrClient(url + "/" + COLLECTION);
       case 2:
         CloudSolrClient client = getCloudSolrClient(cluster.getZkServer().getZkAddress(), random().nextBoolean(), httpClient, 30000, 60000);
         client.setDefaultCollection(COLLECTION);

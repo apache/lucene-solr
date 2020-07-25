@@ -36,6 +36,7 @@ import org.apache.solr.client.solrj.SolrExampleTests;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -72,20 +73,16 @@ public class SolrExampleJettyTest extends SolrExampleTests {
 
   @Test
   public void testArbitraryJsonIndexing() throws Exception  {
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    Http2SolrClient client = (Http2SolrClient) getSolrClient();
     client.deleteByQuery("*:*");
     client.commit();
     assertNumFound("*:*", 0); // make sure it got in
 
     // two docs, one with uniqueKey, another without it
     String json = "{\"id\":\"abc1\", \"name\": \"name1\"} {\"name\" : \"name2\"}";
-    HttpClient httpClient = client.getHttpClient();
-    HttpPost post = new HttpPost(getUri(client));
-    post.setHeader("Content-Type", "application/json");
-    post.setEntity(new InputStreamEntity(
-        new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)), -1));
-    HttpResponse response = httpClient.execute(post, HttpClientUtil.createNewHttpClientRequestContext());
-    assertEquals(200, response.getStatusLine().getStatusCode());
+
+    Http2SolrClient.SimpleResponse resp = Http2SolrClient.POST(getUri(client), client, json.getBytes(StandardCharsets.UTF_8), "application/json");
+    assertEquals(200, resp.status);
     client.commit();
     QueryResponse rsp = getSolrClient().query(new SolrQuery("*:*"));
     assertEquals(2,rsp.getResults().getNumFound());
@@ -103,7 +100,7 @@ public class SolrExampleJettyTest extends SolrExampleTests {
 
   }
 
-  private String getUri(HttpSolrClient client) {
+  private String getUri(Http2SolrClient client) {
     String baseURL = client.getBaseURL();
     return random().nextBoolean() ?
         baseURL.replace("/collection1", "/____v2/cores/collection1/update") :
@@ -117,7 +114,7 @@ public class SolrExampleJettyTest extends SolrExampleTests {
     doc.addField("id", "1");
     doc.addField("b_is", IntStream.range(0, 30000).boxed().collect(Collectors.toList()));
 
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    Http2SolrClient client = (Http2SolrClient) getSolrClient();
     client.add(doc);
     client.commit();
     long start = System.nanoTime();

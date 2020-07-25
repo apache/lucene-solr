@@ -30,7 +30,9 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
@@ -102,7 +104,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     }
     int REPLICATION = 2;
 
-    CloudSolrClient cloudClient = cluster.getSolrClient();
+    CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
 
     // random create tlog or pull type replicas with nrt
     boolean isTlog = random().nextBoolean();
@@ -215,7 +217,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     String coll = getTestClass().getSimpleName() + "_failed_coll_" + inPlaceMove;
     int REPLICATION = 2;
 
-    CloudSolrClient cloudClient = cluster.getSolrClient();
+    CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
 
     // random create tlog or pull type replicas with nrt
     boolean isTlog = random().nextBoolean();
@@ -294,22 +296,22 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     return new CollectionAdminRequest.MoveReplica(coll, replica.getName(), targetNode);
   }
 
-  private Replica getRandomReplica(String coll, CloudSolrClient cloudClient) {
+  private Replica getRandomReplica(String coll, CloudHttp2SolrClient cloudClient) {
     List<Replica> replicas = cloudClient.getZkStateReader().getClusterState().getCollection(coll).getReplicas();
     Collections.shuffle(replicas, random());
     return replicas.get(0);
   }
 
-  private void checkNumOfCores(CloudSolrClient cloudClient, String nodeName, String collectionName, int expectedCores) throws IOException, SolrServerException {
+  private void checkNumOfCores(CloudHttp2SolrClient cloudClient, String nodeName, String collectionName, int expectedCores) throws IOException, SolrServerException {
     assertEquals(nodeName + " does not have expected number of cores", expectedCores, getNumOfCores(cloudClient, nodeName, collectionName));
   }
 
-  private int getNumOfCores(CloudSolrClient cloudClient, String nodeName, String collectionName) throws IOException, SolrServerException {
+  private int getNumOfCores(CloudHttp2SolrClient cloudClient, String nodeName, String collectionName) throws IOException, SolrServerException {
     return getNumOfCores(cloudClient, nodeName, collectionName, null);
   }
 
-  private int getNumOfCores(CloudSolrClient cloudClient, String nodeName, String collectionName, String replicaType) throws IOException, SolrServerException {
-    try (HttpSolrClient coreclient = getHttpSolrClient(cloudClient.getZkStateReader().getBaseUrlForNodeName(nodeName))) {
+  private int getNumOfCores(CloudHttp2SolrClient cloudClient, String nodeName, String collectionName, String replicaType) throws IOException, SolrServerException {
+    try (Http2SolrClient coreclient = getHttpSolrClient(cloudClient.getZkStateReader().getBaseUrlForNodeName(nodeName))) {
       CoreAdminResponse status = CoreAdminRequest.getStatus(null, coreclient);
       if (status.getCoreStatus().size() == 0) {
         return 0;

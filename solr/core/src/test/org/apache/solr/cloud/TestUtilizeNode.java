@@ -24,6 +24,7 @@ import java.util.List;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.CloudTestUtils.AutoScalingRequest;
@@ -76,7 +77,7 @@ public class TestUtilizeNode extends SolrCloudTestCase {
   public void test() throws Exception {
     cluster.waitForAllNodes(5);
     String coll = "utilizenodecoll";
-    CloudSolrClient cloudClient = cluster.getSolrClient();
+    CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
     
     log.info("Creating Collection...");
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(coll, "conf1", 2, 2)

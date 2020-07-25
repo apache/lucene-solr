@@ -35,11 +35,13 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * A test case for the several HTTP cache headers emitted by Solr
  */
+@Ignore // nocommit look at this after http2 switch
 public class CacheHeaderTest extends CacheHeaderTestBase {
   private static File solrHomeDirectory;
     

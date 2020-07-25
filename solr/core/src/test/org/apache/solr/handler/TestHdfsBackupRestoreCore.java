@@ -38,7 +38,9 @@ import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -167,7 +169,7 @@ public class TestHdfsBackupRestoreCore extends SolrCloudTestCase {
 
   @Test
   public void test() throws Exception {
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     String collectionName = "HdfsBackupRestore";
     CollectionAdminRequest.Create create =
         CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 1);
@@ -188,7 +190,7 @@ public class TestHdfsBackupRestoreCore extends SolrCloudTestCase {
     boolean testViaReplicationHandler = random().nextBoolean();
     String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
 
-    try (HttpSolrClient masterClient = getHttpSolrClient(replicaBaseUrl)) {
+    try (Http2SolrClient masterClient = getHttpSolrClient(replicaBaseUrl)) {
       // Create a backup.
       if (testViaReplicationHandler) {
         log.info("Running Backup via replication handler");

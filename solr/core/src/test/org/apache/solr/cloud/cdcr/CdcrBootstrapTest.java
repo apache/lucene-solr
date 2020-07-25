@@ -27,6 +27,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -81,7 +82,7 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
             .withProperty("solr.directoryFactory", "solr.StandardDirectoryFactory")
             .process(source.getSolrClient());
         source.waitForActiveCollection("cdcr-source", 1, 1);
-        CloudSolrClient sourceSolrClient = source.getSolrClient();
+        CloudHttp2SolrClient sourceSolrClient = source.getSolrClient();
         int docs = (TEST_NIGHTLY ? 100 : 10);
         int numDocs = indexDocs(sourceSolrClient, "cdcr-source", docs);
 
@@ -115,7 +116,7 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
             .setMaxShardsPerNode(2)
             .process(target.getSolrClient());
         target.waitForActiveCollection("cdcr-target", 1, 2);
-        CloudSolrClient targetSolrClient = target.getSolrClient();
+        CloudHttp2SolrClient targetSolrClient = target.getSolrClient();
         targetSolrClient.setDefaultCollection("cdcr-target");
         Thread.sleep(6000);
 
@@ -146,7 +147,7 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
     }
   }
 
-  private int indexDocs(CloudSolrClient sourceSolrClient, String collection, int batches) throws IOException, SolrServerException {
+  private int indexDocs(CloudHttp2SolrClient sourceSolrClient, String collection, int batches) throws IOException, SolrServerException {
     sourceSolrClient.setDefaultCollection(collection);
     int numDocs = 0;
     for (int k = 0; k < batches; k++) {
@@ -183,7 +184,7 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
             .process(source.getSolrClient());
         source.waitForActiveCollection("cdcr-source", 1, 1);
 
-        CloudSolrClient sourceSolrClient = source.getSolrClient();
+        CloudHttp2SolrClient sourceSolrClient = source.getSolrClient();
         int docs = (TEST_NIGHTLY ? 100 : 10);
         int numDocs = indexDocs(sourceSolrClient, "cdcr-source", docs);
 
@@ -195,7 +196,7 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
         CollectionAdminRequest.createCollection("cdcr-target", "cdcr-target", 1, 1)
             .process(target.getSolrClient());
         target.waitForActiveCollection("cdcr-target", 1, 1);
-        CloudSolrClient targetSolrClient = target.getSolrClient();
+        CloudHttp2SolrClient targetSolrClient = target.getSolrClient();
         targetSolrClient.setDefaultCollection("cdcr-target");
 
         CdcrTestsUtil.cdcrStart(targetSolrClient);
@@ -268,7 +269,7 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
             .process(source.getSolrClient());
         source.waitForActiveCollection("cdcr-source", 1, 3);
 
-        CloudSolrClient sourceSolrClient = source.getSolrClient();
+        CloudHttp2SolrClient sourceSolrClient = source.getSolrClient();
         int docs = (TEST_NIGHTLY ? 100 : 10);
         int numDocs = indexDocs(sourceSolrClient, "cdcr-source", docs);
 
@@ -280,7 +281,7 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
         CollectionAdminRequest.createCollection("cdcr-target", "cdcr-target", 1, 3)
             .process(target.getSolrClient());
         target.waitForActiveCollection("cdcr-target", 1, 3);
-        CloudSolrClient targetSolrClient = target.getSolrClient();
+        CloudHttp2SolrClient targetSolrClient = target.getSolrClient();
         targetSolrClient.setDefaultCollection("cdcr-target");
 
         CdcrTestsUtil.cdcrStart(targetSolrClient);
@@ -323,7 +324,7 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
             .withProperty("solr.directoryFactory", "solr.StandardDirectoryFactory")
             .process(source.getSolrClient());
         source.waitForActiveCollection("cdcr-source", 1, 1);
-        CloudSolrClient sourceSolrClient = source.getSolrClient();
+        CloudHttp2SolrClient sourceSolrClient = source.getSolrClient();
         int docs = (TEST_NIGHTLY ? 100 : 10);
         int numDocs = indexDocs(sourceSolrClient, "cdcr-source", docs);
 
@@ -335,7 +336,7 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
         CollectionAdminRequest.createCollection("cdcr-target", "cdcr-target", 1, 1)
             .process(target.getSolrClient());
         target.waitForActiveCollection("cdcr-target", 1, 1);
-        CloudSolrClient targetSolrClient = target.getSolrClient();
+        CloudHttp2SolrClient targetSolrClient = target.getSolrClient();
         targetSolrClient.setDefaultCollection("cdcr-target");
         Thread.sleep(1000);
 

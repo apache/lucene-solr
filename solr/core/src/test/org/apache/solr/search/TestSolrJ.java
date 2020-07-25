@@ -21,6 +21,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.util.RTimer;
@@ -164,7 +165,7 @@ public class TestSolrJ extends SolrTestCaseJ4 {
 
   public void doCommitPerf() throws Exception {
 
-    try (HttpSolrClient client = getHttpSolrClient("http://127.0.0.1:8983/solr")) {
+    try (Http2SolrClient client = getHttpSolrClient("http://127.0.0.1:8983/solr")) {
 
       final RTimer timer = new RTimer();
 

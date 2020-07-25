@@ -18,6 +18,7 @@ package org.apache.solr;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.SolrParams;
@@ -88,10 +89,12 @@ public class TestSolrCoreProperties extends SolrJettyTestBase {
   }
 
   public void testSimple() throws Exception {
-    SolrParams params = params("q", "*:*", 
+    SolrParams params = params("q", "*:*",
                                "echoParams", "all");
-    QueryResponse res = getSolrClient().query(params);
-    assertEquals(0, res.getResults().getNumFound());
+    QueryResponse res;
+    SolrClient client = getSolrClient();
+      res = client.query(params);
+      assertEquals(0, res.getResults().getNumFound());
 
     NamedList echoedParams = (NamedList) res.getHeader().get("params");
     assertEquals("f1", echoedParams.get("p1"));

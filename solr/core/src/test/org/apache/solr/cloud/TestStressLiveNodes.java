@@ -25,6 +25,7 @@ import java.util.concurrent.Callable;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -50,7 +51,7 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /** A basic cloud client, we'll be testing the behavior of it's ZkStateReader */
-  private static CloudSolrClient CLOUD_CLIENT;
+  private static CloudHttp2SolrClient CLOUD_CLIENT;
   
   /** The addr of the zk server used in this test */
   private static String ZK_SERVER_ADDR;

@@ -33,6 +33,7 @@ import org.apache.solr.JSONTestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -222,7 +223,7 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
     }
     // For simplicity, we always add out docs directly to NODE0
     // (where the leader should be) and bypass the proxy...
-    try (HttpSolrClient client = getHttpSolrClient(NODE0.getBaseUrl().toString())) {
+    try (Http2SolrClient client = getHttpSolrClient(NODE0.getBaseUrl().toString())) {
       assertEquals(0, client.add(COLLECTION, docs).getStatus());
       if (commit) {
         assertEquals(0, client.commit(COLLECTION).getStatus());
@@ -236,8 +237,8 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
    */
   private void assertDocsExistInBothReplicas(int firstDocId,
                                              int lastDocId) throws Exception {
-    try (HttpSolrClient leaderSolr = getHttpSolrClient(NODE0.getBaseUrl().toString());
-         HttpSolrClient replicaSolr = getHttpSolrClient(NODE1.getBaseUrl().toString())) {
+    try (Http2SolrClient leaderSolr = getHttpSolrClient(NODE0.getBaseUrl().toString());
+         Http2SolrClient replicaSolr = getHttpSolrClient(NODE1.getBaseUrl().toString())) {
       for (int d = firstDocId; d <= lastDocId; d++) {
         String docId = String.valueOf(d);
         assertDocExists("leader", leaderSolr, docId);
@@ -250,7 +251,7 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
    * uses distrib=false RTG requests to verify that the specified docId can be found using the 
    * specified solr client
    */
-  private void assertDocExists(final String clientName, final HttpSolrClient client, final String docId) throws Exception {
+  private void assertDocExists(final String clientName, final Http2SolrClient client, final String docId) throws Exception {
     final QueryResponse rsp = (new QueryRequest(params("qt", "/get",
                                                        "id", docId,
                                                        "_trace", clientName,

@@ -52,15 +52,14 @@ public class JettySolrRunnerTest extends SolrTestCaseJ4 {
       assertEquals("After restart, jetty port should be the same", usedPort, jetty.getLocalPort());
 
       jetty.stop();
-      jetty.start(false, false);
+      jetty.start(false, true);
 
       assertThat("After restart, jetty port should be different", jetty.getLocalPort(), not(usedPort));
-    }
-    finally {
-      if (jetty.isRunning())
-        jetty.stop();
-    }
+    } finally {
 
+      jetty.stop();
+
+    }
   }
 
 }

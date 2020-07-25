@@ -35,6 +35,7 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseCloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.CloudTestUtils.AutoScalingRequest;
@@ -128,7 +129,7 @@ public class ExecutePlanActionTest extends SolrCloudTestCase {
 
   @Test
   public void testExecute() throws Exception {
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     String collectionName = "testExecute";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
         "conf", 1, 2);
@@ -204,7 +205,7 @@ public class ExecutePlanActionTest extends SolrCloudTestCase {
 
   @Test
   public void testIntegration() throws Exception  {
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
 
     String setTriggerCommand = "{" +
         "'set-trigger' : {" +
@@ -266,7 +267,7 @@ public class ExecutePlanActionTest extends SolrCloudTestCase {
     int DELAY = TEST_NIGHTLY ? 1000 : 100;
     boolean taskTimeoutFail = random().nextBoolean();
     TestInjection.delayInExecutePlanAction = DELAY;
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     String triggerName = "node_lost_trigger2";
 
     String setTriggerCommand = "{" +
@@ -323,7 +324,7 @@ public class ExecutePlanActionTest extends SolrCloudTestCase {
   @Test
   public void testTaskFail() throws Exception  {
     TestInjection.failInExecutePlanAction = true;
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     String triggerName = "node_lost_trigger3";
 
     String setTriggerCommand = "{" +

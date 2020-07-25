@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -59,7 +60,7 @@ public class DeleteStatusTest extends SolrCloudTestCase {
   @Test
   public void testAsyncIdsMayBeDeleted() throws Exception {
 
-    final CloudSolrClient client = cluster.getSolrClient();
+    final CloudHttp2SolrClient client = cluster.getSolrClient();
 
     final String collection = "deletestatus";
     final String asyncId = CollectionAdminRequest.createCollection(collection, "conf1", 1, 1).processAsync(client);
@@ -80,7 +81,7 @@ public class DeleteStatusTest extends SolrCloudTestCase {
   @Test
   public void testDeletingNonExistentRequests() throws Exception {
 
-    final CloudSolrClient client = cluster.getSolrClient();
+    final CloudHttp2SolrClient client = cluster.getSolrClient();
 
     CollectionAdminResponse rsp = CollectionAdminRequest.deleteAsyncId("foo").process(client);
     assertEquals("[foo] not found in stored responses", rsp.getResponse().get("status"));
@@ -90,7 +91,7 @@ public class DeleteStatusTest extends SolrCloudTestCase {
   @Test
   public void testProcessAndWaitDeletesAsyncIds() throws IOException, SolrServerException, InterruptedException {
 
-    final CloudSolrClient client = cluster.getSolrClient();
+    final CloudHttp2SolrClient client = cluster.getSolrClient();
 
     RequestStatusState state = CollectionAdminRequest.createCollection("requeststatus", "conf1", 1, 1)
                                   .processAndWait("request1", client, MAX_WAIT_TIMEOUT);
@@ -106,7 +107,7 @@ public class DeleteStatusTest extends SolrCloudTestCase {
   @Test
   public void testDeleteStatusFlush() throws Exception {
 
-    final CloudSolrClient client = cluster.getSolrClient();
+    final CloudHttp2SolrClient client = cluster.getSolrClient();
 
     String id1 = CollectionAdminRequest.createCollection("flush1", "conf1", 1, 1).processAsync(client);
     String id2 = CollectionAdminRequest.createCollection("flush2", "conf1", 1, 1).processAsync(client);

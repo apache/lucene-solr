@@ -36,7 +36,9 @@ import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -103,9 +105,9 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
     { "_solo_i", "_solo_id", "_solo_idS" };
 
   /** A basic client for operations at the cloud level, default collection will be set */
-  private static CloudSolrClient CLOUD_CLIENT;
+  private static CloudHttp2SolrClient CLOUD_CLIENT;
   /** One client per node */
-  private static final ArrayList<HttpSolrClient> CLIENTS = new ArrayList<>(5);
+  private static final ArrayList<Http2SolrClient> CLIENTS = new ArrayList<>(5);
 
   @BeforeClass
   private static void createMiniSolrCloudCluster() throws Exception {
@@ -231,7 +233,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
       CLOUD_CLIENT.close();
       CLOUD_CLIENT = null;
     }
-    for (HttpSolrClient client : CLIENTS) {
+    for (Http2SolrClient client : CLIENTS) {
       client.close();
     }
     CLIENTS.clear();

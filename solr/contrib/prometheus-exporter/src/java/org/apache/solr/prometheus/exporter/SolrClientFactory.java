@@ -22,6 +22,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.zookeeper.client.ConnectStringParser;
@@ -34,18 +35,13 @@ public class SolrClientFactory {
     this.settings = settings;
   }
 
-  public HttpSolrClient createStandaloneSolrClient(String solrHost) {
+  public Http2SolrClient createStandaloneSolrClient(String solrHost) {
     NoOpResponseParser responseParser = new NoOpResponseParser();
     responseParser.setWriterType("json");
 
-    HttpSolrClient.Builder standaloneBuilder = new HttpSolrClient.Builder();
+    Http2SolrClient.Builder standaloneBuilder = new Http2SolrClient.Builder(solrHost);
 
-    standaloneBuilder.withBaseSolrUrl(solrHost);
-
-    standaloneBuilder.withConnectionTimeout(settings.getHttpConnectionTimeout())
-        .withSocketTimeout(settings.getHttpReadTimeout());
-
-    HttpSolrClient httpSolrClient = standaloneBuilder.markInternalRequest().build();
+    Http2SolrClient httpSolrClient = standaloneBuilder.markInternalRequest().build();
     httpSolrClient.setParser(responseParser);
 
     return httpSolrClient;

@@ -34,6 +34,7 @@ import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
@@ -100,7 +101,7 @@ public class SearchRateTriggerTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(COLL1,
         "conf", 2, 2);
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     create.setMaxShardsPerNode(1);
     create.process(solrClient);
     create = CollectionAdminRequest.createCollection(COLL2,
@@ -218,7 +219,7 @@ public class SearchRateTriggerTest extends SolrCloudTestCase {
   @Test
   public void testWaitForElapsed() throws Exception {
     SolrResourceLoader loader = cluster.getJettySolrRunner(0).getCoreContainer().getResourceLoader();
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     SolrZkClient zkClient = solrClient.getZkStateReader().getZkClient();
     SolrCloudManager cloudManager = new SolrClientCloudManager(new ZkDistributedQueueFactory(zkClient), solrClient) {
       @Override

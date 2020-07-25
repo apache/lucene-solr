@@ -25,6 +25,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
@@ -66,7 +67,7 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
     return doc;
   };
 
-  protected CloudSolrClient solrClient;
+  protected CloudHttp2SolrClient solrClient;
 
   protected SolrClient control;
 

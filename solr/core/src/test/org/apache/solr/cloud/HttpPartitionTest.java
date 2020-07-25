@@ -42,7 +42,9 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseCloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -112,11 +114,9 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
    * We need to turn off directUpdatesToLeadersOnly due to SOLR-9512
    */
   @Override
-  protected CloudSolrClient createCloudClient(String defaultCollection) {
-    CloudSolrClient client = new CloudSolrClient.Builder(Collections.singletonList(zkServer.getZkAddress()), Optional.empty())
+  protected CloudHttp2SolrClient createCloudClient(String defaultCollection) {
+    CloudHttp2SolrClient client = new CloudHttp2SolrClient.Builder(Collections.singletonList(zkServer.getZkAddress()), Optional.empty())
         .sendDirectUpdatesToAnyShardReplica()
-        .withConnectionTimeout(5000)
-        .withSocketTimeout(10000)
         .build();
     if (defaultCollection != null) client.setDefaultCollection(defaultCollection);
     return client;
@@ -493,19 +493,19 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     if (log.isInfoEnabled()) {
       log.info("Sending doc 2 to old leader {}", leader.getName());
     }
-    try ( HttpSolrClient leaderSolr = getHttpSolrClient(leader, testCollectionName)) {
+    try ( Http2SolrClient leaderSolr = getHttpSolrClient(leader, testCollectionName)) {
     
       leaderSolr.add(doc);
       leaderSolr.close();
 
       // if the add worked, then the doc must exist on the new leader
-      try (HttpSolrClient newLeaderSolr = getHttpSolrClient(currentLeader, testCollectionName)) {
+      try (Http2SolrClient newLeaderSolr = getHttpSolrClient(currentLeader, testCollectionName)) {
         assertDocExists(newLeaderSolr, testCollectionName, "2");
       }
 
     } catch (SolrException exc) {
       // this is ok provided the doc doesn't exist on the current leader
-      try (HttpSolrClient client = getHttpSolrClient(currentLeader, testCollectionName)) {
+      try (Http2SolrClient client = getHttpSolrClient(currentLeader, testCollectionName)) {
         client.add(doc); // this should work
       }
     } 
@@ -552,9 +552,9 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
       throws Exception {
     Replica leader =
         cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1", 10000);
-    HttpSolrClient leaderSolr = getHttpSolrClient(leader, testCollectionName);
-    List<HttpSolrClient> replicas =
-        new ArrayList<HttpSolrClient>(notLeaders.size());
+    Http2SolrClient leaderSolr = getHttpSolrClient(leader, testCollectionName);
+    List<Http2SolrClient> replicas =
+            new ArrayList<>(notLeaders.size());
 
     for (Replica r : notLeaders) {
       replicas.add(getHttpSolrClient(r, testCollectionName));
@@ -563,7 +563,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
       for (int d = firstDocId; d <= lastDocId; d++) {
         String docId = String.valueOf(d);
         assertDocExists(leaderSolr, testCollectionName, docId);
-        for (HttpSolrClient replicaSolr : replicas) {
+        for (Http2SolrClient replicaSolr : replicas) {
           assertDocExists(replicaSolr, testCollectionName, docId);
         }
       }
@@ -571,13 +571,13 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
       if (leaderSolr != null) {
         leaderSolr.close();
       }
-      for (HttpSolrClient replicaSolr : replicas) {
+      for (Http2SolrClient replicaSolr : replicas) {
         replicaSolr.close();
       }
     }
   }
 
-  protected HttpSolrClient getHttpSolrClient(Replica replica, String coll) throws Exception {
+  protected Http2SolrClient getHttpSolrClient(Replica replica, String coll) throws Exception {
     ZkCoreNodeProps zkProps = new ZkCoreNodeProps(replica);
     String url = zkProps.getBaseUrl() + "/" + coll;
     return getHttpSolrClient(url);
@@ -616,21 +616,21 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
    * exists in the provided server, using distrib=false so it doesn't route to another replica.
    */
   @SuppressWarnings("rawtypes")
-  protected void assertDocExists(HttpSolrClient solr, String coll, String docId) throws Exception {
+  protected void assertDocExists(Http2SolrClient solr, String coll, String docId) throws Exception {
     NamedList rsp = realTimeGetDocId(solr, docId);
     String match = JSONTestUtil.matchObj("/id", rsp.get("doc"), docId);
     assertTrue("Doc with id=" + docId + " not found in " + solr.getBaseURL()
         + " due to: " + match + "; rsp="+rsp, match == null);
   }
 
-  protected void assertDocNotExists(HttpSolrClient solr, String coll, String docId) throws Exception {
+  protected void assertDocNotExists(Http2SolrClient solr, String coll, String docId) throws Exception {
     NamedList rsp = realTimeGetDocId(solr, docId);
     String match = JSONTestUtil.matchObj("/id", rsp.get("doc"), Integer.valueOf(docId));
     assertTrue("Doc with id=" + docId + " is found in " + solr.getBaseURL()
         + " due to: " + match + "; rsp="+rsp, match != null);
   }
 
-  private NamedList realTimeGetDocId(HttpSolrClient solr, String docId) throws SolrServerException, IOException {
+  private NamedList realTimeGetDocId(Http2SolrClient solr, String docId) throws SolrServerException, IOException {
     QueryRequest qr = new QueryRequest(params("qt", "/get", "id", docId, "distrib", "false"));
     return solr.request(qr);
   }

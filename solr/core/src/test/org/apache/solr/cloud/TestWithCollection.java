@@ -32,6 +32,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -111,7 +112,7 @@ public class TestWithCollection extends SolrCloudTestCase {
     String xyz = prefix + "_xyz";
     String abc = prefix + "_abc";
 
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     try {
 
       CollectionAdminRequest.createCollection(xyz, 1, 1)
@@ -135,7 +136,7 @@ public class TestWithCollection extends SolrCloudTestCase {
     String xyz = prefix + "_xyz";
     String abc = prefix + "_abc";
 
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
 
     String setClusterPolicyCommand = "{" +
         " 'set-cluster-policy': [" +
@@ -169,7 +170,7 @@ public class TestWithCollection extends SolrCloudTestCase {
     String xyz = prefix + "_xyz";
     String abc = prefix + "_abc";
 
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     CollectionAdminRequest.createCollection(abc, 1, 1)
         .process(solrClient);
     CollectionAdminRequest.createCollection(xyz, 1, 1)
@@ -229,7 +230,7 @@ public class TestWithCollection extends SolrCloudTestCase {
     String xyz = prefix + "_xyz";
     String abc = prefix + "_abc";
 
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     String chosenNode = cluster.getRandomJetty(random()).getNodeName();
     log.info("Chosen node {} for collection {}", chosenNode, abc);
     CollectionAdminRequest.createCollection(abc, 1, 1)
@@ -261,7 +262,7 @@ public class TestWithCollection extends SolrCloudTestCase {
     String xyz = prefix + "_xyz";
     String abc = prefix + "_abc";
 
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     String setClusterPolicyCommand = "{" +
         " 'set-cluster-policy': [" +
         "      {'cores':'<10', 'node':'#ANY'}," +
@@ -301,7 +302,7 @@ public class TestWithCollection extends SolrCloudTestCase {
     String xyz = prefix + "_xyz";
     String abc = prefix + "_abc";
 
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
 
     String setClusterPolicyCommand = "{" +
         " 'set-cluster-policy': [" +
@@ -351,7 +352,7 @@ public class TestWithCollection extends SolrCloudTestCase {
     String xyz = prefix + "_xyz";
     String abc = prefix + "_abc";
 
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
 
     String setClusterPolicyCommand = "{" +
         " 'set-cluster-policy': [" +
@@ -413,7 +414,7 @@ public class TestWithCollection extends SolrCloudTestCase {
     String xyz = prefix + "_xyz";
     String abc = prefix + "_abc";
 
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
 
     String setClusterPolicyCommand = "{" +
         " 'set-cluster-policy': [" +
@@ -530,7 +531,7 @@ public class TestWithCollection extends SolrCloudTestCase {
     cluster.startJettySolrRunner();
     cluster.waitForAllNodes(30);
 
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
 
     String setClusterPolicyCommand = "{" +
         " 'set-cluster-policy': [" +

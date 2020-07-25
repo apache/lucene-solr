@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -65,7 +66,7 @@ public class BlobRepositoryCloudTest extends SolrCloudTestCase {
     SolrInputDocument document = new SolrInputDocument();
     document.addField("id", "1");
     document.addField("text", "col1");
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     solrClient.add("col1", document);
     solrClient.commit("col1");
     document = new SolrInputDocument();
@@ -109,7 +110,7 @@ public class BlobRepositoryCloudTest extends SolrCloudTestCase {
 
   private SolrDocumentList getSolrDocuments(String collection) throws SolrServerException, IOException {
     SolrQuery query = new SolrQuery("*:*");
-    CloudSolrClient client = cluster.getSolrClient();
+    CloudHttp2SolrClient client = cluster.getSolrClient();
     QueryResponse resp1 = client.query(collection, query);
     return resp1.getResults();
   }

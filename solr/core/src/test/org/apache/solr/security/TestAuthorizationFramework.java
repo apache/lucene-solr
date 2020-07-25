@@ -28,6 +28,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -70,7 +71,7 @@ public class TestAuthorizationFramework extends AbstractFullDistribZkTestBase {
 
     try {
       String baseUrl = jettys.get(0).getBaseUrl().toString();
-      verifySecurityStatus(cloudClient.getLbClient().getHttpClient(), baseUrl + "/admin/authorization", "authorization/class", MockAuthorizationPlugin.class.getName(), 20);
+      verifySecurityStatus(baseUrl + "/admin/authorization", "authorization/class", MockAuthorizationPlugin.class.getName(), 20);
       log.info("Starting test");
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.add("q", "*:*");
@@ -96,7 +97,8 @@ public class TestAuthorizationFramework extends AbstractFullDistribZkTestBase {
 
   }
 
-  public static void verifySecurityStatus(HttpClient cl, String url, String objPath, Object expected, int count) throws Exception {
+  public static void verifySecurityStatus(String url, String objPath, Object expected, int count) throws Exception {
+    HttpClient cl = HttpClientUtil.createClient(null);
     boolean success = false;
     String s = null;
     List<String> hierarchy = StrUtils.splitSmart(objPath, '/');

@@ -22,6 +22,7 @@ import java.io.File;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.common.util.NamedList;
@@ -38,7 +39,7 @@ public class V2StandaloneTest extends SolrTestCaseJ4{
     JettySolrRunner jetty = new JettySolrRunner(solrHomeTmp.getAbsolutePath(), buildJettyConfig("/solr"));
     jetty.start();
 
-    try (HttpSolrClient client = getHttpSolrClient(buildUrl(jetty.getLocalPort(),"/solr/"))) {
+    try (Http2SolrClient client = getHttpSolrClient(buildUrl(jetty.getLocalPort(),"/solr/"))) {
       NamedList res = client.request(new V2Request.Builder("/").build());
       NamedList header = (NamedList) res.get("responseHeader");
       assertEquals(0, header.get("status"));

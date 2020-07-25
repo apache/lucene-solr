@@ -31,12 +31,15 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import javax.script.ScriptEngineManager;
@@ -56,7 +59,9 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Create;
@@ -64,6 +69,7 @@ import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Delete;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.ConfigSetAdminResponse;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkConfigManager;
@@ -578,37 +584,35 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     return res;
   }
   
-  public static Map postDataAndGetResponse(CloudSolrClient cloudClient,
-      String uri, ByteBuffer bytarr, String username, String password) throws IOException {
-    HttpPost httpPost = null;
-    HttpEntity entity;
-    String response = null;
+  public static Map postDataAndGetResponse(CloudHttp2SolrClient cloudClient,
+                                           String uri, ByteBuffer bytarr, String username, String password) throws IOException {
+
     Map m = null;
     
     try {
-      httpPost = new HttpPost(uri);
-      
+
+      Map<String, String> headers = new HashMap<>(1);
       if (username != null) {
         String userPass = username + ":" + password;
         String encoded = Base64.byteArrayToBase64(userPass.getBytes(UTF_8));
-        BasicHeader header = new BasicHeader("Authorization", "Basic " + encoded);
-        httpPost.setHeader(header);
+
+        headers.put("Authorization", "Basic " + encoded);
       }
 
-      httpPost.setHeader("Content-Type", "application/octet-stream");
-      httpPost.setEntity(new ByteArrayEntity(bytarr.array(), bytarr
-          .arrayOffset(), bytarr.limit()));
-      entity = cloudClient.getLbClient().getHttpClient().execute(httpPost)
-          .getEntity();
+      Http2SolrClient.SimpleResponse resp = Http2SolrClient.POST(uri, cloudClient.getHttpClient(), bytarr, "application/octet-stream", headers);
       try {
-        response = EntityUtils.toString(entity, StandardCharsets.UTF_8);
-        m = (Map) Utils.fromJSONString(response);
+
+        m = (Map) Utils.fromJSONString(resp.asString);
       } catch (JSONParser.ParseException e) {
-        System.err.println("err response: " + response);
+        System.err.println("err response: " + resp);
         throw new AssertionError(e);
       }
-    } finally {
-      httpPost.releaseConnection();
+    } catch (InterruptedException e) {
+      ParWork.propegateInterrupt(e);
+    } catch (ExecutionException e) {
+      e.printStackTrace();
+    } catch (TimeoutException e) {
+      e.printStackTrace();
     }
     return m;
   }

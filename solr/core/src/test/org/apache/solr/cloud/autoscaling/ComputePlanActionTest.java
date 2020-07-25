@@ -24,6 +24,7 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.SolrClientNodeStateProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -105,7 +106,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
 
     cluster.deleteAllCollections();
 
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
 
     String setClusterPolicyCommand = "{" +
         " 'set-cluster-policy': [" +
@@ -180,7 +181,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     String node = runner.getNodeName();
     AssertingTriggerAction.expectedNode = node;
 
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     String setTriggerCommand = "{" +
         "'set-trigger' : {" +
         "'name' : 'node_lost_trigger'," +
@@ -265,7 +266,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
 
     cluster.waitForAllNodes(30);
 
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     String setTriggerCommand = "{" +
         "'set-trigger' : {" +
         "'name' : 'node_lost_trigger'," +
@@ -336,7 +337,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
   @Test
   // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testNodeAdded() throws Exception {
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     String setTriggerCommand = "{" +
         "'set-trigger' : {" +
         "'name' : 'node_added_trigger'," +
@@ -444,7 +445,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
   @Test
   //2018-06-18 (commented) @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
   public void testSelectedCollectionsByPolicy() throws Exception {
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     String setSearchPolicyCommand = "{" +
             " 'set-policy': {" +
             "   'search': [" +
@@ -473,7 +474,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
 
     cluster.waitForAllNodes(30);
 
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     String setTriggerCommand = "{" +
             "'set-trigger' : {" +
             "'name' : 'node_lost_trigger'," +
@@ -636,7 +637,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     nodeAddedTriggerWithAddReplicaPreferredOp(collectionNamePrefix, numShards, numCollections, setTriggerCommand, setClusterPolicyCommand, 1, null, null);
   }
   private void nodeAddedTriggerWithAddReplicaPreferredOp(String collectionNamePrefix, int numShards, int numCollections, String setTriggerCommand, String setClusterPolicyCommand, Integer nNrtReplicas, Integer nTlogReplicas, Integer nPullReplicas) throws Exception {
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
@@ -714,7 +715,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     String collectionNamePrefix = "testNodeLostTriggerWithDeleteNodePreferredOp";
     int numCollections = 1 + random().nextInt(3), numShards = 1 + random().nextInt(3);
 
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     String setTriggerCommand = "{" +
         "'set-trigger' : {" +
         "'name' : 'node_lost_trigger'," +

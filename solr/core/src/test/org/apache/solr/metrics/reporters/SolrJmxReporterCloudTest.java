@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -70,7 +71,7 @@ public class SolrJmxReporterCloudTest extends SolrCloudTestCase {
   @Test
   public void testJmxReporter() throws Exception {
     CollectionAdminRequest.reloadCollection(COLLECTION).process(cluster.getSolrClient());
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     // index some docs
     for (int i = 0; i < 100; i++) {
       SolrInputDocument doc = new SolrInputDocument();

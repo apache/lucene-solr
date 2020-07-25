@@ -188,7 +188,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
     this.sysIdResolver = new SystemIdResolver(this);
   }
 
-  public synchronized DocumentBuilder getDocumentBuilder() {
+  public DocumentBuilder getDocumentBuilder() {
     DocumentBuilder db = THREAD_LOCAL_DB.get();
     if (db == null) {
       try {
@@ -199,6 +199,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
       }
       db.setErrorHandler(xmllog);
       THREAD_LOCAL_DB.set(db);
+
     }
     db.setEntityResolver(sysIdResolver);
     return db;

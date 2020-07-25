@@ -41,6 +41,7 @@ import org.apache.solr.client.solrj.cloud.autoscaling.Row;
 import org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
 import org.apache.solr.client.solrj.impl.SolrClientNodeStateProvider;
@@ -155,7 +156,7 @@ public class TestPolicyCloud extends SolrCloudTestCase {
         "}";
     AutoScalingConfig config = new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScaleJson));
     AtomicInteger count = new AtomicInteger(0);
-    try (SolrCloudManager cloudManager = new SolrClientCloudManager(new ZkDistributedQueueFactory(cluster.getZkClient()), cluster.getSolrClient(), cluster.getSolrClient().getHttpClient())) {
+    try (SolrCloudManager cloudManager = new SolrClientCloudManager(new ZkDistributedQueueFactory(cluster.getZkClient()), cluster.getSolrClient())) {
       String nodeName = cloudManager.getClusterStateProvider().getLiveNodes().iterator().next();
       SolrClientNodeStateProvider nodeStateProvider = (SolrClientNodeStateProvider) cloudManager.getNodeStateProvider();
       Map<String, Map<String, List<ReplicaInfo>>> result = nodeStateProvider.getReplicaInfo(nodeName, Collections.singleton("UPDATE./update.requests"));
@@ -345,7 +346,7 @@ public class TestPolicyCloud extends SolrCloudTestCase {
   }
 
   public void testMetricsTag() throws Exception {
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     String setClusterPolicyCommand = "{" +
         " 'set-cluster-policy': [" +
         "      {'cores':'<10', 'node':'#ANY'}," +

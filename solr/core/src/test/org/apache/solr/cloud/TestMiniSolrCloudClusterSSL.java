@@ -39,6 +39,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
@@ -207,7 +208,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
         final String baseURL = jetty.getBaseUrl().toString();
         // verify new solr clients validate peer name and can't talk to this server
         Exception ex = expectThrows(SolrServerException.class, () -> {
-            try (HttpSolrClient client = getRandomizedHttpSolrClient(baseURL)) {
+            try (Http2SolrClient client = getRandomizedHttpSolrClient(baseURL)) {
               CoreAdminRequest req = new CoreAdminRequest();
               req.setAction( CoreAdminAction.STATUS );
               client.request(req);
@@ -269,7 +270,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
    */
   private static void checkCreateCollection(final MiniSolrCloudCluster cluster,
                                             final String collection) throws Exception {
-    final CloudSolrClient cloudClient = cluster.getSolrClient();
+    final CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
     CollectionAdminRequest.createCollection(collection, CONF_NAME, NUM_SERVERS, 1)
         .withProperty("config", "solrconfig-tlog.xml")
         .process(cloudClient);
@@ -299,7 +300,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
                    ssl ? "https" : "http:", baseURL.substring(0,5));
       
       // verify solr client success with expected protocol
-      try (HttpSolrClient client = getRandomizedHttpSolrClient(baseURL)) {
+      try (Http2SolrClient client = getRandomizedHttpSolrClient(baseURL)) {
         assertEquals(0, CoreAdminRequest.getStatus(/* all */ null, client).getStatus());
       }
       
@@ -307,8 +308,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
       // ensure it has the necessary protocols/credentials for each jetty server
       //
       // NOTE: we're not responsible for closing the cloud client
-      final HttpClient cloudClient = cluster.getSolrClient().getLbClient().getHttpClient();
-      try (HttpSolrClient client = getRandomizedHttpSolrClient(baseURL)) {
+      try (Http2SolrClient client = getRandomizedHttpSolrClient(baseURL)) {
         assertEquals(0, CoreAdminRequest.getStatus(/* all */ null, client).getStatus());
       }
 
@@ -317,7 +317,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
           
       // verify solr client using wrong protocol can't talk to server
       expectThrows(SolrServerException.class, () -> {
-          try (HttpSolrClient client = getRandomizedHttpSolrClient(wrongBaseURL)) {
+          try (Http2SolrClient client = getRandomizedHttpSolrClient(wrongBaseURL)) {
             CoreAdminRequest req = new CoreAdminRequest();
             req.setAction( CoreAdminAction.STATUS );
             client.request(req);
@@ -396,7 +396,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
    * instantiation (determined randomly)
    * @see #getHttpSolrClient
    */
-  public static HttpSolrClient getRandomizedHttpSolrClient(String url) {
+  public static Http2SolrClient getRandomizedHttpSolrClient(String url) {
     // NOTE: at the moment, SolrTestCaseJ4 already returns "new HttpSolrClient" most of the time,
     // so this method may seem redundant -- but the point here is to sanity check 2 things:
     // 1) a direct test that "new HttpSolrClient" works given the current JVM/sysprop defaults
@@ -406,7 +406,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
     // that "optimize" the test client construction in a way that would prevent us from finding bugs with
     // regular HttpSolrClient instantiation.
     if (random().nextBoolean()) {
-      return (new HttpSolrClient.Builder(url)).build();
+      return (new Http2SolrClient.Builder(url)).build();
     } // else...
     return getHttpSolrClient(url);
   }

@@ -24,6 +24,7 @@ import java.util.List;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -126,7 +127,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4
   public void testZkConnected() throws Exception{
     MiniSolrCloudCluster miniCluster = new MiniSolrCloudCluster(5, createTempDir(), buildJettyConfig("/solr"));
 
-    final CloudSolrClient cloudSolrClient = miniCluster.getSolrClient();
+    final CloudHttp2SolrClient cloudSolrClient = miniCluster.getSolrClient();
 
     try {
       assertNotNull(miniCluster.getZkServer());
@@ -168,7 +169,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4
   public void testRequireZkConnected() throws Exception{
     MiniSolrCloudCluster miniCluster = new MiniSolrCloudCluster(5, createTempDir(), buildJettyConfig("/solr"));
 
-    final CloudSolrClient cloudSolrClient = miniCluster.getSolrClient();
+    final CloudHttp2SolrClient cloudSolrClient = miniCluster.getSolrClient();
 
     try {
       assertNotNull(miniCluster.getZkServer());
@@ -215,7 +216,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4
   public void testRequireZkConnectedDistrib() throws Exception{
     MiniSolrCloudCluster miniCluster = new MiniSolrCloudCluster(2, createTempDir(), buildJettyConfig("/solr"));
 
-    final CloudSolrClient cloudSolrClient = miniCluster.getSolrClient();
+    final CloudHttp2SolrClient cloudSolrClient = miniCluster.getSolrClient();
 
     try {
       assertNotNull(miniCluster.getZkServer());

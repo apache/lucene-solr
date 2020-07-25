@@ -26,6 +26,7 @@ import java.util.concurrent.Executor;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -36,9 +37,9 @@ import org.apache.solr.prometheus.exporter.MetricsQuery;
 
 public class SolrStandaloneScraper extends SolrScraper {
 
-  private final HttpSolrClient solrClient;
+  private final Http2SolrClient solrClient;
 
-  public SolrStandaloneScraper(HttpSolrClient solrClient, Executor executor) {
+  public SolrStandaloneScraper(Http2SolrClient solrClient, Executor executor) {
     super(executor);
     this.solrClient = solrClient;
   }

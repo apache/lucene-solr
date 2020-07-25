@@ -67,58 +67,51 @@ public class HttpSolrClientConPoolTest extends SolrJettyTestBase {
   }
   
   public void testPoolSize() throws SolrServerException, IOException {
-    PoolingHttpClientConnectionManager pool = HttpClientUtil.createPoolingConnectionManager();
-    final HttpSolrClient client1 ;
+
+    final Http2SolrClient client1;
     final String fooUrl;
     {
       fooUrl = jetty.getBaseUrl().toString() + "/" + "collection1";
-      CloseableHttpClient httpClient = HttpClientUtil.createClient(new ModifiableSolrParams(), pool,
-            false /* let client shutdown it*/);
-      client1 = getHttpSolrClient(fooUrl, httpClient, DEFAULT_CONNECTION_TIMEOUT);
+      client1 = getHttpSolrClient(fooUrl);
     }
     final String barUrl = yetty.getBaseUrl().toString() + "/" + "collection1";
-    
+
     {
-      client1.setBaseURL(fooUrl);
+      client1.setBaseUrl(fooUrl);
       client1.deleteByQuery("*:*");
-      client1.setBaseURL(barUrl);
+      client1.setBaseUrl(barUrl);
       client1.deleteByQuery("*:*");
     }
-    
+
     List<String> urls = new ArrayList<>();
-    for(int i=0; i<17; i++) {
+    for (int i = 0; i < 17; i++) {
       urls.add(fooUrl);
     }
-    for(int i=0; i<31; i++) {
+    for (int i = 0; i < 31; i++) {
       urls.add(barUrl);
     }
-    
+
     Collections.shuffle(urls, random());
-    
-    try {
-      int i=0;
-      for (String url : urls) {
-        if (!client1.getBaseURL().equals(url)) {
-          client1.setBaseURL(url);
-        }
-        client1.add(new SolrInputDocument("id", ""+(i++)));
+
+
+    int i = 0;
+    for (String url : urls) {
+      if (!client1.getBaseURL().equals(url)) {
+        client1.setBaseUrl(url);
       }
-      client1.setBaseURL(fooUrl);
-      client1.commit();
-      assertEquals(17, client1.query(new SolrQuery("*:*")).getResults().getNumFound());
-      
-      client1.setBaseURL(barUrl);
-      client1.commit();
-      assertEquals(31, client1.query(new SolrQuery("*:*")).getResults().getNumFound());
-      
-      PoolStats stats = pool.getTotalStats();
-      assertEquals("oh "+stats, 2, stats.getAvailable());
-    } finally {
-      for (HttpSolrClient c : new HttpSolrClient []{ client1}) {
-        HttpClientUtil.close(c.getHttpClient());
-        c.close();
-      }
+      client1.add(new SolrInputDocument("id", "" + (i++)));
     }
+    client1.setBaseUrl(fooUrl);
+    client1.commit();
+    assertEquals(17, client1.query(new SolrQuery("*:*")).getResults().getNumFound());
+
+    client1.setBaseUrl(barUrl);
+    client1.commit();
+    assertEquals(31, client1.query(new SolrQuery("*:*")).getResults().getNumFound());
+
+    // PoolStats stats = pool.getTotalStats();
+    //assertEquals("oh "+stats, 2, stats.getAvailable());
+
   }
   
 
