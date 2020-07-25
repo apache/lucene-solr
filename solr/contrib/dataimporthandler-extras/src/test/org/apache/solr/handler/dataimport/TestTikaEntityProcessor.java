@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.dataimport;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -25,6 +26,7 @@ import java.util.Locale;
  *
  * @since solr 3.1
  */
+@LuceneTestCase.Nightly
 public class TestTikaEntityProcessor extends AbstractDataImportHandlerTestCase {
   private String conf =
   "<dataConfig>" +

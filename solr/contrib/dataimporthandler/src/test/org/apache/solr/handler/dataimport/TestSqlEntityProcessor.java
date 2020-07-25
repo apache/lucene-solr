@@ -16,12 +16,14 @@
  */
 package org.apache.solr.handler.dataimport;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * Test with various combinations of parameters, child entities, caches, transformers.
  */
+@LuceneTestCase.Nightly
 public class TestSqlEntityProcessor extends AbstractSqlEntityProcessorTestCase { 
    
   @Test

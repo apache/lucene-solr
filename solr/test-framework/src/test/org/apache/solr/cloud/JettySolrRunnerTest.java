@@ -32,6 +32,7 @@ import static org.hamcrest.core.IsNot.not;
 public class JettySolrRunnerTest extends SolrTestCaseJ4 {
 
   @Test
+  @Nightly
   public void testRestartPorts() throws Exception {
 
     Path solrHome = createTempDir();
