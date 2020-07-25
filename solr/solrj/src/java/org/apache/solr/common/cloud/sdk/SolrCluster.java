@@ -23,11 +23,10 @@ import org.apache.solr.common.util.SimpleMap;
  * Represents a Solr cluster
  */
 public interface SolrCluster {
-  /**
-   * Names of all collections in the cluster
-   */
+  /** collections in the cluster */
   SimpleMap<SolrCollection> collections();
 
+  /** nodes in the cluster */
   SimpleMap<SolrNode> nodes();
 
   /** Get a {@link SolrNode} by name. returns null if no such node exists */
