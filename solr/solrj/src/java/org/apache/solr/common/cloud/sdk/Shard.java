@@ -21,7 +21,7 @@ import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.util.SimpleMap;
 
 /**A shard of a collection */
-public interface CollectionShard {
+public interface Shard {
 
   /**name of the shard */
   String name();

@@ -17,17 +17,14 @@
 
 package org.apache.solr.common.cloud.sdk;
 
-import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.util.SimpleMap;
-
-import java.util.function.Consumer;
 
 /** Represents a collection in Solr */
 public interface SolrCollection {
 
   /** shards of a collection
    */
-  SimpleMap<CollectionShard> shards();
+  SimpleMap<Shard> shards();
 
   /** configset used by this collection
    */
