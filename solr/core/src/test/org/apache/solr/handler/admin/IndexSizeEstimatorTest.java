@@ -50,6 +50,7 @@ import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TimeOut;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,6 +94,7 @@ public class IndexSizeEstimatorTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Ignore // there is some race here - the fieldsBySize can come back empty rarely
   public void testEstimator() throws Exception {
     JettySolrRunner jetty = cluster.getRandomJetty(random());
     String randomCoreName = jetty.getCoreContainer().getAllCoreNames().iterator().next();

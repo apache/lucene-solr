@@ -49,6 +49,7 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
     System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
   }
 
+  @Nightly // can be slow (at least on low end hardware)
   public void testWaitForStateAfterShutDown() throws Exception {
     final String col_name = "test_col";
     final MiniSolrCloudCluster cluster = new MiniSolrCloudCluster
