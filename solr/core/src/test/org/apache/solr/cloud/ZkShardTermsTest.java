@@ -36,8 +36,10 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.ShardTerms;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.ParWork;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
+import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -82,7 +84,8 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testRecoveringFlag() {
+  public void testRecoveringFlag() throws KeeperException, InterruptedException {
+    cluster.getZkClient().makePath("/collections/recoveringFlag/terms/shard1", ZkStateReader.emptyJson, false);
     String collection = "recoveringFlag";
     try (ZkShardTerms zkShardTerms = new ZkShardTerms(collection, "shard1", cluster.getZkClient())) {
       // List all possible orders of ensureTermIsHigher, startRecovering, doneRecovering
@@ -135,7 +138,8 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testCoreRemovalWhileRecovering() {
+  public void testCoreRemovalWhileRecovering() throws KeeperException, InterruptedException {
+    cluster.getZkClient().makePath("/collections/recoveringFlagRemoval/terms/shard1", ZkStateReader.emptyJson, false);
     String collection = "recoveringFlagRemoval";
     try (ZkShardTerms zkShardTerms = new ZkShardTerms(collection, "shard1", cluster.getZkClient())) {
       // List all possible orders of ensureTermIsHigher, startRecovering, doneRecovering
@@ -156,7 +160,8 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
     }
   }
 
-  public void testRegisterTerm() throws InterruptedException {
+  public void testRegisterTerm() throws InterruptedException, KeeperException {
+    cluster.getZkClient().makePath("/collections/registerTerm/terms/shard1", ZkStateReader.emptyJson, false);
     String collection = "registerTerm";
     ZkShardTerms rep1Terms = new ZkShardTerms(collection, "shard1", cluster.getZkClient());
     ZkShardTerms rep2Terms = new ZkShardTerms(collection, "shard1", cluster.getZkClient());
@@ -250,7 +255,8 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
     }
   }
 
-  public void testCoreTermWatcher() throws InterruptedException {
+  public void testCoreTermWatcher() throws InterruptedException, KeeperException {
+    cluster.getZkClient().makePath("/collections/coreTermWatcher/terms/shard1", ZkStateReader.emptyJson, false);
     String collection = "coreTermWatcher";
     ZkShardTerms leaderTerms = new ZkShardTerms(collection, "shard1", cluster.getZkClient());
     leaderTerms.registerTerm("leader");
@@ -279,7 +285,8 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
     assertEquals(1L, terms.getTerm("leader").longValue());
   }
 
-  public void testSetTermToZero() {
+  public void testSetTermToZero() throws KeeperException, InterruptedException {
+    cluster.getZkClient().makePath("/collections/setTermToZero/terms/shard1", ZkStateReader.emptyJson, false);
     String collection = "setTermToZero";
     ZkShardTerms terms = new ZkShardTerms(collection, "shard1", cluster.getZkClient());
     terms.registerTerm("leader");
@@ -291,7 +298,8 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
     terms.close();
   }
 
-  public void testReplicaCanBecomeLeader() throws InterruptedException {
+  public void testReplicaCanBecomeLeader() throws InterruptedException, KeeperException {
+    cluster.getZkClient().makePath("/collections/replicaCanBecomeLeader/terms/shard1", ZkStateReader.emptyJson, false);
     String collection = "replicaCanBecomeLeader";
     ZkShardTerms leaderTerms = new ZkShardTerms(collection, "shard1", cluster.getZkClient());
     ZkShardTerms replicaTerms = new ZkShardTerms(collection, "shard1", cluster.getZkClient());
@@ -314,7 +322,8 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
     replicaTerms.close();
   }
 
-  public void testSetTermEqualsToLeader() throws InterruptedException {
+  public void testSetTermEqualsToLeader() throws InterruptedException, KeeperException {
+    cluster.getZkClient().makePath("/collections/setTermEqualsToLeader/terms/shard1", ZkStateReader.emptyJson, false);
     String collection = "setTermEqualsToLeader";
     ZkShardTerms leaderTerms = new ZkShardTerms(collection, "shard1", cluster.getZkClient());
     ZkShardTerms replicaTerms = new ZkShardTerms(collection, "shard1", cluster.getZkClient());

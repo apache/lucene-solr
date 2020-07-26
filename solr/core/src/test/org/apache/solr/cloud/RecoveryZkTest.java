@@ -33,11 +33,13 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.junit.After;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Slow
+@Ignore // nocommit debug
 public class RecoveryZkTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -121,7 +123,6 @@ public class RecoveryZkTest extends SolrCloudTestCase {
     
     // bring shard replica up
     jetty.start();
-    cluster.waitForNode(jetty, 10);
 
     // stop indexing threads
     indexThread.safeStop();

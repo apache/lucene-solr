@@ -187,6 +187,8 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
        // stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName + "/leader_elect", null, CreateMode.PERSISTENT, false);
         stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName + "/leader_elect/" + shardName, null, CreateMode.PERSISTENT, false);
         stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName + "/leader_elect/" + shardName + "/election", null, CreateMode.PERSISTENT, false);
+        stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName + "/terms/" + shardName, ZkStateReader.emptyJson, CreateMode.PERSISTENT, false);
+
       }
 
       ocmh.overseer.offerStateUpdate(Utils.toJSON(message));
@@ -716,6 +718,8 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
       stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection
               + "/leader_elect", null, CreateMode.PERSISTENT, false);
+      stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection
+              + "/terms", null, CreateMode.PERSISTENT, false);
       stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/"
               + ZkStateReader.SHARD_LEADERS_ZKNODE, null, CreateMode.PERSISTENT, false);
 
@@ -723,10 +727,6 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
               ZkStateReader.emptyJson, CreateMode.PERSISTENT, false);
       stateManager.makePath(ZkStateReader.getCollectionPropsPath(collection),
               ZkStateReader.emptyJson, CreateMode.PERSISTENT, false);
-      stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/terms", null, CreateMode.PERSISTENT,
-              false);
-
-
 
     } catch (Exception e) {
       ParWork.propegateInterrupt(e);

@@ -252,8 +252,17 @@ public  class LeaderElector {
             zkClient.create(leaderSeqPath, null, CreateMode.EPHEMERAL, false);
           }
         } else {
-          leaderSeqPath = zkClient.create(shardsElectZkPath + "/" + id + "-n_", null,
-                  CreateMode.EPHEMERAL_SEQUENTIAL, true);
+          while (true) {
+            try {
+              leaderSeqPath = zkClient.getSolrZooKeeper().create(shardsElectZkPath + "/" + id + "-n_", null,
+                      zkClient.getZkACLProvider().getACLsToAdd(shardsElectZkPath + "/" + id + "-n_"),
+                      CreateMode.EPHEMERAL_SEQUENTIAL);
+              break;
+            } catch (ConnectionLossException e) {
+              log.warn("Connection loss during leader election, trying again ...");
+              continue;
+            }
+          }
         }
 
         log.debug("Joined leadership election with path: {}", leaderSeqPath);

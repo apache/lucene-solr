@@ -1549,7 +1549,7 @@ public class ZkController implements Closeable {
         }
       } catch (InterruptedException e) {
         ParWork.propegateInterrupt(e);
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
+        return null;
       } catch (KeeperException | IOException e) {
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
       }
