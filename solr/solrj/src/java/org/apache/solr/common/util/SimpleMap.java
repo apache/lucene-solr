@@ -39,7 +39,7 @@ public interface SimpleMap<T> extends MapWriter {
 
   /**Navigate through all keys and values
    */
-  void forEach(BiConsumer<CharSequence, T> fun);
+  void forEach(BiConsumer<? super CharSequence, ? super T> fun);
 
 
   /** iterate through all keys
@@ -55,7 +55,7 @@ public interface SimpleMap<T> extends MapWriter {
    *  The default impl is suboptimal. Proper implementations must do it more efficiently
    * @param fun Consume each key and return a boolean to signal whether to proceed or not. If true , continue . If false stop
    * */
-  default void conditionalForEachKey(Function<CharSequence, Boolean> fun){
+  default void conditionalForEachKey(Function<? super CharSequence, Boolean> fun){
     forEachKey(new Consumer<>() {
       boolean end = false;
       @Override
@@ -72,7 +72,7 @@ public interface SimpleMap<T> extends MapWriter {
    * The default impl is suboptimal. Proper implementations must do it more efficiently
    * @param fun Consume each entry and return a boolean to signal whether to proceed or not. If true, continue, if false stop
    */
-  default void conditionalForEach(BiFunction<CharSequence, T, Boolean> fun) {
+  default void conditionalForEach(BiFunction<? super CharSequence, ? super T, Boolean> fun) {
     forEach(new BiConsumer<>() {
       boolean end = false;
       @Override
@@ -88,7 +88,7 @@ public interface SimpleMap<T> extends MapWriter {
    * The default impl is suboptimal. Proper implementations must do it more efficiently
    * @param fun Consume each entry and return a boolean to signal whether to proceed or not. If true, continue, if false stop
    */
-  default void conditionalForEach(CharSequence start, BiFunction<CharSequence, T, Boolean> fun) {
+  default void conditionalForEach(CharSequence start, BiFunction<? super CharSequence, ? super T, Boolean> fun) {
     conditionalForEach(new BiFunction<>() {
       boolean end = false;
 
