@@ -110,7 +110,7 @@ public class QueryResultKeyTest extends SolrTestCaseJ4 {
   public void testRandomQueryKeyEquality() {
 
 
-    final int minIters = atLeast(100 * 1000);
+    final int minIters = atLeast(100 * (TEST_NIGHTLY ? 1000 : 1));
     final Query base = new FlatHashTermQuery("base");
     
     // ensure we cover both code paths at least once
