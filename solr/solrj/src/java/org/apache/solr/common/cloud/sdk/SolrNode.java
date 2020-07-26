@@ -19,8 +19,6 @@ package org.apache.solr.common.cloud.sdk;
 
 import org.apache.solr.common.util.SimpleMap;
 
-import java.util.List;
-
 /**
  * A read only view of a Solr node
  */
@@ -32,6 +30,4 @@ public interface SolrNode {
   String baseUrl(boolean isV2);
 
   SimpleMap<ShardReplica> cores();
-
-  SimpleMap<Object> fetchMetrics(List<String> keys);
 }
