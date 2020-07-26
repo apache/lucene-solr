@@ -43,9 +43,9 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
     }
     
     // due to netty - will stop on it's own
-    if (threadName.startsWith("globalEventExecutor")) {
-      return true;
-    }
+//    if (threadName.startsWith("globalEventExecutor")) {
+//      return true;
+//    }
     
     // These is a java pool for the collection stream api
     if (threadName.startsWith("ForkJoinPool.")) {

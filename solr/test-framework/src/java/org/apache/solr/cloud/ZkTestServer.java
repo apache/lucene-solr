@@ -118,8 +118,8 @@ public class ZkTestServer implements Closeable {
 
   private volatile int theTickTime = TICK_TIME;
   // SOLR-12101 - provide defaults to avoid max timeout 20 enforced by our server instance when tick time is 1000
-  private volatile int maxSessionTimeout = 90000;
-  private volatile int minSessionTimeout = 3000;
+  private volatile int maxSessionTimeout = 45000;
+  private volatile int minSessionTimeout = 1000;
 
 
   protected volatile SolrZkClient chRootClient;
@@ -160,9 +160,9 @@ public class ZkTestServer implements Closeable {
       private volatile long limit;
       private volatile LimitViolationAction action;
       @SuppressWarnings("unchecked")
-      private AtomicLongMap<String> counters = AtomicLongMap.create(new ConcurrentHashMap<>(128, 0.75f, 2048));
+      private AtomicLongMap<String> counters = AtomicLongMap.create(new ConcurrentHashMap<>(128, 0.75f, 64));
       @SuppressWarnings("unchecked")
-      private Map<String,Long> maxCounters = new ConcurrentHashMap<>(128, 0.75f, 2048);
+      private Map<String,Long> maxCounters = new ConcurrentHashMap<>(128, 0.75f, 64);
 
       WatchLimit(long limit, String desc, LimitViolationAction action) {
         this.limit = limit;
@@ -394,21 +394,18 @@ public class ZkTestServer implements Closeable {
      */
     protected void shutdown() throws IOException {
       try {
-        ZKDatabase zkDb = zooKeeperServer.getZKDatabase();
-
+//        zooKeeperServer.shutdown(true);
+  //      ZKDatabase zkDb = zooKeeperServer.getZKDatabase();
+    //    if (zkDb != null) zkDb.clear();
         try (ParWork worker = new ParWork(this, true)) {
           worker.add("ZkTestInternals", () -> {
                     cnxnFactory.shutdown();
-                    return cnxnFactory;
-                  },
-                  () -> {
-                    zkDb.clear();
-                    return zkDb;
-                  },
-                  () -> {
                     cnxnFactory.join();
                     return cnxnFactory;
-                  });
+                  }, ()->{
+            zooKeeperServer.shutdown(true);
+            return  zooKeeperServer;
+          });
         }
       } finally {
         ObjectReleaseTracker.release(this);
@@ -493,23 +490,6 @@ public class ZkTestServer implements Closeable {
       chroot = "/" + chroot;
     }
     return getZkHost() + chroot;
-  }
-
-  /**
-   * Check that a path exists in this server
-   *
-   * @param path
-   *          the path to check
-   * @throws IOException
-   *           if an IO exception occurs
-   */
-  public void ensurePathExists(String path) throws IOException {
-    try {
-      chRootClient.makePath(path, null, CreateMode.PERSISTENT, null, false, true, 0);
-    } catch (InterruptedException | KeeperException e) {
-      ParWork.propegateInterrupt(e);
-      throw new IOException("Error checking path " + path, SolrZkClient.checkInterrupted(e));
-    }
   }
 
   public int getPort() {

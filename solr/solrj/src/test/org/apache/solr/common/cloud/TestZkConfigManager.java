@@ -66,7 +66,7 @@ public class TestZkConfigManager extends SolrTestCaseJ4 {
   @Test
   public void testUploadConfig() throws IOException, KeeperException {
 
-    zkServer.ensurePathExists("/solr");
+    zkServer.getZkClient().mkdir("/solr");
 
     try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress("/solr"), 10000).start()) {
 
@@ -132,7 +132,7 @@ public class TestZkConfigManager extends SolrTestCaseJ4 {
   @Test
   public void testUploadWithACL() throws IOException, KeeperException {
 
-    zkServer.ensurePathExists("/acl");
+    zkServer.getZkClient().mkdir("/acl");
 
     final String readOnlyUsername = "readonly";
     final String readOnlyPassword = "readonly";

@@ -265,7 +265,7 @@ public class SolrTestCase extends LuceneTestCase {
       System.setProperty("solr.tests.ramPerThreadHardLimitMB", "30");
 
 
-      System.setProperty("solr.http2solrclient.default.idletimeout", "10000");
+      System.setProperty("solr.http2solrclient.default.idletimeout", "1500");
       System.setProperty("distribUpdateSoTimeout", "10000");
       System.setProperty("socketTimeout", "15000");
       System.setProperty("connTimeout", "10000");
