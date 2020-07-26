@@ -84,7 +84,7 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
   public void testBackupRestore() throws Exception {
     CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     String collectionName = "SolrCoreSnapshots";
-    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 1);
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 1).setMaxShardsPerNode(10);
     create.process(solrClient);
 
     String location = createTempDir().toFile().getAbsolutePath();
