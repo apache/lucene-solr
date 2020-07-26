@@ -115,7 +115,7 @@ public class ZkStateWriter {
     while (true) {
       try {
         state = writePendingUpdates(reader.getClusterState());
-
+        break;
       } catch (KeeperException.BadVersionException e) {
         prevState = reader.getClusterState();
         stats = new Stats();
@@ -131,7 +131,7 @@ public class ZkStateWriter {
         log.error("Ran into unexpected exception trying to write new cluster state", e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
-      break;
+
     }
 
     if (callback != null) {
