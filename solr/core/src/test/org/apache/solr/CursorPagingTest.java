@@ -560,8 +560,8 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
   public void testRandomSortsOnLargeIndex() throws Exception {
     final Collection<String> allFieldNames = getAllSortFieldNames();
 
-    final int initialDocs = TestUtil.nextInt(random(), 100, TEST_NIGHTLY ? 200 : 130);
-    final int totalDocs = TEST_NIGHTLY ? atLeast(500) : 150;
+    final int initialDocs = TestUtil.nextInt(random(), 100, TEST_NIGHTLY ? 200 : 115);
+    final int totalDocs = TEST_NIGHTLY ? atLeast(500) : 120;
 
     // start with a smallish number of documents, and test that we can do a full walk using a 
     // sort on *every* field in the schema...

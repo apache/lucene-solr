@@ -67,6 +67,7 @@ public class ParWork implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected final static ThreadLocal<ExecutorService> THREAD_LOCAL_EXECUTOR = new ThreadLocal<>();
+  public static final int MIN_THREADS = 3;
 
   private Set<Object> collectSet = null;
 
@@ -590,14 +591,14 @@ public class ParWork implements Closeable {
     if (ourLoad > 1) {
       int cMax = executor.getMaximumPoolSize();
       if (cMax > 2) {
-        executor.setMaximumPoolSize(Math.max(2, (int) ((double)cMax * 0.60D)));
+        executor.setMaximumPoolSize(Math.max(MIN_THREADS, (int) ((double)cMax * 0.60D)));
       }
     } else {
       double sLoad = load / (double) PROC_COUNT;
       if (sLoad > 1.0D) {
         int cMax =  executor.getMaximumPoolSize();
         if (cMax > 2) {
-          executor.setMaximumPoolSize(Math.max(2, (int) ((double) cMax * 0.60D)));
+          executor.setMaximumPoolSize(Math.max(MIN_THREADS, (int) ((double) cMax * 0.60D)));
         }
       } else if (sLoad < 0.9D && maxPoolsSize != executor.getMaximumPoolSize()) {
         executor.setMaximumPoolSize(maxPoolsSize);
@@ -631,7 +632,7 @@ public class ParWork implements Closeable {
 
   private static Integer getMaxPoolSize() {
     return Integer.getInteger("solr.maxThreadExecPoolSize",
-            (int) Math.max(4, Math.round(Runtime.getRuntime().availableProcessors() / 3)));
+            (int) Math.max(MIN_THREADS, Math.round(Runtime.getRuntime().availableProcessors() / 3)));
   }
 
   private void handleObject(String label, AtomicReference<Throwable> exception, final TimeTracker workUnitTracker, Object object) {

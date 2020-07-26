@@ -71,18 +71,18 @@ public class TestStressUserVersions extends TestRTGBase {
     clearIndex();
     assertU(commit());
 
-    final int commitPercent = 5 + random().nextInt(20);
+    final int commitPercent = 5 + random().nextInt(TEST_NIGHTLY ? 20 : 3);
     final int softCommitPercent = 30+random().nextInt(75); // what percent of the commits are soft
     final int deletePercent = 4+random().nextInt(25);
     final int deleteByQueryPercent = random().nextInt(8);
-    final int ndocs = 5 + (random().nextBoolean() ? random().nextInt(25) : random().nextInt(200));
+    final int ndocs = 5 + (TEST_NIGHTLY ? (random().nextBoolean() ? random().nextInt(25) : random().nextInt(200)) : 7);
     int nWriteThreads = 1 + random().nextInt(TEST_NIGHTLY ? 12 : 2);
 
     final int maxConcurrentCommits = nWriteThreads;
 
     // query variables
     final int percentRealtimeQuery = 75;
-    final AtomicLong operations = new AtomicLong( TEST_NIGHTLY ? 10000 : 100);  // number of query operations to perform in total - ramp up for a longer test
+    final AtomicLong operations = new AtomicLong( TEST_NIGHTLY ? 10000 : 75);  // number of query operations to perform in total - ramp up for a longer test
     int nReadThreads = 1 + random().nextInt(TEST_NIGHTLY ? 12 : 2);
 
 
@@ -316,10 +316,7 @@ public class TestStressUserVersions extends TestRTGBase {
       threads.add(thread);
     }
 
-
-
     testExecutor.invokeAll(threads);
-
   }
 
 }

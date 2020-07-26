@@ -209,7 +209,7 @@ public class SolrTestCase extends LuceneTestCase {
 //      System.setProperty("solr.tests.DateFieldType", "org.apache.solr.schema.DatePointField");
 //      System.setProperty("solr.tests.EnumFieldType", "org.apache.solr.schema.EnumFieldType");
 
-      System.setProperty("solr.MaxConcurrentRequests", "5");
+      System.setProperty("solr.concurrentRequests.max", "5");
       System.setProperty("solr.tests.infostream", "false");
       System.setProperty("numVersionBuckets", "8192");
 
