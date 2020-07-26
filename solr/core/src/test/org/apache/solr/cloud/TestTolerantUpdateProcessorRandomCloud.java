@@ -108,6 +108,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection(COLLECTION_NAME, configName, numShards, repFactor)
         .setProperties(collectionProperties)
+        .setMaxShardsPerNode(10)
         .process(CLOUD_CLIENT);
     
     if (NODE_CLIENTS != null) {
