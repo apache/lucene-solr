@@ -71,6 +71,7 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.autoscaling.AutoScalingHandler;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
+import org.apache.solr.common.ParWorkExecutor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.DocCollection;
@@ -390,10 +391,11 @@ public class CoreContainer implements Closeable {
     if (solrCoreLoadExecutor == null) {
       synchronized (CoreContainer.class) {
         if (solrCoreLoadExecutor == null) {
-          solrCoreLoadExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(0, Math.max(3, Runtime.getRuntime().availableProcessors() / 2),
-                  3, TimeUnit.SECONDS,
-                  new BlockingArrayQueue<>(100, 10),
-                  new SolrNamedThreadFactory("SolrCoreLoader"));
+//          solrCoreLoadExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(0, Math.max(3, Runtime.getRuntime().availableProcessors() / 2),
+//                  2, TimeUnit.SECOND,
+//                  new BlockingArrayQueue<>(100, 10),
+//                  new SolrNamedThreadFactory("SolrCoreLoader"));
+          solrCoreLoadExecutor = new ParWorkExecutor("SolrCoreLoader", Math.max(3, Runtime.getRuntime().availableProcessors() / 2));
         }
       }
     }
