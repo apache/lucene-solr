@@ -120,7 +120,7 @@ public class ZkStateWriter {
         prevState = reader.getClusterState();
         stats = new Stats();
         numUpdates = 0;
-        lastUpdatedTime = 0;
+        lastUpdatedTime = -1;
         continue;
 //        log.info("BadVersion");
 //        throw new AlreadyClosedException();
@@ -174,6 +174,8 @@ public class ZkStateWriter {
     if (log.isDebugEnabled()) {
       log.debug("writePendingUpdates() - start updates.size={}", updates.size());
     }
+
+
     assert prevState != null;
     Timer.Context timerContext = stats.time("update_state");
     boolean success = false;
@@ -186,6 +188,9 @@ public class ZkStateWriter {
         String path = ZkStateReader.getCollectionPath(name);
         DocCollection c = entry.getValue();
         int prevVersion = -1;
+        if (lastUpdatedTime == -1) {
+          prevVersion = 0;
+        }
         Stat stat = new Stat();
 
         try {

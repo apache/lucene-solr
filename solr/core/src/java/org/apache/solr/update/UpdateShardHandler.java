@@ -35,12 +35,10 @@ import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.security.HttpClientBuilderPlugin;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
@@ -65,8 +63,6 @@ public class UpdateShardHandler implements SolrInfoBean {
 
   private ExecutorService recoveryExecutor;
 
-  private final InstrumentedPoolingHttpClientConnectionManager updateOnlyConnectionManager;
-  
   private final InstrumentedPoolingHttpClientConnectionManager defaultConnectionManager;
 
   private final InstrumentedHttpRequestExecutor httpRequestExecutor;
@@ -82,12 +78,9 @@ public class UpdateShardHandler implements SolrInfoBean {
 
   public UpdateShardHandler(UpdateShardHandlerConfig cfg) {
     ObjectReleaseTracker.track(this);
-    updateOnlyConnectionManager = new InstrumentedPoolingHttpClientConnectionManager(HttpClientUtil.getSocketFactoryRegistryProvider().getSocketFactoryRegistry());
     defaultConnectionManager = new InstrumentedPoolingHttpClientConnectionManager(HttpClientUtil.getSocketFactoryRegistryProvider().getSocketFactoryRegistry());
     ModifiableSolrParams clientParams = new ModifiableSolrParams();
     if (cfg != null ) {
-      updateOnlyConnectionManager.setMaxTotal(cfg.getMaxUpdateConnections());
-      updateOnlyConnectionManager.setDefaultMaxPerRoute(cfg.getMaxUpdateConnectionsPerHost());
       defaultConnectionManager.setMaxTotal(cfg.getMaxUpdateConnections());
       defaultConnectionManager.setDefaultMaxPerRoute(cfg.getMaxUpdateConnectionsPerHost());
       clientParams.set(HttpClientUtil.PROP_SO_TIMEOUT, cfg.getDistributedSocketTimeout());
@@ -114,6 +107,7 @@ public class UpdateShardHandler implements SolrInfoBean {
           .maxConnectionsPerHost(cfg.getMaxUpdateConnectionsPerHost());
     }
     updateOnlyClient = updateOnlyClientBuilder.markInternalRequest().build();
+    updateOnlyClient.enableCloseLock();
     updateOnlyClient.addListenerFactory(updateHttpListenerFactory);
     Set<String> queryParams = new HashSet<>(2);
     queryParams.add(DistributedUpdateProcessor.DISTRIB_FROM);
@@ -217,7 +211,7 @@ public class UpdateShardHandler implements SolrInfoBean {
     if (recoveryExecutor != null) {
       recoveryExecutor.shutdownNow();
     }
-
+    updateOnlyClient.disableCloseLock();
     try (ParWork closer = new ParWork(this, true)) {
       closer.collect(() -> {
         HttpClientUtil.close(defaultClient);

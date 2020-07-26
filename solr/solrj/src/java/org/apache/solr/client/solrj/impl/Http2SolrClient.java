@@ -861,6 +861,14 @@ public class Http2SolrClient extends SolrClient {
     return request(request, collection, null);
   }
 
+  public void enableCloseLock() {
+    closeTracker.enableCloseLock();
+  }
+
+  public void disableCloseLock() {
+    closeTracker.disableCloseLock();
+  }
+
   public void setRequestWriter(RequestWriter requestWriter) {
     this.requestWriter = requestWriter;
   }
@@ -1108,6 +1116,7 @@ public class Http2SolrClient extends SolrClient {
     public int status;
     public byte[] bytes;
   }
+
 
   public static SimpleResponse GET(String url, Http2SolrClient httpClient)
           throws InterruptedException, ExecutionException, TimeoutException {
