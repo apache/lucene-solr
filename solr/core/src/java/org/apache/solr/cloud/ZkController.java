@@ -1291,17 +1291,6 @@ public class ZkController implements Closeable {
       }
     }
 
-    try {
-      ParWork.close(cc);
-    } catch (Exception e) {
-      log.error("Exception on shutdown", e);
-      return;
-    } finally {
-      if (zkClient != null) {
-        zkClient.disableCloseLock();
-      }
-      ParWork.close(zkClient);
-    }
     URL url = null;
     try {
       url = new URL(getHostName() + ":" + getHostPort() + "/shutdown?token=" + "solrrocks");
