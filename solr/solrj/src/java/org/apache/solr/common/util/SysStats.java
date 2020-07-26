@@ -47,6 +47,7 @@ public class SysStats extends Thread {
     }
 
     public void doStop() {
+        this.interrupt();
         this.stopped = true;
     }
 
@@ -118,6 +119,11 @@ public class SysStats extends Thread {
     public void stopMonitor() {
         this.stopped = true;
         this.interrupt();
+        try {
+            this.join();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     public double getTotalUsage() {
