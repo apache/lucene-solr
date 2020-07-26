@@ -107,12 +107,12 @@ public final class CommitTracker implements Runnable, Closeable {
   public synchronized void close() {
     this.closed = true;
     try {
-      pending.cancel(false);
+      pending.cancel(true);
     } catch (NullPointerException e) {
       // okay
     }
     pending = null;
-
+    scheduler.shutdownNow();
     ParWork.close(scheduler);
     ObjectReleaseTracker.release(this);
   }
