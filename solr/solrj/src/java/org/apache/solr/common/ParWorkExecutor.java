@@ -27,7 +27,7 @@ public class ParWorkExecutor extends ThreadPoolExecutor {
     private static AtomicInteger threadNumber = new AtomicInteger(0);
 
     public ParWorkExecutor(String name, int maxPoolsSize) {
-        super(0,  maxPoolsSize,  KEEP_ALIVE_TIME, TimeUnit.SECONDS, new ArrayBlockingQueue<>(Integer.getInteger("solr.threadExecQueueSize", 30)), new ThreadFactory() {
+        super(0,  maxPoolsSize,  KEEP_ALIVE_TIME, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(Integer.getInteger("solr.threadExecQueueSize", 30)), new ThreadFactory() {
 
             ThreadGroup group;
 
@@ -40,8 +40,11 @@ public class ParWorkExecutor extends ThreadPoolExecutor {
             public Thread newThread(Runnable r) {
                 Thread t = new Thread(group, r, name + threadNumber.getAndIncrement(), 0) {
                     public void run() {
-                        super.run();
-                        ParWork.close(ParWork.getExecutor());
+                        try {
+                            super.run();
+                        } finally {
+                            ParWork.closeExecutor();
+                        }
                     }
                 };
                 t.setDaemon(true);

@@ -705,7 +705,7 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
 
     protected void removeThread(Thread thread)
     {
-       ParWork.close(ParWork.getExecutor());
+       ParWork.closeExecutor();
         _threads.remove(thread);
     }
 

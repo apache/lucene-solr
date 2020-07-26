@@ -72,7 +72,16 @@ public class ParWork implements Closeable {
 
   private static SysStats sysStats = SysStats.getSysStats();
 
-  private static class WorkUnit {
+    public static void closeExecutor() {
+      ExecutorService exec = THREAD_LOCAL_EXECUTOR.get();
+      if (exec != null) {
+        exec.shutdownNow();
+        ParWork.close(exec);
+        THREAD_LOCAL_EXECUTOR.set(null);
+      }
+    }
+
+    private static class WorkUnit {
     private final List<Object> objects;
     private final TimeTracker tracker;
     private final String label;

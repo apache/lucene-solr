@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.regex.Pattern;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.mutable.MutableValueDouble;
 import org.apache.lucene.util.mutable.MutableValueFloat;
 import org.apache.lucene.util.mutable.MutableValueInt;
@@ -35,6 +36,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 
+@LuceneTestCase.Nightly // slow test
 public class TermsComponentTest extends SolrTestCaseJ4 {
 
   @BeforeClass

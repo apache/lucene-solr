@@ -567,35 +567,39 @@ public class ZkTestServer implements Closeable {
 
         @Override
         public void run() {
-          ServerConfig config = new ServerConfig() {
+          try {
+            ServerConfig config = new ServerConfig() {
 
-            {
-              setClientPort(ZkTestServer.this.clientPort);
-              this.dataDir = zkDir.toFile();
-              this.dataLogDir = zkDir.toFile();
-              this.tickTime = theTickTime;
-              this.maxSessionTimeout = ZkTestServer.this.maxSessionTimeout;
-              this.minSessionTimeout = ZkTestServer.this.minSessionTimeout;
-            }
-
-            public void setClientPort(int clientPort) {
-              if (clientPortAddress != null) {
-                try {
-                  this.clientPortAddress = new InetSocketAddress(
-                          InetAddress.getByName(clientPortAddress.getHostName()), clientPort);
-                } catch (UnknownHostException e) {
-                  throw new RuntimeException(e);
-                }
-              } else {
-                this.clientPortAddress = new InetSocketAddress(clientPort);
+              {
+                setClientPort(ZkTestServer.this.clientPort);
+                this.dataDir = zkDir.toFile();
+                this.dataLogDir = zkDir.toFile();
+                this.tickTime = theTickTime;
+                this.maxSessionTimeout = ZkTestServer.this.maxSessionTimeout;
+                this.minSessionTimeout = ZkTestServer.this.minSessionTimeout;
               }
 
+              public void setClientPort(int clientPort) {
+                if (clientPortAddress != null) {
+                  try {
+                    this.clientPortAddress = new InetSocketAddress(
+                            InetAddress.getByName(clientPortAddress.getHostName()), clientPort);
+                  } catch (UnknownHostException e) {
+                    throw new RuntimeException(e);
+                  }
+                } else {
+                  this.clientPortAddress = new InetSocketAddress(clientPort);
+                }
+
+              }
+            };
+            try {
+              zkServer.runFromConfig(config);
+            } catch (Throwable t) {
+              log.error("zkServer error", t);
             }
-          };
-          try {
-            zkServer.runFromConfig(config);
-          } catch (Throwable t) {
-            log.error("zkServer error", t);
+          } finally {
+            ParWork.closeExecutor();
           }
         }
       };

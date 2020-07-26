@@ -47,57 +47,14 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
       return true;
     }
     
-    // HttpClient Connection evictor threads can take a moment to wake and shutdown
-    if (threadName.startsWith("Connection evictor")) {
-      return true;
-    }
-    
     // These is a java pool for the collection stream api
     if (threadName.startsWith("ForkJoinPool.")) {
-      return true;
-    }
-    
-    if (threadName.startsWith("Image Fetcher")) {
       return true;
     }
 
     if (threadName.startsWith("SessionTracker")) { // zk thread that will stop in a moment.
       return true;
     }
-
-    if (threadName.startsWith("CPUMonitoringThread")) { // zk thread that will stop in a moment.
-      return true;
-    }
-
-    if (threadName.startsWith("ParWork")) {
-      return true;
-    }
-    if (threadName.startsWith("solr-test-qtp")) {
-      return true;
-    }
-
-    // nocommit tmp hack
-    if (threadName.startsWith("ScheduledTrigger")) {
-      return true;
-    }
-    if (threadName.startsWith("NIOWorkerThread") || threadName.startsWith("EventThread")) {
-      return true;
-    }
-
-    if (threadName.startsWith("ConnnectionExpirer")) {
-      return true;
-    }
-    
-    if (threadName.startsWith("SolrCoreLoader") || threadName.startsWith("searcherExecutor") ) {
-      return true;
-    }
-
-    // nocommit - look into this - these client threads on the qtp can stick around, but are TERMINATED state
-    if (threadName.startsWith("httpClient-")) {
-      return true;
-    }
-
-
 
     return false;
   }

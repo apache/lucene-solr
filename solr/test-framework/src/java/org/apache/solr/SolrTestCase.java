@@ -371,8 +371,10 @@ public class SolrTestCase extends LuceneTestCase {
     log.info("@After Class ------------------------------------------------------");
     try {
 
+      ParWork.closeExecutor();
+
       if (null != testExecutor) {
-        testExecutor.shutdown();
+        testExecutor.shutdownNow();
       }
 
 
@@ -522,14 +524,19 @@ public class SolrTestCase extends LuceneTestCase {
   }
 
   private static void interrupt(Thread thread, String nameContains) {
-    if (nameContains != null && thread.getName().contains(nameContains)) {
-      System.out.println("simulate interrupt on " + thread.getName());
+    if (nameContains != null && thread.getName().contains(nameContains) && nameContains.startsWith("ParWork")) {
+
+ //     System.out.println("simulate interrupt on " + thread.getName());
 //      thread.interrupt();
-//      try {
-//        thread.join(5000);
-//      } catch (InterruptedException e) {
-//        ParWork.propegateInterrupt(e);
-//      }
+      try {
+        thread.join(5000);
+      } catch (InterruptedException e) {
+        ParWork.propegateInterrupt(e);
+      }
+    }
+
+    if (nameContains != null && nameContains.startsWith("ParWork")) {
+      ParWork.closeExecutor();
     }
   }
 

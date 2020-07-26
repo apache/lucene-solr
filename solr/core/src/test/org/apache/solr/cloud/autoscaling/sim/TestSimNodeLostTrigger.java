@@ -39,11 +39,13 @@ import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrResourceLoader;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * Test for {@link NodeLostTrigger}
  */
+@Ignore // auto scaling removed in master anyway
 public class TestSimNodeLostTrigger extends SimSolrCloudTestCase {
   private static AtomicBoolean actionConstructorCalled = new AtomicBoolean(false);
   private static AtomicBoolean actionInitCalled = new AtomicBoolean(false);

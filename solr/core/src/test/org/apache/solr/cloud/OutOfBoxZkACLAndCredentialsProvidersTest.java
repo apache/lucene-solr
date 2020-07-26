@@ -92,15 +92,14 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
   @Override
   public void tearDown() throws Exception {
     zkServer.shutdown();
-    
     super.tearDown();
   }
 
   @Test
   public void testOutOfBoxSolrZkClient() throws Exception {
     SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
-    zkClient.start();
     try {
+      zkClient.start();
       VMParamsZkACLAndCredentialsProvidersTest.doTest(zkClient,
           true, true, true, true, true,
           true, true, true, true, true);
@@ -112,8 +111,8 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
   @Test
   public void testOpenACLUnsafeAllover() throws Exception {
     SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT);
-    zkClient.start();
     try {
+      zkClient.start();
       List<String> verifiedList = new ArrayList<String>();
       assertOpenACLUnsafeAllover(zkClient, "/", verifiedList);
       assertTrue(verifiedList.contains("/solr"));
