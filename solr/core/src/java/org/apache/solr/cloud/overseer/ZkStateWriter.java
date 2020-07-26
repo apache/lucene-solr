@@ -123,6 +123,9 @@ public class ZkStateWriter {
         continue;
 //        log.info("BadVersion");
 //        throw new AlreadyClosedException();
+      } catch (Exception e) {
+        log.error("Ran into unexpected exception trying to write new cluster state", e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
       break;
     }
@@ -287,13 +290,13 @@ public class ZkStateWriter {
 
         } catch (InterruptedException e) {
           ParWork.propegateInterrupt(e);
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Interrupted", e);
+          throw e;
         } catch (Exception e) {
           ParWork.propegateInterrupt(e);
           if (e instanceof KeeperException.BadVersionException) {
             // nocommit invalidState = true;
-            if (log.isDebugEnabled())
-              log.debug("Tried to update the cluster state using version={} but we where rejected, currently at {}", prevVersion, ((KeeperException.BadVersionException) e).getMessage(), e);
+            //if (log.isDebugEnabled())
+            log.info("Tried to update the cluster state using version={} but we where rejected, currently at {}", prevVersion, ((KeeperException.BadVersionException) e).getMessage(), e);
             throw (KeeperException.BadVersionException) e;
           }
           ParWork.propegateInterrupt(e);
@@ -332,7 +335,7 @@ public class ZkStateWriter {
       success = true;
     } catch (KeeperException.BadVersionException bve) {
       // this is a tragic error, we must disallow usage of this instance
-      //  log.error("Tried to update the cluster state using version={} but we where rejected as the version is {}", newClusterState.getZNodeVersion(), bve.getMessage(), bve);
+       log.warn("Tried to update the cluster state using version={} but we where rejected as the version is {}", newClusterState.getZNodeVersion(), bve.getMessage(), bve);
       // nocommit invalidState = true;
       throw bve;
     } finally {
