@@ -44,17 +44,11 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.IOUtils;
-import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@ThreadLeakFilters(defaultFilters = true, filters = {
-        SolrIgnoredThreadsFilter.class,
-        QuickPatchThreadsFilter.class,
-        BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
-})
 @Ignore // nocommit debug
 public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
   protected static final int NUM_SERVERS = 2;

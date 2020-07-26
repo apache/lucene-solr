@@ -16,28 +16,15 @@
  */
 package org.apache.solr.cloud.autoscaling;
 
-import com.carrotsearch.randomizedtesting.annotations.Nightly;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
-import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.lucene.util.QuickPatchThreadsFilter;
-import org.apache.lucene.util.TimeUnits;
-import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
-import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 @Slow
 @LuceneTestCase.Nightly
-@ThreadLeakFilters(defaultFilters = true, filters = {
-        SolrIgnoredThreadsFilter.class,
-        QuickPatchThreadsFilter.class,
-        BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
-})
-@TimeoutSuite(millis = TimeUnits.HOUR)
 public class HdfsAutoAddReplicasIntegrationTest extends AutoAddReplicasIntegrationTest {
   private static MiniDFSCluster dfsCluster;
 

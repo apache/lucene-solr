@@ -52,7 +52,6 @@ import org.apache.solr.update.HdfsUpdateLog;
 import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
-import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
@@ -63,11 +62,6 @@ import org.junit.Test;
 
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
-@ThreadLeakFilters(defaultFilters = true, filters = {
-        SolrIgnoredThreadsFilter.class,
-        QuickPatchThreadsFilter.class,
-        BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
-})
 // TODO: longer term this should be combined with TestRecovery somehow ??
 @LuceneTestCase.Nightly
 public class TestRecoveryHdfs extends SolrTestCaseJ4 {

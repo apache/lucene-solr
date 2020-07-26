@@ -35,7 +35,6 @@ import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
-import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -44,11 +43,6 @@ import org.junit.Test;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 
-@ThreadLeakFilters(defaultFilters = true, filters = {
-        SolrIgnoredThreadsFilter.class,
-        QuickPatchThreadsFilter.class,
-        BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
-})
 @LuceneTestCase.Nightly // can be a slow test, > 20 seconds
 public class HdfsDirectoryTest extends SolrTestCaseJ4 {
   

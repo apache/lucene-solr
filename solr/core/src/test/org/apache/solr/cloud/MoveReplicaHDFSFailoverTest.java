@@ -37,16 +37,10 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-@ThreadLeakFilters(defaultFilters = true, filters = {
-        SolrIgnoredThreadsFilter.class,
-        QuickPatchThreadsFilter.class,
-        BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
-})
 @LuceneTestCase.Nightly// test is too long for non nightly
 public class MoveReplicaHDFSFailoverTest extends SolrCloudTestCase {
   private static MiniDFSCluster dfsCluster;

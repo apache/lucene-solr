@@ -35,7 +35,6 @@ import org.apache.solr.cloud.SolrCloudBridgeTestCase;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.store.hdfs.HdfsDirectory;
-import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -45,11 +44,6 @@ import org.junit.Test;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 
-@ThreadLeakFilters(defaultFilters = true, filters = {
-        SolrIgnoredThreadsFilter.class,
-        QuickPatchThreadsFilter.class,
-        BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
-})
 // commented out on: 24-Dec-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
 @LuceneTestCase.Nightly // TODO speed up
 public class CheckHdfsIndexTest extends SolrCloudBridgeTestCase {

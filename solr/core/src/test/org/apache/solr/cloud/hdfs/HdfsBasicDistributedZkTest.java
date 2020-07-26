@@ -24,7 +24,6 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.cloud.BasicDistributedZkTest;
-import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -33,11 +32,6 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 
 @Slow
 @LuceneTestCase.Nightly
-@ThreadLeakFilters(defaultFilters = true, filters = {
-        SolrIgnoredThreadsFilter.class,
-        QuickPatchThreadsFilter.class,
-        BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
-})
 public class HdfsBasicDistributedZkTest extends BasicDistributedZkTest {
   private static MiniDFSCluster dfsCluster;
   

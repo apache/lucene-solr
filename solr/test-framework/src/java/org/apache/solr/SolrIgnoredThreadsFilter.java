@@ -56,6 +56,27 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
       return true;
     }
 
+    // HDFS nocommit fix
+    if (threadName.startsWith("IPC Parameter Sending Thread ")) { // SOLR-5007
+      return true;
+    } if (threadName.startsWith("IPC Client")) { // SOLR-5007
+      return true;
+    } else if (threadName.startsWith("org.apache.hadoop.hdfs.PeerCache")) { // SOLR-7288
+      return true;
+    } else if (threadName.endsWith("StatisticsDataReferenceCleaner")) {
+      return true;
+    } else if (threadName.startsWith("LeaseRenewer")) { // SOLR-7287
+      return true;
+    } else if (threadName.startsWith("org.apache.hadoop.fs.FileSystem$Statistics")) { // SOLR-11261
+      return true;
+    } else if (threadName.startsWith("ForkJoinPool.")) { // JVM built in pool
+      return true;
+    } else if (threadName.startsWith("solr-hdfs-threadpool-")) { // SOLR-9515 and HDFS-14251
+      return true;
+    } else if (threadName.startsWith("nioEventLoopGroup")) { // Netty threads from hdfs
+      return true;
+    }
+
     return false;
   }
 }

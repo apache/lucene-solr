@@ -49,7 +49,6 @@ import org.apache.solr.store.blockcache.BlockCache;
 import org.apache.solr.store.blockcache.BlockDirectory;
 import org.apache.solr.store.blockcache.BlockDirectoryCache;
 import org.apache.solr.store.blockcache.Cache;
-import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.apache.solr.util.RefCounted;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -57,11 +56,6 @@ import org.junit.Test;
 
 @Slow
 @LuceneTestCase.Nightly
-@ThreadLeakFilters(defaultFilters = true, filters = {
-        SolrIgnoredThreadsFilter.class,
-        QuickPatchThreadsFilter.class,
-        BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
-})
 public class HdfsWriteToMultipleCollectionsTest extends BasicDistributedZkTest {
   private static final String ACOLLECTION = "acollection";
   private static MiniDFSCluster dfsCluster;

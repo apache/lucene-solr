@@ -47,7 +47,6 @@ import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.backup.BackupManager;
 import org.apache.solr.core.backup.repository.HdfsBackupRepository;
-import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -64,11 +63,6 @@ import static org.apache.solr.core.backup.BackupManager.ZK_STATE_DIR;
 /**
  * This class implements the tests for HDFS integration for Solr backup/restore capability.
  */
-@ThreadLeakFilters(defaultFilters = true, filters = {
-        SolrIgnoredThreadsFilter.class,
-        QuickPatchThreadsFilter.class,
-        BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
-})
 @LuceneTestCase.Nightly
 public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCase {
   public static final String SOLR_XML = "<solr>\n" +

@@ -27,18 +27,10 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import com.github.benmanes.caffeine.cache.*;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.QuickPatchThreadsFilter;
-
-import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCase;
 
-import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.Test;
 
-@ThreadLeakFilters(defaultFilters = true, filters = {
-    SolrIgnoredThreadsFilter.class,
-    QuickPatchThreadsFilter.class
-})
 @LuceneTestCase.Nightly // this test will spin up tons of netty threads due to HDFS,
 // should run nightly but should also track down the setting for that
 public class BlockCacheTest extends SolrTestCase {

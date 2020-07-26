@@ -62,7 +62,7 @@ import org.junit.Test;
 /**
  *
  */
-// nocommit - GONE AWAY IN MASTER ANYWAY
+@Ignore // nocommit - GONE AWAY IN MASTER ANYWAY
 public class SearchRateTriggerTest extends SolrCloudTestCase {
   private static final String PREFIX = SearchRateTriggerTest.class.getSimpleName() + "-";
   private static final String COLL1 = PREFIX + "collection1";

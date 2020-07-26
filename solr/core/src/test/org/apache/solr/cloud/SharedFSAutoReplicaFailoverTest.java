@@ -56,7 +56,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreDescriptor;
-import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
@@ -72,11 +71,6 @@ import org.slf4j.LoggerFactory;
 @LuceneTestCase.Nightly
 @Slow
 @SuppressSSL
-@ThreadLeakFilters(defaultFilters = true, filters = {
-        SolrIgnoredThreadsFilter.class,
-        QuickPatchThreadsFilter.class,
-        BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
-})
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;org.apache.solr.cloud.*=DEBUG")
 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Jul-2018
 public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBase {
