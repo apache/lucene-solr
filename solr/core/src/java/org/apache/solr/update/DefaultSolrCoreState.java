@@ -141,7 +141,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
           if (refCntWriter == null) return null;
         } else {
           if (indexWriter == null) {
-            if (core != null && core.getCoreContainer().isShutDown() || closed) {
+            if (closed) {
               throw new AlreadyClosedException();
             }
             indexWriter = createMainIndexWriter(core, "DirectUpdateHandler2");
