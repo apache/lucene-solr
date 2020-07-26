@@ -162,6 +162,8 @@ Other Changes
 
 * SOLR-14676: Update commons-collections to 4.4 and use it in Solr (Erick Erickson)
 
+* SOLR-11868: Deprecate CloudSolrClient.setIdField, use information from Zookeeper (Erick Erickson)
+
 ==================  8.6.0 ==================
 
 Consult the lucene/CHANGES.txt file for additional, low level, changes in this release.
