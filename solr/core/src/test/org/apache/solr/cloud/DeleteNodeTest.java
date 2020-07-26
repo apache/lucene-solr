@@ -45,7 +45,7 @@ public class DeleteNodeTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     useFactory(null);
-    configureCluster(6)
+    configureCluster(TEST_NIGHTLY ? 6 : 3)
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-dynamic").resolve("conf"))
         .formatZk(true).configure();
   }
@@ -70,34 +70,12 @@ public class DeleteNodeTest extends SolrCloudTestCase {
         CollectionAdminRequest.createCollection(coll, "conf1", 5, 1, 0, 0),
         CollectionAdminRequest.createCollection(coll, "conf1", 5, 0, 1, 0)
         );
-    create.setCreateNodeSet(StrUtils.join(l, ',')).setMaxShardsPerNode(10);
+    create = create.setCreateNodeSet(StrUtils.join(l, ',')).setMaxShardsPerNode(20);
     cloudClient.request(create);
     state = cloudClient.getZkStateReader().getClusterState();
     String node2bdecommissioned = l.get(0);
     // check what replicas are on the node, and whether the call should fail
-    boolean shouldFail = false;
-    DocCollection docColl = state.getCollection(coll);
-    log.info("#### DocCollection: {}", docColl);
-    List<Replica> replicas = docColl.getReplicas(node2bdecommissioned);
-    if (replicas != null) {
-      for (Replica replica : replicas) {
-        String shard = docColl.getShardId(node2bdecommissioned, replica.getStr(ZkStateReader.CORE_NAME_PROP));
-        Slice slice = docColl.getSlice(shard);
-        boolean hasOtherNonPullReplicas = false;
-        for (Replica r: slice.getReplicas()) {
-          if (!r.getName().equals(replica.getName()) &&
-              !r.getNodeName().equals(node2bdecommissioned) &&
-              r.getType() != Replica.Type.PULL) {
-            hasOtherNonPullReplicas = true;
-            break;
-          }
-        }
-        if (!hasOtherNonPullReplicas) {
-          shouldFail = true;
-          break;
-        }
-      }
-    }
+
     //new CollectionAdminRequest.DeleteNode(node2bdecommissioned).processAsync("003", cloudClient);
     new CollectionAdminRequest.DeleteNode(node2bdecommissioned).process(cloudClient);
    // CollectionAdminRequest.RequestStatus requestStatus = CollectionAdminRequest.requestStatus("003");
