@@ -107,10 +107,16 @@ public abstract class BaseCloudSolrClient extends SolrClient {
   private ExecutorService threadPool = ExecutorUtil
       .newMDCAwareCachedThreadPool(new SolrNamedThreadFactory(
           "CloudSolrClient ThreadPool"));
-  private String idField = ID;
+
+  // We can figure this out from the collection,
+  // there's no need to let this get out of sync.
+  // Deprecated in Solr 8.7
+  @Deprecated
+  private String routeFieldDeprecated = null;
   public static final String STATE_VERSION = "_stateVer_";
   private long retryExpiryTime = TimeUnit.NANOSECONDS.convert(3, TimeUnit.SECONDS);//3 seconds or 3 million nanos
   private final Set<String> NON_ROUTABLE_PARAMS;
+
   {
     NON_ROUTABLE_PARAMS = new HashSet<>();
     NON_ROUTABLE_PARAMS.add(UpdateParams.EXPUNGE_DELETES);
@@ -289,17 +295,25 @@ public abstract class BaseCloudSolrClient extends SolrClient {
   }
 
   /**
-   * @param idField the field to route documents on.
+   * @param routeField the field to route documents on.
+   * <p>
+   * @deprecated, the field is automatically determined from Zookeeper Deprecated in Solr 8.7
    */
-  public void setIdField(String idField) {
-    this.idField = idField;
+  @Deprecated
+  public void setIdField(String routeField) {
+    log.warn("setIdField is deprecated, route field inferred from cluster state");
+    this.routeFieldDeprecated = routeField;
   }
 
   /**
    * @return the field that updates are routed on.
+   *
+   * @deprecated, the field is automatically determined from Zookeeper Deprecated in Solr 8.7
    */
+  @Deprecated
   public String getIdField() {
-    return idField;
+    log.warn("getIdField is deprecated, route field is in cluster state");
+    return routeFieldDeprecated;
   }
 
   /** Sets the default collection for request */
@@ -508,10 +522,12 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     //Create the URL map, which is keyed on slice name.
     //The value is a list of URLs for each replica in the slice.
     //The first value in the list is the leader for the slice.
-    final Map<String,List<String>> urlMap = buildUrlMap(col, replicaListTransformer);
-    final Map<String, ? extends LBSolrClient.Req> routes = createRoutes(updateRequest, routableParams, col, router, urlMap, idField);
+    final Map<String, List<String>> urlMap = buildUrlMap(col, replicaListTransformer);
+    String routeField = (routeFieldDeprecated != null) ? routeFieldDeprecated :
+        (col.getRouter().getRouteField(col) == null) ? ID : col.getRouter().getRouteField(col);
+    final Map<String, ? extends LBSolrClient.Req> routes = createRoutes(updateRequest, routableParams, col, router, urlMap, routeField);
     if (routes == null) {
-      if (directUpdatesToLeadersOnly && hasInfoToFindLeaders(updateRequest, idField)) {
+      if (directUpdatesToLeadersOnly && hasInfoToFindLeaders(updateRequest, routeField)) {
         // we have info (documents with ids and/or ids to delete) with
         // which to find the leaders but we could not find (all of) them
         throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE,
@@ -626,9 +642,9 @@ public abstract class BaseCloudSolrClient extends SolrClient {
   }
 
   protected Map<String, ? extends LBSolrClient.Req> createRoutes(UpdateRequest updateRequest, ModifiableSolrParams routableParams,
-                                                       DocCollection col, DocRouter router, Map<String, List<String>> urlMap,
-                                                       String idField) {
-    return urlMap == null ? null : updateRequest.getRoutesToCollection(router, col, urlMap, routableParams, idField);
+                                                                 DocCollection col, DocRouter router, Map<String, List<String>> urlMap,
+                                                                 String routeField) {
+    return urlMap == null ? null : updateRequest.getRoutesToCollection(router, col, urlMap, routableParams, routeField);
   }
 
   private Map<String,List<String>> buildUrlMap(DocCollection col, ReplicaListTransformer replicaListTransformer) {
