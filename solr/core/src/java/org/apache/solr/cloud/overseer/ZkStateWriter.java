@@ -115,6 +115,7 @@ public class ZkStateWriter {
     while (true) {
       try {
         state = writePendingUpdates(reader.getClusterState());
+
       } catch (KeeperException.BadVersionException e) {
         prevState = reader.getClusterState();
         stats = new Stats();
@@ -177,13 +178,14 @@ public class ZkStateWriter {
     Timer.Context timerContext = stats.time("update_state");
     boolean success = false;
     ClusterState newClusterState = null;
-    int prevVersion = -1;
+
     try {
       // if (!updates.isEmpty()) {
       for (Map.Entry<String,DocCollection> entry : updates.entrySet()) {
         String name = entry.getKey();
         String path = ZkStateReader.getCollectionPath(name);
         DocCollection c = entry.getValue();
+        int prevVersion = -1;
         Stat stat = new Stat();
 
         try {
@@ -260,9 +262,9 @@ public class ZkStateWriter {
             c = newClusterState.getCollection(name);
             byte[] data = Utils.toJSON(singletonMap(c.getName(), newCollection));
 
-            if (log.isDebugEnabled()) {
-              log.debug("Write state.json bytes={} cs={}", data.length, newClusterState);
-            }
+            //if (log.isDebugEnabled()) {
+              log.info("Write state.json prevVersion={} bytes={} cs={}", prevVersion, data.length, newClusterState);
+            //}
             // stat = reader.getZkClient().getCurator().setData().withVersion(prevVersion).forPath(path, data);
             stat = reader.getZkClient().setData(path, data, prevVersion, true);
           } else {
@@ -299,7 +301,7 @@ public class ZkStateWriter {
           if (e instanceof KeeperException.BadVersionException) {
             // nocommit invalidState = true;
             //if (log.isDebugEnabled())
-            log.info("Tried to update the cluster state using version={} but we where rejected, currently at {}", prevVersion, ((KeeperException.BadVersionException) e).getMessage(), e);
+            log.info("Tried to update the cluster state using version={} but we where rejected, currently at {}", prevVersion, c == null ? "null" : c.getZNodeVersion(), e);
             throw (KeeperException.BadVersionException) e;
           }
           ParWork.propegateInterrupt(e);
@@ -338,7 +340,10 @@ public class ZkStateWriter {
       success = true;
     } catch (KeeperException.BadVersionException bve) {
       // this is a tragic error, we must disallow usage of this instance
-       log.warn("Tried to update the cluster state using version={} but we where rejected as the version is {}", newClusterState.getZNodeVersion(), bve.getMessage(), bve);
+       log.warn("Tried to update the cluster state using version={} but we where rejected", newClusterState.getZNodeVersion(), bve);
+
+
+
       // nocommit invalidState = true;
       throw bve;
     } finally {

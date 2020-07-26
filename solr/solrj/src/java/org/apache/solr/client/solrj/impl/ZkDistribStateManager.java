@@ -108,13 +108,12 @@ public class ZkDistribStateManager implements DistribStateManager {
 
   @Override
   public void makePath(String path, byte[] data, CreateMode createMode, boolean failOnExists) throws AlreadyExistsException, IOException, KeeperException, InterruptedException {
-    if (path.equals("/collections/collection1/terms")) {
-     // throw new IllegalArgumentException();
-    }
     try {
       zkClient.mkdir(path, data, createMode);
     } catch (KeeperException.NodeExistsException e) {
-      throw new AlreadyExistsException(path);
+        if (failOnExists) {
+          throw new AlreadyExistsException(path);
+        }
     }
   }
 
