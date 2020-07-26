@@ -368,8 +368,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
             + event.getWatchedEvent().getState() + " type "
             + event.getWatchedEvent().getType() + "]");
       } else {
-        throw new SolrException(ErrorCode.SERVER_ERROR, operation
-            + " the collection unknown case");
+        // we have to assume success - it was too quick for us to catch the response
+        return new OverseerSolrResponse(new NamedList());
       }
     }
   }

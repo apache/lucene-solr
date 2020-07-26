@@ -140,16 +140,18 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
 
     private final Lock lock;
     private final Condition eventReceived;
+    private final SolrZkClient zkClient;
     private volatile WatchedEvent event;
     private Event.EventType latchEventType;
 
     private volatile boolean triggered = false;
 
-    LatchWatcher() {
-      this(null);
+    LatchWatcher(SolrZkClient zkClient) {
+      this(null, zkClient);
     }
 
-    LatchWatcher(Event.EventType eventType) {
+    LatchWatcher(Event.EventType eventType, SolrZkClient zkClient) {
+      this.zkClient = zkClient;
       this.lock = new ReentrantLock();
       this.eventReceived = lock.newCondition();
       this.latchEventType = eventType;
@@ -191,7 +193,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
           return;
         }
         TimeOut timeout = new TimeOut(timeoutMs, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
-        while (!triggered && !timeout.hasTimedOut()) {
+        while (!triggered && !timeout.hasTimedOut() && !zkClient.isClosed()) {
           try {
             eventReceived.await(250, TimeUnit.MILLISECONDS);
           } catch (InterruptedException e) {
@@ -244,7 +246,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       // otherwise we may miss the response.
       String watchID = createResponseNode();
 
-      LatchWatcher watcher = new LatchWatcher();
+      LatchWatcher watcher = new LatchWatcher(zookeeper);
       Stat stat = zookeeper.exists(watchID, watcher);
 
       // create the request node
