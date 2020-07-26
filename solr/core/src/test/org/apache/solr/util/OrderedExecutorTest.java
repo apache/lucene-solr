@@ -32,6 +32,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.OrderedExecutor;
 import org.junit.Test;
@@ -206,12 +207,16 @@ public class OrderedExecutorTest extends SolrTestCase {
       run.put(i, i);
     }
     OrderedExecutor orderedExecutor = new OrderedExecutor(TEST_NIGHTLY ? 10 : 3, ExecutorUtil.newMDCAwareCachedThreadPool("testStress"));
-    for (int i = 0; i < (TEST_NIGHTLY ? 1000 : 100); i++) {
-      int key = random().nextInt(N);
-      base.put(key, base.get(key) + 1);
-      orderedExecutor.execute(key, () -> run.put(key, run.get(key) + 1));
+    try {
+      for (int i = 0; i < (TEST_NIGHTLY ? 1000 : 55); i++) {
+        int key = random().nextInt(N);
+        base.put(key, base.get(key) + 1);
+        orderedExecutor.execute(key, () -> run.put(key, run.get(key) + 1));
+      }
+    } finally {
+      ParWork.close(orderedExecutor);
     }
-    orderedExecutor.shutdownAndAwaitTermination();
+
     assertTrue(base.equals(run));
   }
 

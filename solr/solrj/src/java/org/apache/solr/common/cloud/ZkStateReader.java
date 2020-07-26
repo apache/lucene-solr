@@ -431,7 +431,7 @@ public class ZkStateReader implements SolrCloseable {
           latch.countDown();
         } else {
           try {
-            Stat stat = zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE, this);
+            Stat stat = zkClient.exists("/cluster/init", this);
             if (stat != null) {
               latch.countDown();
             }
@@ -445,13 +445,13 @@ public class ZkStateReader implements SolrCloseable {
       }
     };
     try {
-      Stat stat = zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE, watcher);
+      Stat stat = zkClient.exists("/cluster/init", watcher);
       if (stat == null) {
         log.info("Collections znode not found, waiting on latch");
         try {
           boolean success = latch.await(10000, TimeUnit.MILLISECONDS);
           if (!success) {
-            log.warn("Timed waiting to see {} node in zk \n{}", ZkStateReader.COLLECTIONS_ZKNODE, clusterState);
+            log.warn("Timed waiting to see {} node in zk \n{}", "/cluster/init", clusterState);
           }
           log.info("Done waiting on latch");
         } catch (InterruptedException e) {

@@ -673,6 +673,8 @@ public class SolrZkClient implements Closeable {
 
   public String mkdir(String path, byte[] data, CreateMode createMode) throws KeeperException {
     if (log.isDebugEnabled()) log.debug("mkdir path={}");
+    // nocommit
+    log.info("mkdir path={}");
 //    if (path.endsWith("/leader_elect")) {
 //      throw new IllegalStateException("");
 //    }

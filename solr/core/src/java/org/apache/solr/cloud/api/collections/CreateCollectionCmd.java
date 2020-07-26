@@ -711,7 +711,12 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
       // nocommit make efficient
 
-      stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection);
+      try {
+        stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection);
+      } catch (AlreadyExistsException e) {
+        // sadly, can be created, say to point to a specific config set
+      }
+
       collectionProps.put(ZkController.CONFIGNAME_PROP, configName);
       ZkNodeProps zkProps = new ZkNodeProps(collectionProps);
       stateManager.setData(collectionPath, Utils.toJSON(zkProps), -1);

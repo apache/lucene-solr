@@ -99,7 +99,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
       server.run(true);
 
       SolrZkClient client = server.getZkClient();
-
+      client.mkdir("/cluster");
       ZkController.createClusterZkNodes(client);
 
       try (ZkStateReader zkStateReader = new ZkStateReader(client)) {

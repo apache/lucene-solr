@@ -878,6 +878,9 @@ public class ZkController implements Closeable {
     //   operations.add(zkClient.createPathOp(ZkStateReader.CLUSTER_PROPS, emptyJson));
     paths.put(ZkStateReader.SOLR_PKGS_PATH, emptyJson);
     paths.put(ZkStateReader.ROLES, emptyJson);
+
+
+    paths.put(COLLECTIONS_ZKNODE, null);
 //
 
 //
@@ -903,10 +906,8 @@ public class ZkController implements Closeable {
       log.info("Supressing upload of default config set");
     }
 
-    log.info("Creating final {} node", COLLECTIONS_ZKNODE);
-    Map<String,byte[]> dataMap = new HashMap<>();
-    dataMap.put(COLLECTIONS_ZKNODE, null);
-    zkClient.mkdirs(dataMap);
+    log.info("Creating final {} node", "/cluster/init");
+    zkClient.mkdir( "/cluster/init");
 
   }
 
@@ -1014,14 +1015,14 @@ public class ZkController implements Closeable {
 
           if (log.isDebugEnabled()) log.debug("got cluster lock");
           CountDownLatch latch = new CountDownLatch(1);
-          zkClient.getSolrZooKeeper().sync(COLLECTIONS_ZKNODE, (rc, path, ctx) -> {
+          zkClient.getSolrZooKeeper().sync("/cluster/init", (rc, path, ctx) -> {
             latch.countDown();
           }, new Object());
           boolean success = latch.await(10, TimeUnit.SECONDS);
           if (!success) {
             throw new SolrException(ErrorCode.SERVER_ERROR, "Timeout calling sync on collection zknode");
           }
-          if (!zkClient.exists(COLLECTIONS_ZKNODE)) {
+          if (!zkClient.exists("/cluster/init")) {
             try {
               createClusterZkNodes(zkClient);
             } catch (Exception e) {
