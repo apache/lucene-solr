@@ -48,6 +48,7 @@ import org.eclipse.jetty.util.thread.TryExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+// TODO we can inherit from jetty impl now and just override newThread
 public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFactory, ThreadPool.SizedThreadPool, Dumpable, TryExecutor, Closeable {
     private static final org.eclipse.jetty.util.log.Logger LOG = Log.getLogger(QueuedThreadPool.class);
     private static Runnable NOOP = () ->

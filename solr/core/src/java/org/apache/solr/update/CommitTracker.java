@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -67,7 +68,7 @@ public final class CommitTracker implements Runnable, Closeable {
   private final ScheduledExecutorService scheduler =
       Executors.newScheduledThreadPool(1, new SolrNamedThreadFactory("commitScheduler"));
   @SuppressWarnings({"rawtypes"})
-  private ScheduledFuture pending;
+  private volatile ScheduledFuture pending;
   
   // state
   private AtomicLong docsSinceCommit = new AtomicLong(0);
@@ -105,12 +106,14 @@ public final class CommitTracker implements Runnable, Closeable {
   
   public synchronized void close() {
     this.closed = true;
-    if (pending != null) {
+    try {
       pending.cancel(false);
-      pending = null;
+    } catch (NullPointerException e) {
+      // okay
     }
-    scheduler.shutdown();
-    ExecutorUtil.awaitTermination(scheduler);
+    pending = null;
+
+    ParWork.close(scheduler);
     ObjectReleaseTracker.release(this);
   }
   
