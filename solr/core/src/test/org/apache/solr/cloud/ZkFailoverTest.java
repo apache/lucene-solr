@@ -33,7 +33,7 @@ public class ZkFailoverTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    System.setProperty("waitForZk", "60");
+    System.setProperty("waitForZk", "30");
     useFactory("solr.StandardDirectoryFactory");
     configureCluster(2)
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-dynamic").resolve("conf"))
