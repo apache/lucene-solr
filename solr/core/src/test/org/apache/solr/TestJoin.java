@@ -178,8 +178,8 @@ public class TestJoin extends SolrTestCaseJ4 {
 
   @Test
   public void testRandomJoin() throws Exception {
-    int indexIter=50 * RANDOM_MULTIPLIER;
-    int queryIter=50 * RANDOM_MULTIPLIER;
+    int indexIter= TEST_NIGHTLY ? 50 : 5 * RANDOM_MULTIPLIER;
+    int queryIter= TEST_NIGHTLY ? 50 : 5 * RANDOM_MULTIPLIER;
 
     // groups of fields that have any chance of matching... used to
     // increase test effectiveness by avoiding 0 resultsets much of the time.
