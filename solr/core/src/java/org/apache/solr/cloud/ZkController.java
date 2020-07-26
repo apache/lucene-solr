@@ -948,13 +948,14 @@ public class ZkController implements Closeable {
   }
 
   private void init() {
-    Runtime.getRuntime().addShutdownHook(new Thread() {
-      public void run() {
-        shutdown();
-        ParWork.close(ParWork.getExecutor());
-      }
-
-    });
+    // nocommit
+//    Runtime.getRuntime().addShutdownHook(new Thread() {
+//      public void run() {
+//        shutdown();
+//        ParWork.close(ParWork.getExecutor());
+//      }
+//
+//    });
     synchronized (initLock) {
       log.info("making shutdown watcher for cluster");
       try {
