@@ -29,6 +29,7 @@ import com.google.common.collect.ImmutableList;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.ApiSupport;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -222,6 +223,9 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
           rsp.setHttpCaching(false);
         }
       }
+    } catch (InterruptedException e) {
+        ParWork.propegateInterrupt(e);
+        throw new AlreadyClosedException(e);
     } catch (Exception e) {
       ParWork.propegateInterrupt(e);
       if (req.getCore() != null) {

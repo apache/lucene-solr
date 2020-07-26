@@ -143,6 +143,8 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
     private volatile WatchedEvent event;
     private Event.EventType latchEventType;
 
+    private volatile boolean triggered = false;
+
     LatchWatcher() {
       this(null);
     }
@@ -173,6 +175,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
         }
         try {
           this.event = event;
+          triggered = true;
           eventReceived.signalAll();
         } finally {
           lock.unlock();
@@ -188,9 +191,9 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
           return;
         }
         TimeOut timeout = new TimeOut(timeoutMs, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
-        while (this.event == null && !timeout.hasTimedOut()) {
+        while (!triggered && !timeout.hasTimedOut()) {
           try {
-            eventReceived.await(500, TimeUnit.MILLISECONDS);
+            eventReceived.await(250, TimeUnit.MILLISECONDS);
           } catch (InterruptedException e) {
             ParWork.propegateInterrupt(e);
             throw e;
