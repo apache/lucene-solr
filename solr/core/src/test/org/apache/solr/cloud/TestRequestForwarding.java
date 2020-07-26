@@ -46,6 +46,7 @@ public class TestRequestForwarding extends SolrTestCaseJ4 {
   @Override
   public void tearDown() throws Exception {
     solrCluster.shutdown();
+    solrCluster = null;
     System.clearProperty("solr.test.sys.prop1");
     System.clearProperty("solr.test.sys.prop2");
 

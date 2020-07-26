@@ -47,6 +47,7 @@ import org.apache.solr.client.solrj.routing.ReplicaListTransformer;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -381,11 +382,11 @@ public class HttpShardHandler extends ShardHandler {
 
       while (pending.size() > 0 && !Thread.currentThread().isInterrupted()) {
         try {
-          Future<ShardResponse> future = completionService.poll(Integer.getInteger("solr.httpShardHandler.completionTimeout", 15000), TimeUnit.MILLISECONDS);
+          Future<ShardResponse> future = completionService.poll(Integer.getInteger("solr.httpShardHandler.completionTimeout", 30000), TimeUnit.MILLISECONDS);
           if (future == null) {
             log.warn("Timed out waiting for response from shard");
             // nocommit
-            continue;
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Timeout waiting for shard response");
           }
           pending.remove(future);
           ShardResponse rsp = future.get();
@@ -400,7 +401,7 @@ public class HttpShardHandler extends ShardHandler {
           }
         } catch (InterruptedException e) {
           ParWork.propegateInterrupt(e);
-          throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, e);
+          throw new AlreadyClosedException(e);
         } catch (ExecutionException e) {
           // should be impossible... the problem with catching the exception
           // at this level is we don't know what ShardRequest it applied to

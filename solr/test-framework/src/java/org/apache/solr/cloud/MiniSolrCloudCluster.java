@@ -57,6 +57,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -156,6 +157,7 @@ public class MiniSolrCloudCluster {
   private final boolean trackJettyMetrics;
 
   private final AtomicInteger nodeIds = new AtomicInteger();
+  private boolean isShutDown;
 
 
   /**
@@ -653,7 +655,11 @@ public class MiniSolrCloudCluster {
   /**
    * Shut down the cluster, including all Solr nodes and ZooKeeper
    */
-  public void shutdown() throws Exception {
+  public synchronized void shutdown() throws Exception {
+    if (this.isShutDown) {
+      throw new AlreadyClosedException("This MiniSolrCloudCluster has already been shutdown");
+    }
+    this.isShutDown = true;
     if (zkServer.getZkClient().isConnected()) {
 //      try {
 //        log.info("creating cluster shutdown zk node");

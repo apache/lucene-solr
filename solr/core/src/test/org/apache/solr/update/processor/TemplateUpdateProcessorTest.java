@@ -43,15 +43,15 @@ public class TemplateUpdateProcessorTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(5)
+    configureCluster(TEST_NIGHTLY ? 5 : 2)
         .addConfig("conf1", configset("cloud-minimal"))
         .configure();
   }
 
   @After
   public void after() throws Exception {
-    cluster.deleteAllCollections();
     cluster.shutdown();
+    cluster = null;
   }
 
   @org.junit.Rule

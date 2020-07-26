@@ -222,6 +222,8 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
   public void cleanup() throws Exception {
     if (cluster != null) cluster.shutdown();
     if (controlCluster != null) controlCluster.shutdown();
+    cluster = null;
+    controlCluster = null;
   }
   
   

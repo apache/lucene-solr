@@ -78,6 +78,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
   @After
   public void tearDownCluster() throws Exception {
     cluster.shutdown();
+    cluster = null;
   }
 
   @Test

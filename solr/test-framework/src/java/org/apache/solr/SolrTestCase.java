@@ -115,17 +115,13 @@ public class SolrTestCase extends LuceneTestCase {
                   new TestWatcher() {
                     @Override
                     protected void failed(Throwable e, Description description) {
-                      System.out.println("TEST FAILED!");
                       failed = true;
                     }
 
                     @Override
                     protected void succeeded(Description description) {
-                      System.out.println("TEST Worked!");
                     }
                   });
-
-
 
   public static final int DEFAULT_ZK_SESSION_TIMEOUT = 20000;  // default socket connection timeout in ms
   public static final int DEFAULT_CONNECTION_TIMEOUT = 10000;  // default socket connection timeout in ms

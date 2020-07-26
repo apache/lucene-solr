@@ -591,7 +591,7 @@ public abstract class LuceneTestCase extends Assert {
    * Max 10mb of static data stored in a test suite class after the suite is complete.
    * Prevents static data structures leaking and causing OOMs in subsequent tests.
    */
-  private final static long STATIC_LEAK_THRESHOLD = 10 * 1024 * 1024;
+  private final static long STATIC_LEAK_THRESHOLD = 5 * 1024;
 
   /** By-name list of ignored types like loggers etc. */
   private final static Set<String> STATIC_LEAK_IGNORED_TYPES = Set.of(

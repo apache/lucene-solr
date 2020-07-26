@@ -52,6 +52,7 @@ public class BasicAuthOnSingleNodeTest extends SolrCloudAuthTestCase {
   @After
   public void tearDown() throws Exception {
     cluster.shutdown();
+    cluster = null;
     super.tearDown();
   }
 
