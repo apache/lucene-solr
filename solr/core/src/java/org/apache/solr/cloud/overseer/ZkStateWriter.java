@@ -123,6 +123,9 @@ public class ZkStateWriter {
         continue;
 //        log.info("BadVersion");
 //        throw new AlreadyClosedException();
+      } catch (InterruptedException | AlreadyClosedException e) {
+        ParWork.propegateInterrupt(e);
+        throw e;
       } catch (Exception e) {
         log.error("Ran into unexpected exception trying to write new cluster state", e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -288,7 +291,7 @@ public class ZkStateWriter {
             }
           }
 
-        } catch (InterruptedException e) {
+        } catch (InterruptedException | AlreadyClosedException e) {
           ParWork.propegateInterrupt(e);
           throw e;
         } catch (Exception e) {
