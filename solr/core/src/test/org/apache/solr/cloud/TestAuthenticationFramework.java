@@ -108,7 +108,6 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
       CollectionAdminRequest.createCollection(collectionName, configName, numShards, numReplicas)
           .setMaxShardsPerNode(maxShardsPerNode)
           .process(cluster.getSolrClient());
-      cluster.waitForActiveCollection(collectionName, numShards, numShards * numReplicas);
     }
 
   }

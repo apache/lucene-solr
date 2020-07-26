@@ -149,8 +149,6 @@ public class AddReplicaTest extends SolrCloudTestCase {
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collection, "conf1", 2, 1);
     create.setMaxShardsPerNode(2);
     cloudClient.request(create);
-    
-    cluster.waitForActiveCollection(collection, 2, 2);
 
     ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
     DocCollection coll = clusterState.getCollection(collection);

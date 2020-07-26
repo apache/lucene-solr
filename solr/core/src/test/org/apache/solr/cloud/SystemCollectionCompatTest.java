@@ -98,7 +98,7 @@ public class SystemCollectionCompatTest extends SolrCloudTestCase {
         .setCreateNodeSet(String.join(",", nodes))
         .setMaxShardsPerNode(2)
         .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(CollectionAdminParams.SYSTEM_COLL,  1, 2);
+
     // send a dummy doc to the .system collection
     SolrInputDocument doc = new SolrInputDocument(
         "id", IdUtils.timeRandomId(),

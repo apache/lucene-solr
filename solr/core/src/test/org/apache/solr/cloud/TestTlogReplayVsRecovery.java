@@ -194,8 +194,7 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
     NODE0.start();
 
     log.info("Waiting for all nodes and active collection...");
-    
-    cluster.waitForAllNodes(30);;
+
     waitForState("Timeout waiting for leader", COLLECTION, (liveNodes, collectionState) -> {
       Replica newLeader = collectionState.getLeader("shard1");
       return newLeader != null && newLeader.getName().equals(leader.getName());

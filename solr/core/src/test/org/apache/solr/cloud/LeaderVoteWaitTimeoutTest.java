@@ -120,7 +120,7 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(collectionName, 1, 1)
         .setCreateNodeSet(cluster.getJettySolrRunner(0).getNodeName())
         .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(collectionName, 1, 1);
+
     cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "1"));
     cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "2"));
     cluster.getSolrClient().commit(collectionName);
@@ -175,28 +175,21 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
     CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
         .setNode(cluster.getJettySolrRunner(0).getNodeName())
         .process(cluster.getSolrClient());
-    
+
     cluster.waitForActiveCollection(collectionName, 1, 1);
-    
-    waitForState("Timeout waiting for shard leader", collectionName, clusterShape(1, 1));
     Replica leader = getCollectionState(collectionName).getSlice("shard1").getLeader();
 
     // this replica will ahead of election queue
     CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
         .setNode(cluster.getJettySolrRunner(1).getNodeName())
         .process(cluster.getSolrClient());
-    
-    cluster.waitForActiveCollection(collectionName, 1, 2);
-    
-    waitForState("Timeout waiting for 1x2 collection", collectionName, clusterShape(1, 2));
+
     Replica replica1 = getCollectionState(collectionName).getSlice("shard1")
         .getReplicas(replica -> replica.getNodeName().equals(cluster.getJettySolrRunner(1).getNodeName())).get(0);
 
     CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
         .setNode(cluster.getJettySolrRunner(2).getNodeName())
         .process(cluster.getSolrClient());
-    
-    cluster.waitForActiveCollection(collectionName, 1, 3);
 
     Replica replica2 = getCollectionState(collectionName).getSlice("shard1")
         .getReplicas(replica -> replica.getNodeName().equals(cluster.getJettySolrRunner(2).getNodeName())).get(0);

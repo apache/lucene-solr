@@ -77,7 +77,6 @@ public class TestSkipOverseerOperations extends SolrCloudTestCase {
             .collect(Collectors.joining(","))
         )
         .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection("collection1", 2, 2);
 
     ZkStateReader reader = cluster.getSolrClient().getZkStateReader();
     
@@ -142,8 +141,6 @@ public class TestSkipOverseerOperations extends SolrCloudTestCase {
         )
         .setMaxShardsPerNode(2)
         .process(cluster.getSolrClient());
-    
-    cluster.waitForActiveCollection(collection, 2, 4);
     
     ZkStateReader reader = cluster.getSolrClient().getZkStateReader();
     

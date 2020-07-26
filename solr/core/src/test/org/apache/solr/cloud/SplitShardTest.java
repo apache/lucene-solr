@@ -82,8 +82,6 @@ public class SplitShardTest extends SolrCloudTestCase {
         .setMaxShardsPerNode(100)
         .process(cluster.getSolrClient());
     
-    cluster.waitForActiveCollection(COLLECTION_NAME, 2, 2);
-    
     CollectionAdminRequest.SplitShard splitShard = CollectionAdminRequest.splitShard(COLLECTION_NAME)
         .setNumSubShards(5)
         .setShardName("shard1");
@@ -131,8 +129,6 @@ public class SplitShardTest extends SolrCloudTestCase {
         .setMaxShardsPerNode(100)
         .process(cluster.getSolrClient());
 
-    cluster.waitForActiveCollection(collectionName, 2, 2);
-
     CollectionAdminRequest.SplitShard splitShard = CollectionAdminRequest.splitShard(collectionName)
         .setSplitFuzz(0.5f)
         .setShardName("shard1");
@@ -157,8 +153,6 @@ public class SplitShardTest extends SolrCloudTestCase {
           .createCollection(collectionName, "conf", 1, repFactor)
           .setMaxShardsPerNode(100)
           .process(cluster.getSolrClient());
-
-    cluster.waitForActiveCollection(collectionName, 1, repFactor);
 
     CloudHttp2SolrClient client = cluster.getSolrClient();
     client.setDefaultCollection(collectionName);

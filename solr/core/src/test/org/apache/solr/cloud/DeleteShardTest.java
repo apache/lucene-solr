@@ -64,7 +64,6 @@ public class DeleteShardTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection(collection, "conf", 2, 1)
         .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(collection, 2, 2);
 
     DocCollection state = getCollectionState(collection);
     assertEquals(State.ACTIVE, state.getSlice("shard1").getState());
@@ -120,8 +119,6 @@ public class DeleteShardTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollectionWithImplicitRouter(collection, "conf", "a,b,c", 1)
         .setMaxShardsPerNode(2)
         .process(cluster.getSolrClient());
-    
-    cluster.waitForActiveCollection(collection, 3, 3);
 
     // Get replica details
     Replica leader = getCollectionState(collection).getLeader("a");

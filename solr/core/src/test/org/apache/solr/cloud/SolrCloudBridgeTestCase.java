@@ -177,7 +177,6 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(COLLECTION, "_default", sliceCount, replicationFactor)
         .setMaxShardsPerNode(10)
         .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(COLLECTION, sliceCount, sliceCount * replicationFactor);
 
     cloudClient = cluster.getSolrClient();
     cloudClient.setDefaultCollection(COLLECTION);
@@ -211,7 +210,6 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
       CollectionAdminRequest.createCollection(COLLECTION, "_default", 1, 1)
           .setMaxShardsPerNode(10)
           .process(controlCluster.getSolrClient());
-      controlCluster.waitForActiveCollection(COLLECTION, 1, 1);
 
       controlClient = controlCluster.getSolrClient();
       controlClient.setDefaultCollection(COLLECTION);
@@ -283,7 +281,6 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
         .setMaxShardsPerNode(10)
         .setCreateNodeSet(null)
         .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(collectionName, numShards, numShards * numReplicas);
     return resp;
   }
   
@@ -292,7 +289,6 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
         .setMaxShardsPerNode(maxShardsPerNode)
         .setRouterField(routerField)
         .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(collectionName, numShards, numShards * numReplicas);
     return resp;
   }
   
@@ -301,7 +297,6 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
         .setMaxShardsPerNode(maxShardsPerNode)
         .setRouterField(routerField)
         .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(collectionName, numShards, numShards * numReplicas);
     return resp;
   }
   
@@ -310,7 +305,6 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
         .setMaxShardsPerNode(maxShardsPerNode)
         .setCreateNodeSet(createNodeSetStr)
         .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(collectionName, numShards, numShards * numReplicas);
     return resp;
   }
   

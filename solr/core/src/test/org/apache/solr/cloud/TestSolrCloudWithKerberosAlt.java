@@ -133,8 +133,6 @@ public class TestSolrCloudWithKerberosAlt extends SolrCloudTestCase {
         .setMaxShardsPerNode(maxShardsPerNode)
         .process(client);
 
-    cluster.waitForActiveCollection(collectionName, numShards, numShards * numReplicas);
-
     // modify/query collection
     new UpdateRequest().add("id", "1").commit(client, collectionName);
     QueryResponse rsp = client.query(collectionName, new SolrQuery("*:*"));

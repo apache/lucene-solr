@@ -92,8 +92,6 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     create.setCreateNodeSet(StrUtils.join(l, ',')).setMaxShardsPerNode(3);
     cloudClient.request(create);
     
-    cluster.waitForActiveCollection(coll, 5, 5 * (create.getNumNrtReplicas() + create.getNumPullReplicas() + create.getNumTlogReplicas()));
-    
     DocCollection collection = cloudClient.getZkStateReader().getClusterState().getCollection(coll);
     log.debug("### Before decommission: {}", collection);
     log.info("excluded_node : {}  ", emptyNode);

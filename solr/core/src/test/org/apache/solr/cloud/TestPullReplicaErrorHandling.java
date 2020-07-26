@@ -145,7 +145,6 @@ public void testCantConnectToPullReplica() throws Exception {
     CollectionAdminRequest.createCollection(collectionName, "conf", numShards, 1, 0, 1)
       .setMaxShardsPerNode(1)
       .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(collectionName, numShards, numShards * 2);
     addDocs(10);
     DocCollection docCollection = assertNumberOfReplicas(numShards, 0, numShards, false, true);
     Slice s = docCollection.getSlices().iterator().next();
@@ -188,7 +187,6 @@ public void testCantConnectToPullReplica() throws Exception {
     CollectionAdminRequest.createCollection(collectionName, "conf", numShards, 1, 0, 1)
       .setMaxShardsPerNode(1)
       .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(collectionName, numShards, numShards * 2);
     addDocs(10);
     DocCollection docCollection = assertNumberOfReplicas(numShards, 0, numShards, false, true);
     Slice s = docCollection.getSlices().iterator().next();

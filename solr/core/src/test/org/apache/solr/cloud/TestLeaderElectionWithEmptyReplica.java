@@ -56,8 +56,6 @@ public class TestLeaderElectionWithEmptyReplica extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection(COLLECTION_NAME, "config", 1, 1)
         .process(cluster.getSolrClient());
-
-    cluster.waitForActiveCollection(COLLECTION_NAME, 1, 1);
   }
 
   @Test
@@ -91,12 +89,8 @@ public class TestLeaderElectionWithEmptyReplica extends SolrCloudTestCase {
     CollectionAdminRequest.AddReplica addReplica = CollectionAdminRequest.addReplicaToShard(COLLECTION_NAME, "shard1");
     String asyncId = addReplica.processAsync(solrClient);
 
-    // wait a bit
-    Thread.sleep(100);
-
     // bring the old leader node back up
     replicaJetty.start();
-    cluster.waitForNode(replicaJetty, 10);
 
     cluster.waitForActiveCollection(COLLECTION_NAME, 1, 2);
 

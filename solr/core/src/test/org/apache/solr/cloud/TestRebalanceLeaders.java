@@ -73,8 +73,6 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
         .setMaxShardsPerNode((numShards * numReplicas) / numNodes + 1)
         .process(cluster.getSolrClient());
     assertEquals("Admin request failed; ", 0, resp.getStatus());
-    cluster.waitForActiveCollection(COLLECTION_NAME, numShards, numShards * numReplicas);
-
   }
 
   @Before

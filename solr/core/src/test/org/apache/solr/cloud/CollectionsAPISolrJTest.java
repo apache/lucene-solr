@@ -180,8 +180,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
           .process(cluster.getSolrClient());
       assertEquals(0, response.getStatus());
       assertTrue(response.isSuccess());
-      
-      cluster.waitForActiveCollection(COLL_NAME, 2, 4);
 
       DocCollection coll = cluster.getSolrClient().getClusterStateProvider().getClusterState().getCollection(COLL_NAME);
       Map<String, Slice> slices = coll.getSlicesMap();
@@ -321,7 +319,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     String collectionName = "solrj_test";
     CollectionAdminResponse response = CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2)
         .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(collectionName, 2,4);
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
     Map<String, NamedList<Integer>> coresStatus = response.getCollectionCoresStatus();
@@ -339,8 +336,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     Map<String,NamedList<Integer>> nodesStatus = response.getCollectionNodesStatus();
     assertEquals(4, nodesStatus.size());
 
-    waitForState("Expected " + collectionName + " to disappear from cluster state", collectionName, (n, c) -> c == null);
-
     // Test Creating a collection with new stateformat.
     collectionName = "solrj_newstateformat";
 
@@ -349,8 +344,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
-
-    cluster.waitForActiveCollection(collectionName, 2,4);
   }
 
   @Test
@@ -363,8 +356,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
-    
-    cluster.waitForActiveCollection(collectionName, 2, 4);
     
     String nodeName = (String) response._get("success[0]/key", null);
     String corename = (String) response._get(asList("success", nodeName, "core"), null);
@@ -389,9 +380,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
-    
-    cluster.waitForActiveCollection(collectionName, 2, 6);
-    
+
     Map<String, NamedList<Integer>> coresStatus = response.getCollectionCoresStatus();
     assertEquals(6, coresStatus.size());
 
@@ -448,8 +437,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1)
         .process(cluster.getSolrClient());
 
-    cluster.waitForActiveCollection(collectionName, 2, 2);
-    
     CollectionAdminResponse response = CollectionAdminRequest.splitShard(collectionName)
         .setShardName("shard1")
         .process(cluster.getSolrClient());
@@ -506,8 +493,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
     
-    cluster.waitForActiveCollection(collectionName, 1, 1);
-    
     Map<String, NamedList<Integer>> coresStatus = response.getCollectionCoresStatus();
     assertEquals(1, coresStatus.size());
 
@@ -527,8 +512,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     final String collectionName = "solrj_replicatests";
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 2)
         .process(cluster.getSolrClient());
-    
-    cluster.waitForActiveCollection(collectionName, 1, 2);
 
     ArrayList<String> nodeList
         = new ArrayList<>(cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes());
@@ -538,9 +521,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     CollectionAdminResponse response = CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
         .setNode(node)
         .process(cluster.getSolrClient());
-    
-    cluster.waitForActiveCollection(collectionName, 1, 3);
-    
+
     Replica newReplica = grabNewReplica(response, getCollectionState(collectionName));
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
@@ -597,8 +578,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2)
         .process(cluster.getSolrClient());
-    
-    cluster.waitForActiveCollection(collectionName, 2, 4);
 
     // Check for value change
     CollectionAdminRequest.setCollectionProperty(collectionName, propName, "false")
@@ -629,8 +608,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     final String collectionName = "collectionStatusTest";
     CollectionAdminRequest.createCollection(collectionName, "conf2", 2, 2)
         .process(cluster.getSolrClient());
-
-    cluster.waitForActiveCollection(collectionName, 2, 4);
 
     SolrClient client = cluster.getSolrClient();
     byte[] binData = collectionName.getBytes("UTF-8");
@@ -711,12 +688,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(collectionName1, "conf", 1, 1).setAlias("col1").process(cluster.getSolrClient());
     CollectionAdminRequest.createCollection(collectionName2, "conf", 1, 1).setAlias("col2").process(cluster.getSolrClient());
 
-    cluster.waitForActiveCollection(collectionName1, 1, 1);
-    cluster.waitForActiveCollection(collectionName2, 1, 1);
-
-    waitForState("Expected collection1 to be created with 1 shard and 1 replica", collectionName1, clusterShape(1, 1));
-    waitForState("Expected collection2 to be created with 1 shard and 1 replica", collectionName2, clusterShape(1, 1));
-
     CollectionAdminRequest.createAlias("compoundAlias", "col1,col2").process(cluster.getSolrClient());
     CollectionAdminRequest.createAlias("simpleAlias", "col1").process(cluster.getSolrClient());
     CollectionAdminRequest.createCategoryRoutedAlias("catAlias", "field1", 100,
@@ -794,12 +765,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     String collectionName2 = "aliasedCollection2";
     CollectionAdminRequest.createCollection(collectionName1, "conf", 1, 1).process(solrClient);
     CollectionAdminRequest.createCollection(collectionName2, "conf", 1, 1).process(solrClient);
-
-    cluster.waitForActiveCollection(collectionName1, 1, 1);
-    cluster.waitForActiveCollection(collectionName2, 1, 1);
-
-    waitForState("Expected collection1 to be created with 1 shard and 1 replica", collectionName1, clusterShape(1, 1));
-    waitForState("Expected collection2 to be created with 1 shard and 1 replica", collectionName2, clusterShape(1, 1));
 
     SolrInputDocument doc = new SolrInputDocument("id", "1");
     solrClient.add(collectionName1, doc);
@@ -897,8 +862,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     final String collection = "replicaProperties";
     CollectionAdminRequest.createCollection(collection, "conf", 2, 2)
         .process(cluster.getSolrClient());
-    
-    cluster.waitForActiveCollection(collection, 2, 4);
 
     final Replica replica = getCollectionState(collection).getLeader("shard1");
     CollectionAdminResponse response
@@ -925,8 +888,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     final String collection = "balancedProperties";
     CollectionAdminRequest.createCollection(collection, "conf", 2, 2)
         .process(cluster.getSolrClient());
-    
-   cluster.waitForActiveCollection(collection, 2, 4);
 
     CollectionAdminResponse response = CollectionAdminRequest.balanceReplicaProperty(collection, "preferredLeader")
         .process(cluster.getSolrClient());
@@ -952,8 +913,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     final String collection = "testAddAndDeleteCollectionAttribute";
     CollectionAdminRequest.createCollection(collection, "conf", 1, 1)
         .process(cluster.getSolrClient());
-    
-    cluster.waitForActiveCollection(collection, 1, 1);
 
     CollectionAdminRequest.modifyCollection(collection, null)
         .setAttribute("replicationFactor", 25)

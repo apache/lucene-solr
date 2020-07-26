@@ -90,7 +90,6 @@ public class RoutingToNodesWithPropertiesTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection(COLLECTION, 2, 2)
         .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(COLLECTION, 2, 4);
 
     // Checking putting replicas
     for (Slice slice : getCollectionState(COLLECTION).getSlices()) {

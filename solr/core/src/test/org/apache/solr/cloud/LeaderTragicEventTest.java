@@ -164,7 +164,6 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
     CollectionAdminRequest
         .createCollection(collection, "config", 1, numReplicas)
         .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(collection, 1, numReplicas);
 
     try {
       JettySolrRunner otherReplicaJetty = null;

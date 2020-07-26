@@ -98,8 +98,6 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
 
     Create req = CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2);
     req.process(cluster.getSolrClient());
-    
-    cluster.waitForActiveCollection(collectionName, 2, 4);
 
     DocCollection state = getCollectionState(collectionName);
     Slice shard = getRandomShard(state);
@@ -198,18 +196,10 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
   @Test
   // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
   public void deleteReplicaByCountForAllShards() throws Exception {
-
     final String collectionName = "deleteByCountNew";
     Create req = CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2);
     req.process(cluster.getSolrClient());
-    
-    cluster.waitForActiveCollection(collectionName, 2, 4);
-    
-    waitForState("Expected two shards with two replicas each", collectionName, clusterShape(2, 4));
-
     CollectionAdminRequest.deleteReplicasFromAllShards(collectionName, 1).process(cluster.getSolrClient());
-    waitForState("Expected two shards with one replica each", collectionName, clusterShape(2, 2));
-
   }
 
   @Test
@@ -233,13 +223,9 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 3)
         .process(cluster.getSolrClient());
     
-    cluster.waitForActiveCollection(collectionName, 1, 3);
-    
     cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "1"));
     cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "2"));
     cluster.getSolrClient().commit(collectionName);
-
-    cluster.waitForActiveCollection(collectionName, 1, 3);
 
     Slice shard = getCollectionState(collectionName).getSlice("shard1");
 
@@ -309,9 +295,6 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     final String collectionName = "raceDeleteReplica_"+legacyCloud;
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 2)
         .process(cluster.getSolrClient());
-    
-    cluster.waitForActiveCollection(collectionName, 1, 2);
-
 
     Slice shard1 = getCollectionState(collectionName).getSlice("shard1");
     Replica leader = shard1.getLeader();
@@ -415,7 +398,6 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     });
 
     leaderJetty.start();
-    cluster.waitForNode(leaderJetty, 10000);
     cluster.waitForActiveCollection(collectionName, 1, 2);
 
     CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());

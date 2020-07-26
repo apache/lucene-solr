@@ -148,8 +148,6 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
         .withProperty("schema", "schema-psuedo-fields.xml")
         .process(CLOUD_CLIENT);
 
-    cluster.waitForActiveCollection(COLLECTION_NAME, numShards, repFactor * numShards); 
-
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"));
     }
@@ -161,6 +159,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       client.close();
     }
     CLIENTS.clear();
+    CLOUD_CLIENT = null;
   }
 
   /** 

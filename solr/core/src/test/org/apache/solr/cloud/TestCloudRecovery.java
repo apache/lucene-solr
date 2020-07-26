@@ -82,7 +82,6 @@ public class TestCloudRecovery extends SolrCloudTestCase {
         .createCollection(COLLECTION, "config", 2, nrtReplicas, tlogReplicas, 0)
         .setMaxShardsPerNode(2)
         .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(COLLECTION, 2, 2 * (nrtReplicas + tlogReplicas));
 
     // SOLR-12314 : assert that these values are from the solr.xml file and not UpdateShardHandlerConfig#DEFAULT
     for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
@@ -129,10 +128,6 @@ public class TestCloudRecovery extends SolrCloudTestCase {
     }
     assertTrue("Timeout waiting for all not live", ClusterStateUtil.waitForAllReplicasNotLive(cloudClient.getZkStateReader(), 45000));
     ChaosMonkey.start(cluster.getJettySolrRunners());
-
-    for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
-      cluster.waitForNode(runner, 10);
-    }
 
     cluster.waitForActiveCollection(COLLECTION, 2, 2 * (nrtReplicas + tlogReplicas));
 
@@ -227,10 +222,6 @@ public class TestCloudRecovery extends SolrCloudTestCase {
 
     for (JettySolrRunner j : cluster.getJettySolrRunners()) {
       j.start();
-    }
-
-    for (JettySolrRunner j : cluster.getJettySolrRunners()) {
-      cluster.waitForNode(j, 10);
     }
 
     cluster.waitForActiveCollection(COLLECTION, 2, 2 * (nrtReplicas + tlogReplicas));

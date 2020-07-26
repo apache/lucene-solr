@@ -159,7 +159,6 @@ public class TestTlogReplica extends SolrCloudTestCase {
         CollectionAdminRequest.createCollection(collectionName, "conf", 2, 0, 4, 0)
         .setMaxShardsPerNode(100)
         .process(cluster.getSolrClient());
-        cluster.waitForActiveCollection(collectionName, 2, 8);
         break;
       case 1:
         // Sometimes don't use SolrJ

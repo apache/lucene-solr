@@ -55,7 +55,6 @@ public class AssignBackwardCompatibilityTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(COLLECTION, 1, 4)
         .setMaxShardsPerNode(1000)
         .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(COLLECTION, 1, 4);
   }
 
   @Test

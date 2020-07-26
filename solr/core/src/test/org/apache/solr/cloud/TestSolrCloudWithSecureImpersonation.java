@@ -186,8 +186,6 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
     };
     create.setMaxShardsPerNode(1);
     response = create.process(solrCluster.getSolrClient());
-
-    miniCluster.waitForActiveCollection(name, 1, 1);
     
     if (response.getStatus() != 0 || response.getErrorMessages() != null) {
       fail("Could not create collection. Response" + response.toString());

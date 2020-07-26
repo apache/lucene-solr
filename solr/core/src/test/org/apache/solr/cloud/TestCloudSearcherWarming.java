@@ -99,8 +99,6 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
         .setCreateNodeSet(cluster.getJettySolrRunner(0).getNodeName());
     create.process(solrClient);
 
-   cluster.waitForActiveCollection(collectionName, 1, 1);
-
     solrClient.setDefaultCollection(collectionName);
 
     String addListenerCommand = "{" +
@@ -120,8 +118,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
 
     JettySolrRunner runner = cluster.getJettySolrRunner(0);
     runner.stop();
-    
-    cluster.waitForJettyToStop(runner);
+
     // check waitForState only after we are sure the node has shutdown and have forced an update to liveNodes
     // ie: workaround SOLR-13490
     cluster.getSolrClient().getZkStateReader().updateLiveNodes();
@@ -129,7 +126,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
     // restart
     sleepTime.set(1000);
     runner.start();
-    cluster.waitForAllNodes(30);
+
     cluster.getSolrClient().getZkStateReader().registerCollectionStateWatcher(collectionName, stateWatcher);
     cluster.waitForActiveCollection(collectionName, 1, 1);
     assertNull("No replica should have been active without registering a searcher, found: " + failingCoreNodeName.get(), failingCoreNodeName.get());
@@ -186,8 +183,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
     log.info("Stopping old node 1");
     AtomicReference<String> oldNodeName = new AtomicReference<>(cluster.getJettySolrRunner(0).getNodeName());
     JettySolrRunner oldNode = cluster.stopJettySolrRunner(0);
-    
-    cluster.waitForJettyToStop(oldNode);
+
     // the newly created replica should become leader
     cluster.waitForActiveCollection(collectionName, 1, 1);
     // the above call is not enough because we want to assert that the down'ed replica is not active
@@ -223,7 +219,6 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
     assertSame(oldNode, cluster.stopJettySolrRunner(1)); // old node is now at 1
     log.info("Stopping old node 2");
     cluster.waitForActiveCollection(collectionName, 1, 1);
-    waitForState("", collectionName, collectionStatePredicate);
 
     // reset
     coreNameRef.set(null);

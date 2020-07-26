@@ -131,7 +131,6 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(COLLECTION_NAME, configName, NUM_SHARDS, REPLICATION_FACTOR)
         .setProperties(collectionProperties)
         .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(COLLECTION_NAME, NUM_SHARDS, REPLICATION_FACTOR * NUM_SHARDS);
 
     CLOUD_CLIENT = cluster.getSolrClient();
     CLOUD_CLIENT.setDefaultCollection(COLLECTION_NAME);

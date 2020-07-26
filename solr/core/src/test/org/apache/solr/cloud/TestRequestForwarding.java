@@ -84,7 +84,5 @@ public class TestRequestForwarding extends SolrTestCaseJ4 {
     if (response.getStatus() != 0 || response.getErrorMessages() != null) {
       fail("Could not create collection. Response" + response.toString());
     }
-    ZkStateReader zkStateReader = solrCluster.getSolrClient().getZkStateReader();
-    solrCluster.waitForActiveCollection(name, 2, 2);
   }
 }

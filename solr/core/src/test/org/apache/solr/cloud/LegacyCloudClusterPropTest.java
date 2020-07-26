@@ -95,8 +95,6 @@ public class LegacyCloudClusterPropTest extends SolrCloudTestCase {
         .setMaxShardsPerNode(1)
         .process(cluster.getSolrClient());
     
-    cluster.waitForActiveCollection(coll, 1, 1);
-    
     assertTrue(ClusterStateUtil.waitForAllActiveAndLiveReplicas(cluster.getSolrClient().getZkStateReader(), 120000));
     
     // Insure all mandatory properties are there.

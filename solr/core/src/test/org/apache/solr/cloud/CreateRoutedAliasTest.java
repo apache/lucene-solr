@@ -231,9 +231,6 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection("collection1meta", "_default", 2, 1).process(cluster.getSolrClient());
     CollectionAdminRequest.createCollection("collection2meta", "_default", 1, 1).process(cluster.getSolrClient());
 
-    cluster.waitForActiveCollection("collection1meta", 2, 2);
-    cluster.waitForActiveCollection("collection2meta", 1, 1);
-
     ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
     zkStateReader.createClusterStateWatchersAndUpdate();
 

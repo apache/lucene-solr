@@ -81,7 +81,6 @@ public class ReplaceNodeNoTargetTest extends SolrCloudTestCase {
     log.info("Creating collection...");
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(coll, "conf1", 5, 2, 0, 0);
     cloudClient.request(create);
-    cluster.waitForActiveCollection(coll, 5, 10);
 
     if (log.isInfoEnabled()) {
       log.info("Current core status list for node we plan to decommision: {} => {}",

@@ -306,7 +306,6 @@ public class PeerSyncReplicationTest extends SolrCloudBridgeTestCase {
     
     // bring back dead node and ensure it recovers
     nodeToBringUp.start();
-    cluster.waitForNode(nodeToBringUp, 10);
     
     nodesDown.remove(nodeToBringUp);
 
