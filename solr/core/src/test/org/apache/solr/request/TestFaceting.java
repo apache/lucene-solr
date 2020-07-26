@@ -42,7 +42,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     // we need DVs on point fields to compute stats & facets
-    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
+    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP, "true");
     initCore("solrconfig.xml","schema11.xml");
   }
 
@@ -149,7 +149,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
 
   @Test
   public void testFacets() throws Exception {
-    StringBuilder sb = new StringBuilder();
+    StringBuilder sb = new StringBuilder(10000);
 
     // go over 4096 to test some of the buffer resizing
     for (int i=0; i<5000; i++) {
@@ -213,10 +213,10 @@ public class TestFaceting extends SolrTestCaseJ4 {
 
   @Test
   public void testRegularBig() throws Exception {
-    StringBuilder sb = new StringBuilder();
+    StringBuilder sb = new StringBuilder(5000);
 
     // go over 4096 to test some of the buffer resizing
-    int nTerms=7;
+    int nTerms=TEST_NIGHTLY ? 7 : 3;
     for (int i=0; i<nTerms; i++) {
       sb.append(t(i));
       sb.append(' ');
@@ -225,7 +225,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
     int i1=1000000;
 
     // int iter=65536+10;
-    int iter=1000;
+    int iter= TEST_NIGHTLY ? 1000 : 100;
     int commitInterval=iter/9;
 
     for (int i=0; i<iter; i++) {
