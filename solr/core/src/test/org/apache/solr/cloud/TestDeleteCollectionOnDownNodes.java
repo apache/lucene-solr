@@ -23,28 +23,23 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class TestDeleteCollectionOnDownNodes extends SolrCloudTestCase {
 
-  @Before
-  public void setupCluster() throws Exception {
+  @BeforeClass
+  public static void beforeTestDeleteCollectionOnDownNodes() throws Exception {
     configureCluster(4)
         .addConfig("conf", configset("cloud-minimal"))
-        .addConfig("conf2", configset("cloud-minimal"))
         .configure();
-  }
-  
-  @After
-  public void teardownCluster() throws Exception {
-    shutdownCluster();
   }
 
   @Test
   public void deleteCollectionWithDownNodes() throws Exception {
 
     CollectionAdminRequest.createCollection("halfdeletedcollection2", "conf", 4, 3)
-        .setMaxShardsPerNode(10)
+        .setMaxShardsPerNode(20)
         .process(cluster.getSolrClient());
 
     // stop a couple nodes
