@@ -62,9 +62,8 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
     configureCluster(2)
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-managed").resolve("conf"))
         .configure();
-    CollectionAdminRequest.createCollection(COLL_NAME, "conf1", 1, 2)
+    CollectionAdminRequest.createCollection(COLL_NAME, "conf1", 1, 2).setMaxShardsPerNode(10)
         .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(COLL_NAME, 1, 2);
   }
 
   @Test

@@ -59,7 +59,7 @@ public class MissingSegmentRecoveryTest extends SolrCloudTestCase {
   @Before
   public void setup() throws SolrServerException, IOException {
     CollectionAdminRequest.createCollection(collection, "conf", 1, 2)
-        .setMaxShardsPerNode(1)
+        .setMaxShardsPerNode(3)
         .process(cluster.getSolrClient());
     cluster.getSolrClient().setDefaultCollection(collection);
 

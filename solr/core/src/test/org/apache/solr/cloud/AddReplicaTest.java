@@ -75,7 +75,7 @@ public class AddReplicaTest extends SolrCloudTestCase {
     CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collection, "conf1", 1, 1);
-    create.setMaxShardsPerNode(2);
+    create.setMaxShardsPerNode(3);
     cloudClient.request(create);
 
     CollectionAdminRequest.AddReplica addReplica = CollectionAdminRequest.addReplicaToShard(collection, "shard1")
@@ -147,7 +147,7 @@ public class AddReplicaTest extends SolrCloudTestCase {
     CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collection, "conf1", 2, 1);
-    create.setMaxShardsPerNode(2);
+    create.setMaxShardsPerNode(3);
     cloudClient.request(create);
 
     ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();

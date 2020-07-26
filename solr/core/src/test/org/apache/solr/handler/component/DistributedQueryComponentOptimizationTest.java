@@ -62,7 +62,7 @@ public class DistributedQueryComponentOptimizationTest extends SolrCloudTestCase
         .configure();
 
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 3, 1)
-        .setMaxShardsPerNode(1)
+        .setMaxShardsPerNode(10)
         .process(cluster.getSolrClient());
 
     new UpdateRequest()

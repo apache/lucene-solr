@@ -117,7 +117,7 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
         CollectionAdminRequest.createCollection(getCollectionName(), "_default", NUM_SHARDS, replFactor, numTlogReplicas, numPullReplicas);
 
     if (random().nextBoolean()) {
-      create.setMaxShardsPerNode(-1);
+      create.setMaxShardsPerNode(3);
     } else if (doSplitShardOperation) {
       create.setMaxShardsPerNode((int) Math.ceil(NUM_SPLIT_SHARDS * backupReplFactor / (double) cluster.getJettySolrRunners().size()));
     } else if (NUM_SHARDS * (backupReplFactor) > cluster.getJettySolrRunners().size() || random().nextBoolean()) {

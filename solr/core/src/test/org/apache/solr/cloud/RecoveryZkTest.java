@@ -72,7 +72,7 @@ public class RecoveryZkTest extends SolrCloudTestCase {
     final String collection = "recoverytest";
 
     CollectionAdminRequest.createCollection(collection, "conf", 1, 2)
-        .setMaxShardsPerNode(1)
+        .setMaxShardsPerNode(3)
         .process(cluster.getSolrClient());
 
     cluster.getSolrClient().setDefaultCollection(collection);

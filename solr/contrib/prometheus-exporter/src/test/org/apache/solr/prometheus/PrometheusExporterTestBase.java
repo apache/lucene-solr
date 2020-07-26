@@ -31,7 +31,7 @@ public class PrometheusExporterTestBase extends SolrCloudTestCase {
   public static final String CONF_DIR = getFile("solr/" + COLLECTION + "/conf").getAbsolutePath();
   public static final int NUM_SHARDS = 2;
   public static final int NUM_REPLICAS = 2;
-  public static final int MAX_SHARDS_PER_NODE = 1;
+  public static final int MAX_SHARDS_PER_NODE = 3;
   public static final int NUM_NODES = (NUM_SHARDS * NUM_REPLICAS + (MAX_SHARDS_PER_NODE - 1)) / MAX_SHARDS_PER_NODE;
   public static final int TIMEOUT = 60;
 
