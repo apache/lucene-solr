@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.stream.Stream;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
@@ -43,6 +44,7 @@ import org.junit.Test;
  *
  * @since solr 1.5
  */
+@LuceneTestCase.Nightly // slow test
 public class DistributedTermsComponentTest extends BaseDistributedSearchTestCase {
 
   public DistributedTermsComponentTest() {

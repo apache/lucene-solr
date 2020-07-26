@@ -16,8 +16,10 @@
  */
 package org.apache.solr.update.processor;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer.RequestWriterSupplier;
 
+@LuceneTestCase.Nightly // slow test
 public class XMLAtomicUpdateMultivalueTest extends AbstractAtomicUpdatesMultivalueTestBase {
 
   @Override

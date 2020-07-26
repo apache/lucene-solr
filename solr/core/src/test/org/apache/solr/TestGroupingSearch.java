@@ -16,6 +16,7 @@
  */
 package org.apache.solr;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -50,6 +51,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+@LuceneTestCase.Nightly // slow test
 public class TestGroupingSearch extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

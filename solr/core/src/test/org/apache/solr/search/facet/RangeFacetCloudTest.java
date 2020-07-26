@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -51,6 +52,7 @@ import org.junit.BeforeClass;
  * The focus here is on stressing the cases where the document values fall direct only on the
  * range boundaries, and how the various "include" options affects refinement.
  */
+@LuceneTestCase.Nightly // slow test
 public class RangeFacetCloudTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Random;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -32,6 +33,7 @@ import org.junit.Before;
 
 import static org.hamcrest.CoreMatchers.is;
 
+@LuceneTestCase.Nightly // slow test
 public class DistributedFacetExistsSmallTest extends BaseDistributedSearchTestCase {
 
   public static final String FLD = "t_s";
