@@ -130,10 +130,6 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
               "Indexing is temporarily disabled");
     }
 
-    if (core != null && core.getCoreContainer().isShutDown()) {
-      throw new AlreadyClosedException();
-    }
-
     boolean succeeded = false;
     iwLock.readLock().lock();
     try {
@@ -145,6 +141,9 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
           if (refCntWriter == null) return null;
         } else {
           if (indexWriter == null) {
+            if (core != null && core.getCoreContainer().isShutDown() || closed) {
+              throw new AlreadyClosedException();
+            }
             indexWriter = createMainIndexWriter(core, "DirectUpdateHandler2");
           }
           initRefCntWriter();

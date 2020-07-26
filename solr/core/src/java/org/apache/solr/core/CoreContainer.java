@@ -1379,6 +1379,9 @@ public class CoreContainer implements Closeable {
         log.info("Creating SolrCore '{}' using configuration from {}, trusted={}", dcore.getName(), coreConfig.getName(), dcore.isConfigSetTrusted());
       }
       try {
+        if (isShutDown) {
+          throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Solr has been shutdown.");
+        }
         core = new SolrCore(this, dcore, coreConfig);
       } catch (SolrException e) {
         core = processCoreCreateException(e, dcore, coreConfig);
