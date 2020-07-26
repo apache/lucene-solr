@@ -696,7 +696,16 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
     @Override
     public Thread newThread(Runnable runnable)
     {
-        Thread thread = new Thread(_threadGroup, runnable);
+        Thread thread = new Thread(_threadGroup, runnable) {
+            @Override
+            public void run() {
+                try {
+                    super.run();
+                } finally {
+                    ParWork.closeExecutor();
+                }
+            }
+        };
         thread.setDaemon(isDaemon());
         thread.setPriority(getThreadsPriority());
         thread.setName(_name + "-" + thread.getId());
@@ -705,7 +714,6 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
 
     protected void removeThread(Thread thread)
     {
-       ParWork.closeExecutor();
         _threads.remove(thread);
     }
 
