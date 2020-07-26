@@ -42,6 +42,7 @@ import org.junit.Test;
  * Test for {@link ScheduledTrigger}
  */
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG")
+// nocommit - GONE AWAY IN MASTER ANYWAY
 public class ScheduledTriggerTest extends SolrCloudTestCase {
 
   private AutoScaling.TriggerEventProcessor noFirstRunProcessor = event -> {

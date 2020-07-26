@@ -24,6 +24,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.server.namenode.NameNodeAdapter;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
@@ -57,7 +58,7 @@ import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
 @Slow
-@Nightly
+@LuceneTestCase.Nightly
 @ThreadLeakFilters(defaultFilters = true, filters = {
         SolrIgnoredThreadsFilter.class,
         QuickPatchThreadsFilter.class,

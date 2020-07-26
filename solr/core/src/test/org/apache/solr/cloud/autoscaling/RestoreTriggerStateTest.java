@@ -50,7 +50,7 @@ import static org.apache.solr.cloud.autoscaling.TriggerIntegrationTest.WAIT_FOR_
  * Added in SOLR-10515
  */
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;org.apache.solr.client.solrj.cloud.autoscaling=DEBUG")
-@Ignore // nocommit - my old friend :( speed this up again
+@Ignore // nocommit - GONE AWAY IN MASTER ANYWAY
 public class RestoreTriggerStateTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

@@ -38,12 +38,14 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * Test for {@link NodeLostTrigger}
  */
 @LuceneTestCase.Nightly // TODO speed up
+@Ignore // nocommit - GONE AWAY IN MASTER ANYWAY
 public class NodeLostTriggerTest extends SolrCloudTestCase {
   private static AtomicBoolean actionConstructorCalled = new AtomicBoolean(false);
   private static AtomicBoolean actionInitCalled = new AtomicBoolean(false);

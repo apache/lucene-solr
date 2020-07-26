@@ -52,6 +52,7 @@ import static org.apache.solr.cloud.autoscaling.TriggerIntegrationTest.WAIT_FOR_
 
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;org.apache.solr.client.solrj.cloud.autoscaling=DEBUG")
 @LuceneTestCase.Nightly // TODO speed up
+// nocommit - GONE AWAY IN MASTER ANYWAY
 public class TriggerCooldownIntegrationTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final int waitForSeconds = 1;

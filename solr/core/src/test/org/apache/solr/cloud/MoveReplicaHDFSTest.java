@@ -20,6 +20,7 @@ import com.carrotsearch.randomizedtesting.annotations.Nightly;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
@@ -32,7 +33,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 @Slow
-@Nightly
+@LuceneTestCase.Nightly
 @ThreadLeakFilters(defaultFilters = true, filters = {
         SolrIgnoredThreadsFilter.class,
         QuickPatchThreadsFilter.class,

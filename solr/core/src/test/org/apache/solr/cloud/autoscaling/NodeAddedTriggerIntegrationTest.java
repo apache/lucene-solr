@@ -55,7 +55,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_P
 // TODO: this class shares duplicated code with NodeLostTriggerIntegrationTest ... merge?
 
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;org.apache.solr.client.solrj.cloud.autoscaling=DEBUG")
-@Ignore // nocommit - my old friend :( speed this up again
+@Ignore // nocommit - GONE AWAY IN MASTER ANYWAY
 public class NodeAddedTriggerIntegrationTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

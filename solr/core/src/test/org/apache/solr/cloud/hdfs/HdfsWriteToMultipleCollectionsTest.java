@@ -31,6 +31,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
@@ -55,7 +56,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 @Slow
-@Nightly
+@LuceneTestCase.Nightly
 @ThreadLeakFilters(defaultFilters = true, filters = {
         SolrIgnoredThreadsFilter.class,
         QuickPatchThreadsFilter.class,

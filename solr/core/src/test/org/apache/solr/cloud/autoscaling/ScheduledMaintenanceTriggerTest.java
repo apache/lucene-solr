@@ -60,7 +60,7 @@ import org.slf4j.LoggerFactory;
  *
  */
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG")
-@Ignore // nocommit fix
+@Ignore // nocommit - GONE AWAY IN MASTER ANYWAY
 public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
