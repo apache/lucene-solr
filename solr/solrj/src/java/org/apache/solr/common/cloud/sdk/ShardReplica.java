@@ -27,16 +27,16 @@ public interface ShardReplica {
   /**
    * The shard which it belongs to
    */
-  String shardName();
+  String shard();
 
   /** collection which it belongs to */
-  String collectionName();
+  String collection();
 
   /** Name of the node where this replica is present */
-  SolrNode node();
+  String node();
 
   /** Name of the core where this is hosted */
-  String coreName();
+  String core();
 
   /** type of the replica */
   Replica.Type type();

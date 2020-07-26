@@ -27,7 +27,7 @@ public interface Shard {
   String name();
 
   /**collection this shard belongs to */
-  String collectionName();
+  String collection();
 
   /**hash range of this shard. null if this is not using hash based router
    */
@@ -40,5 +40,5 @@ public interface Shard {
   /**
    * Name of the replica that is acting as the leader at the moment
    */
-  String leaderReplica();
+  String leader();
 }

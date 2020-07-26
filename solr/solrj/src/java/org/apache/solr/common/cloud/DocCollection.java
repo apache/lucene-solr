@@ -29,6 +29,9 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 
+import org.apache.solr.common.cloud.sdk.Shard;
+import org.apache.solr.common.cloud.sdk.SolrCollection;
+import org.apache.solr.common.util.SimpleMap;
 import org.noggit.JSONWriter;
 
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
@@ -41,7 +44,7 @@ import static org.apache.solr.common.util.Utils.toJSONString;
 /**
  * Models a Collection in zookeeper (but that Java name is obviously taken, hence "DocCollection")
  */
-public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
+public class DocCollection extends ZkNodeProps implements Iterable<Slice>, SolrCollection {
 
   public static final String DOC_ROUTER = "router";
   public static final String SHARDS = "shards";
@@ -388,5 +391,26 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     if (type == Replica.Type.PULL) result = numPullReplicas;
     if (type == Replica.Type.TLOG) result = numTlogReplicas;
     return result == null ? def : result;
+  }
+
+  private SimpleMap<Shard> shards = new SimpleMap<Shard>() {
+    @Override
+    public Shard get(CharSequence key) {
+      return slices.get(key.toString());
+    }
+
+    @Override
+    public void forEach(BiConsumer<? super CharSequence, ? super Shard> fun) {
+      slices.forEach(fun::accept);
+    }
+  };
+  @Override
+  public SimpleMap<Shard> shards() {
+    return shards;
+  }
+
+  @Override
+  public String configSet() {
+   throw new UnsupportedOperationException("Not yet implemented");
   }
 }
