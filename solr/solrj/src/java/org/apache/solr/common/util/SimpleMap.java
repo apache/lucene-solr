@@ -17,25 +17,98 @@
 
 package org.apache.solr.common.util;
 
+import org.apache.solr.common.MapWriter;
+
+import java.io.IOException;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
- * A simplified read-only Map like structure.
- * The objective is to provide implementations that are cheap and memory efficient to implement.
- * The keys are always {@link String} objects
- * No need to create all values up-front. Create objects on-demand
+ * A simplified read-only Map like structure. It is designed to support large datasets without consuming lot of memory
+ * The objective is to provide implementations that are cheap and memory efficient to implement and comsume.
+ * The keys are always {@link String} objects, The values can be of any type
  */
-public interface SimpleMap<T>  {
+public interface SimpleMap<T> extends MapWriter {
 
   /**get a value by key. If not present , null is returned
    *
    */
-  T get(String key);
-
-  /**get all the keys */
-  Iterable<String> names();
+  T get(CharSequence key);
 
   /**Navigate through all keys and values
    */
-  void forEach(BiConsumer<String, T> consumer);
+  void forEach(BiConsumer<CharSequence, T> fun);
+
+
+  /** iterate through all keys
+   * The default impl is suboptimimal. Proper implementations must do it more efficiently
+   * */
+  default void forEachKey(Consumer<CharSequence> fun) {
+    forEach((k, t) -> fun.accept(k));
+
+  }
+
+  /**
+   * iterate through all keys but stop in between if required
+   *  The default impl is suboptimal. Proper implementations must do it more efficiently
+   * @param fun Consume each key and return a boolean to signal whether to proceed or not. If true , continue . If false stop
+   * */
+  default void conditionalForEachKey(Function<CharSequence, Boolean> fun){
+    forEachKey(new Consumer<>() {
+      boolean end = false;
+      @Override
+      public void accept(CharSequence k) {
+        if (end) return;
+        end = fun.apply(k);
+      }
+    });
+  }
+
+
+  /**
+   * Navigate through all keys but stop in between if required.
+   * The default impl is suboptimal. Proper implementations must do it more efficiently
+   * @param fun Consume each entry and return a boolean to signal whether to proceed or not. If true, continue, if false stop
+   */
+  default void conditionalForEach(BiFunction<CharSequence, T, Boolean> fun) {
+    forEach(new BiConsumer<>() {
+      boolean end = false;
+      @Override
+      public void accept(CharSequence k, T v) {
+        if (end) return;
+        end = fun.apply(k, v);
+      }
+    });
+  }
+
+  /**
+   * Navigate through all keys from a starting point but stop in between if required.
+   * The default impl is suboptimal. Proper implementations must do it more efficiently
+   * @param fun Consume each entry and return a boolean to signal whether to proceed or not. If true, continue, if false stop
+   */
+  default void conditionalForEach(CharSequence start, BiFunction<CharSequence, T, Boolean> fun) {
+    conditionalForEach(new BiFunction<>() {
+      boolean end = false;
+
+      @Override
+      public Boolean apply(CharSequence k, T v) {
+        if (end) return Boolean.FALSE;
+        if (k == null || start == null) {
+          end = fun.apply(k, v);
+        } else if (k.toString().compareTo(start.toString()) >= 0) {
+          end = fun.apply(k, v);
+        }
+        return Boolean.TRUE;
+      }
+    });
+
+  }
+
+
+  @Override
+  default void writeMap(EntryWriter ew) throws IOException {
+    forEach(ew::putNoEx);
+  }
 }
