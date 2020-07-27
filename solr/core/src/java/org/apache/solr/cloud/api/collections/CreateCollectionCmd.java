@@ -227,7 +227,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       try {
         replicaPositions = buildReplicaPositions(cloudManager, clusterState,
                 docCollection, message, shardNames, sessionWrapper);
-      } catch (Assign.AssignmentException e) {
+      } catch (Exception e) {
         ZkNodeProps deleteMessage = new ZkNodeProps("name", collectionName);
         new DeleteCollectionCmd(ocmh).call(clusterState, deleteMessage, results);
         // unwrap the exception
