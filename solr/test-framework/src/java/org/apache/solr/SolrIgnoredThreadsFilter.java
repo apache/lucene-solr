@@ -56,6 +56,11 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
     if (threadName.startsWith("NIOWorkerThread-")) {
       return true;
     }
+    // can leak briefly in TERMINATED state
+    if (threadName.startsWith("JettyHttpClientScheduler")) {
+      return true;
+    }
+
 
 
     if (threadName.startsWith("SessionTracker") || threadName.startsWith("ProcessThread")) { // zk thread that will stop in a moment.
