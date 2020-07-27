@@ -2808,6 +2808,7 @@ public class ZkController implements Closeable {
     @Override
     // synchronized due to SOLR-11535
     public synchronized boolean onStateChanged(DocCollection collectionState) {
+      if (true) return true;
       if (isClosed()) { // don't accidentally delete cores on shutdown due to unreliable state
         return true;
       }

@@ -237,8 +237,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
             + event.getWatchedEvent().getState() + " type "
             + event.getWatchedEvent().getType() + "]");
       } else {
-        throw new SolrException(ErrorCode.SERVER_ERROR, operation
-            + " the configset unknown case");
+        // unknown case, we have  to assume success, it was too fast for us to see
       }
     }
   }
