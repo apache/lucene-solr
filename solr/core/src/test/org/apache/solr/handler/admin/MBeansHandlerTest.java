@@ -198,5 +198,6 @@ public class MBeansHandlerTest extends SolrTestCaseJ4 {
     runSnapshots = false;
     bean.close();
     reader.join();
+    modifier.join();
   }
 }
