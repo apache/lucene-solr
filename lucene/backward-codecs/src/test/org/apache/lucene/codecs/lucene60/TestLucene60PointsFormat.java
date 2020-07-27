@@ -36,6 +36,7 @@ import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.bkd.BKDConfig;
 import org.apache.lucene.util.bkd.BKDWriter;
 
 /**
@@ -47,7 +48,7 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
   
   public TestLucene60PointsFormat() {
     codec = new Lucene84RWCodec();
-    maxPointsInLeafNode = BKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE;
+    maxPointsInLeafNode = BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE;
   }
 
   @Override
