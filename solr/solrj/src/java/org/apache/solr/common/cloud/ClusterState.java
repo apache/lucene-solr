@@ -93,11 +93,6 @@ public class ClusterState implements JSONWriter.Writable , SolrCluster {
   }
 
   @Override
-  public SolrNode getNode(String node) {
-    throw new UnsupportedOperationException("Not yet implemented");
-  }
-
-  @Override
   public String overseerNode() {
     throw new UnsupportedOperationException("Not yet implemented");
 
