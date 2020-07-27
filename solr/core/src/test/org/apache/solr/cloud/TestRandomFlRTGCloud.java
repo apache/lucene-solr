@@ -160,6 +160,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     }
     CLIENTS.clear();
     CLOUD_CLIENT = null;
+    shutdownCluster();
   }
 
   /** 

@@ -233,6 +233,7 @@ public class ConnectionManager implements Watcher, Closeable {
         // our retry loop will try to create one again
         try {
           keeper. close();
+          keeper = null;
         } catch (Exception e) {
           ParWork.propegateInterrupt("Exception closing keeper after hitting exception", e);
           if (e instanceof  InterruptedException || e instanceof AlreadyClosedException) {
