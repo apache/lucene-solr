@@ -652,14 +652,11 @@ public class ParWork implements Closeable {
     TimeTracker subTracker = workUnitTracker.startSubClose(object);
     try {
       boolean handled = false;
-      if (object instanceof ExecutorService) {
+      if (object instanceof OrderedExecutor) {
+        ((OrderedExecutor) object).shutdownAndAwaitTermination();
+        handled = true;
+      } else if (object instanceof ExecutorService) {
         shutdownAndAwaitTermination((ExecutorService) object);
-        handled = true;
-      } else if (object instanceof OrderedExecutor) {
-        ((OrderedExecutor) object).shutdownAndAwaitTermination();
-        handled = true;
-      } else if (object instanceof OrderedExecutor) {
-        ((OrderedExecutor) object).shutdownAndAwaitTermination();
         handled = true;
       } else if (object instanceof CloseableHttpClient) {
         HttpClientUtil.close((CloseableHttpClient) object);
