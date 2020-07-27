@@ -570,6 +570,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         params.set(DISTRIB_FROM_SHARD, cloudDesc.getShardId());
 
         cmdDistrib.distribDelete(cmd, nodesByRoutingRules, params, true, rollupReplicationTracker, leaderReplicationTracker);
+        someReplicas = true;
       }
       if (replicas != null) {
         cmdDistrib.distribDelete(cmd, replicas, params, false, rollupReplicationTracker, leaderReplicationTracker);
@@ -577,9 +578,9 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       }
     }
 
-//    if (someReplicas) {
-//      cmdDistrib.blockAndDoRetries();
-//    }
+    if (someReplicas) {
+      cmdDistrib.blockAndDoRetries();
+    }
   }
 
   // used for deleteByQuery to get the list of nodes this leader should forward to
