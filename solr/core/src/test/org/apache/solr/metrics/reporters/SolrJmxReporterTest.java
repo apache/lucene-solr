@@ -31,6 +31,7 @@ import java.util.Set;
 import com.codahale.metrics.Counter;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
@@ -196,7 +197,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
             rootName.equals(o.getObjectName().getDomain())).count());
   }
 
-  private static boolean stopped = false;
+  private static volatile boolean stopped = false;
 
   @Test
   public void testClosedCore() throws Exception {
@@ -204,8 +205,9 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
     assertEquals("Unexpected number of indexDir beans: " + objects.toString(), 1, objects.size());
     final ObjectInstance inst = objects.iterator().next();
     stopped = false;
+    Thread t = null;
     try {
-      Thread t = new Thread() {
+      t = new Thread() {
         public void run() {
           while (!stopped) {
             try {
@@ -215,6 +217,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
               // no longer present
               break;
             } catch (Exception e) {
+              ParWork.propegateInterrupt(e);
               fail("Unexpected error retrieving attribute: " + e.toString());
             }
           }
@@ -228,6 +231,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
       assertEquals("Unexpected number of beans after core closed: " + objects, 0, objects.size());
     } finally {
       stopped = true;
+      t.join();
     }
   }
 
