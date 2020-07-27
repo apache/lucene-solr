@@ -18,10 +18,28 @@
 configure(rootProject) {
   def urlVersion = project.baseVersion.replace('.', '_')
   def refguideUrlVersion = project.baseVersion.replaceFirst(/^(\d+)\.(\d+).*$/, '$1_$2')
-  
+
   ext {
-    luceneDocUrl = project.propertyOrDefault('lucene.javadoc.url', "https://lucene.apache.org/core/${urlVersion}")
-    solrDocUrl = project.propertyOrDefault('solr.javadoc.url', "https://lucene.apache.org/solr/${urlVersion}")
+    luceneDocUrl = project.propertyOrDefault('lucene.javadoc.url', {
+      if (project.version != project.baseVersion) {
+        // non-release build
+        project('lucene').file('build/documentation').toURI().toASCIIString()
+      } else {
+        // release build
+        "https://lucene.apache.org/core/${urlVersion}"
+      }
+    }())
+
+    solrDocUrl = project.propertyOrDefault('solr.javadoc.url', {
+      if (project.version != project.baseVersion) {
+        // non-release build
+        project('solr').file('build/documentation').toURI().toASCIIString()
+      } else {
+        // release build
+        "https://lucene.apache.org/solr/${urlVersion}"
+      }
+    }())
+
     solrRefguideUrl = project.propertyOrDefault('solr.refguide.url', "https://lucene.apache.org/solr/guide/${refguideUrlVersion}")
   }
 
