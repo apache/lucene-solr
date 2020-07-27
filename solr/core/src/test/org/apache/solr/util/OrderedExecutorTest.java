@@ -50,7 +50,7 @@ public class OrderedExecutorTest extends SolrTestCase {
     for (int i = 0; i < 100; i++) {
       orderedExecutor.execute(1, () -> intBox.value++);
     }
-    orderedExecutor.shutdownAndAwaitTermination();
+    ParWork.close(orderedExecutor);
     assertEquals(intBox.value, 100);
   }
 
@@ -97,7 +97,7 @@ public class OrderedExecutorTest extends SolrTestCase {
         fail("interupt while trying to poll event queue");
       }
     } finally {
-      orderedExecutor.shutdownAndAwaitTermination();
+      ParWork.close(orderedExecutor);
     }
   }
 
@@ -187,7 +187,7 @@ public class OrderedExecutorTest extends SolrTestCase {
         fail("interupt while trying to release the barrier and await the postBarrierLatch");
       }
     } finally {
-      orderedExecutor.shutdownAndAwaitTermination();
+      ParWork.close(orderedExecutor);
     }
   }
 
