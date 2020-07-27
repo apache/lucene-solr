@@ -136,7 +136,7 @@ public final class BKDRadixSelector {
       // copy dimension
       System.arraycopy(packedValueDocID.bytes, packedValueDocID.offset + offset, scratch, 0, config.bytesPerDim);
       // copy data dimensions and docID
-      System.arraycopy(packedValueDocID.bytes, packedValueDocID.offset + config.numIndexDims * config.bytesPerDim, scratch, config.bytesPerDim, (config.numDims - config.numIndexDims) * config.bytesPerDim + Integer.BYTES);
+      System.arraycopy(packedValueDocID.bytes, packedValueDocID.offset + config.packedIndexBytesLength, scratch, config.bytesPerDim, (config.numDims - config.numIndexDims) * config.bytesPerDim + Integer.BYTES);
 
       for (long i = from + 1; i < to; i++) {
         reader.next();
@@ -160,7 +160,7 @@ public final class BKDRadixSelector {
           if (j == -1) {
             if (commonPrefixPosition > config.bytesPerDim) {
               // Tie-break on data dimensions + docID
-              final int startTieBreak = config.numIndexDims * config.bytesPerDim;
+              final int startTieBreak = config.packedIndexBytesLength;
               final int endTieBreak = startTieBreak + commonPrefixPosition - config.bytesPerDim;
               int k = Arrays.mismatch(scratch, config.bytesPerDim, commonPrefixPosition,
                   packedValueDocID.bytes, packedValueDocID.offset + startTieBreak, packedValueDocID.offset + endTieBreak);
@@ -196,7 +196,7 @@ public final class BKDRadixSelector {
       bucket = packedValue.bytes[packedValue.offset + offset + commonPrefixPosition] & 0xff;
     } else {
       BytesRef packedValueDocID = pointValue.packedValueDocIDBytes();
-      bucket = packedValueDocID.bytes[packedValueDocID.offset + config.numIndexDims * config.bytesPerDim + commonPrefixPosition - config.bytesPerDim] & 0xff;
+      bucket = packedValueDocID.bytes[packedValueDocID.offset + config.packedIndexBytesLength + commonPrefixPosition - config.bytesPerDim] & 0xff;
     }
     return bucket;
   }
@@ -313,7 +313,7 @@ public final class BKDRadixSelector {
   private byte[] heapRadixSelect(HeapPointWriter points, int dim, int from, int to, int partitionPoint, int commonPrefixLength) {
     final int dimOffset = dim * config.bytesPerDim + commonPrefixLength;
     final int dimCmpBytes = config.bytesPerDim - commonPrefixLength;
-    final int dataOffset = config.numIndexDims * config.bytesPerDim - dimCmpBytes;
+    final int dataOffset = config.packedIndexBytesLength - dimCmpBytes;
     new RadixSelector(bytesSorted - commonPrefixLength) {
 
       @Override
@@ -338,7 +338,6 @@ public final class BKDRadixSelector {
         final int skypedBytes = d + commonPrefixLength;
         final int dimStart = dim * config.bytesPerDim + skypedBytes;
         final int dimEnd =  dim * config.bytesPerDim + config.bytesPerDim;
-        final int dataOffset = config.numIndexDims * config.bytesPerDim;
         // data length is composed by the data dimensions plus the docID
         final int dataLength = (config.numDims - config.numIndexDims) * config.bytesPerDim + Integer.BYTES;
         return new IntroSelector() {
@@ -353,7 +352,7 @@ public final class BKDRadixSelector {
             if (skypedBytes < config.bytesPerDim) {
               System.arraycopy(points.block, i * config.bytesPerDoc + dim * config.bytesPerDim, scratch, 0, config.bytesPerDim);
             }
-            System.arraycopy(points.block, i * config.bytesPerDoc + dataOffset, scratch, config.bytesPerDim, dataLength);
+            System.arraycopy(points.block, i * config.bytesPerDoc + config.packedIndexBytesLength, scratch, config.bytesPerDim, dataLength);
           }
 
           @Override
@@ -366,8 +365,8 @@ public final class BKDRadixSelector {
                 return cmp;
               }
             }
-            int iOffset = i * config.bytesPerDoc + dataOffset;
-            int jOffset = j * config.bytesPerDoc + dataOffset;
+            int iOffset = i * config.bytesPerDoc + config.packedIndexBytesLength;
+            int jOffset = j * config.bytesPerDoc + config.packedIndexBytesLength;
             return Arrays.compareUnsigned(points.block, iOffset, iOffset + dataLength, points.block, jOffset, jOffset + dataLength);
           }
 
@@ -380,7 +379,7 @@ public final class BKDRadixSelector {
                 return cmp;
               }
             }
-            int jOffset = j * config.bytesPerDoc + dataOffset;
+            int jOffset = j * config.bytesPerDoc + config.packedIndexBytesLength;
             return Arrays.compareUnsigned(scratch, config.bytesPerDim, config.bytesPerDim + dataLength, points.block, jOffset, jOffset + dataLength);
           }
         };
@@ -398,7 +397,7 @@ public final class BKDRadixSelector {
   public void heapRadixSort(final HeapPointWriter points, int from, int to, int dim, int commonPrefixLength) {
     final int dimOffset = dim * config.bytesPerDim + commonPrefixLength;
     final int dimCmpBytes = config.bytesPerDim - commonPrefixLength;
-    final int dataOffset = config.numIndexDims * config.bytesPerDim - dimCmpBytes;
+    final int dataOffset = config.packedIndexBytesLength - dimCmpBytes;
     new MSBRadixSorter(bytesSorted - commonPrefixLength) {
 
       @Override
@@ -423,7 +422,6 @@ public final class BKDRadixSelector {
         final int skypedBytes = k + commonPrefixLength;
         final int dimStart = dim * config.bytesPerDim + skypedBytes;
         final int dimEnd =  dim * config.bytesPerDim + config.bytesPerDim;
-        final int dataOffset = config.numIndexDims * config.bytesPerDim;
         // data length is composed by the data dimensions plus the docID
         final int dataLength = (config.numDims - config.numIndexDims) * config.bytesPerDim + Integer.BYTES;
         return new IntroSorter() {
@@ -438,7 +436,7 @@ public final class BKDRadixSelector {
             if (skypedBytes < config.bytesPerDim) {
               System.arraycopy(points.block, i * config.bytesPerDoc + dim * config.bytesPerDim, scratch, 0, config.bytesPerDim);
             }
-            System.arraycopy(points.block, i * config.bytesPerDoc + dataOffset, scratch, config.bytesPerDim, dataLength);
+            System.arraycopy(points.block, i * config.bytesPerDoc + config.packedIndexBytesLength, scratch, config.bytesPerDim, dataLength);
           }
 
           @Override
@@ -451,8 +449,8 @@ public final class BKDRadixSelector {
                 return cmp;
               }
             }
-            int iOffset = i * config.bytesPerDoc + dataOffset;
-            int jOffset = j * config.bytesPerDoc + dataOffset;
+            int iOffset = i * config.bytesPerDoc + config.packedIndexBytesLength;
+            int jOffset = j * config.bytesPerDoc + config.packedIndexBytesLength;
             return Arrays.compareUnsigned(points.block, iOffset, iOffset + dataLength, points.block, jOffset, jOffset + dataLength);
           }
 
@@ -465,7 +463,7 @@ public final class BKDRadixSelector {
                 return cmp;
               }
             }
-            int jOffset = j * config.bytesPerDoc + dataOffset;
+            int jOffset = j * config.bytesPerDoc + config.packedIndexBytesLength;
             return Arrays.compareUnsigned(scratch, config.bytesPerDim, config.bytesPerDim + dataLength, points.block, jOffset, jOffset + dataLength);
           }
         };

@@ -99,8 +99,7 @@ public final class MutablePointsReaderUtils {
 
     final int start = sortedDim * config.bytesPerDim + commonPrefixLengths[sortedDim];
     final int dimEnd =  sortedDim * config.bytesPerDim + config.bytesPerDim;
-    final int dataStart = config.numIndexDims * config.bytesPerDim;
-    final int dataEnd = dataStart + (config.numDims - config.numIndexDims) * config.bytesPerDim;
+    final int dataEnd = config.packedIndexBytesLength + (config.numDims - config.numIndexDims) * config.bytesPerDim;
     // No need for a fancy radix sort here, this is called on the leaves only so
     // there are not many values to sort
     new IntroSorter() {
@@ -125,8 +124,8 @@ public final class MutablePointsReaderUtils {
         int cmp = Arrays.compareUnsigned(pivot.bytes, pivot.offset + start, pivot.offset + dimEnd, scratch2.bytes,
             scratch2.offset + start, scratch2.offset + dimEnd);
         if (cmp == 0) {
-          cmp = Arrays.compareUnsigned(pivot.bytes, pivot.offset + dataStart, pivot.offset + dataEnd,
-              scratch2.bytes, scratch2.offset + dataStart, scratch2.offset + dataEnd);
+          cmp = Arrays.compareUnsigned(pivot.bytes, pivot.offset + config.packedIndexBytesLength, pivot.offset + dataEnd,
+              scratch2.bytes, scratch2.offset + config.packedIndexBytesLength, scratch2.offset + dataEnd);
           if (cmp == 0) {
             cmp = pivotDoc - reader.getDocID(j);
           }
@@ -144,14 +143,13 @@ public final class MutablePointsReaderUtils {
                                BytesRef scratch1, BytesRef scratch2) {
     final int dimOffset = splitDim * config.bytesPerDim + commonPrefixLen;
     final int dimCmpBytes = config.bytesPerDim - commonPrefixLen;
-    final int dataOffset = config.numIndexDims * config.bytesPerDim;
     final int dataCmpBytes = (config.numDims - config.numIndexDims) * config.bytesPerDim + dimCmpBytes;
     final int bitsPerDocId = PackedInts.bitsRequired(maxDoc - 1);
     new RadixSelector(dataCmpBytes + (bitsPerDocId + 7) / 8) {
 
       @Override
       protected Selector getFallbackSelector(int k) {
-        final int dataStart = (k < dimCmpBytes) ? dataOffset : dataOffset + k - dimCmpBytes;
+        final int dataStart = (k < dimCmpBytes) ? config.packedIndexBytesLength : config.packedIndexBytesLength + k - dimCmpBytes;
         final int dataEnd = config.numDims * config.bytesPerDim;
         return new IntroSelector() {
 
@@ -202,7 +200,7 @@ public final class MutablePointsReaderUtils {
         if (k < dimCmpBytes) {
           return Byte.toUnsignedInt(reader.getByteAt(i, dimOffset + k));
         } else if (k < dataCmpBytes) {
-          return Byte.toUnsignedInt(reader.getByteAt(i, dataOffset + k - dimCmpBytes));
+          return Byte.toUnsignedInt(reader.getByteAt(i, config.packedIndexBytesLength + k - dimCmpBytes));
         } else {
           final int shift = bitsPerDocId - ((k - dataCmpBytes + 1) << 3);
           return (reader.getDocID(i) >>> Math.max(0, shift)) & 0xff;

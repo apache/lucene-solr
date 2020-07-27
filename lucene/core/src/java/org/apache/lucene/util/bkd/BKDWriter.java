@@ -1683,8 +1683,7 @@ public class BKDWriter implements Closeable {
         throw new AssertionError("values out of order: last value=" + new BytesRef(lastPackedValue) + " current value=" + new BytesRef(packedValue, packedValueOffset, config.packedBytesLength) + " ord=" + ord);
       }
       if (cmp == 0  && config.numDims > config.numIndexDims) {
-        int dataOffset = config.numIndexDims * config.bytesPerDim;
-        cmp = Arrays.compareUnsigned(lastPackedValue, dataOffset, config.packedBytesLength, packedValue, packedValueOffset + dataOffset, packedValueOffset + config.packedBytesLength);
+        cmp = Arrays.compareUnsigned(lastPackedValue, config.packedIndexBytesLength, config.packedBytesLength, packedValue, packedValueOffset + config.packedIndexBytesLength, packedValueOffset + config.packedBytesLength);
         if (cmp > 0) {
           throw new AssertionError("data values out of order: last value=" + new BytesRef(lastPackedValue) + " current value=" + new BytesRef(packedValue, packedValueOffset, config.packedBytesLength) + " ord=" + ord);
         }
