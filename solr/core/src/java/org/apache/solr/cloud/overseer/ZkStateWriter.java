@@ -188,7 +188,7 @@ public class ZkStateWriter {
         String name = entry.getKey();
         String path = ZkStateReader.getCollectionPath(name);
         DocCollection c = entry.getValue();
-        Integer prevVersion = 0;
+        Integer prevVersion = -1;
         if (lastUpdatedTime == -1) {
           prevVersion = 0;
         }
@@ -280,6 +280,7 @@ public class ZkStateWriter {
             } catch (KeeperException.BadVersionException bve) {
               // this is a tragic error, we must disallow usage of this instance
               log.warn("Tried to update the cluster state using version={} but we where rejected, found {}", newClusterState.getZNodeVersion(), stat.getVersion(), bve);
+              lastUpdatedTime = -1;
               exception = bve;
               continue;
             }
@@ -302,7 +303,7 @@ public class ZkStateWriter {
               log.debug("Write state.json bytes={} cs={}", data.length, newClusterState);
             }
             try {
-              prevVersion = 0;
+              prevVersion = -1;
               reader.getZkClient().create(path, data, CreateMode.PERSISTENT, true);
             } catch (KeeperException.NodeExistsException e) {
               stat = reader.getZkClient().setData(path, data, -1, true);
