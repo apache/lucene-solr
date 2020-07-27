@@ -52,6 +52,17 @@ public class ZkDynamicConfigTest extends SolrTestCaseJ4 {
     assertEquals("zoo3-client", parsed.getServers().get(2).resolveClientPortAddress());
   }
 
+  @Test
+  public void parseLinesNoClientport() {
+    ZkDynamicConfig parsed = ZkDynamicConfig.parseLines(
+        "ignored-line\n" +
+            "server.1=zoo1:2780:2783:participant\n" +
+            "server.2=zoo2:2781:2784:participant|zoo3:2783\n" +
+            "server.3=zoo3:2782:2785\n" +
+            "version=400000003");
+    assertEquals(3, parsed.size());
+  }
+
   @Test(expected = SolrException.class)
   public void parseLinesInvalid() {
     ZkDynamicConfig.parseLines(

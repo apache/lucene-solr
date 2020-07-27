@@ -164,6 +164,13 @@ Other Changes
 
 * SOLR-11868: Deprecate CloudSolrClient.setIdField, use information from Zookeeper (Erick Erickson)
 
+==================  8.6.1 ==================
+
+Bug Fixes
+---------------------
+
+* SOLR-14671: Parsing dynamic ZK config sometimes cause NuberFormatException (janhoy)
+
 ==================  8.6.0 ==================
 
 Consult the lucene/CHANGES.txt file for additional, low level, changes in this release.
