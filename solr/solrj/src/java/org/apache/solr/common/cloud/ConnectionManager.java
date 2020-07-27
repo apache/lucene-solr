@@ -337,12 +337,16 @@ public class ConnectionManager implements Watcher, Closeable {
   public void waitForConnected(long waitForConnection)
           throws TimeoutException, InterruptedException {
     log.info("Waiting for client to connect to ZooKeeper");
-
-    if (client.isConnected()) return;
-    boolean success = connectedLatch.await(waitForConnection, TimeUnit.MILLISECONDS);
-    if (client.isConnected()) return;
-    if (!success) {
-      throw new TimeoutException("Timeout waiting to connect to ZooKeeper " + zkServerAddress + " " + waitForConnection + "ms");
+    TimeOut timeout = new TimeOut(waitForConnection, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
+    while (!timeout.hasTimedOut()) {
+      if (client.isConnected()) return;
+      boolean success = connectedLatch.await(50, TimeUnit.MILLISECONDS);
+      if (success) return;
+      if (client.isConnected()) return;
+    }
+    if (timeout.hasTimedOut()) {
+      throw new TimeoutException("Timeout waiting to connect to ZooKeeper "
+              + zkServerAddress + " " + waitForConnection + "ms");
     }
 
     log.info("Client is connected to ZooKeeper");
