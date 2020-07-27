@@ -79,6 +79,7 @@ public class HdfsTestUtil {
   }
 
   public static void checkAssumptions() {
+    LuceneTestCase.assumeTrue("Only run hdfs tests under Nightly", TEST_NIGHTLY);
     ensureHadoopHomeNotSet();
     checkHadoopWindows();
     checkOverriddenHadoopClasses();
