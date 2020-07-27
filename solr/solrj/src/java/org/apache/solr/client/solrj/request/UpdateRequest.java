@@ -237,6 +237,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
     if (params == null)
       params = new ModifiableSolrParams();
     params.set(UpdateParams.COMMIT, "true");
+    params.set(UpdateParams.WAIT_SEARCHER, "true");
     return process(client, collection);
   }
 
