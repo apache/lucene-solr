@@ -33,6 +33,12 @@ Bug Fixes
 ---------------------
 (No changes)
 
+Documentation
+---------------------
+
+* LUCENE-9424: Add a performance warning to AttributeSource.captureState javadocs (Haoyu Zhai)
+
+
 Other
 ---------------------
 (No changes)

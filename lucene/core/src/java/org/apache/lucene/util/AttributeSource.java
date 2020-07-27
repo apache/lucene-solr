@@ -292,6 +292,8 @@ public class AttributeSource {
   /**
    * Captures the state of all Attributes. The return value can be passed to
    * {@link #restoreState} to restore the state of this or another AttributeSource.
+   * 
+   * Be careful, this method comes with a cost of deep copying all attributes in the source.
    */
   public final State captureState() {
     final State state = this.getCurrentState();
