@@ -27,7 +27,7 @@ import java.util.Set;
 import java.util.function.BiPredicate;
 
 import org.apache.solr.common.MapWriter;
-import org.apache.solr.common.cloud.sdk.ShardReplica;
+import org.apache.solr.cluster.api.ShardReplica;
 import org.apache.solr.common.util.Utils;
 import org.noggit.JSONWriter;
 

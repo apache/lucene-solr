@@ -78,28 +78,6 @@ public interface SimpleMap<T> extends MapWriter {
     });
   }
 
-  /**
-   * Navigate through all keys from a starting point but stop in between if required.
-   * The default impl is suboptimal. Proper implementations must do it more efficiently
-   * @param fun Consume each entry and return a boolean to signal whether to proceed or not. If true, continue, if false stop
-   */
-  default void conditionalForEach(CharSequence start, BiFunction<? super CharSequence, ? super T, Boolean> fun) {
-    conditionalForEach(new BiFunction<>() {
-      boolean end = false;
-      @Override
-      public Boolean apply(CharSequence k, T v) {
-        if (end) return Boolean.FALSE;
-        if (k == null || start == null) {
-          end = fun.apply(k, v);
-        } else if (k.toString().compareTo(start.toString()) >= 0) {
-          end = fun.apply(k, v);
-        }
-        return Boolean.TRUE;
-      }
-    });
-
-  }
-
 
   @Override
   default void writeMap(EntryWriter ew) throws IOException {

@@ -30,9 +30,9 @@ import java.util.function.Consumer;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.sdk.SolrCluster;
-import org.apache.solr.common.cloud.sdk.SolrCollection;
-import org.apache.solr.common.cloud.sdk.SolrNode;
+import org.apache.solr.cluster.api.SolrCluster;
+import org.apache.solr.cluster.api.SolrCollection;
+import org.apache.solr.cluster.api.SolrNode;
 import org.apache.solr.common.util.SimpleMap;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;

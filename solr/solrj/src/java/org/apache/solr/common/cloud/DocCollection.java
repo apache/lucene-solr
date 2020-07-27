@@ -29,9 +29,9 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 
-import org.apache.solr.common.cloud.sdk.Router;
-import org.apache.solr.common.cloud.sdk.Shard;
-import org.apache.solr.common.cloud.sdk.SolrCollection;
+import org.apache.solr.cluster.api.Router;
+import org.apache.solr.cluster.api.Shard;
+import org.apache.solr.cluster.api.SolrCollection;
 import org.apache.solr.common.util.SimpleMap;
 import org.noggit.JSONWriter;
 

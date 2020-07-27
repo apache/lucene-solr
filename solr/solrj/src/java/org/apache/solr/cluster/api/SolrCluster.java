@@ -15,29 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.solr.common.cloud.sdk;
+package org.apache.solr.cluster.api;
 
-import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.util.SimpleMap;
 
-/** replica of a shard */
-public interface ShardReplica {
-  /** Name of this replica */
-  String name();
+/** Represents a Solr cluster */
+
+public interface SolrCluster {
+
+  /** collections in the cluster */
+  SimpleMap<SolrCollection> collections();
+
+  /** collections in the cluster and aliases */
+  SimpleMap<SolrCollection> collections(boolean includeAlias);
+
+  /** nodes in the cluster */
+  SimpleMap<SolrNode> nodes();
+
+  /** Name of the node in which the overseer is running */
+  String overseerNode();
 
   /**
-   * The shard which it belongs to
+   * The name of the node in which this method is invoked from. returns null, if this is not invoked from a
+   * Solr node
    */
-  String shard();
+  String thisNode();
 
-  /** collection which it belongs to */
-  String collection();
-
-  /** Name of the node where this replica is present */
-  String node();
-
-  /** Name of the core where this is hosted */
-  String core();
-
-  /** type of the replica */
-  Replica.Type type();
 }

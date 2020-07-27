@@ -30,8 +30,8 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.apache.solr.common.cloud.Replica.Type;
-import org.apache.solr.common.cloud.sdk.Shard;
-import org.apache.solr.common.cloud.sdk.ShardReplica;
+import org.apache.solr.cluster.api.Shard;
+import org.apache.solr.cluster.api.ShardReplica;
 import org.apache.solr.common.util.SimpleMap;
 import org.noggit.JSONWriter;
 

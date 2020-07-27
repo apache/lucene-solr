@@ -15,21 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.solr.common.cloud.sdk;
+package org.apache.solr.cluster.api;
 
 import org.apache.solr.common.util.SimpleMap;
 
-/** Represents a collection in Solr */
-public interface SolrCollection {
+/** A read only view of a Solr node */
+public interface SolrNode {
 
-  /** shards of a collection
+  /** The node name */
+  String name();
+
+  /**Base http url for this node
+   *
+   * @param isV2 if true gives the /api endpoint , else /solr endpoint
    */
-  SimpleMap<Shard> shards();
+  String baseUrl(boolean isV2);
 
-  /** configset used by this collection
+  /**
+   * Get all the cores in a given node.
+   * This usually involves a network call. So, it's likely to be expensive
    */
-  String configSet();
-
-  Router router();
-
+  SimpleMap<ShardReplica> cores();
 }

@@ -15,12 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.solr.common.cloud.sdk;
+package org.apache.solr.cluster.api;
 
-/**Route documents to appropriate shard */
-public interface Router {
-    /**shard name for a given routing key
-     *
-     */
-    String shard(String routingKey);
+import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.util.SimpleMap;
+
+/**A shard of a collection */
+public interface Shard {
+
+  /**name of the shard */
+  String name();
+
+  /**collection this shard belongs to */
+  String collection();
+
+  /**hash range of this shard. null if this is not using hash based router
+   */
+  DocRouter.Range range();
+
+  /**  replicas of the shard */
+  SimpleMap<ShardReplica> replicas();
+
+  /**
+   * Name of the replica that is acting as the leader at the moment
+   */
+  String leader();
 }

@@ -15,23 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.solr.common.cloud.sdk;
+package org.apache.solr.cluster.api;
 
-import org.apache.solr.common.util.SimpleMap;
+/**identify shards for a given routing key or document id */
+public interface Router {
 
-/**
- * A read only view of a Solr node
- */
-public interface SolrNode {
-
-  /** The node name */
-  String name();
-
-  String baseUrl(boolean isV2);
-
-  /**
-   * Get all the cores in a given node.
-   * This usually involves a network call. So, it's likely to be expensive
-   */
-  SimpleMap<ShardReplica> cores();
+    /**shard name for a given routing key */
+    String shard(String routingKey);
 }
