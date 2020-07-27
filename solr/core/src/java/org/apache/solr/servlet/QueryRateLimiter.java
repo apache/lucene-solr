@@ -28,6 +28,7 @@ public class QueryRateLimiter extends RequestRateLimiter {
   final static String MAX_QUERY_REQUESTS = "maxQueryRequests";
   final static String QUERY_WAIT_FOR_SLOT_ALLOCATION_INMS = "queryWaitForSlotAllocationInMS";
   final static String QUERY_REQUEST_EXPIRATION_TIME_INMS = "queryRequestExpirationTimeInMS";
+  final static String QUERY_ALLOW_WORK_STEALING = "queryAllowWorkStealing";
 
   public QueryRateLimiter(FilterConfig filterConfig) {
     super(constructQueryRateLimiterConfig(filterConfig));
@@ -43,6 +44,7 @@ public class QueryRateLimiter extends RequestRateLimiter {
         DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS);
     queryRateLimiterConfig.allowedRequests = getParamAndParseInt(filterConfig, MAX_QUERY_REQUESTS,
         DEFAULT_CONCURRENT_REQUESTS);
+    queryRateLimiterConfig.isWorkStealingEnabled = getParamAndParseBoolean(filterConfig, QUERY_ALLOW_WORK_STEALING, false);
 
     return queryRateLimiterConfig;
   }

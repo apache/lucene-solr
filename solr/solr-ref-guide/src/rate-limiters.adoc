@@ -48,7 +48,7 @@ Controls enabling of query rate limiter. Default value is false.
 ----
 
 ==== Maximum Number Of Concurrent Requests
-Allows setting maximum concurrent search requests at a given point in time. Default value is 10.
+Allows setting maximum concurrent search requests at a given point in time. Default value is number of cores * 3.
 [source,xml]
 ----
 <param-name>maxQueryRequests</param-name>
@@ -62,7 +62,7 @@ Allows setting maximum concurrent search requests at a given point in time. Defa
 Wait time in ms for which a request will wait for a slot to be available when all slots are full,
 before the request is put into the wait queue. This allows requests to have a chance to proceed if
 the unavailability of the request slots for this rate limiter is a transient phenomenon. Default value
-is -1, indicating no wait.
+is -1, indicating no wait. 0 will represent the same -- no wait.
 [source,xml]
 ----
 <param-name>queryWaitForSlotAllocationInMS</param-name>
@@ -73,7 +73,8 @@ is -1, indicating no wait.
 ----
 
 ==== Request Expiration Time
-Time in ms after which a request will expire in the wait queue. Default value is 200 ms.
+Time in ms after which a request will expire in the wait queue. Default value is 200 ms. Zero or negative
+values indicate no timeout.
 [source,xml]
 ----
 <param-name>queryRequestExpirationTimeInMS</param-name>
@@ -81,6 +82,17 @@ Time in ms after which a request will expire in the wait queue. Default value is
 [source,xml]
 ----
 <param-value>200</param-value>
+----
+
+==== Work Stealing Enabled
+If work stealing (described below) is enabled or not. Default value is false.
+[source,xml]
+----
+<param-name>queryAllowWorkStealing</param-name>
+----
+[source,xml]
+----
+<param-value>true</param-value>
 ----
 
 == Salient Points

@@ -37,14 +37,14 @@ import static org.apache.solr.common.params.CommonParams.SOLR_REQUEST_TYPE_PARAM
  * rate limiting is being done for a specific request type.
  */
 public class RateLimitManager {
-  public final static int DEFAULT_CONCURRENT_REQUESTS= 10;
+  public final static int DEFAULT_CONCURRENT_REQUESTS= (Runtime.getRuntime().availableProcessors()) * 3;
   public final static long DEFAULT_EXPIRATION_TIME_INMS = 300;
   public final static long DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS = -1;
 
   private final Map<String, RequestRateLimiter> requestRateLimiterMap;
 
   public RateLimitManager() {
-    this.requestRateLimiterMap = new HashMap<String, RequestRateLimiter>();
+    this.requestRateLimiterMap = new HashMap<>();
   }
 
   // Handles an incoming request. The main orchestration code path, this method will
@@ -96,12 +96,14 @@ public class RateLimitManager {
       return;
     }
 
-    for (Map.Entry<String, RequestRateLimiter> currentEntry : requestRateLimiterMap.entrySet()) {
-      RequestRateLimiter requestRateLimiter = currentEntry.getValue();
-      boolean isRequestResumed = requestRateLimiter.resumePendingOperation();
+    if (previousRequestRateLimiter.getRateLimiterConfig().isWorkStealingEnabled) {
+      for (Map.Entry<String, RequestRateLimiter> currentEntry : requestRateLimiterMap.entrySet()) {
+        RequestRateLimiter requestRateLimiter = currentEntry.getValue();
+        boolean isRequestResumed = requestRateLimiter.resumePendingOperation();
 
-      if (isRequestResumed) {
-        return;
+        if (isRequestResumed) {
+          return;
+        }
       }
     }
   }

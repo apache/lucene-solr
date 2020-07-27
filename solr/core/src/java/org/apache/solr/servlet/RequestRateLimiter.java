@@ -49,13 +49,11 @@ public class RequestRateLimiter {
   private Semaphore allowedConcurrentRequests;
   private RateLimiterConfig rateLimiterConfig;
   private Queue<AsyncContext> waitQueue;
-  private Queue<AsyncListener> listenerQueue;
 
   public RequestRateLimiter(RateLimiterConfig rateLimiterConfig) {
     this.rateLimiterConfig = rateLimiterConfig;
     this.allowedConcurrentRequests = new Semaphore(rateLimiterConfig.allowedRequests);
     this.waitQueue = new ConcurrentLinkedQueue<>();
-    this.listenerQueue = new ConcurrentLinkedQueue<>();
   }
 
   public boolean handleRequest(HttpServletRequest request) throws InterruptedException {
@@ -75,7 +73,6 @@ public class RequestRateLimiter {
       }
 
       asyncContext.addListener(asyncListener);
-      listenerQueue.add(asyncListener);
       waitQueue.add(asyncContext);
     }
 
@@ -112,7 +109,10 @@ public class RequestRateLimiter {
       asyncContext.complete();
     }
 
-    listenerQueue.clear();
+  }
+
+  public RateLimiterConfig getRateLimiterConfig() {
+    return rateLimiterConfig;
   }
 
   private AsyncListener buildAsyncListener() {
@@ -134,7 +134,7 @@ public class RequestRateLimiter {
         String responseMessage = "Too many requests for this request type." +
             "Please try after some time or increase the quota for this request type";
 
-        servletResponse.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+        servletResponse.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE, responseMessage);
 
         asyncContext.complete();
       }
@@ -186,14 +186,17 @@ public class RequestRateLimiter {
     public long requestExpirationTimeInMS;
     public long waitForSlotAcquisition;
     public int allowedRequests;
+    public boolean isWorkStealingEnabled;
 
     public RateLimiterConfig() { }
 
-    public RateLimiterConfig(boolean isEnabled, long requestExpirationTimeInMS, long waitForSlotAcquisition, int allowedRequests) {
+    public RateLimiterConfig(boolean isEnabled, long requestExpirationTimeInMS, long waitForSlotAcquisition, int allowedRequests,
+                             boolean isWorkStealingEnabled) {
       this.isEnabled = isEnabled;
       this.requestExpirationTimeInMS = requestExpirationTimeInMS;
       this.waitForSlotAcquisition = waitForSlotAcquisition;
       this.allowedRequests = allowedRequests;
+      this.isWorkStealingEnabled = isWorkStealingEnabled;
     }
   }
 }

@@ -392,7 +392,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       try {
         accepted = rateLimitManager.handleRequest(request);
       } catch (InterruptedException e) {
-        throw new RuntimeException(e.getMessage());
+        throw new SolrException(ErrorCode.SERVER_ERROR, e.getMessage());
       }
 
       if (!accepted) {
