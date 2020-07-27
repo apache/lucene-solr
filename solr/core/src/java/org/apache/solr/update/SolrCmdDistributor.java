@@ -87,8 +87,7 @@ public class SolrCmdDistributor implements Closeable {
   public void finish() {
     assert !finished : "lifecycle sanity check";
     finished = true;
-
-   // blockAndDoRetries();
+    solrClient.waitForOutstandingRequests();
   }
   
   public void close() {

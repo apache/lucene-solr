@@ -25,6 +25,7 @@ import org.apache.solr.EmbeddedSolrServerTestBase;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -40,7 +41,7 @@ public abstract class LargeVolumeTestBase extends EmbeddedSolrServerTestBase
 
   // for real load testing, make these numbers bigger
   static final int numdocs = 100; //1000 * 1000;
-  static final int threadCount = 5;
+  static final int threadCount = TEST_NIGHTLY ? 5 : 3;
 
   @Test
   public void testMultiThreaded() throws Exception {
@@ -118,6 +119,7 @@ public abstract class LargeVolumeTestBase extends EmbeddedSolrServerTestBase
         resp = client.optimize();
         assertEquals(0, resp.getStatus());
         } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
           // a commit/optimize can fail with a too many warming searchers exception
           if (log.isInfoEnabled()) {
             log.info("Caught benign exception during commit: {}", e.getMessage());
