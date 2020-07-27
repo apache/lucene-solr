@@ -37,7 +37,6 @@ import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.bkd.BKDConfig;
-import org.apache.lucene.util.bkd.BKDWriter;
 
 /**
  * Tests Lucene60PointsFormat
