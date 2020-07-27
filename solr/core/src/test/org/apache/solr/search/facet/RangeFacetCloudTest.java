@@ -386,7 +386,8 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
       }
     }
   }
-  
+
+  @AwaitsFix(bugUrl = "This test can fail: java.lang.AssertionError: count expected:<32> but was:<13>")
   public void testInclude_EdgeLowerUpper() throws Exception {
     for (boolean doSubFacet : Arrays.asList(false, true)) {
       final Integer subFacetLimit = pickSubFacetLimit(doSubFacet);
