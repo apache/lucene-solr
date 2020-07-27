@@ -57,7 +57,7 @@ import org.slf4j.LoggerFactory;
  * Test for {@link SystemLogListener}
  */
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG")
-@Ignore // nocommit debug
+@Ignore // nocommit this is removed in master
 public class SystemLogListenerTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

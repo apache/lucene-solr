@@ -57,6 +57,7 @@ import org.apache.zookeeper.data.Stat;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,7 +68,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_P
  * Test for {@link ExecutePlanAction}
  */
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG")
-@LuceneTestCase.Nightly // nocommit speed up
+@Ignore // nocommit this is removed in master
 public class ExecutePlanActionTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

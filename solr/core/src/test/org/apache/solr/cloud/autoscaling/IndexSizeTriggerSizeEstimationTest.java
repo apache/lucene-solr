@@ -60,6 +60,7 @@ import org.apache.solr.util.LogLevel;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,7 +70,7 @@ import org.slf4j.LoggerFactory;
  */
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG")
 @LuceneTestCase.Slow
-@Nightly // this test should be faster
+@Ignore // nocommit this is removed in master
 public class IndexSizeTriggerSizeEstimationTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

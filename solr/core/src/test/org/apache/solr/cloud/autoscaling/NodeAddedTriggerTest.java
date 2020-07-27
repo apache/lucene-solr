@@ -42,7 +42,7 @@ import org.junit.Test;
 /**
  * Test for {@link NodeAddedTrigger}
  */
-@Ignore // nocommit - GONE AWAY IN MASTER ANYWAY
+@Ignore // nocommit this is removed in master
 public class NodeAddedTriggerTest extends SolrCloudTestCase {
   private static AtomicBoolean actionConstructorCalled = new AtomicBoolean(false);
   private static AtomicBoolean actionInitCalled = new AtomicBoolean(false);

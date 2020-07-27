@@ -42,7 +42,7 @@ import static org.mockito.Mockito.when;
 /**
  *
  */
-@Ignore // nocommit - GONE AWAY IN MASTER ANYWAY
+@Ignore // nocommit this is removed in master
 public class TriggerEventQueueTest extends SolrTestCaseJ4 {
 
   SolrCloudManager cloudManager;

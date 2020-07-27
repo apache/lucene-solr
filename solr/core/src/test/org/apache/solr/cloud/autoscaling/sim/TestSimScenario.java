@@ -35,7 +35,7 @@ import org.junit.Test;
  *
  */
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG")
-@Ignore // nocommit debug
+@Ignore // nocommit this is removed in master
 public class TestSimScenario extends SimSolrCloudTestCase {
 
   // simple scenario to test .autoAddReplicas trigger

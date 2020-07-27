@@ -18,10 +18,12 @@ package org.apache.solr.cloud.autoscaling.sim;
 
 import org.apache.solr.client.solrj.cloud.DistributedQueue;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
+import org.junit.Ignore;
 
 /**
  *
  */
+@Ignore // nocommit this is removed in master
 public class TestSimGenericDistributedQueue extends TestSimDistributedQueue {
   DistribStateManager stateManager = new SimDistribStateManager();
 

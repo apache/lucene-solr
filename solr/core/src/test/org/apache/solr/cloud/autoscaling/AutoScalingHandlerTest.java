@@ -63,7 +63,7 @@ import static org.apache.solr.common.util.Utils.getObjectByPath;
  * Test for AutoScalingHandler
  */
 
-@Ignore // nocommit - the trigger thread is disabled for life cycle violations
+@Ignore // nocommit this is removed in master
 public class AutoScalingHandlerTest extends SolrCloudTestCase {
   final static String CONFIGSET_NAME = "conf";
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

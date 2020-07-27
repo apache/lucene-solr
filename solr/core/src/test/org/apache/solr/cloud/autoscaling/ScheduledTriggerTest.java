@@ -36,13 +36,14 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.LogLevel;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * Test for {@link ScheduledTrigger}
  */
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG")
-// nocommit - GONE AWAY IN MASTER ANYWAY
+@Ignore // nocommit this is removed in master
 public class ScheduledTriggerTest extends SolrCloudTestCase {
 
   private AutoScaling.TriggerEventProcessor noFirstRunProcessor = event -> {

@@ -51,7 +51,7 @@ import org.junit.Test;
  */
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG")
 @SolrTestCaseJ4.SuppressSSL
-@Ignore // nocommit - yuck, speed this up
+@Ignore // nocommit this is removed in master
 public class HttpTriggerListenerTest extends SolrCloudTestCase {
 
   private static CountDownLatch triggerFiredLatch;

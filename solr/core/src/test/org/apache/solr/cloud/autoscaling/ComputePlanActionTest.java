@@ -62,7 +62,7 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.MO
  * Test for {@link ComputePlanAction}
  */
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;org.apache.solr.cloud.Overseer=DEBUG;org.apache.solr.cloud.overseer=DEBUG;org.apache.solr.client.solrj.impl.SolrClientDataProvider=DEBUG;")
-@LuceneTestCase.Nightly // TODO: speed up
+@Ignore // nocommit this is removed in master
 public class ComputePlanActionTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

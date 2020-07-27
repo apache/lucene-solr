@@ -38,11 +38,13 @@ import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrResourceLoader;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * Test for {@link NodeAddedTrigger}
  */
+@Ignore // nocommit this is removed in master
 public class TestSimNodeAddedTrigger extends SimSolrCloudTestCase {
   private static AtomicBoolean actionConstructorCalled = new AtomicBoolean(false);
   private static AtomicBoolean actionInitCalled = new AtomicBoolean(false);

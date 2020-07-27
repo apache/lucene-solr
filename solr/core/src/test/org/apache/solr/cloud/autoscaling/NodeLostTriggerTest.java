@@ -45,7 +45,7 @@ import org.junit.Test;
  * Test for {@link NodeLostTrigger}
  */
 @LuceneTestCase.Nightly // TODO speed up
-@Ignore // nocommit - GONE AWAY IN MASTER ANYWAY
+@Ignore // nocommit this is removed in master
 public class NodeLostTriggerTest extends SolrCloudTestCase {
   private static AtomicBoolean actionConstructorCalled = new AtomicBoolean(false);
   private static AtomicBoolean actionInitCalled = new AtomicBoolean(false);

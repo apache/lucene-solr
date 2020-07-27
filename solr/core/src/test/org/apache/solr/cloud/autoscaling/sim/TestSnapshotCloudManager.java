@@ -62,7 +62,7 @@ import org.slf4j.LoggerFactory;
 /**
  *
  */
-@Ignore // nocommit debug
+@Ignore // nocommit this is removed in master
 public class TestSnapshotCloudManager extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

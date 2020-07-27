@@ -65,7 +65,7 @@ import org.slf4j.LoggerFactory;
  */
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG")
 @LuceneTestCase.Slow
-@Ignore // nocommit debug
+@Ignore // nocommit this is removed in master
 public class IndexSizeTriggerMixedBoundsTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

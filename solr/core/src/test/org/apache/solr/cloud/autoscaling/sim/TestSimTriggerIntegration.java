@@ -86,7 +86,7 @@ import static org.apache.solr.cloud.autoscaling.OverseerTriggerThread.MARKER_STA
  * An end-to-end integration test for triggers
  */
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG")
-@Ignore // nocommit - my old friend :( speed this up again
+@Ignore // nocommit this is removed in master
 public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

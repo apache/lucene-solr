@@ -43,6 +43,7 @@ import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Ignore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,6 +57,7 @@ import org.slf4j.LoggerFactory;
  *   }
  * </pre>
  */
+@Ignore // nocommit this is removed in master
 public class SimSolrCloudTestCase extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

@@ -38,7 +38,7 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore // nocommit - yuck, speed this up
+@Ignore // nocommit this is removed in master
 public class MetricTriggerTest extends SolrCloudTestCase {
 
   private AutoScaling.TriggerEventProcessor noFirstRunProcessor = event -> {

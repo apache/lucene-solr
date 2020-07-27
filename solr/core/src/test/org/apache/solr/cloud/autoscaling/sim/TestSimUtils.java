@@ -21,11 +21,13 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.common.params.SolrParams;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  *
  */
+@Ignore // nocommit this is removed in master
 public class TestSimUtils extends SolrTestCaseJ4 {
 
   @Test

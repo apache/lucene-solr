@@ -69,7 +69,7 @@ import org.slf4j.LoggerFactory;
  */
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG")
 @LuceneTestCase.Slow
-@Ignore // nocommit - god is the 3r, 4th or 5th time ive fixed these...
+@Ignore // nocommit this is removed in master
 public class IndexSizeTriggerTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static Field[] FIELDS = TriggerBase.class.getFields();
