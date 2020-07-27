@@ -204,7 +204,8 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     assertEquals("Some implicit TransformerFactories are not yet tested by this class: " + implicit,
                  0, implicit.size());
   }
-  
+
+  @AwaitsFix(bugUrl = "Flakey test - expected:<1> but was:<0> TestRandomFlRTGCloud.java:226 TestRandomFlRTGCloud.java:269 TestRandomFlRTGCloud.java:406")
   public void testRandomizedUpdatesAndRTGs() throws Exception {
 
     final int maxNumDocs = atLeast( TEST_NIGHTLY ? 100 : 35);
