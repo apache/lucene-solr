@@ -120,7 +120,7 @@ public class SolrZooKeeper extends ZooKeeper {
     } catch (InterruptedException e) {
       ParWork.propegateInterrupt(e);
     }
-             ZooKeeperExposed exposed = new ZooKeeperExposed(this, cnxn);
+     ZooKeeperExposed exposed = new ZooKeeperExposed(this, cnxn);
      //exposed.intteruptSendThread();
   //  exposed.interruptEventThread();
    // exposed.interruptSendThread();

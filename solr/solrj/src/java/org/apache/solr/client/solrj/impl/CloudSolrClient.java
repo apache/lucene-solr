@@ -84,7 +84,7 @@ public class CloudSolrClient extends BaseCloudSolrClient {
       if (builder.zkHosts != null && builder.zkHosts.size() > 0) {
         this.zkStateReader = new ZkStateReader(ZkClientClusterStateProvider.buildZkHostString(builder.zkHosts, builder.zkChroot), 40000, 15000);
         this.zkStateReader.createClusterStateWatchersAndUpdate();
-        this.stateProvider = new ZkClientClusterStateProvider(zkStateReader, true);
+        this.stateProvider = new ZkClientClusterStateProvider(zkStateReader);
       } else if (builder.solrUrls != null && !builder.solrUrls.isEmpty()) {
         try {
           this.stateProvider = new HttpClusterStateProvider(builder.solrUrls, builder.httpClient);
@@ -177,6 +177,7 @@ public class CloudSolrClient extends BaseCloudSolrClient {
       if (clientIsInternal) {
         closer.collect(myClient);
       }
+      closer.collect(zkStateReader);
       closer.addCollect("cloudclient");
     }
     super.close();

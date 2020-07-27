@@ -394,7 +394,7 @@ public class SolrTestCase extends LuceneTestCase {
 
       SysStats.getSysStats().stopMonitor();
 
-      if (!failed) {
+      if (!failed && suiteFailureMarker.wasSuccessful() ) {
         // if the tests passed, make sure everything was closed / released
         String orr = ObjectReleaseTracker.checkEmpty();
         ObjectReleaseTracker.clear();

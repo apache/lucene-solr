@@ -180,7 +180,7 @@ public class ConnectionManager implements Watcher, Closeable {
 
   private synchronized void updatezk() throws IOException {
     if (keeper != null) {
-      keeper.close();
+      ParWork.close(keeper);
     }
     SolrZooKeeper zk = createSolrZooKeeper(zkServerAddress, zkTimeout, this);
     keeper = zk;
@@ -232,7 +232,7 @@ public class ConnectionManager implements Watcher, Closeable {
           // or if we cannot run our reconnect command, close the keeper
           // our retry loop will try to create one again
           try {
-            keeper.close();
+            ParWork.close(keeper);
             keeper = null;
           } catch (Exception e) {
             ParWork.propegateInterrupt("Exception closing keeper after hitting exception", e);

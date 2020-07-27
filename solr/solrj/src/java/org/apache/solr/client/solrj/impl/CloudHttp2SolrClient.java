@@ -71,7 +71,7 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
       if (builder.zkHosts != null) {
         this.zkStateReader = new ZkStateReader(ZkClientClusterStateProvider.buildZkHostString(builder.zkHosts, builder.zkChroot), 40000, 15000);
         this.zkStateReader.createClusterStateWatchersAndUpdate();
-        this.stateProvider = new ZkClientClusterStateProvider(zkStateReader, true);
+        this.stateProvider = new ZkClientClusterStateProvider(zkStateReader, false);
       } else if (builder.solrUrls != null && !builder.solrUrls.isEmpty()) {
         try {
           this.stateProvider = new Http2ClusterStateProvider(builder.solrUrls, builder.httpClient);
@@ -94,7 +94,7 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
   @Override
   public void close() throws IOException {
     try (ParWork closer = new ParWork(this, true)) {
-      closer.add("CloudHttp2SolrClient#close", stateProvider, lbClient);
+      closer.add("CloudHttp2SolrClient#close", stateProvider, zkStateReader, lbClient);
       if (clientIsInternal && myClient!=null) {
         closer.add("http2Client", myClient);
       }

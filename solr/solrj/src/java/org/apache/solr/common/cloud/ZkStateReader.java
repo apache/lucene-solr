@@ -904,7 +904,7 @@ public class ZkStateReader implements SolrCloseable {
     closeTracker.close();
     this.closed = true;
 
-    try (ParWork closer = new ParWork(this)) {
+    try (ParWork closer = new ParWork(this, true)) {
       notifications.shutdown();
       collectionPropsNotifications.shutdown();
 
