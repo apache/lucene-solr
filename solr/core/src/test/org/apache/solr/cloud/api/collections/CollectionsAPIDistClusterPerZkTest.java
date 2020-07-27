@@ -204,18 +204,6 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testDeleteNonExistentCollection() throws Exception {
-
-    expectThrows(SolrException.class, () -> {
-      CollectionAdminRequest.deleteCollection("unknown_collection").process(cluster.getSolrClient());
-    });
-
-    // create another collection should still work
-    CollectionAdminRequest.createCollection("acollectionafterbaddelete", "conf", 1, 2)
-        .process(cluster.getSolrClient());
-  }
-
-  @Test
   @Ignore // nocommit slow
   public void testSpecificConfigsets() throws Exception {
     CollectionAdminRequest.createCollection("withconfigset2", "conf2", 1, 1).process(cluster.getSolrClient());

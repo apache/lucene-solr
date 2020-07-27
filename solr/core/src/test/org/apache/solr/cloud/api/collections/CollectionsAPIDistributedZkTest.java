@@ -23,6 +23,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -288,5 +289,17 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     solrClient.commit();
     rsp = solrClient.query(params(CommonParams.Q, "*:*"));
     assertEquals("num docs after turning off read-only", NUM_DOCS * 3, rsp.getResults().getNumFound());
+  }
+
+  @Test
+  public void testDeleteNonExistentCollection() throws Exception {
+
+    expectThrows(SolrException.class, () -> {
+      CollectionAdminRequest.deleteCollection("unknown_collection").process(cluster.getSolrClient());
+    });
+
+    // create another collection should still work
+    CollectionAdminRequest.createCollection("acollectionafterbaddelete", "conf", 1, 2)
+            .process(cluster.getSolrClient());
   }
 }
