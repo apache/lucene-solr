@@ -31,7 +31,7 @@ public class TimeTracker {
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
-  public static final Map<String,TimeTracker> CLOSE_TIMES = new ConcurrentHashMap<>();
+  public static final Map<String,TimeTracker> CLOSE_TIMES = new ConcurrentHashMap<>(2048, 0.75f, 6);
   
   private final long startTime;
 
@@ -39,11 +39,11 @@ public class TimeTracker {
 
   private volatile Object trackedObject;
   
-  private final List<TimeTracker> children = Collections.synchronizedList(new ArrayList<>());
+  private final List<TimeTracker> children = Collections.synchronizedList(new ArrayList<>(64));
 
   private final Class<? extends Object> clazz;
 
-  private final StringBuilder label = new StringBuilder();
+  private final StringBuilder label = new StringBuilder(2046);
   
   private final int depth;
   

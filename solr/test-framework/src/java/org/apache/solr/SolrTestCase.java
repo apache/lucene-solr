@@ -376,12 +376,12 @@ public class SolrTestCase extends LuceneTestCase {
         synchronized (CoreContainer.class) {
           if (CoreContainer.solrCoreLoadExecutor != null) {
             CoreContainer.solrCoreLoadExecutor.shutdown();
-            ExecutorUtil.shutdownAndAwaitTermination(CoreContainer.solrCoreLoadExecutor);
+            ParWork.close(CoreContainer.solrCoreLoadExecutor);
             CoreContainer.solrCoreLoadExecutor = null;
           }
         }
       }
-      
+
       if (null != testExecutor) {
         ParWork.close(testExecutor);
         testExecutor = null;
