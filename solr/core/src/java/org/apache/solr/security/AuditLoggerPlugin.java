@@ -67,19 +67,19 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
   private static final int DEFAULT_QUEUE_SIZE = 4096;
   private static final int DEFAULT_NUM_THREADS = Math.max(2, Runtime.getRuntime().availableProcessors() / 2);
 
-  BlockingQueue<AuditEvent> queue;
-  AtomicInteger auditsInFlight = new AtomicInteger(0);
-  boolean async;
-  boolean blockAsync;
-  int blockingQueueSize;
+  volatile BlockingQueue<AuditEvent> queue;
+  final AtomicInteger auditsInFlight = new AtomicInteger(0);
+  volatile boolean async;
+  volatile boolean blockAsync;
+  volatile int blockingQueueSize;
 
   protected AuditEventFormatter formatter;
-  private Set<String> metricNames = ConcurrentHashMap.newKeySet();
-  private ExecutorService executorService;
-  private boolean closed;
-  private MuteRules muteRules;
 
-  protected SolrMetricsContext solrMetricsContext;
+  private volatile ExecutorService executorService;
+  private volatile boolean closed;
+  private volatile MuteRules muteRules;
+
+  protected volatile SolrMetricsContext solrMetricsContext;
   protected Meter numErrors = new Meter();
   protected Meter numLost = new Meter();
   protected Meter numLogged = new Meter();
@@ -192,7 +192,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
   @Override
   public void run() {
     assert(async);
-    while (!closed && !Thread.currentThread().isInterrupted()) {
+    while (!closed) {
       try {
         AuditEvent event = queue.poll(1000, TimeUnit.MILLISECONDS);
         auditsInFlight.incrementAndGet();
@@ -206,6 +206,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
         totalTime.inc(timer.stop());
       } catch (InterruptedException e) {
         ParWork.propegateInterrupt(e);
+        return;
       } catch (Exception ex) {
         log.error("Exception when attempting to audit log asynchronously", ex);
         numErrors.mark();
@@ -311,11 +312,11 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
   @Override
   public void close() throws IOException {
     if (async && executorService != null) {
-      waitForQueueToDrain(30);
+      executorService.shutdown();
+      waitForQueueToDrain(15);
       closed = true;
       log.info("Shutting down async Auditlogger background thread(s)");
       if (executorService != null) {
-        executorService.shutdownNow();
         ParWork.close(executorService);
       }
     }
