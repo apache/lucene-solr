@@ -61,11 +61,15 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
       return true;
     }
 
-
-
     if (threadName.startsWith("SessionTracker") || threadName.startsWith("ProcessThread")) { // zk thread that will stop in a moment.
       return true;
     }
+
+    // randomizedtesting claims this leaks, but the thread is already TERMINATED state
+    if (threadName.startsWith("executeInOrderTest")) {
+      return true;
+    }
+
 
     // HDFS nocommit fix
     if (threadName.startsWith("IPC Parameter Sending Thread ")) { // SOLR-5007
