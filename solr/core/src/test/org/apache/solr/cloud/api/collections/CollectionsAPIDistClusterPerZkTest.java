@@ -149,9 +149,13 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
   public void testTooManyReplicas() {
     CollectionAdminRequest req = CollectionAdminRequest.createCollection("collection", "conf", 2, 10);
 
-    expectThrows(Exception.class, () -> {
+    try {
       cluster.getSolrClient().request(req);
-    });
+      fail("Expected excetpion");
+    } catch (Exception e) {
+      // expected
+    }
+
   }
 
   @Test
