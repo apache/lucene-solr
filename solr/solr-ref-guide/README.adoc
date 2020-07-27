@@ -26,6 +26,8 @@ These files are processed with AsciiDoctor in 2 different ways:
 * HTML version, using Jekyll:
 ** `Ruby` (v2.3 or higher)
 ** The following gems must be installed:
+*** `asciidoctor`:v2.0.10 or higher.
+Use `gem install asciidoctor` to install.
 *** `jekyll`: v3.5, not v4.x.
 Use `gem install jekyll --force --version 3.5.0` to force install of v3.5.0.
 *** `jekyll-asciidoc`: v2.1 or higher; latest version (3.0.0) is fine.
@@ -36,7 +38,6 @@ Use `gem install slim` to install.
 Use `gem install tilt` to install.
 *** `concurrent-ruby`: v1.0 or higher; latest version (1.1.5) is fine.
 Use `gem install concurrent-ruby` to install.
-
 
 == Building the Guide
 For details on building the ref guide, see `ant -p`.
