@@ -90,9 +90,13 @@ public class OrderedExecutor implements Executor {
     ExecutorUtil.awaitTermination(delegate);
   }
 
+  public void shutdownNow() {
+    delegate.shutdownNow();
+  }
+
   /** A set of locks by a key {@code T}, kind of like Google Striped but the keys are sparse/lazy. */
   private static class SparseStripedLock<T> {
-    private ConcurrentHashMap<T, CountDownLatch> map = new ConcurrentHashMap<>(32);
+    private final ConcurrentHashMap<T, CountDownLatch> map = new ConcurrentHashMap<>(32);
     private final Semaphore sizeSemaphore;
 
     SparseStripedLock(int maxSize) {

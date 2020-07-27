@@ -57,6 +57,7 @@ public class OrderedExecutorTest extends SolrTestCase {
       orderedExecutor.shutdownAndAwaitTermination();
       assertEquals(100, intBox.value.get());
     } finally {
+      orderedExecutor.shutdownNow();
       ParWork.close(orderedExecutor);
     }
 
