@@ -368,22 +368,20 @@ public class SolrTestCase extends LuceneTestCase {
     log.info("*******************************************************************");
     log.info("@After Class ------------------------------------------------------");
     try {
+      if (null != testExecutor) {
+        testExecutor.shutdown();
+      }
 
       if (CoreContainer.solrCoreLoadExecutor != null) {
         synchronized (CoreContainer.class) {
           if (CoreContainer.solrCoreLoadExecutor != null) {
-            CoreContainer.solrCoreLoadExecutor.shutdownNow();
+            CoreContainer.solrCoreLoadExecutor.shutdown();
             ExecutorUtil.shutdownAndAwaitTermination(CoreContainer.solrCoreLoadExecutor);
             CoreContainer.solrCoreLoadExecutor = null;
           }
         }
       }
-
-      if (null != testExecutor) {
-        testExecutor.shutdown();
-      }
-
-
+      
       if (null != testExecutor) {
         ParWork.close(testExecutor);
         testExecutor = null;
