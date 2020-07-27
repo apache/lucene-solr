@@ -368,6 +368,10 @@ public class SolrTestCase extends LuceneTestCase {
     log.info("*******************************************************************");
     log.info("@After Class ------------------------------------------------------");
     try {
+      if (CoreContainer.solrCoreLoadExecutor != null) {
+        CoreContainer.solrCoreLoadExecutor.shutdownNow();
+      }
+
       if (null != testExecutor) {
         testExecutor.shutdown();
       }
@@ -375,7 +379,6 @@ public class SolrTestCase extends LuceneTestCase {
       if (CoreContainer.solrCoreLoadExecutor != null) {
         synchronized (CoreContainer.class) {
           if (CoreContainer.solrCoreLoadExecutor != null) {
-            CoreContainer.solrCoreLoadExecutor.shutdown();
             ParWork.close(CoreContainer.solrCoreLoadExecutor);
             CoreContainer.solrCoreLoadExecutor = null;
           }
