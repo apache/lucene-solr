@@ -69,6 +69,7 @@ public class IndexSizeEstimatorTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     // create predictable field names
+    useFactory(null);
     System.setProperty("solr.tests.numeric.dv", "true");
     System.setProperty("solr.tests.numeric.points", "true");
     System.setProperty("solr.tests.numeric.points.dv", "true");
