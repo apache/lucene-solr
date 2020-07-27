@@ -127,5 +127,4 @@
         "minimize":"cores",
         "precision":1}
       ,{
-          "maximize":"freedisk"}],
-      "cluster-policy": []}}}
+          "maximize":"freedisk"}]}}}

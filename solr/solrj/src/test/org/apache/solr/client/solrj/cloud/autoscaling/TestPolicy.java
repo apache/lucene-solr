@@ -77,7 +77,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.CLUSTER_POLICY;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.CLUSTER_PREFERENCES;
 import static org.apache.solr.client.solrj.cloud.autoscaling.TestPolicy2.loadFromResource;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.CORES;
@@ -1339,7 +1338,6 @@ public class TestPolicy extends SolrTestCaseJ4 {
     Map<String, Map> nodeValues = (Map<String, Map>) Utils.fromJSONString("{" +
         "node1:{cores:2}," +
         "node3:{cores:4}" +
-        "node2:{cores:2}" +
         "}");
     Policy policy = new Policy(new HashMap<>());
     @SuppressWarnings({"unchecked"})
@@ -1348,8 +1346,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         .getSuggester(MOVEREPLICA)
         .hint(Hint.COLL, "collection1")
         .hint(Hint.COLL, "collection2")
-        .hint(Suggester.Hint.SRC_NODE, "node2")
-        .forceOperation(true);
+        .hint(Suggester.Hint.SRC_NODE, "node2");
     @SuppressWarnings({"rawtypes"})
     SolrRequest op = suggester.getSuggestion();
     assertNotNull(op);
@@ -1362,8 +1359,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         .getSuggester(MOVEREPLICA)
         .hint(Hint.COLL, "collection1")
         .hint(Hint.COLL, "collection2")
-        .hint(Suggester.Hint.SRC_NODE, "node2")
-        .forceOperation(true);
+        .hint(Suggester.Hint.SRC_NODE, "node2");
     op = suggester.getSuggestion();
     assertNotNull(op);
     assertEquals("collection2", op.getParams().get("collection"));
@@ -2246,7 +2242,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
   }
 
   public void testEmptyClusterState() {
-    String autoScaleJson = " {'cluster-policy':[], 'policies':{'c1':[{" +
+    String autoScaleJson = " {'policies':{'c1':[{" +
         "        'replica':1," +
         "        'shard':'#EACH'," +
         "        'port':'50096'}]}}";
@@ -3332,24 +3328,5 @@ public class TestPolicy extends SolrTestCaseJ4 {
     // since the user explicitly added those preferences, they should be written by MapWriter
     assertEquals(1, writtenKeys.size());
     assertTrue(writtenKeys.contains(CLUSTER_PREFERENCES));
-
-    // reset
-    writtenKeys.clear();
-    // now we create a cluster policy that is intentionally empty which should prevent the implicit
-    // cluster policy from being written but should emit an empty key/val pair for cluster policy
-    policy = new Policy(Utils.makeMap(CLUSTER_POLICY, Collections.emptyList()));
-    // sanity checks
-    assertFalse(policy.isEmpty());
-    assertTrue(policy.hasEmptyPreferences());
-    assertFalse(policy.hasEmptyClusterPolicy());
-    policy.writeMap(new MapWriter.EntryWriter() {
-      @Override
-      public MapWriter.EntryWriter put(CharSequence k, Object v) throws IOException {
-        writtenKeys.add(k.toString());
-        return this;
-      }
-    });
-    assertEquals(1, writtenKeys.size());
-    assertTrue(writtenKeys.contains(CLUSTER_POLICY));
   }
 }
