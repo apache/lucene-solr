@@ -369,15 +369,13 @@ public class SolrTestCase extends LuceneTestCase {
     log.info("@After Class ------------------------------------------------------");
     try {
 
-      ParWork.closeExecutor();
-
       if (null != testExecutor) {
         testExecutor.shutdownNow();
       }
 
 
       if (null != testExecutor) {
-        ExecutorUtil.shutdownAndAwaitTermination(testExecutor);
+        ParWork.close(testExecutor);
         testExecutor = null;
       }
 
@@ -390,6 +388,8 @@ public class SolrTestCase extends LuceneTestCase {
           }
         }
       }
+
+      ParWork.closeExecutor();
 
       SysStats.getSysStats().stopMonitor();
 
