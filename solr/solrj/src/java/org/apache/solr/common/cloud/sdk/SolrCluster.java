@@ -32,9 +32,6 @@ public interface SolrCluster {
   /** nodes in the cluster */
   SimpleMap<SolrNode> nodes();
 
-  /** Get a {@link SolrNode} by name. returns null if no such node exists */
-  SolrNode getNode(String node);
-
   /**
    * Name of the node in which the overseer is running
    */
