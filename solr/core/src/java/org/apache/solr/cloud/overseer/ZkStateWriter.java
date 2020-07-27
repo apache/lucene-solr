@@ -180,6 +180,7 @@ public class ZkStateWriter {
     Timer.Context timerContext = stats.time("update_state");
     boolean success = false;
     ClusterState newClusterState = null;
+    KeeperException.BadVersionException exception = null;
 
     try {
       // if (!updates.isEmpty()) {
@@ -187,7 +188,7 @@ public class ZkStateWriter {
         String name = entry.getKey();
         String path = ZkStateReader.getCollectionPath(name);
         DocCollection c = entry.getValue();
-        Integer prevVersion = -1;
+        Integer prevVersion = 0;
         if (lastUpdatedTime == -1) {
           prevVersion = 0;
         }
@@ -274,7 +275,14 @@ public class ZkStateWriter {
               log.info("Write state.json prevVersion={} bytes={} cs={}", prevVersion, data.length, newClusterState);
             //}
             // stat = reader.getZkClient().getCurator().setData().withVersion(prevVersion).forPath(path, data);
-            stat = reader.getZkClient().setData(path, data, prevVersion, true);
+            try {
+              stat = reader.getZkClient().setData(path, data, prevVersion, false);
+            } catch (KeeperException.BadVersionException bve) {
+              // this is a tragic error, we must disallow usage of this instance
+              log.warn("Tried to update the cluster state using version={} but we where rejected, found {}", newClusterState.getZNodeVersion(), stat.getVersion(), bve);
+              exception = bve;
+              continue;
+            }
           } else {
             if (log.isDebugEnabled()) {
               log.debug("writePendingUpdates() - going to create_collection {}", path);
@@ -346,15 +354,11 @@ public class ZkStateWriter {
       //
 
       lastUpdatedTime = System.nanoTime();
+      if (exception != null) {
+        throw exception;
+      }
+
       success = true;
-    } catch (KeeperException.BadVersionException bve) {
-      // this is a tragic error, we must disallow usage of this instance
-       log.warn("Tried to update the cluster state using version={} but we where rejected", newClusterState.getZNodeVersion(), bve);
-
-
-
-      // nocommit invalidState = true;
-      throw bve;
     } finally {
       timerContext.stop();
       if (success) {
