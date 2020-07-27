@@ -77,7 +77,7 @@ public class ExecutorUtil {
 
   public static void shutdownAndAwaitTermination(ExecutorService pool) {
     if(pool == null) return;
-    pool.shutdownNow(); // Disable new tasks from being submitted
+    pool.shutdown(); // Disable new tasks from being submitted
     awaitTermination(pool);
   }
 

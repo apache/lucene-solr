@@ -53,8 +53,7 @@ public class OrderedExecutorTest extends SolrTestCase {
       for (int i = 0; i < 100; i++) {
         orderedExecutor.execute(1, () -> intBox.value.incrementAndGet());
       }
-      orderedExecutor.shutdown();
-      orderedExecutor.awaitTermination();
+      orderedExecutor.shutdownAndAwaitTermination();
       assertEquals(100, intBox.value.get());
     } finally {
       ParWork.close(orderedExecutor);
