@@ -30,9 +30,11 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.ParWork;
+import org.apache.solr.common.ParWorkExecutor;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.OrderedExecutor;
 import org.junit.Test;
@@ -45,13 +47,19 @@ public class OrderedExecutorTest extends SolrTestCase {
 
   @Test
   public void testExecutionInOrder() {
-    OrderedExecutor orderedExecutor = new OrderedExecutor(TEST_NIGHTLY ? 10 : 3, ExecutorUtil.newMDCAwareCachedThreadPool("executeInOrderTest"));
     IntBox intBox = new IntBox();
-    for (int i = 0; i < 100; i++) {
-      orderedExecutor.execute(1, () -> intBox.value++);
+    OrderedExecutor orderedExecutor = new OrderedExecutor(TEST_NIGHTLY ? 10 : 3, new ParWorkExecutor("executeInOrderTest", TEST_NIGHTLY ? 10 : 3));
+    try {
+      for (int i = 0; i < 100; i++) {
+        orderedExecutor.execute(1, () -> intBox.value.incrementAndGet());
+      }
+      orderedExecutor.shutdown();
+      orderedExecutor.awaitTermination();
+      assertEquals(100, intBox.value.get());
+    } finally {
+      ParWork.close(orderedExecutor);
     }
-    ParWork.close(orderedExecutor);
-    assertEquals(intBox.value, 100);
+
   }
 
   @Test
@@ -221,6 +229,6 @@ public class OrderedExecutorTest extends SolrTestCase {
   }
 
   private static class IntBox {
-    int value;
+    final AtomicInteger value = new AtomicInteger();
   }
 }

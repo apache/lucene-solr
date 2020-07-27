@@ -24,6 +24,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Semaphore;
 
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -60,12 +61,10 @@ public class OrderedExecutor implements Executor {
       sparseStripedLock.add(lockId);
     } catch (InterruptedException e) {
       ParWork.propegateInterrupt(e);
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      throw new AlreadyClosedException(e);
     }
 
     try {
-      if (delegate.isShutdown()) throw new RejectedExecutionException();
-
       delegate.execute(() -> {
         try {
           command.run();
@@ -73,7 +72,7 @@ public class OrderedExecutor implements Executor {
           sparseStripedLock.remove(lockId);
         }
       });
-    } catch (RejectedExecutionException e) {
+    } catch (Exception e) {
       sparseStripedLock.remove(lockId);
       throw e;
     }
@@ -112,7 +111,7 @@ public class OrderedExecutor implements Executor {
         // myLock was successfully inserted
       }
       // won the lock
-      sizeSemaphore.acquire();
+      sizeSemaphore.acquireUninterruptibly();
     }
 
     public void remove(T t) {
