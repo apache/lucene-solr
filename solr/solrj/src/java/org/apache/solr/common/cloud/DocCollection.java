@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 
+import org.apache.solr.common.cloud.sdk.Router;
 import org.apache.solr.common.cloud.sdk.Shard;
 import org.apache.solr.common.cloud.sdk.SolrCollection;
 import org.apache.solr.common.util.SimpleMap;
@@ -407,6 +408,14 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice>, SolrC
   @Override
   public SimpleMap<Shard> shards() {
     return shards;
+  }
+
+  @Override
+  public Router router() {
+    return routingKey -> {
+          Slice targetSlice = router.getTargetSlice(routingKey, null, null, null, null);
+          return targetSlice == null? null: targetSlice.getName();
+        };
   }
 
   @Override

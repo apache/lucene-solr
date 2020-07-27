@@ -30,4 +30,6 @@ public interface SolrCollection {
    */
   String configSet();
 
+  Router router();
+
 }
