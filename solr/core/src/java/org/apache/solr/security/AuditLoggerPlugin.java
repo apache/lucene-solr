@@ -314,12 +314,15 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
       waitForQueueToDrain(30);
       closed = true;
       log.info("Shutting down async Auditlogger background thread(s)");
-      executorService.shutdownNow();
-      try {
-        SolrInfoBean.super.close();
-      } catch (Exception e) {
-        throw new IOException("Exception closing", e);
+      if (executorService != null) {
+        executorService.shutdownNow();
+        ParWork.close(executorService);
       }
+    }
+    try {
+      SolrInfoBean.super.close();
+    } catch (Exception e) {
+      throw new IOException("Exception closing", e);
     }
   }
 
