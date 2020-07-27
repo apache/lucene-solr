@@ -44,8 +44,11 @@ public class NodeMutator {
 
     log.debug("DownNode state invoked for node: {}", nodeName);
 
-    for (DocCollection docCollection : clusterState.getCollectionsMap().values()) {
-      String collection = docCollection.getName();
+    for (String collection : clusterState.getCollectionStates().keySet()) {
+      DocCollection docCollection = clusterState.getCollectionOrNull(collection);
+      if (docCollection == null) {
+        continue;
+      }
 
       Map<String,Slice> slicesCopy = new LinkedHashMap<>(docCollection.getSlicesMap());
 
