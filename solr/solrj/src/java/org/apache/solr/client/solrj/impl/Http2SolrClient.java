@@ -272,14 +272,6 @@ public class Http2SolrClient extends SolrClient {
         throw new RuntimeException(e);
       }
     }
-    if (scheduler != null) {
-      try {
-        scheduler.stop();
-      } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
-        throw new RuntimeException(e);
-      }
-    }
     // we wait for async requests, so far devs don't want to give sugar for this
     asyncTracker.waitForCompleteFinal();
     if (httpClientExecutor != null) {
