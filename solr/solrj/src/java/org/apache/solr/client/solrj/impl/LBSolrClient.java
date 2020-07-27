@@ -18,6 +18,7 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.lang.ref.WeakReference;
 import java.net.ConnectException;
 import java.net.MalformedURLException;
@@ -56,15 +57,18 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
 
 public abstract class LBSolrClient extends SolrClient {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   // defaults
   private static final Set<Integer> RETRY_CODES = new HashSet<>(Arrays.asList(404, 403, 503, 500));
-  private static final int CHECK_INTERVAL = 60 * 1000; //1 minute between checks
+  private static final int CHECK_INTERVAL = 30 * 1000; //1 minute between checks
   private static final int NONSTANDARD_PING_LIMIT = 5;  // number of times we'll ping dead servers not in the server list
 
   // keys to the maps are currently of the form "http://localhost:8983/solr"
@@ -72,7 +76,7 @@ public abstract class LBSolrClient extends SolrClient {
   private final Map<String, ServerWrapper> aliveServers = new LinkedHashMap<>();
   // access to aliveServers should be synchronized on itself
 
-  private final Map<String, ServerWrapper> zombieServers = new ConcurrentHashMap<>();
+  private final Map<String, ServerWrapper> zombieServers = new ConcurrentHashMap<>(32);
 
   // changes to aliveServers are reflected in this array, no need to synchronize
   private volatile ServerWrapper[] aliveServerList = new ServerWrapper[0];
@@ -80,7 +84,7 @@ public abstract class LBSolrClient extends SolrClient {
 
   private volatile ScheduledExecutorService aliveCheckExecutor;
 
-  private int interval = CHECK_INTERVAL;
+  private int interval = Integer.getInteger("solr.lbclient.live_check_interval", CHECK_INTERVAL);
   private final AtomicInteger counter = new AtomicInteger(-1);
 
   private static final SolrQuery solrQuery = new SolrQuery("*:*");
@@ -424,6 +428,7 @@ public abstract class LBSolrClient extends SolrClient {
   protected abstract SolrClient getClient(String baseUrl);
 
   private Exception addZombie(String serverStr, Exception e) {
+    log.info("add Zombie {}" + serverStr);
     ServerWrapper wrapper = createServerWrapper(serverStr);
     wrapper.standard = false;
     zombieServers.put(serverStr, wrapper);

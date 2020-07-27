@@ -23,6 +23,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -43,10 +44,8 @@ public class NodeMutator {
 
     log.debug("DownNode state invoked for node: {}", nodeName);
 
-    Map<String, DocCollection> collections = clusterState.getCollectionsMap();
-    for (Map.Entry<String, DocCollection> entry : collections.entrySet()) {
-      String collection = entry.getKey();
-      DocCollection docCollection = entry.getValue();
+    for (DocCollection docCollection : clusterState.getCollectionsMap().values()) {
+      String collection = docCollection.getName();
 
       Map<String,Slice> slicesCopy = new LinkedHashMap<>(docCollection.getSlicesMap());
 

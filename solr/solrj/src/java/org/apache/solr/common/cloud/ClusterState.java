@@ -160,17 +160,12 @@ public class ClusterState implements JSONWriter.Writable {
    */
   public Map<String, DocCollection> getCollectionsMap()  {
     Map<String, DocCollection> result = new HashMap<>(collectionStates.size());
+    // TODO this is a bit whack, but some class cast exception happens here
     for (Entry<String, CollectionRef> entry : collectionStates.entrySet()) {
-     Object  collObject = entry.getValue().get();
-      DocCollection collection = null;
-      if (collObject instanceof  CollectionRef) {
-        collection = ((CollectionRef)collObject).get();
-      } else if (collObject instanceof  DocCollection) {
-        collection = (DocCollection) collObject;
-      }
+      CollectionRef collection = entry.getValue();
 
       if (collection != null) {
-        result.put(entry.getKey(), collection);
+        result.put(entry.getKey(), collection.get(true));
       }
     }
     return result;

@@ -199,6 +199,7 @@ public class SolrTestCase extends LuceneTestCase {
       //TestInjection.randomDelayMaxInCoreCreationInSec = 2;
 
 
+      System.setProperty("solr.lbclient.live_check_interval", "3000");
       System.setProperty("solr.httpShardHandler.completionTimeout", "2000");
       System.setProperty("zookeeper.request.timeout", "5000");
       System.setProperty(SolrTestCaseJ4.USE_NUMERIC_POINTS_SYSPROP, "false");

@@ -175,7 +175,7 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
   public void testIndexOptimization() throws Exception {
     CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     String collectionName = "SolrCoreSnapshots_IndexOptimization";
-    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 1);
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 1).setMaxShardsPerNode(10);
     create.process(solrClient);
 
     int nDocs = BackupRestoreUtils.indexDocs(cluster.getSolrClient(), collectionName, docsSeed);
@@ -242,7 +242,7 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
 
       // Add few documents. Without this the optimize command below does not take effect.
       {
-        int moreAdds = TestUtil.nextInt(random(), 1, 100);
+        int moreAdds = TestUtil.nextInt(random(), 1, TEST_NIGHTLY ? 100 : 25);
         for (int i=0; i<moreAdds; i++) {
           SolrInputDocument doc = new SolrInputDocument();
           doc.addField("id", i + nDocs);

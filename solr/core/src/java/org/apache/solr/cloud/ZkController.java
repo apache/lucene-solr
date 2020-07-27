@@ -2894,10 +2894,37 @@ public class ZkController implements Closeable {
       overseer.getStateUpdateQueue().offer(Utils.toJSON(m));
     } catch (AlreadyClosedException e) {
       log.info("Not publishing node as DOWN because a resource required to do so is already closed.");
+      return;
     } catch (InterruptedException e) {
       ParWork.propegateInterrupt(e);
-      log.debug("Publish node as down was interrupted.");
+      return;
     }
+//    Collection<SolrCore> cores = cc.getCores();
+//    for (SolrCore core : cores) {
+//      CoreDescriptor desc = core.getCoreDescriptor();
+//      String collection = desc.getCollectionName();
+//      try {
+//        zkStateReader.waitForState(collection, 3, TimeUnit.SECONDS, (n,c) -> {
+//          if (c != null) {
+//            List<Replica> replicas = c.getReplicas();
+//            for (Replica replica : replicas) {
+//              if (replica.getNodeName().equals(getNodeName())) {
+//                if (!replica.getState().equals(Replica.State.DOWN)) {
+//                  log.info("Found state {} {}", replica.getState(), replica.getNodeName());
+//                  return false;
+//                }
+//              }
+//            }
+//          }
+//          return true;
+//        });
+//      } catch (InterruptedException e) {
+//        ParWork.propegateInterrupt(e);
+//        return;
+//      } catch (TimeoutException e) {
+//        log.error("Timeout", e);
+//      }
+//    }
   }
 
   /**

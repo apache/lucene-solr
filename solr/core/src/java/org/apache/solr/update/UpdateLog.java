@@ -2256,11 +2256,13 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
   public void seedBucketsWithHighestVersion(SolrIndexSearcher newSearcher) {
     log.debug("Looking up max value of version field to seed version buckets");
-    versionInfo.blockUpdates();
-    try {
-      maxVersionFromIndex = seedBucketsWithHighestVersion(newSearcher, versionInfo);
-    } finally {
-      versionInfo.unblockUpdates();
+    if (versionInfo != null) {
+      versionInfo.blockUpdates();
+      try {
+        maxVersionFromIndex = seedBucketsWithHighestVersion(newSearcher, versionInfo);
+      } finally {
+        versionInfo.unblockUpdates();
+      }
     }
   }
 }

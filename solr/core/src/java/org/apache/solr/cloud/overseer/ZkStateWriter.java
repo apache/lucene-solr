@@ -187,7 +187,7 @@ public class ZkStateWriter {
         String name = entry.getKey();
         String path = ZkStateReader.getCollectionPath(name);
         DocCollection c = entry.getValue();
-        int prevVersion = -1;
+        Integer prevVersion = -1;
         if (lastUpdatedTime == -1) {
           prevVersion = 0;
         }
@@ -201,7 +201,7 @@ public class ZkStateWriter {
               log.debug("going to delete state.json {}", path);
             }
             reader.getZkClient().clean(path);
-          } else if (prevState.getCollectionsMap().containsKey(name)) {
+          } else if (prevState.getCollectionOrNull(name) != null) {
             if (log.isDebugEnabled()) {
               log.debug("writePendingUpdates() - going to update_collection {} version: {}", path,
                       prevState.getZNodeVersion());
@@ -209,8 +209,11 @@ public class ZkStateWriter {
 
             // assert c.getStateFormat() > 1;
             // stat = reader.getZkClient().getCurator().checkExists().forPath(path);
+            DocCollection coll = prevState.getCollectionOrNull(name);
+            if (coll != null) {
+              prevVersion = coll.getZNodeVersion();
+            }
 
-            prevVersion = prevState.getCollection(c.getName()).getZNodeVersion();
             Map<String, Slice> existingSlices = prevState.getCollection(c.getName()).getSlicesMap();
 
             Map<String, Slice> newSliceMap = new HashMap<>(existingSlices.size() + 1);

@@ -133,12 +133,13 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
   }
   
   @AfterClass
-  public static void afterClass() throws IOException {
+  public static void afterClass() throws Exception {
     if (NODE_CLIENTS != null) {
       for (Http2SolrClient client : NODE_CLIENTS) {
         client.close();
       }
     }
+    shutdownCluster();
     NODE_CLIENTS = null;
     CLOUD_CLIENT = null;
   }
