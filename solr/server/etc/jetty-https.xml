@@ -48,12 +48,14 @@
                     <Item>http/1.1</Item>
                   </Array>
                 </Arg>
-                <Set name="defaultProtocol">http/1.1</Set>
+                <Set name="defaultProtocol">h2</Set>
               </New>
             </Item>
             <Item>
               <New class="org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory">
                 <Arg name="config"><Ref refid="sslHttpConfig"/></Arg>
+                <Set name="maxConcurrentStreams">1500</Set>
+                <Set name="inputBufferSize">16384</Set>
               </New>
             </Item>
             <Item>
