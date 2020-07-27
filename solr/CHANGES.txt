@@ -12,7 +12,7 @@ Bug Fixes
 ---------------------
 
 * SOLR-14665: Revert SOLR-12845 adding of default autoscaling cluster policy, due to performance
- issues. (Ishan Chattopadhyaya, Houston Putman)
+ issues. (Ishan Chattopadhyaya, Houston Putman, ab)
 
 ==================  8.6.0 ==================
 
