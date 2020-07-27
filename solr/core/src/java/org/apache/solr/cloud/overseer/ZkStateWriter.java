@@ -334,6 +334,7 @@ public class ZkStateWriter {
             log.warn("Timeout waiting to see written cluster state come back");
           }
         }
+       // Thread.sleep(500);
       }
 
       // assert newClusterState.getZNodeVersion() >= 0;

@@ -200,7 +200,7 @@ public class SolrTestCase extends LuceneTestCase {
 
 
       System.setProperty("solr.lbclient.live_check_interval", "3000");
-      System.setProperty("solr.httpShardHandler.completionTimeout", "2000");
+      System.setProperty("solr.httpShardHandler.completionTimeout", "3000");
       System.setProperty("zookeeper.request.timeout", "5000");
       System.setProperty(SolrTestCaseJ4.USE_NUMERIC_POINTS_SYSPROP, "false");
 //      System.setProperty("solr.tests.IntegerFieldType", "org.apache.solr.schema.IntPointField");
@@ -262,7 +262,7 @@ public class SolrTestCase extends LuceneTestCase {
       System.setProperty("solr.tests.ramPerThreadHardLimitMB", "30");
 
 
-      System.setProperty("solr.http2solrclient.default.idletimeout", "1500");
+      System.setProperty("solr.http2solrclient.default.idletimeout", "10000");
       System.setProperty("distribUpdateSoTimeout", "10000");
       System.setProperty("socketTimeout", "15000");
       System.setProperty("connTimeout", "10000");
@@ -292,7 +292,7 @@ public class SolrTestCase extends LuceneTestCase {
 
       System.setProperty("solr.waitForState", "5"); // secs
 
-      System.setProperty("solr.default.collection_op_timeout", "15000");
+      System.setProperty("solr.default.collection_op_timeout", "10000");
 
 
       System.setProperty("solr.httpclient.retries", "1");
