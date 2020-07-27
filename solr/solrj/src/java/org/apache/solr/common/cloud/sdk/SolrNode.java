@@ -29,5 +29,9 @@ public interface SolrNode {
 
   String baseUrl(boolean isV2);
 
+  /**
+   * Get all the cores in a given node.
+   * This usually involves a network call. So, it's likely to be expensive
+   */
   SimpleMap<ShardReplica> cores();
 }

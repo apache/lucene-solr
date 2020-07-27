@@ -26,6 +26,9 @@ public interface SolrCluster {
   /** collections in the cluster */
   SimpleMap<SolrCollection> collections();
 
+  /** collections in the cluster and aliases */
+  SimpleMap<SolrCollection> collections(boolean includeAlias);
+
   /** nodes in the cluster */
   SimpleMap<SolrNode> nodes();
 

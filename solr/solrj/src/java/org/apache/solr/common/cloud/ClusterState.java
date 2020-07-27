@@ -86,6 +86,7 @@ public class ClusterState implements JSONWriter.Writable , SolrCluster {
   }
 
 
+
   @Override
   public SimpleMap<SolrNode> nodes() {
     throw new UnsupportedOperationException("Not yet implemented");
@@ -100,6 +101,11 @@ public class ClusterState implements JSONWriter.Writable , SolrCluster {
   public String overseerNode() {
     throw new UnsupportedOperationException("Not yet implemented");
 
+  }
+
+  @Override
+  public SimpleMap<SolrCollection> collections(boolean includeAlias) {
+    throw new UnsupportedOperationException("Not yet implemented");
   }
 
   @Override
