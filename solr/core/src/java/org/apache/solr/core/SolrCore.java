@@ -1609,8 +1609,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         }
       }
 
-      assert ObjectReleaseTracker.release(searcherExecutor);
-
       List<Callable<Object>> closeCalls = new ArrayList<Callable<Object>>();
       closeCalls.addAll(closeHookCalls);
       closeCalls.add(() -> {
@@ -1652,7 +1650,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
       closer.add("SolrCoreState", () -> {
         boolean closed = false;
-        if (updateHandler != null && updateHandler instanceof IndexWriterCloser) {
+        if (updateHandler != null && updateHandler instanceof IndexWriterCloser && solrCoreState != null) {
           closed = solrCoreState.decrefSolrCoreState((IndexWriterCloser) updateHandler);
         } else {
           closed = solrCoreState.decrefSolrCoreState(null);
@@ -1666,7 +1664,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         return "Searcher";
       });
 
-      closer.add("shutdown", searcherExecutor, () -> {
+      closer.add("shutdown", () -> {
 
         synchronized (searcherLock) {
           while (onDeckSearchers.get() > 0) {
@@ -1684,11 +1682,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       closer.add("closeSearcher", () -> {
         closeSearcher();
       });
-
-      closer.add("ClearInfoReg&ReleaseSnapShotsDir", () -> {
-        closeSearcher();
-        return "searcher";
-      }, () -> {
+      assert ObjectReleaseTracker.release(searcherExecutor);
+      closer.add("searcherExecutor", searcherExecutor, () -> {
         infoRegistry.clear();
         return infoRegistry;
       }, () -> {
