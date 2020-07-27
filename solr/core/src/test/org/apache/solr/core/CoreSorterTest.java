@@ -185,7 +185,7 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
   private CoreDescriptor newCoreDescriptor(Replica r) {
     @SuppressWarnings({"unchecked"})
     Map<String,String> props = map(
-        CoreDescriptor.CORE_SHARD, r.getSlice(),
+        CoreDescriptor.CORE_SHARD, r.getShard(),
         CoreDescriptor.CORE_COLLECTION, r.getCollection(),
         CoreDescriptor.CORE_NODE_NAME, r.getNodeName()
     );

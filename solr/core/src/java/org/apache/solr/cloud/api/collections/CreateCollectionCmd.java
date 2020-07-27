@@ -31,15 +31,13 @@ import java.util.NoSuchElementException;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
-import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
-import org.apache.solr.client.solrj.cloud.autoscaling.NotEmptyException;
-import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
-import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
+import org.apache.solr.client.solrj.cloud.AlreadyExistsException;
+import org.apache.solr.client.solrj.cloud.BadVersionException;
+import org.apache.solr.client.solrj.cloud.NotEmptyException;
+import org.apache.solr.client.solrj.cloud.VersionedData;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
@@ -147,7 +145,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     List<String> shardNames = populateShardNames(message, router);
     checkReplicaTypes(message);
 
-    AtomicReference<PolicyHelper.SessionWrapper> sessionWrapper = new AtomicReference<>();
+
 
     try {
 
@@ -187,7 +185,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
       List<ReplicaPosition> replicaPositions = null;
       try {
-        replicaPositions = buildReplicaPositions(ocmh.cloudManager, clusterState, clusterState.getCollection(collectionName), message, shardNames, sessionWrapper);
+        replicaPositions = buildReplicaPositions(ocmh.cloudManager, clusterState, clusterState.getCollection(collectionName), message, shardNames);
       } catch (Assign.AssignmentException e) {
         ZkNodeProps deleteMessage = new ZkNodeProps("name", collectionName);
         new DeleteCollectionCmd(ocmh).call(clusterState, deleteMessage, results);
@@ -335,16 +333,13 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       throw ex;
     } catch (Exception ex) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, null, ex);
-    } finally {
-      if (sessionWrapper.get() != null) sessionWrapper.get().release();
     }
   }
 
   public static List<ReplicaPosition> buildReplicaPositions(SolrCloudManager cloudManager, ClusterState clusterState,
                                                             DocCollection docCollection,
                                                             ZkNodeProps message,
-                                                            List<String> shardNames,
-                                                            AtomicReference<PolicyHelper.SessionWrapper> sessionWrapper) throws IOException, InterruptedException, Assign.AssignmentException {
+                                                            List<String> shardNames) throws IOException, InterruptedException, Assign.AssignmentException {
     final String collectionName = message.getStr(NAME);
     // look at the replication factor and see if it matches reality
     // if it does not, find best nodes to create more cores
@@ -386,7 +381,6 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       Assign.AssignStrategyFactory assignStrategyFactory = new Assign.AssignStrategyFactory(cloudManager);
       Assign.AssignStrategy assignStrategy = assignStrategyFactory.create(clusterState, docCollection);
       replicaPositions = assignStrategy.assign(cloudManager, assignRequest);
-      sessionWrapper.set(PolicyHelper.getLastSessionWrapper(true));
     }
     return replicaPositions;
   }

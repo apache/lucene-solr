@@ -33,7 +33,8 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.apache.commons.collections.map.MultiValueMap;
+import org.apache.commons.collections4.MultiValuedMap;
+import org.apache.commons.collections4.multimap.HashSetValuedHashMap;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
 import org.apache.solr.common.NavigableObject;
@@ -46,7 +47,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.packagemanager.SolrPackage.Command;
 import org.apache.solr.packagemanager.SolrPackage.Manifest;
 import org.apache.solr.packagemanager.SolrPackage.Plugin;
-import org.apache.solr.pkg.PackagePluginHolder;
+import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.util.SolrCLI;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -141,12 +142,13 @@ public class PackageManager implements Closeable {
    * Get a list of packages that have their plugins deployed as cluster level plugins.
    * The returned packages also contain the "pluginMeta" from "clusterprops.json" as custom data. 
    */
-  @SuppressWarnings("unchecked")
   public Map<String, SolrPackageInstance> getPackagesDeployedAsClusterLevelPlugins() {
-    Map<String, String> packageVersions = new HashMap<String, String>();
-    MultiValueMap packagePlugins = new MultiValueMap(); // map of package name to multiple values of pluginMeta (Map<String, String>)
-    Map<String, Object> result = (Map<String, Object>) Utils.executeGET(solrClient.getHttpClient(),
+    Map<String, String> packageVersions = new HashMap<>();
+    MultiValuedMap<String, PluginMeta> packagePlugins = new HashSetValuedHashMap<>(); // map of package name to multiple values of pluginMeta (Map<String, String>)
+    @SuppressWarnings({"unchecked"})
+    Map<String, Object> result =  (Map<String, Object>)Utils.executeGET(solrClient.getHttpClient(),
         solrBaseUrl + PackageUtils.CLUSTERPROPS_PATH, Utils.JSONCONSUMER);
+    @SuppressWarnings({"unchecked"})
     Map<String, Object> clusterPlugins = (Map<String, Object>) result.getOrDefault("plugin", Collections.emptyMap());
     for (String key: clusterPlugins.keySet()) {
       // Map<String, String> pluginMeta = (Map<String, String>) clusterPlugins.get(key);
@@ -167,7 +169,7 @@ public class PackageManager implements Closeable {
       if (Strings.isNullOrEmpty(packageName) == false && // There can be an empty key, storing the version here
           packageVersions.get(packageName) != null) { // null means the package was undeployed from this package before
         ret.put(packageName, getPackageInstance(packageName, packageVersions.get(packageName)));
-        ret.get(packageName).setCustomData(packagePlugins.getCollection(packageName));
+        ret.get(packageName).setCustomData(packagePlugins.get(packageName));
       }
     }
     return ret;
@@ -250,7 +252,7 @@ public class PackageManager implements Closeable {
       // Set the package version in the collection's parameters
       try {
         SolrCLI.postJsonToSolr(solrClient, PackageUtils.getCollectionParamsPath(collection),
-            "{set:{PKG_VERSIONS:{" + packageInstance.name+": '" + (pegToLatest? PackagePluginHolder.LATEST: packageInstance.version)+"'}}}");
+            "{set:{PKG_VERSIONS:{" + packageInstance.name+": '" + (pegToLatest? PackageLoader.LATEST: packageInstance.version)+"'}}}");
       } catch (Exception ex) {
         throw new SolrException(ErrorCode.SERVER_ERROR, ex);
       }
@@ -296,7 +298,7 @@ public class PackageManager implements Closeable {
       // Set the package version in the collection's parameters
       try {
         SolrCLI.postJsonToSolr(solrClient, PackageUtils.getCollectionParamsPath(collection),
-            "{update:{PKG_VERSIONS:{'" + packageInstance.name + "' : '" + (pegToLatest? PackagePluginHolder.LATEST: packageInstance.version) + "'}}}");
+            "{update:{PKG_VERSIONS:{'" + packageInstance.name + "' : '" + (pegToLatest? PackageLoader.LATEST: packageInstance.version) + "'}}}");
       } catch (Exception ex) {
         throw new SolrException(ErrorCode.SERVER_ERROR, ex);
       }
@@ -550,7 +552,7 @@ public class PackageManager implements Closeable {
         }
       }
     }
-    if (version == null || version.equalsIgnoreCase(PackageUtils.LATEST) || version.equalsIgnoreCase(PackagePluginHolder.LATEST)) {
+    if (version == null || version.equalsIgnoreCase(PackageUtils.LATEST) || version.equalsIgnoreCase(PackageLoader.LATEST)) {
       return latest;
     } else return null;
   }
@@ -671,7 +673,7 @@ public class PackageManager implements Closeable {
 
   /**
    * Given a package, return a map of collections where this package is
-   * installed to the installed version (which can be {@link PackagePluginHolder#LATEST})
+   * installed to the installed version (which can be {@link PackageLoader#LATEST})
    */
   public Map<String, String> getDeployedCollections(String packageName) {
     List<String> allCollections;

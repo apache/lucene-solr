@@ -1489,7 +1489,7 @@ public class IndexFetcher {
   @SuppressWarnings({"unchecked"})
   private Collection<Map<String, Object>> getModifiedConfFiles(List<Map<String, Object>> confFilesToDownload) {
     if (confFilesToDownload == null || confFilesToDownload.isEmpty())
-      return Collections.EMPTY_LIST;
+      return Collections.emptyList();
     //build a map with alias/name as the key
     @SuppressWarnings({"rawtypes"})
     Map<String, Map<String, Object>> nameVsFile = new HashMap<>();
@@ -1512,7 +1512,7 @@ public class IndexFetcher {
         nameVsFile.remove(name); //checksums are same so the file need not be downloaded
       }
     }
-    return nameVsFile.isEmpty() ? Collections.EMPTY_LIST : nameVsFile.values();
+    return nameVsFile.isEmpty() ? Collections.emptyList() : nameVsFile.values();
   }
 
   /**
@@ -1570,49 +1570,43 @@ public class IndexFetcher {
     return timeElapsed;
   }
 
-  @SuppressWarnings({"unchecked"})
   List<Map<String, Object>> getTlogFilesToDownload() {
     //make a copy first because it can be null later
     List<Map<String, Object>> tmp = tlogFilesToDownload;
     //create a new instance. or else iterator may fail
-    return tmp == null ? Collections.EMPTY_LIST : new ArrayList<>(tmp);
+    return tmp == null ? Collections.emptyList() : new ArrayList<>(tmp);
   }
 
-  @SuppressWarnings({"unchecked"})
   List<Map<String, Object>> getTlogFilesDownloaded() {
     //make a copy first because it can be null later
     List<Map<String, Object>> tmp = tlogFilesDownloaded;
     // NOTE: it's safe to make a copy of a SynchronizedCollection(ArrayList)
-    return tmp == null ? Collections.EMPTY_LIST : new ArrayList<>(tmp);
+    return tmp == null ? Collections.emptyList() : new ArrayList<>(tmp);
   }
 
-  @SuppressWarnings({"unchecked"})
   List<Map<String, Object>> getConfFilesToDownload() {
     //make a copy first because it can be null later
     List<Map<String, Object>> tmp = confFilesToDownload;
     //create a new instance. or else iterator may fail
-    return tmp == null ? Collections.EMPTY_LIST : new ArrayList<>(tmp);
+    return tmp == null ? Collections.emptyList() : new ArrayList<>(tmp);
   }
 
-  @SuppressWarnings({"unchecked"})
   List<Map<String, Object>> getConfFilesDownloaded() {
     //make a copy first because it can be null later
     List<Map<String, Object>> tmp = confFilesDownloaded;
     // NOTE: it's safe to make a copy of a SynchronizedCollection(ArrayList)
-    return tmp == null ? Collections.EMPTY_LIST : new ArrayList<>(tmp);
+    return tmp == null ? Collections.emptyList() : new ArrayList<>(tmp);
   }
 
-  @SuppressWarnings({"unchecked"})
   List<Map<String, Object>> getFilesToDownload() {
     //make a copy first because it can be null later
     List<Map<String, Object>> tmp = filesToDownload;
-    return tmp == null ? Collections.EMPTY_LIST : new ArrayList<>(tmp);
+    return tmp == null ? Collections.emptyList() : new ArrayList<>(tmp);
   }
 
-  @SuppressWarnings({"unchecked"})
   List<Map<String, Object>> getFilesDownloaded() {
     List<Map<String, Object>> tmp = filesDownloaded;
-    return tmp == null ? Collections.EMPTY_LIST : new ArrayList<>(tmp);
+    return tmp == null ? Collections.emptyList() : new ArrayList<>(tmp);
   }
 
   // TODO: currently does not reflect conf files

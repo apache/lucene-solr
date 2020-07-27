@@ -140,18 +140,3 @@ Using these additional options will make the results more sparse, so it may be u
 to increase the top-N count:
 
 gradlew -p lucene/core test -Ptests.profile=true -Ptests.profile.count=100
-
-Testing against different JVMs
-------------------------------
-
-By default tests are executed with the same Java gradle is using internally.
-To run tests against a different Java version define a property called
-"runtime.java.home" or define an environment variable "RUNTIME_JAVA_HOME"
-pointing at the JDK installation folder.
-
-If property is used, it can be a system property (-D...) or a project
-property (-P...).
-
-Example:
-
-gradlew test -p lucene/test-framework --tests TestJvmInfo -Dtests.verbose=true -Druntime.java.home=/jvms/jdk14

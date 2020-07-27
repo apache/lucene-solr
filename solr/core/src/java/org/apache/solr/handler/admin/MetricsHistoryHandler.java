@@ -60,10 +60,9 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
-import org.apache.solr.client.solrj.cloud.autoscaling.Variable;
-import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
+import org.apache.solr.client.solrj.cloud.VersionedData;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.impl.SolrClientNodeStateProvider.Variable;
 import org.apache.solr.cloud.LeaderElector;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.common.SolrException;
@@ -137,7 +136,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
 
     DEFAULT_NODE_GAUGES.add("CONTAINER.fs.coreRoot.usableSpace");
 
-    DEFAULT_CORE_GAUGES.add(Variable.Type.CORE_IDX.metricsAttribute);
+    DEFAULT_CORE_GAUGES.add(Variable.CORE_IDX.metricsAttribute);
 
     DEFAULT_CORE_COUNTERS.add("QUERY./select.requests");
     DEFAULT_CORE_COUNTERS.add("UPDATE./update.requests");
@@ -488,7 +487,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
         return;
       }
       // add core-level stats
-      Map<String, Map<String, List<ReplicaInfo>>> infos = nodeStateProvider.getReplicaInfo(node, collTags);
+      Map<String, Map<String, List<Replica>>> infos = nodeStateProvider.getReplicaInfo(node, collTags);
       infos.forEach((coll, shards) -> {
         shards.forEach((sh, replicas) -> {
           String registry = SolrMetricManager.getRegistryName(Group.collection, coll);
@@ -497,7 +496,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
               .computeIfAbsent(registry, r -> new HashMap<>());
           replicas.forEach(ri -> {
             collTags.forEach(tag -> {
-              double value = ((Number)ri.getVariable(tag, 0.0)).doubleValue();
+              double value = ((Number)ri.get(tag, 0.0)).doubleValue();
               DoubleAdder adder = (DoubleAdder)perReg.computeIfAbsent(tag, t -> new DoubleAdder());
               adder.add(value);
             });
