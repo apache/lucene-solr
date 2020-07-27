@@ -60,8 +60,7 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
 
     RequestRateLimiter.RateLimiterConfig rateLimiterConfig = new RequestRateLimiter.RateLimiterConfig(true, DEFAULT_EXPIRATION_TIME_INMS,
         DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS, 5 /* allowedRequests */, true /* isWorkStealingEnabled */);
-    RateLimitManager.Builder builder = new MockBuilder(new MockRequestRateLimiter(rateLimiterConfig, 5),
-        new MockRequestRateLimiter(rateLimiterConfig, 5));
+    RateLimitManager.Builder builder = new MockBuilder(new MockRequestRateLimiter(rateLimiterConfig, 5));
     RateLimitManager rateLimitManager = builder.build();
 
     solrDispatchFilter.replaceRateLimitManager(rateLimitManager);
@@ -187,11 +186,9 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
   }
 
   private static class MockBuilder extends RateLimitManager.Builder {
-    private final RequestRateLimiter indexRequestRateLimiter;
     private final RequestRateLimiter queryRequestRateLimiter;
 
-    public MockBuilder(RequestRateLimiter indexRequestRateLimiter, RequestRateLimiter queryRequestRateLimiter) {
-      this.indexRequestRateLimiter = indexRequestRateLimiter;
+    public MockBuilder(RequestRateLimiter queryRequestRateLimiter) {
       this.queryRequestRateLimiter = queryRequestRateLimiter;
     }
 
@@ -199,7 +196,6 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
     public RateLimitManager build() {
       RateLimitManager rateLimitManager = new RateLimitManager();
 
-      rateLimitManager.registerRequestRateLimiter(indexRequestRateLimiter, SolrRequest.SolrRequestType.UPDATE);
       rateLimitManager.registerRequestRateLimiter(queryRequestRateLimiter, SolrRequest.SolrRequestType.QUERY);
 
       return rateLimitManager;
