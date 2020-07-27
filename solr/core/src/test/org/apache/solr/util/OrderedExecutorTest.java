@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
@@ -207,8 +208,8 @@ public class OrderedExecutorTest extends SolrTestCase {
       N = 15;
     }
 
-    Map<Integer, Integer> base = new HashMap<>();
-    Map<Integer, Integer> run = new HashMap<>();
+    Map<Integer, Integer> base = new ConcurrentHashMap<>(100);
+    Map<Integer, Integer> run = new ConcurrentHashMap<>(100);
     for (int i = 0; i < N; i++) {
       base.put(i, i);
       run.put(i, i);
