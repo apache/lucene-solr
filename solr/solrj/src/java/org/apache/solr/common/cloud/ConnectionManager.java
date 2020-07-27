@@ -226,18 +226,19 @@ public class ConnectionManager implements Watcher, Closeable {
           }
         }
       }
-
-      if (keeper != null) {
-        // if there was a problem creating the new SolrZooKeeper
-        // or if we cannot run our reconnect command, close the keeper
-        // our retry loop will try to create one again
-        try {
-          keeper. close();
-          keeper = null;
-        } catch (Exception e) {
-          ParWork.propegateInterrupt("Exception closing keeper after hitting exception", e);
-          if (e instanceof  InterruptedException || e instanceof AlreadyClosedException) {
-            return;
+      synchronized (ConnectionManager.this) {
+        if (keeper != null) {
+          // if there was a problem creating the new SolrZooKeeper
+          // or if we cannot run our reconnect command, close the keeper
+          // our retry loop will try to create one again
+          try {
+            keeper.close();
+            keeper = null;
+          } catch (Exception e) {
+            ParWork.propegateInterrupt("Exception closing keeper after hitting exception", e);
+            if (e instanceof InterruptedException || e instanceof AlreadyClosedException) {
+              return;
+            }
           }
         }
       }
@@ -341,7 +342,6 @@ public class ConnectionManager implements Watcher, Closeable {
     while (!timeout.hasTimedOut()) {
       if (client.isConnected()) return;
       boolean success = connectedLatch.await(50, TimeUnit.MILLISECONDS);
-      if (success) return;
       if (client.isConnected()) return;
     }
     if (timeout.hasTimedOut()) {
