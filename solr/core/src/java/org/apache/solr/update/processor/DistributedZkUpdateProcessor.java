@@ -210,7 +210,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         if (replicaType == Replica.Type.PULL) {
           log.warn("Commit not supported on replicas of type " + Replica.Type.PULL);
         } else if (replicaType == Replica.Type.NRT) {
-          log.info("Do a local commit on NRT endpoint");
+          log.info("Do a local commit on NRT endpoint for replica");
           doLocalCommit(cmd);
         }
       } else {
@@ -235,7 +235,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         }
         if (isLeader) {
 
-          log.info("Do a local commit on NRT endpoint");
+          log.info("Do a local commit on NRT endpoint for leader");
           doLocalCommit(cmd);
 
           params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
@@ -243,6 +243,8 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
           params.set(COMMIT_END_POINT, "replicas");
 
           useNodes = getReplicaNodesForLeader(cloudDesc.getShardId(), leaderReplica);
+
+          log.info("Found the following replicas to send commit to {}", useNodes);
 
           if (useNodes != null && useNodes.size() > 0) {
             log.info("send commit to replicas nodes={}", useNodes);
@@ -253,16 +255,16 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
             List<SolrCmdDistributor.Node> finalUseNodes1 = useNodes;
             Future<?> future = ParWork.getExecutor().submit(() -> cmdDistrib.distribCommit(cmd, finalUseNodes1, params));
-            if (useNodes != null && useNodes.size() > 0 && cmd.waitSearcher) {
-              try {
-                future.get();
-              } catch (InterruptedException e) {
-                ParWork.propegateInterrupt(e);
-                throw new SolrException(ErrorCode.SERVER_ERROR, e);
-              } catch (ExecutionException e) {
-                throw new SolrException(ErrorCode.SERVER_ERROR, e);
-              }
-            }
+//            if (useNodes != null && useNodes.size() > 0 && cmd.waitSearcher) {
+//              try {
+//                future.get();
+//              } catch (InterruptedException e) {
+//                ParWork.propegateInterrupt(e);
+//                throw new SolrException(ErrorCode.SERVER_ERROR, e);
+//              } catch (ExecutionException e) {
+//                throw new SolrException(ErrorCode.SERVER_ERROR, e);
+//              }
+//            }
           }
 
         }
@@ -270,9 +272,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
       }
 
-      if (log.isDebugEnabled()) {
-        log.debug("processCommit(CommitUpdateCommand) - end");
-      }
+      log.info("processCommit(CommitUpdateCommand) - end");
     }
   }
 

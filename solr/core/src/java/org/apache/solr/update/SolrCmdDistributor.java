@@ -76,7 +76,7 @@ public class SolrCmdDistributor implements Closeable {
   };
 
   public SolrCmdDistributor(UpdateShardHandler updateShardHandler) {
-    this.solrClient = updateShardHandler.getUpdateOnlyHttpClient();
+    this.solrClient = new Http2SolrClient.Builder().markInternalRequest().withHttpClient(updateShardHandler.getUpdateOnlyHttpClient()).build();
   }
   
   /* For tests only */
@@ -86,12 +86,11 @@ public class SolrCmdDistributor implements Closeable {
   
   public void finish() {
     assert !finished : "lifecycle sanity check";
-    phaser.arriveAndAwaitAdvance();
     finished = true;
   }
   
   public void close() {
-
+    ParWork.close(solrClient);
   }
 
   public boolean checkRetry(Error err) {

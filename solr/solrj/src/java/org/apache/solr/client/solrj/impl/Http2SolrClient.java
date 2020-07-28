@@ -236,7 +236,7 @@ public class Http2SolrClient extends SolrClient {
       HTTP2Client http2client = new HTTP2Client();
       transport = new HttpClientTransportOverHTTP2(http2client);
       httpClient = new HttpClient(transport, sslContextFactory);
-      httpClient.setMaxConnectionsPerDestination(4);
+      httpClient.setMaxConnectionsPerDestination(10);
     }
     httpClientExecutor = new SolrQueuedThreadPool("httpClient");
     httpClientExecutor.setMaxThreads(Math.max(4 , Runtime.getRuntime().availableProcessors()));
@@ -277,14 +277,6 @@ public class Http2SolrClient extends SolrClient {
         });
       }
       closer.collect(() -> {
-        if (httpClientExecutor != null) {
-          try {
-            httpClientExecutor.prepareToStop();
-          } catch (Exception e) {
-            ParWork.propegateInterrupt(e);
-            throw new RuntimeException(e);
-          }
-        }
         // we wait for async requests, so far devs don't want to give sugar for this
         asyncTracker.waitForCompleteFinal();
         if (httpClientExecutor != null) {
@@ -388,8 +380,17 @@ public class Http2SolrClient extends SolrClient {
     }
 
     decorateRequest(postRequest, updateRequest);
-    InputStreamResponseListener responseListener = new InputStreamResponseListener();
-    asyncTracker.phaser.register();
+    InputStreamResponseListener responseListener = new InputStreamResponseListener() {
+      @Override
+      public void onComplete(Result result) {
+        try {
+          super.onComplete(result);
+        } finally {
+          asyncTracker.completeListener.onComplete(result);
+        }
+      }
+    };
+    asyncTracker.register();
     postRequest.send(responseListener);
 
     boolean isXml = ClientUtils.TEXT_XML.equals(requestWriter.getUpdateContentType());
@@ -434,7 +435,7 @@ public class Http2SolrClient extends SolrClient {
         ? this.parser: solrRequest.getResponseParser();
     if (onComplete != null) {
       // This async call only suitable for indexing since the response size is limited by 5MB
-      asyncTracker.phaser.register();
+      asyncTracker.register();
       req.send(new BufferingResponseListener(5 * 1024 * 1024) {
 
         @Override
@@ -467,11 +468,14 @@ public class Http2SolrClient extends SolrClient {
         InputStreamResponseListener listener = new InputStreamResponseListener() {
           @Override
           public void onComplete(Result result) {
-            super.onComplete(result);
-            asyncTracker.completeListener.onComplete(result);
+            try {
+              super.onComplete(result);
+            } finally {
+              asyncTracker.completeListener.onComplete(result);
+            }
           }
         };
-        asyncTracker.phaser.register();
+        asyncTracker.register();
         req.send(listener);
         Response response = listener.get(idleTimeout, TimeUnit.MILLISECONDS);
         InputStream is = listener.getInputStream();
@@ -880,7 +884,6 @@ public class Http2SolrClient extends SolrClient {
   }
 
   private class AsyncTracker {
-    private final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     // nocommit - look at outstanding max again
     private static final int MAX_OUTSTANDING_REQUESTS = 1000;
@@ -925,6 +928,13 @@ public class Http2SolrClient extends SolrClient {
       int arrival = phaser.awaitAdvance(phaser.arriveAndDeregister());
 
       if (log.isDebugEnabled()) log.debug("After wait for complete final registered: {} arrived: {}", phaser.getRegisteredParties(), phaser.getArrivedParties());
+    }
+
+    public void register() {
+      if (log.isDebugEnabled()) {
+        log.debug("Registered new party");
+      }
+      phaser.register();
     }
   }
 
