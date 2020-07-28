@@ -28,7 +28,9 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -65,7 +67,7 @@ public class OrderedExecutorTest extends SolrTestCase {
   }
 
   @Test
-  public void testLockWhenQueueIsFull() {
+  public void testLockWhenQueueIsFull() throws ExecutionException {
     final OrderedExecutor orderedExecutor = new OrderedExecutor
       (TEST_NIGHTLY ? 10 : 3, new ParWorkExecutor("testLockWhenQueueIsFull_test", TEST_NIGHTLY ? 10 : 3, TEST_NIGHTLY ? 10 : 3));
     
@@ -90,22 +92,24 @@ public class OrderedExecutorTest extends SolrTestCase {
         });
       // BBB doesn't care about the latch, but because it uses the same lockId, it's blocked on AAA
       // so we execute it in a background thread...
-      testExecutor.execute(() -> {
-          orderedExecutor.execute(lockId, () -> {
-              events.add("BBB");
-            });
+      Future<?> future = testExecutor.submit(() -> {
+        orderedExecutor.execute(lockId, () -> {
+          events.add("BBB");
         });
+      });
       
       // now if we release the latchAAA, AAA should be garunteed to fire first, then BBB
       latchAAA.countDown();
       try {
         assertEquals("AAA", events.poll(10, TimeUnit.SECONDS));
         assertEquals("BBB", events.poll(10, TimeUnit.SECONDS));
+        future.get();
       } catch (InterruptedException e) {
         log.error("Interrupt polling event queue", e);
         Thread.currentThread().interrupt();
         fail("interupt while trying to poll event queue");
       }
+
     } finally {
       ParWork.close(orderedExecutor);
     }
