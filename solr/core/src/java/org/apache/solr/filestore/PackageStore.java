@@ -79,7 +79,7 @@ public interface PackageStore {
    */
   void refresh(String path);
 
-  /** Delete a file all over the cluster */
+  /** Delete a file cluster-wide */
   void delete(String path);
 
   /** Delete file from local file system */
