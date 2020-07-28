@@ -101,6 +101,7 @@ public class DistributedQueryComponentOptimizationTest extends SolrCloudTestCase
   }
 
   @Test
+  @AwaitsFix(bugUrl = "Can fail with Number of documents (2) is different from number of expected values (14")
   public void testFieldList() throws Exception {
 
     // works with just fl=id as well
