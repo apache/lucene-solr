@@ -125,6 +125,9 @@ Improvements
 
 * SOLR-11262: Implement writeMap and writeIterator in XMLWriter (yonik, Munendra S N)
 
+* SOLR-14651: The MetricsHistoryHandler can more completely disable itself when you tell it to.
+  Also, it now shuts down more thoroughly. (David Smiley)
+
 Optimizations
 ---------------------
 
