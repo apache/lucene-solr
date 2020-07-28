@@ -20,14 +20,23 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class ParWorkExecutor extends ThreadPoolExecutor {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-    public static final long KEEP_ALIVE_TIME = 1;
+    public static final int KEEP_ALIVE_TIME = 1;
 
     private final Object lock = new Object();
 
     private static AtomicInteger threadNumber = new AtomicInteger(0);
 
     public ParWorkExecutor(String name, int maxPoolsSize) {
-        super(0,  maxPoolsSize,  KEEP_ALIVE_TIME, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(Integer.getInteger("solr.threadExecQueueSize", 30)), new ThreadFactory() {
+        this(name, 0, maxPoolsSize, KEEP_ALIVE_TIME);
+    }
+
+    public ParWorkExecutor(String name, int corePoolsSize, int maxPoolsSize) {
+        this(name, corePoolsSize, maxPoolsSize, KEEP_ALIVE_TIME);
+    }
+
+
+    public ParWorkExecutor(String name, int corePoolsSize, int maxPoolsSize, int keepalive) {
+        super(corePoolsSize,  maxPoolsSize,  keepalive, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(Integer.getInteger("solr.threadExecQueueSize", 30)), new ThreadFactory() {
 
             ThreadGroup group;
 

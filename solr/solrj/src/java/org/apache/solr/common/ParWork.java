@@ -617,7 +617,7 @@ public class ParWork implements Closeable {
       }
 
       // figure out thread usage - maybe try to adjust based on current thread count
-      exec = getExecutorService(0, Math.max(4, Runtime.getRuntime().availableProcessors() / 3), 5000);
+      exec = getExecutorService(0, Math.max(4, Runtime.getRuntime().availableProcessors() / 3), 1);
       THREAD_LOCAL_EXECUTOR.set(exec);
     }
 
@@ -626,7 +626,8 @@ public class ParWork implements Closeable {
 
   public static ExecutorService getExecutorService(int corePoolSize, int maximumPoolSize, int keepAliveTime) {
     ThreadPoolExecutor exec;
-    exec = new ParWorkExecutor("ParWork-" + Thread.currentThread().getName(), getMaxPoolSize());
+    exec = new ParWorkExecutor("ParWork-" + Thread.currentThread().getName(),
+            corePoolSize, maximumPoolSize == -1 ? getMaxPoolSize() : maximumPoolSize, keepAliveTime);
     return exec;
   }
 
