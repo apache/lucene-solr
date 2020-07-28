@@ -36,7 +36,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 @LuceneTestCase.Slow
-@Ignore // nocommit speed up
 public class CleanupOldIndexTest extends SolrCloudTestCase {
 
   @BeforeClass
@@ -110,9 +109,6 @@ public class CleanupOldIndexTest extends SolrCloudTestCase {
     // stop indexing threads
     indexThread.safeStop();
     indexThread.join();
-
-    cluster.getSolrClient().waitForState(COLLECTION, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
-        (n, c) -> DocCollection.isFullyActive(n, c, 1, 2));
 
     assertTrue(!oldIndexDir1.isDirectory());
     assertTrue(!oldIndexDir2.isDirectory());
