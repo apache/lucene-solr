@@ -17,6 +17,7 @@
 
 package org.apache.solr.cluster.api;
 
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.SimpleMap;
 
 /** Represents a Solr cluster */
@@ -24,20 +25,20 @@ import org.apache.solr.common.util.SimpleMap;
 public interface SolrCluster {
 
   /** collections in the cluster */
-  SimpleMap<SolrCollection> collections();
+  SimpleMap<SolrCollection> collections() throws SolrException;
 
   /** collections in the cluster and aliases */
-  SimpleMap<SolrCollection> collections(boolean includeAlias);
+  SimpleMap<SolrCollection> collections(boolean includeAlias) throws SolrException;
 
   /** nodes in the cluster */
-  SimpleMap<SolrNode> nodes();
+  SimpleMap<SolrNode> nodes() throws SolrException;
 
 
   /** Config sets in the cluster*/
-  SimpleMap<Config> configs();
+  SimpleMap<Config> configs() throws SolrException;
 
   /** Name of the node in which the overseer is running */
-  String overseerNode();
+  String overseerNode() throws SolrException;
 
   /**
    * The name of the node in which this method is invoked from. returns null, if this is not invoked from a

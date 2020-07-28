@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
+import org.apache.solr.cluster.api.Config;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.cluster.api.SolrCluster;
@@ -100,6 +101,11 @@ public class ClusterState implements JSONWriter.Writable , SolrCluster {
 
   @Override
   public SimpleMap<SolrCollection> collections(boolean includeAlias) {
+    throw new UnsupportedOperationException("Not yet implemented");
+  }
+
+  @Override
+  public SimpleMap<Config> configs() throws SolrException {
     throw new UnsupportedOperationException("Not yet implemented");
   }
 
