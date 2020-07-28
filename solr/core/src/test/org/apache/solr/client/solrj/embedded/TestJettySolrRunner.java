@@ -36,7 +36,6 @@ import java.util.Properties;
 public class TestJettySolrRunner extends SolrTestCaseJ4 {
 
   @Test
-  @Ignore // nocommit flakey debug
   public void testPassSolrHomeToRunner() throws Exception {
 
     // We set a non-standard coreRootDirectory, create a core, and check that it has been
