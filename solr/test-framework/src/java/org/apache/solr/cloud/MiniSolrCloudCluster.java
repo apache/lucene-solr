@@ -945,7 +945,7 @@ public class MiniSolrCloudCluster {
       reader.waitForLiveNodes(10, TimeUnit.SECONDS, (o, n) -> !n.contains(nodeName));
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
-      throw new SolrException(ErrorCode.SERVER_ERROR, "interrupted");
+      throw new SolrException(ErrorCode.SERVER_ERROR, "interrupted", e);
     }
   }
 

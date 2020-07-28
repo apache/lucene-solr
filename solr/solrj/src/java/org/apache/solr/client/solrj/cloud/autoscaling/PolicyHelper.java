@@ -480,6 +480,7 @@ public class PolicyHelper {
             try {
               lockObj.wait(10 * 1000);//wait for a max of 10 seconds
             } catch (InterruptedException e) {
+              ParWork.propegateInterrupt(e);
               log.info("interrupted... ");
             }
             if (log.isDebugEnabled()) {

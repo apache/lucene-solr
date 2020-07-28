@@ -571,7 +571,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       throw new ZkController.NotInClusterStateException(ErrorCode.SERVER_ERROR, error);
     } catch (InterruptedException e) {
       ParWork.propegateInterrupt(e);
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Interrupted");
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Interrupted", e);
     }
 
     return coreNodeName.get();
@@ -594,7 +594,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       throw new ZkController.NotInClusterStateException(ErrorCode.SERVER_ERROR, error);
     } catch (InterruptedException e) {
       ParWork.propegateInterrupt(e);
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Interrupted");
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Interrupted", e);
     }
   }
 
@@ -732,7 +732,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       throw new SolrException(ErrorCode.SERVER_ERROR, error);
     } catch (InterruptedException e) {
       ParWork.propegateInterrupt(e);
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Interrupted");
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Interrupted", e);
     }
     return result.get();
   }

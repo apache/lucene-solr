@@ -150,7 +150,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       parentShardLeader = zkStateReader.getLeaderRetry(collectionName, slice.get(), 10000);
     } catch (InterruptedException e) {
       ParWork.propegateInterrupt(e);
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Interrupted.");
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Interrupted.", e);
     }
 
     RTimerTree t = timings.sub("checkDiskSpace");

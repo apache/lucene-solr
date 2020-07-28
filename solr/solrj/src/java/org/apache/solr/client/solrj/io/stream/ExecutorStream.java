@@ -149,6 +149,7 @@ public class ExecutorStream extends TupleStream implements Expressible {
     try {
       executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);
     } catch(InterruptedException e) {
+      ParWork.propegateInterrupt(e);
       log.error("Interrupted while waiting for termination", e);
     }
   }

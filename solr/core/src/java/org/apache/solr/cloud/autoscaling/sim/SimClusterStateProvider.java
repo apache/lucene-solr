@@ -1210,7 +1210,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
                     cloudManager.getSimNodeStateProvider().simSetNodeValue(n, "cores", cores.intValue() - 1);
                   } catch (InterruptedException e) {
                     ParWork.propegateInterrupt(e);
-                    throw new RuntimeException("interrupted");
+                    throw new RuntimeException("interrupted", e);
                   }
                 }
               }

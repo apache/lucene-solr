@@ -147,7 +147,7 @@ public class AddReplicaTest extends SolrCloudTestCase {
     CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collection, "conf1", 2, 1);
-    create.setMaxShardsPerNode(3);
+    create.setMaxShardsPerNode(2);
     cloudClient.request(create);
 
     ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
@@ -158,12 +158,14 @@ public class AddReplicaTest extends SolrCloudTestCase {
     addReplica.processAsync("000", cloudClient);
     CollectionAdminRequest.RequestStatus requestStatus = CollectionAdminRequest.requestStatus("000");
     CollectionAdminRequest.RequestStatusResponse rsp = requestStatus.process(cloudClient);
+
     assertNotSame(rsp.getRequestStatus(), COMPLETED);
     
     // wait for async request success
     boolean success = false;
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 300; i++) {
       rsp = requestStatus.process(cloudClient);
+      System.out.println("resp:" + rsp);
       if (rsp.getRequestStatus() == COMPLETED) {
         success = true;
         break;

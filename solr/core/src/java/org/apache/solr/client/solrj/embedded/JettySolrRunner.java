@@ -781,7 +781,7 @@ public class JettySolrRunner implements Closeable {
           reader.waitForLiveNodes(10, TimeUnit.SECONDS, (o, n) -> !n.contains(nodeName));
         } catch (InterruptedException e) {
           ParWork.propegateInterrupt(e);
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "interrupted");
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "interrupted", e);
         } catch (TimeoutException e) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
         }

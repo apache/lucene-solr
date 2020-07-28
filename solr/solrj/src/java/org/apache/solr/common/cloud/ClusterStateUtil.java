@@ -95,7 +95,7 @@ public class ClusterStateUtil {
             Thread.sleep(TIMEOUT_POLL_MS);
           } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new SolrException(ErrorCode.SERVER_ERROR, "Interrupted");
+            throw new SolrException(ErrorCode.SERVER_ERROR, "Interrupted", e);
           }
         }
       }
@@ -154,7 +154,7 @@ public class ClusterStateUtil {
           Thread.sleep(TIMEOUT_POLL_MS);
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
-          throw new SolrException(ErrorCode.SERVER_ERROR, "Interrupted");
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Interrupted", e);
         }
       }
     }
@@ -207,7 +207,7 @@ public class ClusterStateUtil {
             Thread.sleep(TIMEOUT_POLL_MS);
           } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new SolrException(ErrorCode.SERVER_ERROR, "Interrupted");
+            throw new SolrException(ErrorCode.SERVER_ERROR, "Interrupted", e);
           }
         }
       }
@@ -245,7 +245,7 @@ public class ClusterStateUtil {
           Thread.sleep(TIMEOUT_POLL_MS);
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
-          throw new SolrException(ErrorCode.SERVER_ERROR, "Interrupted");
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Interrupted", e);
         }
       }
       

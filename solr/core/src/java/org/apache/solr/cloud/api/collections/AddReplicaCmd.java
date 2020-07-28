@@ -183,7 +183,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "ZooKeeper exception", e);
       } catch (InterruptedException e) {
         ParWork.propegateInterrupt(e);
-        throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Interrupted");
+        throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Interrupted", e);
       }
       for (CreateReplica replica : createReplicas) {
         ocmh.waitForCoreNodeName(zkStateReader, collectionName, replica.node, replica.coreName);

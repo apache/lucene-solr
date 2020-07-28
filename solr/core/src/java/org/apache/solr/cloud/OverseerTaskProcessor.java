@@ -413,8 +413,10 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
     runningTasks.add(head.getId());
 
-    if (asyncId != null)
+    if (asyncId != null) {
+      log.info("Add async task {} to running map", asyncId);
       runningMap.put(asyncId, null);
+    }
   }
 
   protected class Runner implements Runnable {

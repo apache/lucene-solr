@@ -1156,7 +1156,7 @@ public class ZkStateReader implements SolrCloseable {
         throw new SolrException(ErrorCode.SERVER_ERROR, e);
       }
     } catch (InterruptedException e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Interrupted");
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Interrupted", e);
     }
   }
 
