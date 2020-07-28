@@ -86,6 +86,7 @@ public class SolrCmdDistributor implements Closeable {
   
   public void finish() {
     assert !finished : "lifecycle sanity check";
+    phaser.arriveAndAwaitAdvance();
     finished = true;
   }
   
@@ -284,6 +285,7 @@ public class SolrCmdDistributor implements Closeable {
         }});
     } catch (Exception e) {
       log.warn("Error sending distributed update", e);
+      arrive(req);
       Error error = new Error();
       error.t = e;
       error.req = req;

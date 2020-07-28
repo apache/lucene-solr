@@ -28,6 +28,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -250,12 +252,21 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
 
             List<SolrCmdDistributor.Node> finalUseNodes1 = useNodes;
-            ParWork.getExecutor().submit(() -> cmdDistrib.distribCommit(cmd, finalUseNodes1, params));
+            Future<?> future = ParWork.getExecutor().submit(() -> cmdDistrib.distribCommit(cmd, finalUseNodes1, params));
+            if (useNodes != null && useNodes.size() > 0 && cmd.waitSearcher) {
+              try {
+                future.get();
+              } catch (InterruptedException e) {
+                ParWork.propegateInterrupt(e);
+                throw new SolrException(ErrorCode.SERVER_ERROR, e);
+              } catch (ExecutionException e) {
+                throw new SolrException(ErrorCode.SERVER_ERROR, e);
+              }
+            }
           }
+
         }
-        if (useNodes != null && useNodes.size() > 0 && cmd.waitSearcher) {
-          cmdDistrib.blockAndDoRetries();
-        }
+
 
       }
 

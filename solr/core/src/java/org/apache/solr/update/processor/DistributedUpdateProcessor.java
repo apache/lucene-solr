@@ -149,7 +149,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   protected boolean isLeader = true;
   protected boolean forwardToLeader = false;
   protected boolean isSubShardLeader = false;
-  protected boolean isIndexChanged = false;
+  protected volatile boolean isIndexChanged = false;
 
   /**
    * Number of times requests forwarded to some other shard's leader can be retried
