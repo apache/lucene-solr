@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -224,59 +225,6 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
     }
   }
 
-  @Test
-  @Ignore // nocommit debug
-  public void testMultipleWatchesAsync() throws Exception {
-    try (ZkConnection conn = new ZkConnection()) {
-      final SolrZkClient zkClient = conn.getClient();
-      zkClient.mkdir("/collections");
-
-      final int numColls = random().nextInt(TEST_NIGHTLY ? 100 : 10);
-      final CountDownLatch latch = new CountDownLatch(numColls);
-      final CountDownLatch watchesDone = new CountDownLatch(numColls);
-      final Set<String> collectionsInProgress = new HashSet<>(numColls);
-      AtomicInteger maxCollectionsInProgress = new AtomicInteger();
-
-      for (int i = 1; i <= numColls; i ++) {
-        String collPath = "/collections/collection" + i;
-        zkClient.mkdir(collPath);
-        zkClient.getChildren(collPath, new Watcher() {
-          @Override
-          public void process(WatchedEvent event) {
-            synchronized (collectionsInProgress) {
-              collectionsInProgress.add(event.getPath()); // Will be something like /collections/collection##
-              maxCollectionsInProgress.set(Math.max(maxCollectionsInProgress.get(), collectionsInProgress.size()));
-            }
-            latch.countDown();
-            try {
-              latch.await(10000, TimeUnit.MILLISECONDS);
-            }
-            catch (InterruptedException e) {}
-            synchronized (collectionsInProgress) {
-              collectionsInProgress.remove(event.getPath());
-            }
-            watchesDone.countDown();
-          }
-        }, true);
-      }
-
-      for (int i = 1; i <= numColls; i ++) {
-        String shardsPath = "/collections/collection" + i + "/shards";
-        zkClient.mkdir(shardsPath);
-      }
-
-      assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
-      assertEquals("All collections should have been processed in parallel", numColls, maxCollectionsInProgress.get());
-      
-      // just as sanity check for the test:
-      assertTrue(watchesDone.await(10000, TimeUnit.MILLISECONDS));
-      synchronized (collectionsInProgress) {
-        assertEquals(0, collectionsInProgress.size());
-      }
-    }
-  }
-
-  @Ignore // nocommit - flakey
   public void testWatchChildren() throws Exception {
     try (ZkConnection conn = new ZkConnection ()) {
       final SolrZkClient zkClient = conn.getClient();
@@ -289,6 +237,9 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
 
         @Override
         public void process(WatchedEvent event) {
+          if (event.getType().equals(Event.EventType.None)) {
+            return;
+          }
           cnt.incrementAndGet();
           // remake watch
           try {
@@ -300,13 +251,15 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
         }
       }, true);
 
+      zkClient.mkdir("/collections/collection99");
       zkClient.mkdir("/collections/collection99/shards");
       latch.await(); //wait until watch has been re-created
 
-      zkClient.mkdir("collections/collection99/config=collection1");
+      zkClient.mkdir("/collections/collection99/config=collection1");
 
-      zkClient.mkdir("collections/collection99/config=collection3");
-      
+      zkClient.mkdir("/collections/collection99/config=collection3");
+
+      zkClient.mkdir("/collections/collection97");
       zkClient.mkdir("/collections/collection97/shards");
 
       assertEquals(2, cnt.intValue());
