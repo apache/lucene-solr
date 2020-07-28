@@ -45,6 +45,7 @@ public class DeleteInactiveReplicaTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    useFactory(null);
     configureCluster(4)
         .addConfig("conf", configset("cloud-minimal"))
         .withProperty(ZkStateReader.LEGACY_CLOUD, "false")
