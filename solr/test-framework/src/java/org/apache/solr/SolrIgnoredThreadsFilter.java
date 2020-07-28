@@ -67,7 +67,7 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
 
     // randomizedtesting claims this leaks, but the thread is already TERMINATED state
     // I think it can be resolved, but for now ...
-    if (threadName.startsWith("executeInOrderTest") || threadName.startsWith("testStress")) {
+    if (threadName.startsWith("executeInOrderTest") || threadName.startsWith("testStress") || threadName.startsWith("testLockWhenQueueIsFull_test")) {
       return true;
     }
 
