@@ -32,6 +32,10 @@ public interface SolrCluster {
   /** nodes in the cluster */
   SimpleMap<SolrNode> nodes();
 
+
+  /** Config sets in the cluster*/
+  SimpleMap<Config> configs();
+
   /** Name of the node in which the overseer is running */
   String overseerNode();
 
