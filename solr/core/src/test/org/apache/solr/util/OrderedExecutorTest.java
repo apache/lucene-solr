@@ -118,7 +118,7 @@ public class OrderedExecutorTest extends SolrTestCase {
   }
 
   @Test
-  public void testRunInParallel() {
+  public void testRunInParallel() throws ExecutionException, InterruptedException {
     final int parallelism = atLeast(3);
 
     final OrderedExecutor orderedExecutor = new OrderedExecutor
@@ -131,10 +131,10 @@ public class OrderedExecutorTest extends SolrTestCase {
       final CyclicBarrier barrier = new CyclicBarrier(parallelism + 1);
       final CountDownLatch preBarrierLatch = new CountDownLatch(parallelism);
       final CountDownLatch postBarrierLatch = new CountDownLatch(parallelism);
-      
+      List<Future> futures = new ArrayList<>();
       for (int i = 0; i < parallelism; i++) {
         final int lockId = i;
-        testExecutor.execute(() -> {
+        futures.add(testExecutor.submit(() -> {
             orderedExecutor.execute(lockId, () -> {
                 try {
                   log.info("Worker #{} starting", lockId);
@@ -150,7 +150,7 @@ public class OrderedExecutorTest extends SolrTestCase {
                   Thread.currentThread().interrupt();
                 }
               });
-          });
+          }));
       }
 
       if (log.isInfoEnabled()) {
@@ -201,6 +201,9 @@ public class OrderedExecutorTest extends SolrTestCase {
         log.error("Interrupt awwaiting barrier / post barrier latch", e);
         Thread.currentThread().interrupt();
         fail("interupt while trying to release the barrier and await the postBarrierLatch");
+      }
+      for (Future future : futures) {
+        future.get();
       }
     } finally {
       ParWork.close(orderedExecutor);
