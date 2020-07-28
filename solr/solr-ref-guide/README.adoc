@@ -21,9 +21,9 @@ This is the source for the Solr Reference Guide.
 Raw content is stored in Asciidoc (`.adoc`) formatted files in the `src/` directory.
 
 == Prerequisites for Building
-These files are processed with AsciiDoctor in 2 different ways:
+These files are processed with AsciiDoctor.
 
-* HTML version, using Jekyll:
+* HTML is generated using Jekyll with these key dependencies:
 ** `Ruby` (v2.3 or higher)
 ** The following gems must be installed:
 *** `jekyll`: v3.5, not v4.x.
@@ -36,6 +36,11 @@ Use `gem install slim` to install.
 Use `gem install tilt` to install.
 *** `concurrent-ruby`: v1.0 or higher; latest version (1.1.5) is fine.
 Use `gem install concurrent-ruby` to install.
+
+NOTE: The above should install the correct version of the asciidoctor gem implicitly on a new system, but will not upgrade an existing version.
+If you experience problems building that seem unrelated to your changes, check that asciidoctor is at least v2.0.10 or higher.
+This is usually only a problem if you have previously built the ref guide prior to October 2019 or used asciidoctor for some other reason.
+`gem info asciidoctor` will show you what version(s) you have installed.
 
 
 == Building the Guide
