@@ -225,48 +225,6 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
     }
   }
 
-  public void testWatchChildren() throws Exception {
-    try (ZkConnection conn = new ZkConnection ()) {
-      final SolrZkClient zkClient = conn.getClient();
-      final AtomicInteger cnt = new AtomicInteger();
-      final CountDownLatch latch = new CountDownLatch(1);
-
-      zkClient.mkdir("/collections");
-
-      zkClient.getChildren("/collections", new Watcher() {
-
-        @Override
-        public void process(WatchedEvent event) {
-          if (event.getType().equals(Event.EventType.None)) {
-            return;
-          }
-          cnt.incrementAndGet();
-          // remake watch
-          try {
-            zkClient.getChildren("/collections", this, true);
-            latch.countDown();
-          } catch (KeeperException | InterruptedException e) {
-            throw new RuntimeException(e);
-          }
-        }
-      }, true);
-
-      zkClient.mkdir("/collections/collection99");
-      zkClient.mkdir("/collections/collection99/shards");
-      latch.await(); //wait until watch has been re-created
-
-      zkClient.mkdir("/collections/collection99/config=collection1");
-
-      zkClient.mkdir("/collections/collection99/config=collection3");
-
-      zkClient.mkdir("/collections/collection97");
-      zkClient.mkdir("/collections/collection97/shards");
-
-      assertEquals(2, cnt.intValue());
-
-    }
-  }
-
   @Override
   public void tearDown() throws Exception {
     super.tearDown();
