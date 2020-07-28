@@ -15,27 +15,28 @@
  * limitations under the License.
  */
 
+
 package org.apache.solr.cluster.api;
 
-import org.apache.solr.common.util.SimpleMap;
+/**
+ * A range of hash that is stored in a shard
+ */
+public interface HashRange {
 
-/**A shard of a collection */
-public interface Shard {
+  /** minimum value (inclusive) */
+  int min();
 
-  /**name of the shard */
-  String name();
+  /** maximum value (inclusive) */
+  int max();
 
-  /**collection this shard belongs to */
-  String collection();
+  /** Check if a given hash falls in this range */
+  default boolean includes(int hash) {
+    return hash >= min() && hash <= max();
+  }
 
-  /**hash range of this shard. null if this is not using hash based router */
-  HashRange range();
+  /** Check if another range is a subset of this range */
+  default boolean isSubset(HashRange subset) {
+    return min() <= subset.min() && max() >= subset.max();
+  }
 
-  /**  replicas of the shard */
-  SimpleMap<ShardReplica> replicas();
-
-  /**
-   * Name of the replica that is acting as the leader at the moment
-   */
-  String leader();
 }

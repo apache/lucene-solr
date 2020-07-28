@@ -29,6 +29,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import org.apache.solr.cluster.api.HashRange;
 import org.apache.solr.common.cloud.Replica.Type;
 import org.apache.solr.cluster.api.Shard;
 import org.apache.solr.cluster.api.ShardReplica;
@@ -309,7 +310,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> , Shard {
   }
 
   @Override
-  public DocRouter.Range range() {
+  public HashRange range() {
     return range;
   }
 
