@@ -88,6 +88,7 @@ public class DistributedQueryComponentOptimizationTest extends SolrCloudTestCase
   private static final String id = "id";
 
   @Test
+  @AwaitsFix(bugUrl = "Can fail with Number of documents (2) is different from number of expected values (14")
   public void testBasics() throws Exception {
 
     QueryResponse rsp;
