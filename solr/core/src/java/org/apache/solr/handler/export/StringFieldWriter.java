@@ -56,21 +56,21 @@ class StringFieldWriter extends FieldWriter {
   }
 
   public boolean write(SortDoc sortDoc, LeafReader reader, MapWriter.EntryWriter ew, int fieldIndex) throws IOException {
-    StringValue stringValue = (StringValue)sortDoc.getSortValue(this.field);
+    StringValue stringValue = (StringValue) sortDoc.getSortValue(this.field);
     BytesRef ref = null;
 
-    if(stringValue != null) {
+    if (stringValue != null) {
       //We already have the top level ordinal used for sorting.
       //Now let's use it for caching the BytesRef so we don't have to look it up.
       //When we have long runs of repeated values do to the sort order of the docs this i huge win.
-      if(this.lastOrd == stringValue.currentOrd) {
+      if (this.lastOrd == stringValue.currentOrd) {
         ref = lastRef;
       }
 
       this.lastOrd = stringValue.currentOrd;
     }
 
-    if(ref == null) {
+    if (ref == null) {
       SortedDocValues vals = DocValues.getSorted(reader, this.field);
       if (vals.advance(sortDoc.docId) != sortDoc.docId) {
         return false;
@@ -84,10 +84,8 @@ class StringFieldWriter extends FieldWriter {
     if (ew instanceof JavaBinCodec.BinEntryWriter) {
       ew.put(this.field, utf8.reset(ref.bytes, ref.offset, ref.length, null));
     } else {
-      String v = null;
       fieldType.indexedToReadable(ref, cref);
-      v = cref.toString();
-      ew.put(this.field, v);
+      ew.put(this.field, cref.toString());
     }
     return true;
   }

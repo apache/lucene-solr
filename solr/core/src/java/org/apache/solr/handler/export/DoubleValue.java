@@ -82,14 +82,13 @@ class DoubleValue implements SortValue {
 
   }
 
-
-    @Override
+  @Override
   public boolean isPresent() {
     return present;
   }
 
   public void setCurrentValue(SortValue sv) {
-    DoubleValue dv = (DoubleValue)sv;
+    DoubleValue dv = (DoubleValue) sv;
     this.currentValue = dv.currentValue;
     this.present = dv.present;
   }
@@ -100,7 +99,7 @@ class DoubleValue implements SortValue {
   }
 
   public int compareTo(SortValue o) {
-    DoubleValue dv = (DoubleValue)o;
+    DoubleValue dv = (DoubleValue) o;
     return comp.compare(currentValue, dv.currentValue);
   }
 }

@@ -61,8 +61,6 @@ class FloatValue implements SortValue {
     lastDocID = 0;
   }
 
-
-
   public void setCurrentValue(int docId) throws IOException {
     if (docId < lastDocID) {
       throw new AssertionError("docs were sent out-of-order: lastDocID=" + lastDocID + " vs doc=" + docId);
@@ -87,7 +85,7 @@ class FloatValue implements SortValue {
   }
 
   public void setCurrentValue(SortValue sv) {
-    FloatValue fv = (FloatValue)sv;
+    FloatValue fv = (FloatValue) sv;
     this.currentValue = fv.currentValue;
     this.present = fv.present;
   }
@@ -98,7 +96,7 @@ class FloatValue implements SortValue {
   }
 
   public int compareTo(SortValue o) {
-    FloatValue fv = (FloatValue)o;
+    FloatValue fv = (FloatValue) o;
     return comp.compare(currentValue, fv.currentValue);
   }
 }

@@ -104,7 +104,7 @@ class StringValue implements SortValue {
   }
 
   public void setCurrentValue(SortValue sv) {
-    StringValue v = (StringValue)sv;
+    StringValue v = (StringValue) sv;
     this.currentOrd = v.currentOrd;
     this.present = v.present;
     this.leafOrd = v.leafOrd;
@@ -125,7 +125,7 @@ class StringValue implements SortValue {
   public void toGlobalValue(SortValue previousValue) {
     lastOrd = currentOrd;
     StringValue sv = (StringValue)previousValue;
-    if(sv.lastOrd == currentOrd) {
+    if (sv.lastOrd == currentOrd) {
       //Take the global ord from the previousValue
       this.currentOrd = sv.currentOrd;
     } else {

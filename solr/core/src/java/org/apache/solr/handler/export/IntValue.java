@@ -79,18 +79,18 @@ public class IntValue implements SortValue {
 
   }
 
-    @Override
+  @Override
   public boolean isPresent() {
     return this.present;
   }
 
   public int compareTo(SortValue o) {
-    IntValue iv = (IntValue)o;
+    IntValue iv = (IntValue) o;
     return comp.compare(currentValue, iv.currentValue);
   }
 
   public void setCurrentValue(SortValue sv) {
-    IntValue iv = (IntValue)sv;
+    IntValue iv = (IntValue) sv;
     this.currentValue = iv.currentValue;
     this.present = iv.present;
   }

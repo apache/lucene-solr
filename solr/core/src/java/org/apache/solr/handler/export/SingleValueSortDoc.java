@@ -54,7 +54,7 @@ class SingleValueSortDoc extends SortDoc {
     this.docId = sortDoc.docId;
     this.ord = sortDoc.ord;
     this.docBase = sortDoc.docBase;
-    value1.setCurrentValue(((SingleValueSortDoc)sortDoc).value1);
+    value1.setCurrentValue(((SingleValueSortDoc) sortDoc).value1);
   }
 
   public SingleValueSortDoc(SortValue value1) {
@@ -63,7 +63,7 @@ class SingleValueSortDoc extends SortDoc {
   }
 
   public void setGlobalValues(SortDoc previous) {
-    SortValue previousValue = ((SingleValueSortDoc)previous).value1;
+    SortValue previousValue = ((SingleValueSortDoc) previous).value1;
     value1.toGlobalValue(previousValue);
   }
 
@@ -72,22 +72,22 @@ class SingleValueSortDoc extends SortDoc {
   }
 
   public boolean lessThan(Object o) {
-    SingleValueSortDoc sd = (SingleValueSortDoc)o;
+    SingleValueSortDoc sd = (SingleValueSortDoc) o;
     int comp = value1.compareTo(sd.value1);
-    if(comp == -1) {
+    if (comp == -1) {
       return true;
     } else if (comp == 1) {
       return false;
     } else {
-      return docId+docBase > sd.docId+sd.docBase;
+      return docId + docBase > sd.docId + sd.docBase;
     }
   }
 
   public int compareTo(Object o) {
-    SingleValueSortDoc sd = (SingleValueSortDoc)o;
+    SingleValueSortDoc sd = (SingleValueSortDoc) o;
     int comp = value1.compareTo(sd.value1);
-    if(comp == 0) {
-      return docId+docBase - sd.docId+sd.docBase;
+    if (comp == 0) {
+      return docId + docBase - sd.docId + sd.docBase;
     } else {
       return comp;
     }

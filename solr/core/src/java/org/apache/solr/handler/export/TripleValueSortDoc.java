@@ -72,9 +72,9 @@ class TripleValueSortDoc extends DoubleValueSortDoc {
     this.docId = sortDoc.docId;
     this.ord = sortDoc.ord;
     this.docBase = sortDoc.docBase;
-    value1.setCurrentValue(((TripleValueSortDoc)sortDoc).value1);
-    value2.setCurrentValue(((TripleValueSortDoc)sortDoc).value2);
-    value3.setCurrentValue(((TripleValueSortDoc)sortDoc).value3);
+    value1.setCurrentValue(((TripleValueSortDoc) sortDoc).value1);
+    value2.setCurrentValue(((TripleValueSortDoc) sortDoc).value2);
+    value3.setCurrentValue(((TripleValueSortDoc) sortDoc).value3);
   }
 
   public TripleValueSortDoc(SortValue value1, SortValue value2, SortValue value3) {
@@ -87,27 +87,26 @@ class TripleValueSortDoc extends DoubleValueSortDoc {
   }
 
   public boolean lessThan(Object o) {
-
-    TripleValueSortDoc sd = (TripleValueSortDoc)o;
+    TripleValueSortDoc sd = (TripleValueSortDoc) o;
     int comp = value1.compareTo(sd.value1);
-    if(comp == -1) {
+    if (comp == -1) {
       return true;
     } else if (comp == 1) {
       return false;
     } else {
       comp = value2.compareTo(sd.value2);
-      if(comp == -1) {
+      if (comp == -1) {
         return true;
       } else if (comp == 1) {
         return false;
       } else {
         comp = value3.compareTo(sd.value3);
-        if(comp == -1) {
+        if (comp == -1) {
           return true;
         } else if (comp == 1) {
           return false;
         } else {
-          return docId+docBase > sd.docId+sd.docBase;
+          return docId + docBase > sd.docId + sd.docBase;
         }
       }
     }
@@ -120,8 +119,8 @@ class TripleValueSortDoc extends DoubleValueSortDoc {
       comp = value2.compareTo(sd.value2);
       if (comp == 0) {
         comp = value3.compareTo(sd.value3);
-        if(comp == 0) {
-          return docId+docBase - sd.docId+sd.docBase;
+        if (comp == 0) {
+          return docId + docBase - sd.docId + sd.docBase;
         } else {
           return comp;
         }

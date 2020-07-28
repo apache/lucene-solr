@@ -259,12 +259,10 @@ class ExportBuffers {
     }
 
     public void initialize(SortDoc proto) {
-
       outDocsIndex = EMPTY;
       for (int i = 0; i < outDocs.length; i++) {
         outDocs[i] = proto.copy();
       }
-
     }
 
     @Override

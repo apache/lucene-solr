@@ -72,7 +72,7 @@ class SortDoc implements Comparable {
 
   public void setGlobalValues(SortDoc previous) {
     SortValue[] previousValues = previous.sortValues;
-    for(int i=0; i<sortValues.length; i++) {
+    for (int i = 0; i < sortValues.length; i++) {
       sortValues[i].toGlobalValue(previousValues[i]);
     }
   }
@@ -92,7 +92,6 @@ class SortDoc implements Comparable {
     for (int i = 0; i < sortValues.length; i++) {
       svs[i] = sortValues[i].copy();
     }
-
     return new SortDoc(svs);
   }
 
@@ -100,7 +99,7 @@ class SortDoc implements Comparable {
     if (docId == -1) {
       return true;
     }
-    SortDoc sd = (SortDoc)o;
+    SortDoc sd = (SortDoc) o;
     SortValue[] sortValues1 = sd.sortValues;
     for (int i = 0; i < sortValues.length; i++) {
       int comp = sortValues[i].compareTo(sortValues1[i]);
@@ -114,7 +113,7 @@ class SortDoc implements Comparable {
   }
 
   public int compareTo(Object o) {
-    SortDoc sd = (SortDoc)o;
+    SortDoc sd = (SortDoc) o;
     for (int i = 0; i < sortValues.length; i++) {
       int comp = sortValues[i].compareTo(sd.sortValues[i]);
       if (comp != 0) {
@@ -123,7 +122,6 @@ class SortDoc implements Comparable {
     }
     return 0;
   }
-
 
   public String toString() {
     StringBuilder builder = new StringBuilder();

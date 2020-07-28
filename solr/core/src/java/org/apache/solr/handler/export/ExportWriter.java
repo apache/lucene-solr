@@ -310,41 +310,12 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     Timer.Context timerContext = transferBatchToBufferTimer.time();
     try {
       int outDocsIndex = -1;
-      for(int i=0; i<30000; i++) {
+      for (int i = 0; i < 30000; i++) {
         SortDoc sortDoc = mergeIterator.next();
-        if(sortDoc != null) {
+        if (sortDoc != null) {
           destination.outDocs[++outDocsIndex].setValues(sortDoc);
         } else {
           break;
-        }
-      }
-      destination.outDocsIndex = outDocsIndex;
-    } catch (Throwable t) {
-      log.error("transfer", t);
-      if (t instanceof InterruptedException) {
-        Thread.currentThread().interrupt();
-      }
-      throw t;
-    } finally {
-      timerContext.stop();
-    }
-  }
-
-
-
-  private void transferBatchToBufferForOutput(SortQueue queue,
-                                                List<LeafReaderContext> leaves,
-                                                ExportBuffers.Buffer destination) throws IOException {
-    Timer.Context timerContext = transferBatchToBufferTimer.time();
-    try {
-      int outDocsIndex = -1;
-      for (int i = 0; i < queue.maxSize; i++) {
-        SortDoc s = queue.pop();
-        if (s.docId > -1) {
-          destination.outDocs[++outDocsIndex].setValues(s);
-          // remove this doc id from the matching bitset, it's been exported
-          sets[s.ord].clear(s.docId);
-          s.reset(); // reuse
         }
       }
       destination.outDocsIndex = outDocsIndex;
@@ -622,8 +593,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   }
 
 
-  public static class MergeIterator {
-
+  static class MergeIterator {
     private TreeSet<SortDoc> set = new TreeSet();
     private SegmentIterator[] segmentIterators;
     private SortDoc outDoc;
@@ -631,13 +601,13 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     public MergeIterator(SegmentIterator[] segmentIterators, SortDoc proto) {
       outDoc = proto.copy();
       this.segmentIterators = segmentIterators;
-      for(int i=0; i<segmentIterators.length; i++) {
+      for (int i = 0; i < segmentIterators.length; i++) {
         try {
           SortDoc sortDoc = segmentIterators[i].next();
-          if(sortDoc != null) {
+          if (sortDoc != null) {
             set.add(sortDoc);
           }
-        } catch(Exception e) {
+        } catch (Exception e) {
           e.printStackTrace();
           throw e;
         }
@@ -651,17 +621,16 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     */
 
     public SortDoc next() {
-
       SortDoc sortDoc = set.pollLast();
       //We've exhausted all documents
-      if(sortDoc == null) {
+      if (sortDoc == null) {
         return null;
       } else {
         outDoc.setValues(sortDoc);
       }
 
       SortDoc nextDoc = segmentIterators[sortDoc.ord].next();
-      if(nextDoc != null) {
+      if (nextDoc != null) {
         //The entire expense of the operation is here
         set.add(nextDoc);
       }
@@ -669,24 +638,23 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     }
   }
 
-  public MergeIterator getMergeIterator(List<LeafReaderContext> leafs, FixedBitSet[] bits, SortDoc sortDoc) throws IOException {
-
+  public MergeIterator getMergeIterator(List<LeafReaderContext> leaves, FixedBitSet[] bits, SortDoc sortDoc) throws IOException {
     long totalDocs = 0;
-    for(int i=0; i< leafs.size(); i++) {
-      totalDocs += leafs.get(i).reader().maxDoc();
+    for (int i = 0; i < leaves.size(); i++) {
+      totalDocs += leaves.get(i).reader().maxDoc();
     }
 
-    int[] sizes = new int[leafs.size()];
-    for(int i=0; i< leafs.size(); i++) {
-      long maxDoc = leafs.get(i).reader().maxDoc();
-      int sortQueueSize = Math.min((int)(((double)maxDoc/(double)totalDocs) * 200000), 30000);
+    int[] sizes = new int[leaves.size()];
+    for (int i = 0; i < leaves.size(); i++) {
+      long maxDoc = leaves.get(i).reader().maxDoc();
+      int sortQueueSize = Math.min((int) (((double) maxDoc / (double) totalDocs) * 200000), 30000);
       sizes[i] = sortQueueSize;
     }
 
-    SegmentIterator[] segmentIterators = new SegmentIterator[leafs.size()];
-    for(int i=0; i<segmentIterators.length; i++) {
+    SegmentIterator[] segmentIterators = new SegmentIterator[leaves.size()];
+    for (int i = 0; i < segmentIterators.length; i++) {
       SortQueue sortQueue = new SortQueue(sizes[i], sortDoc.copy());
-      segmentIterators[i] = new SegmentIterator(bits[i], leafs.get(i), sortQueue, sortDoc.copy());
+      segmentIterators[i] = new SegmentIterator(bits[i], leaves.get(i), sortQueue, sortDoc.copy());
     }
 
     return new MergeIterator(segmentIterators, sortDoc);
@@ -719,16 +687,16 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
 
     public SortDoc next() {
       SortDoc sortDoc = null;
-      if(index > -1) {
+      if (index > -1) {
         sortDoc = outDocs[index--];
       } else {
         topDocs();
-        if(index > -1) {
+        if (index > -1) {
           sortDoc = outDocs[index--];
         }
       }
 
-      if(sortDoc != null) {
+      if (sortDoc != null) {
         //Clear the bit so it's not loaded again.
         bits.clear(sortDoc.docId);
 
@@ -743,7 +711,6 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       } else {
         nextDoc = null;
       }
-
       return nextDoc;
     }
 
@@ -765,9 +732,9 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
         //Pop the queue and load up the array.
         index = -1;
 
-        while(true) {
+        while (true) {
           SortDoc sortDoc = queue.pop();
-          if(sortDoc.docId > -1) {
+          if (sortDoc.docId > -1) {
             outDocs[++index] = sortDoc;
           }
         }
@@ -786,5 +753,4 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       return "Early Client Disconnect";
     }
   }
-
 }
