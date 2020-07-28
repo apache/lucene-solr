@@ -39,7 +39,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Ignore // nocommit debug
 public class DeleteInactiveReplicaTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -97,11 +96,6 @@ public class DeleteInactiveReplicaTest extends SolrCloudTestCase {
     cluster.startJettySolrRunner(jetty);
     log.info("restarted jetty");
 
-    // the system was down, these don't seem to get removed
-//    TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-//    timeOut.waitFor("Expected data dir and instance dir of " + replica.getName() + " is deleted", ()
-//        -> !Files.exists(replicaCd.getInstanceDir()) && !FileUtils.fileExists(replicaCd.getDataDir()));
-
     // Check that we can't create a core with no coreNodeName
     try (SolrClient queryClient = getHttpSolrClient(jetty.getBaseUrl().toString())) {
       Exception e = expectThrows(Exception.class, () -> {
@@ -111,7 +105,7 @@ public class DeleteInactiveReplicaTest extends SolrCloudTestCase {
         createRequest.setShardId("shard2");
         queryClient.request(createRequest);
       });
-      assertTrue("Unexpected error message: " + e.getMessage(), e.getMessage().contains("coreNodeName missing"));
+      assertTrue("Unexpected error message: " + e.getMessage(), e.getMessage().contains("No coreNodeName for"));
 
     }
   }
