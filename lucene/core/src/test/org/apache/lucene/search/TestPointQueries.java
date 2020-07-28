@@ -69,7 +69,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.bkd.BKDConfig;
-import org.apache.lucene.util.bkd.BKDWriter;
 import org.junit.BeforeClass;
 
 @LuceneTestCase.SuppressCodecs("SimpleText")
