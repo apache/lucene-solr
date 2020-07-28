@@ -21,6 +21,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.JavaBinCodec;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
@@ -48,6 +49,9 @@ public class BinaryResponseParser extends ResponseParser {
   public NamedList<Object> processResponse(InputStream body, String encoding) {
     try {
       return (NamedList<Object>) createCodec().unmarshal(body);
+    } catch (EOFException e) {
+      // no body
+      return new NamedList<>();
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "parsing error", e);
 

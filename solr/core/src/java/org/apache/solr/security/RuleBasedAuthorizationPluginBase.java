@@ -136,9 +136,7 @@ public abstract class RuleBasedAuthorizationPluginBase implements AuthorizationP
     log.trace("Following perms are associated with this collection and path: [{}]", permissions);
     final Permission governingPermission = findFirstGoverningPermission(permissions, context);
     if (governingPermission == null) {
-      if (log.isDebugEnabled()) {
-        log.debug("No perms configured for the resource {} . So allowed to access", context.getResource());
-      }
+      log.info("No perms configured for the resource {} . So allowed to access", context.getResource());
       return MatchStatus.NO_PERMISSIONS_FOUND;
     }
     if (log.isDebugEnabled()) {
@@ -218,14 +216,14 @@ public abstract class RuleBasedAuthorizationPluginBase implements AuthorizationP
 
   private MatchStatus determineIfPermissionPermitsPrincipal(Principal principal, Permission governingPermission) {
     if (governingPermission.role == null) {
-      log.debug("Governing permission [{}] has no role; permitting access", governingPermission);
+      log.info("Governing permission [{}] has no role; permitting access", governingPermission);
       return MatchStatus.PERMITTED;
     }
     if (principal == null) {
-      log.debug("Governing permission [{}] has role, but request principal cannot be identified; forbidding access", governingPermission);
+      log.info("Governing permission [{}] has role, but request principal cannot be identified; forbidding access", governingPermission);
       return MatchStatus.USER_REQUIRED;
     } else if (governingPermission.role.contains("*")) {
-      log.debug("Governing permission [{}] allows all roles; permitting access", governingPermission);
+      log.info("Governing permission [{}] allows all roles; permitting access", governingPermission);
       return MatchStatus.PERMITTED;
     }
 

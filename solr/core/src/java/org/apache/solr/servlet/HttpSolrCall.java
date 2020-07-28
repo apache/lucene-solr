@@ -492,6 +492,7 @@ public class HttpSolrCall {
     log.debug("AuthorizationContext : {}", context);
     AuthorizationResponse authResponse = cores.getAuthorizationPlugin().authorize(context);
     int statusCode = authResponse.statusCode;
+    log.info("Authorization response status code {}", authResponse.statusCode);
     
     if (statusCode == AuthorizationResponse.PROMPT.statusCode) {
       Map<String, String> headers = (Map) getReq().getAttribute(AuthenticationPlugin.class.getName());
@@ -531,7 +532,7 @@ public class HttpSolrCall {
     if (shouldAudit(EventType.AUTHORIZED)) {
       cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.AUTHORIZED, req, context));
     }
-    return null;
+    return ADMIN;
   }
 
   /**
@@ -761,7 +762,7 @@ public class HttpSolrCall {
 
 
       IOUtils.copyLarge(listener.getInputStream(), response.getOutputStream());
-      response.getOutputStream().flush(); // nocommit try not flushing
+//    /  response.getOutputStream().flush(); // nocommit try not flushing
 
     }
 

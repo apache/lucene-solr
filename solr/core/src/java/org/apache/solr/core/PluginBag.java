@@ -99,7 +99,7 @@ public class PluginBag<T> implements AutoCloseable {
    * Constructs a non-threadsafe plugin registry
    */
   public PluginBag(Class<T> klass, SolrCore core) {
-    this(klass, core, false);
+    this(klass, core, true);
   }
 
   public static void initInstance(Object inst, PluginInfo info) {

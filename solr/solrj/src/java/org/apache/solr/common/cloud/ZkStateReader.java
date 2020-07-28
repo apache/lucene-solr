@@ -514,7 +514,7 @@ public class ZkStateReader implements SolrCloseable {
             }
             try {
               synchronized (ZkStateReader.this.getUpdateLock()) {
-                log.debug("Updating [{}] ... ", SOLR_SECURITY_CONF_PATH);
+                log.info("Updating [{}] ... ", SOLR_SECURITY_CONF_PATH);
 
                 // remake watch
                 final Stat stat = new Stat();
@@ -534,11 +534,8 @@ public class ZkStateReader implements SolrCloseable {
               }
             } catch (KeeperException e) {
               log.error("A ZK error has occurred", e);
-              throw new ZooKeeperException(ErrorCode.SERVER_ERROR, "", e);
             } catch (InterruptedException e) {
-              // Restore the interrupted status
-              Thread.currentThread().interrupt();
-              log.warn("Interrupted", e);
+              ParWork.propegateInterrupt(e);
             }
           }
 
