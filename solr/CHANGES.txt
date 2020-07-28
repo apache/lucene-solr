@@ -6,7 +6,7 @@ https://github.com/apache/lucene-solr/blob/master/solr/solr-ref-guide/src/solr-u
 
 ==================  9.0.0 ==================
 
-Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+Consult the lucene/CHANGES.txt file for additional, low level, changes in this release.
 
 Upgrade Notes
 ---------------------
@@ -36,6 +36,8 @@ Improvements
 
 Other Changes
 ----------------------
+* SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
+
 * LUCENE-9391: Upgrade HPPC to 0.8.2. (Haoyu Zhai)
 
 * SOLR-10288: Remove non-minified JavaScript from the webapp. (Erik Hatcher, marcussorealheis)
@@ -104,11 +106,12 @@ Bug Fixes
 
 ==================  8.7.0 ==================
 
-Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+Consult the lucene/CHANGES.txt file for additional, low level, changes in this release.
 
 New Features
 ---------------------
-(No changes)
+
+* SOLR-14151 Make schema components load from packages (noble)
 
 Improvements
 ---------------------
@@ -125,6 +128,9 @@ Improvements
 
 * SOLR-11262: Implement writeMap and writeIterator in XMLWriter (yonik, Munendra S N)
 
+* SOLR-13205: Prevent StringIndexOutOfBoundsException when parsing field names in SolrQueryParserBase
+  (pramodkumar9 via Jason Gerlowski)
+
 * SOLR-14651: The MetricsHistoryHandler can more completely disable itself when you tell it to.
   Also, it now shuts down more thoroughly. (David Smiley)
 
@@ -140,7 +146,9 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+
+* SOLR-11656: TLOG replication doesn't work properly after rebalancing leaders. (Yuki Yano via
+  Erick Erickson)
 
 Other Changes
 ---------------------
@@ -155,9 +163,11 @@ Other Changes
 
 * SOLR-14637: Update CloudSolrClient examples to remove deprecated method. (Andras Salamon via Eric Pugh)
 
+* SOLR-14676: Update commons-collections to 4.4 and use it in Solr (Erick Erickson)
+
 ==================  8.6.0 ==================
 
-Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+Consult the lucene/CHANGES.txt file for additional, low level, changes in this release.
 
 New Features
 ---------------------

@@ -29,10 +29,8 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 
-import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.noggit.JSONWriter;
 
-import static org.apache.solr.common.cloud.ZkStateReader.AUTO_ADD_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.READ_ONLY;
@@ -64,8 +62,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   private final Integer numNrtReplicas;
   private final Integer numTlogReplicas;
   private final Integer numPullReplicas;
-  private final Boolean autoAddReplicas;
-  private final String policy;
   private final Boolean readOnly;
 
   public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router) {
@@ -92,9 +88,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     this.numNrtReplicas = (Integer) verifyProp(props, NRT_REPLICAS, 0);
     this.numTlogReplicas = (Integer) verifyProp(props, TLOG_REPLICAS, 0);
     this.numPullReplicas = (Integer) verifyProp(props, PULL_REPLICAS, 0);
-    Boolean autoAddReplicas = (Boolean) verifyProp(props, AUTO_ADD_REPLICAS);
-    this.policy = (String) props.get(Policy.POLICY);
-    this.autoAddReplicas = autoAddReplicas == null ? Boolean.FALSE : autoAddReplicas;
     Boolean readOnly = (Boolean) verifyProp(props, READ_ONLY);
     this.readOnly = readOnly == null ? Boolean.FALSE : readOnly;
     
@@ -147,7 +140,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
       case PULL_REPLICAS:
       case TLOG_REPLICAS:
         return Integer.parseInt(o.toString());
-      case AUTO_ADD_REPLICAS:
       case READ_ONLY:
         return Boolean.parseBoolean(o.toString());
       case "snitch":
@@ -245,10 +237,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    */
   public Integer getReplicationFactor() {
     return replicationFactor;
-  }
-  
-  public boolean getAutoAddReplicas() {
-    return autoAddReplicas;
   }
   
   public DocRouter getRouter() {
@@ -392,13 +380,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    */
   public Integer getNumPullReplicas() {
     return numPullReplicas;
-  }
-
-  /**
-   * @return the policy associated with this collection if any
-   */
-  public String getPolicyName() {
-    return policy;
   }
 
   public int getExpectedReplicaCount(Replica.Type type, int def) {

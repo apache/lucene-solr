@@ -158,6 +158,8 @@ class SolrCores {
   //WARNING! This should be the _only_ place you put anything into the list of transient cores!
   protected SolrCore putCore(CoreDescriptor cd, SolrCore core) {
     synchronized (modifyLock) {
+      addCoreDescriptor(cd); // cd must always be registered if we register a core
+
       if (cd.isTransient()) {
         if (getTransientCacheHandler() != null) {
           return getTransientCacheHandler().addCore(cd.getName(), core);

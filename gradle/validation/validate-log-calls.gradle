@@ -238,7 +238,7 @@ class ValidateLogCallsTask extends DefaultTask {
   @TaskAction
   def checkLogLines() {
     sourceFiles.each { checkFile(it) }
-    logger.warn("Checked: ${sourceFiles.files.size()}")
+    logger.info("Checked: ${sourceFiles.files.size()}")
 
     if (errsFound > 0) {
       throw new BuildException(String.format(Locale.ENGLISH, 'Found %d violations in source files (%s).',

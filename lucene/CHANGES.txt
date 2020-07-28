@@ -60,10 +60,6 @@ API Changes
 
 Improvements
 
-* LUCENE-8574: Add a new ExpressionValueSource which will enforce only one value per name
-  per hit in dependencies, ExpressionFunctionValues will no longer
-  recompute already computed values (Haoyu Zhai)
-
 * LUCENE-9370: RegExp query is no longer lenient about inappropriate backslashes and
   follows the Java Pattern policy for rejecting illegal syntax.  (Mark Harwood)
 
@@ -138,6 +134,8 @@ Bug fixes
 
 Other
 
+* LUCENE-9312: Allow gradle builds against arbitrary JVMs. (Tomoko Uchida, Dawid Weiss)
+
 * LUCENE-9391: Upgrade HPPC to 0.8.2. (Haoyu Zhai)
 
 * LUCENE-8768: Fix Javadocs build in Java 11. (Namgyu Kim)
@@ -154,6 +152,40 @@ Other
 
 * LUCENE-9411: Fail complation on warnings, 9x gradle-only (Erick Erickson, Dawid Weiss)
   Deserves mention here as well as Lucene CHANGES.txt since it affects both.
+
+======================= Lucene 8.7.0 =======================
+
+API Changes
+---------------------
+(No changes)
+
+* LUCENE-9437: Lucene's facet module's DocValuesOrdinalsReader.decode method
+  is now public, making it easier for applications to decode facet
+  ordinals into their corresponding labels (Ankur)
+
+New Features
+---------------------
+
+* LUCENE-9386: RegExpQuery added case insensitive matching option. (Mark Harwood)
+
+Improvements
+---------------------
+
+* LUCENE-8574: Add a new ExpressionValueSource which will enforce only one value per name
+  per hit in dependencies, ExpressionFunctionValues will no longer
+  recompute already computed values (Haoyu Zhai)
+
+Optimizations
+---------------------
+(No changes)
+
+Bug Fixes
+---------------------
+(No changes)
+
+Other
+---------------------
+(No changes)
 
 ======================= Lucene 8.6.0 =======================
 
