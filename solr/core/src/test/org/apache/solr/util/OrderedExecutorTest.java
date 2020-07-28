@@ -19,7 +19,9 @@ package org.apache.solr.util;
 
 import java.lang.invoke.MethodHandles;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import java.util.concurrent.ArrayBlockingQueue;
@@ -214,8 +216,8 @@ public class OrderedExecutorTest extends SolrTestCase {
       N = 15;
     }
 
-    Map<Integer, Integer> base = new ConcurrentHashMap<>(100);
-    Map<Integer, Integer> run = new ConcurrentHashMap<>(100);
+    Map<Integer, Integer> base = new ConcurrentHashMap<>(TEST_NIGHTLY ? 1000 : 55);
+    Map<Integer, Integer> run = new ConcurrentHashMap<>(TEST_NIGHTLY ? 1000 : 55);
     for (int i = 0; i < N; i++) {
       base.put(i, i);
       run.put(i, i);
