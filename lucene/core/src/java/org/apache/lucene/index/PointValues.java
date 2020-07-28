@@ -30,7 +30,6 @@ import org.apache.lucene.document.LatLonPoint;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.bkd.BKDConfig;
-import org.apache.lucene.util.bkd.BKDWriter;
 
 /** 
  * Access to indexed numeric values.
