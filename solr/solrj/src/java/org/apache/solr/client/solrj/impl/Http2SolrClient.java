@@ -264,39 +264,38 @@ public class Http2SolrClient extends SolrClient {
   public void close() {
     closeTracker.close();
 
-    if (httpClientExecutor != null) {
-      try {
-        httpClientExecutor.prepareToStop();
-      } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
-        throw new RuntimeException(e);
-      }
-    }
-    // we wait for async requests, so far devs don't want to give sugar for this
-    asyncTracker.waitForCompleteFinal();
-    if (httpClientExecutor != null) {
-      try {
-        httpClientExecutor.waitForStopping();
-      } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
-      }
-    }
     try (ParWork closer = new ParWork(this, true)) {
-
       if (closeClient) {
         closer.collect(() -> {
-            try {
-             // httpClient.setStopTimeout();
-             // httpClientExecutor.doStop();
-              httpClient.stop();
-            } catch (InterruptedException e) {
-              ParWork.propegateInterrupt(e);
-            } catch (Exception e) {
-              ParWork.propegateInterrupt(e);
-            }
+          try {
+            httpClient.stop();
+          } catch (InterruptedException e) {
+            ParWork.propegateInterrupt(e);
+          } catch (Exception e) {
+            ParWork.propegateInterrupt(e);
+          }
         });
       }
-     closer.addCollect("http2SolrClientClose");
+      closer.collect(() -> {
+        if (httpClientExecutor != null) {
+          try {
+            httpClientExecutor.prepareToStop();
+          } catch (Exception e) {
+            ParWork.propegateInterrupt(e);
+            throw new RuntimeException(e);
+          }
+        }
+        // we wait for async requests, so far devs don't want to give sugar for this
+        asyncTracker.waitForCompleteFinal();
+        if (httpClientExecutor != null) {
+          try {
+            httpClientExecutor.waitForStopping();
+          } catch (InterruptedException e) {
+            ParWork.propegateInterrupt(e);
+          }
+        }
+      });
+      closer.addCollect("httpClientExecutor");
     }
     assert ObjectReleaseTracker.release(this);
   }
