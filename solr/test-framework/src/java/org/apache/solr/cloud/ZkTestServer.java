@@ -399,12 +399,12 @@ public class ZkTestServer implements Closeable {
     //    if (zkDb != null) zkDb.clear();
         try (ParWork worker = new ParWork(this, true)) {
           worker.add("ZkTestInternals", () -> {
-                    cnxnFactory.shutdown();
-                    cnxnFactory.join();
-                    return cnxnFactory;
-                  }, ()->{
-            zooKeeperServer.shutdown(true);
-            return  zooKeeperServer;
+            zooKeeperServer.shutdown(false);
+            return zooKeeperServer;
+          }, () -> {
+            cnxnFactory.shutdown();
+            cnxnFactory.join();
+            return cnxnFactory;
           });
         }
       } finally {
@@ -523,7 +523,7 @@ public class ZkTestServer implements Closeable {
     zkServer.zooKeeperServer.setZKDatabase(zkDb);
   }
 
-  public void run() throws InterruptedException, IOException {
+  public synchronized void run() throws InterruptedException, IOException {
     run(false);
   }
 
@@ -608,6 +608,7 @@ public class ZkTestServer implements Closeable {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     } catch (InterruptedException e) {
       ParWork.propegateInterrupt(e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
   }
 
@@ -622,7 +623,11 @@ public class ZkTestServer implements Closeable {
       ParWork.propegateInterrupt("Exception trying to print zk layout to log on shutdown", e);
     }
     if (zkMonitoringFile != null && chRootClient != null && zkServer != null) {
-      writeZkMonitorFile();
+      try {
+        writeZkMonitorFile();
+      } catch (Exception e2) {
+        ParWork.propegateInterrupt("Exception trying to write zk layout to file on shutdown", e2);
+      }
     }
 
    // zooThread.interrupt();
