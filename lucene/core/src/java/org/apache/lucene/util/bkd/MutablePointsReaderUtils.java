@@ -99,7 +99,6 @@ public final class MutablePointsReaderUtils {
 
     final int start = sortedDim * config.bytesPerDim + commonPrefixLengths[sortedDim];
     final int dimEnd =  sortedDim * config.bytesPerDim + config.bytesPerDim;
-    final int dataEnd = config.packedIndexBytesLength + (config.numDims - config.numIndexDims) * config.bytesPerDim;
     // No need for a fancy radix sort here, this is called on the leaves only so
     // there are not many values to sort
     new IntroSorter() {
@@ -124,8 +123,8 @@ public final class MutablePointsReaderUtils {
         int cmp = Arrays.compareUnsigned(pivot.bytes, pivot.offset + start, pivot.offset + dimEnd, scratch2.bytes,
             scratch2.offset + start, scratch2.offset + dimEnd);
         if (cmp == 0) {
-          cmp = Arrays.compareUnsigned(pivot.bytes, pivot.offset + config.packedIndexBytesLength, pivot.offset + dataEnd,
-              scratch2.bytes, scratch2.offset + config.packedIndexBytesLength, scratch2.offset + dataEnd);
+          cmp = Arrays.compareUnsigned(pivot.bytes, pivot.offset + config.packedIndexBytesLength, pivot.offset + config.packedBytesLength,
+              scratch2.bytes, scratch2.offset + config.packedIndexBytesLength, scratch2.offset + config.packedBytesLength);
           if (cmp == 0) {
             cmp = pivotDoc - reader.getDocID(j);
           }
