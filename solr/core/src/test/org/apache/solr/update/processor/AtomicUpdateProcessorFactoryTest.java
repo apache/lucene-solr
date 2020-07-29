@@ -53,8 +53,13 @@ public class AtomicUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
       AddUpdateCommand cmd = new AddUpdateCommand(req);
       AtomicUpdateProcessorFactory factory = new AtomicUpdateProcessorFactory();
       factory.inform(h.getCore());
-      factory.getInstance(cmd.getReq(), new SolrQueryResponse(),
-          null).processAdd(cmd);
+      UpdateRequestProcessor proc = factory.getInstance(cmd.getReq(), new SolrQueryResponse(),
+              null);
+      try {
+        proc.processAdd(cmd);
+      } finally {
+        proc.close();
+      }
     } catch (SolrException e) {
       assertEquals("Unexpected param(s) for AtomicUpdateProcessor, invalid atomic op passed: 'delete'",
           e.getMessage());
@@ -72,8 +77,10 @@ public class AtomicUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
       cmd.solrDoc.addField("title", 1);
       AtomicUpdateProcessorFactory factory = new AtomicUpdateProcessorFactory();
       factory.inform(h.getCore());
-      factory.getInstance(cmd.getReq(), new SolrQueryResponse(),
-          null).processAdd(cmd);
+      UpdateRequestProcessor proc = factory.getInstance(cmd.getReq(), new SolrQueryResponse(),
+          null);
+      proc.processAdd(cmd);
+      proc.close();
     } catch (SolrException e) {
       assertEquals("Document passed with no unique field: 'id'", e.getMessage());
     }
@@ -100,10 +107,11 @@ public class AtomicUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
       cmd.solrDoc.addField("name_s", "Virat");
       cmd.solrDoc.addField("multiDefault", "Delhi");
 
-      h.getCore()
-          .getUpdateProcessorChain(params)
-          .createProcessor(cmd.getReq(), new SolrQueryResponse())
-          .processAdd(cmd);
+      UpdateRequestProcessor proc = h.getCore()
+              .getUpdateProcessorChain(params)
+              .createProcessor(cmd.getReq(), new SolrQueryResponse());
+      proc.processAdd(cmd);
+      proc.close();
     }
 
     assertU(commit());
@@ -150,10 +158,12 @@ public class AtomicUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
       cmd.solrDoc.addField("count_i", 20);
       cmd.solrDoc.addField("name_s", "Virat");
       cmd.solrDoc.addField("multiDefault", ".elh.");
-      h.getCore()
-          .getUpdateProcessorChain(params)
-          .createProcessor(cmd.getReq(), new SolrQueryResponse())
-          .processAdd(cmd);
+      UpdateRequestProcessor proc = h.getCore()
+              .getUpdateProcessorChain(params)
+              .createProcessor(cmd.getReq(), new SolrQueryResponse());
+      proc.processAdd(cmd);
+      proc.close();
+    
     }
 
     assertU(commit());
@@ -230,9 +240,11 @@ public class AtomicUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
             cmd.solrDoc.addField("cat", strings[index]);
             cmd.solrDoc.addField("int_i", index);
             SolrQueryResponse rsp = new SolrQueryResponse();
-            factory.getInstance(cmd.getReq(), new SolrQueryResponse(),
-                createDistributedUpdateProcessor(cmd.getReq(), rsp,
-                    createRunUpdateProcessor(cmd.getReq(), rsp, null))).processAdd(cmd);
+            UpdateRequestProcessor proc = factory.getInstance(cmd.getReq(), new SolrQueryResponse(),
+                    createDistributedUpdateProcessor(cmd.getReq(), rsp,
+                            createRunUpdateProcessor(cmd.getReq(), rsp, null)));
+            proc.processAdd(cmd);
+            proc.close();
           } catch (IOException e) {
           }
         }

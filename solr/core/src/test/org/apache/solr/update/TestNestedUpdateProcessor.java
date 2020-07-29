@@ -176,6 +176,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
 
     SolrInputDocument singularChild = (SolrInputDocument) docHierarchy.get("lonelyChild").getValue();
     assertEquals("SolrInputDocument(fields: [id=5, name_s=Loner, _nest_path_=/lonelyChild#, _nest_parent_=1])", singularChild.toString());
+    nestedUpdate.close();
   }
 
   @Test
@@ -193,6 +194,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
     SolrInputDocument idLessChild = (SolrInputDocument)((SolrInputDocument) children.get(1)).get(childKey).getValue();
     assertTrue("Id less child did not get an Id", idLessChild.containsKey("id"));
     assertEquals("Id less child was assigned an unexpected id", expectedId, idLessChild.getFieldValue("id").toString());
+    nestedUpdate.close();
   }
 
   @Test

@@ -68,47 +68,53 @@ public class SkipExistingDocumentsProcessorFactoryTest {
   }
 
   @Test(expected=SolrException.class)
-  public void testExceptionIfNextProcessorIsNull() {
+  public void testExceptionIfNextProcessorIsNull() throws IOException {
     SkipExistingDocumentsProcessorFactory factory = new SkipExistingDocumentsProcessorFactory();
     NamedList<Object> initArgs = new NamedList<>();
     factory.init(initArgs);
 
-    factory.getInstance(defaultRequest, new SolrQueryResponse(), null);
+    factory.getInstance(defaultRequest, new SolrQueryResponse(), null).close();
   }
 
   @Test(expected=SolrException.class)
-  public void testExceptionIfNextProcessorNotDistributed() {
+  public void testExceptionIfNextProcessorNotDistributed() throws IOException {
     SkipExistingDocumentsProcessorFactory factory = new SkipExistingDocumentsProcessorFactory();
     NamedList<Object> initArgs = new NamedList<>();
     factory.init(initArgs);
     UpdateRequestProcessor next = new BufferingRequestProcessor(null);
-
-    factory.getInstance(defaultRequest, new SolrQueryResponse(), next);
+    try {
+      factory.getInstance(defaultRequest, new SolrQueryResponse(), next).close();
+    } finally {
+      next.close();
+    }
   }
 
   @Test
-  public void testNoExceptionIfNextProcessorIsDistributed() {
+  public void testNoExceptionIfNextProcessorIsDistributed() throws IOException {
     SkipExistingDocumentsProcessorFactory factory = new SkipExistingDocumentsProcessorFactory();
     NamedList<Object> initArgs = new NamedList<>();
     factory.init(initArgs);
     UpdateRequestProcessor next = Mockito.mock(DistributedUpdateProcessor.class);
 
-    factory.getInstance(defaultRequest, new SolrQueryResponse(), next);
+    factory.getInstance(defaultRequest, new SolrQueryResponse(), next).close();
+    next.close();
   }
 
   @Test
-  public void testNoExceptionIfNextNextProcessorIsDistributed() {
+  public void testNoExceptionIfNextNextProcessorIsDistributed() throws IOException {
     SkipExistingDocumentsProcessorFactory factory = new SkipExistingDocumentsProcessorFactory();
     NamedList<Object> initArgs = new NamedList<>();
     factory.init(initArgs);
     UpdateRequestProcessor distProcessor = Mockito.mock(DistributedUpdateProcessor.class);
     UpdateRequestProcessor next = new BufferingRequestProcessor(distProcessor);
 
-    factory.getInstance(defaultRequest, new SolrQueryResponse(), next);
+    factory.getInstance(defaultRequest, new SolrQueryResponse(), next).close();
+    next.close();
+    distProcessor.close();
   }
 
   @Test
-  public void testSkipInsertsAndUpdatesDefaultToTrueIfNotConfigured() {
+  public void testSkipInsertsAndUpdatesDefaultToTrueIfNotConfigured() throws IOException {
     SkipExistingDocumentsProcessorFactory factory = new SkipExistingDocumentsProcessorFactory();
     NamedList<Object> initArgs = new NamedList<>();
     factory.init(initArgs);
@@ -117,10 +123,12 @@ public class SkipExistingDocumentsProcessorFactoryTest {
     SkipExistingDocumentsUpdateProcessor processor = factory.getInstance(defaultRequest, new SolrQueryResponse(), next);
     assertTrue("Expected skipInsertIfExists to be true", processor.isSkipInsertIfExists());
     assertTrue("Expected skipUpdateIfMissing to be true", processor.isSkipUpdateIfMissing());
+    next.close();
+    processor.close();
   }
 
   @Test
-  public void testSkipInsertsFalseIfInInitArgs() {
+  public void testSkipInsertsFalseIfInInitArgs() throws IOException {
     SkipExistingDocumentsProcessorFactory factory = new SkipExistingDocumentsProcessorFactory();
     NamedList<Object> initArgs = new NamedList<>();
     initArgs.add("skipInsertIfExists", false);
@@ -130,10 +138,12 @@ public class SkipExistingDocumentsProcessorFactoryTest {
     SkipExistingDocumentsUpdateProcessor processor = factory.getInstance(defaultRequest, new SolrQueryResponse(), next);
     assertFalse("Expected skipInsertIfExists to be false", processor.isSkipInsertIfExists());
     assertTrue("Expected skipUpdateIfMissing to be true", processor.isSkipUpdateIfMissing());
+    processor.close();
+    next.close();
   }
 
   @Test
-  public void testSkipUpdatesFalseIfInInitArgs() {
+  public void testSkipUpdatesFalseIfInInitArgs() throws IOException {
     SkipExistingDocumentsProcessorFactory factory = new SkipExistingDocumentsProcessorFactory();
     NamedList<Object> initArgs = new NamedList<>();
     initArgs.add("skipUpdateIfMissing", false);
@@ -143,10 +153,12 @@ public class SkipExistingDocumentsProcessorFactoryTest {
     SkipExistingDocumentsUpdateProcessor processor = factory.getInstance(defaultRequest, new SolrQueryResponse(), next);
     assertTrue("Expected skipInsertIfExists to be true", processor.isSkipInsertIfExists());
     assertFalse("Expected skipUpdateIfMissing to be false", processor.isSkipUpdateIfMissing());
+    next.close();
+    processor.close();
   }
 
   @Test
-  public void testSkipBothFalseIfInInitArgs() {
+  public void testSkipBothFalseIfInInitArgs() throws IOException {
     SkipExistingDocumentsProcessorFactory factory = new SkipExistingDocumentsProcessorFactory();
     NamedList<Object> initArgs = new NamedList<>();
     initArgs.add("skipInsertIfExists", false);
@@ -157,10 +169,12 @@ public class SkipExistingDocumentsProcessorFactoryTest {
     SkipExistingDocumentsUpdateProcessor processor = factory.getInstance(defaultRequest, new SolrQueryResponse(), next);
     assertFalse("Expected skipInsertIfExists to be false", processor.isSkipInsertIfExists());
     assertFalse("Expected skipUpdateIfMissing to be false", processor.isSkipUpdateIfMissing());
+    next.close();
+    processor.close();
   }
 
   @Test
-  public void testSkipInsertsFalseIfInitArgsTrueButFalseStringInRequest() {
+  public void testSkipInsertsFalseIfInitArgsTrueButFalseStringInRequest() throws IOException {
     SkipExistingDocumentsProcessorFactory factory = new SkipExistingDocumentsProcessorFactory();
     NamedList<Object> initArgs = new NamedList<>();
     initArgs.add("skipInsertIfExists", true);
@@ -173,10 +187,12 @@ public class SkipExistingDocumentsProcessorFactoryTest {
     SkipExistingDocumentsUpdateProcessor processor = factory.getInstance(req, new SolrQueryResponse(), next);
     assertFalse("Expected skipInsertIfExists to be false", processor.isSkipInsertIfExists());
     assertTrue("Expected skipUpdateIfMissing to be true", processor.isSkipUpdateIfMissing());
+    next.close();
+    processor.close();
   }
 
   @Test
-  public void testSkipUpdatesFalseIfInitArgsTrueButFalseBooleanInRequest() {
+  public void testSkipUpdatesFalseIfInitArgsTrueButFalseBooleanInRequest() throws IOException {
     SkipExistingDocumentsProcessorFactory factory = new SkipExistingDocumentsProcessorFactory();
     NamedList<Object> initArgs = new NamedList<>();
     initArgs.add("skipUpdateIfMissing", true);
@@ -189,10 +205,12 @@ public class SkipExistingDocumentsProcessorFactoryTest {
     SkipExistingDocumentsUpdateProcessor processor = factory.getInstance(req, new SolrQueryResponse(), next);
     assertTrue("Expected skipInsertIfExists to be true", processor.isSkipInsertIfExists());
     assertFalse("Expected skipUpdateIfMissing to be false", processor.isSkipUpdateIfMissing());
+    next.close();
+    processor.close();
   }
 
   @Test
-  public void testSkipUpdatesTrueIfInitArgsFalseButTrueStringInRequest() {
+  public void testSkipUpdatesTrueIfInitArgsFalseButTrueStringInRequest() throws IOException {
     SkipExistingDocumentsProcessorFactory factory = new SkipExistingDocumentsProcessorFactory();
     NamedList<Object> initArgs = new NamedList<>();
     initArgs.add("skipInsertIfExists", true);
@@ -206,6 +224,8 @@ public class SkipExistingDocumentsProcessorFactoryTest {
     SkipExistingDocumentsUpdateProcessor processor = factory.getInstance(req, new SolrQueryResponse(), next);
     assertTrue("Expected skipInsertIfExists to be true", processor.isSkipInsertIfExists());
     assertTrue("Expected skipUpdateIfMissing to be true", processor.isSkipUpdateIfMissing());
+    next.close();
+    processor.close();
   }
 
 
@@ -214,8 +234,9 @@ public class SkipExistingDocumentsProcessorFactoryTest {
   @Test
   public void testSkippableInsertIsNotSkippedIfNotLeader() throws IOException {
     UpdateRequestProcessor next = Mockito.mock(DistributedUpdateProcessor.class);
+    SkipExistingDocumentsUpdateProcessor proc = new SkipExistingDocumentsUpdateProcessor(defaultRequest, next, true, true);
     SkipExistingDocumentsUpdateProcessor processor
-            = Mockito.spy(new SkipExistingDocumentsUpdateProcessor(defaultRequest, next, true, true));
+            = Mockito.spy(proc);
 
     AddUpdateCommand cmd = createInsertUpdateCmd(defaultRequest);
     doReturn(false).when(processor).isLeader(cmd);
@@ -223,13 +244,16 @@ public class SkipExistingDocumentsProcessorFactoryTest {
 
     processor.processAdd(cmd);
     verify(next).processAdd(cmd);
+    processor.close();
+    proc.close();
   }
 
   @Test
   public void testSkippableInsertIsNotSkippedIfSkipInsertsFalse() throws IOException {
     UpdateRequestProcessor next = Mockito.mock(DistributedUpdateProcessor.class);
+    SkipExistingDocumentsUpdateProcessor proc2 = new SkipExistingDocumentsUpdateProcessor(defaultRequest, next, false, false);
     SkipExistingDocumentsUpdateProcessor processor
-            = Mockito.spy(new SkipExistingDocumentsUpdateProcessor(defaultRequest, next, false, false));
+            = Mockito.spy(proc2);
 
     AddUpdateCommand cmd = createInsertUpdateCmd(defaultRequest);
     doReturn(true).when(processor).isLeader(cmd);
@@ -237,13 +261,16 @@ public class SkipExistingDocumentsProcessorFactoryTest {
 
     processor.processAdd(cmd);
     verify(next).processAdd(cmd);
+    processor.close();
+    proc2.close();
   }
 
   @Test
   public void testSkippableInsertIsSkippedIfSkipInsertsTrue() throws IOException {
     UpdateRequestProcessor next = Mockito.mock(DistributedUpdateProcessor.class);
+    SkipExistingDocumentsUpdateProcessor proc = new SkipExistingDocumentsUpdateProcessor(defaultRequest, next, true, false);
     SkipExistingDocumentsUpdateProcessor processor
-            = Mockito.spy(new SkipExistingDocumentsUpdateProcessor(defaultRequest, next, true, false));
+            = Mockito.spy(proc);
 
     AddUpdateCommand cmd = createInsertUpdateCmd(defaultRequest);
     doReturn(true).when(processor).isLeader(cmd);
@@ -251,13 +278,16 @@ public class SkipExistingDocumentsProcessorFactoryTest {
 
     processor.processAdd(cmd);
     verify(next, never()).processAdd(cmd);
+    processor.close();
+    proc.close();
   }
 
   @Test
   public void testNonSkippableInsertIsNotSkippedIfSkipInsertsTrue() throws IOException {
     UpdateRequestProcessor next = Mockito.mock(DistributedUpdateProcessor.class);
+    SkipExistingDocumentsUpdateProcessor proc = new SkipExistingDocumentsUpdateProcessor(defaultRequest, next, true, false);
     SkipExistingDocumentsUpdateProcessor processor
-            = Mockito.spy(new SkipExistingDocumentsUpdateProcessor(defaultRequest, next, true, false));
+            = Mockito.spy(proc);
 
     AddUpdateCommand cmd = createInsertUpdateCmd(defaultRequest);
     doReturn(true).when(processor).isLeader(cmd);
@@ -265,13 +295,16 @@ public class SkipExistingDocumentsProcessorFactoryTest {
 
     processor.processAdd(cmd);
     verify(next).processAdd(cmd);
+    processor.close();
+    proc.close();
   }
 
   @Test
   public void testSkippableUpdateIsNotSkippedIfNotLeader() throws IOException {
     UpdateRequestProcessor next = Mockito.mock(DistributedUpdateProcessor.class);
+    SkipExistingDocumentsUpdateProcessor proc = new SkipExistingDocumentsUpdateProcessor(defaultRequest, next, true, true);
     SkipExistingDocumentsUpdateProcessor processor
-            = Mockito.spy(new SkipExistingDocumentsUpdateProcessor(defaultRequest, next, true, true));
+            = Mockito.spy(proc);
 
     AddUpdateCommand cmd = createAtomicUpdateCmd(defaultRequest);
     doReturn(false).when(processor).isLeader(cmd);
@@ -279,13 +312,16 @@ public class SkipExistingDocumentsProcessorFactoryTest {
 
     processor.processAdd(cmd);
     verify(next).processAdd(cmd);
+    processor.close();
+    proc.close();
   }
 
   @Test
   public void testSkippableUpdateIsNotSkippedIfSkipUpdatesFalse() throws IOException {
     UpdateRequestProcessor next = Mockito.mock(DistributedUpdateProcessor.class);
+    SkipExistingDocumentsUpdateProcessor proc = new SkipExistingDocumentsUpdateProcessor(defaultRequest, next, false, false);
     SkipExistingDocumentsUpdateProcessor processor
-            = Mockito.spy(new SkipExistingDocumentsUpdateProcessor(defaultRequest, next, false, false));
+            = Mockito.spy(proc);
 
     AddUpdateCommand cmd = createAtomicUpdateCmd(defaultRequest);
     doReturn(true).when(processor).isLeader(cmd);
@@ -293,13 +329,16 @@ public class SkipExistingDocumentsProcessorFactoryTest {
 
     processor.processAdd(cmd);
     verify(next).processAdd(cmd);
+    processor.close();
+    proc.close();
   }
 
   @Test
   public void testSkippableUpdateIsSkippedIfSkipUpdatesTrue() throws IOException {
     UpdateRequestProcessor next = Mockito.mock(DistributedUpdateProcessor.class);
+    SkipExistingDocumentsUpdateProcessor proc = new SkipExistingDocumentsUpdateProcessor(defaultRequest, next, false, true);
     SkipExistingDocumentsUpdateProcessor processor
-            = Mockito.spy(new SkipExistingDocumentsUpdateProcessor(defaultRequest, next, false, true));
+            = Mockito.spy(proc);
 
     AddUpdateCommand cmd = createAtomicUpdateCmd(defaultRequest);
     doReturn(true).when(processor).isLeader(cmd);
@@ -307,13 +346,16 @@ public class SkipExistingDocumentsProcessorFactoryTest {
 
     processor.processAdd(cmd);
     verify(next, never()).processAdd(cmd);
+    processor.close();
+    proc.close();
   }
 
   @Test
   public void testNonSkippableUpdateIsNotSkippedIfSkipUpdatesTrue() throws IOException {
     UpdateRequestProcessor next = Mockito.mock(DistributedUpdateProcessor.class);
+    SkipExistingDocumentsUpdateProcessor proc = new SkipExistingDocumentsUpdateProcessor(defaultRequest, next, false, true);
     SkipExistingDocumentsUpdateProcessor processor
-            = Mockito.spy(new SkipExistingDocumentsUpdateProcessor(defaultRequest, next, false, true));
+            = Mockito.spy(proc);
 
     AddUpdateCommand cmd = createAtomicUpdateCmd(defaultRequest);
     doReturn(true).when(processor).isLeader(cmd);
@@ -321,6 +363,8 @@ public class SkipExistingDocumentsProcessorFactoryTest {
 
     processor.processAdd(cmd);
     verify(next).processAdd(cmd);
+    processor.close();
+    proc.close();
   }
 
   private AddUpdateCommand createInsertUpdateCmd(SolrQueryRequest req) {

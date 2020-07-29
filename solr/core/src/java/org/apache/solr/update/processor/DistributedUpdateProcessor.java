@@ -1334,4 +1334,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       return sb.toString();
     }
   }
+
+  @Override
+  public void doClose() {
+    super.doClose();
+  }
 }

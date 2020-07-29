@@ -84,6 +84,7 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     assertLang("sk", "id", "18sk", "name", "Slovakian", "subject", "Boli vytvorené dva národné parlamenty - Česká národná rada a Slovenská národná rada a spoločný jednokomorový česko-slovenský parlament bol premenovaný z Národného zhromaždenia na Federálne zhromaždenie s dvoma komorami - Snemovňou ľudu a Snemovňu národov.");
     assertLang("sl", "id", "19sl", "name", "Slovenian", "subject", "Slovenska Wikipedija je različica spletne enciklopedije Wikipedije v slovenskem jeziku. Projekt slovenske Wikipedije se je začel 26. februarja 2002 z ustanovitvijo njene spletne strani, njen pobudnik pa je bil uporabnik Jani Melik.");
     assertLang("uk", "id", "20uk", "name", "Ukrainian", "subject", "Народно-господарський комплекс країни включає такі види промисловості як важке машинобудування, чорна та кольорова металургія, суднобудування, виробництво автобусів, легкових та вантажних автомобілів, тракторів та іншої сільськогосподарської техніки, тепловозів, верстатів, турбін, авіаційних двигунів та літаків, обладнання для електростанцій, нафто-газової та хімічної промисловості тощо. Крім того, Україна є потужним виробником електроенергії. Україна має розвинуте сільське господарство і займає одне з провідних місць серед експортерів деяких видів сільськогосподарської продукції і продовольства (зокрема, соняшникової олії).");
+    liProcessor.close();
   }
     
   @Test
@@ -102,15 +103,18 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
 
     // Test that enforceSchema correctly catches illegal field and returns null
     parameters.set("langid.enforceSchema", "true");
+    liProcessor.close();
     liProcessor = createLangIdProcessor(parameters);
     assertEquals(null, liProcessor.getMappedField("inputfield", "sv"));
 
     // Prove support for other mapping regex, still with enforceSchema=true
     parameters.add("langid.map.pattern", "text_(.*?)_field");
     parameters.add("langid.map.replace", "$1_{lang}_s");
+    liProcessor.close();
     liProcessor = createLangIdProcessor(parameters);
     assertEquals("title_no_s", liProcessor.getMappedField("text_title_field", "no"));
     assertEquals("body_sv_s", liProcessor.getMappedField("text_body_field", "sv"));
+    liProcessor.close();
   }
 
   @Test
@@ -127,6 +131,7 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     List<DetectedLanguage> langs = new ArrayList<>();
     langs.add(new DetectedLanguage("zh_cn", 0.8));
     assertEquals("zh", liProcessor.resolveLanguage(langs, "NA"));
+    liProcessor.close();
   }
 
   @Test
@@ -149,6 +154,7 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     assertEquals("no", process(doc).getFieldValue("language"));
     assertEquals("no", process(doc).getFieldValue("languages"));
     assertNotNull(process(doc).getFieldValue("text_no"));
+    liProcessor.close();
   }
 
   /**
@@ -175,6 +181,7 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     assertEquals("no", process(doc).getFieldValue("language"));
     assertEquals("no", process(doc).getFieldValue("languages"));
     assertNotNull(process(doc).getFieldValue("text_multivalue_no"));
+    liProcessor.close();
   }
 
   /**
@@ -201,6 +208,7 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     assertEquals("no", process(doc).getFieldValue("language"));
     assertEquals("no", process(doc).getFieldValue("languages"));
     assertNotNull(process(doc).getFieldValue("text_multivalue_no"));
+    liProcessor.close();
   }
 
   @Test
@@ -214,6 +222,7 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     
     doc = tooShortDoc();
     assertEquals("", process(doc).getFieldValue("language"));
+    liProcessor.close();
   }
 
   @Test
@@ -227,6 +236,7 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
 
     doc = new SolrInputDocument();
     assertEquals("", process(doc).getFieldValue("language"));
+    liProcessor.close();
   }
 
   @Test
@@ -247,7 +257,8 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
 
     // Verify fallback to fallback value since no fallback fields exist
     doc = tooShortDoc();
-    assertEquals("fbVal", process(doc).getFieldValue("language"));  
+    assertEquals("fbVal", process(doc).getFieldValue("language"));
+    liProcessor.close();
   }
   
   @Test
@@ -270,7 +281,8 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     // One detected language under default threshold
     langs = new ArrayList<>();
     langs.add(new DetectedLanguage("under", 0.1));
-    assertEquals("fallback", liProcessor.resolveLanguage(langs, "fallback"));    
+    assertEquals("fallback", liProcessor.resolveLanguage(langs, "fallback"));
+    liProcessor.close();
   }
   
   @Test
@@ -292,6 +304,7 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     
     // keepOrig true
     parameters.set("langid.map.keepOrig", "true");
+    liProcessor.close();
     liProcessor = createLangIdProcessor(parameters);
 
     SolrInputDocument mappedKeepOrig = process(englishDoc());
@@ -302,6 +315,7 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     // keepOrig and map individual
     parameters.set("langid.map.individual", "true");
     parameters.set("langid.fl", "text,text2");
+    liProcessor.close();
     liProcessor = createLangIdProcessor(parameters);
 
     SolrInputDocument mappedIndividual = process(languagePerFieldDoc());
@@ -310,6 +324,7 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     assertTrue(mappedIndividual.containsKey("text2_ru"));
     assertTrue(mappedIndividual.containsKey("text2"));
     assertEquals(languagePerFieldDoc().getFieldValue("text"), mappedIndividual.getFieldValue("text_en"));
+    liProcessor.close();
   }
 
   @Test
@@ -326,6 +341,7 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     SolrInputDocument mappedIndividual = process(languagePerFieldDoc());
     assertTrue(mappedIndividual.containsKey("text_en"));
     assertTrue(mappedIndividual.containsKey("text2_ru"));
+    liProcessor.close();
   }
   
   // Various utility methods

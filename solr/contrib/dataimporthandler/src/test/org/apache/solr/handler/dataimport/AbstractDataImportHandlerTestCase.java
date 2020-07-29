@@ -339,6 +339,15 @@ public abstract class AbstractDataImportHandlerTestCase extends
       reset();
     }
 
+    public void doClose() {
+      super.doClose();
+      try {
+        next.close();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
+
     @Override
     public void finish() throws IOException {
       finishCalled = true;

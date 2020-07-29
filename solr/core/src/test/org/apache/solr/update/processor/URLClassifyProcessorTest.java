@@ -23,6 +23,7 @@ import java.net.URISyntaxException;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.update.AddUpdateCommand;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -34,6 +35,12 @@ public class URLClassifyProcessorTest extends SolrTestCaseJ4 {
   public static void initTest() {
     classifyProcessor =
       (URLClassifyProcessor) new URLClassifyProcessorFactory().getInstance(null, null, null);
+  }
+
+  @AfterClass
+  public static void afterURLClassifyProcessorTest() throws IOException {
+    classifyProcessor.close();
+    classifyProcessor = null;
   }
   
   @Test

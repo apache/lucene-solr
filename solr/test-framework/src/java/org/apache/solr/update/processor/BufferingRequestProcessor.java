@@ -61,4 +61,9 @@ public class BufferingRequestProcessor extends UpdateRequestProcessor
   public void finish() throws IOException {
     // nothing?    
   }
+
+  @Override
+  public void doClose() {
+    super.doClose();
+  }
 }

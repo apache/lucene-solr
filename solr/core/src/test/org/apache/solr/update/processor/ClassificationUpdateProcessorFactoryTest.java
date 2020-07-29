@@ -26,6 +26,7 @@ import org.junit.Test;
 
 import static org.hamcrest.core.Is.is;
 import static org.mockito.Mockito.mock;
+import java.io.IOException;
 
 /**
  * Tests for {@link ClassificationUpdateProcessorFactory}
@@ -113,8 +114,8 @@ public class ClassificationUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     try {
       cFactoryToTest.init(args);
       /* parsing failure happens because of the mocks, fine enough to check a proper exception propagation */
-      cFactoryToTest.getInstance(mockRequest, mockResponse, mockProcessor);
-    } catch (SolrException e) {
+      cFactoryToTest.getInstance(mockRequest, mockResponse, mockProcessor).close();
+    } catch (SolrException | IOException e) {
       assertEquals("Classification UpdateProcessor Training Filter Query: 'not supported query' is not supported", e.getMessage());
     }
   }

@@ -224,6 +224,7 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
 
   @Override
   protected void doClose() {
+    super.doClose();
     try {
       cmdDistrib.close();
     } finally {

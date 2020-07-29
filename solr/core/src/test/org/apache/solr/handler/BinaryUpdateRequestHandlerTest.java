@@ -66,5 +66,6 @@ public class BinaryUpdateRequestHandlerTest extends SolrTestCaseJ4 {
       assertEquals(false, add.overwrite);
       assertEquals(100, add.commitWithin);
     }
+    p.close();
   }
 }

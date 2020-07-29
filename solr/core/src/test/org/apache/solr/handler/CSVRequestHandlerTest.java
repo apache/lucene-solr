@@ -49,5 +49,6 @@ public class CSVRequestHandlerTest extends SolrTestCaseJ4 {
     assertEquals(200, add.commitWithin);
 
     req.close();
+    p.close();
   }
 }

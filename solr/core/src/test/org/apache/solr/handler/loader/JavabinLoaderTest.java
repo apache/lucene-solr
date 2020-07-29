@@ -87,5 +87,6 @@ public class JavabinLoaderTest extends SolrTestCaseJ4 {
 
     // last doc should have the flag set
     assertTrue(mockUpdateProcessor.addCommands.get(batch.size()-1).isLastDocInBatch);
+    mockUpdateProcessor.close();
   }
 }

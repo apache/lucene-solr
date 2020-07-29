@@ -208,6 +208,7 @@ public class DataImportHandler extends RequestHandlerBase implements
             importer.runCmd(requestParams, sw);
           }
         }
+        processor.close();
       } else if (DataImporter.RELOAD_CONF_CMD.equals(command)) { 
         if(importer.maybeReloadConfiguration(requestParams, defaultParams)) {
           message = DataImporter.MSG.CONFIG_RELOADED;

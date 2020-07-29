@@ -52,7 +52,6 @@ public abstract class ContentStreamHandlerBase extends RequestHandlerBase {
         req.getCore().getUpdateProcessorChain(params);
 
     UpdateRequestProcessor processor = processorChain.createProcessor(req, rsp);
-
     try {
       ContentStreamLoader documentLoader = newLoader(req, processor);
 

@@ -402,7 +402,7 @@ public class SolrTestCase extends LuceneTestCase {
         assertNull(orr, orr);
       }
     } finally {
-      ObjectReleaseTracker.OBJECTS.clear();
+      ObjectReleaseTracker.clear();
       TestInjection.reset();
     }
     try {

@@ -52,8 +52,12 @@ public class IgnoreLargeDocumentProcessorFactoryTest extends SolrTestCase {
     factory = new IgnoreLargeDocumentProcessorFactory();
     factory.init(args);
     UpdateRequestProcessor requestProcessor = factory.getInstance(null, null, null);
-    requestProcessor.processAdd(getUpdate(1024));
-
+    try {
+      requestProcessor.processAdd(getUpdate(1024));
+    } finally {
+      requestProcessor.close();
+    }
+    processor.close();
   }
 
   public AddUpdateCommand getUpdate(int size) {

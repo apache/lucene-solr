@@ -108,6 +108,7 @@ public class XmlUpdateRequestHandlerTest extends SolrTestCaseJ4 {
     assertEquals(100, add.commitWithin);
     assertEquals(false, add.overwrite);
     req.close();
+    p.close();
   }
   
   @Test
@@ -134,6 +135,7 @@ public class XmlUpdateRequestHandlerTest extends SolrTestCaseJ4 {
     AddUpdateCommand add = p.addCommands.get(0);
     assertEquals("12345", add.solrDoc.getField("id").getFirstValue());
     req.close();
+    p.close();
   }
 
   public void testNamedEntity() throws Exception {
@@ -192,6 +194,7 @@ public class XmlUpdateRequestHandlerTest extends SolrTestCaseJ4 {
       loader.load(req(), new SolrQueryResponse(), new ContentStreamBase.StringStream(xml), p);
 
       p.assertNoCommandsPending();
+      p.close();
     }
 
     private static class MockUpdateRequestProcessor extends UpdateRequestProcessor {

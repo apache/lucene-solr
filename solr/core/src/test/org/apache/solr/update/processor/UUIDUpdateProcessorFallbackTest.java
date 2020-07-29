@@ -130,7 +130,9 @@ public class UUIDUpdateProcessorFallbackTest extends SolrTestCaseJ4 {
     cmd.solrDoc = new SolrInputDocument();
     cmd.solrDoc.addField("random_s", "random_val");
 
-    processorFactory.getInstance(req, rsp, null).processAdd(cmd);
+    UpdateRequestProcessor proc = processorFactory.getInstance(req, rsp, null);
+    proc.processAdd(cmd);
+    proc.close();
     assertNotNull(cmd.solrDoc);
     assertNotNull(cmd.solrDoc.get("id"));
     assertNotNull(cmd.solrDoc.get("id").getValue());
@@ -198,7 +200,7 @@ public class UUIDUpdateProcessorFallbackTest extends SolrTestCaseJ4 {
 
       UpdateRequestProcessor processor = pc.createProcessor(req, rsp);
       processor.processAdd(cmd);
-
+      processor.close();
       return cmd.solrDoc;
     } finally {
       SolrRequestInfo.clearRequestInfo();

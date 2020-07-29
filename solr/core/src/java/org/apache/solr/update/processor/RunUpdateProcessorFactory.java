@@ -120,6 +120,11 @@ public class RunUpdateProcessorFactory extends UpdateRequestProcessorFactory {
       }
       super.finish();
     }
+
+    @Override
+    public void doClose() {
+      super.doClose();
+    }
   }
 }
 

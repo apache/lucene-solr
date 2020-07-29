@@ -72,8 +72,9 @@ public class TemplateUpdateProcessorTest extends SolrCloudTestCase {
     cmd.solrDoc = new SolrInputDocument();
     cmd.solrDoc.addField("firstName", "Tom");
     cmd.solrDoc.addField("lastName", "Cruise");
-
-    new TemplateUpdateProcessorFactory().getInstance(cmd.getReq(), new SolrQueryResponse(), null).processAdd(cmd);
+    UpdateRequestProcessor proc = new TemplateUpdateProcessorFactory().getInstance(cmd.getReq(), new SolrQueryResponse(), null);
+    proc.processAdd(cmd);
+    proc.close();
     assertEquals("Tom_Cruise", cmd.solrDoc.getFieldValue("id"));
     assertEquals("Cruise_Tom", cmd.solrDoc.getFieldValue("another"));
     assertEquals("Cruise_", cmd.solrDoc.getFieldValue("missing"));
@@ -95,7 +96,7 @@ public class TemplateUpdateProcessorTest extends SolrCloudTestCase {
     QueryResponse rsp = cluster.getSolrClient().query("c",
         new ModifiableSolrParams().add("q","id:1"));
     assertEquals( "key_1", rsp.getResults().get(0).getFieldValue("x_s"));
-
+    proc.close();
 
   }
 }

@@ -125,5 +125,6 @@ public class XsltUpdateRequestHandlerTest extends SolrTestCaseJ4 {
     assertEquals("12345", add.solrDoc.getField("id").getFirstValue());
     assertEquals("zzz", add.solrDoc.getField("foo_s").getFirstValue());
     req.close();
+    p.close();
   }  
 }

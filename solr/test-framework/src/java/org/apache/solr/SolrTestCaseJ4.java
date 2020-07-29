@@ -1067,6 +1067,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     req.setContentStreams(streams);
     handler.handleRequestBody(req, new SolrQueryResponse());
     req.close();
+    handler.close();
   }
 
   /**

@@ -110,6 +110,7 @@ public class ClassificationUpdateProcessorTest extends SolrTestCaseJ4 {
     updateProcessorToTest.processAdd(update);
 
     assertThat(unseenDocument1.getFieldValue(PREDICTED_CLASS),is("class2"));
+    updateProcessorToTest.close();
   }
 
   @Test
@@ -130,6 +131,7 @@ public class ClassificationUpdateProcessorTest extends SolrTestCaseJ4 {
     updateProcessorToTest.processAdd(update);
 
     assertThat(unseenDocument1.getFieldValue(TRAINING_CLASS),is("class2"));
+    updateProcessorToTest.close();
   }
 
   @Test
@@ -152,6 +154,7 @@ public class ClassificationUpdateProcessorTest extends SolrTestCaseJ4 {
     updateProcessorToTest.processAdd(update);
 
     assertThat(unseenDocument1.getFieldValue(TRAINING_CLASS),is("class2"));
+    updateProcessorToTest.close();
   }
 
   @Test
@@ -172,6 +175,7 @@ public class ClassificationUpdateProcessorTest extends SolrTestCaseJ4 {
     updateProcessorToTest.processAdd(update);
 
     assertThat(unseenDocument1.getFieldValue(TRAINING_CLASS),is("class1"));
+    updateProcessorToTest.close();
   }
 
   @Test
@@ -194,6 +198,7 @@ public class ClassificationUpdateProcessorTest extends SolrTestCaseJ4 {
     updateProcessorToTest.processAdd(update);
 
     assertThat(unseenDocument1.getFieldValue(TRAINING_CLASS),is("class3"));
+    updateProcessorToTest.close();
   }
 
   @Test
@@ -216,6 +221,7 @@ public class ClassificationUpdateProcessorTest extends SolrTestCaseJ4 {
     updateProcessorToTest.processAdd(update);
 
     assertThat(unseenDocument1.getFieldValue(TRAINING_CLASS),is("class2"));
+    updateProcessorToTest.close();
   }
 
   @Test
@@ -239,6 +245,7 @@ public class ClassificationUpdateProcessorTest extends SolrTestCaseJ4 {
     ArrayList<Object> assignedClasses = (ArrayList)unseenDocument1.getFieldValues(TRAINING_CLASS);
     assertThat(assignedClasses.get(0),is("class2"));
     assertThat(assignedClasses.get(1),is("class1"));
+    updateProcessorToTest.close();
   }
 
   @Test
@@ -263,6 +270,7 @@ public class ClassificationUpdateProcessorTest extends SolrTestCaseJ4 {
     assertThat(assignedClasses.size(),is(2));
     assertThat(assignedClasses.get(0),is("class2"));
     assertThat(assignedClasses.get(1),is("class1"));
+    updateProcessorToTest.close();
   }
 
   @Test
@@ -287,6 +295,7 @@ public class ClassificationUpdateProcessorTest extends SolrTestCaseJ4 {
     assertThat(assignedClasses.size(),is(2));
     assertThat(assignedClasses.get(0),is("class2"));
     assertThat(assignedClasses.get(1),is("class1"));
+    updateProcessorToTest.close();
   }
 
   @Test
@@ -313,6 +322,7 @@ public class ClassificationUpdateProcessorTest extends SolrTestCaseJ4 {
     assertThat(assignedClasses.size(),is(2));
     assertThat(assignedClasses.get(0),is("class4"));
     assertThat(assignedClasses.get(1),is("class6"));
+    updateProcessorToTest.close();
   }
 
   @Test
@@ -339,6 +349,7 @@ public class ClassificationUpdateProcessorTest extends SolrTestCaseJ4 {
     assertThat(assignedClasses.size(),is(2));
     assertThat(assignedClasses.get(0),is("class4"));
     assertThat(assignedClasses.get(1),is("class6"));
+    updateProcessorToTest.close();
   }
 
   private ClassificationUpdateProcessorParams initParams(ClassificationUpdateProcessorFactory.Algorithm classificationAlgorithm) {

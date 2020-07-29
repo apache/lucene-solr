@@ -134,6 +134,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     assertEquals( 1, p.rollbackCommands.size() );
 
     req.close();
+    p.close();
   }
 
 
@@ -163,6 +164,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     assertFalse(add.overwrite);
 
     req.close();
+    p.close();
   }
 
   @Test
@@ -178,6 +180,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertTrue(ex.getMessage().contains("Cannot parse"));
     assertTrue(ex.getMessage().contains("JSON"));
+    p.close();
   }
 
   public void testSimpleFormatInAdd() throws Exception
@@ -206,6 +209,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     assertTrue(add.overwrite);
 
     req.close();
+    p.close();
   }
 
   public void testFieldValueOrdering() throws Exception {
@@ -239,6 +243,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     assertEquals("2", d.getFieldValue("id"));
 
     req.close();
+    p.close();
   }
 
   public void testMultipleDocsWithoutArray() throws Exception {
@@ -254,6 +259,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     JsonLoader loader = new JsonLoader();
     loader.load(req, rsp, new ContentStreamBase.StringStream(doc), p);
     assertEquals( 2, p.addCommands.size() );
+    p.close();
   }
 
   public void testJsonDocFormat() throws Exception{
@@ -313,6 +319,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     req = req("srcField","_src_");
     req.getContext().put("path","/update/json/docs");
     rsp = new SolrQueryResponse();
+    p.close();
     p = new BufferingRequestProcessor(null);
     loader = new JsonLoader();
     loader.load(req, rsp, new ContentStreamBase.StringStream(doc), p);
@@ -335,6 +342,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     req = req("split", "/|/a/b"   );
     req.getContext().put("path","/update/json/docs");
     rsp = new SolrQueryResponse();
+    p.close();
     p = new BufferingRequestProcessor(null);
     loader = new JsonLoader();
     loader.load(req, rsp, new ContentStreamBase.StringStream(json), p);
@@ -345,6 +353,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
           "SolrInputDocument(fields: [c=c2, e=e2, d.p=q])], " +
         "a.x=y" +
         "])",  p.addCommands.get(0).solrDoc.toString());
+    p.close();
   }
 
   private static final String PARENT_TWO_CHILDREN_JSON = "{\n" +
@@ -443,6 +452,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
         assertOnlyValue("grandchild", grandChild, "cat");
       }
     }
+    p.close();
   }
 
   private static void assertOnlyValue(String expected, SolrInputDocument doc, String field) {
@@ -465,6 +475,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     assertEquals("SolrInputDocument(fields: [id=1, val_s={add=foo}])", add.solrDoc.toString());
 
     req.close();
+    p.close();
   }
 
   @Test
@@ -498,6 +509,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     assertEquals(Boolean.TRUE, ((List)f.getValue()).get(1));
 
     req.close();
+    p.close();
   }
 
   @Test
@@ -523,6 +535,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     assertEquals(1L, ((List)f.getValue()).get(1));
 
     req.close();
+    p.close();
   }
 
 
@@ -551,6 +564,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     assertEquals(1.7E-10, f.getValue());
 
     req.close();
+    p.close();
   }
 
   @Test
@@ -580,6 +594,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     assertTrue(((List)f.getValue()).contains("123456789012345678900.012345678901234567890"));
 
     req.close();
+    p.close();
   }
 
   @Test
@@ -608,6 +623,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     assertTrue(((List)f.getValue()).contains("10987654321098765432109"));
 
     req.close();
+    p.close();
   }
 
 
@@ -729,6 +745,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     assertEquals(delete.getVersion(), 88888L);
 
     req.close();
+    p.close();
   }
 
   private static final String SIMPLE_ANON_CHILD_DOCS_JSON = "{\n" +
@@ -828,6 +845,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     assertEquals(new Object[] {666L,777L}, cf.getValues().toArray());
 
     req.close();
+    p.close();
   }
 
   @Test
@@ -856,6 +874,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     assertNull(cd);
 
     req.close();
+    p.close();
   }
 
   @Test
@@ -909,7 +928,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     assertEquals("Bar", three.getFieldValue("foo_s"));
 
     req.close();
-
+    p.close();
   }
 
   @Test
@@ -954,7 +973,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     assertEquals("Bar", three.getFieldValue("foo_s"));
 
     req.close();
-
+    p.close();
   }
 
   @Test
@@ -991,7 +1010,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     assertEquals("Yaz", two.getFieldValue("foo_s"));
 
     req.close();
-
+    p.close();
   }
 
 }

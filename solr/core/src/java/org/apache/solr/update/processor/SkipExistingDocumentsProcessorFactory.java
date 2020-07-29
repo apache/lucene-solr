@@ -256,5 +256,10 @@ public class SkipExistingDocumentsProcessorFactory extends UpdateRequestProcesso
 
       super.processAdd(cmd);
     }
+
+    @Override
+    public void doClose() {
+      super.doClose();
+    }
   }
 }

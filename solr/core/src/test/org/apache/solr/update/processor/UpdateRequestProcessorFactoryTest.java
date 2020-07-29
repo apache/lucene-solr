@@ -146,7 +146,7 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
                  ( // compare them both just because i'm going insane and the more checks the better
                    proc.next instanceof LogUpdateProcessorFactory.LogUpdateProcessor
                    && procs.get(1) instanceof LogUpdateProcessorFactory.LogUpdateProcessor));
-
+      proc.close();
       // fetch the distributed version of this chain
       proc = chain.createProcessor(req(DISTRIB_UPDATE_PARAM, "NONE"), // just some non-blank value
                                    new SolrQueryResponse());
@@ -179,6 +179,7 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
       }
       assertEquals(name + " (distrib) chain has wrong length: " + procs.toString(),
           expectedProcLen, procs.size());
+      proc.close();
     }
 
   }

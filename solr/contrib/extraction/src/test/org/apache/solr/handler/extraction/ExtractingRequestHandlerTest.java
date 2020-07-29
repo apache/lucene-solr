@@ -456,6 +456,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     assertEquals(200, add.commitWithin);
 
     req.close();
+    p.close();
   }
 
   // Note: If you load a plain text file specifying neither MIME type nor filename, extraction will silently fail. This is because Tika's
