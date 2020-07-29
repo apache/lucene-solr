@@ -84,7 +84,6 @@ import com.google.common.collect.ImmutableList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@LuceneTestCase.Slow
 public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -100,7 +99,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     System.setProperty("solr.test.socketTimeout.default", "20000");
     System.setProperty("solr.so_commit_timeout.default", "20000");
     System.setProperty("solr.httpclient.defaultSoTimeout", "20000");
-    configureCluster( 4).formatZk(true)
+    configureCluster( TEST_NIGHTLY ? 4 : 2).formatZk(true)
             .addConfig("conf", configset("cloud-minimal"))
             .addConfig("conf2", configset("cloud-dynamic"))
             .configure();
@@ -131,7 +130,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   public void testCreateWithDefaultConfigSet() throws Exception {
     String collectionName = "solrj_default_configset";
     CollectionAdminResponse response = CollectionAdminRequest.createCollection(collectionName, 2, 2)
-        .process(cluster.getSolrClient());
+            .setMaxShardsPerNode(4).process(cluster.getSolrClient());
 
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
@@ -149,7 +148,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
     Map<String,NamedList<Integer>> nodesStatus = response.getCollectionNodesStatus();
-    assertEquals(4, nodesStatus.size());
+    assertEquals(TEST_NIGHTLY ? 4 : 2, nodesStatus.size());
 
     waitForState("Expected " + collectionName + " to disappear from cluster state", collectionName, (n, c) -> c == null);
   }
@@ -316,7 +315,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   public void testCreateAndDeleteCollection() throws Exception {
     String collectionName = "solrj_test";
     CollectionAdminResponse response = CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2)
-        .process(cluster.getSolrClient());
+            .setMaxShardsPerNode(4).process(cluster.getSolrClient());
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
     Map<String, NamedList<Integer>> coresStatus = response.getCollectionCoresStatus();
@@ -332,14 +331,14 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
     Map<String,NamedList<Integer>> nodesStatus = response.getCollectionNodesStatus();
-    assertEquals(4, nodesStatus.size());
+    assertEquals(TEST_NIGHTLY ? 4 : 2, nodesStatus.size());
 
     // Test Creating a collection with new stateformat.
     collectionName = "solrj_newstateformat";
 
     response = CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2)
         .setStateFormat(2)
-        .process(cluster.getSolrClient());
+        .setMaxShardsPerNode(4).process(cluster.getSolrClient());
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
   }
@@ -575,7 +574,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     final String propName = "testProperty";
 
     CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2)
-        .process(cluster.getSolrClient());
+            .setMaxShardsPerNode(4).process(cluster.getSolrClient());
 
     // Check for value change
     CollectionAdminRequest.setCollectionProperty(collectionName, propName, "false")
@@ -885,7 +884,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
     final String collection = "balancedProperties";
     CollectionAdminRequest.createCollection(collection, "conf", 2, 2)
-        .process(cluster.getSolrClient());
+            .setMaxShardsPerNode(4).process(cluster.getSolrClient());
 
     CollectionAdminResponse response = CollectionAdminRequest.balanceReplicaProperty(collection, "preferredLeader")
         .process(cluster.getSolrClient());
