@@ -1835,6 +1835,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
 
     public void doReplay(TransactionLog translog) {
+      UpdateRequestProcessor proc = null;
       try {
         loglog.warn("Starting log replay {}  active={} starting pos={} inSortedOrder={}", translog, activeLog, recoveryInfo.positionOfStart, inSortedOrder);
         long lastStatusTime = System.nanoTime();
@@ -1848,7 +1849,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         // to change underneath us.
 
         UpdateRequestProcessorChain processorChain = req.getCore().getUpdateProcessingChain(null);
-        UpdateRequestProcessor proc = processorChain.createProcessor(req, rsp);
+        proc = processorChain.createProcessor(req, rsp);
         OrderedExecutor executor = inSortedOrder ? null : req.getCore().getCoreContainer().getReplayUpdatesExecutor();
         AtomicInteger pendingTasks = new AtomicInteger(0);
         AtomicReference<SolrException> exceptionOnExecuteUpdate = new AtomicReference<>();
@@ -2017,13 +2018,12 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         } catch (IOException ex) {
           recoveryInfo.errors++;
           loglog.error("Replay exception: finish()", ex);
-        } finally {
-          IOUtils.closeQuietly(proc);
         }
 
       } finally {
         if (tlogReader != null) tlogReader.close();
         translog.decref();
+        ParWork.close(proc);
       }
     }
 
