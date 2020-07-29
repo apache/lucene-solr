@@ -132,6 +132,7 @@ public class ZkDynamicConfig {
       if (!m.matches()) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Could not parse dynamic zk config line: " + line);
       }
+      String clientPortStr = m.group("clientPort");
       return new Server(
           Integer.parseInt(m.group("serverId")),
           m.group("address"),
@@ -139,7 +140,7 @@ public class ZkDynamicConfig {
           Integer.parseInt(m.group("leaderElectionPort")),
           m.group("role"),
           m.group("clientPortAddress"),
-          Integer.parseInt(m.group("clientPort"))
+          clientPortStr != null ? Integer.parseInt(clientPortStr) : null
       );
     }
   }
