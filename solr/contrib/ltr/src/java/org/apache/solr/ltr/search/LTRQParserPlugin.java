@@ -152,6 +152,26 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
             "Must provide model in the request");
       }
 
+      final Map<String,String[]> externalFeatureInfo = extractEFIParams(localParams);
+
+      final LTRScoringQuery scoringQuery = newLTRScoringQuery(modelName, externalFeatureInfo,
+          mr, threadManager, req);
+
+      SolrQueryRequestContextUtils.setScoringQuery(req, scoringQuery);
+
+      int reRankDocs = localParams.getInt(RERANK_DOCS, DEFAULT_RERANK_DOCS);
+      if (reRankDocs <= 0) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Must rerank at least 1 document");
+      }
+
+      return new LTRQuery(scoringQuery, reRankDocs);
+    }
+  }
+
+  private static LTRScoringQuery newLTRScoringQuery(final String modelName, Map<String,String[]> externalFeatureInfo,
+      ManagedModelStore mr, LTRThreadModule threadManager, SolrQueryRequest req) throws SyntaxError {
+
       final LTRScoringModel ltrScoringModel = mr.getModel(modelName);
       if (ltrScoringModel == null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
@@ -167,7 +187,7 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
         threadManager.setExecutor(req.getCore().getCoreContainer().getUpdateShardHandler().getUpdateExecutor());
       }
       final LTRScoringQuery scoringQuery = new LTRScoringQuery(ltrScoringModel,
-          extractEFIParams(localParams),
+          externalFeatureInfo,
           featuresRequestedFromSameStore, threadManager);
 
       // Enable the feature vector caching if we are extracting features, and the features
@@ -175,19 +195,11 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
       if (featuresRequestedFromSameStore) {
         scoringQuery.setFeatureLogger( SolrQueryRequestContextUtils.getFeatureLogger(req) );
       }
-      SolrQueryRequestContextUtils.setScoringQuery(req, scoringQuery);
-
-      int reRankDocs = localParams.getInt(RERANK_DOCS, DEFAULT_RERANK_DOCS);
-      if (reRankDocs <= 0) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Must rerank at least 1 document");
-      }
 
       // External features
       scoringQuery.setRequest(req);
 
-      return new LTRQuery(scoringQuery, reRankDocs);
-    }
+      return scoringQuery;
   }
 
   /**
