@@ -64,8 +64,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
-    // we need DVs on point fields to compute stats & facets
-    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
+    // we need DVs on point fields to compute stats & facetsew
     System.setProperty("solr.test.useFilterForSortedQuery", Boolean.toString(random().nextBoolean()));
     initCore(TEST_SOLRCONFIG_NAME, TEST_SCHEMAXML_NAME);
   }
@@ -592,10 +591,10 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     }
     assertU(commit());
 
-    final int numRandomSorts = atLeast(3);
+    final int numRandomSorts = atLeast(TEST_NIGHTLY ? 3 : 1);
     for (int i = 0; i < numRandomSorts; i++) {
       final String sort = buildRandomSort(allFieldNames);
-      final String rows = "" + TestUtil.nextInt(random(), 63, 113);
+      final String rows = "" + TestUtil.nextInt(random(), 63, TEST_NIGHTLY ? 113 : 73);
       final String fl = random().nextBoolean() ? "id" : "id,score";
       final boolean matchAll = random().nextBoolean();
       final String q = matchAll ? "*:*" : buildRandomQuery();
