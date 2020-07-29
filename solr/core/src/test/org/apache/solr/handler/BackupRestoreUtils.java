@@ -45,7 +45,7 @@ public class BackupRestoreUtils extends SolrTestCase {
     masterClient.deleteByQuery(collectionName, "*:*");
 
     Random random = new Random(docsSeed);// use a constant seed for the whole test run so that we can easily re-index.
-    int nDocs = TestUtil.nextInt(random, 1, 100);
+    int nDocs = TestUtil.nextInt(random, 1, TEST_NIGHTLY ? 100 : 14);
     log.info("Indexing {} test docs", nDocs);
 
     List<SolrInputDocument> docs = new ArrayList<>(nDocs);

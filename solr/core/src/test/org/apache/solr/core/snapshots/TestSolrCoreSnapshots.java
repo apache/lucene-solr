@@ -205,7 +205,7 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
             masterClient.deleteByQuery("id:" + i);
           }
           //Add a few more
-          int moreAdds = TestUtil.nextInt(random(), 1, 100);
+          int moreAdds = TestUtil.nextInt(random(), 1, TEST_NIGHTLY ? 100 : 15);
           for (int i=0; i<moreAdds; i++) {
             SolrInputDocument doc = new SolrInputDocument();
             doc.addField("id", i + nDocs);
