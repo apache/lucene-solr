@@ -86,8 +86,8 @@ class ExportBuffers {
     this.writeOutputBufferTimer = writeOutputBufferTimer;
     this.fillerWaitTimer = fillerWaitTimer;
     this.writerWaitTimer = writerWaitTimer;
-    this.bufferOne = new Buffer(30000);
-    this.bufferTwo = new Buffer(30000);
+    this.bufferOne = new Buffer(queueSize);
+    this.bufferTwo = new Buffer(queueSize);
     this.totalHits = totalHits;
     fillBuffer = bufferOne;
     outputBuffer = bufferTwo;

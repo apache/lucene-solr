@@ -112,8 +112,8 @@ class TripleValueSortDoc extends DoubleValueSortDoc {
     }
   }
 
-  public int compareTo(Object o) {
-    TripleValueSortDoc sd = (TripleValueSortDoc)o;
+  public int compareTo(SortDoc o) {
+    TripleValueSortDoc sd = (TripleValueSortDoc) o;
     int comp = value1.compareTo(sd.value1);
     if (comp == 0) {
       comp = value2.compareTo(sd.value2);

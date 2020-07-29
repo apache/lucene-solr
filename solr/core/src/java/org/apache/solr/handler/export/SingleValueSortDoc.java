@@ -83,7 +83,7 @@ class SingleValueSortDoc extends SortDoc {
     }
   }
 
-  public int compareTo(Object o) {
+  public int compareTo(SortDoc o) {
     SingleValueSortDoc sd = (SingleValueSortDoc) o;
     int comp = value1.compareTo(sd.value1);
     if (comp == 0) {

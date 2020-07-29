@@ -21,7 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.LeafReaderContext;
 
-class SortDoc implements Comparable {
+class SortDoc implements Comparable<SortDoc> {
 
   protected int docId = -1;
   protected int ord = -1;
@@ -112,8 +112,7 @@ class SortDoc implements Comparable {
     return docId + docBase > sd.docId + sd.docBase; //index order
   }
 
-  public int compareTo(Object o) {
-    SortDoc sd = (SortDoc) o;
+  public int compareTo(SortDoc sd) {
     for (int i = 0; i < sortValues.length; i++) {
       int comp = sortValues[i].compareTo(sd.sortValues[i]);
       if (comp != 0) {

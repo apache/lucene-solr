@@ -98,7 +98,7 @@ class DoubleValueSortDoc extends SingleValueSortDoc {
     }
   }
 
-  public int compareTo(Object o) {
+  public int compareTo(SortDoc o) {
     DoubleValueSortDoc sd = (DoubleValueSortDoc) o;
     int comp = value1.compareTo(sd.value1);
     if (comp == 0) {

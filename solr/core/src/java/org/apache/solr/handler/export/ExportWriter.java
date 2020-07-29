@@ -116,11 +116,12 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   FixedBitSet[] sets = null;
   PushWriter writer;
   private String wt;
-  final Timer identifyLowestSortingDocTimer;
   final Timer transferBatchToBufferTimer;
+  final Timer getMergeIteratorTimer;
   final Timer writeOutputBufferTimer;
   final Timer writerWaitTimer;
   final Timer fillerWaitTimer;
+  final Timer totalTimer;
 
 
   public ExportWriter(SolrQueryRequest req, SolrQueryResponse res, String wt,
@@ -132,12 +133,15 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     this.initialStreamContext = initialStreamContext;
     this.solrMetricsContext = solrMetricsContext;
     this.metricsPath = metricsPath;
-    this.batchSize = req.getParams().getInt(BATCH_SIZE_PARAM, DEFAULT_BATCH_SIZE);
-    identifyLowestSortingDocTimer = solrMetricsContext.timer("identifyLowestSortingDoc", metricsPath);
+    // may be too tricky to get this right? always use default for now
+    //this.batchSize = req.getParams().getInt(BATCH_SIZE_PARAM, DEFAULT_BATCH_SIZE);
+    this.batchSize = DEFAULT_BATCH_SIZE;
+    getMergeIteratorTimer = solrMetricsContext.timer("createMergeIterator", metricsPath);
     transferBatchToBufferTimer = solrMetricsContext.timer("transferBatchToBuffer", metricsPath);
     writeOutputBufferTimer = solrMetricsContext.timer("writeOutputBuffer", metricsPath);
-    writerWaitTimer = solrMetricsContext.timer("writerWaitTimer", metricsPath);
-    fillerWaitTimer = solrMetricsContext.timer("fillerWaitTimer", metricsPath);
+    writerWaitTimer = solrMetricsContext.timer("writerWait", metricsPath);
+    fillerWaitTimer = solrMetricsContext.timer("fillerWait", metricsPath);
+    totalTimer = solrMetricsContext.timer("totalTime", metricsPath);
   }
 
   @Override
@@ -170,6 +174,15 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   }
 
   public void write(OutputStream os) throws IOException {
+    Timer.Context timerContext = totalTimer.time();
+    try {
+      _write(os);
+    } finally {
+      timerContext.stop();
+    }
+  }
+
+  private void _write(OutputStream os) throws IOException {
     QueryResponseWriter rw = req.getCore().getResponseWriters().get(wt);
     if (rw instanceof BinaryResponseWriter) {
       //todo add support for other writers after testing
@@ -304,13 +317,12 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     return tupleStream;
   }
 
-
   private void transferBatchToBufferForOutput(MergeIterator mergeIterator,
                                               ExportBuffers.Buffer destination) throws IOException {
     Timer.Context timerContext = transferBatchToBufferTimer.time();
     try {
       int outDocsIndex = -1;
-      for (int i = 0; i < 30000; i++) {
+      for (int i = 0; i < batchSize; i++) {
         SortDoc sortDoc = mergeIterator.next();
         if (sortDoc != null) {
           destination.outDocs[++outDocsIndex].setValues(sortDoc);
@@ -594,7 +606,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
 
 
   static class MergeIterator {
-    private TreeSet<SortDoc> set = new TreeSet();
+    private TreeSet<SortDoc> set = new TreeSet<>();
     private SegmentIterator[] segmentIterators;
     private SortDoc outDoc;
 
@@ -639,25 +651,30 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   }
 
   public MergeIterator getMergeIterator(List<LeafReaderContext> leaves, FixedBitSet[] bits, SortDoc sortDoc) throws IOException {
-    long totalDocs = 0;
-    for (int i = 0; i < leaves.size(); i++) {
-      totalDocs += leaves.get(i).reader().maxDoc();
-    }
+    Timer.Context timerContext = getMergeIteratorTimer.time();
+    try {
+      long totalDocs = 0;
+      for (int i = 0; i < leaves.size(); i++) {
+        totalDocs += leaves.get(i).reader().maxDoc();
+      }
 
-    int[] sizes = new int[leaves.size()];
-    for (int i = 0; i < leaves.size(); i++) {
-      long maxDoc = leaves.get(i).reader().maxDoc();
-      int sortQueueSize = Math.min((int) (((double) maxDoc / (double) totalDocs) * 200000), 30000);
-      sizes[i] = sortQueueSize;
-    }
+      int[] sizes = new int[leaves.size()];
+      for (int i = 0; i < leaves.size(); i++) {
+        long maxDoc = leaves.get(i).reader().maxDoc();
+        int sortQueueSize = Math.min((int) (((double) maxDoc / (double) totalDocs) * 200000), batchSize);
+        sizes[i] = sortQueueSize;
+      }
 
-    SegmentIterator[] segmentIterators = new SegmentIterator[leaves.size()];
-    for (int i = 0; i < segmentIterators.length; i++) {
-      SortQueue sortQueue = new SortQueue(sizes[i], sortDoc.copy());
-      segmentIterators[i] = new SegmentIterator(bits[i], leaves.get(i), sortQueue, sortDoc.copy());
-    }
+      SegmentIterator[] segmentIterators = new SegmentIterator[leaves.size()];
+      for (int i = 0; i < segmentIterators.length; i++) {
+        SortQueue sortQueue = new SortQueue(sizes[i], sortDoc.copy());
+        segmentIterators[i] = new SegmentIterator(bits[i], leaves.get(i), sortQueue, sortDoc.copy());
+      }
 
-    return new MergeIterator(segmentIterators, sortDoc);
+      return new MergeIterator(segmentIterators, sortDoc);
+    } finally {
+      timerContext.stop();
+    }
   }
 
   private static class SegmentIterator {
