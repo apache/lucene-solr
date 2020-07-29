@@ -63,9 +63,6 @@ public class DeleteInactiveReplicaTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(collectionName, "conf", numShards, replicationFactor)
         .setMaxShardsPerNode(maxShardsPerNode)
         .process(cluster.getSolrClient());
-    waitForState("Expected a cluster of 2 shards and 2 replicas", collectionName, (n, c) -> {
-      return DocCollection.isFullyActive(n, c, numShards, replicationFactor);
-    });
 
     DocCollection collectionState = getCollectionState(collectionName);
 

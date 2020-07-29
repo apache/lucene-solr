@@ -1258,6 +1258,7 @@ public class CoreContainer implements Closeable {
     if (isShutDown) {
       throw new AlreadyClosedException();
     }
+    SolrCore core = null;
     CoreDescriptor cd = new CoreDescriptor(coreName, instancePath, parameters, getContainerProperties(), getZkController());
 
     // TODO: There's a race here, isn't there?
@@ -1286,7 +1287,6 @@ public class CoreContainer implements Closeable {
       // first and clean it up if there's an error.
       coresLocator.create(this, cd);
 
-      SolrCore core = null;
       try {
         solrCores.waitAddPendingCoreOps(cd.getName());
         core = createFromDescriptor(cd, true, newCollection);
@@ -1314,6 +1314,7 @@ public class CoreContainer implements Closeable {
         }
       }
 
+      ParWork.close(core);
       Throwable tc = ex;
       Throwable c = null;
       do {
@@ -1409,7 +1410,7 @@ public class CoreContainer implements Closeable {
       solrCores.removeCoreDescriptor(dcore);
       final SolrException solrException = new SolrException(ErrorCode.SERVER_ERROR, "Unable to create core [" + dcore.getName() + "]", e);
       if (core != null && !core.isClosed())
-        IOUtils.closeQuietly(core);
+        ParWork.close(core);
       throw solrException;
     } catch (Throwable t) {
       log.error("Unable to create SolrCore", t);

@@ -190,7 +190,7 @@ public class ZkStateWriter {
         DocCollection c = entry.getValue();
         Integer prevVersion = -1;
         if (lastUpdatedTime == -1) {
-          prevVersion = 0;
+          prevVersion = -1;
         }
         Stat stat = new Stat();
 
