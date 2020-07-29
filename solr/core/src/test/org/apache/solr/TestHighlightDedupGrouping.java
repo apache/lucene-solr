@@ -111,9 +111,7 @@ public class TestHighlightDedupGrouping extends BaseDistributedSearchTestCase {
           ,"hl", "true", "hl.fl", "*", "hl.requireFieldMatch", "true"
           ));
       // The number of highlit documents should be the same as the de-duplicated docs for this group
-      // but there can be a one off diff with distrib
-      int diff = Math.abs(docsInGroup[group] - rsp.getHighlighting().values().size());
-      assertTrue(diff <= 1);
+      assertEquals(docsInGroup[group], rsp.getHighlighting().values().size());
     }
   }
 
