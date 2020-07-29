@@ -112,7 +112,8 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
           .map(h -> h.resolveClientPortAddress() + ":" + h.clientPort)
           .sorted().collect(Collectors.toList());
       List<String> dynamicHosts = zkDynamicConfig.getServers().stream()
-          .map(h -> h.resolveClientPortAddress() + ":" + (h.clientPort != null ? h.clientPort : "2181"))
+          .map(h -> h.resolveClientPortAddress() + ":" +
+                  (h.clientPort != null ? h.clientPort : hostsFromConnectionString.getServers().get(0).clientPort))
           .sorted().collect(Collectors.toList());
       if (!connStringHosts.containsAll(dynamicHosts)) {
         errors.add("Your ZK connection string (" + connStringHosts.size() + " hosts) is different from the " +
