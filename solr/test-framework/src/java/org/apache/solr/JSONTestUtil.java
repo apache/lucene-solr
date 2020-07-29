@@ -32,7 +32,7 @@ public class JSONTestUtil {
    * Default delta used in numeric equality comparisons for floats and doubles.
    */
   public final static double DEFAULT_DELTA = 1e-5;
-  public static boolean failRepeatedKeys = false;
+  public static volatile boolean failRepeatedKeys = false;
 
   /**
    * comparison using default delta
