@@ -33,21 +33,21 @@ public class MultiSolrCloudTestCaseTest extends MultiSolrCloudTestCase {
   @BeforeClass
   public static void setupClusters() throws Exception {
 
-    numClouds = random().nextInt(4); //  0..3
+    numClouds = random().nextInt(TEST_NIGHTLY ? 4 : 2); //  0..3
     final String[] clusterIds = new String[numClouds];
     for (int ii=0; ii<numClouds; ++ii) {
       clusterIds[ii] = "cloud"+(ii+1);
     }
 
-    numCollectionsPerCloud = random().nextInt(3); //  0..2
+    numCollectionsPerCloud = random().nextInt(TEST_NIGHTLY ? 3 : 1); //  0..2
     final String[] collections = new String[numCollectionsPerCloud];
     for (int ii=0; ii<numCollectionsPerCloud; ++ii) {
       collections[ii] = "collection"+(ii+1);
     }
 
-    numShards = 1+random().nextInt(2);
-    numReplicas = 1+random().nextInt(2);
-    maxShardsPerNode = 1+random().nextInt(2);
+    numShards = 1+random().nextInt(TEST_NIGHTLY ? 2 : 1);
+    numReplicas = 1+random().nextInt(TEST_NIGHTLY ? 2 : 1);
+    maxShardsPerNode = 1+random().nextInt(TEST_NIGHTLY ? 2 : 1);
     nodesPerCluster = (numShards*numReplicas + (maxShardsPerNode-1))/maxShardsPerNode;
 
     doSetupClusters(
