@@ -7,7 +7,8 @@ http://s.apache.org/luceneversions
 
 Bug Fixes
 ---------------------
-(No changes)
+* LUCENE-9443: The UnifiedHighlighter was closing the underlying reader when there were multiple term-vector fields.
+  This was a regression in 8.6.0.  (David Smiley, Chris Beer)
 
 ======================= Lucene 8.6.0 =======================
 
