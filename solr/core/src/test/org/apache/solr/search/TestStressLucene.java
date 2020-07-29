@@ -53,12 +53,12 @@ public class TestStressLucene extends TestRTGBase {
     final int deletePercent = 4+random().nextInt(25);
     final int deleteByQueryPercent = 1+random().nextInt(5);
     final int ndocs = 5 + (random().nextBoolean() ? random().nextInt(25) : random().nextInt(200));
-    int nWriteThreads = 5 + random().nextInt(25);
+    int nWriteThreads = TEST_NIGHTLY ? 5 + random().nextInt(25) : 3;
 
     final int maxConcurrentCommits = nWriteThreads;
 
-    final AtomicLong operations = new AtomicLong(100000);  // number of query operations to perform in total
-    int nReadThreads = 5 + random().nextInt(25);
+    final AtomicLong operations = new AtomicLong(TEST_NIGHTLY ? 100000 : 100);  // number of query operations to perform in total
+    int nReadThreads = TEST_NIGHTLY ? 5 + random().nextInt(25) : 2;
     final boolean tombstones = random().nextBoolean();
     final boolean syncCommits = random().nextBoolean();
 
