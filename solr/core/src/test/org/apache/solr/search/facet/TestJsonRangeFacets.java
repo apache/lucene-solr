@@ -48,7 +48,7 @@ public class TestJsonRangeFacets extends SolrTestCaseHS {
    */
   public static void initServers() throws Exception {
     if (servers == null) {
-      servers = new SolrInstances(3, "solrconfig-tlog.xml", "schema_latest.xml");
+      servers = new SolrInstances(TEST_NIGHTLY ? 3 : 2, "solrconfig-tlog.xml", "schema_latest.xml");
     }
   }
 
@@ -72,13 +72,11 @@ public class TestJsonRangeFacets extends SolrTestCaseHS {
         "num_is", "-9", "num_is", "-5",
         "val_b", "false"), null);
     client.add(sdoc("id", "3"), null);
-    client.commit();
     client.add(sdoc("id", "4", "cat_s", "A", "where_s", "NJ", "num_d", "2", "num_i", "3",
         "num_is", "2", "num_is", "3"), null);
     client.add(sdoc("id", "5", "cat_s", "B", "where_s", "NJ", "num_d", "11", "num_i", "7",
         "num_is", "11", "num_is", "7",
         "sparse_s", "two"),null);
-    client.commit();
     client.add(sdoc("id", "6", "cat_s", "B", "where_s", "NY", "num_d", "-5", "num_i", "-5",
         "num_is", "-5"),null);
     client.commit();
