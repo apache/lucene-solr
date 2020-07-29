@@ -42,6 +42,7 @@ import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.core.Diagnostics;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.LeaderRequestReplicationTracker;
@@ -66,7 +67,7 @@ public class SolrCmdDistributor implements Closeable {
     public boolean abortCheck();
   }
   
-  private Http2SolrClient solrClient;
+  private final Http2SolrClient solrClient;
 
   private final Phaser phaser = new Phaser(1) {
     @Override
@@ -76,14 +77,10 @@ public class SolrCmdDistributor implements Closeable {
   };
 
   public SolrCmdDistributor(UpdateShardHandler updateShardHandler) {
+    assert ObjectReleaseTracker.track(this);
     this.solrClient = new Http2SolrClient.Builder().markInternalRequest().withHttpClient(updateShardHandler.getUpdateOnlyHttpClient()).build();
   }
-  
-  /* For tests only */
-  SolrCmdDistributor(int maxRetriesOnForward) {
-    this.maxRetriesOnForward = maxRetriesOnForward;
-  }
-  
+
   public void finish() {
     assert !finished : "lifecycle sanity check";
     finished = true;
@@ -91,6 +88,7 @@ public class SolrCmdDistributor implements Closeable {
   
   public void close() {
     ParWork.close(solrClient);
+    assert ObjectReleaseTracker.release(this);
   }
 
   public boolean checkRetry(Error err) {
