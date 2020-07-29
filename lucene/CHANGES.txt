@@ -25,6 +25,9 @@ Improvements
   per hit in dependencies, ExpressionFunctionValues will no longer
   recompute already computed values (Haoyu Zhai)
 
+* LUCENE-9416: Fix CheckIndex to print an invalid non-zero norm as
+  unsigned long when detecting corruption.
+
 Optimizations
 ---------------------
 (No changes)
