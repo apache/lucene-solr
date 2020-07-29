@@ -28,6 +28,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.OnReconnect;
@@ -47,6 +48,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Slow
+@LuceneTestCase.Nightly
 @Ignore // nocommit debug
 public class LeaderElectionTest extends SolrTestCaseJ4 {
 
@@ -82,8 +84,10 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     zkClient = server.getZkClient();
     zkStateReader = new ZkStateReader(zkClient);
     seqToThread = new ConcurrentHashMap<>();
-    zkClient.mkdir("/collections/collection1");
+    zkClient.mkdirs("/collections/collection1");
     zkClient.mkdir("/collections/collection2");
+    zkClient.mkdir("/collections/collection1/election");
+    zkClient.mkdir("/collections/collection2/election");
   }
 
   class TestLeaderElectionContext extends ShardLeaderElectionContextBase {
@@ -92,7 +96,8 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     public TestLeaderElectionContext(LeaderElector leaderElector,
         String shardId, String collection, String coreNodeName, ZkNodeProps props,
         ZkController zkController, long runLeaderDelay) {
-      super (coreNodeName, "nocommit", "nocommit", props, zkController.getZkClient());
+      super (coreNodeName, "/collections/" + collection,
+              "/collections/" + collection + "/leader", props, zkController.getZkClient());
       this.runLeaderDelay = runLeaderDelay;
     }
 
