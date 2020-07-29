@@ -14,6 +14,8 @@ Bug Fixes
 * SOLR-14665: Revert SOLR-12845 adding of default autoscaling cluster policy, due to performance
  issues. (Ishan Chattopadhyaya, Houston Putman, ab)
 
+* SOLR-14671: Parsing dynamic ZK config sometimes cause NumberFormatException (janhoy)
+
 ==================  8.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
