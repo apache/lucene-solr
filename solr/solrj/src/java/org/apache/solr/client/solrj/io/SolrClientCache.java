@@ -30,6 +30,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,7 +53,7 @@ public class SolrClientCache implements Serializable, Closeable {
 
   public SolrClientCache(HttpClient httpClient) {
     this.httpClient = httpClient;
-    ObjectReleaseTracker.track(this);
+    assert ObjectReleaseTracker.track(this);
   }
 
   public synchronized CloudSolrClient getCloudSolrClient(String zkHost) {
@@ -90,14 +91,13 @@ public class SolrClientCache implements Serializable, Closeable {
   }
 
   public synchronized void close() {
-    for(Map.Entry<String, SolrClient> entry : solrClients.entrySet()) {
-      try {
-        entry.getValue().close();
-      } catch (IOException e) {
-        log.error("Error closing SolrClient for {}", entry.getKey(), e);
+    try (ParWork closer = new ParWork(this, true)) {
+      for (Map.Entry<String, SolrClient> entry : solrClients.entrySet()) {
+        closer.collect(entry.getValue());
       }
+      closer.addCollect("solrClients");
     }
     solrClients.clear();
-    ObjectReleaseTracker.release(this);
+    assert ObjectReleaseTracker.release(this);
   }
 }

@@ -27,10 +27,12 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.SolrCore;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 
 import java.io.File;
 import java.io.IOException;
 
+@Ignore
 public class AnalysisAfterCoreReloadTest extends SolrTestCaseJ4 {
   
   private static String tmpSolrHome;

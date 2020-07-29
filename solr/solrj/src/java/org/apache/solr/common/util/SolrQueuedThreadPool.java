@@ -191,12 +191,6 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
         ensureThreads();
     }
 
-
-    public void prepareToStop() throws Exception {
-        super.doStop();
-    }
-
-
     @Override
     protected void doStop() throws Exception
     {

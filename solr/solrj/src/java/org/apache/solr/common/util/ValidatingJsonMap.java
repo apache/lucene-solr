@@ -322,7 +322,7 @@ public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
     return new ObjectBuilder(jp) {
       @Override
       public Object newObject() throws IOException {
-        return new ValidatingJsonMap();
+        return new ValidatingJsonMap(64);
       }
     };
   }

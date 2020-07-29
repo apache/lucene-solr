@@ -307,8 +307,24 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
       }
     }
     if (qtp != null) {
+      try (ParWork closer = new ParWork("qtp")) {
+        closer.collect(() -> {
+          try {
+            qtp.stop();
+          } catch (Exception e) {
+            log.error("Error stopping qtp", e);
+          }
+        });
+        closer.collect(() -> {
+          try {
+            qtp.waitForStopping();
+          } catch (InterruptedException e) {
+            ParWork.propegateInterrupt(e);
+          }
+        });
+        closer.addCollect("qtp_close");
+      }
 
-      qtp.stop();
       qtp = null;
     }
   }

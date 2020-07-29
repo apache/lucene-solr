@@ -67,7 +67,6 @@ public class ParWork implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected final static ThreadLocal<ExecutorService> THREAD_LOCAL_EXECUTOR = new ThreadLocal<>();
-  public static final int MIN_THREADS = 3;
 
   private Set<Object> collectSet = null;
 
@@ -529,7 +528,7 @@ public class ParWork implements Closeable {
 //                List<Future<Object>> results = executor.invokeAll(closeCalls, 8, TimeUnit.SECONDS);
 
                 for (Future<Object> future : results) {
-                  future.get();
+                  future.get(10000, TimeUnit.MILLISECONDS); // nocommit
                   if (!future.isDone() || future.isCancelled()) {
                     log.warn("A task did not finish isDone={} isCanceled={}", future.isDone(), future.isCancelled());
                   //  throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "A task did nor finish" +future.isDone()  + " " + future.isCancelled());
@@ -539,6 +538,7 @@ public class ParWork implements Closeable {
               } catch (InterruptedException e1) {
                 log.warn(WORK_WAS_INTERRUPTED);
                 Thread.currentThread().interrupt();
+                return;
               }
             }
           }
@@ -580,6 +580,10 @@ public class ParWork implements Closeable {
   public static void sizePoolByLoad() {
     Integer maxPoolsSize = getMaxPoolSize();
 
+    Integer minThreads;
+
+    minThreads = Integer.getInteger("solr.per_thread_exec.min_threads", 3);
+
     ThreadPoolExecutor executor = (ThreadPoolExecutor) getExecutor();
     double load =  ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage();
     if (load < 0) {
@@ -591,14 +595,14 @@ public class ParWork implements Closeable {
     if (ourLoad > 1) {
       int cMax = executor.getMaximumPoolSize();
       if (cMax > 2) {
-        executor.setMaximumPoolSize(Math.max(MIN_THREADS, (int) ((double)cMax * 0.60D)));
+        executor.setMaximumPoolSize(Math.max(minThreads, (int) ((double)cMax * 0.60D)));
       }
     } else {
       double sLoad = load / (double) PROC_COUNT;
       if (sLoad > 1.0D) {
         int cMax =  executor.getMaximumPoolSize();
         if (cMax > 2) {
-          executor.setMaximumPoolSize(Math.max(MIN_THREADS, (int) ((double) cMax * 0.60D)));
+          executor.setMaximumPoolSize(Math.max(minThreads, (int) ((double) cMax * 0.60D)));
         }
       } else if (sLoad < 0.9D && maxPoolsSize != executor.getMaximumPoolSize()) {
         executor.setMaximumPoolSize(maxPoolsSize);
@@ -616,8 +620,12 @@ public class ParWork implements Closeable {
         log.debug("Starting a new executor");
       }
 
-      // figure out thread usage - maybe try to adjust based on current thread count
-      exec = getExecutorService(0, Math.max(4, Runtime.getRuntime().availableProcessors() / 3), 1);
+      Integer minThreads;
+      Integer maxThreads;
+      minThreads = Integer.getInteger("solr.per_thread_exec.min_threads", 3);
+      maxThreads = Integer.getInteger("solr.per_thread_exec.max_threads",  Runtime.getRuntime().availableProcessors() / 3);
+      exec = getExecutorService(0, Math.max(minThreads, maxThreads), 1); // keep alive directly affects how long a worker might
+      // be stuck in poll without an enqueue on shutdown
       THREAD_LOCAL_EXECUTOR.set(exec);
     }
 
@@ -633,7 +641,7 @@ public class ParWork implements Closeable {
 
   private static Integer getMaxPoolSize() {
     return Integer.getInteger("solr.maxThreadExecPoolSize",
-            (int) Math.max(MIN_THREADS, Math.round(Runtime.getRuntime().availableProcessors() / 3)));
+            (int) Math.max(4, Math.round(Runtime.getRuntime().availableProcessors() / 3)));
   }
 
   private void handleObject(String label, AtomicReference<Throwable> exception, final TimeTracker workUnitTracker, Object object) {

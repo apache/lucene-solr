@@ -346,7 +346,7 @@ public class CoreContainer implements Closeable {
     this.asyncSolrCoreLoad = asyncSolrCoreLoad;
 
     this.replayUpdatesExecutor = new OrderedExecutor( cfg.getReplayUpdatesThreads(),
-            ParWork.getExecutorService( cfg.getReplayUpdatesThreads(), cfg.getReplayUpdatesThreads(), 1000));
+            ParWork.getExecutorService( cfg.getReplayUpdatesThreads(), cfg.getReplayUpdatesThreads(), 250));
 
     metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig());
     String registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.node);
@@ -1047,9 +1047,9 @@ public class CoreContainer implements Closeable {
 
   @Override
   public void close() throws IOException {
-    if (this.isShutDown) {
-      return;
-    }
+//    if (this.isShutDown) {
+//      return;
+//    }
     log.info("Closing CoreContainer");
     // must do before isShutDown=true
     if (isZooKeeperAware()) {
@@ -1159,10 +1159,9 @@ public class CoreContainer implements Closeable {
 
       closer.add("zkSys", zkSys);
 
-      closer.add("shardHandlers", shardHandlerFactory, updateShardHandler);
       closer.add("loader", loader);
 
-
+      closer.add("shardHandlers", shardHandlerFactory, updateShardHandler);
      }
 
     assert ObjectReleaseTracker.release(this);

@@ -155,6 +155,7 @@ public class JettySolrRunner implements Closeable {
 
 
   private static Scheduler scheduler = new SolrHttpClientScheduler("JettySolrRunnerScheduler", true, null, new ThreadGroup("JettySolrRunnerScheduler"), 1);
+  private volatile SolrQueuedThreadPool qtp;
 
   public String getContext() {
     return config.context;
@@ -277,7 +278,7 @@ public class JettySolrRunner implements Closeable {
    * @param enableProxy       enables proxy feature to disable connections
    */
   public JettySolrRunner(String solrHome, Properties nodeProperties, JettyConfig config, boolean enableProxy) {
-    ObjectReleaseTracker.track(this);
+    assert ObjectReleaseTracker.track(this);
     this.enableProxy = enableProxy;
     this.solrHome = solrHome;
     this.config = config;
@@ -297,8 +298,7 @@ public class JettySolrRunner implements Closeable {
   }
 
   private void init(int port) {
-
-    SolrQueuedThreadPool qtp;
+    
     if (config.qtp != null) {
       qtp = config.qtp;
     } else {
@@ -745,7 +745,26 @@ public class JettySolrRunner implements Closeable {
     Map<String,String> prevContext = MDC.getCopyOfContextMap();
     MDC.clear();
     try {
-      server.stop();
+      try (ParWork closer = new ParWork(this)) {
+        closer.collect(() -> {
+          try {
+            server.stop();
+          } catch (Exception e) {
+            log.error("Error stopping jetty server", e);
+          }
+        });
+        closer.collect(() -> {
+          try {
+            if (config.qtp == null) {
+              qtp.waitForStopping();
+            }
+          } catch (InterruptedException e) {
+            ParWork.propegateInterrupt(e);
+          }
+        });
+        closer.addCollect("stopServer");
+      }
+
 
       try {
 
@@ -753,6 +772,10 @@ public class JettySolrRunner implements Closeable {
       } catch (InterruptedException e) {
         SolrZkClient.checkInterrupted(e);
         throw new RuntimeException(e);
+      }
+
+      if (config.qtp == null) {
+      //  qtp.stop();
       }
 
     } catch (Exception e) {
@@ -794,7 +817,7 @@ public class JettySolrRunner implements Closeable {
 //          }
 //        }
 //      }
-      ObjectReleaseTracker.release(this);
+      assert ObjectReleaseTracker.release(this);
       if (prevContext != null) {
         MDC.setContextMap(prevContext);
       } else {
