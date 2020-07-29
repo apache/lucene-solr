@@ -67,7 +67,9 @@ public class SyncStrategy implements Closeable {
   }
   
   public SyncStrategy(CoreContainer cc) {
-    ObjectReleaseTracker.track(this);
+    // don't track currently - can be left open by a late election,
+    // but currently holds no resources to release anyway
+    // assert ObjectReleaseTracker.track(this);
     UpdateShardHandler updateShardHandler = cc.getUpdateShardHandler();
     shardHandler = ((HttpShardHandlerFactory)cc.getShardHandlerFactory()).getShardHandler(cc.getUpdateShardHandler().getUpdateOnlyHttpClient());
   }
@@ -280,7 +282,9 @@ public class SyncStrategy implements Closeable {
   
   public void close() {
     this.isClosed = true;
-    ObjectReleaseTracker.release(this);
+    // don't track currently - can be left open by a late election,
+    // but currently holds no resources to release anyway
+    // assert ObjectReleaseTracker.release(this);
   }
   
   public static ModifiableSolrParams params(String... params) {
