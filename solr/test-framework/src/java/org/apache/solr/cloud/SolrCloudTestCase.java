@@ -46,6 +46,7 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
@@ -60,6 +61,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrQueuedThreadPool;
 import org.junit.AfterClass;
@@ -475,7 +477,9 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
    * This assumes that the replica is hosted on a live node.
    */
   protected static CoreStatus getCoreStatus(Replica replica) throws IOException, SolrServerException {
-    return CoreAdminRequest.getCoreStatus(replica.getCoreName(), cluster.getSolrClient().getHttpClient());
+    try (Http2SolrClient client = new Http2SolrClient.Builder(replica.getBaseUrl()).withHttpClient(cluster.getSolrClient().getHttpClient()).build()) {
+      return CoreAdminRequest.getCoreStatus(replica.getCoreName(), client);
+    }
   }
 
   protected NamedList waitForResponse(Predicate<NamedList> predicate, SolrRequest request, int intervalInMillis, int numRetries, String messageOnFail) {

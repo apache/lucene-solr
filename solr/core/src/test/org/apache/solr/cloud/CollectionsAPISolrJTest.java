@@ -85,7 +85,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @LuceneTestCase.Slow
-@Ignore
 public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -239,10 +238,9 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit debug...
+  @Ignore // nocommit debug
   public void testCreateCollWithDefaultClusterPropertiesNewFormat() throws Exception {
     String COLL_NAME = "CollWithDefaultClusterProperties";
-
       V2Response rsp = new V2Request.Builder("/cluster")
           .withMethod(SolrRequest.METHOD.POST)
           .withPayload("{set-obj-property:{defaults : {collection:{numShards : 2 , nrtReplicas : 2}}}}")
