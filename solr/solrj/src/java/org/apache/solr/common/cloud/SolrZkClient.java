@@ -732,11 +732,12 @@ public class SolrZkClient implements Closeable {
   public List<OpResult> multi(final Iterable<Op> ops) throws InterruptedException, KeeperException {
     List<String> errors = new ArrayList<>();
     List<OpResult> results;
-
+    KeeperException ex = null;
     try {
       ZooKeeper keeper = connManager.getKeeper();
       results = keeper.multi(ops);
     } catch (KeeperException e) {
+      ex = e;
       results = e.getResults();
     }
 
@@ -752,9 +753,13 @@ public class SolrZkClient implements Closeable {
     }
     if (errors.size() > 0) {
       log.error("Errors", errors.toString());
-      return results;
+      //return results;
     }
-    return Collections.emptyList();
+
+    if (ex != null) {
+      throw ex;
+    }
+    return results;
   }
 
   /**

@@ -73,7 +73,7 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
 
   @Override
   public void cancelElection() throws InterruptedException, KeeperException {
-    if (!zkClient.isConnected() || zkClient.isClosed()) {
+    if (!zkClient.isConnected()) {
       log.info("Can't cancel, zkClient is not connected");
       return;
     }

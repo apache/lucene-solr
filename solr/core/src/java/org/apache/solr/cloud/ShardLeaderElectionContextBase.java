@@ -67,7 +67,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
 
   @Override
   public void cancelElection() throws InterruptedException, KeeperException {
-    if (!zkClient.isConnected() || zkClient.isClosed()) {
+    if (!zkClient.isConnected()) {
       log.info("Can't cancel, zkClient is not connected");
       return;
     }
@@ -150,12 +150,14 @@ class ShardLeaderElectionContextBase extends ElectionContext {
       List<OpResult> results;
 
       results = zkClient.multi(ops);
+      log.info("Results from call {}", results);
       Iterator<Op> it = ops.iterator();
       for (OpResult result : results) {
         if (result.getType() == ZooDefs.OpCode.setData) {
           SetDataResult dresult = (SetDataResult) result;
           Stat stat = dresult.getStat();
           leaderZkNodeParentVersion = stat.getVersion();
+          log.info("Got leaderZkNodeParentVersion {}", leaderZkNodeParentVersion);
         }
         if (result.getType() == ZooDefs.OpCode.error) {
           OpResult.ErrorResult dresult = (OpResult.ErrorResult) result;
@@ -165,7 +167,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
         }
 
       }
-     // assert leaderZkNodeParentVersion != null;
+    // assert leaderZkNodeParentVersion != null;
 
     } catch (Throwable t) {
       ParWork.propegateInterrupt(t);

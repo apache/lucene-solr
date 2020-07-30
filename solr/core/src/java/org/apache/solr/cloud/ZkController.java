@@ -861,6 +861,8 @@ public class ZkController implements Closeable {
 
     paths.put(Overseer.OVERSEER_COLLECTION_MAP_FAILURE, null);
     paths.put(Overseer.OVERSEER_ASYNC_IDS, null);
+    paths.put(Overseer.OVERSEER_ELECT, null);
+
 
     paths.put("/autoscaling", null);
     paths.put(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, emptyJson);
