@@ -234,7 +234,7 @@ public class SolrCmdDistributor implements Closeable {
           req.uReq.setBasePath(req.node.getUrl());
           solrClient.request(req.uReq);
         } catch (Exception e) {
-          SolrException.log(log, e);
+          log.error("Exception sending synchronous dist update", e);
           Error error = new Error();
           error.t = e;
           error.req = req;
@@ -263,7 +263,7 @@ public class SolrCmdDistributor implements Closeable {
 
         @Override
         public void onFailure(Throwable t) {
-          log.warn("Error sending distributed update", t);
+          log.error("Exception sending dist update", t);
           arrive(req);
 
           Error error = new Error();
@@ -282,7 +282,7 @@ public class SolrCmdDistributor implements Closeable {
 
         }});
     } catch (Exception e) {
-      log.warn("Error sending distributed update", e);
+      log.error("Exception sending dist update", e);
       arrive(req);
       Error error = new Error();
       error.t = e;

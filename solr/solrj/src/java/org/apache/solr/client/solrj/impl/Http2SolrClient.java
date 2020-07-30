@@ -43,6 +43,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Phaser;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -887,6 +888,8 @@ public class Http2SolrClient extends SolrClient {
     // nocommit - look at outstanding max again
     private static final int MAX_OUTSTANDING_REQUESTS = 1000;
 
+    private final Semaphore available;
+
     // wait for async requests
     private final Phaser phaser = new Phaser(1) {
       @Override
@@ -903,9 +906,11 @@ public class Http2SolrClient extends SolrClient {
 //        phaser.register();
 //        if (log.isDebugEnabled()) log.debug("Request queued registered: {} arrived: {}", phaser.getRegisteredParties(), phaser.getArrivedParties());
 //      };
+      available = new Semaphore(MAX_OUTSTANDING_REQUESTS, false);
       completeListener = result -> {
        if (log.isDebugEnabled()) log.debug("Request complete registered: {} arrived: {}", phaser.getRegisteredParties(), phaser.getArrivedParties());
         phaser.arriveAndDeregister();
+        available.release();
       };
     }
 
@@ -934,6 +939,11 @@ public class Http2SolrClient extends SolrClient {
         log.debug("Registered new party");
       }
       phaser.register();
+      try {
+        available.acquire();
+      } catch (InterruptedException ignored) {
+        ParWork.propegateInterrupt(ignored);
+      }
     }
   }
 
