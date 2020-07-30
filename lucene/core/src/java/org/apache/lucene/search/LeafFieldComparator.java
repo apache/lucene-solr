@@ -51,7 +51,7 @@ import java.io.IOException;
  * @see FieldComparator
  * @lucene.experimental
  */
-public interface LeafFieldComparator {
+public interface LeafFieldComparator<T> {
 
   /**
    * Set the bottom slot, ie the "weakest" (sorted last)
@@ -116,4 +116,12 @@ public interface LeafFieldComparator {
    * obtain the current hit's score, if necessary. */
   void setScorer(Scorable scorer) throws IOException;
 
+  /** Publishes feature values for the given docID
+   *  The passed in docID values should only move ahead --
+   *  DocValues do not support reverse iterations.
+   *  WARNING: Can be a costly API, especially for sorted fields
+   *
+   *  @param doc docID relative to current reader
+   */
+  T getDocValue(int doc) throws IOException;
 }
