@@ -92,11 +92,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
    * Requests from leader to it's followers will be retried this amount of times by default
    */
   static final int MAX_RETRIES_TO_FOLLOWERS_DEFAULT = Integer.getInteger("solr.retries.to.followers", 3);
-  private long versionOnUpdate;
-  private VersionBucket bucket;
-  private boolean isReplayOrPeersync;
-  private boolean leaderLogic;
-  private boolean forwardedFromCollection;
+  private volatile long versionOnUpdate;
+  private volatile VersionBucket bucket;
+  private volatile boolean isReplayOrPeersync;
+  private volatile boolean leaderLogic;
+  private volatile boolean forwardedFromCollection;
 
   /**
    * Values this processor supports for the <code>DISTRIB_UPDATE_PARAM</code>.
@@ -125,7 +125,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   public static final String LOG_REPLAY = "log_replay";
 
   // used to assert we don't call finish more than once, see finish()
-  private boolean finished = false;
+  private volatile boolean finished = false;
 
   protected final SolrQueryRequest req;
   protected final SolrQueryResponse rsp;
@@ -135,7 +135,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   @VisibleForTesting
   VersionInfo vinfo;
   private final boolean versionsStored;
-  private boolean returnVersions;
+  private volatile boolean returnVersions;
 
   private NamedList<Object> addsResponse = null;
   private NamedList<Object> deleteResponse = null;
@@ -146,9 +146,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   // these are setup at the start of each request processing
   // method in this update processor
-  protected boolean isLeader = true;
-  protected boolean forwardToLeader = false;
-  protected boolean isSubShardLeader = false;
+  protected volatile boolean isLeader = true;
+  protected volatile boolean forwardToLeader = false;
+  protected volatile boolean isSubShardLeader = false;
   protected volatile boolean isIndexChanged = false;
 
   /**
@@ -160,7 +160,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
    */
   protected final int maxRetriesToFollowers = MAX_RETRIES_TO_FOLLOWERS_DEFAULT;
 
-  protected UpdateCommand updateCommand;  // the current command this processor is working on.
+  protected volatile UpdateCommand updateCommand;  // the current command this processor is working on.
 
   protected final Replica.Type replicaType;
 
@@ -233,23 +233,14 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     if (dropCmd) {
       // TODO: do we need to add anything to the response?
+      log.info("Dropping update {}", cmd.getPrintableId());
       return;
     }
 
     SolrInputDocument clonedDoc = shouldCloneCmdDoc() ? cmd.solrDoc.deepCopy(): null;
-    AddUpdateCommand cmd2 = null;
+
     if (clonedDoc != null) {
-      cmd2 = new AddUpdateCommand(cmd.getReq());
-      cmd2.commitWithin = cmd.commitWithin;
-      cmd2.isNested = cmd.isNested;
-      cmd2.overwrite = cmd.overwrite;
-      cmd2.prevVersion = cmd.prevVersion;
-      cmd2.updateTerm = cmd.updateTerm;
-      cmd2.isLastDocInBatch = cmd.isLastDocInBatch;
-      cmd2.solrDoc = clonedDoc;
-      cmd2.setVersion((long) cmd.solrDoc.getFieldValue(CommonParams.VERSION_FIELD));
-      cmd2.setFlags(cmd.getFlags());
-      cmd2.setRoute(cmd.getRoute());
+      cmd.solrDoc = clonedDoc;
     }
     try (ParWork worker = new ParWork(this)) {
       if (!forwardToLeader) {
@@ -278,17 +269,17 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           }
         });
       }
-      if (req.getCore().getCoreContainer().isZooKeeperAware()) {
-        AddUpdateCommand finalCmd;
-        if (cmd2 == null) {
-          finalCmd = cmd;
-        } else {
-          finalCmd = cmd2;
-        }
+      boolean zkAware = req.getCore().getCoreContainer().isZooKeeperAware();
+      log.info("Is zk aware {}", zkAware);
+      if (zkAware) {
+
+        log.info("Collect distrib add");
         worker.collect(() -> {
+          log.info("Run distrib add collection");
           try {
-            doDistribAdd(finalCmd);
-          } catch (Exception e) {
+            DistributedUpdateProcessor.this.doDistribAdd(cmd);
+            log.info("after distrib add collection");
+          } catch (Throwable e) {
             ParWork.propegateInterrupt(e);
             throw new SolrException(ErrorCode.SERVER_ERROR, e);
           }
@@ -319,6 +310,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   protected void doDistribAdd(AddUpdateCommand cmd) throws IOException {
     // no-op for derived classes to implement
+    log.info("in dist add");
   }
 
   // must be synchronized by bucket

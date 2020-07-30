@@ -647,7 +647,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
 
     ignoreException("big_integer_t");
 
-    SolrException ex = expectThrows(SolrException.class, () -> {
+    Exception ex = expectThrows(Exception.class, () -> {
       updateJ(json( "[{'id':'1','big_integer_tl':12345678901234567890}]" ), null);
     });
     // nocommit
@@ -655,10 +655,10 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
 
     // Adding a BigInteger to an integer field should fail
     // BigInteger.intValue() returns only the low-order 32 bits.
-    ex = expectThrows(SolrException.class, () -> {
+    ex = expectThrows(Exception.class, () -> {
       updateJ(json( "[{'id':'1','big_integer_ti':12345678901234567890}]" ), null);
     });
-    assertTrue(ex.getCause() instanceof NumberFormatException);
+    assertTrue(ex.getCause().getCause() instanceof NumberFormatException);
 
     unIgnoreException("big_integer_t");
   }

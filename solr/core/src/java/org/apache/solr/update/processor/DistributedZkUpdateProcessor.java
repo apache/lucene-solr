@@ -78,7 +78,6 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
 public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
-
   private final CloudDescriptor cloudDesc;
   private final ZkController zkController;
   private final SolrCmdDistributor cmdDistrib;
@@ -227,15 +226,18 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
             params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
                     zkController.getBaseUrl(), req.getCore().getName()));
 
-            List<SolrCmdDistributor.Node> finalUseNodes = useNodes;
-            ParWork.getExecutor().submit(() -> cmdDistrib.distribCommit(cmd, finalUseNodes, params));
-
+            cmdDistrib.distribCommit(cmd, useNodes, params);
           }
         }
         if (isLeader) {
 
           log.info("Do a local commit on NRT endpoint for leader");
-          doLocalCommit(cmd);
+          try {
+            doLocalCommit(cmd);
+          } catch (Exception e) {
+            log.error("Error on local commit");
+            throw new SolrException(ErrorCode.SERVER_ERROR, e);
+          }
 
           params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
 
@@ -251,9 +253,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
             params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
                     zkController.getBaseUrl(), req.getCore().getName()));
 
-
-            List<SolrCmdDistributor.Node> finalUseNodes1 = useNodes;
-            cmdDistrib.distribCommit(cmd, finalUseNodes1, params);
+            cmdDistrib.distribCommit(cmd, useNodes, params);
 
           }
 
@@ -287,6 +287,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
   @Override
   protected void doDistribAdd(AddUpdateCommand cmd) throws IOException {
+    log.info("in zk dist add");
     log.info("Distribute add cmd {} to {} {}", cmd, nodes, isLeader);
     if (isLeader && !isSubShardLeader)  {
       DocCollection coll = clusterState.getCollection(collection);
@@ -318,8 +319,10 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         return;
 
       }
+    } else {
+      log.info("Not a shard or sub shard leader");
     }
-
+    log.info("Using nodes {}", nodes);
     if (nodes != null) {
       ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
       params.set(DISTRIB_UPDATE_PARAM,
@@ -351,9 +354,9 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
           }
 
       } else {
-        if (!isLeader && params.get(DISTRIB_UPDATE_PARAM).equals(DistribPhase.FROMLEADER.toString())) {
-          throw new IllegalStateException();
-        }
+//        if (!isLeader && params.get(DISTRIB_UPDATE_PARAM).equals(DistribPhase.FROMLEADER.toString())) {
+//          throw new IllegalStateException();
+//        }
         try {
           cmdDistrib
               .distribAdd(cmd, nodes, params, false, rollupReplicationTracker,

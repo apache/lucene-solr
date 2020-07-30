@@ -57,7 +57,7 @@ public class SolrCmdDistributor implements Closeable {
   private static final int MAX_RETRIES_ON_FORWARD = 3;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private boolean finished = false; // see finish()
+  private volatile boolean finished = false; // see finish()
 
   private int maxRetriesOnForward = MAX_RETRIES_ON_FORWARD;
 
@@ -208,7 +208,8 @@ public class SolrCmdDistributor implements Closeable {
   }
 
   public void blockAndDoRetries() {
-    phaser.arriveAndAwaitAdvance();
+    //phaser.arriveAndAwaitAdvance();
+    solrClient.waitForOutstandingRequests();
   }
   
   void addCommit(UpdateRequest ureq, CommitUpdateCommand cmd) {

@@ -466,22 +466,23 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     final CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
     final String collectionName = createAndSetNewDefaultCollection();
 
-    final int numDocs = 3;//atLeast(50);
+    final int numDocs = TEST_NIGHTLY ? atLeast(150) : 55;
     final JettySolrRunner nodeToUpdate = cluster.getRandomJetty(random());
     try (ConcurrentUpdateSolrClient indexClient
          = getConcurrentUpdateSolrClient(nodeToUpdate.getBaseUrl() + "/" + collectionName, 10, 2)) {
       
       for (int i = 0; i < numDocs; i++) {
+        log.info("add doc {}", i);
         indexClient.add(sdoc("id", i, "text_t",
                              TestUtil.randomRealisticUnicodeString(random(), 200)));
       }
       indexClient.blockUntilFinished();
-      
       assertEquals(0, indexClient.commit().getStatus());
-      assertEquals(numDocs, cloudClient.query(params("q","*:*")).getResults().getNumFound());
-
-      checkShardConsistency(params("q","*:*", "rows", ""+(1 + numDocs),"_trace","addAll"));
+      indexClient.blockUntilFinished();
     }
+    assertEquals(numDocs, cloudClient.query(params("q","*:*")).getResults().getNumFound());
+
+    checkShardConsistency(params("q","*:*", "rows", ""+(1 + numDocs),"_trace","addAll"));
   }
   
   /**

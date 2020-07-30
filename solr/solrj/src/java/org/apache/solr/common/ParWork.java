@@ -530,7 +530,15 @@ public class ParWork implements Closeable {
                 continue;
 
               closeCalls.add(() -> {
-                handleObject(workUnit.label, exception, workUnitTracker, object);
+                try {
+                  handleObject(workUnit.label, exception, workUnitTracker,
+                      object);
+                } catch (Throwable t) {
+                  log.error(RAN_INTO_AN_ERROR_WHILE_DOING_WORK, t);
+                  if (exception.get() == null) {
+                    exception.set(t);
+                  }
+                }
                 return object;
               });
 
@@ -569,7 +577,9 @@ public class ParWork implements Closeable {
     } catch (Throwable t) {
       log.error(RAN_INTO_AN_ERROR_WHILE_DOING_WORK, t);
 
-      exception.set(t);
+      if (exception.get() == null) {
+        exception.set(t);
+      }
     } finally {
 
       tracker.doneClose();
