@@ -165,13 +165,16 @@ public abstract class FacetRequest {
     public static class JoinField {
       public final String from;
       public final String to;
+      public final String method;
 
-      private JoinField(String from, String to) {
+      private JoinField(String from, String to, String method) {
         assert null != from;
         assert null != to;
+        assert null != method;
 
         this.from = from;
         this.to = to;
+        this.method = method;
       }
 
       /**
@@ -204,7 +207,9 @@ public abstract class FacetRequest {
                 "'join' domain change contains unexpected keys, only 'from' and 'to' supported: "
                     + join.toString());
           }
-          domain.joinField = new JoinField(join.get("from"), join.get("to"));
+
+          final String method = join.containsKey("method") ? join.get("method") : "index";
+          domain.joinField = new JoinField(join.get("from"), join.get("to"), method);
         }
       }
 
@@ -221,7 +226,7 @@ public abstract class FacetRequest {
         // this shouldn't matter once we're wrapped in a join query, but just in case it ever does...
         fromQuery.setCache(false);
 
-        return JoinQParserPlugin.createJoinQuery(fromQuery, this.from, this.to);
+        return JoinQParserPlugin.createJoinQuery(fromQuery, this.from, this.to, this.method);
       }
 
 

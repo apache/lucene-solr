@@ -182,8 +182,10 @@ public class JoinQParserPlugin extends QParserPlugin {
    * @param subQuery the query to define the starting set of documents on the "left side" of the join
    * @param fromField "left side" field name to use in the join
    * @param toField "right side" field name to use in the join
+   * @param method indicates which implementation should be used to process the join
    */
-  public static Query createJoinQuery(Query subQuery, String fromField, String toField) {
+  public static Query createJoinQuery(Query subQuery, String fromField, String toField, String method) {
+    // TODO actually use the 'method' value.
     return new JoinQuery(fromField, toField, null, subQuery);
   }
   
