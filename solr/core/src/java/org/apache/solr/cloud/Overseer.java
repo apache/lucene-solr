@@ -835,7 +835,7 @@ public class Overseer implements SolrCloseable {
     this.closeAndDone = true;
   }
   
-  public void close() {
+  public synchronized void close() {
     if (this.id != null) {
       log.info("Overseer (id={}) closing", id);
     }
@@ -847,7 +847,15 @@ public class Overseer implements SolrCloseable {
       });
       closer.addCollect("OverseerClose");
     }
-
+    if (zkController.getZkClient().isConnected()) {
+      try {
+        context.cancelElection();
+      } catch (InterruptedException e) {
+        ParWork.propegateInterrupt(e);
+      } catch (KeeperException e) {
+        log.error("Exception canceling election for overseer");
+      }
+    }
 
     assert ObjectReleaseTracker.release(this);
   }
@@ -857,7 +865,7 @@ public class Overseer implements SolrCloseable {
     return closed || zkController.getCoreContainer().isShutDown();
   }
 
-  void doClose() {
+  synchronized void doClose() {
     if (log.isDebugEnabled()) {
       log.debug("doClose() - start");
     }
