@@ -279,7 +279,7 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
       }
       return propertyDataStr.getBytes(StandardCharsets.UTF_8);
     }
-    return null;
+    return ZkStateReader.emptyJson;
   }
 
   private String getPropertyPath(String configName, String propertyPath) {

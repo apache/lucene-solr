@@ -108,12 +108,11 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
   public static final String CONFIGSET_EDITING_DISABLED_ARG = "disable.configEdit";
   public static final boolean configEditing_disabled = Boolean.getBoolean(CONFIGSET_EDITING_DISABLED_ARG);
   private static final Map<String, SolrConfig.SolrPluginInfo> namedPlugins;
-  private Lock reloadLock = new ReentrantLock(true);
-  private HttpClient httpClient;
+ // private Lock reloadLock = new ReentrantLock(true);
 
-  public Lock getReloadLock() {
-    return reloadLock;
-  }
+//  //public Lock getReloadLock() {
+//    return reloadLock;
+//  }
 
   private boolean isImmutableConfigSet = false;
 
@@ -151,7 +150,6 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
   @Override
   public void inform(SolrCore core) {
     isImmutableConfigSet = getImmutable(core);
-    this.httpClient = core.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient();
   }
 
   public static boolean getImmutable(SolrCore core) {
@@ -229,21 +227,35 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
               log.info("I already have the expected version {} of params", expectedVersion);
             }
             if (isStale && req.getCore().getResourceLoader() instanceof ZkSolrResourceLoader) {
-              new Thread(() -> {
-                if (!reloadLock.tryLock()) {
-                  log.info("Another reload is in progress . Not doing anything");
-                  return;
+              //                if (!reloadLock.tryLock()) {
+              //                  log.info("Another reload is in progress . Not doing anything");
+              //                  return;
+              //                }
+              //  reloadLock.unlock();
+              Runnable runner = new Runnable() {
+                @Override
+                public void run() {
+                  //                if (!reloadLock.tryLock()) {
+                  //                  log.info("Another reload is in progress . Not doing anything");
+                  //                  return;
+                  //                }
+                  try {
+                    log.info("Trying to update my configs");
+                    SolrCore.getConfListener(req.getCore(),
+                        (ZkSolrResourceLoader) req.getCore()
+                            .getResourceLoader()).run();
+                  } catch (Exception e) {
+                    ParWork.propegateInterrupt(e);
+                    if (e instanceof InterruptedException) {
+                      return;
+                    }
+                    log.error("Unable to refresh conf ", e);
+                  } finally {
+                    //  reloadLock.unlock();
+                  }
                 }
-                try {
-                  log.info("Trying to update my configs");
-                  SolrCore.getConfListener(req.getCore(), (ZkSolrResourceLoader) req.getCore().getResourceLoader()).run();
-                } catch (Exception e) {
-                  ParWork.propegateInterrupt(e);
-                  log.error("Unable to refresh conf ", e);
-                } finally {
-                  reloadLock.unlock();
-                }
-              }, SolrConfigHandler.class.getSimpleName() + "-refreshconf").start();
+              };
+              runner.run();
             } else {
               if (log.isInfoEnabled()) {
                 log.info("isStale {} , resourceloader {}", isStale, req.getCore().getResourceLoader().getClass().getName());
@@ -370,7 +382,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       List<CommandOperation> ops = CommandOperation.readCommands(req.getContentStreams(), resp.getValues());
       if (ops == null) return;
       try {
-        for (; ; ) {
+        for (int i = 0;  i < 5; i++) {
           ArrayList<CommandOperation> opsCopy = new ArrayList<>(ops.size());
           for (CommandOperation op : ops) opsCopy.add(op.getCopy());
           try {
@@ -387,6 +399,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
             if (log.isInfoEnabled()) {
               log.info("Race condition, the node is modified in ZK by someone else {}", e.getMessage());
             }
+            Thread.sleep(250);
           }
         }
       } catch (Exception e) {

@@ -3163,19 +3163,19 @@ public final class SolrCore implements SolrInfoBean, Closeable {
           checkStale(zkClient, managedSchmaResourcePath, managedSchemaVersion)) {
         log.info("core reload {}", coreName);
         SolrConfigHandler configHandler = ((SolrConfigHandler) core.getRequestHandler("/config"));
-        if (configHandler.getReloadLock().tryLock()) {
+    //    if (configHandler.getReloadLock().tryLock()) {
 
           try {
             cc.reload(coreName);
           } catch (SolrCoreState.CoreIsClosedException e) {
             /*no problem this core is already closed*/
           } finally {
-            configHandler.getReloadLock().unlock();
+          //  configHandler.getReloadLock().unlock();
           }
 
-        } else {
-          log.info("Another reload is in progress. Not doing anything.");
-        }
+//        } else {
+//          log.info("Another reload is in progress. Not doing anything.");
+//        }
         return;
       }
       //some files in conf directory may have  other than managedschema, overlay, params
@@ -3187,7 +3187,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
               try {
                 listener.run();
               } catch (Exception e) {
-                ParWork.propegateInterrupt(e);
                 ParWork.propegateInterrupt("Error in listener ", e);
               }
             });

@@ -1642,7 +1642,7 @@ public class CoreContainer implements Closeable {
       Closeable oldCore = null;
       boolean success = false;
       try {
-        solrCores.waitAddPendingCoreOps(cd.getName());
+        solrCores.waitForLoadingCoreToFinish(cd.getName(), 15000);
         ConfigSet coreConfig = coreConfigService.loadConfigSet(cd);
         log.info("Reloading SolrCore '{}' using configuration from {}", cd.getName(), coreConfig.getName());
         newCore = core.reload(coreConfig);

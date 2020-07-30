@@ -58,6 +58,12 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
 
   @BeforeClass
   public static void createCluster() throws Exception {
+        System.setProperty("solr.tests.IntegerFieldType", "org.apache.solr.schema.IntPointField");
+          System.setProperty("solr.tests.FloatFieldType", "org.apache.solr.schema.FloatPointField");
+         System.setProperty("solr.tests.LongFieldType", "org.apache.solr.schema.LongPointField");
+         System.setProperty("solr.tests.DoubleFieldType", "org.apache.solr.schema.DoublePointField");
+         System.setProperty("solr.tests.DateFieldType", "org.apache.solr.schema.DatePointField");
+         System.setProperty("solr.tests.EnumFieldType", "org.apache.solr.schema.EnumFieldType");
     System.setProperty("managed.schema.mutable", "true");
     configureCluster(2)
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-managed").resolve("conf"))

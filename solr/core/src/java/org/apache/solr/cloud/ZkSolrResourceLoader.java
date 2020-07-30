@@ -75,6 +75,7 @@ public class ZkSolrResourceLoader extends SolrResourceLoader implements Resource
     InputStream is;
     String file = (".".equals(resource)) ? configSetZkPath : configSetZkPath + "/" + resource;
 
+
     try {
 
       Stat stat = new Stat();

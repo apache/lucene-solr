@@ -72,7 +72,12 @@ public abstract class ConfigSetService {
       // ConfigSet properties are loaded from ConfigSetProperties.DEFAULT_FILENAME file.
       NamedList properties = loadConfigSetProperties(dcore, coreLoader);
       // ConfigSet flags are loaded from the metadata of the ZK node of the configset.
-      NamedList flags = loadConfigSetFlags(dcore, coreLoader);
+      NamedList flags = null;
+      try {
+        flags = loadConfigSetFlags(dcore, coreLoader);
+      } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
+      }
 
       boolean trusted =
           (coreLoader instanceof ZkSolrResourceLoader
