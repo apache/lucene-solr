@@ -236,6 +236,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       return;
     }
 
+    SolrInputDocument clonedDoc = shouldCloneCmdDoc() ? cmd.solrDoc.deepCopy(): null;
+    if (clonedDoc != null) {
+      cmd.solrDoc = clonedDoc;
+    }
     try (ParWork worker = new ParWork(this)) {
       worker.collect(() -> {
         if (vinfo != null) vinfo.lockForUpdate();
@@ -248,7 +252,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           // force open a realTimeSearcher to trigger a ulog cache refresh.
           // This refresh makes RTG handler aware of this update.q
           if (ulog != null) {
-            if (req.getSchema().isUsableForChildDocs() && shouldRefreshUlogCaches(cmd)) {
+            if (req.getSchema().isUsableForChildDocs()
+                && shouldRefreshUlogCaches(cmd)) {
               ulog.openRealtimeSearcher();
             }
           }
@@ -259,13 +264,16 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           if (vinfo != null) vinfo.unlockForUpdate();
         }
       });
-      SolrInputDocument clonedDoc = shouldCloneCmdDoc() ? cmd.solrDoc.deepCopy(): null;
-      if (clonedDoc != null) {
-        cmd.solrDoc = clonedDoc;
-      }
       if (req.getCore().getCoreContainer().isZooKeeperAware()) {
-        doDistribAdd(worker, cmd);
+        worker.collect(() -> {
+          try {
+            doDistribAdd(worker, cmd);
+          } catch (IOException e) {
+            throw new SolrException(ErrorCode.SERVER_ERROR, e);
+          }
+        });
       }
+
       worker.addCollect("distUpdate");
     }
 
