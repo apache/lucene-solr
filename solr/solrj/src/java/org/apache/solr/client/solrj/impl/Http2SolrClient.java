@@ -102,7 +102,6 @@ import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -138,7 +137,7 @@ public class Http2SolrClient extends SolrClient {
   private static final String DEFAULT_PATH = "/select";
   private static final List<String> errPath = Arrays.asList("metadata", "error-class");
   private final Map<String, String> headers;
-  private final SolrHttpClientScheduler scheduler;
+
   private final CloseTracker closeTracker;
 
   private volatile HttpClient httpClient;
@@ -167,8 +166,6 @@ public class Http2SolrClient extends SolrClient {
       }
       this.serverBaseUrl = serverBaseUrl;
     }
-
-    scheduler = new SolrHttpClientScheduler("JettyHttpClientScheduler", true, null, new ThreadGroup("JettyHttpClientScheduler"), 5);
 
     this.headers = builder.headers;
 
@@ -205,12 +202,6 @@ public class Http2SolrClient extends SolrClient {
   private HttpClient createHttpClient(Builder builder) {
     HttpClient httpClient;
 
-//    BlockingArrayQueue<Runnable> queue = new BlockingArrayQueue<>(256, 256);
-//    httpClientExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(Integer.getInteger("solr.http2solrclient.corepool.size", 2),
-//            Integer.getInteger("solr.http2solrclient.maxpool.size", 10), Integer.getInteger("solr.http2solrclient.pool.keepalive", 3000),
-//            TimeUnit.MILLISECONDS, queue, new SolrNamedThreadFactory("h2sc"));
-
-
     SslContextFactory.Client sslContextFactory;
     boolean ssl;
     if (builder.sslConfig == null) {
@@ -237,11 +228,11 @@ public class Http2SolrClient extends SolrClient {
       HTTP2Client http2client = new HTTP2Client();
       transport = new HttpClientTransportOverHTTP2(http2client);
       httpClient = new HttpClient(transport, sslContextFactory);
-      httpClient.setMaxConnectionsPerDestination(10);
+      httpClient.setMaxConnectionsPerDestination(300);
     }
     httpClientExecutor = new SolrQueuedThreadPool("httpClient");
-    httpClientExecutor.setMaxThreads(Math.max(4 , Runtime.getRuntime().availableProcessors()));
-    httpClientExecutor.setMinThreads(3);
+    //httpClientExecutor.setMaxThreads(-1);
+   // httpClientExecutor.setMinThreads(3);
     httpClient.setIdleTimeout(idleTimeout);
     try {
       httpClient.setExecutor(httpClientExecutor);
@@ -252,7 +243,6 @@ public class Http2SolrClient extends SolrClient {
       httpClient.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, AGENT));
       httpClient.setIdleTimeout(idleTimeout);
       if (builder.connectionTimeout != null) httpClient.setConnectTimeout(builder.connectionTimeout);
-      httpClient.setScheduler(scheduler);
       httpClient.start();
     } catch (Exception e) {
       ParWork.propegateInterrupt(e);
@@ -276,17 +266,11 @@ public class Http2SolrClient extends SolrClient {
           }
         });
       }
-      closer.collect(() -> {
-        // we wait for async requests, so far devs don't want to give sugar for this
-        asyncTracker.waitForCompleteFinal();
-        if (httpClientExecutor != null) {
-          try {
-            httpClientExecutor.waitForStopping();
-          } catch (InterruptedException e) {
-            ParWork.propegateInterrupt(e);
-          }
-        }
-      });
+//      closer.collect(() -> {
+//        // we wait for async requests, so far devs don't want to give sugar for this
+//       // asyncTracker.waitForCompleteFinal();
+//
+//      });
       closer.addCollect("httpClientExecutor");
     }
     assert ObjectReleaseTracker.release(this);
@@ -435,8 +419,8 @@ public class Http2SolrClient extends SolrClient {
         ? this.parser: solrRequest.getResponseParser();
     if (onComplete != null) {
       // This async call only suitable for indexing since the response size is limited by 5MB
-      asyncTracker.register();
-      req.send(new BufferingResponseListener(5 * 1024 * 1024) {
+      req.onRequestQueued(asyncTracker.queuedListener)
+          .onComplete(asyncTracker.completeListener).send(new BufferingResponseListener(5 * 1024 * 1024) {
 
         @Override
         public void onComplete(Result result) {
@@ -458,7 +442,7 @@ public class Http2SolrClient extends SolrClient {
               onComplete.onFailure(e);
             }
           } finally {
-            asyncTracker.completeListener.onComplete(result);
+        //    asyncTracker.completeListener.onComplete(result);
           }
         }
       });
@@ -475,8 +459,7 @@ public class Http2SolrClient extends SolrClient {
             }
           }
         };
-        asyncTracker.register();
-        req.send(listener);
+        req.onRequestQueued(asyncTracker.queuedListener).send(listener);
         Response response = listener.get(idleTimeout, TimeUnit.MILLISECONDS);
         InputStream is = listener.getInputStream();
         assert ObjectReleaseTracker.track(is);
@@ -886,7 +869,7 @@ public class Http2SolrClient extends SolrClient {
   private class AsyncTracker {
 
     // nocommit - look at outstanding max again
-    private static final int MAX_OUTSTANDING_REQUESTS = 100;
+    private static final int MAX_OUTSTANDING_REQUESTS = 10;
 
     private final Semaphore available;
 
@@ -898,15 +881,21 @@ public class Http2SolrClient extends SolrClient {
       }
     };
     // maximum outstanding requests left
-   // private final Request.QueuedListener queuedListener;
+    private final Request.QueuedListener queuedListener;
     private final Response.CompleteListener completeListener;
 
     AsyncTracker() {
-//      queuedListener = request -> {
-//        phaser.register();
-//        if (log.isDebugEnabled()) log.debug("Request queued registered: {} arrived: {}", phaser.getRegisteredParties(), phaser.getArrivedParties());
-//      };
-      available = new Semaphore(MAX_OUTSTANDING_REQUESTS, true);
+      available = new Semaphore(MAX_OUTSTANDING_REQUESTS, false);
+      queuedListener = request -> {
+        phaser.register();
+        try {
+          available.acquire();
+        } catch (InterruptedException ignored) {
+          ParWork.propegateInterrupt(ignored);
+        }
+        if (log.isDebugEnabled()) log.debug("Request queued registered: {} arrived: {}", phaser.getRegisteredParties(), phaser.getArrivedParties());
+      };
+
       completeListener = result -> {
        if (log.isDebugEnabled()) log.debug("Request complete registered: {} arrived: {}", phaser.getRegisteredParties(), phaser.getArrivedParties());
         phaser.arriveAndDeregister();
@@ -921,15 +910,19 @@ public class Http2SolrClient extends SolrClient {
 
     public synchronized void waitForComplete() {
       if (log.isDebugEnabled()) log.debug("Before wait for outstanding requests registered: {} arrived: {}", phaser.getRegisteredParties(), phaser.getArrivedParties());
-
+      if (phaser.getUnarrivedParties() == 0) {
+        return;
+      }
       int arrival = phaser.arriveAndAwaitAdvance();
+
+     // phaser.awaitAdvance(phaser.arriveAndDeregister());
 
       if (log.isDebugEnabled()) log.debug("After wait for outstanding requests registered: {} arrived: {}", phaser.getRegisteredParties(), phaser.getArrivedParties());
     }
 
     public void waitForCompleteFinal() {
       if (log.isDebugEnabled()) log.debug("Before wait for complete final registered: {} arrived: {}", phaser.getRegisteredParties(), phaser.getArrivedParties());
-      int arrival = phaser.arriveAndAwaitAdvance();
+      phaser.awaitAdvance(phaser.arriveAndDeregister());
 
       if (log.isDebugEnabled()) log.debug("After wait for complete final registered: {} arrived: {}", phaser.getRegisteredParties(), phaser.getArrivedParties());
     }
@@ -938,12 +931,12 @@ public class Http2SolrClient extends SolrClient {
       if (log.isDebugEnabled()) {
         log.debug("Registered new party");
       }
-      phaser.register();
-      try {
-        available.acquire();
-      } catch (InterruptedException ignored) {
-        ParWork.propegateInterrupt(ignored);
-      }
+   //   phaser.register();
+//      try {
+//        available.acquire();
+//      } catch (InterruptedException ignored) {
+//        ParWork.propegateInterrupt(ignored);
+//      }
     }
   }
 

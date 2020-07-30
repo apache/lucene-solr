@@ -289,9 +289,6 @@ public class ParWorkExecService implements ExecutorService {
 
   @Override
   public void execute(Runnable runnable) {
-    if (shutdown || terminated) {
-      throw new RejectedExecutionException();
-    }
     boolean success = checkLoad();
     if (success) {
       success = available.tryAcquire();

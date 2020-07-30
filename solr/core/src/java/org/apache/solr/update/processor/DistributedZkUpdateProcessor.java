@@ -1154,7 +1154,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     cmdDistrib.finish();
     Set<SolrCmdDistributor.Error> errors = cmdDistrib.getErrors();
     if (errors.size() > 0) {
-      log.info("There were errors during the request {}", errors);
+      log.warn("There were errors during the request {}", errors);
     }
 
     // TODO - we may need to tell about more than one error...

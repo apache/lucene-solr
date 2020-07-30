@@ -448,7 +448,7 @@ public class SolrTestCase extends LuceneTestCase {
 
       if (clazz != null) {
         // nocommit - leave this on
-        fail("A " + clazz.getName() + " took too long to close: " + tooLongTime + "\n" + times);
+        if (!TEST_NIGHTLY) fail("A " + clazz.getName() + " took too long to close: " + tooLongTime + "\n" + times);
       }
     }
     log.info("@AfterClass end ------------------------------------------------------");

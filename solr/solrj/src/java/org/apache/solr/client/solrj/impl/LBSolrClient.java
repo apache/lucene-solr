@@ -428,7 +428,7 @@ public abstract class LBSolrClient extends SolrClient {
   protected abstract SolrClient getClient(String baseUrl);
 
   private Exception addZombie(String serverStr, Exception e) {
-    log.info("add Zombie {}" + serverStr);
+    log.warn("adding zombie server {} due to exception", serverStr, e);
     ServerWrapper wrapper = createServerWrapper(serverStr);
     wrapper.standard = false;
     zombieServers.put(serverStr, wrapper);

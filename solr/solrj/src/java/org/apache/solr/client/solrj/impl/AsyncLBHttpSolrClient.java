@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.impl;
 import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.lang.ref.WeakReference;
 import java.net.ConnectException;
 import java.net.MalformedURLException;
@@ -56,6 +57,8 @@ import org.apache.solr.common.params.QoSParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 /**
@@ -96,6 +99,10 @@ import org.slf4j.MDC;
  * @since solr 1.4
  */
 public class AsyncLBHttpSolrClient extends SolrClient {
+
+  private static final Logger log = LoggerFactory
+      .getLogger(MethodHandles.lookup().lookupClass());
+
   private static Set<Integer> RETRY_CODES = new HashSet<>(4);
 
   static {
@@ -483,7 +490,7 @@ public class AsyncLBHttpSolrClient extends SolrClient {
   }
 
   protected Exception addZombie(Http2SolrClient server, String url, Exception e) {
-
+    log.warn("adding zombie server {} due to exception", url, e);
     ServerWrapper wrapper;
 
     wrapper = new ServerWrapper(server, url);

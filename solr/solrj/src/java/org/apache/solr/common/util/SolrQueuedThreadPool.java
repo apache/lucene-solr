@@ -142,7 +142,7 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
         setMinThreads(minThreads);
         setMaxThreads(maxThreads);
         setIdleTimeout(idleTimeout);
-        setStopTimeout(5000);
+//       / setStopTimeout(5000);
         setReservedThreads(reservedThreads);
         if (queue == null)
         {
@@ -284,14 +284,14 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
 
     private void joinThreads(long stopByNanos) throws InterruptedException
     {
-        for (Thread thread : _threads)
-        {
-            long canWait = TimeUnit.NANOSECONDS.toMillis(stopByNanos - System.nanoTime());
-            if (LOG.isDebugEnabled())
-                LOG.debug("Waiting for {} for {}", thread, canWait);
-            if (canWait > 0)
-                thread.join(canWait);
-        }
+//        for (Thread thread : _threads)
+//        {
+//            long canWait = TimeUnit.NANOSECONDS.toMillis(stopByNanos - System.nanoTime());
+//            if (LOG.isDebugEnabled())
+//                LOG.debug("Waiting for {} for {}", thread, canWait);
+//            if (canWait > 0)
+//                thread.join(canWait);
+//        }
     }
 
     /**
