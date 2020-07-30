@@ -142,7 +142,7 @@ public class SysStats extends Thread {
     }
 
     public double getAvarageUsagePerCPU() {
-        return getTotalUsage() / opBean.getAvailableProcessors();
+        return getTotalUsage() / ParWork.PROC_COUNT;
     }
 
     public double getUsageByThread(Thread t) {

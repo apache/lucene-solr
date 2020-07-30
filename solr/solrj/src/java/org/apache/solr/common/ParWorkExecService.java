@@ -24,7 +24,7 @@ public class ParWorkExecService implements ExecutorService {
   private static final Logger log = LoggerFactory
       .getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final int MAX_AVAILABLE = ParWork.PROC_COUNT;
+  private static final int MAX_AVAILABLE = Math.max(ParWork.PROC_COUNT / 2, 3);
   private final Semaphore available = new Semaphore(MAX_AVAILABLE, true);
 
   private final Phaser phaser = new Phaser(1) {
@@ -102,7 +102,7 @@ public class ParWorkExecService implements ExecutorService {
           return CompletableFuture.completedFuture(callable.call());
         }
       } else {
-        available.acquireUninterruptibly();
+      //  available.acquireUninterruptibly();
       }
       Future<T> future = service.submit(callable);
       return new Future<T>() {
@@ -196,7 +196,7 @@ public class ParWorkExecService implements ExecutorService {
         return CompletableFuture.completedFuture(null);
       }
     } else {
-      available.acquireUninterruptibly();
+     // available.acquireUninterruptibly();
     }
     Future<?> future = service.submit(runnable);
 

@@ -82,7 +82,7 @@ public class TestHighlightDedupGrouping extends BaseDistributedSearchTestCase {
     handle.put("grouped", UNORDERED);   // distrib grouping doesn't guarantee order of top level group commands
 
     int numDocs = TestUtil.nextInt(random(), 100, TEST_NIGHTLY ? 1000 : 125);
-    int numGroups = TestUtil.nextInt(random(), 1, (numDocs / 50) + 1);
+    int numGroups = TestUtil.nextInt(random(), 1, (TEST_NIGHTLY ? (numDocs / 50) + 1 : 1));
     int[] docsInGroup = new int[numGroups + 1];
     int percentDuplicates = TestUtil.nextInt(random(), 1, TEST_NIGHTLY ? 25 : 5);
     for (int docid = 0 ; docid < numDocs ; ++docid) {
