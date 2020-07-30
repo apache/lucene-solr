@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search;
 
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -67,6 +68,11 @@ public class JoinQParserPlugin extends QParserPlugin {
         q.fromCoreOpenTime = jParams.fromCoreOpenTime;
         return q;
       }
+
+      @Override
+      Query makeJoinDirectFromParams(JoinParams jParams) {
+        return new JoinQuery(jParams.fromField, jParams.toField, null, jParams.fromQuery);
+      }
     },
     dvWithScore {
       @Override
@@ -82,6 +88,11 @@ public class JoinQParserPlugin extends QParserPlugin {
         q.fromCoreOpenTime = jParams.fromCoreOpenTime;
         return q;
       }
+
+      @Override
+      Query makeJoinDirectFromParams(JoinParams jParams) {
+        return new TopLevelJoinQuery(jParams.fromField, jParams.toField, null, jParams.fromQuery);
+      }
     },
     crossCollection {
       @Override
@@ -92,6 +103,10 @@ public class JoinQParserPlugin extends QParserPlugin {
     };
 
     abstract Query makeFilter(QParser qparser, JoinQParserPlugin plugin) throws SyntaxError;
+
+    Query makeJoinDirectFromParams(JoinParams jParams) {
+      throw new IllegalStateException("Join method [" + name() + "] doesn't support qparser-less creation");
+    }
 
     JoinParams parseJoin(QParser qparser) throws SyntaxError {
       final String fromField = qparser.getParam("from");
@@ -182,11 +197,25 @@ public class JoinQParserPlugin extends QParserPlugin {
    * @param subQuery the query to define the starting set of documents on the "left side" of the join
    * @param fromField "left side" field name to use in the join
    * @param toField "right side" field name to use in the join
-   * @param method indicates which implementation should be used to process the join
+   * @param method indicates which implementation should be used to process the join.  Currently only 'index' and
+   *               'topLevelDV' are supported.
    */
   public static Query createJoinQuery(Query subQuery, String fromField, String toField, String method) {
-    // TODO actually use the 'method' value.
-    return new JoinQuery(fromField, toField, null, subQuery);
+    final EnumSet<Method> methodWhitelist = EnumSet.of(Method.index, Method.topLevelDV);
+    // no method defaults to 'index' for back compatibility
+    if ( method == null ) {
+      return new JoinQuery(fromField, toField, null, subQuery);
+    }
+
+    final Method joinMethod = Method.valueOf(method);
+    if (! methodWhitelist.contains(joinMethod)) {
+      // TODO Throw something that the callers here (FacetRequest) can catch and produce a more domain-appropriate error message for?
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Join method " + method + " not supported for non-scoring, same-core joins");
+    }
+
+    final JoinParams jParams = new JoinParams(fromField, null, subQuery, 0L, toField);
+    return joinMethod.makeJoinDirectFromParams(jParams);
   }
   
 }
