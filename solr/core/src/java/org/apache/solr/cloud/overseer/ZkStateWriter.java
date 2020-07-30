@@ -170,13 +170,12 @@ public class ZkStateWriter {
    * @throws KeeperException       if any ZooKeeper operation results in an error
    * @throws InterruptedException  if the current thread is interrupted
    */
-  public ClusterState writePendingUpdates(ClusterState prevState) throws IllegalStateException, KeeperException, InterruptedException {
+  public ClusterState writePendingUpdates(ClusterState state) throws IllegalStateException, KeeperException, InterruptedException {
     if (log.isDebugEnabled()) {
       log.debug("writePendingUpdates() - start updates.size={}", updates.size());
     }
 
-
-    assert prevState != null;
+    ClusterState prevState = reader.getClusterState();
     Timer.Context timerContext = stats.time("update_state");
     boolean success = false;
     ClusterState newClusterState = null;
@@ -303,7 +302,7 @@ public class ZkStateWriter {
               log.debug("Write state.json bytes={} cs={}", data.length, newClusterState);
             }
             try {
-              prevVersion = -1;
+              prevVersion = 0;
               reader.getZkClient().create(path, data, CreateMode.PERSISTENT, true);
             } catch (KeeperException.NodeExistsException e) {
               stat = reader.getZkClient().setData(path, data, -1, true);
@@ -327,14 +326,21 @@ public class ZkStateWriter {
         }
         // }
 
-        updates.clear();
         // numUpdates = 0;
         if (c != null) {
           try {
+            System.out.println("waiting to see state " + prevVersion);
+            Integer finalPrevVersion = prevVersion;
             reader.waitForState(c.getName(), 15, TimeUnit.SECONDS,
                     (l, col) -> {
-                      if (col != null && col.getZNodeVersion() > prevState.getZNodeVersion()) {
+
+                      if (col != null) {
+                        System.out.println("the version " + col.getZNodeVersion());
+                      }
+
+                      if (col != null && col.getZNodeVersion() > finalPrevVersion) {
                         if (log.isDebugEnabled()) log.debug("Waited for ver: {}", col.getZNodeVersion());
+                        System.out.println("found the version");
                         return true;
                       }
                       return false;
@@ -358,7 +364,7 @@ public class ZkStateWriter {
       if (exception != null) {
         throw exception;
       }
-
+      updates.clear();
       success = true;
     } finally {
       timerContext.stop();

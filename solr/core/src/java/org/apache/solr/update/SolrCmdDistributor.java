@@ -130,7 +130,7 @@ public class SolrCmdDistributor implements Closeable {
         log.info("check retry true");
         return true;
       } else {
-        log.info("max retries exhausted retry false");
+        log.info("max retries exhausted or not a retryable error {} {}", err.req.retries, rspCode);
         return false;
       }
     } else {

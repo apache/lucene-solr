@@ -60,7 +60,6 @@ public class ConfigSetProperties {
     try (InputStream resource = loader.openResource(name)) {
       try (InputStreamReader reader = new InputStreamReader(resource, StandardCharsets.UTF_8)) {
         try {
-          System.out.println("JSON:" + IOUtils.toString(reader));
           return readFromInputStream(reader);
         } finally {
           ParWork.close(reader);
