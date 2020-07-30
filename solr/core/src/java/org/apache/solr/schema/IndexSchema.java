@@ -185,6 +185,7 @@ public class IndexSchema {
     this.resourceName = Objects.requireNonNull(name);
     try {
       readSchema(is);
+      // nocommit
       loader.inform(loader);
     } catch (IOException e) {
       throw new RuntimeException(e);

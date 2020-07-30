@@ -390,10 +390,12 @@ public class SolrTestCase extends LuceneTestCase {
       ParWork.closeExecutor();
 
       if (null != testExecutor) {
-        testExecutor.shutdownNow();
+        testExecutor.shutdown();
         ParWork.close(testExecutor);
         testExecutor = null;
       }
+
+      ParWork.shutdownExec();
 
       SysStats.getSysStats().stopMonitor();
 

@@ -33,6 +33,7 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItem;
@@ -44,6 +45,7 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    useFactory(null);
     initCore("solrconfig-externalversionconstraint.xml", "schema15.xml");
   }
 
@@ -442,6 +444,7 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
    * Constantly hammer the same doc with multiple concurrent threads and diff versions,
    * confirm that the highest version wins.
    */
+  @Ignore // nocommit debug
   public void testConcurrentAdds() throws Exception {
     final int NUM_DOCS = atLeast(50);
     final int MAX_CONCURENT = atLeast(10);

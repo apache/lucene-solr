@@ -135,7 +135,7 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
 
   @Override
   public boolean isClosed() {
-    return overseer.getCoreContainer().isShutDown() || zkClient.isClosed();
+    return isClosed || overseer.getCoreContainer().isShutDown() || zkClient.isClosed();
   }
 }
 

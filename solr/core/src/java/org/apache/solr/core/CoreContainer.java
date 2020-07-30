@@ -896,7 +896,6 @@ public class CoreContainer implements Closeable {
               solrCores.markCoreAsLoading(cd);
             }
             if (cd.isLoadOnStartup()) {
-              ParWork.sizePoolByLoad();
               futures.add(solrCoreLoadExecutor.submit(() -> {
                 SolrCore core;
                 try {

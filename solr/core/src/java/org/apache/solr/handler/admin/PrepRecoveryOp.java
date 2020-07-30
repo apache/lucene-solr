@@ -165,6 +165,10 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
         if (core == null) throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "core not found:" + cname);
         if (onlyIfLeader != null && onlyIfLeader) {
           if (!core.getCoreDescriptor().getCloudDescriptor().isLeader()) {
+            if (coreContainer.isShutDown()) {
+              return;
+            }
+
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "We are not the leader");
           }
         }

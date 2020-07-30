@@ -1,5 +1,7 @@
 package org.apache.solr.common;
 
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.FuturePromise;
 import org.slf4j.Logger;
@@ -9,10 +11,12 @@ import java.lang.invoke.MethodHandles;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.RunnableFuture;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -26,6 +30,11 @@ public class ParWorkExecutor extends ThreadPoolExecutor {
 
     private static AtomicInteger threadNumber = new AtomicInteger(0);
 
+    private  static ExecutorService EXEC_MASTER = new ExecutorUtil.MDCAwareThreadPoolExecutor(4, Integer.MAX_VALUE,
+        15L, TimeUnit.SECONDS,
+        new SynchronousQueue<>(),
+    new SolrNamedThreadFactory("EXEC_MASTER"));
+
     public ParWorkExecutor(String name, int maxPoolsSize) {
         this(name, 0, maxPoolsSize, KEEP_ALIVE_TIME);
     }
@@ -36,7 +45,7 @@ public class ParWorkExecutor extends ThreadPoolExecutor {
 
 
     public ParWorkExecutor(String name, int corePoolsSize, int maxPoolsSize, int keepalive) {
-        super(corePoolsSize,  maxPoolsSize,  keepalive, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(Integer.getInteger("solr.threadExecQueueSize", 30)), new ThreadFactory() {
+        super(corePoolsSize,  maxPoolsSize,  keepalive, TimeUnit.MILLISECONDS, new SynchronousQueue<>(), new ThreadFactory() {
 
             ThreadGroup group;
 
@@ -57,6 +66,7 @@ public class ParWorkExecutor extends ThreadPoolExecutor {
                     }
                 };
                 t.setDaemon(true);
+
                 // t.setPriority(priority);
                 return t;
             }

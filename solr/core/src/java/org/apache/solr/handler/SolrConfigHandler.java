@@ -473,7 +473,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       @SuppressWarnings({"rawtypes"})
       List errs = CommandOperation.captureErrors(ops);
       if (!errs.isEmpty()) {
-        throw new ApiBag.ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST, "error processing params", errs);
+        throw new ApiBag.ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST, "error processing params:" +errs, errs);
       }
 
       SolrResourceLoader loader = req.getCore().getResourceLoader();

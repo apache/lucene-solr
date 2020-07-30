@@ -334,7 +334,7 @@ public class ZkStateReader implements SolrCloseable {
 
   private volatile boolean closed = false;
 
-  private Set<CountDownLatch> waitLatches = ConcurrentHashMap.newKeySet();
+  private Set<CountDownLatch> waitLatches = ConcurrentHashMap.newKeySet(64);
 
   public ZkStateReader(SolrZkClient zkClient) {
     this(zkClient, null);
@@ -365,7 +365,7 @@ public class ZkStateReader implements SolrCloseable {
     this.configManager = new ZkConfigManager(zkClient);
     this.closeClient = true;
     this.securityNodeListener = null;
-
+    zkClient.start();
     assert ObjectReleaseTracker.track(this);
   }
 
@@ -412,8 +412,8 @@ public class ZkStateReader implements SolrCloseable {
 
   @SuppressWarnings({"unchecked"})
   public synchronized void createClusterStateWatchersAndUpdate() {
-    if (closeClient) {
-      zkClient.start();
+    if (isClosed()) {
+      throw new AlreadyClosedException();
     }
 
     log.info("createClusterStateWatchersAndUpdate");
@@ -900,24 +900,32 @@ public class ZkStateReader implements SolrCloseable {
   public void close() {
     closeTracker.close();
     this.closed = true;
+    try {
+      try (ParWork closer = new ParWork(this, true)) {
+        notifications.shutdown();
+        collectionPropsNotifications.shutdown();
 
-    try (ParWork closer = new ParWork(this, true)) {
-      notifications.shutdown();
-      collectionPropsNotifications.shutdown();
+        try {
+          collectionPropsCacheCleaner.cancel(true);
+        } catch (NullPointerException e) {
+          // okay
+        }
+        closer.add("waitLatchesReader", () -> {
+          waitLatches.forEach((w) -> w.countDown());
+          return null;
+        });
 
-      try {
-        collectionPropsCacheCleaner.cancel(true);
-      } catch (NullPointerException e) {
-        // okay
+        closer
+            .add("notifications", notifications, collectionPropsNotifications);
+
+        if (closeClient) {
+          closer.add("zkClient", zkClient);
+        }
       }
-
-      closer.add("ZkStateReader", closeClient ? zkClient : null, notifications, collectionPropsNotifications, () -> {
-        waitLatches.forEach((w) -> w.countDown());
-        return null;
-
-      });
+    } finally {
+      assert ObjectReleaseTracker.release(this);
     }
-    assert ObjectReleaseTracker.release(this);
+
   }
 
   @Override
@@ -2276,6 +2284,7 @@ public class ZkStateReader implements SolrCloseable {
         try {
           Thread.sleep(60000);
         } catch (InterruptedException e) {
+          ParWork.propegateInterrupt(e);
           // Executor shutdown will send us an interrupt
           break;
         }

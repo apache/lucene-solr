@@ -528,6 +528,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
     @Override
     public void newSearcher(SolrIndexSearcher newSearcher,
                             SolrIndexSearcher currentSearcher) {
+      if (core.getCoreContainer().isShutDown()) return;
       long thisCallCount = callCount.incrementAndGet();
       if (isCoreReload && thisCallCount == 1) {
         log.info("Skipping first newSearcher call for suggester {} in core reload", suggester);

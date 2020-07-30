@@ -183,10 +183,8 @@ public class SolrSuggester implements Accountable {
     try {
       lookup.build(dictionary);
     } catch (AlreadyClosedException e) {
-      RuntimeException e2 = new SolrCoreState.CoreIsClosedException
-          ("Suggester build has been interrupted by a core reload or shutdown.");
-      e2.initCause(e);
-      throw e2;
+      log.info("Suggester build has been interrupted by a core reload or shutdown.");
+      return;
     }
     if (storeDir != null) {
       File target = getStoreFile();

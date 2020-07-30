@@ -822,7 +822,10 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
         } catch (Error error) {
             log.error("Error in Jetty thread pool thread", error);
             this.error = error;
+        } finally {
+            ParWork.closeExecutor();
         }
+
         synchronized (notify) {
             notify.notifyAll();
         }

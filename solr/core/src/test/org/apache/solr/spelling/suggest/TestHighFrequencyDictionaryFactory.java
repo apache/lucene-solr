@@ -26,6 +26,7 @@ public class TestHighFrequencyDictionaryFactory extends SolrTestCaseJ4  {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    useFactory(null);
     initCore("solrconfig-phrasesuggest.xml","schema-phrasesuggest.xml");
     // Suggestions text include : change, charge, chance
     assertU(adoc("id", "9999990",

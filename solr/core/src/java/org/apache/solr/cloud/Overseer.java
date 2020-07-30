@@ -178,7 +178,7 @@ public class Overseer implements SolrCloseable {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private volatile ElectionContext context;
-
+  private volatile boolean closeAndDone;
 
   /**
    * <p>This class is responsible for dequeueing state change requests from the ZooKeeper queue at <code>/overseer/queue</code>
@@ -598,7 +598,7 @@ public class Overseer implements SolrCloseable {
   }
 
   public synchronized void start(String id, ElectionContext context) throws KeeperException {
-    if (getCoreContainer().isShutDown()) {
+    if (getCoreContainer().isShutDown() || closeAndDone) {
       if (log.isDebugEnabled()) log.debug("Already closed, exiting");
       return;
     }
@@ -828,6 +828,11 @@ public class Overseer implements SolrCloseable {
    */
   public synchronized OverseerThread getTriggerThread() {
     return triggerThread;
+  }
+
+
+  public void closeAndDone() {
+    this.closeAndDone = true;
   }
   
   public void close() {

@@ -1100,9 +1100,12 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
   @Override
   public void doClose() {
-    super.doClose();
-    if (cmdDistrib != null) {
-      cmdDistrib.close();
+    try {
+      super.doClose();
+    } finally {
+      if (cmdDistrib != null) {
+        cmdDistrib.close();
+      }
     }
   }
 

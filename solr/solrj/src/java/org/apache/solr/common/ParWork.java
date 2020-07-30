@@ -28,27 +28,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.RejectedExecutionHandler;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.OrderedExecutor;
 import org.apache.solr.common.util.SysStats;
 import org.apache.zookeeper.KeeperException;
-import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,7 +54,7 @@ import org.slf4j.LoggerFactory;
  * 
  */
 public class ParWork implements Closeable {
-  static final int PROC_COUNT = ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors();
+  public static final int PROC_COUNT = ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors();
   private static final String WORK_WAS_INTERRUPTED = "Work was interrupted!";
 
   private static final String RAN_INTO_AN_ERROR_WHILE_DOING_WORK =
@@ -67,10 +63,37 @@ public class ParWork implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected final static ThreadLocal<ExecutorService> THREAD_LOCAL_EXECUTOR = new ThreadLocal<>();
+  private final boolean requireAnotherThread;
 
   private Set<Object> collectSet = null;
 
+  private static volatile ThreadPoolExecutor EXEC;
+
+  private synchronized static ThreadPoolExecutor getEXEC() {
+    if (EXEC == null) {
+      EXEC = (ThreadPoolExecutor) getParExecutorService(0,
+          Math.max(Integer.getInteger("solr.per_thread_exec.min_threads", 3), Integer.getInteger("solr.per_thread_exec.max_threads",  Runtime.getRuntime().availableProcessors() / 3)), 15000);
+    }
+    return  EXEC;
+  }
+
+
+  public synchronized static void shutdownExec() {
+    if (EXEC != null) {
+      EXEC.shutdown();
+      EXEC.setKeepAliveTime(1, TimeUnit.MILLISECONDS);
+      EXEC.allowCoreThreadTimeOut(true);
+      ExecutorUtil.shutdownAndAwaitTermination(EXEC);
+      EXEC = null;
+    }
+  }
+
+
   private static SysStats sysStats = SysStats.getSysStats();
+
+  public static SysStats getSysStats() {
+    return sysStats;
+  }
 
     public static void closeExecutor() {
       ExecutorService exec = THREAD_LOCAL_EXECUTOR.get();
@@ -208,8 +231,14 @@ public class ParWork implements Closeable {
     this(object, false);
   }
 
+
   public ParWork(Object object, boolean ignoreExceptions) {
+    this(object, ignoreExceptions, false);
+  }
+
+  public ParWork(Object object, boolean ignoreExceptions, boolean requireAnotherThread) {
     this.ignoreExceptions = ignoreExceptions;
+    this.requireAnotherThread = requireAnotherThread;
     tracker = new TimeTracker(object, object == null ? "NullObject" : object.getClass().getName());
     // constructor must stay very light weight
   }
@@ -479,7 +508,7 @@ public class ParWork implements Closeable {
       throw new IllegalStateException("addCollect must be called to add any objects collected!");
     }
 
-    ExecutorService executor = getExecutor();
+    ParWorkExecService executor = (ParWorkExecService) getExecutor();
     //initExecutor();
     AtomicReference<Throwable> exception = new AtomicReference<>();
     try {
@@ -508,21 +537,10 @@ public class ParWork implements Closeable {
             }
             if (closeCalls.size() > 0) {
               try {
-
-                sizePoolByLoad();
                 List<Future<Object>> results = new ArrayList<>(closeCalls.size());
                 for (Callable<Object> call : closeCalls) {
-                  try {
-                    Future<Object> future = executor.submit(call);
+                    Future<Object> future = executor.doSubmit(call, requireAnotherThread);
                     results.add(future);
-                  } catch (RejectedExecutionException e) {
-                    log.warn("ParWork task was reject due to full executor, running in calling thread");
-                    try {
-                      call.call();
-                    }catch (Exception e1) {
-                      propegateInterrupt("Error running task", e1);
-                    }
-                  }
                 }
 
 //                List<Future<Object>> results = executor.invokeAll(closeCalls, 8, TimeUnit.SECONDS);
@@ -577,41 +595,6 @@ public class ParWork implements Closeable {
     }
   }
 
-  public static void sizePoolByLoad() {
-    Integer maxPoolsSize = getMaxPoolSize();
-
-    Integer minThreads;
-
-    minThreads = Integer.getInteger("solr.per_thread_exec.min_threads", 3);
-
-    ThreadPoolExecutor executor = (ThreadPoolExecutor) getExecutor();
-    double load =  ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage();
-    if (load < 0) {
-      log.warn("SystemLoadAverage not supported on this JVM");
-      load = 0;
-    }
-
-    double ourLoad = sysStats.getAvarageUsagePerCPU();
-    if (ourLoad > 1) {
-      int cMax = executor.getMaximumPoolSize();
-      if (cMax > 2) {
-        executor.setMaximumPoolSize(Math.max(minThreads, (int) ((double)cMax * 0.60D)));
-      }
-    } else {
-      double sLoad = load / (double) PROC_COUNT;
-      if (sLoad > 1.0D) {
-        int cMax =  executor.getMaximumPoolSize();
-        if (cMax > 2) {
-          executor.setMaximumPoolSize(Math.max(minThreads, (int) ((double) cMax * 0.60D)));
-        }
-      } else if (sLoad < 0.9D && maxPoolsSize != executor.getMaximumPoolSize()) {
-        executor.setMaximumPoolSize(maxPoolsSize);
-      }
-      if (log.isDebugEnabled()) log.debug("ParWork, load:" + sLoad); //nocommit: remove when testing is done
-
-    }
-  }
-
   public static ExecutorService getExecutor() {
      // if (executor != null) return executor;
     ExecutorService exec = THREAD_LOCAL_EXECUTOR.get();
@@ -632,11 +615,15 @@ public class ParWork implements Closeable {
     return exec;
   }
 
-  public static ExecutorService getExecutorService(int corePoolSize, int maximumPoolSize, int keepAliveTime) {
+  public static ExecutorService getParExecutorService(int corePoolSize, int maximumPoolSize, int keepAliveTime) {
     ThreadPoolExecutor exec;
     exec = new ParWorkExecutor("ParWork-" + Thread.currentThread().getName(),
-            corePoolSize, maximumPoolSize == -1 ? getMaxPoolSize() : maximumPoolSize, keepAliveTime);
+            corePoolSize, Integer.MAX_VALUE, keepAliveTime);
     return exec;
+  }
+
+  public static ExecutorService getExecutorService(int corePoolSize, int maximumPoolSize, int keepAliveTime) {
+    return new ParWorkExecService(getEXEC());
   }
 
   private static Integer getMaxPoolSize() {
@@ -807,7 +794,7 @@ public class ParWork implements Closeable {
       return;
     pool.shutdown(); // Disable new tasks from being submitted
     awaitTermination(pool);
-    if (!(pool.isShutdown() && pool.isTerminated())) {
+    if (!(pool.isShutdown())) {
       throw new RuntimeException("Timeout waiting for executor to shutdown");
     }
 

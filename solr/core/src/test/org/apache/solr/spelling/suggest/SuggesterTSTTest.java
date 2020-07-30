@@ -16,7 +16,14 @@
  */
 package org.apache.solr.spelling.suggest;
 
+import org.junit.BeforeClass;
+
 public class SuggesterTSTTest extends SuggesterTest {
+  @BeforeClass
+  public static void beforeSuggesterTSTTest() throws Exception {
+    useFactory(null);
+  }
+
   public SuggesterTSTTest() {
     super.requestUri = "/suggest_tst";
   }

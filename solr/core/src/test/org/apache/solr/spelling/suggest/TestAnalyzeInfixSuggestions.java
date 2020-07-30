@@ -26,6 +26,7 @@ public class TestAnalyzeInfixSuggestions extends SolrTestCaseJ4  {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    useFactory(null);
     initCore("solrconfig-phrasesuggest.xml","schema-phrasesuggest.xml");
     assertQ(req("qt", URI_DEFAULT, "q", "", SpellingParams.SPELLCHECK_BUILD, "true"));
     assertQ(req("qt", URI_SUGGEST_DEFAULT, "q", "", SuggesterParams.SUGGEST_BUILD_ALL, "true"));    

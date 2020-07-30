@@ -745,7 +745,7 @@ public class JettySolrRunner implements Closeable {
     Map<String,String> prevContext = MDC.getCopyOfContextMap();
     MDC.clear();
     try {
-      try (ParWork closer = new ParWork(this)) {
+      try (ParWork closer = new ParWork(this, true, true)) {
         closer.collect(() -> {
           try {
             server.stop();

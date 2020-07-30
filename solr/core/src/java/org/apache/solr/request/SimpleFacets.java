@@ -548,7 +548,6 @@ public class SimpleFacets {
           } else {
             PerSegmentSingleValuedFaceting ps = new PerSegmentSingleValuedFaceting(searcher, docs, field, offset, limit, mincount, missing, sort, prefix, termFilter);
             ps.setNumThreads(threads);
-            ParWork.sizePoolByLoad();
             counts = ps.getFacetCounts(ParWork.getExecutor()); // ### expert usage
           }
           break;
@@ -854,9 +853,11 @@ public class SimpleFacets {
         calls.add(callable);
 
       }//facetFs loop
-
+      List<Future> futures = new ArrayList<>(calls.size());
       // expert use of per thread exec
-      List<Future<NamedList>> futures = ParWork.getExecutor().invokeAll(calls);
+      for (Callable<NamedList> call : calls) {
+        futures.add(ParWork.getExecutor().submit(call));
+      }
 
       for (Future<NamedList> future : futures) {
         res.addAll(future.get());
@@ -868,7 +869,7 @@ public class SimpleFacets {
         throw (RuntimeException) e;
       }
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Error while processing facet fields: " + e.toString(), e);
+          "Error while processing facet fields: " + e.toString(), ee);
     }
 
     return res;

@@ -623,7 +623,9 @@ public class ZkController implements Closeable {
     this.shudownCalled = true;
 
     this.isClosed = true;
-
+    if (overseer != null) {
+      overseer.closeAndDone();
+    }
     try (ParWork closer = new ParWork(this, true)) {
       closer.collect(electionContexts.values());
       closer.collect(collectionToTerms.values());
@@ -631,22 +633,18 @@ public class ZkController implements Closeable {
       closer.collect(cloudManager);
       closer.collect(cloudSolrClient);
       closer.collect(replicateFromLeaders.values());
-      closer.addCollect("closeGroup1");
+      closer.addCollect("internals");
 
-      if (overseerElector != null && overseerElector.getContext() != null ) {
-        closer.collect(overseerElector.getContext());
-      }
       closer.collect(overseerContexts.values());
       closer.collect(overseer);
-      closer.addCollect("closeGroup2");
-
+      closer.addCollect("overseer");
       closer.collect(zkStateReader);
-      closer.addCollect("closeGroup3");
-
+      closer.addCollect("zkStateReader");
       if (closeZkClient) {
         closer.collect(zkClient);
+        closer.addCollect("zkClient");
       }
-      closer.addCollect("closeGroup4");
+
     }
     assert ObjectReleaseTracker.release(this);
   }

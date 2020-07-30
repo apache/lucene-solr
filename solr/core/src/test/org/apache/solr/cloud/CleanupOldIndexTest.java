@@ -49,7 +49,7 @@ public class CleanupOldIndexTest extends SolrCloudTestCase {
 
   @AfterClass
   public static void afterClass() throws Exception {
-
+    shutdownCluster();
   }
 
   private static final String COLLECTION = "oldindextest";
@@ -61,7 +61,13 @@ public class CleanupOldIndexTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     cluster.getSolrClient().setDefaultCollection(COLLECTION); // TODO make this configurable on StoppableIndexingThread
 
-    int[] maxDocList = new int[] {300, 500, 700};
+    int[] maxDocList;
+    if (TEST_NIGHTLY) {
+      maxDocList = new int[] {300, 500, 700};
+    } else {
+      maxDocList = new int[] {30, 50, 70};
+    }
+
     int maxDoc = maxDocList[random().nextInt(maxDocList.length - 1)];
 
     StoppableIndexingThread indexThread = new StoppableIndexingThread(null, cluster.getSolrClient(), "1", true, maxDoc, 1, true);
@@ -72,7 +78,7 @@ public class CleanupOldIndexTest extends SolrCloudTestCase {
     if (TEST_NIGHTLY) {
       waitTimes = new int[] {3000, 4000};
     } else {
-      waitTimes = new int[] {500, 1000};
+      waitTimes = new int[] {300, 600};
     }
 
     Thread.sleep(waitTimes[random().nextInt(waitTimes.length - 1)]);
@@ -112,6 +118,8 @@ public class CleanupOldIndexTest extends SolrCloudTestCase {
 
     assertTrue(!oldIndexDir1.isDirectory());
     assertTrue(!oldIndexDir2.isDirectory());
+
+    cluster.waitForActiveCollection(COLLECTION, 1, 2);
   }
 
 

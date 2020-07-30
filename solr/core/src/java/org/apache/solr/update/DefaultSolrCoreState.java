@@ -131,7 +131,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
     }
 
     boolean succeeded = false;
-    iwLock.readLock().lock();
+    lock(iwLock.readLock());
     try {
       // Multiple readers may be executing this, but we only want one to open the writer on demand.
       synchronized (this) {
@@ -184,6 +184,26 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
     }
   }
 
+  // acquires the lock or throws an exception if the CoreState has been closed.
+  private void lock(Lock lock) {
+    boolean acquired = false;
+    do {
+      try {
+        acquired = lock.tryLock(100, TimeUnit.MILLISECONDS);
+      } catch (InterruptedException e) {
+        log.warn("WARNING - Dangerous interrupt", e);
+      }
+
+      // even if we failed to acquire, check if we are closed
+      if (closed) {
+        if (acquired) {
+          lock.unlock();
+        }
+        throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "SolrCoreState already closed.");
+      }
+    } while (!acquired);
+  }
+
   // closes and opens index writers without any locking
   private void changeWriter(SolrCore core, boolean rollback, boolean openNewWriter) throws IOException {
     String coreName = core.getName();
@@ -220,7 +240,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
 
   @Override
   public void newIndexWriter(SolrCore core, boolean rollback) throws IOException {
-    iwLock.writeLock().lock();
+    lock(iwLock.writeLock());
     try {
       changeWriter(core, rollback, true);
     } finally {
@@ -230,7 +250,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
 
   @Override
   public void closeIndexWriter(SolrCore core, boolean rollback) throws IOException {
-    iwLock.writeLock().lock();
+    lock(iwLock.writeLock());
     changeWriter(core, rollback, false);
     // Do not unlock the writeLock in this method.  It will be unlocked by the openIndexWriter call (see base class javadoc)
   }
@@ -268,7 +288,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   }
 
   public Sort getMergePolicySort() throws IOException {
-    iwLock.readLock().lock();
+    lock(iwLock.readLock());
     try {
       if (indexWriter != null) {
         final MergePolicy mergePolicy = indexWriter.getConfig().getMergePolicy();
@@ -344,17 +364,14 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
             if (recoveryStrat != null) {
               ParWork.close(recoveryStrat);
             }
-            iwLock.writeLock().lock();
-            try {
-              if (prepForClose || cc.isShutDown() || closed) {
-                return;
-              }
-              recoveryStrat = recoveryStrategyBuilder.create(cc, cd, DefaultSolrCoreState.this);
-              recoveryStrat.setRecoveringAfterStartup(recoveringAfterStartup);
-              recoveryStrat.run();
-            } finally {
-              iwLock.writeLock().unlock();
+
+            if (prepForClose || cc.isShutDown() || closed) {
+              return;
             }
+            recoveryStrat = recoveryStrategyBuilder
+                .create(cc, cd, DefaultSolrCoreState.this);
+            recoveryStrat.setRecoveringAfterStartup(recoveringAfterStartup);
+            recoveryStrat.run();
           } finally {
             recoveryLock.unlock();
           }

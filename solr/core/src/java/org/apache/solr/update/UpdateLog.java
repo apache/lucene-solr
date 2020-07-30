@@ -1781,6 +1781,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
     @Override
     public void run() {
+      if (UpdateLog.this.isClosed) throw new AlreadyClosedException();
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(DISTRIB_UPDATE_PARAM, FROMLEADER.toString());
       params.set(DistributedUpdateProcessor.LOG_REPLAY, "true");
@@ -2021,9 +2022,12 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         }
 
       } finally {
-        if (tlogReader != null) tlogReader.close();
-        translog.decref();
-        ParWork.close(proc);
+        try {
+          if (tlogReader != null) tlogReader.close();
+          if (translog != null) translog.decref();
+        } finally {
+          ParWork.close(proc);
+        }
       }
     }
 

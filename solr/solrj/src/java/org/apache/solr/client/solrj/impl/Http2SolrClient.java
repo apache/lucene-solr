@@ -263,8 +263,7 @@ public class Http2SolrClient extends SolrClient {
 
   public void close() {
     closeTracker.close();
-
-    try (ParWork closer = new ParWork(this, true)) {
+    try (ParWork closer = new ParWork(this, true, true)) {
       if (closeClient) {
         closer.collect(() -> {
           try {
@@ -272,7 +271,7 @@ public class Http2SolrClient extends SolrClient {
           } catch (InterruptedException e) {
             ParWork.propegateInterrupt(e);
           } catch (Exception e) {
-            ParWork.propegateInterrupt(e);
+            log.error("Exception closing httpClient", e);
           }
         });
       }

@@ -108,6 +108,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
   protected Map<String, SolrSpellChecker> spellCheckers = new ConcurrentHashMap<>();
 
   protected QueryConverter queryConverter;
+  private volatile  SolrCore core;
 
   @Override
   public void init(@SuppressWarnings({"rawtypes"})NamedList args) {

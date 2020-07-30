@@ -81,6 +81,7 @@ import org.apache.solr.cloud.RecoveryStrategy;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
+import org.apache.solr.common.ParWorkExecService;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
@@ -659,8 +660,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     }
   }
 
-  final List<SolrEventListener> firstSearcherListeners = new ArrayList<>();
-  final List<SolrEventListener> newSearcherListeners = new ArrayList<>();
+  final Set<SolrEventListener> firstSearcherListeners = ConcurrentHashMap.newKeySet();
+  final Set<SolrEventListener> newSearcherListeners = ConcurrentHashMap.newKeySet();
 
   /**
    * NOTE: this function is not thread safe.  However, it is safe to call within the
@@ -696,7 +697,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   }
 
   public SolrCore reload(ConfigSet coreConfig) throws IOException {
-
+    log.info("Reload SolrCore");
     // only one reload at a time
     synchronized (getUpdateHandler().getSolrCoreState().getReloadLock()) {
       final SolrCore currentCore;
@@ -1036,12 +1037,14 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       // cause the executor to stall so firstSearcher events won't fire
       // until after inform() has been called for all components.
       // searchExecutor must be single-threaded for this to work
-      searcherExecutor.submit(() -> {
-        boolean success = latch.await(250, TimeUnit.MILLISECONDS);
+      searcherExecutor.doSubmit(() -> {
+        boolean success = latch.await(10000, TimeUnit.MILLISECONDS);
         return null;
-      });
+      }, true);
 
       this.updateHandler = initUpdateHandler(updateHandler);
+
+      initSearcher(prev);
 
       // Initialize the RestManager
       restManager = initRestManager();
@@ -1051,7 +1054,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
       // Finally tell anyone who wants to know
       resourceLoader.inform(resourceLoader);
-      resourceLoader.inform(this); // last call before the latch is released.
+
       this.updateHandler.informEventListeners(this);
 
       infoRegistry.put("core", this);
@@ -1063,8 +1066,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       // and a SolrCoreAware MBean may have properties that depend on getting a Searcher
       // from the core.
       resourceLoader.inform(infoRegistry);
-
-      initSearcher(prev);
 
       // Allow the directory factory to report metrics
       if (directoryFactory instanceof SolrMetricProducer) {
@@ -1084,6 +1085,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       if (reload) {
         solrCoreState.increfSolrCoreState();
       }
+
+      latch.countDown();
+      resourceLoader.inform(this); // last call before the latch is released.
     } catch (Throwable e) {
       // release the latch, otherwise we block trying to do the close. This
       // should be fine, since counting down on a latch of 0 is still fine
@@ -1108,7 +1112,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       throw new SolrException(ErrorCode.SERVER_ERROR, msg, e);
     } finally {
       // allow firstSearcher events to fire and make sure it is released
-      latch.countDown();
+      //latch.countDown();
     }
 
     assert ObjectReleaseTracker.track(this);
@@ -1873,7 +1877,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private final LinkedList<RefCounted<SolrIndexSearcher>> _searchers = new LinkedList<>();
   private final LinkedList<RefCounted<SolrIndexSearcher>> _realtimeSearchers = new LinkedList<>();
 
-  final ExecutorService searcherExecutor = ParWork.getExecutorService(0, 2, 250);
+  final ParWorkExecService searcherExecutor = (ParWorkExecService) ParWork.getExecutorService(0, 1, 5000);
   private AtomicInteger onDeckSearchers = new AtomicInteger();  // number of searchers preparing
   // Lock ordering: one can acquire the openSearcherLock and then the searcherLock, but not vice-versa.
   private final Object searcherLock = new Object();  // the sync object for the searcher
@@ -2403,12 +2407,13 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
         if (currSearcher == null) {
           future = searcherExecutor.submit(() -> {
-            try {
+            try (ParWork work = new ParWork(this, true)) {
               for (SolrEventListener listener : firstSearcherListeners) {
-                listener.newSearcher(newSearcher, null);
+                work.collect(() -> {
+                  listener.newSearcher(newSearcher, null);
+                });
               }
-            } catch (Throwable e) {
-              ParWork.propegateInterrupt(e);
+              work.addCollect("firstSearchersListeners");
             }
             return null;
           });
@@ -2416,12 +2421,13 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
         if (currSearcher != null) {
           future = searcherExecutor.submit(() -> {
-            try {
+            try (ParWork work = new ParWork(this, true)) {
               for (SolrEventListener listener : newSearcherListeners) {
-                listener.newSearcher(newSearcher, currSearcher);
+                work.collect(() -> {
+                  listener.newSearcher(newSearcher, null);
+                });
               }
-            } catch (Throwable e) {
-              ParWork.propegateInterrupt(e);
+              work.addCollect("newSearcherListeners");
             }
             return null;
           });

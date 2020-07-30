@@ -24,6 +24,7 @@ public class TestBlendedInfixSuggestions extends SolrTestCaseJ4 {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
+    useFactory(null);
     initCore("solrconfig-phrasesuggest.xml","schema-phrasesuggest.xml");
     assertQ(req("qt", URI, "q", "", SuggesterParams.SUGGEST_BUILD_ALL, "true"));
   }

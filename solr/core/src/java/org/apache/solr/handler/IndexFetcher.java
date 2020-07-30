@@ -1174,7 +1174,8 @@ public class IndexFetcher {
     solrCore.deleteNonSnapshotIndexFiles(indexDirPath);
     this.solrCore.closeSearcher();
     assert testWait.getAsBoolean();
-    solrCore.getUpdateHandler().getSolrCoreState().closeIndexWriter(this.solrCore, false);
+    //solrCore.getUpdateHandler().getSolrCoreState().closeIndexWriter(this.solrCore, false);
+   // solrCore.getUpdateHandler().getSolrCoreState().newIndexWriter(this.solrCore, false);
     for (String f : filesTobeDeleted) {
       try {
         indexDir.deleteFile(f);

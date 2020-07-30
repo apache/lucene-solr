@@ -763,6 +763,9 @@ public class RecoveryStrategy implements Runnable, Closeable {
         }
 
       } catch (Exception e) {
+        if (core.getCoreContainer().isShutDown()) {
+          break;
+        }
         SolrException.log(log, "Error while trying to recover. core=" + coreName, e);
       } finally {
         if (successfulRecovery) {

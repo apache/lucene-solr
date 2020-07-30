@@ -211,7 +211,7 @@ public class UpdateShardHandler implements SolrInfoBean {
     if (recoveryExecutor != null) {
       recoveryExecutor.shutdownNow();
     }
-    updateOnlyClient.disableCloseLock();
+    if (updateOnlyClient != null) updateOnlyClient.disableCloseLock();
     try (ParWork closer = new ParWork(this, true)) {
       closer.collect(() -> {
         HttpClientUtil.close(defaultClient);
