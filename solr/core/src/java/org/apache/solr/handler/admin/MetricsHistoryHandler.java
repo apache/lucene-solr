@@ -220,7 +220,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
     }
 
     if (enable) {
-      collectService = (ScheduledThreadPoolExecutor) Executors.newFixedThreadPool(1,
+      collectService = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(1,
           new SolrNamedThreadFactory("MetricsHistoryHandler"));
       collectService.setRemoveOnCancelPolicy(true);
       collectService.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
