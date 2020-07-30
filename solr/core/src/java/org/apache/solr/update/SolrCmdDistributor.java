@@ -84,7 +84,7 @@ public class SolrCmdDistributor implements Closeable {
   public void finish() {
     assert !finished : "lifecycle sanity check";
 
-    blockAndDoRetries();
+    solrClient.waitForOutstandingRequests();
     finished = true;
   }
   
@@ -209,8 +209,8 @@ public class SolrCmdDistributor implements Closeable {
   }
 
   public void blockAndDoRetries() {
-    //phaser.arriveAndAwaitAdvance();
-    solrClient.waitForOutstandingRequests();
+    phaser.arriveAndAwaitAdvance();
+    //solrClient.waitForOutstandingRequests();
   }
   
   void addCommit(UpdateRequest ureq, CommitUpdateCommand cmd) {
