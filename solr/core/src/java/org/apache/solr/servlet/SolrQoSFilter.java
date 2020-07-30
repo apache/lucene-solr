@@ -50,8 +50,8 @@ public class SolrQoSFilter extends QoSFilter {
     super.init(filterConfig);
     _origMaxRequests = Integer.getInteger("solr.concurrentRequests.max", 1000);
     super.setMaxRequests(_origMaxRequests);
-    super.setSuspendMs(Integer.getInteger("solr.concurrentRequests.suspendms", 10000));
-    super.setWaitMs(Integer.getInteger("solr.concurrentRequests.waitms", 500));
+    super.setSuspendMs(Integer.getInteger("solr.concurrentRequests.suspendms", 15000));
+    super.setWaitMs(Integer.getInteger("solr.concurrentRequests.waitms", 2000));
   }
 
   @Override

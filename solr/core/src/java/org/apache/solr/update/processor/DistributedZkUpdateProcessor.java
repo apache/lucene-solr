@@ -157,7 +157,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   public void processCommit(CommitUpdateCommand cmd) throws IOException {
     {
       log.info("processCommit(CommitUpdateCommand cmd={}) - start", cmd);
-
+      log.info("start commit isLeader={} commit_end_point={} replicaType={}", isLeader, req.getParams().get(COMMIT_END_POINT), replicaType);
 
       clusterState = zkController.getClusterState();
 
@@ -178,17 +178,15 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
 
       if (nodes != null) {
-        nodes.removeIf((node) -> node.getNodeProps().getNodeName().equals(zkController.getNodeName())
-                && node.getNodeProps().getCoreName().equals(req.getCore().getName()));
-
-//      if (nodes.size() == 0) {
-//        log.info("Found no other shards or replicas, local commit liveNodes={} clusterstate={}", clusterState.getLiveNodes(), clusterState.getCollection(collection));
-//        doLocalCommit(cmd);
-//        return;
-//      }
+        nodes.removeIf((node) -> node.getNodeProps().getCoreNodeName().equals(
+            cmd.getReq().getCore().getCoreDescriptor().getCloudDescriptor().getCoreNodeName()));
+//
+////      if (nodes.size() == 0) {
+////        log.info("Found no other shards or replicas, local commit liveNodes={} clusterstate={}", clusterState.getLiveNodes(), clusterState.getCollection(collection));
+////        doLocalCommit(cmd);
+////        return;
+////      }
       }
-
-
 
       try {
         leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, cloudDesc.getShardId());
@@ -197,7 +195,8 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Exception finding leader for shard " + cloudDesc.getShardId(), e);
 
       }
-      isLeader = leaderReplica.getName().equals(cloudDesc.getCoreNodeName());
+      isLeader = leaderReplica.getName()
+          .equals(cloudDesc.getCoreNodeName());
 
 
       if (nodes == null) {
@@ -205,7 +204,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
                 "Unable to distribute commit operation. No replicas available of types " + Replica.Type.TLOG + " or " + Replica.Type.NRT);
       }
-
+      log.info("distrib commit isLeader={} commit_end_point={} replicaType={}", isLeader, req.getParams().get(COMMIT_END_POINT), replicaType);
       if (!isLeader && req.getParams().get(COMMIT_END_POINT, "").equals("replicas")) {
         if (replicaType == Replica.Type.PULL) {
           log.warn("Commit not supported on replicas of type " + Replica.Type.PULL);
@@ -254,17 +253,8 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
 
             List<SolrCmdDistributor.Node> finalUseNodes1 = useNodes;
-            Future<?> future = ParWork.getExecutor().submit(() -> cmdDistrib.distribCommit(cmd, finalUseNodes1, params));
-//            if (useNodes != null && useNodes.size() > 0 && cmd.waitSearcher) {
-//              try {
-//                future.get();
-//              } catch (InterruptedException e) {
-//                ParWork.propegateInterrupt(e);
-//                throw new SolrException(ErrorCode.SERVER_ERROR, e);
-//              } catch (ExecutionException e) {
-//                throw new SolrException(ErrorCode.SERVER_ERROR, e);
-//              }
-//            }
+            cmdDistrib.distribCommit(cmd, finalUseNodes1, params);
+
           }
 
         }
@@ -296,8 +286,8 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   }
 
   @Override
-  protected void doDistribAdd(ParWork worker, AddUpdateCommand cmd) throws IOException {
-
+  protected void doDistribAdd(AddUpdateCommand cmd) throws IOException {
+    log.info("Distribute add cmd {} to {} {}", cmd, nodes, isLeader);
     if (isLeader && !isSubShardLeader)  {
       DocCollection coll = clusterState.getCollection(collection);
       List<SolrCmdDistributor.Node> subShardLeaders = getSubShardLeaders(coll, cloudDesc.getShardId(), cmd.getRootIdUsingRouteParam(), cmd.getSolrInputDocument());
@@ -309,6 +299,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
             zkController.getBaseUrl(), req.getCore().getName()));
         params.set(DISTRIB_FROM_PARENT, cloudDesc.getShardId());
         cmdDistrib.distribAdd(cmd, subShardLeaders, params, true);
+        return;
       }
       final List<SolrCmdDistributor.Node> nodesByRoutingRules = getNodesByRoutingRules(clusterState, coll, cmd.getRootIdUsingRouteParam(), cmd.getSolrInputDocument());
       if (nodesByRoutingRules != null && !nodesByRoutingRules.isEmpty())  {
@@ -318,13 +309,14 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
             zkController.getBaseUrl(), req.getCore().getName()));
         params.set(DISTRIB_FROM_COLLECTION, collection);
         params.set(DISTRIB_FROM_SHARD, cloudDesc.getShardId());
-        worker.collect(() -> {
-          try {
-            cmdDistrib.distribAdd(cmd, nodesByRoutingRules, params, true);
-          } catch (IOException e) {
-            throw new SolrException(ErrorCode.SERVER_ERROR, e);
-          }
-        });
+
+        try {
+          cmdDistrib.distribAdd(cmd, nodesByRoutingRules, params, true);
+        } catch (IOException e) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, e);
+        }
+        return;
+
       }
     }
 
@@ -352,21 +344,23 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         // in the stream, can result in the current update being bottled up behind the previous
         // update in the stream and can lead to degraded performance.
 
-        worker.collect(() -> {
           try {
             cmdDistrib.distribAdd(cmd, nodes, params, true, rollupReplicationTracker, leaderReplicationTracker);
           } catch (IOException e) {
             throw new SolrException(ErrorCode.SERVER_ERROR, e);
           }
-        });
+
       } else {
-        worker.collect(() -> {
-          try {
-            cmdDistrib.distribAdd(cmd, nodes, params, false, rollupReplicationTracker, leaderReplicationTracker);
-          } catch (IOException e) {
-            throw new SolrException(ErrorCode.SERVER_ERROR, e);
-          }
-        });
+        if (!isLeader && params.get(DISTRIB_UPDATE_PARAM).equals(DistribPhase.FROMLEADER.toString())) {
+          throw new IllegalStateException();
+        }
+        try {
+          cmdDistrib
+              .distribAdd(cmd, nodes, params, false, rollupReplicationTracker,
+                  leaderReplicationTracker);
+        } catch (IOException e) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, e);
+        }
       }
     }
   }
@@ -715,7 +709,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       // Replica leader = slice.getLeader();
       Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, shardId);
       isLeader = leaderReplica.getName().equals(cloudDesc.getCoreNodeName());
-
+      log.info("Are we leader for sending to replicas? {} phase={}", isLeader, phase);
       if (!isLeader) {
         isSubShardLeader = amISubShardLeader(coll, slice, id, doc);
         if (isSubShardLeader) {
@@ -735,6 +729,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         forwardToLeader = false;
         return null;
       } else if (isLeader || isSubShardLeader) {
+        log.info("We are the leader, forward update to replicas..");
         // that means I want to forward onto my replicas...
         // so get the replicas...
         forwardToLeader = false;
@@ -837,6 +832,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         Replica replica = docCollection.getLeader(replicas.getName());
         if (replica != null) {
           ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(replica);
+          nodeProps.getNodeProps().getProperties().put(ZkStateReader.CORE_NODE_NAME_PROP, replica.getName());
           urls.add(new SolrCmdDistributor.StdNode(nodeProps, collection, replicas.getName()));
         }
         continue;
@@ -848,6 +844,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
           continue;
         }
         ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(entry.getValue());
+        nodeProps.getNodeProps().getProperties().put(ZkStateReader.CORE_NODE_NAME_PROP, entry.getValue().getName());
         if (clusterState.liveNodesContain(nodeProps.getNodeName())) {
           urls.add(new SolrCmdDistributor.StdNode(nodeProps, collection, replicas.getName()));
         }
@@ -894,6 +891,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   }
 
   protected List<SolrCmdDistributor.Node> getReplicaNodesForLeader(String shardId, Replica leaderReplica) {
+    log.info("leader is {}", leaderReplica.getName());
     String leaderCoreNodeName = leaderReplica.getName();
     List<Replica> replicas = clusterState.getCollection(collection)
         .getSlice(shardId)
@@ -923,7 +921,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         }
       } else if (zkShardTerms.registered(coreNodeName) && zkShardTerms.skipSendingUpdatesTo(coreNodeName)) {
         if (log.isDebugEnabled()) {
-          log.debug("skip url:{} cause its term is less than leader", replica.getCoreUrl());
+          log.info("skip url:{} cause its term is less than leader", replica.getCoreUrl());
         }
         skippedCoreNodeNames.add(replica.getName());
       } else if (!clusterState.getLiveNodes().contains(replica.getNodeName())

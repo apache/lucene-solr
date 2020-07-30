@@ -675,7 +675,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
             SolrIndexWriter.setCommitData(writer, cmd.getVersion());
             writer.commit();
           } else {
-            log.debug("No uncommitted changes. Skipping IW.commit.");
+            log.info("No uncommitted changes. Skipping IW.commit.");
           }
 
           // SolrCore.verbose("writer.commit() end");

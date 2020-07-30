@@ -85,8 +85,8 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   volatile CountDownLatch lock = null; // used to block everything
   final int threadCount;
   boolean shutdownExecutor = false;
-  int pollQueueTime = 50;
-  int stallTime = 100;
+  int pollQueueTime = 1000;
+  int stallTime = 10000;
   private final boolean streamDeletes;
   private boolean internalHttpClient;
   private volatile Integer connectionTimeout;
@@ -136,7 +136,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     this.streamDeletes = builder.streamDeletes;
     this.connectionTimeout = builder.connectionTimeoutMillis;
     this.soTimeout = builder.socketTimeoutMillis;
-    this.stallTime = Integer.getInteger("solr.cloud.client.stallTime", 100);
+    this.stallTime = Integer.getInteger("solr.cloud.client.stallTime", 10000);
     if (stallTime < pollQueueTime * 2) {
       throw new RuntimeException("Invalid stallTime: " + stallTime + "ms, must be 2x > pollQueueTime " + pollQueueTime);
     }

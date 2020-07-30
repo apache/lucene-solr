@@ -42,7 +42,11 @@ public class ZkCoreNodeProps {
   public String getCoreName() {
     return nodeProps.getStr(ZkStateReader.CORE_NAME_PROP);
   }
-  
+
+  public String getCoreNodeName() {
+    return nodeProps.getStr(ZkStateReader.CORE_NODE_NAME_PROP);
+  }
+
   public static String getCoreUrl(ZkNodeProps nodeProps) {
     return getCoreUrl(nodeProps.getStr(ZkStateReader.BASE_URL_PROP), nodeProps.getStr(ZkStateReader.CORE_NAME_PROP));
   }

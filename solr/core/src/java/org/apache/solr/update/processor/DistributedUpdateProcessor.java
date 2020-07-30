@@ -237,38 +237,59 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
 
     SolrInputDocument clonedDoc = shouldCloneCmdDoc() ? cmd.solrDoc.deepCopy(): null;
+    AddUpdateCommand cmd2 = null;
     if (clonedDoc != null) {
-      cmd.solrDoc = clonedDoc;
+      cmd2 = new AddUpdateCommand(cmd.getReq());
+      cmd2.commitWithin = cmd.commitWithin;
+      cmd2.isNested = cmd.isNested;
+      cmd2.overwrite = cmd.overwrite;
+      cmd2.prevVersion = cmd.prevVersion;
+      cmd2.updateTerm = cmd.updateTerm;
+      cmd2.isLastDocInBatch = cmd.isLastDocInBatch;
+      cmd2.solrDoc = clonedDoc;
+      cmd2.setVersion((long) cmd.solrDoc.getFieldValue(CommonParams.VERSION_FIELD));
+      cmd2.setFlags(cmd.getFlags());
+      cmd2.setRoute(cmd.getRoute());
     }
     try (ParWork worker = new ParWork(this)) {
-      worker.collect(() -> {
-        if (vinfo != null) vinfo.lockForUpdate();
-        try {
+      if (!forwardToLeader) {
+        worker.collect(() -> {
+          if (vinfo != null) vinfo.lockForUpdate();
+          try {
 
-          // TODO: possibly set checkDeleteByQueries as a flag on the command?
-          doLocalAdd(cmd);
+            // TODO: possibly set checkDeleteByQueries as a flag on the command?
+            log.info("Local add cmd");
+            doLocalAdd(cmd);
 
-          // if the update updates a doc that is part of a nested structure,
-          // force open a realTimeSearcher to trigger a ulog cache refresh.
-          // This refresh makes RTG handler aware of this update.q
-          if (ulog != null) {
-            if (req.getSchema().isUsableForChildDocs()
-                && shouldRefreshUlogCaches(cmd)) {
-              ulog.openRealtimeSearcher();
+            // if the update updates a doc that is part of a nested structure,
+            // force open a realTimeSearcher to trigger a ulog cache refresh.
+            // This refresh makes RTG handler aware of this update.q
+            if (ulog != null) {
+              if (req.getSchema().isUsableForChildDocs() && shouldRefreshUlogCaches(cmd)) {
+                ulog.openRealtimeSearcher();
+              }
             }
-          }
 
-        } catch (IOException e) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, e);
-        } finally {
-          if (vinfo != null) vinfo.unlockForUpdate();
-        }
-      });
+          } catch (Exception e) {
+            ParWork.propegateInterrupt(e);
+            throw new SolrException(ErrorCode.SERVER_ERROR, e);
+          } finally {
+            if (vinfo != null) vinfo.unlockForUpdate();
+          }
+        });
+      }
       if (req.getCore().getCoreContainer().isZooKeeperAware()) {
+        AddUpdateCommand finalCmd;
+        if (cmd2 == null) {
+          finalCmd = cmd;
+        } else {
+          finalCmd = cmd2;
+        }
         worker.collect(() -> {
           try {
-            doDistribAdd(worker, cmd);
-          } catch (IOException e) {
+            doDistribAdd(finalCmd);
+          } catch (Exception e) {
+            ParWork.propegateInterrupt(e);
             throw new SolrException(ErrorCode.SERVER_ERROR, e);
           }
         });
@@ -296,7 +317,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   }
 
-  protected void doDistribAdd(ParWork worker, AddUpdateCommand cmd) throws IOException {
+  protected void doDistribAdd(AddUpdateCommand cmd) throws IOException {
     // no-op for derived classes to implement
   }
 

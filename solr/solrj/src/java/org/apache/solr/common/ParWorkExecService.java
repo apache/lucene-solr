@@ -24,7 +24,7 @@ public class ParWorkExecService implements ExecutorService {
   private static final Logger log = LoggerFactory
       .getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final int MAX_AVAILABLE = ParWork.PROC_COUNT;
+  private static final int MAX_AVAILABLE = 500;//ParWork.PROC_COUNT;
   private final Semaphore available = new Semaphore(MAX_AVAILABLE, true);
 
   private final Phaser phaser = new Phaser(1) {
@@ -93,18 +93,18 @@ public class ParWorkExecService implements ExecutorService {
       throw new RejectedExecutionException();
     }
     try {
-      if (!requiresAnotherThread) {
-        boolean success = checkLoad();
-        if (success) {
-          success = available.tryAcquire();
-        }
-        if (!success) {
-          awaitOutstanding(10, TimeUnit.SECONDS);
-          return CompletableFuture.completedFuture(callable.call());
-        }
-      } else {
-        //available.acquire();
-      }
+//      if (!requiresAnotherThread) {
+//        boolean success = checkLoad();
+//        if (success) {
+//          success = available.tryAcquire();
+//        }
+//        if (!success) {
+//          available.acquire();
+//          return CompletableFuture.completedFuture(callable.call());
+//        }
+//      } else {
+        available.acquire();
+    //  }
       Future<T> future = service.submit(callable);
       return new Future<T>() {
         @Override
@@ -158,18 +158,23 @@ public class ParWorkExecService implements ExecutorService {
       throw new RejectedExecutionException();
     }
     boolean success = checkLoad();
-    if (success) {
-      success = available.tryAcquire();
+    try {
+      available.acquire();
+    } catch (InterruptedException e) {
+      ParWork.propegateInterrupt(e);
     }
-    if (!success) {
-      try {
-        awaitOutstanding(10, TimeUnit.SECONDS);
-      } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
-      }
-      runnable.run();
-      return CompletableFuture.completedFuture(null);
-    }
+    //    if (success) {
+//      success = available.tryAcquire();
+//    }
+//    if (!success) {
+//      try {
+//        awaitOutstanding(10, TimeUnit.SECONDS);
+//      } catch (InterruptedException e) {
+//        ParWork.propegateInterrupt(e);
+//      }
+//      runnable.run();
+//      return CompletableFuture.completedFuture(null);
+//    }
     return service.submit(new Runnable() {
       @Override
       public void run() {
@@ -192,26 +197,31 @@ public class ParWorkExecService implements ExecutorService {
     if (shutdown || terminated) {
       throw new RejectedExecutionException();
     }
-    if (!requiresAnotherThread) {
-      boolean success = checkLoad();
-      if (success) {
-        success = available.tryAcquire();
-      }
-      if (!success) {
-        try {
-          awaitOutstanding(10, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-          ParWork.propegateInterrupt(e);
-        }
-        runnable.run();
-        return CompletableFuture.completedFuture(null);
-      }
-    } else {
-//      try {
-//        available.acquire();
-//      } catch (InterruptedException e) {
-//        ParWork.propegateInterrupt(e);
+//    if (!requiresAnotherThread) {
+//      boolean success = checkLoad();
+//      if (success) {
+//        success = available.tryAcquire();
 //      }
+//      if (!success) {
+//        try {
+//          awaitOutstanding(10, TimeUnit.SECONDS);
+//        } catch (InterruptedException e) {
+//          ParWork.propegateInterrupt(e);
+//        }
+//        runnable.run();
+//        return CompletableFuture.completedFuture(null);
+//      }
+//    } else {
+////      try {
+////        available.acquire();
+////      } catch (InterruptedException e) {
+////        ParWork.propegateInterrupt(e);
+////      }
+//    }
+    try {
+      available.acquire();
+    } catch (InterruptedException e) {
+      ParWork.propegateInterrupt(e);
     }
     Future<?> future = service.submit(runnable);
 
@@ -246,8 +256,12 @@ public class ParWorkExecService implements ExecutorService {
       @Override
       public Object get(long l, TimeUnit timeUnit)
           throws InterruptedException, ExecutionException, TimeoutException {
-        Object ret = future.get(l, timeUnit);
-        available.release();
+        Object ret;
+        try {
+          ret = future.get();
+        } finally {
+          available.release();
+        }
         return ret;
       }
 

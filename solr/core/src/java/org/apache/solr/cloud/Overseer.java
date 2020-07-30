@@ -180,6 +180,10 @@ public class Overseer implements SolrCloseable {
   private volatile ElectionContext context;
   private volatile boolean closeAndDone;
 
+  public boolean isDone() {
+    return  closeAndDone;
+  }
+
   /**
    * <p>This class is responsible for dequeueing state change requests from the ZooKeeper queue at <code>/overseer/queue</code>
    * and executing the requested cluster change (essentially writing or updating <code>state.json</code> for a collection).</p>
@@ -856,8 +860,6 @@ public class Overseer implements SolrCloseable {
         log.error("Exception canceling election for overseer");
       }
     }
-
-    assert ObjectReleaseTracker.release(this);
   }
 
   @Override
@@ -865,14 +867,13 @@ public class Overseer implements SolrCloseable {
     return closed || zkController.getCoreContainer().isShutDown();
   }
 
-  synchronized void doClose() {
+  void doClose() {
     if (log.isDebugEnabled()) {
       log.debug("doClose() - start");
     }
     try (ParWork closer = new ParWork(this, true)) {
 
       closer.collect(() -> {
-
         IOUtils.closeQuietly(ccThread);
         ccThread.interrupt();
       });
@@ -895,6 +896,7 @@ public class Overseer implements SolrCloseable {
     if (log.isDebugEnabled()) {
       log.debug("doClose() - end");
     }
+    assert ObjectReleaseTracker.release(this);
   }
 
   /**

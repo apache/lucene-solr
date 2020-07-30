@@ -906,7 +906,7 @@ public class Http2SolrClient extends SolrClient {
 //        phaser.register();
 //        if (log.isDebugEnabled()) log.debug("Request queued registered: {} arrived: {}", phaser.getRegisteredParties(), phaser.getArrivedParties());
 //      };
-      available = new Semaphore(MAX_OUTSTANDING_REQUESTS, false);
+      available = new Semaphore(MAX_OUTSTANDING_REQUESTS, true);
       completeListener = result -> {
        if (log.isDebugEnabled()) log.debug("Request complete registered: {} arrived: {}", phaser.getRegisteredParties(), phaser.getArrivedParties());
         phaser.arriveAndDeregister();
@@ -929,7 +929,7 @@ public class Http2SolrClient extends SolrClient {
 
     public void waitForCompleteFinal() {
       if (log.isDebugEnabled()) log.debug("Before wait for complete final registered: {} arrived: {}", phaser.getRegisteredParties(), phaser.getArrivedParties());
-      int arrival = phaser.awaitAdvance(phaser.arriveAndDeregister());
+      int arrival = phaser.arriveAndAwaitAdvance();
 
       if (log.isDebugEnabled()) log.debug("After wait for complete final registered: {} arrived: {}", phaser.getRegisteredParties(), phaser.getArrivedParties());
     }
