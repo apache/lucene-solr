@@ -84,7 +84,6 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStreamBase;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectCache;
@@ -102,7 +101,6 @@ import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.MockSearchableSolrClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -485,7 +483,8 @@ public class SimCloudManager implements SolrCloudManager {
     // initialize history handler if this is the first node
     if (metricsHistoryHandler == null && liveNodesSet.size() == 1) {
       metricsHandler = new MetricsHandler(metricManager);
-      metricsHistoryHandler = new MetricsHistoryHandler(nodeId, metricsHandler, solrClient, this, new HashMap<>());
+      metricsHistoryHandler = new MetricsHistoryHandler(nodeId, metricsHandler, solrClient, this, new HashMap<>(),
+          null);
       SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, SolrMetricManager.getRegistryName(SolrInfoBean.Group.node), metricTag);
       metricsHistoryHandler.initializeMetrics(solrMetricsContext, CommonParams.METRICS_HISTORY_PATH);
     }

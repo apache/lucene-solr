@@ -19,14 +19,11 @@ package org.apache.solr.handler.admin;
 import javax.imageio.ImageIO;
 import java.awt.Color;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -38,7 +35,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
@@ -57,14 +53,10 @@ import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.Variable;
-import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.cloud.LeaderElector;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
@@ -72,20 +64,17 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.rrd.SolrRrdBackendFactory;
@@ -94,7 +83,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.zookeeper.KeeperException;
 import org.rrd4j.ConsolFun;
 import org.rrd4j.DsType;
 import org.rrd4j.core.ArcDef;
@@ -104,7 +92,6 @@ import org.rrd4j.core.DsDef;
 import org.rrd4j.core.FetchData;
 import org.rrd4j.core.FetchRequest;
 import org.rrd4j.core.RrdDb;
-import org.rrd4j.core.RrdDbPool;
 import org.rrd4j.core.RrdDef;
 import org.rrd4j.core.Sample;
 import org.rrd4j.graph.RrdGraph;
@@ -113,7 +100,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.stream.Collectors.toMap;
-import static org.apache.solr.common.params.CommonParams.ID;
 
 /**
  * Collects metrics from all nodes in the system on a regular basis in a background thread.
@@ -170,6 +156,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
   private final String overseerUrlScheme;
 
   private final Map<String, RrdDb> knownDbs = new ConcurrentHashMap<>(16, 0.75f, 4);
+  private final Overseer overseer;
 
   private ScheduledThreadPoolExecutor collectService;
   private boolean logMissingCollection = true;
@@ -179,8 +166,9 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
   private volatile String versionString;
 
   public MetricsHistoryHandler(String nodeName, MetricsHandler metricsHandler,
-        SolrClient solrClient, SolrCloudManager cloudManager, Map<String, Object> pluginArgs) {
-
+      SolrClient solrClient, SolrCloudManager cloudManager,
+      Map<String,Object> pluginArgs, Overseer overseer) {
+    this.overseer = overseer;
     Map<String, Object> args = new HashMap<>();
     // init from optional solr.xml config
     if (pluginArgs != null) {
@@ -232,7 +220,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
     }
 
     if (enable) {
-      collectService = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(1,
+      collectService = (ScheduledThreadPoolExecutor) Executors.newFixedThreadPool(1,
           new SolrNamedThreadFactory("MetricsHistoryHandler"));
       collectService.setRemoveOnCancelPolicy(true);
       collectService.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
@@ -318,44 +306,6 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
     return factory;
   }
 
-  private String getOverseerLeader() {
-    // non-ZK node has no Overseer
-    if (cloudManager == null) {
-      return null;
-    }
-    ZkNodeProps props = null;
-    try {
-      VersionedData data = cloudManager.getDistribStateManager().getData(
-          Overseer.OVERSEER_ELECT + "/leader");
-      if (data != null && data.getData() != null) {
-        props = ZkNodeProps.load(data.getData());
-      }
-    } catch (IOException | NoSuchElementException e) {
-      log.warn("Could not obtain overseer's address, skipping.", e);
-      return null;
-    } catch (InterruptedException e) {
-      ParWork.propegateInterrupt(e);
-      return null;
-    } catch (KeeperException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-    }
-    if (props == null) {
-      return null;
-    }
-    String oid = props.getStr(ID);
-    if (oid == null) {
-      return null;
-    }
-    String nodeName = null;
-    try {
-      nodeName = LeaderElector.getNodeName(oid);
-    } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
-      log.warn("Unknown format of leader id, skipping: {}", oid, e);
-      return null;
-    }
-    return nodeName;
-  }
 
   private void collectMetrics() {
     log.debug("-- collectMetrics");
@@ -462,10 +412,9 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
   }
 
   private void collectGlobalMetrics() {
-    // nocommit - this stuff is slow and hackey and too hard to do righ this way
-//    if (!amIOverseerLeader()) {
-//      return;
-//    }
+    if (overseer == null || !overseer.getUpdaterThread().isAlive()) {
+      return;
+    }
     Set<String> nodes = new HashSet<>(cloudManager.getClusterStateProvider().getLiveNodes());
     NodeStateProvider nodeStateProvider = cloudManager.getNodeStateProvider();
     Set<String> collTags = new HashSet<>();

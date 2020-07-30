@@ -991,7 +991,7 @@ public class CoreContainer implements Closeable {
       }
     }
     metricsHistoryHandler = new MetricsHistoryHandler(name, metricsHandler,
-        client, cloudManager, initArgs);
+        client, cloudManager, initArgs, zkSys.getZkController().getOverseer());
     containerHandlers.put(METRICS_HISTORY_PATH, metricsHistoryHandler);
     metricsHistoryHandler.initializeMetrics(solrMetricsContext, METRICS_HISTORY_PATH);
   }

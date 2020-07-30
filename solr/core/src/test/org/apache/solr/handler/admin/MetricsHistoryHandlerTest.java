@@ -33,7 +33,6 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrInfoBean;
-import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.util.LogLevel;
@@ -86,7 +85,7 @@ public class MetricsHistoryHandlerTest extends SolrCloudTestCase {
       metricsHandler = new MetricsHandler(metricManager);
       SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, SolrInfoBean.Group.node.toString(), "");
       handler = new MetricsHistoryHandler(cloudManager.getClusterStateProvider().getLiveNodes().iterator().next(),
-          metricsHandler, solrClient, cloudManager, args);
+          metricsHandler, solrClient, cloudManager, args, null);
       handler.initializeMetrics(solrMetricsContext, CommonParams.METRICS_HISTORY_PATH);
     }
     configureCluster(1)
@@ -98,7 +97,8 @@ public class MetricsHistoryHandlerTest extends SolrCloudTestCase {
       metricManager = cluster.getJettySolrRunner(0).getCoreContainer().getMetricManager();
       solrClient = cluster.getSolrClient();
       metricsHandler = new MetricsHandler(metricManager);
-      handler = new MetricsHistoryHandler(cluster.getJettySolrRunner(0).getNodeName(), metricsHandler, solrClient, cloudManager, args);
+      handler = new MetricsHistoryHandler(cluster.getJettySolrRunner(0).getNodeName(), metricsHandler, solrClient, cloudManager, args,
+          null);
       SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, SolrInfoBean.Group.node.toString(), "");
       handler.initializeMetrics(solrMetricsContext, CommonParams.METRICS_HISTORY_PATH);
       SPEED = 1;
@@ -109,8 +109,6 @@ public class MetricsHistoryHandlerTest extends SolrCloudTestCase {
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(CollectionAdminParams.SYSTEM_COLL,
         "conf", 1, 1);
     create.process(solrClient);
-    CloudUtil.waitForState(cloudManager, "failed to create " + CollectionAdminParams.SYSTEM_COLL,
-        CollectionAdminParams.SYSTEM_COLL, CloudUtil.clusterShape(1, 1));
   }
 
   @AfterClass
