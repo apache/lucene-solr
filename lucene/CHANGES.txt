@@ -28,6 +28,9 @@ Improvements
 * LUCENE-9416: Fix CheckIndex to print an invalid non-zero norm as
   unsigned long when detecting corruption.
 
+* LUCENE-9440: FieldInfo#checkConsistency called twice from Lucene50(60)FieldInfosFormat#read;
+  Removed the (redundant?) assert and do these checks for real. (Yauheni Putsykovich)
+
 Optimizations
 ---------------------
 
