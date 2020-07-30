@@ -30,7 +30,9 @@ Improvements
 
 Optimizations
 ---------------------
-(No changes)
+
+* LUCENE-9395: ConstantValuesSource now shares a single DoubleValues
+  instance across all segments (Tony Xu)
 
 Bug Fixes
 ---------------------
