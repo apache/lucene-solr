@@ -72,6 +72,7 @@ import org.apache.solr.update.PeerSyncWithLeader;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.UpdateLog.RecoveryInfo;
 import org.apache.solr.update.UpdateShardHandlerConfig;
+import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
@@ -114,7 +115,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
       .getInteger("solr.cloud.wait-for-updates-with-stale-state-pause", 0);
   private volatile int maxRetries = 500;
   private volatile int startingRecoveryDelayMilliSeconds = Integer
-          .getInteger("solr.cloud.starting-recovery-delay-milli-seconds", 0);
+          .getInteger("solr.cloud.starting-recovery-delay-milli-seconds", 1000);
 
   public static interface RecoveryListener {
     public void recovered();
@@ -341,7 +342,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
     try (HttpSolrClient client = buildRecoverySolrClient(leaderUrl)) {
       UpdateRequest ureq = new UpdateRequest();
       ureq.setParams(new ModifiableSolrParams());
-      // ureq.getParams().set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
+      ureq.getParams().set(DistributedUpdateProcessor.COMMIT_END_POINT, "terminal");
       // ureq.getParams().set(UpdateParams.OPEN_SEARCHER, onlyLeaderIndexes);// Why do we need to open searcher if
       // "onlyLeaderIndexes"?
       ureq.getParams().set(UpdateParams.OPEN_SEARCHER, false);

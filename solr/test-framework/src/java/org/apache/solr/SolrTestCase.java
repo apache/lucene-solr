@@ -283,14 +283,14 @@ public class SolrTestCase extends LuceneTestCase {
       System.setProperty("leaderVoteWait", "5000"); // this is also apparently controlling how long we wait for a leader on register nocommit
       System.setProperty("leaderConflictResolveWait", "10000");
 
-      System.setProperty("solr.recovery.recoveryThrottle", "250");
-      System.setProperty("solr.recovery.leaderThrottle", "50");
+      System.setProperty("solr.recovery.recoveryThrottle", "500");
+      System.setProperty("solr.recovery.leaderThrottle", "100");
 
       System.setProperty("bucketVersionLockTimeoutMs", "8000");
       System.setProperty("socketTimeout", "30000");
       System.setProperty("connTimeout", "10000");
       System.setProperty("solr.cloud.wait-for-updates-with-stale-state-pause", "0");
-      System.setProperty("solr.cloud.starting-recovery-delay-milli-seconds", "0");
+      System.setProperty("solr.cloud.starting-recovery-delay-milli-seconds", "500");
 
       System.setProperty("solr.waitForState", "5"); // secs
 

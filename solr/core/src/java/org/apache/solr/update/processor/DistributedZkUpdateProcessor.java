@@ -174,6 +174,12 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
       nodes = getCollectionUrls(collection, EnumSet.of(Replica.Type.TLOG,Replica.Type.NRT), true);
 
+      if (req.getParams().get(COMMIT_END_POINT, "").equals("terminal")) {
+        log.info("Do a local commit on single replica directly");
+        doLocalCommit(cmd);
+        return;
+      }
+
 
 
       if (nodes != null) {
