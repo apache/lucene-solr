@@ -25,6 +25,7 @@ class QuadValueSortDoc extends TripleValueSortDoc {
 
   protected SortValue value4;
 
+  @Override
   public SortValue getSortValue(String field) {
     if (value1.getField().equals(field)) {
       return value1;
@@ -38,6 +39,7 @@ class QuadValueSortDoc extends TripleValueSortDoc {
     return null;
   }
 
+  @Override
   public void setNextReader(LeafReaderContext context) throws IOException {
     this.ord = context.ord;
     this.docBase = context.docBase;
@@ -57,6 +59,7 @@ class QuadValueSortDoc extends TripleValueSortDoc {
     value4.toGlobalValue(quadValueSortDoc.value4);
   }
 
+  @Override
   public void reset() {
     this.docId = -1;
     this.docBase = -1;
@@ -67,6 +70,7 @@ class QuadValueSortDoc extends TripleValueSortDoc {
     value4.reset();
   }
 
+  @Override
   public void setValues(int docId) throws IOException {
     this.docId = docId;
     value1.setCurrentValue(docId);
@@ -75,6 +79,7 @@ class QuadValueSortDoc extends TripleValueSortDoc {
     value4.setCurrentValue(docId);
   }
 
+  @Override
   public void setValues(SortDoc sortDoc) {
     this.docId = sortDoc.docId;
     this.ord = sortDoc.ord;
@@ -90,10 +95,12 @@ class QuadValueSortDoc extends TripleValueSortDoc {
     this.value4 = value4;
   }
 
+  @Override
   public SortDoc copy() {
     return new QuadValueSortDoc(value1.copy(), value2.copy(), value3.copy(), value4.copy());
   }
 
+  @Override
   public boolean lessThan(Object o) {
 
     QuadValueSortDoc sd = (QuadValueSortDoc) o;
@@ -128,6 +135,7 @@ class QuadValueSortDoc extends TripleValueSortDoc {
     }
   }
 
+  @Override
   public int compareTo(SortDoc o) {
     QuadValueSortDoc sd = (QuadValueSortDoc) o;
     int comp = value1.compareTo(sd.value1);
@@ -138,7 +146,7 @@ class QuadValueSortDoc extends TripleValueSortDoc {
         if (comp == 0) {
           comp = value4.compareTo(sd.value4);
           if (comp == 0) {
-            return docId + docBase - sd.docId + sd.docBase;
+            return docId + docBase - sd.docId - sd.docBase;
           } else {
             return comp;
           }

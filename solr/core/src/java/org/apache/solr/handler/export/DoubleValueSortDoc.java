@@ -25,6 +25,7 @@ class DoubleValueSortDoc extends SingleValueSortDoc {
 
   protected SortValue value2;
 
+  @Override
   public SortValue getSortValue(String field) {
     if (value1.getField().equals(field)) {
       return value1;
@@ -34,6 +35,7 @@ class DoubleValueSortDoc extends SingleValueSortDoc {
     return null;
   }
 
+  @Override
   public void setNextReader(LeafReaderContext context) throws IOException {
     this.ord = context.ord;
     this.docBase = context.docBase;
@@ -41,6 +43,7 @@ class DoubleValueSortDoc extends SingleValueSortDoc {
     value2.setNextReader(context);
   }
 
+  @Override
   public void reset() {
     this.docId = -1;
     this.docBase = -1;
@@ -49,6 +52,7 @@ class DoubleValueSortDoc extends SingleValueSortDoc {
     value2.reset();
   }
 
+  @Override
   public void setValues(int docId) throws IOException {
     this.docId = docId;
     value1.setCurrentValue(docId);
@@ -62,6 +66,7 @@ class DoubleValueSortDoc extends SingleValueSortDoc {
     value2.toGlobalValue(doubleValueSortDoc.value2);
   }
 
+  @Override
   public void setValues(SortDoc sortDoc) {
     this.docId = sortDoc.docId;
     this.ord = sortDoc.ord;
@@ -75,10 +80,12 @@ class DoubleValueSortDoc extends SingleValueSortDoc {
     this.value2 = value2;
   }
 
+  @Override
   public SortDoc copy() {
     return new DoubleValueSortDoc(value1.copy(), value2.copy());
   }
 
+  @Override
   public boolean lessThan(Object o) {
     DoubleValueSortDoc sd = (DoubleValueSortDoc) o;
     int comp = value1.compareTo(sd.value1);
@@ -98,11 +105,17 @@ class DoubleValueSortDoc extends SingleValueSortDoc {
     }
   }
 
+  @Override
   public int compareTo(SortDoc o) {
     DoubleValueSortDoc sd = (DoubleValueSortDoc) o;
     int comp = value1.compareTo(sd.value1);
     if (comp == 0) {
-      return value2.compareTo(sd.value2);
+      comp = value2.compareTo(sd.value2);
+      if (comp == 0) {
+        return docId + docBase - sd.docId - sd.docBase;
+      } else {
+        return comp;
+      }
     } else {
       return comp;
     }

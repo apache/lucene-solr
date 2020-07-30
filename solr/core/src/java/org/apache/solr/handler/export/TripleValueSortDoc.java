@@ -25,6 +25,7 @@ class TripleValueSortDoc extends DoubleValueSortDoc {
 
   protected SortValue value3;
 
+  @Override
   public SortValue getSortValue(String field) {
     if (value1.getField().equals(field)) {
       return value1;
@@ -36,6 +37,7 @@ class TripleValueSortDoc extends DoubleValueSortDoc {
     return null;
   }
 
+  @Override
   public void setNextReader(LeafReaderContext context) throws IOException {
     this.ord = context.ord;
     this.docBase = context.docBase;
@@ -44,6 +46,7 @@ class TripleValueSortDoc extends DoubleValueSortDoc {
     value3.setNextReader(context);
   }
 
+  @Override
   public void reset() {
     this.docId = -1;
     this.docBase = -1;
@@ -53,6 +56,7 @@ class TripleValueSortDoc extends DoubleValueSortDoc {
     value3.reset();
   }
 
+  @Override
   public void setValues(int docId) throws IOException {
     this.docId = docId;
     value1.setCurrentValue(docId);
@@ -68,6 +72,7 @@ class TripleValueSortDoc extends DoubleValueSortDoc {
     value3.toGlobalValue(tripleValueSortDoc.value3);
   }
 
+  @Override
   public void setValues(SortDoc sortDoc) {
     this.docId = sortDoc.docId;
     this.ord = sortDoc.ord;
@@ -82,10 +87,12 @@ class TripleValueSortDoc extends DoubleValueSortDoc {
     this.value3 = value3;
   }
 
+  @Override
   public SortDoc copy() {
     return new TripleValueSortDoc(value1.copy(), value2.copy(), value3.copy());
   }
 
+  @Override
   public boolean lessThan(Object o) {
     TripleValueSortDoc sd = (TripleValueSortDoc) o;
     int comp = value1.compareTo(sd.value1);
@@ -112,6 +119,7 @@ class TripleValueSortDoc extends DoubleValueSortDoc {
     }
   }
 
+  @Override
   public int compareTo(SortDoc o) {
     TripleValueSortDoc sd = (TripleValueSortDoc) o;
     int comp = value1.compareTo(sd.value1);
@@ -120,7 +128,7 @@ class TripleValueSortDoc extends DoubleValueSortDoc {
       if (comp == 0) {
         comp = value3.compareTo(sd.value3);
         if (comp == 0) {
-          return docId + docBase - sd.docId + sd.docBase;
+          return docId + docBase - sd.docId - sd.docBase;
         } else {
           return comp;
         }
