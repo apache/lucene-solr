@@ -40,6 +40,7 @@ public class SolrQoSFilter extends QoSFilter {
   static final String MAX_REQUESTS_INIT_PARAM = "maxRequests";
   static final String SUSPEND_INIT_PARAM = "suspendMs";
   static final int PROC_COUNT = ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors();
+  public static final int OUR_LOAD_HIGH = 5;
   protected int _origMaxRequests;
 
 
@@ -68,29 +69,37 @@ public class SolrQoSFilter extends QoSFilter {
       }
 
       double ourLoad = sysStats.getAvarageUsagePerCPU();
-      if (ourLoad > 1) {
+      if (ourLoad > OUR_LOAD_HIGH) {
+        log.info("Our individual load is {}", ourLoad);
         int cMax = getMaxRequests();
         if (cMax > 2) {
-          setMaxRequests(Math.max(1, (int) ((double)cMax * 0.60D)));
+          int max = Math.max(1, (int) ((double)cMax * 0.60D));
+          log.info("set max concurrent requests to {}", max);
+          setMaxRequests(max);
         }
       } else {
         double sLoad = load / (double) PROC_COUNT;
         if (sLoad > 1.0D) {
           int cMax = getMaxRequests();
           if (cMax > 2) {
-            setMaxRequests(Math.max(1, (int) ((double) cMax * 0.60D)));
+            int max = Math.max(1, (int) ((double) cMax * 0.60D));
+            log.info("set max concurrent requests to {}", max);
+            setMaxRequests(max);
           }
         } else if (sLoad < 0.9D && _origMaxRequests != getMaxRequests()) {
+
+          log.info("set max concurrent requests to orig value {}", _origMaxRequests);
           setMaxRequests(_origMaxRequests);
         }
-        if (log.isDebugEnabled()) log.debug("external request, load:" + sLoad); //nocommit: remove when testing is done
-
+        //if (log.isDebugEnabled()) log.debug("external request, load:" + sLoad); //nocommit: remove when testing is done
+        log.info("external request, load:" + sLoad);
       }
 
       super.doFilter(req, response, chain);
 
     } else {
-      if (log.isDebugEnabled()) log.debug("internal request"); //nocommit: remove when testing is done
+      //if (log.isDebugEnabled()) log.debug("internal request"); //nocommit: remove when testing is done
+      log.info("internal request, allow");
       chain.doFilter(req, response);
     }
   }
