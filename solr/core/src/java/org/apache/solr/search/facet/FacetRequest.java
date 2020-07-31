@@ -19,6 +19,7 @@ package org.apache.solr.search.facet;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -213,7 +214,8 @@ public abstract class FacetRequest {
           for (String providedKey : join.keySet()) {
             if (! SUPPORTED_JOIN_PROPERTIES.contains(providedKey)) {
               final String supportedPropsStr = String.join(", ", SUPPORTED_JOIN_PROPERTIES);
-              final String message = String.format("'join' domain change contains unexpected key [%s], only %s supported", providedKey, supportedPropsStr);
+              final String message = String.format(Locale.ROOT,
+                  "'join' domain change contains unexpected key [%s], only %s supported", providedKey, supportedPropsStr);
               throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message);
             }
           }
