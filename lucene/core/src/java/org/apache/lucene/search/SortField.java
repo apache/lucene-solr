@@ -416,7 +416,12 @@ public class SortField {
 
   /** Returns true if <code>o</code> is equal to this.  If a
    *  {@link FieldComparatorSource} was provided, it must properly
-   *  implement equals (unless a singleton is always used). */
+   *  implement equals (unless a singleton is always used).
+   *  <code>canUsePoints</code> field is not part of <code>equals</code> and
+   *  <code>hasCode</code> intentionally, as it is only useful during search-time and
+   *  using it in these functions prevents index sorting optimizations
+   *  that rely on the equality of the index-time and search-time SortField instances.
+   */
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
