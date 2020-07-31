@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.join.ScoreMode;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -78,6 +79,11 @@ public class JoinQParserPlugin extends QParserPlugin {
       @Override
       Query makeFilter(QParser qparser, JoinQParserPlugin plugin) throws SyntaxError {
         return new ScoreJoinQParserPlugin().createParser(qparser.qstr, qparser.localParams, qparser.params, qparser.req).parse();
+      }
+
+      @Override
+      Query makeJoinDirectFromParams(JoinParams jParams) {
+        return ScoreJoinQParserPlugin.createJoinQuery(jParams.fromQuery, jParams.fromField, jParams.toField, ScoreMode.None);
       }
     },
     topLevelDV {
@@ -197,11 +203,11 @@ public class JoinQParserPlugin extends QParserPlugin {
    * @param subQuery the query to define the starting set of documents on the "left side" of the join
    * @param fromField "left side" field name to use in the join
    * @param toField "right side" field name to use in the join
-   * @param method indicates which implementation should be used to process the join.  Currently only 'index' and
-   *               'topLevelDV' are supported.
+   * @param method indicates which implementation should be used to process the join.  Currently only 'index',
+   *               'dvWithScore', and 'topLevelDV' are supported.
    */
   public static Query createJoinQuery(Query subQuery, String fromField, String toField, String method) {
-    final EnumSet<Method> methodWhitelist = EnumSet.of(Method.index, Method.topLevelDV);
+    final EnumSet<Method> methodWhitelist = EnumSet.of(Method.index, Method.topLevelDV, Method.dvWithScore);
     // no method defaults to 'index' for back compatibility
     if ( method == null ) {
       return new JoinQuery(fromField, toField, null, subQuery);
