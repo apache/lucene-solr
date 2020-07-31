@@ -21,7 +21,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
+import com.google.common.collect.Sets;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
@@ -163,6 +165,11 @@ public abstract class FacetRequest {
 
     /** Are we doing a query time join across other documents */
     public static class JoinField {
+      public static final String FROM_PARAM = "from";
+      public static final String TO_PARAM = "to";
+      public static final String METHOD_PARAM = "method";
+      public static final Set<String> SUPPORTED_JOIN_PROPERTIES = Sets.newHashSet(FROM_PARAM, TO_PARAM, METHOD_PARAM);
+
       public final String from;
       public final String to;
       public final String method;
@@ -197,15 +204,18 @@ public abstract class FacetRequest {
           }
           @SuppressWarnings({"unchecked"})
           final Map<String,String> join = (Map<String,String>) queryJoin;
-          if (! (join.containsKey("from") && join.containsKey("to") &&
-              null != join.get("from") && null != join.get("to")) ) {
+          if (! (join.containsKey(FROM_PARAM) && join.containsKey(TO_PARAM) &&
+              null != join.get(FROM_PARAM) && null != join.get(TO_PARAM)) ) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
                 "'join' domain change requires non-null 'from' and 'to' field names");
           }
-          if (2 != join.size()) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                "'join' domain change contains unexpected keys, only 'from' and 'to' supported: "
-                    + join.toString());
+
+          for (String providedKey : join.keySet()) {
+            if (! SUPPORTED_JOIN_PROPERTIES.contains(providedKey)) {
+              final String supportedPropsStr = String.join(", ", SUPPORTED_JOIN_PROPERTIES);
+              final String message = String.format("'join' domain change contains unexpected key [%s], only %s supported", providedKey, supportedPropsStr);
+              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message);
+            }
           }
 
           final String method = join.containsKey("method") ? join.get("method") : "index";
