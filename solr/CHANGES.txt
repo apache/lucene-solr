@@ -28,7 +28,7 @@ Improvements
 
 * SOLR-14635: ThreadDumpHandler has been enhanced to show lock ownership (hossman)
 
-* SOLR-11262: Implement writeMap and writeIterator in XMLWriter (yonik, Munendra S N)
+* SOLR-11262: Add support to stream data out using push APIs when wt=xml (yonik, Munendra S N)
 
 * SOLR-13205: Prevent StringIndexOutOfBoundsException when parsing field names in SolrQueryParserBase
   (pramodkumar9 via Jason Gerlowski)
