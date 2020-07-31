@@ -15,19 +15,7 @@
  * limitations under the License.
  */
 
-
-apply plugin: 'java-library'
-
-description = 'Highlights search keywords in results'
-
-dependencies {
-  api project(':lucene:core')
-
-  implementation project(':lucene:queries')
-  implementation project(':lucene:memory')
-
-  testImplementation project(':lucene:test-framework')
-  testImplementation project(':lucene:analysis:common')
-  testImplementation project(':lucene:queryparser')
-  testImplementation "org.assertj:assertj-core"
-}
+/**
+ * Highlighter that works on top of {@link org.apache.lucene.search.Matches} API.
+ */
+package org.apache.lucene.search.matchhighlight;

@@ -14,20 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.search.matchhighlight;
 
+import org.apache.lucene.analysis.Analyzer;
 
-apply plugin: 'java-library'
+import java.io.Reader;
 
-description = 'Highlights search keywords in results'
+/** An {@link Analyzer} that throws a runtime exception when used for anything. */
+public final class MissingAnalyzer extends Analyzer {
+  @Override
+  protected Reader initReader(String fieldName, Reader reader) {
+    throw new RuntimeException("Field must have an explicit Analyzer: " + fieldName);
+  }
 
-dependencies {
-  api project(':lucene:core')
+  @Override
+  protected TokenStreamComponents createComponents(String fieldName) {
+    throw new RuntimeException("Field must have an explicit Analyzer: " + fieldName);
+  }
 
-  implementation project(':lucene:queries')
-  implementation project(':lucene:memory')
-
-  testImplementation project(':lucene:test-framework')
-  testImplementation project(':lucene:analysis:common')
-  testImplementation project(':lucene:queryparser')
-  testImplementation "org.assertj:assertj-core"
+  @Override
+  public int getOffsetGap(String fieldName) {
+    return 0;
+  }
 }

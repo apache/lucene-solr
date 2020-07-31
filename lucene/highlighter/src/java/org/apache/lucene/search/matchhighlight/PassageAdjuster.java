@@ -14,20 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.search.matchhighlight;
 
-
-apply plugin: 'java-library'
-
-description = 'Highlights search keywords in results'
-
-dependencies {
-  api project(':lucene:core')
-
-  implementation project(':lucene:queries')
-  implementation project(':lucene:memory')
-
-  testImplementation project(':lucene:test-framework')
-  testImplementation project(':lucene:analysis:common')
-  testImplementation project(':lucene:queryparser')
-  testImplementation "org.assertj:assertj-core"
+public interface PassageAdjuster {
+  public void currentValue(CharSequence value);
+  public OffsetRange adjust(Passage p);
 }
