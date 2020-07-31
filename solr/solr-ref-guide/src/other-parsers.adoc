@@ -24,6 +24,16 @@ Many of these parsers are expressed the same way as <<local-parameters-in-querie
 
 == Block Join Query Parsers
 
+// nocommit: of/which are a PITA to get right in deeply nested docs
+//
+// nocommit: https://issues.apache.org/jira/browse/SOLR-14383?focusedCommentId=17166339&page=com.atlassian.jira.plugin.system.issuetabpanels:comment-tabpanel#comment-17166339
+//
+// nocommit: the detailed docs on child/parent parsers need to explain exactly how these should be used
+// nocommit: so people can understand them (and so other sections of the ref-guide can link here for
+// nocommit: actual explanaiton)
+
+
+
 There are two query parsers that support block joins. These parsers allow indexing and searching for relational content that has been <<indexing-nested-documents.adoc#indexing-nested-documents, indexed as Nested Documents>>.
 
 The example usage of the query parsers below assumes these two documents and each of their child documents have been indexed:
