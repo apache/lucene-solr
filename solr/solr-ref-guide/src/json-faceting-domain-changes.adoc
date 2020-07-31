@@ -268,7 +268,7 @@ Example:
 
 ----
 
-`join` domain changes support an optional `method` parameter, which allows users to specify which join implementation they would like to use in this domain transform.  Solr offers several join implementations, each with different performance characteristics.  For more information on these implementations and their tradeoffs, see the `method` parameter documentation <<other-parsers.adoc#Parameters,here>>.  Join domain changes support all `method` values except `crossCollection`.
+`join` domain changes support an optional `method` parameter, which allows users to specify which join implementation they would like to use in this domain transform.  Solr offers several join implementations, each with different performance characteristics.  For more information on these implementations and their tradeoffs, see the `method` parameter documentation <<other-parsers.adoc#parameters,here>>.  Join domain changes support all `method` values except `crossCollection`.
 
 == Graph Traversal Domain Changes
 
