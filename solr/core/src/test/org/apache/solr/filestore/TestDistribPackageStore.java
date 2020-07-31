@@ -47,6 +47,8 @@ import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.function.Predicate;
 
@@ -67,7 +69,7 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
     System.clearProperty("enable.packages");
   }
   
-  @SuppressWarnings({"unchecked", "rawtypes"})
+  @SuppressWarnings({"unchecked"})
   public void testPackageStoreManagement() throws Exception {
     MiniSolrCloudCluster cluster =
         configureCluster(4)
