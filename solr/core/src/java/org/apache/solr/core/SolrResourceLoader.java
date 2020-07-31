@@ -48,6 +48,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.XMLErrorLogger;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.ShardHandlerFactory;
+import org.apache.solr.highlight.SolrBoundaryScanner;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.rest.RestManager;
@@ -605,6 +606,21 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
     map.put("DirectSolrSpellChecker", "org.apache.solr.spelling.DirectSolrSpellChecker");
     map.put("solr.WordBreakSolrSpellChecker", "org.apache.solr.spelling.WordBreakSolrSpellChecker");
     map.put("solr.FileBasedSpellChecker", "org.apache.solr.spelling.FileBasedSpellChecker");
+    map.put("solr.FileBasedSpellChecker", "org.apache.solr.spelling.FileBasedSpellChecker");
+    map.put("solr.CSVRequestHandler", "org.apache.solr.handler.CSVRequestHandler");
+    map.put("solr.highlight.GapFragmenter", "org.apache.solr.highlight.GapFragmenter");
+    map.put("solr.highlight.RegexFragmenter", "org.apache.solr.highlight.RegexFragmenter");
+    map.put("solr.highlight.HtmlFormatter", "org.apache.solr.highlight.HtmlFormatter");
+    map.put("solr.highlight.HtmlEncoder", "org.apache.solr.highlight.HtmlEncoder");
+    map.put("solr.highlight.SimpleFragListBuilder", "org.apache.solr.highlight.SimpleFragListBuilder");
+    map.put("solr.highlight.SimpleFragmentsBuilder", "org.apache.solr.highlight.SimpleFragmentsBuilder");
+    map.put("solr.highlight.SimpleBoundaryScanner", "org.apache.solr.highlight.SimpleBoundaryScanner");
+    map.put("solr.highlight.SolrBoundaryScanner", "org.apache.solr.highlight.SolrBoundaryScanner");
+    map.put("solr.highlight.DefaultEncoder", "org.apache.solr.highlight.DefaultEncoder");
+    map.put("solr.highlight.SingleFragListBuilder", "org.apache.solr.highlight.SingleFragListBuilder");
+    map.put("solr.highlight.WeightedFragListBuilder", "org.apache.solr.highlight.WeightedFragListBuilder");
+    map.put("solr.highlight.ScoreOrderFragmentsBuilder", "org.apache.solr.highlight.ScoreOrderFragmentsBuilder");
+
     TRANS_MAP = Collections.unmodifiableMap(map);
   }
 
