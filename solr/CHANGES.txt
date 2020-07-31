@@ -21,7 +21,6 @@ New Features
 
 * SOLR-14588: Introduce Circuit Breaker Infrastructure and a JVM heap usage memory tracking circuit breaker implementation (Atri Sharma)
 
-* SOLR-14681: Introduce ability to delete .jar stored in the Package Store. (MarcusSorealheis via Mike Drob)
 
 Improvements
 ----------------------
@@ -114,6 +113,8 @@ New Features
 ---------------------
 
 * SOLR-14151 Make schema components load from packages (noble)
+
+* SOLR-14681: Introduce ability to delete .jar stored in the Package Store. (MarcusSorealheis , Mike Drob)
 
 Improvements
 ---------------------
