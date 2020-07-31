@@ -73,7 +73,6 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
         configureCluster(4)
         .withJettyConfig(jetty -> jetty.enableV2(true))
         .addConfig("conf", configset("cloud-minimal"))
-        .addConfig("conf", configset("cloud-minimal"))
         .configure();
     try {
 
