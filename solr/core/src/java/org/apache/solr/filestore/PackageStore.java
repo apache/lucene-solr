@@ -79,6 +79,13 @@ public interface PackageStore {
    */
   void refresh(String path);
 
+  /** Delete a file cluster-wide */
+  void delete(String path);
+
+  /** Delete file from local file system */
+
+  void deleteLocal(String path);
+
   public class FileEntry {
     final ByteBuffer buf;
     final MetaData meta;
