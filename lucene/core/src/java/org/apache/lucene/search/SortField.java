@@ -104,6 +104,11 @@ public class SortField {
   // Used for 'sortMissingFirst/Last'
   protected Object missingValue = null;
 
+  // For numeric sort fields, if true, indicates the DocValues and Point fields
+  // with the same name have the exactly same data indexed.
+  // This allows to use them to optimize sort and skip non-competitive documents.
+  private boolean canUsePoints = false;
+
   /** Creates a sort by terms in the given field with the type of term
    * values explicitly given.
    * @param field  Name of field to sort by.  Can be <code>null</code> if
@@ -394,9 +399,29 @@ public class SortField {
     return buffer.toString();
   }
 
+
+  /**
+   * For numeric sort fields, setting this field, indicates that
+   * the same numeric data has been indexed with two fields: doc values and points and
+   * that these fields have the same name.
+   * This allows to use sort optimization and skip non-competitive documents.
+   */
+  public void setCanUsePoints() {
+    this.canUsePoints = true;
+  }
+
+  public boolean getCanUsePoints() {
+    return canUsePoints;
+  }
+
   /** Returns true if <code>o</code> is equal to this.  If a
    *  {@link FieldComparatorSource} was provided, it must properly
-   *  implement equals (unless a singleton is always used). */
+   *  implement equals (unless a singleton is always used).
+   *  <code>canUsePoints</code> field is not part of <code>equals</code> and
+   *  <code>hasCode</code> intentionally, as it is only useful during search-time and
+   *  using it in these functions prevents index sorting optimizations
+   *  that rely on the equality of the index-time and search-time SortField instances.
+   */
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;

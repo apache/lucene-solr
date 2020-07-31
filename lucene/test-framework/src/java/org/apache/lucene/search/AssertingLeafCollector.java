@@ -50,5 +50,9 @@ class AssertingLeafCollector extends FilterLeafCollector {
     lastCollected = doc;
   }
 
-}
+  @Override
+  public DocIdSetIterator competitiveIterator() throws IOException {
+    return in.competitiveIterator();
+  }
 
+}
