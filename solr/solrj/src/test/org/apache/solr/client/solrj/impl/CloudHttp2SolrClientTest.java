@@ -31,6 +31,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import com.google.common.collect.Lists;
@@ -102,8 +104,6 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
   private static CloudHttp2SolrClient httpBasedCloudSolrClient = null;
   private static CloudHttp2SolrClient zkBasedCloudSolrClient = null;
-
-  private boolean asyncCallbackRun;
 
   @Before
   public void setupCluster() throws Exception {
@@ -1078,19 +1078,32 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   }
 
   /**
-   * Tests the async request code pathway to ensure that normal requests will trigger the onSuccess callback.
+   * Tests the async request code pathway to ensure that normal requests will trigger the onStart and onSuccess listener methods.
    */
   @Test
   public void asyncRequestTest() throws Exception {
     final String collectionName = "asyncRequestCollection";
+    // Boolean flags to check that onStart and onSuccess execute
+    final boolean[] asyncCallbackRun = {false, false};
+    final Semaphore semaphore = new Semaphore(1);
 
     // Create collection
     CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1).process(cluster.getSolrClient());
     cluster.waitForActiveCollection(collectionName, 2, 2);
 
-    AsyncListener<LBHttp2SolrClient.Rsp> callback = new AsyncListener<>() {
+    AsyncListener<NamedList<Object>> callback = new AsyncListener<>() {
       @Override
-      public void onSuccess(LBHttp2SolrClient.Rsp rsp) { asyncCallbackRun = true; }
+      public void onStart() {
+          semaphore.acquireUninterruptibly();
+          asyncCallbackRun[0] = true;
+      }
+
+      @Override
+      public void onSuccess(NamedList<Object> namedList) {
+        // Checks that onSuccess runs sometime after onStart
+        asyncCallbackRun[1] = asyncCallbackRun[0];
+        semaphore.release();
+      }
 
       @Override
       public void onFailure(Throwable throwable) { }
@@ -1099,15 +1112,13 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     QueryRequest request = new QueryRequest(); // params of the request aren't important for this test
 
     // Test success callback runs on a "successful" request
-    asyncCallbackRun = false;
     getRandomClient().asyncRequest(request, collectionName, callback);
 
     // Wait for up to 500ms timeout success callback to run
-    int count = 0;
-    while (!asyncCallbackRun && ++count <= 20) {
-      Thread.sleep(25);
+    boolean acquired = semaphore.tryAcquire(500, TimeUnit.MILLISECONDS);
+    if (!(asyncCallbackRun[0] && asyncCallbackRun[1] && acquired)) {
+      fail("Async request didn't complete in 500ms");
     }
-    if (count == 21) { fail("Async request timed out"); }
   }
 
 }

@@ -132,8 +132,23 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
    */
   public Cancellable asyncRequest(@SuppressWarnings({"rawtypes"}) SolrRequest request,
                                   String collection,
-                                  AsyncListener<LBSolrClient.Rsp> asyncListener) throws SolrServerException, IOException {
-    NamedList<Object> cancellableWrapper = this.makeRequest(request, collection, asyncListener);
+                                  AsyncListener<NamedList<Object>> asyncListener) throws SolrServerException, IOException {
+    NamedList<Object> cancellableWrapper = this.makeRequest(request, collection, new AsyncListener<>() {
+      @Override
+      public void onStart() {
+        asyncListener.onStart();
+      }
+
+      @Override
+      public void onSuccess(LBSolrClient.Rsp rsp) {
+        asyncListener.onSuccess(rsp.getResponse());
+      }
+
+      @Override
+      public void onFailure(Throwable throwable) {
+        asyncListener.onFailure(throwable);
+      }
+    });
     return (Cancellable) cancellableWrapper.get("asyncCancellable");
   }
 
