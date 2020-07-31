@@ -266,11 +266,16 @@ public class Http2SolrClient extends SolrClient {
           }
         });
       }
-//      closer.collect(() -> {
-//        // we wait for async requests, so far devs don't want to give sugar for this
-//       // asyncTracker.waitForCompleteFinal();
-//
-//      });
+      closer.collect(() -> {
+
+        try {
+          // will fill queue with NOOPS and wake sleeping threads
+          httpClientExecutor.waitForStopping();
+        } catch (InterruptedException e) {
+          ParWork.propegateInterrupt(e);
+        }
+
+      });
       closer.addCollect("httpClientExecutor");
     }
     assert ObjectReleaseTracker.release(this);
