@@ -475,7 +475,6 @@ public class DistribPackageStore implements PackageStore {
 
   @Override
   public void delete(String path) {
-    checkInZk(path);
     deleteLocal(path);
     List<String> nodes = coreContainer.getPackageStoreAPI().shuffledNodes();
     HttpClient client = coreContainer.getUpdateShardHandler().getDefaultHttpClient();
