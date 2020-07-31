@@ -125,7 +125,7 @@ PARSER_END(StandardSyntaxParser)
 | <QUOTED:     "\"" (<_QUOTED_CHAR>)* "\"">
 | <TERM:      <_TERM_START_CHAR> (<_TERM_CHAR>)*  >
 | <FUZZY_SLOP:     "~" ( (<_NUM_CHAR>)+ ( "." (<_NUM_CHAR>)+ )? )? >
-| <REGEXPTERM: "/" (~[ "/" ] | "\\/" )* "/" >
+| <REGEXPTERM: "/" (~[ "/" ] | "\\/" )* ("/" | "/i") >
 | <RANGEIN_START: "[" > : Range
 | <RANGEEX_START: "{" > : Range
 }
@@ -440,8 +440,10 @@ QueryNode Term(CharSequence field) : {
           }
           q = new FuzzyQueryNode(field, EscapeQuerySyntaxImpl.discardEscapeChar(term.image), fms, term.beginColumn, term.endColumn);
        } else if (regexp) {
-         String re = term.image.substring(1, term.image.length()-1);
-         q = new RegexpQueryNode(field, re, 0, re.length());
+         boolean caseSensitive = !term.image.endsWith("i");
+         int lastSlash = term.image.lastIndexOf("/");
+         String re = term.image.substring(1, lastSlash);
+         q = new RegexpQueryNode(field, re, 0, re.length(), caseSensitive);
        }
      }
      | ( ( <RANGEIN_START> {startInc=true;} | <RANGEEX_START> )

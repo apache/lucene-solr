@@ -209,7 +209,7 @@ PARSER_END(QueryParser)
 | <FUZZY_SLOP:    "~" ((<_NUM_CHAR>)+ (( "." (<_NUM_CHAR>)+ )? (<_TERM_CHAR>)*) | (<_TERM_CHAR>)*) >
 | <PREFIXTERM:    ("*") | ( <_TERM_START_CHAR> (<_TERM_CHAR>)* "*" ) >
 | <WILDTERM:      (<_TERM_START_CHAR> | [ "*", "?" ]) (<_TERM_CHAR> | ( [ "*", "?" ] ))* >
-| <REGEXPTERM:    "/" (~[ "/" ] | "\\/" )* "/" >
+| <REGEXPTERM:    "/" (~[ "/" ] | "\\/" )* ("/" | "/i") >
 | <RANGEIN_START: "[" > : Range
 | <RANGEEX_START: "{" > : Range
 }

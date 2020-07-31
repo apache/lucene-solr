@@ -1051,6 +1051,16 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     assertEquals(re, getQuery("field:/http.*/",qp));
     assertEquals(re, getQuery("/http.*/",qp));
     
+    // Confirm the automaton comparison identifies differences in case-matching choices
+    re = new RegexpQuery(new Term("field", "http.*"), RegExp.NONE);
+    assertNotEquals(re, getQuery("field:/http.*/i",qp));
+    assertNotEquals(re, getQuery("/http.*/i",qp));
+
+    // Now check the case insensitivity syntax
+    re = new RegexpQuery(new Term("field", "http.*"), RegExp.NONE, RegExp.ASCII_CASE_INSENSITIVE, 1000);
+    assertEquals(re, getQuery("field:/http.*/i",qp));
+    assertEquals(re, getQuery("/http.*/i",qp));
+    
     re = new RegexpQuery(new Term("field", "http~0.5"));
     assertEquals(re, getQuery("field:/http~0.5/",qp));
     assertEquals(re, getQuery("/http~0.5/",qp));
