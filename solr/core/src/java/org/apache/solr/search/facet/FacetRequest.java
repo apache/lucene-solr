@@ -218,8 +218,8 @@ public abstract class FacetRequest {
             }
           }
 
-          final String method = join.containsKey("method") ? join.get("method") : "index";
-          domain.joinField = new JoinField(join.get("from"), join.get("to"), method);
+          final String method = join.containsKey(METHOD_PARAM) ? join.get(METHOD_PARAM) : "index";
+          domain.joinField = new JoinField(join.get(FROM_PARAM), join.get(TO_PARAM), method);
         }
       }
 
