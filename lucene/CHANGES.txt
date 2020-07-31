@@ -175,9 +175,17 @@ Improvements
   per hit in dependencies, ExpressionFunctionValues will no longer
   recompute already computed values (Haoyu Zhai)
 
+* LUCENE-9416: Fix CheckIndex to print an invalid non-zero norm as
+  unsigned long when detecting corruption.
+
+* LUCENE-9440: FieldInfo#checkConsistency called twice from Lucene50(60)FieldInfosFormat#read;
+  Removed the (redundant?) assert and do these checks for real. (Yauheni Putsykovich)
+
 Optimizations
 ---------------------
-(No changes)
+
+* LUCENE-9395: ConstantValuesSource now shares a single DoubleValues
+  instance across all segments (Tony Xu)
 
 Bug Fixes
 ---------------------
@@ -192,6 +200,13 @@ Documentation
 Other
 ---------------------
 (No changes)
+
+======================= Lucene 8.6.1 =======================
+
+Bug Fixes
+---------------------
+* LUCENE-9443: The UnifiedHighlighter was closing the underlying reader when there were multiple term-vector fields.
+  This was a regression in 8.6.0.  (David Smiley, Chris Beer)
 
 ======================= Lucene 8.6.0 =======================
 

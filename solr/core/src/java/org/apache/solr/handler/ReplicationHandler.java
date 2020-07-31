@@ -1234,7 +1234,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   public void inform(SolrCore core) {
     this.core = core;
     registerCloseHook();
-    Long deprecatedReserveCommitDuration = null;
     Object nbtk = initArgs.get(NUMBER_BACKUPS_TO_KEEP_INIT_PARAM);
     if(nbtk!=null) {
       numberBackupsToKeep = Integer.parseInt(nbtk.toString());
@@ -1352,11 +1351,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           if (s!=null) s.decref();
         }
       }
-      String reserve = (String) master.get(RESERVE);
-      if (reserve != null && !reserve.trim().equals("")) {
-        reserveCommitDuration = readIntervalMs(reserve);
-        deprecatedReserveCommitDuration = reserveCommitDuration;
-      }
       isMaster = true;
     }
 
@@ -1364,9 +1358,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       final String reserve = (String) initArgs.get(RESERVE);
       if (reserve != null && !reserve.trim().equals("")) {
         reserveCommitDuration = readIntervalMs(reserve);
-        if (deprecatedReserveCommitDuration != null) {
-          throw new IllegalArgumentException("'master."+RESERVE+"' and '"+RESERVE+"' are mutually exclusive.");
-        }
       }
     }
     log.info("Commits will be reserved for {} ms", reserveCommitDuration);

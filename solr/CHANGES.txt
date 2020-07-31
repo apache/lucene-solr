@@ -131,6 +131,9 @@ Improvements
 * SOLR-13205: Prevent StringIndexOutOfBoundsException when parsing field names in SolrQueryParserBase
   (pramodkumar9 via Jason Gerlowski)
 
+* SOLR-14651: The MetricsHistoryHandler can more completely disable itself when you tell it to.
+  Also, it now shuts down more thoroughly. (David Smiley)
+
 Optimizations
 ---------------------
 
@@ -163,6 +166,13 @@ Other Changes
 * SOLR-14676: Update commons-collections to 4.4 and use it in Solr (Erick Erickson)
 
 * SOLR-11868: Deprecate CloudSolrClient.setIdField, use information from Zookeeper (Erick Erickson)
+
+==================  8.6.1 ==================
+
+Bug Fixes
+---------------------
+
+* SOLR-14671: Parsing dynamic ZK config sometimes cause NuberFormatException (janhoy)
 
 ==================  8.6.0 ==================
 
