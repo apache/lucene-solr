@@ -62,6 +62,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.VersionedData;
@@ -793,14 +794,17 @@ public class Utils {
 
 
   public static <T> T executeGET(HttpClient client, String url, InputStreamConsumer<T> consumer) throws SolrException {
+    return executeHttpMethod(client, url, consumer, new HttpGet(url));
+  }
+
+  public static <T> T executeHttpMethod(HttpClient client, String url, InputStreamConsumer<T> consumer, HttpRequestBase httpMethod) {
     T result = null;
-    HttpGet httpGet = new HttpGet(url);
     HttpResponse rsp = null;
     try {
-      rsp = client.execute(httpGet);
+      rsp = client.execute(httpMethod);
     } catch (IOException e) {
       log.error("Error in request to url : {}", url, e);
-      throw new SolrException(SolrException.ErrorCode.UNKNOWN, "error sending request");
+      throw new SolrException(SolrException.ErrorCode.UNKNOWN, "Error sending request");
     }
     int statusCode = rsp.getStatusLine().getStatusCode();
     if (statusCode != 200) {
