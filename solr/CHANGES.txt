@@ -58,6 +58,9 @@ Bug Fixes
 * SOLR-14665: Revert changes from SOLR-12845 (Add a default cluster policy) to fix a
   collection creation performance regression. (ishan, houston, ab)
 
+* SOLR-14516: Fix NPE in JSON response writer(wt=json) with /get when writing non-stored, non-indexed docvalue field
+  from an uncommitted document (noble, Ishan Chattopadhyaya, Munendra S N)
+
 Other Changes
 ---------------------
 
