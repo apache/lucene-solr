@@ -848,7 +848,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
    *
    * @return A {@link NamedList} with the response if sync, or a {@link NamedList} containing a single Cancellable object if async
    */
-  NamedList<Object> makeRequest(@SuppressWarnings({"rawtypes"}) SolrRequest request,
+  NamedList<Object> makeRequest(SolrRequest<?> request,
                                 String collection,
                                 AsyncListener<LBSolrClient.Rsp> asyncListener) throws SolrServerException, IOException {
     // the collection parameter of the request overrides that of the parameter to this method
@@ -868,7 +868,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
    * there's a chance that the request will fail due to cached stale state,
    * which means the state must be refreshed from ZK and retried.
    */
-  protected NamedList<Object> requestWithRetryOnStaleState(@SuppressWarnings({"rawtypes"})SolrRequest request,
+  protected NamedList<Object> requestWithRetryOnStaleState(SolrRequest<?> request,
                                                            int retryCount,
                                                            List<String> inputCollections,
                                                            AsyncListener<LBSolrClient.Rsp> asyncListener) throws SolrServerException, IOException {
@@ -1055,7 +1055,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     return resp;
   }
 
-  protected NamedList<Object> sendRequest(@SuppressWarnings({"rawtypes"})SolrRequest request, List<String> inputCollections, AsyncListener<LBSolrClient.Rsp> asyncListener)
+  protected NamedList<Object> sendRequest(SolrRequest<?> request, List<String> inputCollections, AsyncListener<LBSolrClient.Rsp> asyncListener)
       throws SolrServerException, IOException {
     connect();
 

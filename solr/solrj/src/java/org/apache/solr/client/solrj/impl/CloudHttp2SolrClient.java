@@ -130,7 +130,7 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
-  public Cancellable asyncRequest(@SuppressWarnings({"rawtypes"}) SolrRequest request,
+  public Cancellable asyncRequest(SolrRequest<?> request,
                                   String collection,
                                   AsyncListener<NamedList<Object>> asyncListener) throws SolrServerException, IOException {
     NamedList<Object> cancellableWrapper = this.makeRequest(request, collection, new AsyncListener<>() {
