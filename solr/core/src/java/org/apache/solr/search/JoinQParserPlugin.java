@@ -207,7 +207,8 @@ public class JoinQParserPlugin extends QParserPlugin {
       return new JoinQuery(fromField, toField, null, subQuery);
     }
 
-    final Method joinMethod = Method.valueOf(method);
+
+    final Method joinMethod = parseMethodString(method);
     if (! methodWhitelist.contains(joinMethod)) {
       // TODO Throw something that the callers here (FacetRequest) can catch and produce a more domain-appropriate error message for?
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
@@ -216,6 +217,14 @@ public class JoinQParserPlugin extends QParserPlugin {
 
     final JoinParams jParams = new JoinParams(fromField, null, subQuery, 0L, toField);
     return joinMethod.makeJoinDirectFromParams(jParams);
+  }
+
+  private static Method parseMethodString(String method) {
+    try {
+      return Method.valueOf(method);
+    } catch (IllegalArgumentException iae) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Provided join method '" + method + "' not supported");
+    }
   }
   
 }
