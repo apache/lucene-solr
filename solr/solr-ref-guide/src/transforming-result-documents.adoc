@@ -168,13 +168,13 @@ Some Examples:
 ** Matches any documents that are descendents of the current document and have a "nested path" of `/skus` -- but not any children of those `skus`
 * childFilter="/skus/color_s:RED"
 ** Matches any documents that are descendents of the current document; match `color_s:RED`; and have a "nested path" of `/skus` -- but not any children of those `skus`
-* `childFilter="/skus/docs/\*:*"`
-** Matches any documents that are descendents of the current document and have a "nested path" of `/skus/docs` -- but not any children of those `docs`
+* `childFilter="/skus/manuals/\*:*"`
+** Matches any documents that are descendents of the current document and have a "nested path" of `/skus/manuals` -- but not any children of those `manuals`
 
 When paths do not start with a `/` they are treated as "path suffixes":
 
-* `childFilter="docs/\*:*"`
-** Matches any documents that are descendents of the current document and have a "nested path" that ends with "docs", regardless of how deeply nested they are -- but not any children of those `docs`
+* `childFilter="manuals/\*:*"`
+** Matches any documents that are descendents of the current document and have a "nested path" that ends with "manuals", regardless of how deeply nested they are -- but not any children of those `manuals`
 
 ====
 

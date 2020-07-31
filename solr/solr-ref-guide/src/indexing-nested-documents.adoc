@@ -36,11 +36,11 @@ With the exception of in-place updates, <<#maintaining-integrity-with-updates-an
 [#example-indexing-syntax]
 == Example Indexing Syntax: Psuedo-Fields
 
-This example shows what it looks like to index two root level "product" documents, each containing two different types of child documents specified in "psuedo-fields": "skus" and "docs".  Two of the "sku" type documents have their own nested child "docs" documents...
+This example shows what it looks like to index two root level "product" documents, each containing two different types of child documents specified in "psuedo-fields": "skus" and "manuals".  Two of the "sku" type documents have their own nested child "manuals" documents...
 
 [NOTE]
 ====
-Even though the child documents in these examples are provided syntactically as field values syntactically, this is simply a matter of syntax and as such `skus` and `docs` are not actual fields in the documents.  Consequently, these field names need not be defined in the schema and probably shouldn't be as it would be confusing.  There is no "child document" field type.
+Even though the child documents in these examples are provided syntactically as field values syntactically, this is simply a matter of syntax and as such `skus` and `manuals` are not actual fields in the documents.  Consequently, these field names need not be defined in the schema and probably shouldn't be as it would be confusing.  There is no "child document" field type.
 ====
 
 //
@@ -61,23 +61,23 @@ Even though the child documents in these examples are provided syntactically as 
    "skus": [ { "id": "P11!S21",
                "color_s": "RED",
                "price_i": 42,
-               "docs": [ { "id": "P11!D41",
-                           "name_s": "Red Swingline Brochure",
-                           "content_t": "..."
-                         } ]
+               "manuals": [ { "id": "P11!D41",
+                              "name_s": "Red Swingline Brochure",
+                              "content_t": "..."
+                            } ]
              },
              { "id": "P11!S31",
                "color_s": "BLACK",
                "price_i": 3
              } ],
-   "docs": [ { "id": "P11!D51",
-               "name_s": "Quick Reference Guide",
-               "content_t": "How to use your stapler ..."
-             },
-             { "id": "P11!D61",
-               "name_s": "Warranty Details",
-               "content_t": "... lifetime garuntee ..."
-             } ]
+   "manuals": [ { "id": "P11!D51",
+                  "name_s": "Quick Reference Guide",
+                  "content_t": "How to use your stapler ..."
+                },
+                { "id": "P11!D61",
+                  "name_s": "Warranty Details",
+                  "content_t": "... lifetime guarantee ..."
+                } ]
  },
  { "id": "P22!prod",
    "name_s": "Mont Blanc Fountain Pen",
@@ -85,19 +85,19 @@ Even though the child documents in these examples are provided syntactically as 
    "skus": [ { "id": "P22!S22",
                "color_s": "RED",
                "price_i": 89,
-               "docs": [ { "id": "P21!D41",
-                           "name_s": "Red Mont Blanc Brochure",
-                           "content_t": "..."
-                         } ]
+               "manuals": [ { "id": "P21!D41",
+                              "name_s": "Red Mont Blanc Brochure",
+                              "content_t": "..."
+                            } ]
              },
              { "id": "P22!S32",
                "color_s": "BLACK",
                "price_i": 67
              } ],
-   "docs": [ { "id": "P22!D52",
-               "name_s": "How To Use A Pen",
-               "content_t": "Start by removing the cap ..."
-             } ]
+   "manuals": [ { "id": "P22!D52",
+                  "name_s": "How To Use A Pen",
+                  "content_t": "Start by removing the cap ..."
+                } ]
  } ]
 ----
 // end::sample-indexing-deeply-nested-documents[]
@@ -148,7 +148,6 @@ There are several additional schema considerations that should be considered for
 ** All field names in the schema can only be configured in one -- different types of child documents can not have the same field name configured in different ways.
 ** It may be infeasible to use `required` for any field names that aren't reqiured for all types of documents.
 ** Even child documents need a _globally_ unique `id`.
-*** When using Solr Cloud it is a _VERY_ good idea to use <<shards-and-indexing-data-in-solrcloud#document-routing,prefix based compositeIds>> with a common prefix for all documents in the block.  This makes it much easier to apply <<updating-parts-of-documents#updating-child-documents,atomic updates to individual child documents>>
 * `\_root_` must be configured to either be stored (`stored="true"`) or use doc values (`docValues="true"`) to enable <<updating-parts-of-documents#updating-child-documents,atomic updates of nested documents>>.
 ** Also, beware of `uniqueBlock(\_root_)` <<json-facet-api#stat-facet-functions,field type limitation>>, if you plan to use one.
 * `\_nest_path_` is an optional field that (if definied) will be populated by Solr automatically with the ancestor path of each non-root document.
@@ -160,14 +159,19 @@ There are several additional schema considerations that should be considered for
 ----
 ** This field is neccessary if you wish to use <<updating-parts-of-documents#updating-child-documents,atomic updates of nested documents>>
 ** This field is neccessary in order for Solr to properly record & reconstruct the nested relationship of documents when using the `<<searching-nested-documents.adoc#child-doc-transformer,[child]>>` doc transformer.
-*** If this field does not exist, the `[child]` transformer will return all descendent child docs as a flattened list -- just as if they had been <<#indexing-anonymous-children,indexed as anonymous children>>.
-** If you do not use `\_nest_path_` it is strongly recomended that every document have some field that differentiates root docs from their nested children -- and differentiates different "types" of child documents.  This is not strictly neccessary, so long as it's possible to write a "filter" query that can be used to isolate and select only parent documents for use in the <<other-parsers.adoc#block-join-query-parsers,block join query parsers>> and <<searching-nested-documents.adoc#child-doc-transformer,[child]>> doc transformer
+*** If this field does not exist, the `[child]` transformer will return all descendent child documents as a flattened list -- just as if they had been <<#indexing-anonymous-children,indexed as anonymous children>>.
+** If you do not use `\_nest_path_` it is strongly recomended that every document have some field that differentiates root documents from their nested children -- and differentiates different "types" of child documents.  This is not strictly neccessary, so long as it's possible to write a "filter" query that can be used to isolate and select only parent documents for use in the <<other-parsers.adoc#block-join-query-parsers,block join query parsers>> and <<searching-nested-documents.adoc#child-doc-transformer,[child]>> doc transformer
 * `\_nest_parent_` is an optional field that (if defined) will be populated by Solr automatically to store the `id` of each document's _immediate_ parent document (if there is one).
 +
 [sourece,xml]
 ----
 <field name="_nest_parent_" type="string" indexed="true" stored="true" />
 ----
+
+[TIP]
+====
+When using Solr Cloud it is a _VERY_ good idea to use <<shards-and-indexing-data-in-solrcloud#document-routing,prefix based compositeIds>> with a common prefix for all documents in the block.  This makes it much easier to apply <<updating-parts-of-documents#updating-child-documents,atomic updates to individual child documents>>
+====
 
 
 == Maintaining Integrity with Updates and Deletes
@@ -223,7 +227,7 @@ Although not recommended, it is also possible to index child documents "anonymou
        { "id": "P11!D61",
          "type_s": "DOC",
          "name_s": "Warranty Details",
-         "content_t": "... lifetime garuntee ..."
+         "content_t": "... lifetime guarantee ..."
        }
     ]
 } ]
@@ -304,7 +308,7 @@ $ curl --globoff 'http://localhost:8983/solr/gettingstarted/select?omitHeader=tr
           "id":"P11!D61",
           "type_s":"DOC",
           "name_s":"Warranty Details",
-          "content_t":"... lifetime garuntee ...",
+          "content_t":"... lifetime guarantee ...",
           "_version_":1673055562829398016}]}]
   }}
 ----
@@ -354,7 +358,7 @@ $ curl --globoff 'http://localhost:8983/solr/gettingstarted/select?omitHeader=tr
       <str name="id">P11!D61</str>
       <str name="type_s">DOC</str>
       <str name="name_s">Warranty Details</str>
-      <str name="content_t">... lifetime garuntee ...</str>
+      <str name="content_t">... lifetime guarantee ...</str>
       <long name="_version_">1673055562829398016</long></doc></doc>
 </result>
 </response>

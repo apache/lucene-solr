@@ -156,14 +156,14 @@ As with normal (multiValued) fields, the `set` keyword can be used to replace al
 curl -X POST 'http://localhost:8983/solr/gettingstarted/update?commit=true' -H 'Content-Type: application/json' --data-binary '[
 {
   "id": "P22!S22",
-  "docs": { "set": [ { "id": "P22!D77",
-                       "name_s": "Why Red Pens Are the Best",
-                       "content_t": "... correcting papers ...",
-                     },
-                     { "id": "P22!D88",
-                       "name_s": "How to get Red ink stains out of fabric",
-                       "content_t": "... vinegar ...",
-                     } ] }
+  "manuals": { "set": [ { "id": "P22!D77",
+                          "name_s": "Why Red Pens Are the Best",
+                          "content_t": "... correcting papers ...",
+                        },
+                        { "id": "P22!D88",
+                          "name_s": "How to get Red ink stains out of fabric",
+                          "content_t": "... vinegar ...",
+                        } ] }
                      
 } ]'
 ----
@@ -177,10 +177,10 @@ As with normal (multiValued) fields, the `add` keyword can be used to add additi
 curl -X POST 'http://localhost:8983/solr/gettingstarted/update?commit=true' -H 'Content-Type: application/json' --data-binary '[
 {
   "id": "P11!S21",
-  "docs": { "add": { "id": "P11!D99",
-                     "name_s": "Why Red Staplers Are the Best",
-                     "content_t": "Once upon a time, Mike Judge ...",
-                   } }
+  "manuals": { "add": { "id": "P11!D99",
+                        "name_s": "Why Red Staplers Are the Best",
+                        "content_t": "Once upon a time, Mike Judge ...",
+                      } }
 } ]'
 ----
 
@@ -194,7 +194,7 @@ As with normal (multiValued) fields, the `remove` keyword can be used to remove 
 curl -X POST 'http://localhost:8983/solr/gettingstarted/update?commit=true' -H 'Content-Type: application/json' --data-binary '[
 {
   "id": "P11!S21",
-  "docs": { "remove": { "id": "P11!D41" } }
+  "manuals": { "remove": { "id": "P11!D41" } }
 } ]'
 ----
 

@@ -35,7 +35,7 @@ include::indexing-nested-documents.adoc[tag=sample-indexing-deeply-nested-docume
 
 === Child Doc Transformer
 
-By default, documents that match a query do not include any of thir nested children in the response.  The `[child]` Doc Transformer Can be used enrich query results with the documents' descendants.
+By default, documents that match a query do not include any of their nested children in the response.  The `[child]` Doc Transformer Can be used enrich query results with the documents' descendants.
 
 For a detailed explanation of this transformer, and specifics on it's syntax & limitations, please refer to the section <<transforming-result-documents.adoc#child-childdoctransformerfactory, [child] - ChildDocTransformerFactory>>.
 
@@ -72,7 +72,7 @@ $ curl 'http://localhost:8983/solr/gettingstarted/select?omitHeader=true&q=descr
             "color_s":"RED",
             "price_i":42,
             "_version_":1672933224035123200,
-            "docs":[
+            "manuals":[
               {
                 "id":"P11!D41",
                 "name_s":"Red Swingline Brochure",
@@ -84,7 +84,7 @@ $ curl 'http://localhost:8983/solr/gettingstarted/select?omitHeader=true&q=descr
             "color_s":"BLACK",
             "price_i":3,
             "_version_":1672933224035123200}],
-        "docs":[
+        "manuals":[
           {
             "id":"P11!D51",
             "name_s":"Quick Reference Guide",
@@ -94,7 +94,7 @@ $ curl 'http://localhost:8983/solr/gettingstarted/select?omitHeader=true&q=descr
           {
             "id":"P11!D61",
             "name_s":"Warranty Details",
-            "content_t":"... lifetime garuntee ...",
+            "content_t":"... lifetime guarantee ...",
             "_version_":1672933224035123200}]}]
   }}
 ----
@@ -134,7 +134,7 @@ $ curl --globoff 'http://localhost:8983/solr/gettingstarted/select?omitHeader=tr
       {
         "id":"P11!D61",
         "name_s":"Warranty Details",
-        "content_t":"... lifetime garuntee ...",
+        "content_t":"... lifetime guarantee ...",
         "_version_":1672933224035123200}]
   }}
 ----
@@ -198,13 +198,13 @@ Here for example is a query where:
 
 * the (sku) documents returned must have a color of "RED"
 * the (sku) docments returned must be the descendents of root level (product) documents which have:
-** immediate child "docs" documents which have:
-*** "lifetime garuntee" in their content
-* each return (sku) document also includes any descendent (docs) documents it has
+** immediate child "manuals" documents which have:
+*** "lifetime guarantee" in their content
+* each return (sku) document also includes any descendent (manuals) documents it has
 
 [source,bash]
 ----
-$ curl --globoff 'http://localhost:8983/solr/gettingstarted/select?omitHeader=true&fq=color_s:RED&q={!child+of="*:*+-_nest_path_:*"+filters=$parent_fq}&parent_fq={!parent+which="*:*+-_nest_path_:*"}_nest_path_:"/docs"+AND+content_t:"lifetime+garuntee"&fl=*,[child]'
+$ curl --globoff 'http://localhost:8983/solr/gettingstarted/select?omitHeader=true&fq=color_s:RED&q={!child+of="*:*+-_nest_path_:*"+filters=$parent_fq}&parent_fq={!parent+which="*:*+-_nest_path_:*"}_nest_path_:"/manuals"+AND+content_t:"lifetime+guarantee"&fl=*,[child]'
 {
   "response":{"numFound":1,"start":0,"maxScore":1.4E-45,"numFoundExact":true,"docs":[
       {
@@ -212,7 +212,7 @@ $ curl --globoff 'http://localhost:8983/solr/gettingstarted/select?omitHeader=tr
         "color_s":"RED",
         "price_i":42,
         "_version_":1672933224035123200,
-        "docs":[
+        "manuals":[
           {
             "id":"P11!D41",
             "name_s":"Red Swingline Brochure",
