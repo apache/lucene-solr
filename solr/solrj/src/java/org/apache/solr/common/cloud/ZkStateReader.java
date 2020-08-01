@@ -226,14 +226,8 @@ public class ZkStateReader implements SolrCloseable {
 
   private Set<ClusterPropertiesListener> clusterPropertiesListeners = ConcurrentHashMap.newKeySet();
 
-  /**
-   * Used to submit notifications to Collection Properties watchers in order
-   **/
-  private final ExecutorService collectionPropsNotifications = ParWork.getExecutor();
-
   private static final long LAZY_CACHE_TIME = TimeUnit.NANOSECONDS.convert(STATE_UPDATE_DELAY, TimeUnit.MILLISECONDS);
 
-  private volatile Future<?> collectionPropsCacheCleaner; // only kept to identify if the cleaner has already been started.
 
   /**
    * Get current {@link AutoScalingConfig}.
@@ -914,21 +908,16 @@ public class ZkStateReader implements SolrCloseable {
     this.closed = true;
     try {
       try (ParWork closer = new ParWork(this, true)) {
-        notifications.shutdown();
-        collectionPropsNotifications.shutdown();
-
-        try {
-          collectionPropsCacheCleaner.cancel(true);
-        } catch (NullPointerException e) {
-          // okay
-        }
-        closer.add("waitLatchesReader", () -> {
-          waitLatches.forEach((w) -> w.countDown());
-          return null;
-        });
+//        closer.add("waitLatchesReader", () -> {
+//          waitLatches.forEach((w) -> w.countDown());
+//          return null;
+//        });
 
         closer
-            .add("notifications", notifications, collectionPropsNotifications);
+            .add("notifications", notifications, () -> {
+              waitLatches.forEach((w) -> w.countDown());
+              return null;
+            });
 
         if (closeClient) {
           closer.add("zkClient", zkClient);
@@ -2015,9 +2004,6 @@ public class ZkStateReader implements SolrCloseable {
   }
 
   private void notifyStateWatchers(String collection, DocCollection collectionState) {
-    if (this.closed) {
-      return;
-    }
     try {
       notifications.submit(new Notification(collection, collectionState));
     } catch (RejectedExecutionException e) {
