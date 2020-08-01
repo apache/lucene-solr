@@ -14,6 +14,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class SysStats extends Thread {
+    public static final int REFRESH_INTERVAL = 10000;
     static final int PROC_COUNT = ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors();
 
     private long refreshInterval;
@@ -27,7 +28,7 @@ public class SysStats extends Thread {
 
     public static synchronized SysStats getSysStats() {
         if (sysStats == null) {
-            sysStats = new SysStats(10000);
+            sysStats = new SysStats(REFRESH_INTERVAL);
         }
         return  sysStats;
     }
@@ -43,7 +44,7 @@ public class SysStats extends Thread {
         if (sysStats != null) {
             sysStats.stopMonitor();
         }
-        sysStats = new SysStats(10000);
+        sysStats = new SysStats(REFRESH_INTERVAL);
     }
 
     public void doStop() {
@@ -135,7 +136,7 @@ public class SysStats extends Thread {
         double usage = 0D;
         for (ThreadTime threadTime : values) {
             synchronized (threadTime) {
-                usage += (threadTime.getCurrent() - threadTime.getLast()) / (refreshInterval * 10000);
+                usage += (threadTime.getCurrent() - threadTime.getLast()) / (refreshInterval * REFRESH_INTERVAL);
             }
         }
         return usage;
@@ -154,7 +155,7 @@ public class SysStats extends Thread {
         double usage = 0D;
         if(info != null) {
             synchronized (info) {
-                usage = (info.getCurrent() - info.getLast()) / (refreshInterval * 10000);
+                usage = (info.getCurrent() - info.getLast()) / (TimeUnit.MILLISECONDS.toNanos(refreshInterval));
             }
         }
         return usage;

@@ -40,7 +40,7 @@ public class SolrQoSFilter extends QoSFilter {
   static final String MAX_REQUESTS_INIT_PARAM = "maxRequests";
   static final String SUSPEND_INIT_PARAM = "suspendMs";
   static final int PROC_COUNT = ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors();
-  public static final int OUR_LOAD_HIGH = 5;
+  public static final int OUR_LOAD_HIGH = 99;
   protected int _origMaxRequests;
 
 
@@ -61,32 +61,33 @@ public class SolrQoSFilter extends QoSFilter {
     HttpServletRequest req = (HttpServletRequest) request;
     String source = req.getHeader(QoSParams.REQUEST_SOURCE);
     if (source == null || !source.equals(QoSParams.INTERNAL)) {
-      // nocommit - deal with no supported, use this as a fail safe with high and low watermark?
-      double load =  ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage();
-      if (load < 0) {
-        log.warn("SystemLoadAverage not supported on this JVM");
-        load = 0;
-      }
+
 
       double ourLoad = sysStats.getAvarageUsagePerCPU();
       if (ourLoad > OUR_LOAD_HIGH) {
         log.info("Our individual load is {}", ourLoad);
         int cMax = getMaxRequests();
         if (cMax > 2) {
-          int max = Math.max(1, (int) ((double)cMax * 0.60D));
+          int max = Math.max(2, (int) ((double)cMax * 0.60D));
           log.info("set max concurrent requests to {}", max);
           setMaxRequests(max);
         }
       } else {
+        // nocommit - deal with no supported, use this as a fail safe with high and low watermark?
+        double load =  ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage();
+        if (load < 0) {
+          log.warn("SystemLoadAverage not supported on this JVM");
+          load = 0;
+        }
         double sLoad = load / (double) PROC_COUNT;
-        if (sLoad > 1.0D) {
+        if (sLoad > PROC_COUNT) {
           int cMax = getMaxRequests();
           if (cMax > 2) {
-            int max = Math.max(1, (int) ((double) cMax * 0.60D));
+            int max = Math.max(2, (int) ((double) cMax * 0.60D));
             log.info("set max concurrent requests to {}", max);
             setMaxRequests(max);
           }
-        } else if (sLoad < 0.9D && _origMaxRequests != getMaxRequests()) {
+        } else if (sLoad < PROC_COUNT && _origMaxRequests != getMaxRequests()) {
 
           log.info("set max concurrent requests to orig value {}", _origMaxRequests);
           setMaxRequests(_origMaxRequests);

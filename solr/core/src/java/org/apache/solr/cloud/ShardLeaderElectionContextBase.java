@@ -159,13 +159,6 @@ class ShardLeaderElectionContextBase extends ElectionContext {
           leaderZkNodeParentVersion = stat.getVersion();
           log.info("Got leaderZkNodeParentVersion {}", leaderZkNodeParentVersion);
         }
-        if (result.getType() == ZooDefs.OpCode.error) {
-          OpResult.ErrorResult dresult = (OpResult.ErrorResult) result;
-          if (dresult.getErr() > 0) {
-            errors.add(it.next().getPath());
-          }
-        }
-
       }
     // assert leaderZkNodeParentVersion != null;
 

@@ -40,11 +40,11 @@ public abstract class ElectionContext implements Closeable {
     this.leaderPath = leaderPath;
     this.leaderProps = leaderProps;
 
-    ObjectReleaseTracker.track(this);
+    assert ObjectReleaseTracker.track(this);
   }
 
   public void close() {
-    ObjectReleaseTracker.release(this);
+    assert ObjectReleaseTracker.release(this);
   }
 
   public void cancelElection() throws InterruptedException, KeeperException {
