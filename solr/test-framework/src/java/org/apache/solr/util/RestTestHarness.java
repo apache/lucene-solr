@@ -21,6 +21,10 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpDelete;
@@ -32,8 +36,10 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.ParWork;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.QoSParams;
 import org.apache.solr.common.util.ObjectReleaseTracker;
@@ -44,13 +50,13 @@ import org.apache.solr.common.util.Utils;
  */
 public class RestTestHarness extends BaseTestHarness implements Closeable {
   private RESTfulServerProvider serverProvider;
-  private CloseableHttpClient httpClient;
+  private Http2SolrClient sorlClient;
   
-  public RestTestHarness(RESTfulServerProvider serverProvider) {
+  public RestTestHarness(RESTfulServerProvider serverProvider, Http2SolrClient sorlClient) {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, 5000);
     params.set(HttpClientUtil.PROP_SO_TIMEOUT, 10000);
-    httpClient = HttpClientUtil.createClient(params);
+    this.sorlClient = sorlClient;
     this.serverProvider = serverProvider;
     assert ObjectReleaseTracker.track(this);
   }
@@ -112,15 +118,11 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
    * @exception Exception any exception in the response.
    */
   public String query(String request) throws Exception {
-    HttpGet get = new HttpGet(getBaseURL() + request);
-    get.addHeader(QoSParams.REQUEST_SOURCE, QoSParams.INTERNAL);
-    return getResponse(get);
+    return Http2SolrClient.GET(getBaseURL() + request, sorlClient).asString;
   }
 
   public String adminQuery(String request) throws Exception {
-    HttpGet get = new HttpGet(getAdminURL() + request);
-    get.addHeader(QoSParams.REQUEST_SOURCE, QoSParams.INTERNAL);
-    return getResponse(get);
+    return Http2SolrClient.GET(getAdminURL()  + request, sorlClient).asString;
   }
 
   /**
@@ -132,12 +134,19 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
    * @return The response to the PUT request
    */
   public String put(String request, String content) throws IOException {
-    HttpPut httpPut = new HttpPut(getBaseURL() + request);
-    httpPut.addHeader(QoSParams.REQUEST_SOURCE, QoSParams.INTERNAL);
-    httpPut.setEntity(new StringEntity(content, ContentType.create(
-        "application/json", StandardCharsets.UTF_8)));
-    
-    return getResponse(httpPut);
+    String resp;
+    try {
+      resp = Http2SolrClient.PUT(getBaseURL() + request, sorlClient, content.getBytes("UTF-8"), "application/json",
+          Collections.emptyMap()).asString;
+    } catch (InterruptedException e) {
+      ParWork.propegateInterrupt(e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    } catch (ExecutionException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    } catch (TimeoutException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
+    return resp;
   }
 
   /**
@@ -148,9 +157,16 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
    * @return The response to the DELETE request
    */
   public String delete(String request) throws IOException {
-    HttpDelete httpDelete = new HttpDelete(getBaseURL() + request);
-    httpDelete.addHeader(QoSParams.REQUEST_SOURCE, QoSParams.INTERNAL);
-    return getResponse(httpDelete);
+    try {
+      return Http2SolrClient.DELETE(getBaseURL() + request, sorlClient).asString;
+    } catch (InterruptedException e) {
+      ParWork.propegateInterrupt(e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    } catch (ExecutionException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    } catch (TimeoutException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
   }
 
   /**
@@ -162,12 +178,18 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
    * @return The response to the POST request
    */
   public String post(String request, String content) throws IOException {
-    HttpPost httpPost = new HttpPost(getBaseURL() + request);
-    httpPost.addHeader(QoSParams.REQUEST_SOURCE, QoSParams.INTERNAL);
-    httpPost.setEntity(new StringEntity(content, ContentType.create(
-        "application/json", StandardCharsets.UTF_8)));
-    
-    return getResponse(httpPost);
+    String resp = null;
+    try {
+      resp = Http2SolrClient.POST(getBaseURL() + request, sorlClient, content.getBytes("UTF-8"), "application/json").asString;
+    } catch (InterruptedException e) {
+      ParWork.propegateInterrupt(e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    } catch (ExecutionException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    } catch (TimeoutException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
+    return resp;
   }
 
 
@@ -222,22 +244,9 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
     }
   }
 
-  /**
-   * Executes the given request and returns the response.
-   */
-  private String getResponse(HttpUriRequest request) throws IOException {
-    HttpEntity entity = null;
-    try {
-      entity = httpClient.execute(request, HttpClientUtil.createNewHttpClientRequestContext()).getEntity();
-      return EntityUtils.toString(entity, StandardCharsets.UTF_8);
-    } finally {
-      Utils.consumeFully(entity);
-    }
-  }
-
   @Override
   public void close() throws IOException {
-    HttpClientUtil.close(httpClient);
+    sorlClient.close();
     assert ObjectReleaseTracker.release(this);
   }
 }

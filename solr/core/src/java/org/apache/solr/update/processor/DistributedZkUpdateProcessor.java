@@ -147,6 +147,11 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   }
 
   @Override
+  public boolean hasNodes () {
+    return nodes != null && nodes.size() > 0;
+  }
+
+  @Override
   protected Replica.Type computeReplicaType() {
     // can't use cloudDesc since this is called by super class, before the constructor instantiates cloudDesc.
     return req.getCore().getCoreDescriptor().getCloudDescriptor().getReplicaType();
@@ -545,7 +550,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
         zkController.getBaseUrl(), req.getCore().getName()));
 
-    boolean someReplicas = false;
     boolean subShardLeader = false;
     try {
       subShardLeader = amISubShardLeader(coll, null, null, null);
@@ -562,12 +566,11 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
             myReplicas.add(new SolrCmdDistributor.StdNode(replicaProp, collection, myShardId));
           }
           cmdDistrib.distribDelete(cmd, myReplicas, params, false, rollupReplicationTracker, leaderReplicationTracker);
-          someReplicas = true;
         }
       }
     } catch (InterruptedException e) {
       ParWork.propegateInterrupt(e);
-      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
+      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "Interrupted", e);
     }
     if (leaderLogic) {
       List<SolrCmdDistributor.Node> subShardLeaders = getSubShardLeaders(coll, cloudDesc.getShardId(), null, null);
@@ -584,16 +587,10 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         params.set(DISTRIB_FROM_SHARD, cloudDesc.getShardId());
 
         cmdDistrib.distribDelete(cmd, nodesByRoutingRules, params, true, rollupReplicationTracker, leaderReplicationTracker);
-        someReplicas = true;
       }
       if (replicas != null) {
         cmdDistrib.distribDelete(cmd, replicas, params, false, rollupReplicationTracker, leaderReplicationTracker);
-        someReplicas = true;
       }
-    }
-
-    if (someReplicas) {
-      cmdDistrib.blockAndDoRetries();
     }
   }
 

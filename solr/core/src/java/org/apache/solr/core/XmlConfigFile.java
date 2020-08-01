@@ -16,9 +16,36 @@
  */
 package org.apache.solr.core;
 
+import net.sf.saxon.dom.DocumentBuilderImpl;
+import net.sf.saxon.jaxp.SaxonTransformerFactory;
+import net.sf.saxon.xpath.XPathFactoryImpl;
+import org.apache.solr.cloud.ZkSolrResourceLoader;
+import org.apache.solr.common.ParWork;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.XMLErrorLogger;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.util.DOMUtil;
+import org.apache.solr.util.SystemIdResolver;
+import org.codehaus.staxmate.dom.DOMConverter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+
 import javax.xml.namespace.QName;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMResult;
+import javax.xml.transform.dom.DOMSource;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
@@ -36,38 +63,19 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-import net.sf.saxon.xpath.XPathFactoryImpl;
-import org.apache.commons.io.IOUtils;
-import org.apache.jute.Index;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.cloud.ZkSolrResourceLoader;
-import org.apache.solr.common.ParWork;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.XMLErrorLogger;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.util.DOMUtil;
-import org.apache.solr.util.SystemIdResolver;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.NamedNodeMap;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-
 /**
  * Wrapper around an XML DOM object to provide convenient accessors to it.  Intended for XML config files.
  */
 public class XmlConfigFile { // formerly simply "Config"
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-
+  public static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
+  public static final DOMConverter convertor = new DOMConverter();
   public static final XPathFactory xpathFactory = new XPathFactoryImpl();
-
- // public static final  TransformerFactory tfactory = TransformerFactory.newInstance();
-
+  public static final SaxonTransformerFactory tfactory = new SaxonTransformerFactory();
+  static  {
+   // tfactory.getConfiguration().setBooleanProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, Boolean.TRUE);
+  }
 
   private final Document doc;
   //private final Document origDoc; // with unsubstituted properties
@@ -84,7 +92,7 @@ public class XmlConfigFile { // formerly simply "Config"
    */
   public XmlConfigFile(SolrResourceLoader loader, String name) throws ParserConfigurationException, IOException, SAXException
   {
-    this( loader, name, null, null );
+    this( loader, name, null, null);
   }
 
   /**
@@ -118,11 +126,13 @@ public class XmlConfigFile { // formerly simply "Config"
       loader = new SolrResourceLoader(SolrPaths.locateSolrHome());
     }
     this.loader = loader;
-    this.substituteProperties = substituteProps;
     this.name = name;
     this.prefix = (prefix != null && !prefix.endsWith("/"))? prefix + '/' : prefix;
-    try {
+
       if (is == null) {
+        if (name == null || name.length() == 0) {
+          throw new IllegalArgumentException("Null or empty name:" + name);
+        }
         InputStream in = loader.openResource(name);
         if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
           zkVersion = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
@@ -133,18 +143,38 @@ public class XmlConfigFile { // formerly simply "Config"
       }
 
       try {
-        doc = loader.getDocumentBuilder().parse(is);
+
+        DocumentBuilderImpl b = new DocumentBuilderImpl();
+        if (is.getSystemId() != null) {
+          b.setEntityResolver(loader.getSysIdResolver());
+          b.setXIncludeAware(true);
+          b.setValidating(false);
+          b.getConfiguration().setExpandAttributeDefaults(true);
+        }
+        try {
+          doc = copyDoc(b.parse(is));
+        } catch (TransformerException e) {
+          throw new RuntimeException(e);
+        }
+
       } finally {
         // some XML parsers are broken and don't close the byte stream (but they should according to spec)
-        IOUtils.closeQuietly(is.getByteStream());
+        ParWork.close(is.getByteStream());
       }
-      if (substituteProps != null) {
-        DOMUtil.substituteProperties(doc, getSubstituteProperties());
+
+
+      this.substituteProperties = substituteProps;
+    if (substituteProps != null) {
+        DOMUtil.substituteProperties(doc, substituteProperties);
       }
-    } catch (SAXException e)  {
-      SolrException.log(log, "Exception during parsing file: " + name, e);
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-    }
+  }
+
+  private static Document copyDoc(Document doc) throws TransformerException {
+    Transformer tx = tfactory.newTransformer();
+    DOMSource source = new DOMSource(doc);
+    DOMResult result = new DOMResult();
+    tx.transform(source, result);
+    return (Document) result.getNode();
   }
 
   /*
@@ -167,14 +197,6 @@ public class XmlConfigFile { // formerly simply "Config"
     return this.substituteProperties;
   }
 
-//  private static Document copyDoc(Document doc) throws TransformerException {
-//    Transformer tx = tfactory.newTransformer();
-//    DOMSource source = new DOMSource(doc);
-//    DOMResult result = new DOMResult();
-//    tx.transform(source, result);
-//    return (Document) result.getNode();
-//  }
-//
   /**
    * @since solr 1.3
    */

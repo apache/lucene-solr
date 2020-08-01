@@ -610,7 +610,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
   
   protected void setupRestTestHarnesses() {
     for (final SolrClient client : clients) {
-      RestTestHarness harness = new RestTestHarness(() -> ((HttpSolrClient) client).getBaseURL());
+      RestTestHarness harness = new RestTestHarness(() -> ((HttpSolrClient) client).getBaseURL(), cluster.getSolrClient().getHttpClient());
       restTestHarnesses.add(harness);
     }
   }

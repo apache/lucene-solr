@@ -61,10 +61,10 @@ dependencies {
   api 'commons-codec:commons-codec'
   api 'commons-collections:commons-collections'
 
-  implementation 'net.sf.saxon:Saxon-HE'
+  api 'net.sf.saxon:Saxon-HE'
 
   implementation 'xerces:xercesImpl'
-
+  implementation 'com.fasterxml.staxmate:staxmate'
 
   implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-smile'
 

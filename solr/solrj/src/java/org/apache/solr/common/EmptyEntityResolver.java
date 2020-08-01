@@ -71,6 +71,7 @@ public final class EmptyEntityResolver {
   public static void configureSAXParserFactory(SAXParserFactory saxFactory) {
     // don't enable validation of DTDs:
     saxFactory.setValidating(false);
+    saxFactory.setXIncludeAware(false);
     // enable secure processing:
     trySetSAXFeature(saxFactory, XMLConstants.FEATURE_SECURE_PROCESSING, true);
   }

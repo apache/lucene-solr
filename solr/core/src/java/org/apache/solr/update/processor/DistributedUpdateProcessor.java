@@ -211,6 +211,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     return isLeader;
   }
 
+  public boolean hasNodes () {
+    return false;
+  }
+
   @Override
   public void processAdd(AddUpdateCommand cmd) throws IOException {
 
@@ -271,13 +275,13 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       }
       boolean zkAware = req.getCore().getCoreContainer().isZooKeeperAware();
       log.info("Is zk aware {}", zkAware);
-      if (zkAware) {
+      if (zkAware && hasNodes()) {
 
         log.info("Collect distrib add");
         worker.collect(() -> {
           log.info("Run distrib add collection");
           try {
-            DistributedUpdateProcessor.this.doDistribAdd(cmd);
+            doDistribAdd(cmd);
             log.info("after distrib add collection");
           } catch (Throwable e) {
             ParWork.propegateInterrupt(e);
@@ -882,7 +886,27 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     versionDeleteByQuery(cmd);
 
-    doDistribDeleteByQuery(cmd, replicas, coll);
+    try (ParWork work = new ParWork(this)) {
+      work.collect(() -> {
+        try {
+          doLocalDelete(cmd);
+        } catch (IOException e) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, e);
+        }
+      });
+
+      work.collect(() -> {
+        try {
+          doDistribDeleteByQuery(cmd, replicas, coll);
+        } catch (IOException e) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, e);
+        }
+      });
+      work.addCollect("deleteByQuery");
+
+    }
+
+
 
 
     if (returnVersions && rsp != null) {
@@ -947,9 +971,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         long version = vinfo.getNewClock();
         cmd.setVersion(-version);
         // TODO update versions in all buckets
-
-        doLocalDelete(cmd);
-
       } else {
         cmd.setVersion(-versionOnUpdate);
 
@@ -964,7 +985,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           // TLOG replica not leader, don't write the DBQ to IW
           cmd.setFlags(cmd.getFlags() | UpdateCommand.IGNORE_INDEXWRITER);
         }
-        doLocalDelete(cmd);
       }
     }
   }

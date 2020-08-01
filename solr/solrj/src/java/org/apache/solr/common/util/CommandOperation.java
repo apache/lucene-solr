@@ -27,6 +27,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.solr.common.SolrException;
 import org.noggit.JSONParser;
@@ -40,8 +41,8 @@ import static org.apache.solr.common.util.Utils.toJSON;
 
 public class CommandOperation {
   public final String name;
-  private Object commandData;//this is most often a map
-  private List<String> errors = new ArrayList<>();
+  private volatile Object commandData;//this is most often a map
+  private Set<String> errors = ConcurrentHashMap.newKeySet();
 
   public CommandOperation(String operationName, Object metaData) {
     commandData = metaData;
@@ -200,7 +201,7 @@ public class CommandOperation {
   }
 
 
-  public List<String> getErrors() {
+  public Set<String> getErrors() {
     return errors;
   }
 

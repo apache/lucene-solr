@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -71,7 +72,7 @@ public class ZkShardTerms implements AutoCloseable{
   private final String shard;
   private final String znodePath;
   private final SolrZkClient zkClient;
-  private final Set<CoreTermWatcher> listeners = new HashSet<>();
+  private final Set<CoreTermWatcher> listeners = ConcurrentHashMap.newKeySet();
   private final AtomicBoolean isClosed = new AtomicBoolean(false);
 
   private AtomicReference<ShardTerms> terms = new AtomicReference<>();
@@ -153,9 +154,9 @@ public class ZkShardTerms implements AutoCloseable{
   public void close() {
     // no watcher will be registered
     isClosed.set(true);
-    synchronized (listeners) {
-      listeners.clear();
-    }
+
+    listeners.clear();
+
     ObjectReleaseTracker.release(this);
   }
 
@@ -168,9 +169,7 @@ public class ZkShardTerms implements AutoCloseable{
    * Add a listener so the next time the shard's term get updated, listeners will be called
    */
   void addListener(CoreTermWatcher listener) {
-    synchronized (listeners) {
-      listeners.add(listener);
-    }
+    listeners.add(listener);
   }
 
   /**
@@ -179,11 +178,10 @@ public class ZkShardTerms implements AutoCloseable{
    */
   boolean removeTerm(CoreDescriptor cd) {
     int numListeners;
-    synchronized (listeners) {
       // solrcore already closed
-      listeners.removeIf(coreTermWatcher -> !coreTermWatcher.onTermChanged(terms.get()));
-      numListeners = listeners.size();
-    }
+    listeners.removeIf(coreTermWatcher -> !coreTermWatcher.onTermChanged(terms.get()));
+    numListeners = listeners.size();
+
     return removeTerm(cd.getCloudDescriptor().getCoreNodeName()) || numListeners == 0;
   }
 
@@ -278,9 +276,7 @@ public class ZkShardTerms implements AutoCloseable{
 
   // package private for testing, only used by tests
   int getNumListeners() {
-    synchronized (listeners) {
-      return listeners.size();
-    }
+    return listeners.size();
   }
 
   /**
@@ -413,8 +409,6 @@ public class ZkShardTerms implements AutoCloseable{
   }
 
   private void onTermUpdates(ShardTerms newTerms) {
-    synchronized (listeners) {
-      listeners.removeIf(coreTermWatcher -> !coreTermWatcher.onTermChanged(newTerms));
-    }
+    listeners.removeIf(coreTermWatcher -> !coreTermWatcher.onTermChanged(newTerms));
   }
 }

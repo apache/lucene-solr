@@ -31,6 +31,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -46,15 +47,18 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     useFactory(null);
-    initCore("solrconfig-externalversionconstraint.xml", "schema15.xml");
+
   }
 
   @Before
   public void before() throws Exception {
-    assertU(delQ("*:*"));
-    assertU(commit());
+    initCore("solrconfig-externalversionconstraint.xml", "schema15.xml");
   }
 
+  @After
+  public void after() throws Exception {
+    deleteCore();
+  }
 
   public void testSimpleUpdates() throws Exception {
 

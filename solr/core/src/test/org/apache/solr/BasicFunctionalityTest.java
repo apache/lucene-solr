@@ -67,6 +67,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
+    assertNotNull(System.getProperty("solr.tests.IntegerFieldType"));
     initCore("solrconfig.xml","schema.xml");
   }
   // tests the performance of dynamic field creation and

@@ -271,7 +271,8 @@ public class ParWorkExecService implements ExecutorService {
   public <T> List<Future<T>> invokeAll(
       Collection<? extends Callable<T>> collection, long l, TimeUnit timeUnit)
       throws InterruptedException {
-    throw new UnsupportedOperationException();
+    // nocommit
+    return invokeAll(collection);
   }
 
   @Override

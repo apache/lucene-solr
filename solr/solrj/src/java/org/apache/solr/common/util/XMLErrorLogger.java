@@ -43,11 +43,14 @@ public final class XMLErrorLogger implements ErrorHandler,ErrorListener,XMLRepor
 
   @Override
   public void error(SAXParseException e) throws SAXException {
+    log.error("", e);
+
     throw e;
   }
 
   @Override
   public void fatalError(SAXParseException e) throws SAXException {
+    log.error("", e);
     throw e;
   }
 
@@ -55,11 +58,13 @@ public final class XMLErrorLogger implements ErrorHandler,ErrorListener,XMLRepor
 
   @Override
   public void warning(TransformerException e) {
+    log.error("", e);
     log.warn(e.getMessageAndLocation());
   }
 
   @Override
   public void error(TransformerException e) throws TransformerException {
+    log.error("", e);
     throw e;
   }
 

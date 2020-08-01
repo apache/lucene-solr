@@ -38,7 +38,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import com.ctc.wstx.shaded.msv_core.verifier.jaxp.SAXParserFactoryImpl;
+import com.ctc.wstx.sax.SAXFeature;
+import com.ctc.wstx.sax.WstxSAXParserFactory;
 import com.ctc.wstx.stax.WstxInputFactory;
 import com.google.common.collect.Lists;
 import org.apache.commons.io.IOUtils;
@@ -69,6 +70,8 @@ import org.apache.solr.util.xslt.TransformerProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
+import org.xml.sax.SAXNotRecognizedException;
+import org.xml.sax.SAXNotSupportedException;
 import org.xml.sax.XMLReader;
 
 import static org.apache.solr.common.params.CommonParams.ID;
@@ -88,24 +91,10 @@ public class XMLLoader extends ContentStreamLoader {
 
   private static int xsltCacheLifetimeSeconds = XSLT_CACHE_DEFAULT;
   private static XMLInputFactory inputFactory = new WstxInputFactory();
-  private static SAXParserFactory saxFactory = new SAXParserFactoryImpl();
+  private static WstxSAXParserFactory saxFactory = new WstxSAXParserFactory();
   static {
     EmptyEntityResolver.configureXMLInputFactory(inputFactory);
     inputFactory.setXMLReporter(xmllog);
-
-    try {
-      // The java 1.6 bundled stax parser (sjsxp) does not currently have a thread-safe
-      // XMLInputFactory, as that implementation tries to cache and reuse the
-      // XMLStreamReader.  Setting the parser-specific "reuse-instance" property to false
-      // prevents this.
-      // All other known open-source stax parsers (and the bea ref impl)
-      // have thread-safe factories.
-      inputFactory.setProperty("reuse-instance", Boolean.FALSE);
-    } catch (IllegalArgumentException ex) {
-      // Other implementations will likely throw this exception since "reuse-instance"
-      // isimplementation specific.
-      log.debug("Unable to set the 'reuse-instance' property for the input chain: {}", inputFactory);
-    }
 
     // Init SAX parser (for XSL):
     saxFactory.setNamespaceAware(true); // XSL needs this!
@@ -151,6 +140,7 @@ public class XMLLoader extends ContentStreamLoader {
         isrc.setEncoding(charset);
         final XMLReader xmlr = saxFactory.newSAXParser().getXMLReader();
         xmlr.setErrorHandler(xmllog);
+        xmlr.setFeature("http://xml.org/sax/features/external-general-entities", Boolean.TRUE);
         xmlr.setEntityResolver(EmptyEntityResolver.SAX_INSTANCE);
         final SAXSource source = new SAXSource(xmlr, isrc);
         t.transform(source, result);

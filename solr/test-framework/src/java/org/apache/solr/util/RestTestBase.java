@@ -17,6 +17,7 @@
 package org.apache.solr.util;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MultiMapSolrParams;
@@ -40,9 +41,7 @@ abstract public class RestTestBase extends SolrJettyTestBase {
 
   @AfterClass
   public synchronized static void cleanUpHarness() throws IOException {
-    if (restTestHarness != null) {
-      restTestHarness.close();
-    }
+    ParWork.close(restTestHarness, true);
     restTestHarness = null;
   }
 
@@ -54,7 +53,9 @@ abstract public class RestTestBase extends SolrJettyTestBase {
     if (restTestHarness != null) {
       restTestHarness.close();
     }
-    restTestHarness = new RestTestHarness(() -> jetty.getBaseUrl().toString() + "/" + DEFAULT_TEST_CORENAME);
+    restTestHarness = new RestTestHarness(() -> jetty.getBaseUrl().toString() + "/" + DEFAULT_TEST_CORENAME,
+        getHttpSolrClient(jetty.getBaseUrl().toString() + "/" + DEFAULT_TEST_CORENAME,
+            (Http2SolrClient) client));
   }
 
   /** Validates an update XML String is successful

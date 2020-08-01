@@ -114,7 +114,7 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
 
 
     if (jetty != null) {
-      jetty.stop();
+      throw new IllegalStateException();
     }
     jetty = new JettySolrRunner(solrHome, nodeProps, jettyConfig);
     jetty.start();

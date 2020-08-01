@@ -16,6 +16,7 @@
  */
 package org.apache.solr.core;
 
+
 import com.google.common.annotations.VisibleForTesting;
 import java.io.*;
 import java.lang.invoke.MethodHandles;
@@ -204,6 +205,10 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
     }
     db.setEntityResolver(sysIdResolver);
     return db;
+  }
+
+  public SystemIdResolver getSysIdResolver() {
+    return  sysIdResolver;
   }
 
   /**
@@ -1043,5 +1048,4 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
       }
     }
   }
-
 }

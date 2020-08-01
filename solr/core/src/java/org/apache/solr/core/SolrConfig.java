@@ -107,7 +107,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
   public static final String DEFAULT_CONF_FILE = "solrconfig.xml";
 
-  private RequestParams requestParams;
+  private volatile RequestParams requestParams;
 
   public enum PluginOpts {
     MULTI_OK,

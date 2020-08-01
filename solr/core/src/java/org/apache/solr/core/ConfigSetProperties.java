@@ -80,9 +80,6 @@ public class ConfigSetProperties {
   public static NamedList readFromInputStream(InputStreamReader reader) {
     try {
       Object object = fromJSON(reader);
-      if (object == null) {
-        return new NamedList();
-      }
       if (!(object instanceof Map)) {
         final String objectClass = object == null ? "null" : object.getClass().getName();
         throw new SolrException(ErrorCode.SERVER_ERROR, "Invalid JSON type " + objectClass + ", expected Map");

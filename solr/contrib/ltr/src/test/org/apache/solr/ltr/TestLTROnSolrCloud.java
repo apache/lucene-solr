@@ -211,7 +211,7 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     for (JettySolrRunner solrRunner : solrCluster.getJettySolrRunners()) {
       if (!solrRunner.getCoreContainer().getCores().isEmpty()){
         String coreName = solrRunner.getCoreContainer().getCores().iterator().next().getName();
-        restTestHarness = new RestTestHarness(() -> solrRunner.getBaseUrl().toString() + "/" + coreName);
+        restTestHarness = new RestTestHarness(() -> solrRunner.getBaseUrl().toString() + "/" + coreName, solrCluster.getSolrClient().getHttpClient());
         break;
       }
     }

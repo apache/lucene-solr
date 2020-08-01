@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -173,7 +174,7 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
     req.setContentStreams(Collections.singletonList(o));
     rsp = new SolrQueryResponse();
     handler.handleRequestBody(req, rsp);
-    List l = (List) ((Map) ((List)rsp.getValues().get("errorMessages")).get(0)).get("errorMessages");
+    Set l = (Set) ((Map) ((List)rsp.getValues().get("errorMessages")).get(0)).get("errorMessages");
     assertEquals(1, l.size());
     handler.close();
   }

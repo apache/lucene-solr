@@ -72,23 +72,22 @@ public abstract class ConfigSetService {
       // ConfigSet properties are loaded from ConfigSetProperties.DEFAULT_FILENAME file.
       NamedList properties = loadConfigSetProperties(dcore, coreLoader);
       // ConfigSet flags are loaded from the metadata of the ZK node of the configset.
-      NamedList flags = null;
-      try {
-        flags = loadConfigSetFlags(dcore, coreLoader);
-      } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
-      }
 
-      boolean trusted =
-          (coreLoader instanceof ZkSolrResourceLoader
-              && flags != null
-              && flags.get("trusted") != null
-              && !flags.getBooleanArg("trusted")
-              ) ? false: true;
+      // there are no flags in non cloud mode, it just returns null
+//      NamedList flags = null;
+//      flags = loadConfigSetFlags(dcore, coreLoader);
 
-      SolrConfig solrConfig = createSolrConfig(dcore, coreLoader, trusted);
+
+//      boolean trusted =
+//          (coreLoader instanceof ZkSolrResourceLoader
+//              && flags != null
+//              && flags.get("trusted") != null
+//              && !flags.getBooleanArg("trusted")
+//              ) ? false: true;
+
+      SolrConfig solrConfig = createSolrConfig(dcore, coreLoader, true);
       IndexSchema schema = createIndexSchema(dcore, solrConfig);
-      return new ConfigSet(configSetName(dcore), solrConfig, schema, properties, trusted);
+      return new ConfigSet(configSetName(dcore), solrConfig, schema, properties, true);
     } catch (Exception e) {
       ParWork.propegateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,

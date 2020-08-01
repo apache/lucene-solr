@@ -108,7 +108,7 @@ class SolrCores implements Closeable {
     log.info("Closing SolrCores");
     this.closed = true;
 
-    waitForLoadingAndOps();
+    waitForLoadingCoresToFinish(15000);
 
     Collection<SolrCore> coreList = new ArrayList<>();
 
@@ -149,11 +149,6 @@ class SolrCores implements Closeable {
       closer.addCollect("CloseSolrCores");
     }
 
-  }
-
-  public void waitForLoadingAndOps() {
-    waitForLoadingCoresToFinish(30 * 1000); // nocommit timeout config
-    waitAddPendingCoreOps();
   }
   
   // Returns the old core if there was a core of the same name.
@@ -362,73 +357,6 @@ class SolrCores implements Closeable {
       }
     }
     return new CoreDescriptor(cname, desc);
-  }
-
-  // Wait here until any pending operations (load, unload or reload) are completed on this core.
-  protected SolrCore waitAddPendingCoreOps(String name) {
-
-    // Keep multiple threads from operating on a core at one time.
-      boolean pending;
-      do { // Are we currently doing anything to this core? Loading, unloading, reloading?
-        pending = pendingCoreOps.contains(name); // wait for the core to be done being operated upon
-//        if (!pending) { // Linear list, but shouldn't be too long
-//          for (SolrCore core : pendingCloses) {
-//            if (core.getName().equals(name)) {
-//              pending = true;
-//              break;
-//            }
-//          }
-//        }
-
-        if (pending) {
-          try {
-            Thread.sleep(250);
-          } catch (InterruptedException e) {
-            ParWork.propegateInterrupt(e);
-            throw new RuntimeException(e);
-          }
-        }
-      } while (pending);
-      // We _really_ need to do this within the synchronized block!
-      if (! container.isShutDown()) {
-        if (! pendingCoreOps.add(name)) {
-          log.warn("Replaced an entry in pendingCoreOps {}, we should not be doing this", name);
-        }
-        return getCoreFromAnyList(name, false); // we might have been _unloading_ the core, so return the core if it was loaded.
-      }
-
-    return null;
-  }
-
-  protected SolrCore waitAddPendingCoreOps() {
-      boolean pending;
-      do {
-        pending = pendingCoreOps.size() > 0;
-
-        if (pending) {
-          synchronized (pendingCoreOps) {
-            try {
-              pendingCoreOps.wait(500);
-            } catch (InterruptedException e) {
-              ParWork.propegateInterrupt(e);
-              throw new RuntimeException(e);
-            }
-          }
-
-        }
-      } while (pending);
-    return null;
-  }
-
-  // We should always be removing the first thing in the list with our name! The idea here is to NOT do anything n
-  // any core while some other operation is working on that core.
-  protected void removeFromPendingOps(String name) {
-    synchronized (pendingCoreOps) {
-      if (!pendingCoreOps.remove(name)) {
-        log.warn("Tried to remove core {} from pendingCoreOps and it wasn't there. ", name);
-      }
-      pendingCoreOps.notifyAll();
-    }
   }
 
   /**

@@ -163,8 +163,8 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     synchronized (this) {
       CacheValue cacheValue = byDirectoryCache.get(directory);
       if (cacheValue == null) {
-        throw new IllegalArgumentException("Unknown directory: " + directory
-                + " " + byDirectoryCache);
+        log.warn("done with an unknown directory, {}", directory);
+        return;
       }
       cacheValue.doneWithDir = true;
       if (log.isDebugEnabled()) log.debug("Done with dir: {}", cacheValue);

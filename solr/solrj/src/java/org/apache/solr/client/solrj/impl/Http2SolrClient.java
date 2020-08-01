@@ -1127,9 +1127,20 @@ public class Http2SolrClient extends SolrClient {
   }
 
 
+  public static SimpleResponse DELETE(String url, Http2SolrClient httpClient)
+      throws InterruptedException, ExecutionException, TimeoutException {
+    return doDelete(url, httpClient, Collections.emptyMap());
+  }
+
+
   public static SimpleResponse GET(String url, Http2SolrClient httpClient)
           throws InterruptedException, ExecutionException, TimeoutException {
-    return doGet(url, httpClient);
+    return doGet(url, httpClient, Collections.emptyMap());
+  }
+
+  public static SimpleResponse GET(String url, Http2SolrClient httpClient, Map<String,String> headers)
+      throws InterruptedException, ExecutionException, TimeoutException {
+    return doGet(url, httpClient, headers);
   }
 
   public static SimpleResponse POST(String url, Http2SolrClient httpClient, byte[] bytes, String contentType)
@@ -1147,10 +1158,28 @@ public class Http2SolrClient extends SolrClient {
     return doPost(url, httpClient, bytes, contentType, headers);
   }
 
-  private static SimpleResponse doGet(String url, Http2SolrClient httpClient)
+  public static SimpleResponse PUT(String url, Http2SolrClient httpClient, byte[] bytes, String contentType, Map<String,String> headers)
+      throws InterruptedException, ExecutionException, TimeoutException {
+    return doPut(url, httpClient, bytes, contentType, headers);
+  }
+
+  private static SimpleResponse doGet(String url, Http2SolrClient httpClient, Map<String,String> headers)
           throws InterruptedException, ExecutionException, TimeoutException {
     assert url != null;
     Request req = httpClient.getHttpClient().newRequest(url).method(GET);
+    ContentResponse response = req.send();
+    SimpleResponse sResponse = new SimpleResponse();
+    sResponse.asString = response.getContentAsString();
+    sResponse.contentType = response.getEncoding();
+    sResponse.size = response.getContent().length;
+    sResponse.status = response.getStatus();
+    return sResponse;
+  }
+
+  private static SimpleResponse doDelete(String url, Http2SolrClient httpClient, Map<String,String> headers)
+      throws InterruptedException, ExecutionException, TimeoutException {
+    assert url != null;
+    Request req = httpClient.getHttpClient().newRequest(url).method(DELETE);
     ContentResponse response = req.send();
     SimpleResponse sResponse = new SimpleResponse();
     sResponse.asString = response.getContentAsString();
@@ -1168,6 +1197,21 @@ public class Http2SolrClient extends SolrClient {
   private static SimpleResponse doPost(String url, Http2SolrClient httpClient, byte[] bytes, String contentType,
                                        Map<String,String> headers) throws InterruptedException, ExecutionException, TimeoutException {
     Request req = httpClient.getHttpClient().newRequest(url).method(POST).content(new BytesContentProvider(contentType, bytes));
+    for (Map.Entry<String,String> entry : headers.entrySet()) {
+      req.header(entry.getKey(), entry.getValue());
+    }
+    ContentResponse response = req.send();
+    SimpleResponse sResponse = new SimpleResponse();
+    sResponse.asString = response.getContentAsString();
+    sResponse.contentType = response.getEncoding();
+    sResponse.size = response.getContent().length;
+    sResponse.status = response.getStatus();
+    return sResponse;
+  }
+
+  private static SimpleResponse doPut(String url, Http2SolrClient httpClient, byte[] bytes, String contentType,
+      Map<String,String> headers) throws InterruptedException, ExecutionException, TimeoutException {
+    Request req = httpClient.getHttpClient().newRequest(url).method(PUT).content(new BytesContentProvider(contentType, bytes));
     for (Map.Entry<String,String> entry : headers.entrySet()) {
       req.header(entry.getKey(), entry.getValue());
     }

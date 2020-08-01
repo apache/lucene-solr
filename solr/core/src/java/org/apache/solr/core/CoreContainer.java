@@ -902,10 +902,8 @@ public class CoreContainer implements Closeable {
                   if (isZooKeeperAware()) {
                     zkSys.getZkController().throwErrorIfReplicaReplaced(cd);
                   }
-                  solrCores.waitAddPendingCoreOps(cd.getName());
                   core = createFromDescriptor(cd, false, false);
                 } finally {
-                  solrCores.removeFromPendingOps(cd.getName());
                   if (asyncSolrCoreLoad) {
                     solrCores.markCoreAsNotLoading(cd);
                   }
@@ -1175,7 +1173,7 @@ public class CoreContainer implements Closeable {
   }
 
   public void waitForCoresToFinish() {
-    solrCores.waitForLoadingAndOps();
+    solrCores.waitForLoadingCoresToFinish(30000);
   }
 
   public void cancelCoreRecoveries() {
@@ -1285,13 +1283,10 @@ public class CoreContainer implements Closeable {
       // first and clean it up if there's an error.
       coresLocator.create(this, cd);
 
-      try {
-        solrCores.waitAddPendingCoreOps(cd.getName());
-        core = createFromDescriptor(cd, true, newCollection);
-        coresLocator.persist(this, cd); // Write out the current core properties in case anything changed when the core was created
-      } finally {
-        solrCores.removeFromPendingOps(cd.getName());
-      }
+
+      core = createFromDescriptor(cd, true, newCollection);
+      coresLocator.persist(this, cd); // Write out the current core properties in case anything changed when the core was created
+
 
       return core;
     } catch (Exception ex) {
@@ -1381,7 +1376,7 @@ public class CoreContainer implements Closeable {
       }
       try {
         if (isShutDown) {
-          throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Solr has been shutdown.");
+          throw new AlreadyClosedException("Solr has been shutdown.");
         }
         core = new SolrCore(this, dcore, coreConfig);
       } catch (SolrException e) {
@@ -1708,17 +1703,11 @@ public class CoreContainer implements Closeable {
         if (!success) {
           ParWork.close(newCore);
         }
-        solrCores.removeFromPendingOps(cd.getName());
       }
     } else {
       CoreLoadFailure clf = coreInitFailures.get(name);
       if (clf != null) {
-        try {
-          solrCores.waitAddPendingCoreOps(clf.cd.getName());
-          createFromDescriptor(clf.cd, true, false);
-        } finally {
-          solrCores.removeFromPendingOps(clf.cd.getName());
-        }
+        createFromDescriptor(clf.cd, true, false);
       } else {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No such core: " + name);
       }
@@ -1924,9 +1913,7 @@ public class CoreContainer implements Closeable {
 
     // This will put an entry in pending core ops if the core isn't loaded. Here's where moving the
     // waitAddPendingCoreOps to createFromDescriptor would introduce a race condition.
-    core = solrCores.waitAddPendingCoreOps(name);
 
-    try {
       if (core == null) {
         if (isZooKeeperAware()) {
           zkSys.getZkController().throwErrorIfReplicaReplaced(desc);
@@ -1934,9 +1921,7 @@ public class CoreContainer implements Closeable {
         core = createFromDescriptor(desc, true, false); // This should throw an error if it fails.
       }
       core.open();
-    } finally {
-      solrCores.removeFromPendingOps(name);
-    }
+
 
     return core;
   }

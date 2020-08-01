@@ -49,6 +49,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -246,7 +247,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
                             .getResourceLoader()).run();
                   } catch (Exception e) {
                     ParWork.propegateInterrupt(e);
-                    if (e instanceof InterruptedException) {
+                    if (e instanceof InterruptedException || e instanceof AlreadyClosedException) {
                       return;
                     }
                     log.error("Unable to refresh conf ", e);
@@ -404,6 +405,9 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
         }
       } catch (Exception e) {
         ParWork.propegateInterrupt(e);
+        if (e instanceof  InterruptedException || e instanceof  AlreadyClosedException) {
+          return;
+        }
         resp.setException(e);
         resp.add(CommandOperation.ERR_MSGS, singletonList(SchemaManager.getErrorStr(e)));
       }
@@ -602,7 +606,6 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
             rtl.init(new PluginInfo(info.tag, op.getDataMap()));
           }
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
           op.addError(e.getMessage());
           log.error("can't load this plugin ", e);
           return overlay;
@@ -835,11 +838,10 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
 
     // use an executor service to invoke schema zk version requests in parallel with a max wait time
     int poolSize = Math.min(concurrentTasks.size(), 10);
-    ExecutorService parallelExecutor =
-        ExecutorUtil.newMDCAwareFixedThreadPool(poolSize, new SolrNamedThreadFactory("solrHandlerExecutor"));
+
     try {
       List<Future<Boolean>> results =
-          parallelExecutor.invokeAll(concurrentTasks, maxWaitSecs, TimeUnit.SECONDS);
+          ParWork.getExecutor().invokeAll(concurrentTasks, maxWaitSecs, TimeUnit.SECONDS);
 
       // determine whether all replicas have the update
       List<String> failedList = null; // lazily init'd
@@ -851,6 +853,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
           try {
             success = next.get();
           } catch (ExecutionException e) {
+            log.error("Exception waiting for schema update", e);
             // shouldn't happen since we checked isCancelled
           }
         }
@@ -871,8 +874,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
 
     } catch (InterruptedException ie) {
       ParWork.propegateInterrupt(ie);
-    } finally {
-      ExecutorUtil.shutdownAndAwaitTermination(parallelExecutor);
+      return;
     }
 
     if (log.isInfoEnabled()) {
@@ -944,17 +946,17 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
     @Override
     public Boolean call() throws Exception {
       final RTimer timer = new RTimer();
+      long timeElapsed = (long) timer.getTime() / 1000;
       int attempts = 0;
       try (HttpSolrClient solr = new HttpSolrClient.Builder(coreUrl).withHttpClient(httpClient).markInternalRequest().build()) {
         // eventually, this loop will get killed by the ExecutorService's timeout
         while (true) {
           try {
-            long timeElapsed = (long) timer.getTime() / 1000;
+            timeElapsed = (long) timer.getTime() / 1000;
             if (timeElapsed >= maxWait) {
               return false;
             }
-            log.info("Time elapsed : {} secs, maxWait {}", timeElapsed, maxWait);
-            Thread.sleep(100);
+
             NamedList<Object> resp = solr.httpUriRequest(this).future.get();
             if (resp != null) {
               @SuppressWarnings({"rawtypes"})
@@ -970,12 +972,15 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
               log.info(formatString("Could not get expectedVersion {0} from {1} for prop {2}   after {3} attempts", expectedZkVersion, coreUrl, prop, attempts));
             }
           } catch (Exception e) {
-            if (e instanceof InterruptedException) {
+            if (e instanceof InterruptedException || e instanceof AlreadyClosedException) {
+              ParWork.propegateInterrupt(e);
               break; // stop looping
             } else {
               log.warn("Failed to get /schema/zkversion from {} due to: ", coreUrl, e);
             }
           }
+          log.info("Time elapsed : {} secs, maxWait {}", timeElapsed, maxWait);
+          Thread.sleep(500);
         }
       }
       return true;

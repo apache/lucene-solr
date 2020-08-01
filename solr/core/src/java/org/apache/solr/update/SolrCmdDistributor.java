@@ -249,7 +249,7 @@ public class SolrCmdDistributor implements Closeable {
         return;
       }
 
-      if (req.cmd instanceof  CommitUpdateCommand || req.cmd instanceof  DeleteUpdateCommand &&  ((DeleteUpdateCommand)req.cmd).query != null) {
+      if (req.cmd instanceof  CommitUpdateCommand) {
         // commit or delete by query
       } else {
         phaser.register();
@@ -301,7 +301,7 @@ public class SolrCmdDistributor implements Closeable {
   }
 
   private void arrive(Req req) {
-    if (req.cmd instanceof  CommitUpdateCommand || req.cmd instanceof  DeleteUpdateCommand &&  ((DeleteUpdateCommand)req.cmd).query != null) {
+    if (req.cmd instanceof  CommitUpdateCommand) {
       // commit or delete by query
     } else {
       phaser.arriveAndDeregister();

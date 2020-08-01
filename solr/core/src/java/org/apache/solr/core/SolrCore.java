@@ -554,11 +554,13 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     } catch (Throwable e) {
       ParWork.propegateInterrupt(e);
 
-      // nocommit have to get this wwriter and writer close
       try {
-        directoryFactory.doneWithDirectory(snapshotDir);
-        directoryFactory.release(snapshotDir);
+        if (snapshotDir != null) {
+          directoryFactory.doneWithDirectory(snapshotDir);
+          directoryFactory.release(snapshotDir);
+        }
       } catch (IOException e1) {
+        log.warn("IOException while releasing directory for SolrSnapShotManager", e1);
         e.addSuppressed(e1);
       }
 

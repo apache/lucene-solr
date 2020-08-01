@@ -34,7 +34,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 
-@Ignore // nocommit you would want to write these props to ZK actually ...
+//@Ignore // nocommit you would want to write these props to ZK actually ...
 public class TestConfigSetProperties extends SolrTestCaseJ4 {
 
   @Rule
