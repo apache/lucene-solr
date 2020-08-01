@@ -67,12 +67,8 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
       log.info("Wait to confirm our node is fully shutdown");
       cluster.waitForJettyToStop(nodeToStop);
 
-      // now that we're confident that node has stoped, check if a waitForState
-      // call will detect the missing replica -- shouldn't need long wait times (we know it's down)...
       log.info("Now check if waitForState will recognize we already have the exepcted state");
-      cluster.getSolrClient().waitForState(col_name, 500, TimeUnit.MILLISECONDS, clusterShape(1, 0));
-                                           
-      
+      cluster.waitForActiveCollection(col_name, 5000, TimeUnit.MILLISECONDS, 1, 0);
     } finally {
       cluster.shutdown();
     }

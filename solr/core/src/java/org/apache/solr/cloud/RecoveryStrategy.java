@@ -34,6 +34,7 @@ import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.HttpUriRequestResponse;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
@@ -184,14 +185,12 @@ public class RecoveryStrategy implements Runnable, Closeable {
   }
 
   /** Builds a new HttpSolrClient for use in recovery.  Caller must close */
-  private final HttpSolrClient buildRecoverySolrClient(final String leaderUrl) {
+  private final Http2SolrClient buildRecoverySolrClient(final String leaderUrl) {
     // workaround for SOLR-13605: get the configured timeouts & set them directly
     // (even though getRecoveryOnlyHttpClient() already has them set)
     final UpdateShardHandlerConfig cfg = cc.getConfig().getUpdateShardHandlerConfig();
-    return (new HttpSolrClient.Builder(leaderUrl)
-            .withConnectionTimeout(3)
-            .withSocketTimeout(5)
-            .withHttpClient(cc.getUpdateShardHandler().getDefaultHttpClient())
+    return (new Http2SolrClient.Builder(leaderUrl)
+            .withHttpClient(cc.getUpdateShardHandler().getUpdateOnlyHttpClient())
             .markInternalRequest()
             ).build();
   }
@@ -339,7 +338,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
   final private void commitOnLeader(String leaderUrl) throws SolrServerException,
       IOException {
-    try (HttpSolrClient client = buildRecoverySolrClient(leaderUrl)) {
+    try (Http2SolrClient client = buildRecoverySolrClient(leaderUrl)) {
       UpdateRequest ureq = new UpdateRequest();
       ureq.setParams(new ModifiableSolrParams());
       ureq.getParams().set(DistributedUpdateProcessor.COMMIT_END_POINT, "terminal");
@@ -892,7 +891,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
         return leaderReplica;
       }
 
-      try (HttpSolrClient httpSolrClient = buildRecoverySolrClient(leaderReplica.getCoreUrl())) {
+      try (Http2SolrClient httpSolrClient = buildRecoverySolrClient(leaderReplica.getCoreUrl())) {
         SolrPingResponse resp = httpSolrClient.ping();
         return leaderReplica;
       } catch (IOException e) {
@@ -997,14 +996,15 @@ public class RecoveryStrategy implements Runnable, Closeable {
     int conflictWaitMs = zkController.getLeaderConflictResolveWait();
 
     int readTimeout = conflictWaitMs + Integer.parseInt(System.getProperty("prepRecoveryReadTimeoutExtraWait", "100"));
-    try (HttpSolrClient client = buildRecoverySolrClient(leaderBaseUrl)) {
-      client.setSoTimeout(readTimeout);
-      HttpUriRequestResponse mrr = client.httpUriRequest(prepCmd);
-      prevSendPreRecoveryHttpUriRequest = mrr.httpUriRequest;
+    try (Http2SolrClient client = buildRecoverySolrClient(leaderBaseUrl)) {
+      client.request(prepCmd);
+      // nocommit
+//      HttpUriRequestResponse mrr = client.httpUriRequest(prepCmd);
+//      prevSendPreRecoveryHttpUriRequest = mrr.httpUriRequest;
 
       log.info("Sending prep recovery command to [{}]; [{}]", leaderBaseUrl, prepCmd);
 
-      mrr.future.get();
+     // mrr.future.get();
     }
   }
 }

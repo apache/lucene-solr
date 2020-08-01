@@ -89,9 +89,9 @@ public class ParWorkExecService implements ExecutorService {
 
 
   public <T> Future<T> doSubmit(Callable<T> callable, boolean requiresAnotherThread) {
-    if (shutdown || terminated) {
-      throw new RejectedExecutionException();
-    }
+//    if (shutdown || terminated) {
+//      throw new RejectedExecutionException();
+//    }
     try {
       if (!requiresAnotherThread) {
         boolean success = checkLoad();
@@ -183,9 +183,9 @@ public class ParWorkExecService implements ExecutorService {
   }
 
   public Future<?> doSubmit(Runnable runnable, boolean requiresAnotherThread) {
-    if (shutdown || terminated) {
-      throw new RejectedExecutionException();
-    }
+//    if (shutdown || terminated) {
+//      throw new RejectedExecutionException();
+//    }
     if (!requiresAnotherThread) {
       boolean success = checkLoad();
       if (success) {
@@ -248,9 +248,9 @@ public class ParWorkExecService implements ExecutorService {
   public <T> List<Future<T>> invokeAll(
       Collection<? extends Callable<T>> collection)
       throws InterruptedException {
-    if (shutdown || terminated) {
-      throw new RejectedExecutionException();
-    }
+//    if (shutdown || terminated) {
+//      throw new RejectedExecutionException();
+//    }
     List<Future<T>> futures = new ArrayList<>(collection.size());
     for (Callable c : collection) {
       futures.add(submit(c));
