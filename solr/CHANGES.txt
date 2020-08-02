@@ -1329,7 +1329,7 @@ New Features
 
 * SOLR-13320: add an update param failOnVersionConflicts=false to updates not fail when there is a version conflict (noble)
 
-* SOLR-13445: Preferred replicas on nodes with same system properties as the query leader (Cao Manh Dat)
+* SOLR-13445: Preferred replicas on nodes with same system properties as the query master (Cao Manh Dat)
 
 * SOLR-13047: Add facet2D Streaming Expression (Nazerke Seidan, Joel Bernstein)
 
@@ -1729,7 +1729,7 @@ Bug Fixes
 Improvements
 ----------------------
 
-* SOLR-12999: Index replication could delete segments before downloading segments from leader if there is not enough
+* SOLR-12999: Index replication could delete segments before downloading segments from master if there is not enough
   disk space (noble)
 
 * SOLR-13227: Optimizing facet.range.other by avoiding expensive exceptions (Nikolay Khitrin via Mikhail Khludnev)
@@ -2950,8 +2950,8 @@ Upgrade Notes
   implementation which is compatible with SLF4J. We now let log4j2 handle rotation of solr logs at startup, and bin/solr
   start scripts will no longer attempt this nor move existing console or GC logs into logs/archived either (SOLR-12144).
 
-* SOLR-11673: Follower doesn't commit empty index when completely new index is detected on leader during replication.
-  To return the previous behavior pass false to skipCommitOnMasterVersionZero in follower section of replication
+* SOLR-11673: Slave doesn't commit empty index when completely new index is detected on master during replication.
+  To return the previous behavior pass false to skipCommitOnMasterVersionZero in slave section of replication
   handler configuration, or pass it to the fetchindex command.
 
 * SOLR-11453: Configuring slowQueryThresholdMillis now logs slow requests to a separate file - solr_slow_requests.log.
@@ -3083,7 +3083,7 @@ Bug Fixes
   document. Multithreaded test for AtomicUpdateRequestProcessor was also beefed up and fixed.
   (Ishan Chattopadhyaya, Noble Paul, Amrit Sarkar, shalin)
 
-* SOLR-11673: By default follower doesn't commit empty index when completely new index appears on leader.
+* SOLR-11673: By default slave doesn't commit empty index when completely new index appears on master.
   See Upgrade Notes to find a way to get back to the previous behavior. (Mikhail Khludnev)
 
 * SOLR-9399: Delete requests do not send credentials & fails for Basic Authentication
@@ -3129,7 +3129,7 @@ Bug Fixes
 * SOLR-12187: Replica should watch clusterstate and unload itself if its entry is removed (Cao Manh Dat)
 
 * SOLR-6286: TestReplicationHandler.doTestReplicateAfterCoreReload(): stop checking for identical
-  commits before/after leader core reload; and make non-nightly mode test 10 docs instead of 0.
+  commits before/after master core reload; and make non-nightly mode test 10 docs instead of 0.
   (shalin, hossman, Mark Miller, Steve Rowe)
 
 * SOLR-9304: Fix Solr's HTTP handling to respect '-Dsolr.ssl.checkPeerName=false' aka SOLR_SSL_CHECK_PEER_NAME
@@ -3223,7 +3223,7 @@ Bug Fixes
 Optimizations
 ----------------------
 
-* SOLR-11920: IndexFetcher now fetches only those files (from leader) that are different. This
+* SOLR-11920: IndexFetcher now fetches only those files (from master/leader) that are different. This
   differential fetching now speeds up recovery times when full index replication is needed, but only
   a few segments diverge. (Ishan Chattopadhyaya, Shaun Sabo, John Gallagher)
 
@@ -4077,8 +4077,8 @@ Upgrade Notes
   makes it much easier for evaluators to handle differing data types (primitives, objects, arrays,
   lists, and so forth). (Dennis Gove)
 
-* SOLR-10962: in the ReplicationHandler the leader.commitReserveDuration sub-element is deprecated. Instead
-  please configure a direct commitReserveDuration element for use in all modes (leader, follower, cloud).
+* SOLR-10962: in the ReplicationHandler the master.commitReserveDuration sub-element is deprecated. Instead
+  please configure a direct commitReserveDuration element for use in all modes (master, slave, cloud).
 
 * SOLR-11482: RunExecutableListener was removed for security reasons. If you want to listen to
   events caused by updates, commits, or optimize, write your own listener as native Java class
@@ -4226,7 +4226,7 @@ Bug Fixes
 
 * SOLR-11278: Stopping CDCR should cancel a running bootstrap operation. (Amrit Sarkar, shalin)
 
-* SOLR-11293: Potential data loss in TLOG replicas when leaderVersion equals zero (noble, Cao Manh Dat)
+* SOLR-11293: Potential data loss in TLOG replicas when masterVersion equals zero (noble, Cao Manh Dat)
 
 * SOLR-10101: TestLazyCores hangs (Erick Erickson)
 
@@ -7194,7 +7194,7 @@ Bug Fixes
 * SOLR-9030: The 'downnode' overseer command can trip asserts in ZkStateWriter.
   (Scott Blum, Mark Miller, shalin)
 
-* SOLR-9036: Solr follower is doing full replication (entire index) of index after leader restart.
+* SOLR-9036: Solr slave is doing full replication (entire index) of index after master restart.
   (Lior Sapir, Mark Miller, shalin)
 
 * SOLR-9058: Makes HashJoinStream and OuterHashJoinStream support different field names in the
@@ -7220,7 +7220,7 @@ Other Changes
   (Jason Gerlowski, Benoit Vanalderweireldt, shalin)
 
 * SOLR-8967: In SolrCloud mode, under the 'Core Selector' dropdown in the UI the Replication tab won't be displayed
-  anymore. The Replication tab is only beneficial to users running Solr in leader-follower mode. (Varun Thacker)
+  anymore. The Replication tab is only beneficial to users running Solr in master-slave mode. (Varun Thacker)
 
 * SOLR-8985: Added back support for 'includeDynamic' flag to /schema/fields endpoint (noble)
 
@@ -7800,7 +7800,7 @@ Bug Fixes
 * SOLR-9030: The 'downnode' overseer command can trip asserts in ZkStateWriter.
   (Scott Blum, Mark Miller, shalin)
 
-* SOLR-9036: Solr follower is doing full replication (entire index) of index after leader restart.
+* SOLR-9036: Solr slave is doing full replication (entire index) of index after master restart.
   (Lior Sapir, Mark Miller, shalin)
 
 * SOLR-9093: Fix NullPointerException in TopGroupsShardResponseProcessor. (Christine Poerschke)
@@ -7836,7 +7836,7 @@ Other Changes
   (Jason Gerlowski, Benoit Vanalderweireldt, shalin)
 
 * SOLR-8967: In SolrCloud mode, under the 'Core Selector' dropdown in the UI the Replication tab won't be displayed
-  anymore. The Replication tab is only beneficial to users running Solr in leader-follower mode. (Varun Thacker)
+  anymore. The Replication tab is only beneficial to users running Solr in master-slave mode. (Varun Thacker)
 
 * SOLR-9131: Fix "start solr" text in cluster.vm Velocity template (janhoy)
 
@@ -12886,7 +12886,7 @@ Other Changes
 * SOLR-5401: SolrResourceLoader logs a warning if a deprecated (factory) class
   is used in schema or config.  (Uwe Schindler)
 
-* SOLR-3397: Warn if leader or follower replication is enabled in SolrCloud mode. (Erick
+* SOLR-3397: Warn if master or slave replication is enabled in SolrCloud mode. (Erick
   Erickson)
 
 ==================  4.5.1 ==================
@@ -13785,7 +13785,7 @@ Bug Fixes
   or an intermediate HTTP Proxy (hossman)
 
 * SOLR-4661: Admin UI Replication details now correctly displays the current
-  replicable generation/version of the leader. (hossman)
+  replicable generation/version of the master. (hossman)
 
 * SOLR-4716,SOLR-4584: SolrCloud request proxying does not work on Tomcat and
   perhaps other non Jetty containers. (Po Rui, Yago Riveiro via Mark Miller)
@@ -14033,8 +14033,8 @@ New Features
 * SOLR-4477: Add support for queries (match-only) against docvalues fields.
   (Robert Muir)
 
-* SOLR-4488: Return follower replication details for a leader if the leader has
-  also acted like a follower. (Mark Miller)
+* SOLR-4488: Return slave replication details for a master if the master has
+  also acted like a slave. (Mark Miller)
 
 * SOLR-4498: Add list command to ZkCLI that prints out the contents of
   ZooKeeper. (Roman Shaposhnik via Mark Miller)
@@ -14130,7 +14130,7 @@ Bug Fixes
   directory has changed and the previous SolrCore's state should not be
   propagated. (Mark Miller, Gregg Donovan)
 
-* SOLR-4471: Replication occurs even when a follower is already up to date.
+* SOLR-4471: Replication occurs even when a slave is already up to date.
   (Mark Miller, Andre Charton)
 
 * SOLR-4484: ReplicationHandler#loadReplicationProperties still uses Files
@@ -14159,7 +14159,7 @@ Bug Fixes
 * SOLR-4511: When a new index is replicated into place, we need
   to update the most recent replicatable index point without
   doing a commit. This is important for repeater use cases, as
-  well as when nodes may switch leader/follower roles.
+  well as when nodes may switch master/slave roles.
   (Mark Miller, Raúl Grande)
 
 * SOLR-4515: CurrencyField's OpenExchangeRatesOrgProvider now requires
@@ -14469,7 +14469,7 @@ Optimizations
   retrying for 2 minutes, retry in proportion to the session timeout.
   (Mark Miller)
 
-* SOLR-4262: Replication Icon on Dashboard does not reflect Master-/Follower-
+* SOLR-4262: Replication Icon on Dashboard does not reflect Master-/Slave-
   State (steffkes)
 
 * SOLR-4264: Missing Error-Screen on UI's Cloud-Page (steffkes)
@@ -14534,7 +14534,7 @@ Bug Fixes
   collection list with the same instance. (Grzegorz Sobczyk, Mark Miller)
 
 * SOLR-3938: prepareCommit command omits commitData causing a failure to trigger
-  replication to followers. (yonik)
+  replication to slaves. (yonik)
 
 * SOLR-3992: QuerySenderListener doesn't populate document cache.
   (Shotaro Kamio, yonik)
@@ -14752,8 +14752,8 @@ Bug Fixes
 * SOLR-4217: post.jar no longer ignores -Dparams when -Durl is used.
   (Alexandre Rafalovitch, ehatcher)
 
-* SOLR-4303: On replication, if the generation of the leader is lower than the
-  follower we need to force a full copy of the index. (Mark Miller, Gregg Donovan)
+* SOLR-4303: On replication, if the generation of the master is lower than the
+  slave we need to force a full copy of the index. (Mark Miller, Gregg Donovan)
 
 * SOLR-4266: HttpSolrServer does not release connection properly on exception
   when no response parser is used. (Steve Molloy via Mark Miller)
@@ -14890,8 +14890,8 @@ Upgrading from Solr 3.6
 
 * The Lucene index format has changed and as a result, once you upgrade,
   previous versions of Solr will no longer be able to read your indices.
-  In a leader/follower configuration, all searchers/followers should be upgraded
-  before the leader.  If the leader were to be updated first, the older
+  In a master/slave configuration, all searchers/slaves should be upgraded
+  before the master.  If the master were to be updated first, the older
   searchers would not be able to read the new index format.
 
 * Setting abortOnConfigurationError=false is no longer supported
@@ -15479,8 +15479,8 @@ Upgrading from Solr 3.6-dev
 
 * The Lucene index format has changed and as a result, once you upgrade,
   previous versions of Solr will no longer be able to read your indices.
-  In a leader/follower configuration, all searchers/followers should be upgraded
-  before the leader.  If the master were to be updated first, the older
+  In a master/slave configuration, all searchers/slaves should be upgraded
+  before the master.  If the master were to be updated first, the older
   searchers would not be able to read the new index format.
 
 * Setting abortOnConfigurationError=false is no longer supported
@@ -16756,7 +16756,7 @@ Upgrading from Solr 3.3
 
 * The Lucene index format has changed and as a result, once you upgrade,
   previous versions of Solr will no longer be able to read your indices.
-  In a leader/follower configuration, all searchers/followers should be upgraded
+  In a master/slave configuration, all searchers/slaves should be upgraded
   before the master.  If the master were to be updated first, the older
   searchers would not be able to read the new index format.
 
@@ -17226,7 +17226,7 @@ Upgrading from Solr 1.4
 
 * The Lucene index format has changed and as a result, once you upgrade,
   previous versions of Solr will no longer be able to read your indices.
-  In a leader/follower configuration, all searchers/followers should be upgraded
+  In a master/slave configuration, all searchers/slaves should be upgraded
   before the master.  If the master were to be updated first, the older
   searchers would not be able to read the new index format.
 
@@ -17619,7 +17619,7 @@ Bug Fixes
 * SOLR-1753: StatsComponent throws NPE when getting statistics for facets in distributed search
   (Janne Majaranta via koji)
 
-* SOLR-1736:In the follower , If 'mov'ing file does not succeed , copy the file (noble)
+* SOLR-1736:In the slave , If 'mov'ing file does not succeed , copy the file (noble)
 
 * SOLR-1579: Fixes to XML escaping in stats.jsp
   (David Bowen and hossman)
@@ -17678,7 +17678,7 @@ Bug Fixes
 * SOLR-2100: The replication handler backup command didn't save the commit
   point and hence could fail when a newer commit caused the older commit point
   to be removed before it was finished being copied.  This did not affect
-  normal leader/follower replication.  (Peter Sturge via yonik)
+  normal master/slave replication.  (Peter Sturge via yonik)
 
 * SOLR-2114: Fixed parsing error in hsin function.  The function signature has changed slightly. (gsingers)
 
@@ -18288,7 +18288,7 @@ New Features
 15. SOLR-822: Add CharFilter so that characters can be filtered (e.g. character normalization)
     before Tokenizer/TokenFilters. (koji)
 
-16. SOLR-829: Allow followers to request compressed files from master during replication
+16. SOLR-829: Allow slaves to request compressed files from master during replication
     (Simon Collins, Noble Paul, Akshay Ukey via shalin)
 
 17. SOLR-877: Added TermsComponent for accessing Lucene's TermEnum capabilities.
@@ -18308,7 +18308,7 @@ New Features
     also deprecated and replaced with "count" and "lex".
     (Lars Kotthoff via yonik)
 
-22. SOLR-821: Add support for replication to copy conf file to follower with a different name. This allows replication
+22. SOLR-821: Add support for replication to copy conf file to slave with a different name. This allows replication
     of solrconfig.xml
     (Noble Paul, Akshay Ukey via shalin)
 
@@ -18378,7 +18378,7 @@ New Features
 
 43. SOLR-1095: Fixed performance problem in the StopFilterFactory and simplified code.  Added tests as well.  (gsingers)
 
-44. SOLR-1096: Introduced httpConnTimeout and httpReadTimeout in replication follower configuration to avoid stalled
+44. SOLR-1096: Introduced httpConnTimeout and httpReadTimeout in replication slave configuration to avoid stalled
     replication. (Jeff Newburn, Noble Paul, shalin)
 
 45. SOLR-1115: <bool>on</bool> and <bool>yes</bool> work as expected in solrconfig.xml. (koji)
@@ -18772,7 +18772,7 @@ Bug Fixes
 24. SOLR-902: FastInputStream#read(byte b[], int off, int len) gives incorrect results when amount left to read is less
     than buffer size (Noble Paul via shalin)
 
-25. SOLR-978: Old files are not removed from followers after replication (Jaco, Noble Paul, shalin)
+25. SOLR-978: Old files are not removed from slaves after replication (Jaco, Noble Paul, shalin)
 
 26. SOLR-883: Implicit properties are not set for Cores created through CoreAdmin (Noble Paul via shalin)
 
@@ -18792,9 +18792,9 @@ Bug Fixes
 30. SOLR-1016: HTTP 503 error changes 500 in SolrCore (koji)
 
 31. SOLR-1015: Incomplete information in replication admin page and http command response when server
-    is both master and follower i.e. when server is a repeater (Akshay Ukey via shalin)
+    is both master and slave i.e. when server is a repeater (Akshay Ukey via shalin)
 
-32. SOLR-1018: Follower is unable to replicate when server acts as repeater (as both master and follower)
+32. SOLR-1018: Slave is unable to replicate when server acts as repeater (as both master and slave)
     (Akshay Ukey, Noble Paul via shalin)
 
 33. SOLR-1031: Fix XSS vulnerability in schema.jsp (Paul Lovvik via ehatcher)
@@ -19092,7 +19092,7 @@ Other Changes
 
 28. Upgraded to Lucene 2.9-dev r768336 (shalin)
 
-29. SOLR-997: Wait for a longer time for follower to complete replication in TestReplicationHandler
+29. SOLR-997: Wait for a longer time for slave to complete replication in TestReplicationHandler
     (Mark Miller via shalin)
 
 30. SOLR-748: FacetComponent helper classes are made public as an experimental API.
@@ -19255,7 +19255,7 @@ Documentation
 
 Upgrading from Solr 1.2
 -----------------------
-IMPORTANT UPGRADE NOTE: In a leader/follower configuration, all searchers/followers
+IMPORTANT UPGRADE NOTE: In a master/slave configuration, all searchers/slaves
 should be upgraded before the master!  If the master were to be updated
 first, the older searchers would not be able to read the new index format.
 
@@ -19931,7 +19931,7 @@ Build
 
 Upgrading from Solr 1.1
 -------------------------------------
-IMPORTANT UPGRADE NOTE: In a leader/follower configuration, all searchers/followers
+IMPORTANT UPGRADE NOTE: In a master/slave configuration, all searchers/slaves
 should be upgraded before the master!  If the master were to be updated
 first, the older searchers would not be able to read the new index format.
 
