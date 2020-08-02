@@ -35,6 +35,8 @@ Improvements
 
 * SOLR-10814: Add short-name feature to RuleBasedAuthz plugin (Mike Drob, Hrishikesh Gadre)
 
+* SOLR-14702: Pull oppressive language out the project (marcussorealheis)
+
 Other Changes
 ----------------------
 * SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
