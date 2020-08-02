@@ -18,7 +18,7 @@
 -->
 <ivy-module version="2.0" xmlns:maven="http://ant.apache.org/ivy/maven">
   <info organisation="org.apache.solr" module="server"/>
-  <configurations defaultconfmapping="metrics->primary;jetty->primary;start->primary;servlet->primary;logging->primary">
+  <configurations defaultconfmapping="metrics->master;jetty->master;start->master;servlet->master;logging->master">
     <conf name="metrics" description="metrics jars" transitive="true"/>
     <conf name="jetty" description="jetty jars" transitive="false"/>
     <conf name="start" description="jetty start jar" transitive="false"/>
