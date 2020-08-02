@@ -84,7 +84,7 @@ limitations under the License.
         
     </div>
 
-    <div id="iterations" class="slaveOnly block clearfix" ng-show="isSlave">
+    <div id="iterations" class="followerOnly block clearfix" ng-show="isFollower">
 
       <div class="label"><span class="">Iterations:</span></div>
       <div class="iterations" ng-show="iterations && showIterations">
@@ -148,17 +148,17 @@ limitations under the License.
 
           </tr>
 
-          <tr class="slave slaveOnly" ng-show="isSlave">
+          <tr class="follower followerOnly" ng-show="isFollower">
 
-            <th>Slave (Searching)</th>
+            <th>Follower (Searching)</th>
             <td class="version" ng-class="{diff:versions.changedVersion}">
-                <div>{{versions.slave.version}}</div>
+                <div>{{versions.follower.version}}</div>
             </td>
             <td class="generation" ng-class="{diff:versions.changedGeneration}">
-                <div>{{versions.slave.generation}}</div>
+                <div>{{versions.follower.generation}}</div>
             </td>
             <td class="size">
-                <div>{{versions.slave.size}}</div>
+                <div>{{versions.follower.size}}</div>
             </td>
 
           </tr>
@@ -169,7 +169,7 @@ limitations under the License.
 
     </div>
 
-    <div id="settings" class="settings block clearfix slaveOnly" ng-show="isSlave">
+    <div id="settings" class="settings block clearfix followerOnly" ng-show="isFollower">
 
       <div class="label"><span>Settings:</span></div>
       <ul>
@@ -213,7 +213,7 @@ limitations under the License.
 
   <div id="navigation">
 
-    <div class="timer" ng-show="isSlave && !settings.isPollingDisabled &&!settings.isReplicating">
+    <div class="timer" ng-show="isFollower && !settings.isPollingDisabled &&!settings.isReplicating">
 
       <p>Next Run: <span class="approx" ng-show="settings.isApprox">~</span><span class="tick">{{settings.tick | readableSeconds}}</span></p>
       <small ng-show="settings.nextExecutionAt">{{settings.nextExecutionAt}}</small>
@@ -221,7 +221,7 @@ limitations under the License.
 
     <button class="refresh-status" ng-click="refresh()"><span>Refresh Status</span></button>
 
-    <div class="slaveOnly" ng-show="isSlave">
+    <div class="followerOnly" ng-show="isFollower">
       <button class="optional replicate-now primary" ng-click="execute('fetchindex')" ng-show="!settings.isReplicating"><span>Replicate now</span></button>
       <button class="optional abort-replication warn" ng-click="execute('abortfetch')" ng-show="settings.isReplicating"><span>Abort Replication</span></button>
 
@@ -229,7 +229,7 @@ limitations under the License.
       <button class="optional enable-polling" ng-click="execute('enablepoll')" ng-show="settings.isPollingDisabled"><span>Enable Polling</span></button>
     </div>
 
-    <div class="masterOnly" ng-show="!isSlave">
+    <div class="masterOnly" ng-show="!isFollower">
       <button class="optional disable-replication warn" ng-click="execute('disablereplication')" ng-show="master.replicationEnabled"><span>Disable Replication</span></button>
       <button class="optional enable-replication warn" ng-click="execute('enablereplication')" ng-show="!master.replicationEnabled"><span>Enable Replication</span></button>
     </div>

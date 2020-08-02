@@ -330,7 +330,7 @@ class KStemData7 {
 "slanderous","slang","slangy","slant","slantwise",
 "slap","slapdash","slaphappy","slapstick","slash",
 "slat","slate","slattern","slaty","slaughter",
-"slaughterhouse","slave","slaver","slavery","slavic",
+"slaughterhouse","follower","followerr","followerry","slavic",
 "slavish","slay","sleazy","sled","sledge",
 "sledgehammer","sleek","sleep","sleeper","sleepless",
 "sleepwalker","sleepy","sleepyhead","sleet","sleeve",

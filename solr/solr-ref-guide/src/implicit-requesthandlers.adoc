@@ -184,7 +184,7 @@ Dump:: Echo the request contents back to the client.
 |`solr/debug/dump` |{solr-javadocs}/solr-core/org/apache/solr/handler/DumpRequestHandler.html[DumpRequestHandler] |`_DEBUG_DUMP`
 |===
 
-Replication:: Replicate indexes for SolrCloud recovery and Master/Slave index distribution. This handler must have a core name in the path to the endpoint.
+Replication:: Replicate indexes for SolrCloud recovery and Master/Follower index distribution. This handler must have a core name in the path to the endpoint.
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===

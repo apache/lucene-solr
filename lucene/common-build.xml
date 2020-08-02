@@ -1036,7 +1036,7 @@
             failureProperty="tests.failed"
 
             dynamicAssignmentRatio="${tests.dynamicAssignmentRatio}"
-            shuffleOnSlave="true"
+            shuffleOnFollower="true"
             leaveTemporary="${junit4.leaveTemporary}"
             seed="${tests.seed}"
             onNonEmptyWorkDirectory="wipe"
@@ -1383,15 +1383,15 @@ ant -Dtests.filter="@nightly and not(@awaitsfix or @slow)"
 # Load balancing and caches. --------------------------------------
 #
 
-# Run sequentially (one slave JVM).
+# Run sequentially (one follower JVM).
 ant -Dtests.jvms=1 test
 
-# Run with more slave JVMs than the default.
+# Run with more follower JVMs than the default.
 # Don't count hypercores for CPU-intense tests.
 # Make sure there is enough RAM to handle child JVMs.
 ant -Dtests.jvms=8 test
 
-# Use repeatable suite order on slave JVMs (disables job stealing).
+# Use repeatable suite order on follower JVMs (disables job stealing).
 ant -Dtests.dynamicAssignmentRatio=0 test
 
 # Update global (versioned!) execution times cache (top level).
@@ -1410,7 +1410,7 @@ ant -Dtestcase=... test-nocompile
 # Run all tests without stopping on errors (inspect log files!).
 ant -Dtests.haltonfailure=false test
 
-# Run more verbose output (slave JVM parameters, etc.).
+# Run more verbose output (follower JVM parameters, etc.).
 ant -verbose test
 
 # Include additional information like what is printed to 
@@ -1430,7 +1430,7 @@ ant -Dtests.timestamps=on ...
 # Override forked JVM file.encoding
 ant -Dtests.file.encoding=XXX ...
 
-# Don't remove any temporary files under slave directories, even if
+# Don't remove any temporary files under follower directories, even if
 # the test passes (any of the following props):
 ant -Dtests.leaveTemporary=true
 ant -Dtests.leavetmpdir=true

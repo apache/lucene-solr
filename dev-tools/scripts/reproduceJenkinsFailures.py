@@ -33,7 +33,7 @@ reGitRev = re.compile(r'Checking out Revision (\S+)\s+\(refs/remotes/origin/([^)
 #         Policeman Jenkins example:           [Lucene-Solr-7.x-Linux] $ /var/lib/jenkins/tools/hudson.tasks.Ant_AntInstallation/ANT_1.8.2/bin/ant "-Dargs=-XX:-UseCompressedOops -XX:+UseConcMarkSweepGC" jenkins-hourly
 # Policeman Jenkins Windows example:      [Lucene-Solr-master-Windows] $ cmd.exe /C "C:\Users\jenkins\tools\hudson.tasks.Ant_AntInstallation\ANT_1.8.2\bin\ant.bat '"-Dargs=-client -XX:+UseConcMarkSweepGC"' jenkins-hourly && exit %%ERRORLEVEL%%"
 #               ASF Jenkins example:        [Lucene-Solr-Tests-master] $ /home/jenkins/tools/ant/apache-ant-1.8.4/bin/ant jenkins-hourly
-#       ASF Jenkins nightly example:                        [checkout] $ /home/jenkins/tools/ant/apache-ant-1.8.4/bin/ant -file build.xml -Dtests.multiplier=2 -Dtests.linedocsfile=/home/jenkins/jenkins-slave/workspace/Lucene-Solr-NightlyTests-master/test-data/enwiki.random.lines.txt jenkins-nightly
+#       ASF Jenkins nightly example:                        [checkout] $ /home/jenkins/tools/ant/apache-ant-1.8.4/bin/ant -file build.xml -Dtests.multiplier=2 -Dtests.linedocsfile=/home/jenkins/jenkins-follower/workspace/Lucene-Solr-NightlyTests-master/test-data/enwiki.random.lines.txt jenkins-nightly
 #        ASF Jenkins smoker example: [Lucene-Solr-SmokeRelease-master] $ /home/jenkins/tools/ant/apache-ant-1.8.4/bin/ant nightly-smoke
 reAntInvocation = re.compile(r'\bant(?:\.bat)?\s+.*(?:jenkins-(?:hourly|nightly)|nightly-smoke)')
 reAntSysprops = re.compile(r'"-D[^"]+"|-D[^=]+="[^"]*"|-D\S+')

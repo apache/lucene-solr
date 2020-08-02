@@ -243,7 +243,7 @@ public class IndexFetcher {
     String masterUrl = (String) initArgs.get(MASTER_URL);
     if (masterUrl == null && !this.fetchFromLeader)
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-              "'masterUrl' is required for a slave");
+              "'masterUrl' is required for a follower");
     if (masterUrl != null && masterUrl.endsWith(ReplicationHandler.PATH)) {
       masterUrl = masterUrl.substring(0, masterUrl.length()-12);
       log.warn("'masterUrl' must be specified without the {} suffix", ReplicationHandler.PATH);
@@ -256,7 +256,7 @@ public class IndexFetcher {
     useExternalCompression = EXTERNAL.equals(compress);
     connTimeout = getParameter(initArgs, HttpClientUtil.PROP_CONNECTION_TIMEOUT, 30000, null);
     
-    // allow a master override for tests - you specify this in /replication slave section of solrconfig and some 
+    // allow a master override for tests - you specify this in /replication follower section of solrconfig and some
     // test don't want to define this
     soTimeout = Integer.getInteger("solr.indexfetcher.sotimeout", -1);
     if (soTimeout == -1) {
@@ -360,7 +360,7 @@ public class IndexFetcher {
    *
    * @param forceReplication force a replication in all cases
    * @param forceCoreReload force a core reload in all cases
-   * @return true on success, false if slave is already in sync
+   * @return true on success, false if follower is already in sync
    * @throws IOException if an exception occurs
    */
   IndexFetchResult fetchLatestIndex(boolean forceReplication, boolean forceCoreReload) throws IOException, InterruptedException {
@@ -453,8 +453,8 @@ public class IndexFetcher {
       }
 
       if (log.isInfoEnabled()) {
-        log.info("Slave's generation: {}", commit.getGeneration());
-        log.info("Slave's version: {}", IndexDeletionPolicyWrapper.getCommitTimestamp(commit)); // logOK
+        log.info("Follower's generation: {}", commit.getGeneration());
+        log.info("Follower's version: {}", IndexDeletionPolicyWrapper.getCommitTimestamp(commit)); // logOK
       }
 
       if (latestVersion == 0L) {
@@ -468,7 +468,7 @@ public class IndexFetcher {
           } finally {
             iw.decref();
           }
-          assert TestInjection.injectDelayBeforeSlaveCommitRefresh();
+          assert TestInjection.injectDelayBeforeFollowerCommitRefresh();
           if (skipCommitOnMasterVersionZero) {
             openNewSearcherAndUpdateCommitPoint();
           } else {
@@ -485,8 +485,8 @@ public class IndexFetcher {
 
       // TODO: Should we be comparing timestamps (across machines) here?
       if (!forceReplication && IndexDeletionPolicyWrapper.getCommitTimestamp(commit) == latestVersion) {
-        //master and slave are already in sync just return
-        log.info("Slave in sync with master.");
+        //master and follower are already in sync just return
+        log.info("Follower in sync with master.");
         successfulInstall = true;
         return IndexFetchResult.ALREADY_IN_SYNC;
       }
@@ -510,7 +510,7 @@ public class IndexFetcher {
       fsyncService = ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrNamedThreadFactory("fsyncService"));
       // use a synchronized list because the list is read by other threads (to show details)
       filesDownloaded = Collections.synchronizedList(new ArrayList<Map<String, Object>>());
-      // if the generation of master is older than that of the slave , it means they are not compatible to be copied
+      // if the generation of master is older than that of the follower , it means they are not compatible to be copied
       // then a new index directory to be created and all the files need to be copied
       boolean isFullCopyNeeded = IndexDeletionPolicyWrapper
           .getCommitTimestamp(commit) >= latestVersion
@@ -1247,7 +1247,7 @@ public class IndexFetcher {
   }
 
   /**
-   * All the files which are common between master and slave must have same size and same checksum else we assume
+   * All the files which are common between master and follower must have same size and same checksum else we assume
    * they are not compatible (stale).
    *
    * @return true if the index stale and we need to download a fresh copy, false otherwise.
@@ -1496,7 +1496,7 @@ public class IndexFetcher {
     @SuppressWarnings({"rawtypes"})
     NamedList names = new NamedList();
     for (Map<String, Object> map : confFilesToDownload) {
-      //if alias is present that is the name the file may have in the slave
+      //if alias is present that is the name the file may have in the follower
       String name = (String) (map.get(ALIAS) == null ? map.get(NAME) : map.get(ALIAS));
       nameVsFile.put(name, map);
       names.add(name, null);
@@ -1979,7 +1979,7 @@ public class IndexFetcher {
   NamedList getDetails() throws IOException, SolrServerException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(COMMAND, CMD_DETAILS);
-    params.set("slave", false);
+    params.set("follower", false);
     params.set(CommonParams.QT, ReplicationHandler.PATH);
 
     // TODO use shardhandler

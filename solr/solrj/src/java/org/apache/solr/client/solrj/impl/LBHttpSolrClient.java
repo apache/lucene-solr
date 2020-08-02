@@ -33,7 +33,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
  * {@link HttpSolrClient}. This is useful when you
  * have multiple Solr servers and the requests need to be Load Balanced among them.
  *
- * Do <b>NOT</b> use this class for indexing in master/slave scenarios since documents must be sent to the
+ * Do <b>NOT</b> use this class for indexing in master/follower scenarios since documents must be sent to the
  * correct master; no inter-node routing is done.
  *
  * In SolrCloud (leader/replica) scenarios, it is usually better to use

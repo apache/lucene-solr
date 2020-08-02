@@ -250,7 +250,7 @@ class KStemData3 {
 "enormously","enough","enplane","enquire","enquiring",
 "enquiry","enrage","enrapture","enrich","enrol",
 "enroll","enrollment","enrolment","ensanguined","ensconce",
-"ensemble","enshrine","enshroud","ensign","enslave",
+"ensemble","enshrine","enshroud","ensign","enfollower",
 "ensnare","ensue","ensure","entail","entangle",
 "entanglement","entente","enter","enteritis","enterprise",
 "enterprising","entertain","entertainer","entertaining","entertainment",
