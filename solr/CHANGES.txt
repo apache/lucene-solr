@@ -35,8 +35,6 @@ Improvements
 
 * SOLR-10814: Add short-name feature to RuleBasedAuthz plugin (Mike Drob, Hrishikesh Gadre)
 
-* SOLR-14702: Pull oppressive language out the project (marcussorealheis)
-
 Other Changes
 ----------------------
 * SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
@@ -3225,7 +3223,7 @@ Bug Fixes
 Optimizations
 ----------------------
 
-* SOLR-11920: IndexFetcher now fetches only those files (from primary/leader) that are different. This
+* SOLR-11920: IndexFetcher now fetches only those files (from master/leader) that are different. This
   differential fetching now speeds up recovery times when full index replication is needed, but only
   a few segments diverge. (Ishan Chattopadhyaya, Shaun Sabo, John Gallagher)
 
@@ -7222,7 +7220,7 @@ Other Changes
   (Jason Gerlowski, Benoit Vanalderweireldt, shalin)
 
 * SOLR-8967: In SolrCloud mode, under the 'Core Selector' dropdown in the UI the Replication tab won't be displayed
-  anymore. The Replication tab is only beneficial to users running Solr in primary-secondary mode. (Varun Thacker)
+  anymore. The Replication tab is only beneficial to users running Solr in master-slave mode. (Varun Thacker)
 
 * SOLR-8985: Added back support for 'includeDynamic' flag to /schema/fields endpoint (noble)
 
@@ -7838,7 +7836,7 @@ Other Changes
   (Jason Gerlowski, Benoit Vanalderweireldt, shalin)
 
 * SOLR-8967: In SolrCloud mode, under the 'Core Selector' dropdown in the UI the Replication tab won't be displayed
-  anymore. The Replication tab is only beneficial to users running Solr in primary-secondary mode. (Varun Thacker)
+  anymore. The Replication tab is only beneficial to users running Solr in master-slave mode. (Varun Thacker)
 
 * SOLR-9131: Fix "start solr" text in cluster.vm Velocity template (janhoy)
 
