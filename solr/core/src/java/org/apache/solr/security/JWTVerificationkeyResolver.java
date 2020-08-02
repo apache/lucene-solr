@@ -106,7 +106,7 @@ public class JWTVerificationkeyResolver implements VerificationKeyResolver {
         }
       }
 
-      // Add all keys into a primary list
+      // Add all keys into a reference list
       if (issuerConfig.usesHttpsJwk()) {
         keysSource = "[" + String.join(", ", issuerConfig.getJwksUrls()) + "]";
         for (HttpsJwks hjwks : issuerConfig.getHttpsJwks()) {
