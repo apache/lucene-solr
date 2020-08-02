@@ -1329,7 +1329,7 @@ New Features
 
 * SOLR-13320: add an update param failOnVersionConflicts=false to updates not fail when there is a version conflict (noble)
 
-* SOLR-13445: Preferred replicas on nodes with same system properties as the query master (Cao Manh Dat)
+* SOLR-13445: Preferred replicas on nodes with same system properties as the query leader (Cao Manh Dat)
 
 * SOLR-13047: Add facet2D Streaming Expression (Nazerke Seidan, Joel Bernstein)
 
@@ -1729,7 +1729,7 @@ Bug Fixes
 Improvements
 ----------------------
 
-* SOLR-12999: Index replication could delete segments before downloading segments from master if there is not enough
+* SOLR-12999: Index replication could delete segments before downloading segments from leader if there is not enough
   disk space (noble)
 
 * SOLR-13227: Optimizing facet.range.other by avoiding expensive exceptions (Nikolay Khitrin via Mikhail Khludnev)
@@ -2950,7 +2950,7 @@ Upgrade Notes
   implementation which is compatible with SLF4J. We now let log4j2 handle rotation of solr logs at startup, and bin/solr
   start scripts will no longer attempt this nor move existing console or GC logs into logs/archived either (SOLR-12144).
 
-* SOLR-11673: Follower doesn't commit empty index when completely new index is detected on master during replication.
+* SOLR-11673: Follower doesn't commit empty index when completely new index is detected on leader during replication.
   To return the previous behavior pass false to skipCommitOnMasterVersionZero in follower section of replication
   handler configuration, or pass it to the fetchindex command.
 
@@ -3083,7 +3083,7 @@ Bug Fixes
   document. Multithreaded test for AtomicUpdateRequestProcessor was also beefed up and fixed.
   (Ishan Chattopadhyaya, Noble Paul, Amrit Sarkar, shalin)
 
-* SOLR-11673: By default follower doesn't commit empty index when completely new index appears on master.
+* SOLR-11673: By default follower doesn't commit empty index when completely new index appears on leader.
   See Upgrade Notes to find a way to get back to the previous behavior. (Mikhail Khludnev)
 
 * SOLR-9399: Delete requests do not send credentials & fails for Basic Authentication
@@ -3129,7 +3129,7 @@ Bug Fixes
 * SOLR-12187: Replica should watch clusterstate and unload itself if its entry is removed (Cao Manh Dat)
 
 * SOLR-6286: TestReplicationHandler.doTestReplicateAfterCoreReload(): stop checking for identical
-  commits before/after master core reload; and make non-nightly mode test 10 docs instead of 0.
+  commits before/after leader core reload; and make non-nightly mode test 10 docs instead of 0.
   (shalin, hossman, Mark Miller, Steve Rowe)
 
 * SOLR-9304: Fix Solr's HTTP handling to respect '-Dsolr.ssl.checkPeerName=false' aka SOLR_SSL_CHECK_PEER_NAME
@@ -3223,7 +3223,7 @@ Bug Fixes
 Optimizations
 ----------------------
 
-* SOLR-11920: IndexFetcher now fetches only those files (from master/leader) that are different. This
+* SOLR-11920: IndexFetcher now fetches only those files (from leader) that are different. This
   differential fetching now speeds up recovery times when full index replication is needed, but only
   a few segments diverge. (Ishan Chattopadhyaya, Shaun Sabo, John Gallagher)
 
@@ -4077,8 +4077,8 @@ Upgrade Notes
   makes it much easier for evaluators to handle differing data types (primitives, objects, arrays,
   lists, and so forth). (Dennis Gove)
 
-* SOLR-10962: in the ReplicationHandler the master.commitReserveDuration sub-element is deprecated. Instead
-  please configure a direct commitReserveDuration element for use in all modes (master, follower, cloud).
+* SOLR-10962: in the ReplicationHandler the leader.commitReserveDuration sub-element is deprecated. Instead
+  please configure a direct commitReserveDuration element for use in all modes (leader, follower, cloud).
 
 * SOLR-11482: RunExecutableListener was removed for security reasons. If you want to listen to
   events caused by updates, commits, or optimize, write your own listener as native Java class
@@ -4226,7 +4226,7 @@ Bug Fixes
 
 * SOLR-11278: Stopping CDCR should cancel a running bootstrap operation. (Amrit Sarkar, shalin)
 
-* SOLR-11293: Potential data loss in TLOG replicas when masterVersion equals zero (noble, Cao Manh Dat)
+* SOLR-11293: Potential data loss in TLOG replicas when leaderVersion equals zero (noble, Cao Manh Dat)
 
 * SOLR-10101: TestLazyCores hangs (Erick Erickson)
 
@@ -7194,7 +7194,7 @@ Bug Fixes
 * SOLR-9030: The 'downnode' overseer command can trip asserts in ZkStateWriter.
   (Scott Blum, Mark Miller, shalin)
 
-* SOLR-9036: Solr follower is doing full replication (entire index) of index after master restart.
+* SOLR-9036: Solr follower is doing full replication (entire index) of index after leader restart.
   (Lior Sapir, Mark Miller, shalin)
 
 * SOLR-9058: Makes HashJoinStream and OuterHashJoinStream support different field names in the
@@ -7220,7 +7220,7 @@ Other Changes
   (Jason Gerlowski, Benoit Vanalderweireldt, shalin)
 
 * SOLR-8967: In SolrCloud mode, under the 'Core Selector' dropdown in the UI the Replication tab won't be displayed
-  anymore. The Replication tab is only beneficial to users running Solr in master-follower mode. (Varun Thacker)
+  anymore. The Replication tab is only beneficial to users running Solr in leader-follower mode. (Varun Thacker)
 
 * SOLR-8985: Added back support for 'includeDynamic' flag to /schema/fields endpoint (noble)
 
@@ -7800,7 +7800,7 @@ Bug Fixes
 * SOLR-9030: The 'downnode' overseer command can trip asserts in ZkStateWriter.
   (Scott Blum, Mark Miller, shalin)
 
-* SOLR-9036: Solr follower is doing full replication (entire index) of index after master restart.
+* SOLR-9036: Solr follower is doing full replication (entire index) of index after leader restart.
   (Lior Sapir, Mark Miller, shalin)
 
 * SOLR-9093: Fix NullPointerException in TopGroupsShardResponseProcessor. (Christine Poerschke)
@@ -7836,7 +7836,7 @@ Other Changes
   (Jason Gerlowski, Benoit Vanalderweireldt, shalin)
 
 * SOLR-8967: In SolrCloud mode, under the 'Core Selector' dropdown in the UI the Replication tab won't be displayed
-  anymore. The Replication tab is only beneficial to users running Solr in master-follower mode. (Varun Thacker)
+  anymore. The Replication tab is only beneficial to users running Solr in leader-follower mode. (Varun Thacker)
 
 * SOLR-9131: Fix "start solr" text in cluster.vm Velocity template (janhoy)
 

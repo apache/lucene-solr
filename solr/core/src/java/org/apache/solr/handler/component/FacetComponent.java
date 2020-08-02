@@ -1033,9 +1033,9 @@ public class FacetComponent extends SearchComponent {
       }
       
       for (Entry<String,List<NamedList<Object>>> pivotFacetResponseFromShard : pivotFacetResponsesFromShard) {
-        PivotFacet masterPivotFacet = fi.pivotFacets.get(pivotFacetResponseFromShard.getKey());
-        masterPivotFacet.mergeResponseFromShard(shardNumber, rb, pivotFacetResponseFromShard.getValue());  
-        masterPivotFacet.removeAllRefinementsForShard(shardNumber);
+        PivotFacet leaderPivotFacet = fi.pivotFacets.get(pivotFacetResponseFromShard.getKey());
+        leaderPivotFacet.mergeResponseFromShard(shardNumber, rb, pivotFacetResponseFromShard.getValue());
+        leaderPivotFacet.removeAllRefinementsForShard(shardNumber);
       }
     }
     

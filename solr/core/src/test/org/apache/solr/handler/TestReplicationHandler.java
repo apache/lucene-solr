@@ -109,9 +109,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       + File.separator + "collection1" + File.separator + "conf"
       + File.separator;
 
-  JettySolrRunner masterJetty, followerJetty, repeaterJetty;
-  HttpSolrClient masterClient, followerClient, repeaterClient;
-  SolrInstance master = null, follower = null, repeater = null;
+  JettySolrRunner leaderJetty, followerJetty, repeaterJetty;
+  HttpSolrClient leaderClient, followerClient, repeaterClient;
+  SolrInstance leader = null, follower = null, repeater = null;
 
   static String context = "/solr";
 
@@ -130,12 +130,12 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 //    System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     // For manual testing only
     // useFactory(null); // force an FS factory.
-    master = new SolrInstance(createTempDir("solr-instance").toFile(), "master", null);
-    master.setUp();
-    masterJetty = createAndStartJetty(master);
-    masterClient = createNewSolrClient(masterJetty.getLocalPort());
+    leader = new SolrInstance(createTempDir("solr-instance").toFile(), "leader", null);
+    leader.setUp();
+    leaderJetty = createAndStartJetty(leader);
+    leaderClient = createNewSolrClient(leaderJetty.getLocalPort());
 
-    follower = new SolrInstance(createTempDir("solr-instance").toFile(), "follower", masterJetty.getLocalPort());
+    follower = new SolrInstance(createTempDir("solr-instance").toFile(), "follower", leaderJetty.getLocalPort());
     follower.setUp();
     followerJetty = createAndStartJetty(follower);
     followerClient = createNewSolrClient(followerJetty.getLocalPort());
@@ -144,9 +144,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
 
   public void clearIndexWithReplication() throws Exception {
-    if (numFound(query("*:*", masterClient)) != 0) {
-      masterClient.deleteByQuery("*:*");
-      masterClient.commit();
+    if (numFound(query("*:*", leaderClient)) != 0) {
+      leaderClient.deleteByQuery("*:*");
+      leaderClient.commit();
       // wait for replication to sync & verify
       assertEquals(0, numFound(rQuery(0, "*:*", followerClient)));
     }
@@ -156,15 +156,15 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   @After
   public void tearDown() throws Exception {
     super.tearDown();
-    if (null != masterJetty) {
-      masterJetty.stop();
-      masterJetty = null;
+    if (null != leaderJetty) {
+      leaderJetty.stop();
+      leaderJetty = null;
     }
     if (null != followerJetty) {
       followerJetty.stop();
       followerJetty = null;
     }
-    if (null != masterClient) {
+    if (null != leaderClient) {
       masterClient.close();
       masterClient = null;
     }
