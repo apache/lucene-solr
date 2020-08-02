@@ -220,7 +220,7 @@ public class PackageManager implements Closeable {
     Map<String, Object> result;
     try {
       result = (Map<String, Object>) Utils.executeGET(solrClient.getHttpClient(),
-              +solrBaseUrl + PackageUtils.CLUSTERPROPS_PATH, Utils.JSONCONSUMER);
+               solrBaseUrl + PackageUtils.CLUSTERPROPS_PATH, Utils.JSONCONSUMER);
     } catch (SolrException ex) {
       if (ex.code() == ErrorCode.NOT_FOUND.code) {
         result = Collections.emptyMap(); // Cluster props doesn't exist, that means there are no cluster level plugins installed.
