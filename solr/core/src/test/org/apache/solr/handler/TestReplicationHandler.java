@@ -165,8 +165,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       followerJetty = null;
     }
     if (null != leaderClient) {
-      masterClient.close();
-      masterClient = null;
+      leaderClient.close();
+      leaderClient = null;
     }
     if (null != followerClient) {
       followerClient.close();
@@ -302,25 +302,25 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   public void doTestDetails() throws Exception {
     followerJetty.stop();
     
-    follower.setTestPort(masterJetty.getLocalPort());
+    follower.setTestPort(leaderJetty.getLocalPort());
     follower.copyConfigFile(CONF_DIR + "solrconfig-follower.xml", "solrconfig.xml");
     followerJetty = createAndStartJetty(follower);
     
     followerClient.close();
-    masterClient.close();
-    masterClient = createNewSolrClient(masterJetty.getLocalPort());
+    leaderClient.close();
+    leaderClient = createNewSolrClient(leaderJetty.getLocalPort());
     followerClient = createNewSolrClient(followerJetty.getLocalPort());
     
     clearIndexWithReplication();
     { 
-      NamedList<Object> details = getDetails(masterClient);
+      NamedList<Object> details = getDetails(leaderClient);
       
-      assertEquals("master isMaster?", 
+      assertEquals("leader isMaster?",
                    "true", details.get("isMaster"));
-      assertEquals("master isFollower?",
+      assertEquals("leader isFollower?",
                    "false", details.get("isFollower"));
-      assertNotNull("master has master section", 
-                    details.get("master"));
+      assertNotNull("leader has leader section",
+                    details.get("leader"));
     }
 
     // check details on the follower a couple of times before & after fetching
@@ -358,9 +358,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
       if (3 != i) {
         // index & fetch
-        index(masterClient, "id", i, "name", "name = " + i);
-        masterClient.commit();
-        pullFromTo(masterJetty, followerJetty);
+        index(leaderClient, "id", i, "name", "name = " + i);
+        leaderClient.commit();
+        pullFromTo(leaderJetty, followerJetty);
       }
     }
 
@@ -368,7 +368,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     JettySolrRunner repeaterJetty = null;
     SolrClient repeaterClient = null;
     try {
-      repeater = new SolrInstance(createTempDir("solr-instance").toFile(), "repeater", masterJetty.getLocalPort());
+      repeater = new SolrInstance(createTempDir("solr-instance").toFile(), "repeater", leaderJetty.getLocalPort());
       repeater.setUp();
       repeaterJetty = createAndStartJetty(repeater);
       repeaterClient = createNewSolrClient(repeaterJetty.getLocalPort());
@@ -380,8 +380,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
                    "true", details.get("isMaster"));
       assertEquals("repeater isFollower?",
                    "true", details.get("isFollower"));
-      assertNotNull("repeater has master section", 
-                    details.get("master"));
+      assertNotNull("repeater has leader section",
+                    details.get("leader"));
       assertNotNull("repeater has follower section",
                     details.get("follower"));
 
@@ -396,51 +396,51 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
   /**
    * Verify that empty commits and/or commits with openSearcher=false
-   * on the master do not cause subsequent replication problems on the follower
+   * on the leader do not cause subsequent replication problems on the follower
    */
   public void testEmptyCommits() throws Exception {
     clearIndexWithReplication();
     
-    // add a doc to master and commit
-    index(masterClient, "id", "1", "name", "empty1");
-    emptyUpdate(masterClient, "commit", "true");
+    // add a doc to leader and commit
+    index(leaderClient, "id", "1", "name", "empty1");
+    emptyUpdate(leaderClient, "commit", "true");
     // force replication
     pullFromMasterToFollower();
     // verify doc is on follower
     rQuery(1, "name:empty1", followerClient);
-    assertVersions(masterClient, followerClient);
+    assertVersions(leaderClient, followerClient);
 
-    // do a completely empty commit on master and force replication
-    emptyUpdate(masterClient, "commit", "true");
+    // do a completely empty commit on leader and force replication
+    emptyUpdate(leaderClient, "commit", "true");
     pullFromMasterToFollower();
 
     // add another doc and verify follower gets it
-    index(masterClient, "id", "2", "name", "empty2");
-    emptyUpdate(masterClient, "commit", "true");
+    index(leaderClient, "id", "2", "name", "empty2");
+    emptyUpdate(leaderClient, "commit", "true");
     // force replication
     pullFromMasterToFollower();
 
     rQuery(1, "name:empty2", followerClient);
-    assertVersions(masterClient, followerClient);
+    assertVersions(leaderClient, followerClient);
 
-    // add a third doc but don't open a new searcher on master
-    index(masterClient, "id", "3", "name", "empty3");
-    emptyUpdate(masterClient, "commit", "true", "openSearcher", "false");
+    // add a third doc but don't open a new searcher on leader
+    index(leaderClient, "id", "3", "name", "empty3");
+    emptyUpdate(leaderClient, "commit", "true", "openSearcher", "false");
     pullFromMasterToFollower();
     
-    // verify follower can search the doc, but master doesn't
-    rQuery(0, "name:empty3", masterClient);
+    // verify follower can search the doc, but leader doesn't
+    rQuery(0, "name:empty3", leaderClient);
     rQuery(1, "name:empty3", followerClient);
 
-    // final doc with hard commit, follower and master both showing all docs
-    index(masterClient, "id", "4", "name", "empty4");
-    emptyUpdate(masterClient, "commit", "true");
+    // final doc with hard commit, follower and leader both showing all docs
+    index(leaderClient, "id", "4", "name", "empty4");
+    emptyUpdate(leaderClient, "commit", "true");
     pullFromMasterToFollower();
 
     String q = "name:(empty1 empty2 empty3 empty4)";
-    rQuery(4, q, masterClient);
+    rQuery(4, q, leaderClient);
     rQuery(4, q, followerClient);
-    assertVersions(masterClient, followerClient);
+    assertVersions(leaderClient, followerClient);
 
   }
 
@@ -449,7 +449,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     clearIndexWithReplication();
     nDocs--;
     for (int i = 0; i < nDocs; i++) {
-      index(masterClient, "id", i, "name", "name = " + i);
+      index(leaderClient, "id", i, "name", "name = " + i);
     }
 
     invokeReplicationCommand(masterJetty.getLocalPort(), "disableReplication");
@@ -588,7 +588,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     clearIndexWithReplication();
 
     // Test:
-    // setup master/follower.
+    // setup leader/follower.
     // stop polling on follower, add a doc to master and verify follower hasn't picked it.
     nDocs--;
     for (int i = 0; i < nDocs; i++)

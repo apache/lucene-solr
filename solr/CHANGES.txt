@@ -12886,7 +12886,7 @@ Other Changes
 * SOLR-5401: SolrResourceLoader logs a warning if a deprecated (factory) class
   is used in schema or config.  (Uwe Schindler)
 
-* SOLR-3397: Warn if master or follower replication is enabled in SolrCloud mode. (Erick
+* SOLR-3397: Warn if leader or follower replication is enabled in SolrCloud mode. (Erick
   Erickson)
 
 ==================  4.5.1 ==================
@@ -13785,7 +13785,7 @@ Bug Fixes
   or an intermediate HTTP Proxy (hossman)
 
 * SOLR-4661: Admin UI Replication details now correctly displays the current
-  replicable generation/version of the master. (hossman)
+  replicable generation/version of the leader. (hossman)
 
 * SOLR-4716,SOLR-4584: SolrCloud request proxying does not work on Tomcat and
   perhaps other non Jetty containers. (Po Rui, Yago Riveiro via Mark Miller)
@@ -14033,7 +14033,7 @@ New Features
 * SOLR-4477: Add support for queries (match-only) against docvalues fields.
   (Robert Muir)
 
-* SOLR-4488: Return follower replication details for a master if the master has
+* SOLR-4488: Return follower replication details for a leader if the leader has
   also acted like a follower. (Mark Miller)
 
 * SOLR-4498: Add list command to ZkCLI that prints out the contents of
@@ -14159,7 +14159,7 @@ Bug Fixes
 * SOLR-4511: When a new index is replicated into place, we need
   to update the most recent replicatable index point without
   doing a commit. This is important for repeater use cases, as
-  well as when nodes may switch master/follower roles.
+  well as when nodes may switch leader/follower roles.
   (Mark Miller, Raúl Grande)
 
 * SOLR-4515: CurrencyField's OpenExchangeRatesOrgProvider now requires
@@ -14752,7 +14752,7 @@ Bug Fixes
 * SOLR-4217: post.jar no longer ignores -Dparams when -Durl is used.
   (Alexandre Rafalovitch, ehatcher)
 
-* SOLR-4303: On replication, if the generation of the master is lower than the
+* SOLR-4303: On replication, if the generation of the leader is lower than the
   follower we need to force a full copy of the index. (Mark Miller, Gregg Donovan)
 
 * SOLR-4266: HttpSolrServer does not release connection properly on exception
@@ -14890,8 +14890,8 @@ Upgrading from Solr 3.6
 
 * The Lucene index format has changed and as a result, once you upgrade,
   previous versions of Solr will no longer be able to read your indices.
-  In a master/follower configuration, all searchers/followers should be upgraded
-  before the master.  If the master were to be updated first, the older
+  In a leader/follower configuration, all searchers/followers should be upgraded
+  before the leader.  If the leader were to be updated first, the older
   searchers would not be able to read the new index format.
 
 * Setting abortOnConfigurationError=false is no longer supported
@@ -15479,8 +15479,8 @@ Upgrading from Solr 3.6-dev
 
 * The Lucene index format has changed and as a result, once you upgrade,
   previous versions of Solr will no longer be able to read your indices.
-  In a master/follower configuration, all searchers/followers should be upgraded
-  before the master.  If the master were to be updated first, the older
+  In a leader/follower configuration, all searchers/followers should be upgraded
+  before the leader.  If the master were to be updated first, the older
   searchers would not be able to read the new index format.
 
 * Setting abortOnConfigurationError=false is no longer supported
@@ -16756,7 +16756,7 @@ Upgrading from Solr 3.3
 
 * The Lucene index format has changed and as a result, once you upgrade,
   previous versions of Solr will no longer be able to read your indices.
-  In a master/follower configuration, all searchers/followers should be upgraded
+  In a leader/follower configuration, all searchers/followers should be upgraded
   before the master.  If the master were to be updated first, the older
   searchers would not be able to read the new index format.
 
@@ -17226,7 +17226,7 @@ Upgrading from Solr 1.4
 
 * The Lucene index format has changed and as a result, once you upgrade,
   previous versions of Solr will no longer be able to read your indices.
-  In a master/follower configuration, all searchers/followers should be upgraded
+  In a leader/follower configuration, all searchers/followers should be upgraded
   before the master.  If the master were to be updated first, the older
   searchers would not be able to read the new index format.
 
@@ -17678,7 +17678,7 @@ Bug Fixes
 * SOLR-2100: The replication handler backup command didn't save the commit
   point and hence could fail when a newer commit caused the older commit point
   to be removed before it was finished being copied.  This did not affect
-  normal master/follower replication.  (Peter Sturge via yonik)
+  normal leader/follower replication.  (Peter Sturge via yonik)
 
 * SOLR-2114: Fixed parsing error in hsin function.  The function signature has changed slightly. (gsingers)
 
@@ -19255,7 +19255,7 @@ Documentation
 
 Upgrading from Solr 1.2
 -----------------------
-IMPORTANT UPGRADE NOTE: In a master/follower configuration, all searchers/followers
+IMPORTANT UPGRADE NOTE: In a leader/follower configuration, all searchers/followers
 should be upgraded before the master!  If the master were to be updated
 first, the older searchers would not be able to read the new index format.
 
@@ -19931,7 +19931,7 @@ Build
 
 Upgrading from Solr 1.1
 -------------------------------------
-IMPORTANT UPGRADE NOTE: In a master/follower configuration, all searchers/followers
+IMPORTANT UPGRADE NOTE: In a leader/follower configuration, all searchers/followers
 should be upgraded before the master!  If the master were to be updated
 first, the older searchers would not be able to read the new index format.
 
