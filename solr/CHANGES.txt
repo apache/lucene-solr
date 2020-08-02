@@ -35,8 +35,6 @@ Improvements
 
 * SOLR-10814: Add short-name feature to RuleBasedAuthz plugin (Mike Drob, Hrishikesh Gadre)
 
-* SOLR-14604: Add the ability to uninstall a package. (MarcusSorealheis)
-
 Other Changes
 ----------------------
 * SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
@@ -117,6 +115,8 @@ New Features
 * SOLR-14151 Make schema components load from packages (noble)
 
 * SOLR-14681: Introduce ability to delete .jar stored in the Package Store. (MarcusSorealheis , Mike Drob)
+
+* SOLR-14604: Add the ability to uninstall a package from with the Package CLI. (MarcusSorealheis)
 
 Improvements
 ---------------------
