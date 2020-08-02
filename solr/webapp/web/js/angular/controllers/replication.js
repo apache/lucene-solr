@@ -28,8 +28,8 @@ solrAdminApp.controller('ReplicationController',
                 if ($scope.interval) $interval.cancel($scope.interval);
                 $scope.isSecondary = (response.details.isSecondary === 'true');
                 if ($scope.isSecondary) {
-                    $scope.progress = getProgressDetails(response.details.slave);
-                    $scope.iterations = getIterations(response.details.slave);
+                    $scope.progress = getProgressDetails(response.details.secondary);
+                    $scope.iterations = getIterations(response.details.secondary);
                     $scope.versions = getSecondaryVersions(response.details);
                     $scope.settings = getSecondarySettings(response.details);
                     if ($scope.settings.isReplicating) {
@@ -85,7 +85,7 @@ var getProgressDetails = function(progress) {
     return progress;
 };
 
-var getIterations = function(slave) {
+var getIterations = function(secondary) {
 
     var iterations = [];
 
@@ -93,17 +93,17 @@ var getIterations = function(slave) {
         return list.filter(function(e) {return e.date == date});
     };
 
-    for (var i in slave.indexReplicatedAtList) {
-        var date = slave.indexReplicatedAtList[i];
+    for (var i in secondary.indexReplicatedAtList) {
+        var date = secondary.indexReplicatedAtList[i];
         var iteration = {date:date, status:"replicated", latest: false};
-        if (date == slave.indexReplicatedAt) {
+        if (date == secondary.indexReplicatedAt) {
             iteration.latest = true;
         }
         iterations.push(iteration);
     }
 
-    for (var i in slave.replicationFailedAtList) {
-        var failedDate = slave.replicationFailedAtList[i];
+    for (var i in secondary.replicationFailedAtList) {
+        var failedDate = secondary.replicationFailedAtList[i];
         var matchingIterations = find(iterations, failedDate);
         if (matchingIterations[0]) {
             iteration = matchingIterations[0];
@@ -112,7 +112,7 @@ var getIterations = function(slave) {
             iteration = {date: failedDate, status:"failed", latest:false};
             iterations.push(iteration);
         }
-        if (failedDate == slave.replicationFailedAt) {
+        if (failedDate == secondary.replicationFailedAt) {
             iteration.latest = true;
         }
     }
@@ -135,22 +135,22 @@ var getPrimaryVersions = function(data) {
 };
 
 var getSecondaryVersions = function(data) {
-    versions = {primarySearch: {}, primary: {}, slave: {}};
+    versions = {primarySearch: {}, primary: {}, secondary: {}};
 
-    versions.slave.version = data.indexVersion;
-    versions.slave.generation = data.generation;
-    versions.slave.size = data.indexSize;
+    versions.secondary.version = data.indexVersion;
+    versions.secondary.generation = data.generation;
+    versions.secondary.size = data.indexSize;
 
-    versions.primary.version = data.slave.primaryDetails.replicableVersion || '-';
-    versions.primary.generation = data.slave.primaryDetails.replicableGeneration || '-';
+    versions.primary.version = data.secondary.primaryDetails.replicableVersion || '-';
+    versions.primary.generation = data.secondary.primaryDetails.replicableGeneration || '-';
     versions.primary.size = '-';
 
-    versions.primarySearch.version = data.slave.primaryDetails.indexVersion;
-    versions.primarySearch.generation = data.slave.primaryDetails.generation;
-    versions.primarySearch.size = data.slave.primaryDetails.indexSize;
+    versions.primarySearch.version = data.secondary.primaryDetails.indexVersion;
+    versions.primarySearch.generation = data.secondary.primaryDetails.generation;
+    versions.primarySearch.size = data.secondary.primaryDetails.indexSize;
 
-    versions.changedVersion = data.indexVersion !== data.slave.primaryDetails.indexVersion;
-    versions.changedGeneration = data.generation !== data.slave.primaryDetails.generation;
+    versions.changedVersion = data.indexVersion !== data.secondary.primaryDetails.indexVersion;
+    versions.changedGeneration = data.generation !== data.secondary.primaryDetails.generation;
 
     return versions;
 };
@@ -183,11 +183,11 @@ var parseSeconds = function(time) {
 
 var getSecondarySettings = function(data) {
     var settings = {};
-    settings.primaryUrl = data.slave.primaryUrl;
-    settings.isPollingDisabled = data.slave.isPollingDisabled == 'true';
-    settings.pollInterval = data.slave.pollInterval;
-    settings.isReplicating = data.slave.isReplicating == 'true';
-    settings.nextExecutionAt = data.slave.nextExecutionAt;
+    settings.primaryUrl = data.secondary.primaryUrl;
+    settings.isPollingDisabled = data.secondary.isPollingDisabled == 'true';
+    settings.pollInterval = data.secondary.pollInterval;
+    settings.isReplicating = data.secondary.isReplicating == 'true';
+    settings.nextExecutionAt = data.secondary.nextExecutionAt;
 
     if(settings.isReplicating) {
         settings.isApprox = true;
@@ -195,7 +195,7 @@ var getSecondarySettings = function(data) {
     } else if (!settings.isPollingDisabled && settings.pollInterval) {
         if( settings.nextExecutionAt ) {
             settings.nextExecutionAtEpoch = parseDateToEpoch(settings.nextExecutionAt);
-            settings.currentTime = parseDateToEpoch(data.slave.currentDate);
+            settings.currentTime = parseDateToEpoch(data.secondary.currentDate);
 
             if( settings.nextExecutionAtEpoch > settings.currentTime) {
                 settings.isApprox = false;
@@ -208,7 +208,7 @@ var getSecondarySettings = function(data) {
 
 var getPrimarySettings = function(details, isSecondary) {
     var primary = {};
-    var primaryData = isSecondary ? details.slave.primaryDetails.primary : details.primary;
+    var primaryData = isSecondary ? details.secondary.primaryDetails.primary : details.primary;
     primary.replicationEnabled = primaryData.replicationEnabled == "true";
     primary.replicateAfter = primaryData.replicateAfter.join(", ");
 
