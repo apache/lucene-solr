@@ -186,13 +186,13 @@ public class TestHdfsBackupRestoreCore extends SolrCloudTestCase {
     boolean testViaReplicationHandler = random().nextBoolean();
     String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
 
-    try (HttpSolrClient masterClient = getHttpSolrClient(replicaBaseUrl)) {
+    try (HttpSolrClient primaryClient = getHttpSolrClient(replicaBaseUrl)) {
       // Create a backup.
       if (testViaReplicationHandler) {
         log.info("Running Backup via replication handler");
         BackupRestoreUtils.runReplicationHandlerCommand(baseUrl, coreName, ReplicationHandler.CMD_BACKUP, "hdfs", backupName);
         final BackupStatusChecker backupStatus
-          = new BackupStatusChecker(masterClient, "/" + coreName + "/replication");
+          = new BackupStatusChecker(primaryClient, "/" + coreName + "/replication");
         backupStatus.waitForBackupSuccess(backupName, 30);
       } else {
         log.info("Running Backup via core admin api");
@@ -209,9 +209,9 @@ public class TestHdfsBackupRestoreCore extends SolrCloudTestCase {
           //Delete a few docs
           int numDeletes = TestUtil.nextInt(random(), 1, nDocs);
           for(int i=0; i<numDeletes; i++) {
-            masterClient.deleteByQuery(collectionName, "id:" + i);
+            primaryClient.deleteByQuery(collectionName, "id:" + i);
           }
-          masterClient.commit(collectionName);
+          primaryClient.commit(collectionName);
 
           //Add a few more
           int moreAdds = TestUtil.nextInt(random(), 1, 100);
@@ -219,11 +219,11 @@ public class TestHdfsBackupRestoreCore extends SolrCloudTestCase {
             SolrInputDocument doc = new SolrInputDocument();
             doc.addField("id", i + nDocs);
             doc.addField("name", "name = " + (i + nDocs));
-            masterClient.add(collectionName, doc);
+            primaryClient.add(collectionName, doc);
           }
           //Purposely not calling commit once in a while. There can be some docs which are not committed
           if (usually()) {
-            masterClient.commit(collectionName);
+            primaryClient.commit(collectionName);
           }
         }
         // Snapshooter prefixes "snapshot." to the backup name.
@@ -242,7 +242,7 @@ public class TestHdfsBackupRestoreCore extends SolrCloudTestCase {
           BackupRestoreUtils.runCoreAdminCommand(replicaBaseUrl, coreName, CoreAdminAction.RESTORECORE.toString(), params);
         }
         //See if restore was successful by checking if all the docs are present again
-        BackupRestoreUtils.verifyDocs(nDocs, masterClient, coreName);
+        BackupRestoreUtils.verifyDocs(nDocs, primaryClient, coreName);
 
         // Verify the permissions for the backup folder.
         FileStatus status = fs.getFileStatus(new org.apache.hadoop.fs.Path("/backup/snapshot."+backupName));

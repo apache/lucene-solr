@@ -41,8 +41,8 @@ public class BackupRestoreUtils extends SolrTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static int indexDocs(SolrClient masterClient, String collectionName, long docsSeed) throws IOException, SolrServerException {
-    masterClient.deleteByQuery(collectionName, "*:*");
+  public static int indexDocs(SolrClient primaryClient, String collectionName, long docsSeed) throws IOException, SolrServerException {
+    primaryClient.deleteByQuery(collectionName, "*:*");
 
     Random random = new Random(docsSeed);// use a constant seed for the whole test run so that we can easily re-index.
     int nDocs = TestUtil.nextInt(random, 1, 100);
@@ -55,15 +55,15 @@ public class BackupRestoreUtils extends SolrTestCase {
       doc.addField("name", "name = " + i);
       docs.add(doc);
     }
-    masterClient.add(collectionName, docs);
-    masterClient.commit(collectionName);
+    primaryClient.add(collectionName, docs);
+    primaryClient.commit(collectionName);
     return nDocs;
   }
 
-  public static void verifyDocs(int nDocs, SolrClient masterClient, String collectionName) throws SolrServerException, IOException {
+  public static void verifyDocs(int nDocs, SolrClient primaryClient, String collectionName) throws SolrServerException, IOException {
     ModifiableSolrParams queryParams = new ModifiableSolrParams();
     queryParams.set("q", "*:*");
-    QueryResponse response = masterClient.query(collectionName, queryParams);
+    QueryResponse response = primaryClient.query(collectionName, queryParams);
 
     assertEquals(0, response.getStatus());
     assertEquals(nDocs, response.getResults().getNumFound());
@@ -82,13 +82,13 @@ public class BackupRestoreUtils extends SolrTestCase {
       builder.append("=");
       builder.append(p.getValue());
     }
-    String masterUrl = builder.toString();
-    executeHttpRequest(masterUrl);
+    String primaryUrl = builder.toString();
+    executeHttpRequest(primaryUrl);
   }
 
   public static void runReplicationHandlerCommand(String baseUrl, String coreName, String action, String repoName, String backupName) throws IOException {
-    String masterUrl = baseUrl + "/" + coreName + ReplicationHandler.PATH + "?command=" + action + "&repository="+repoName+"&name="+backupName;
-    executeHttpRequest(masterUrl);
+    String primaryUrl = baseUrl + "/" + coreName + ReplicationHandler.PATH + "?command=" + action + "&repository="+repoName+"&name="+backupName;
+    executeHttpRequest(primaryUrl);
   }
 
   static void executeHttpRequest(String requestUrl) throws IOException {

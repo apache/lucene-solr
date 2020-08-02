@@ -337,9 +337,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
   private void fetchIndex(SolrParams solrParams, SolrQueryResponse rsp) throws InterruptedException {
-    String masterUrl = solrParams.get(MASTER_URL);
-    if (!isSecondary && masterUrl == null) {
-      reportErrorOnResponse(rsp, "No secondary configured or no 'masterUrl' specified", null);
+    String primaryUrl = solrParams.get(PRIMARY_URL);
+    if (!isSecondary && primaryUrl == null) {
+      reportErrorOnResponse(rsp, "No secondary configured or no 'primaryUrl' specified", null);
       return;
     }
     final SolrParams paramsCopy = new ModifiableSolrParams(solrParams);
@@ -406,7 +406,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   private volatile IndexFetcher currentIndexFetcher;
 
   public IndexFetchResult doFetch(SolrParams solrParams, boolean forceReplication) {
-    String masterUrl = solrParams == null ? null : solrParams.get(MASTER_URL);
+    String primaryUrl = solrParams == null ? null : solrParams.get(PRIMARY_URL);
     if (!indexFetchLock.tryLock())
       return IndexFetchResult.LOCK_OBTAIN_FAILED;
     if (core.getCoreContainer().isShutDown()) {
@@ -414,7 +414,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       return IndexFetchResult.CONTAINER_IS_SHUTTING_DOWN; 
     }
     try {
-      if (masterUrl != null) {
+      if (primaryUrl != null) {
         if (currentIndexFetcher != null && currentIndexFetcher != pollingIndexFetcher) {
           currentIndexFetcher.destroy();
         }
@@ -904,7 +904,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     final MetricsMap fetcherMap = new MetricsMap((detailed, map) -> {
       IndexFetcher fetcher = currentIndexFetcher;
       if (fetcher != null) {
-        map.put(MASTER_URL, fetcher.getPrimaryUrl());
+        map.put(PRIMARY_URL, fetcher.getPrimaryUrl());
         if (getPollInterval() != null) {
           map.put(POLL_INTERVAL, getPollInterval());
         }
@@ -985,7 +985,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           secondary.add(ERR_STATUS, "invalid_master");
         }
       }
-      secondary.add(MASTER_URL, fetcher.getPrimaryUrl());
+      secondary.add(PRIMARY_URL, fetcher.getPrimaryUrl());
       if (getPollInterval() != null) {
         secondary.add(POLL_INTERVAL, getPollInterval());
       }
@@ -1768,7 +1768,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   private static final String EXCEPTION = "exception";
 
-  public static final String MASTER_URL = "masterUrl";
+  public static final String PRIMARY_URL = "primaryUrl";
 
   public static final String FETCH_FROM_LEADER = "fetchFromLeader";
 

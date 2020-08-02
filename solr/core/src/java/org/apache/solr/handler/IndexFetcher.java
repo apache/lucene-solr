@@ -124,7 +124,7 @@ public class IndexFetcher {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private String masterUrl;
+  private String primaryUrl;
 
   final ReplicationHandler replicationHandler;
 
@@ -240,15 +240,15 @@ public class IndexFetcher {
     if (skipCommitOnPrimaryVersionZero != null && skipCommitOnPrimaryVersionZero instanceof Boolean) {
       this.skipCommitOnPrimaryVersionZero = (boolean) skipCommitOnPrimaryVersionZero;
     }
-    String masterUrl = (String) initArgs.get(MASTER_URL);
-    if (masterUrl == null && !this.fetchFromLeader)
+    String primaryUrl = (String) initArgs.get(PRIMARY_URL);
+    if (primaryUrl == null && !this.fetchFromLeader)
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-              "'masterUrl' is required for a slave");
-    if (masterUrl != null && masterUrl.endsWith(ReplicationHandler.PATH)) {
-      masterUrl = masterUrl.substring(0, masterUrl.length()-12);
-      log.warn("'masterUrl' must be specified without the {} suffix", ReplicationHandler.PATH);
+              "'primaryUrl' is required for a slave");
+    if (primaryUrl != null && primaryUrl.endsWith(ReplicationHandler.PATH)) {
+      primaryUrl = primaryUrl.substring(0, primaryUrl.length()-12);
+      log.warn("'primaryUrl' must be specified without the {} suffix", ReplicationHandler.PATH);
     }
-    this.masterUrl = masterUrl;
+    this.primaryUrl = primaryUrl;
 
     this.replicationHandler = handler;
     String compress = (String) initArgs.get(COMPRESSION);
@@ -295,7 +295,7 @@ public class IndexFetcher {
     QueryRequest req = new QueryRequest(params);
 
     // TODO modify to use shardhandler
-    try (HttpSolrClient client = new Builder(masterUrl)
+    try (HttpSolrClient client = new Builder(primaryUrl)
         .withHttpClient(myHttpClient)
         .withConnectionTimeout(connTimeout)
         .withSocketTimeout(soTimeout)
@@ -321,7 +321,7 @@ public class IndexFetcher {
     QueryRequest req = new QueryRequest(params);
 
     // TODO modify to use shardhandler
-    try (HttpSolrClient client = new HttpSolrClient.Builder(masterUrl)
+    try (HttpSolrClient client = new HttpSolrClient.Builder(primaryUrl)
         .withHttpClient(myHttpClient)
         .withConnectionTimeout(connTimeout)
         .withSocketTimeout(soTimeout)
@@ -404,12 +404,12 @@ public class IndexFetcher {
           }
           return IndexFetchResult.LEADER_IS_NOT_ACTIVE;
         }
-        if (!replica.getCoreUrl().equals(masterUrl)) {
-          masterUrl = replica.getCoreUrl();
-          log.info("Updated masterUrl to {}", masterUrl);
+        if (!replica.getCoreUrl().equals(primaryUrl)) {
+          primaryUrl = replica.getCoreUrl();
+          log.info("Updated primaryUrl to {}", primaryUrl);
           // TODO: Do we need to set forceReplication = true?
         } else {
-          log.debug("masterUrl didn't change");
+          log.debug("primaryUrl didn't change");
         }
       }
       //get the current 'replicateable' index version in the master
@@ -420,10 +420,10 @@ public class IndexFetcher {
       } catch (Exception e) {
         final String errorMsg = e.toString();
         if (!Strings.isNullOrEmpty(errorMsg) && errorMsg.contains(INTERRUPT_RESPONSE_MESSAGE)) {
-            log.warn("Primary at: {} is not available. Index fetch failed by interrupt. Exception: {}", masterUrl, errorMsg);
+            log.warn("Primary at: {} is not available. Index fetch failed by interrupt. Exception: {}", primaryUrl, errorMsg);
             return new IndexFetchResult(IndexFetchResult.FAILED_BY_INTERRUPT_MESSAGE, false, e);
         } else {
-            log.warn("Primary at: {} is not available. Index fetch failed by exception: {}", masterUrl, errorMsg);
+            log.warn("Primary at: {} is not available. Index fetch failed by exception: {}", primaryUrl, errorMsg);
             return new IndexFetchResult(IndexFetchResult.FAILED_BY_EXCEPTION_MESSAGE, false, e);
         }
     }
@@ -1870,7 +1870,7 @@ public class IndexFetcher {
       InputStream is = null;
 
       // TODO use shardhandler
-      try (HttpSolrClient client = new Builder(masterUrl)
+      try (HttpSolrClient client = new Builder(primaryUrl)
           .withHttpClient(myHttpClient)
           .withResponseParser(null)
           .withConnectionTimeout(connTimeout)
@@ -1983,7 +1983,7 @@ public class IndexFetcher {
     params.set(CommonParams.QT, ReplicationHandler.PATH);
 
     // TODO use shardhandler
-    try (HttpSolrClient client = new HttpSolrClient.Builder(masterUrl)
+    try (HttpSolrClient client = new HttpSolrClient.Builder(primaryUrl)
         .withHttpClient(myHttpClient)
         .withConnectionTimeout(connTimeout)
         .withSocketTimeout(soTimeout)
@@ -1999,7 +1999,7 @@ public class IndexFetcher {
   }
 
   String getPrimaryUrl() {
-    return masterUrl;
+    return primaryUrl;
   }
 
   private static final int MAX_RETRIES = 5;

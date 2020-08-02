@@ -59,8 +59,8 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
   Function<String, Long> originalDiskSpaceprovider = null;
   BooleanSupplier originalTestWait = null;
   
-  JettySolrRunner masterJetty, secondaryJetty;
-  SolrClient masterClient, secondaryClient;
+  JettySolrRunner primaryJetty, secondaryJetty;
+  SolrClient primaryClient, secondaryClient;
   TestReplicationHandler.SolrInstance master = null, secondary = null;
 
   static String context = "/solr";

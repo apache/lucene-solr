@@ -109,9 +109,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       + File.separator + "collection1" + File.separator + "conf"
       + File.separator;
 
-  JettySolrRunner masterJetty, secondaryJetty, repeaterJetty;
-  HttpSolrClient masterClient, secondaryClient, repeaterClient;
-  SolrInstance master = null, secondary = null, repeater = null;
+  JettySolrRunner primaryJetty, secondaryJetty, repeaterJetty;
+  HttpSolrClient primaryClient, secondaryClient, repeaterClient;
+  SolrInstance primary = null, secondary = null, repeater = null;
 
   static String context = "/solr";
 
@@ -132,10 +132,10 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     // useFactory(null); // force an FS factory.
     master = new SolrInstance(createTempDir("solr-instance").toFile(), "master", null);
     master.setUp();
-    masterJetty = createAndStartJetty(master);
-    masterClient = createNewSolrClient(masterJetty.getLocalPort());
+    primaryJetty = createAndStartJetty(master);
+    primaryClient = createNewSolrClient(primaryJetty.getLocalPort());
 
-    secondary = new SolrInstance(createTempDir("solr-instance").toFile(), "secondary", masterJetty.getLocalPort());
+    secondary = new SolrInstance(createTempDir("solr-instance").toFile(), "secondary", primaryJetty.getLocalPort());
     secondary.setUp();
     secondaryJetty = createAndStartJetty(secondary);
     secondaryClient = createNewSolrClient(secondaryJetty.getLocalPort());
@@ -144,9 +144,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
 
   public void clearIndexWithReplication() throws Exception {
-    if (numFound(query("*:*", masterClient)) != 0) {
-      masterClient.deleteByQuery("*:*");
-      masterClient.commit();
+    if (numFound(query("*:*", primaryClient)) != 0) {
+      primaryClient.deleteByQuery("*:*");
+      primaryClient.commit();
       // wait for replication to sync & verify
       assertEquals(0, numFound(rQuery(0, "*:*", secondaryClient)));
     }
@@ -156,17 +156,17 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   @After
   public void tearDown() throws Exception {
     super.tearDown();
-    if (null != masterJetty) {
-      masterJetty.stop();
-      masterJetty = null;
+    if (null != primaryJetty) {
+      primaryJetty.stop();
+      primaryJetty = null;
     }
     if (null != secondaryJetty) {
       secondaryJetty.stop();
       secondaryJetty = null;
     }
-    if (null != masterClient) {
-      masterClient.close();
-      masterClient = null;
+    if (null != primaryClient) {
+      primaryClient.close();
+      primaryClient = null;
     }
     if (null != secondaryClient) {
       secondaryClient.close();
@@ -302,18 +302,18 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   public void doTestDetails() throws Exception {
     secondaryJetty.stop();
     
-    secondary.setTestPort(masterJetty.getLocalPort());
+    secondary.setTestPort(primaryJetty.getLocalPort());
     secondary.copyConfigFile(CONF_DIR + "solrconfig-secondary.xml", "solrconfig.xml");
     secondaryJetty = createAndStartJetty(secondary);
     
     secondaryClient.close();
-    masterClient.close();
-    masterClient = createNewSolrClient(masterJetty.getLocalPort());
+    primaryClient.close();
+    primaryClient = createNewSolrClient(primaryJetty.getLocalPort());
     secondaryClient = createNewSolrClient(secondaryJetty.getLocalPort());
     
     clearIndexWithReplication();
     { 
-      NamedList<Object> details = getDetails(masterClient);
+      NamedList<Object> details = getDetails(primaryClient);
       
       assertEquals("primary isPrimary?",
                    "true", details.get("isPrimary"));
@@ -358,9 +358,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
       if (3 != i) {
         // index & fetch
-        index(masterClient, "id", i, "name", "name = " + i);
-        masterClient.commit();
-        pullFromTo(masterJetty, secondaryJetty);
+        index(primaryClient, "id", i, "name", "name = " + i);
+        primaryClient.commit();
+        pullFromTo(primaryJetty, secondaryJetty);
       }
     }
 
@@ -368,7 +368,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     JettySolrRunner repeaterJetty = null;
     SolrClient repeaterClient = null;
     try {
-      repeater = new SolrInstance(createTempDir("solr-instance").toFile(), "repeater", masterJetty.getLocalPort());
+      repeater = new SolrInstance(createTempDir("solr-instance").toFile(), "repeater", primaryJetty.getLocalPort());
       repeater.setUp();
       repeaterJetty = createAndStartJetty(repeater);
       repeaterClient = createNewSolrClient(repeaterJetty.getLocalPort());
@@ -402,45 +402,45 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     clearIndexWithReplication();
     
     // add a doc to master and commit
-    index(masterClient, "id", "1", "name", "empty1");
-    emptyUpdate(masterClient, "commit", "true");
+    index(primaryClient, "id", "1", "name", "empty1");
+    emptyUpdate(primaryClient, "commit", "true");
     // force replication
     pullFromPrimaryToSecondary();
     // verify doc is on secondary
     rQuery(1, "name:empty1", secondaryClient);
-    assertVersions(masterClient, secondaryClient);
+    assertVersions(primaryClient, secondaryClient);
 
     // do a completely empty commit on master and force replication
-    emptyUpdate(masterClient, "commit", "true");
+    emptyUpdate(primaryClient, "commit", "true");
     pullFromPrimaryToSecondary();
 
     // add another doc and verify secondary gets it
-    index(masterClient, "id", "2", "name", "empty2");
-    emptyUpdate(masterClient, "commit", "true");
+    index(primaryClient, "id", "2", "name", "empty2");
+    emptyUpdate(primaryClient, "commit", "true");
     // force replication
     pullFromPrimaryToSecondary();
 
     rQuery(1, "name:empty2", secondaryClient);
-    assertVersions(masterClient, secondaryClient);
+    assertVersions(primaryClient, secondaryClient);
 
     // add a third doc but don't open a new searcher on master
-    index(masterClient, "id", "3", "name", "empty3");
-    emptyUpdate(masterClient, "commit", "true", "openSearcher", "false");
+    index(primaryClient, "id", "3", "name", "empty3");
+    emptyUpdate(primaryClient, "commit", "true", "openSearcher", "false");
     pullFromPrimaryToSecondary();
     
     // verify secondary can search the doc, but master doesn't
-    rQuery(0, "name:empty3", masterClient);
+    rQuery(0, "name:empty3", primaryClient);
     rQuery(1, "name:empty3", secondaryClient);
 
     // final doc with hard commit, secondary and master both showing all docs
-    index(masterClient, "id", "4", "name", "empty4");
-    emptyUpdate(masterClient, "commit", "true");
+    index(primaryClient, "id", "4", "name", "empty4");
+    emptyUpdate(primaryClient, "commit", "true");
     pullFromPrimaryToSecondary();
 
     String q = "name:(empty1 empty2 empty3 empty4)";
-    rQuery(4, q, masterClient);
+    rQuery(4, q, primaryClient);
     rQuery(4, q, secondaryClient);
-    assertVersions(masterClient, secondaryClient);
+    assertVersions(primaryClient, secondaryClient);
 
   }
 
@@ -449,15 +449,15 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     clearIndexWithReplication();
     nDocs--;
     for (int i = 0; i < nDocs; i++) {
-      index(masterClient, "id", i, "name", "name = " + i);
+      index(primaryClient, "id", i, "name", "name = " + i);
     }
 
-    invokeReplicationCommand(masterJetty.getLocalPort(), "disableReplication");
+    invokeReplicationCommand(primaryJetty.getLocalPort(), "disableReplication");
     invokeReplicationCommand(secondaryJetty.getLocalPort(), "disablepoll");
     
-    masterClient.commit();
+    primaryClient.commit();
 
-    assertEquals(nDocs, numFound(rQuery(nDocs, "*:*", masterClient)));
+    assertEquals(nDocs, numFound(rQuery(nDocs, "*:*", primaryClient)));
 
     // Make sure that both the index version and index generation on the secondary is
     // higher than that of the master, just to make the test harder.
@@ -477,7 +477,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     assertEquals(1, numFound(rQuery(1, "id:555", secondaryClient)));
 
     //Let's fetch the index rather than rely on the polling.
-    invokeReplicationCommand(masterJetty.getLocalPort(), "enablereplication");
+    invokeReplicationCommand(primaryJetty.getLocalPort(), "enablereplication");
     invokeReplicationCommand(secondaryJetty.getLocalPort(), "fetchindex");
 
     /*
@@ -498,8 +498,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   //jetty servers.
   static void invokeReplicationCommand(int pJettyPort, String pCommand) throws IOException
   {
-    String masterUrl = buildUrl(pJettyPort) + "/" + DEFAULT_TEST_CORENAME + ReplicationHandler.PATH+"?command=" + pCommand;
-    URL u = new URL(masterUrl);
+    String primaryUrl = buildUrl(pJettyPort) + "/" + DEFAULT_TEST_CORENAME + ReplicationHandler.PATH+"?command=" + pCommand;
+    URL u = new URL(primaryUrl);
     InputStream stream = u.openStream();
     stream.close();
   }
@@ -513,12 +513,12 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     nDocs--;
     for (int i = 0; i < nDocs; i++)
-      index(masterClient, "id", i, "name", "name = " + i);
+      index(primaryClient, "id", i, "name", "name = " + i);
 
-    masterClient.commit();
+    primaryClient.commit();
 
     @SuppressWarnings({"rawtypes"})
-    NamedList masterQueryRsp = rQuery(nDocs, "*:*", masterClient);
+    NamedList masterQueryRsp = rQuery(nDocs, "*:*", primaryClient);
     SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
     assertEquals(nDocs, numFound(masterQueryRsp));
 
@@ -532,22 +532,22 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     String cmp = BaseDistributedSearchTestCase.compare(masterQueryResult, secondaryQueryResult, 0, null);
     assertEquals(null, cmp);
     
-    assertVersions(masterClient, secondaryClient);
+    assertVersions(primaryClient, secondaryClient);
 
     //start config files replication test
-    masterClient.deleteByQuery("*:*");
-    masterClient.commit();
+    primaryClient.deleteByQuery("*:*");
+    primaryClient.commit();
 
     //change the schema on master
     master.copyConfigFile(CONF_DIR + "schema-replication2.xml", "schema.xml");
 
-    masterJetty.stop();
+    primaryJetty.stop();
 
-    masterJetty = createAndStartJetty(master);
-    masterClient.close();
-    masterClient = createNewSolrClient(masterJetty.getLocalPort());
+    primaryJetty = createAndStartJetty(master);
+    primaryClient.close();
+    primaryClient = createNewSolrClient(primaryJetty.getLocalPort());
 
-    secondary.setTestPort(masterJetty.getLocalPort());
+    secondary.setTestPort(primaryJetty.getLocalPort());
     secondary.copyConfigFile(secondary.getSolrConfigFile(), "solrconfig.xml");
 
     secondaryJetty.stop();
@@ -566,20 +566,20 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     secondaryClient.close();
     secondaryClient = createNewSolrClient(secondaryJetty.getLocalPort());
     //add a doc with new field and commit on master to trigger index fetch from secondary.
-    index(masterClient, "id", "2000", "name", "name = " + 2000, "newname", "newname = " + 2000);
-    masterClient.commit();
+    index(primaryClient, "id", "2000", "name", "name = " + 2000, "newname", "newname = " + 2000);
+    primaryClient.commit();
 
-    assertEquals(1, numFound( rQuery(1, "*:*", masterClient)));
+    assertEquals(1, numFound( rQuery(1, "*:*", primaryClient)));
     
     secondaryQueryRsp = rQuery(1, "*:*", secondaryClient);
-    assertVersions(masterClient, secondaryClient);
+    assertVersions(primaryClient, secondaryClient);
     SolrDocument d = ((SolrDocumentList) secondaryQueryRsp.get("response")).get(0);
     assertEquals("newname = 2000", (String) d.getFieldValue("newname"));
 
     assertTrue(secondaryXsltDir.isDirectory());
     assertTrue(secondaryXsl.exists());
     
-    checkForSingleIndex(masterJetty);
+    checkForSingleIndex(primaryJetty);
     checkForSingleIndex(secondaryJetty, true);
   }
 
@@ -592,12 +592,12 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     // stop polling on secondary, add a doc to master and verify secondary hasn't picked it.
     nDocs--;
     for (int i = 0; i < nDocs; i++)
-      index(masterClient, "id", i, "name", "name = " + i);
+      index(primaryClient, "id", i, "name", "name = " + i);
 
-    masterClient.commit();
+    primaryClient.commit();
 
     @SuppressWarnings({"rawtypes"})
-    NamedList masterQueryRsp = rQuery(nDocs, "*:*", masterClient);
+    NamedList masterQueryRsp = rQuery(nDocs, "*:*", primaryClient);
     SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
     assertEquals(nDocs, numFound(masterQueryRsp));
 
@@ -614,11 +614,11 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     // start stop polling test
     invokeReplicationCommand(secondaryJetty.getLocalPort(), "disablepoll");
     
-    index(masterClient, "id", 501, "name", "name = " + 501);
-    masterClient.commit();
+    index(primaryClient, "id", 501, "name", "name = " + 501);
+    primaryClient.commit();
 
     //get docs from master and check if number is equal to master
-    assertEquals(nDocs+1, numFound(rQuery(nDocs+1, "*:*", masterClient)));
+    assertEquals(nDocs+1, numFound(rQuery(nDocs+1, "*:*", primaryClient)));
     
     // NOTE: this test is wierd, we want to verify it DOESNT replicate...
     // for now, add a sleep for this.., but the logic is wierd.
@@ -647,12 +647,12 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       master.copyConfigFile(CONF_DIR + "solrconfig-master2.xml",
           "solrconfig.xml");
 
-      masterJetty.stop();
-      masterJetty.start();
+      primaryJetty.stop();
+      primaryJetty.start();
 
       // close and re-create master client because its connection pool has stale connections
-      masterClient.close();
-      masterClient = createNewSolrClient(masterJetty.getLocalPort());
+      primaryClient.close();
+      masterClient = createNewSolrClient(primaryJetty.getLocalPort());
 
       nDocs--;
       for (int i = 0; i < nDocs; i++)
@@ -693,12 +693,12 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
       }
 
-      masterJetty.stop();
+      primaryJetty.stop();
 
       final TimeOut waitForLeaderToShutdown = new TimeOut(300, TimeUnit.SECONDS, TimeSource.NANO_TIME);
       waitForLeaderToShutdown.waitFor
         ("Gave up after waiting an obscene amount of time for leader to shut down",
-         () -> masterJetty.isStopped() );
+         () -> primaryJetty.isStopped() );
         
       for(int retries=0; ;retries++) { 
 
@@ -726,7 +726,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         }
       }
       
-      masterJetty.start();
+      primaryJetty.start();
 
       // poll interval on secondary is 1 second, so we just sleep for a few seconds
       Thread.sleep(2000);
@@ -768,16 +768,16 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   public void doTestIndexFetchWithPrimaryUrl() throws Exception {
     //change solrconfig on slave
     //this has no entry for pollinginterval
-    slave.setTestPort(masterJetty.getLocalPort());
+    slave.setTestPort(primaryJetty.getLocalPort());
     slave.copyConfigFile(CONF_DIR + "solrconfig-slave1.xml", "solrconfig.xml");
     slaveJetty.stop();
     slaveJetty = createAndStartJetty(slave);
-    slaveClient.close();
-    slaveClient = createNewSolrClient(slaveJetty.getLocalPort());
+    secondaryClient.close();
+    secondaryClient = createNewSolrClient(slaveJetty.getLocalPort());
 
     masterClient.deleteByQuery("*:*");
-    slaveClient.deleteByQuery("*:*");
-    slaveClient.commit();
+    secondaryClient.deleteByQuery("*:*");
+    secondaryClient.commit();
     nDocs--;
     for (int i = 0; i < nDocs; i++)
       index(masterClient, "id", i, "name", "name = " + i);
@@ -795,15 +795,15 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     assertEquals(nDocs, masterQueryResult.getNumFound());
 
     // index fetch
-    String masterUrl = buildUrl(slaveJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME + ReplicationHandler.PATH+"?command=fetchindex&masterUrl=";
-    masterUrl += buildUrl(masterJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME + ReplicationHandler.PATH;
-    URL url = new URL(masterUrl);
+    String primaryUrl = buildUrl(slaveJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME + ReplicationHandler.PATH+"?command=fetchindex&primaryUrl=";
+    primaryUrl += buildUrl(primaryJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME + ReplicationHandler.PATH;
+    URL url = new URL(primaryUrl);
     InputStream stream = url.openStream();
     stream.close();
     
     //get docs from slave and check if number is equal to master
     @SuppressWarnings({"rawtypes"})
-    NamedList slaveQueryRsp = rQuery(nDocs, "*:*", slaveClient);
+    NamedList slaveQueryRsp = rQuery(nDocs, "*:*", secondaryClient);
     SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
     assertEquals(nDocs, slaveQueryResult.getNumFound());
     //compare results
@@ -813,15 +813,15 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     // index fetch from the slave to the master
     
     for (int i = nDocs; i < nDocs + 3; i++)
-      index(slaveClient, "id", i, "name", "name = " + i);
+      index(secondaryClient, "id", i, "name", "name = " + i);
 
-    slaveClient.commit();
+    secondaryClient.commit();
     
     pullFromSecondaryToPrimary();
     rQuery(nDocs + 3, "*:*", masterClient);
     
     //get docs from slave and check if number is equal to master
-    slaveQueryRsp = rQuery(nDocs + 3, "*:*", slaveClient);
+    slaveQueryRsp = rQuery(nDocs + 3, "*:*", secondaryClient);
     slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
     assertEquals(nDocs + 3, slaveQueryResult.getNumFound());
     //compare results
@@ -830,12 +830,12 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     cmp = BaseDistributedSearchTestCase.compare(masterQueryResult, slaveQueryResult, 0, null);
     assertEquals(null, cmp);
 
-    assertVersions(masterClient, slaveClient);
+    assertVersions(masterClient, secondaryClient);
     
     pullFromSecondaryToPrimary();
     
     //get docs from slave and check if number is equal to master
-    slaveQueryRsp = rQuery(nDocs + 3, "*:*", slaveClient);
+    slaveQueryRsp = rQuery(nDocs + 3, "*:*", secondaryClient);
     slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
     assertEquals(nDocs + 3, slaveQueryResult.getNumFound());
     //compare results
@@ -844,7 +844,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     cmp = BaseDistributedSearchTestCase.compare(masterQueryResult, slaveQueryResult, 0, null);
     assertEquals(null, cmp);
     
-    assertVersions(masterClient, slaveClient);
+    assertVersions(masterClient, secondaryClient);
     
     // now force a new index directory
     for (int i = nDocs + 3; i < nDocs + 7; i++)
@@ -856,7 +856,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     rQuery((int) slaveQueryResult.getNumFound(), "*:*", masterClient);
     
     //get docs from slave and check if number is equal to master
-    slaveQueryRsp = rQuery(nDocs + 3, "*:*", slaveClient);
+    slaveQueryRsp = rQuery(nDocs + 3, "*:*", secondaryClient);
     slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
     assertEquals(nDocs + 3, slaveQueryResult.getNumFound());
     //compare results
@@ -865,11 +865,11 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     cmp = BaseDistributedSearchTestCase.compare(masterQueryResult, slaveQueryResult, 0, null);
     assertEquals(null, cmp);
     
-    assertVersions(masterClient, slaveClient);
+    assertVersions(masterClient, secondaryClient);
     pullFromSecondaryToPrimary();
     
     //get docs from slave and check if number is equal to master
-    slaveQueryRsp = rQuery(nDocs + 3, "*:*", slaveClient);
+    slaveQueryRsp = rQuery(nDocs + 3, "*:*", secondaryClient);
     slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
     assertEquals(nDocs + 3, slaveQueryResult.getNumFound());
     //compare results
@@ -878,13 +878,13 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     cmp = BaseDistributedSearchTestCase.compare(masterQueryResult, slaveQueryResult, 0, null);
     assertEquals(null, cmp);
     
-    assertVersions(masterClient, slaveClient);
+    assertVersions(masterClient, secondaryClient);
     
     NamedList<Object> details = getDetails(masterClient);
    
-    details = getDetails(slaveClient);
+    details = getDetails(secondaryClient);
     
-    checkForSingleIndex(masterJetty);
+    checkForSingleIndex(primaryJetty);
     checkForSingleIndex(slaveJetty);
   }
   
@@ -907,24 +907,24 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     try {
 
-      slave.setTestPort(masterJetty.getLocalPort());
+      slave.setTestPort(primaryJetty.getLocalPort());
       slave.copyConfigFile(CONF_DIR +"solrconfig-slave1.xml", "solrconfig.xml");
       slave.copyConfigFile(CONF_DIR +slaveSchema, "schema.xml");
       slaveJetty.stop();
       slaveJetty = createAndStartJetty(slave);
-      slaveClient.close();
-      slaveClient = createNewSolrClient(slaveJetty.getLocalPort());
+      secondaryClient.close();
+      secondaryClient = createNewSolrClient(slaveJetty.getLocalPort());
 
       master.copyConfigFile(CONF_DIR + "solrconfig-master3.xml",
           "solrconfig.xml");
-      masterJetty.stop();
-      masterJetty = createAndStartJetty(master);
+      primaryJetty.stop();
+      primaryJetty = createAndStartJetty(master);
       masterClient.close();
-      masterClient = createNewSolrClient(masterJetty.getLocalPort());
+      masterClient = createNewSolrClient(primaryJetty.getLocalPort());
       
       masterClient.deleteByQuery("*:*");
-      slaveClient.deleteByQuery("*:*");
-      slaveClient.commit();
+      secondaryClient.deleteByQuery("*:*");
+      secondaryClient.commit();
       
       int maxDocs = TEST_NIGHTLY ? 1000 : 75;
       int rounds = TEST_NIGHTLY ? 45 : 3;
@@ -956,15 +956,15 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         assertEquals(totalDocs, masterQueryResult.getNumFound());
         
         // index fetch
-        Date slaveCoreStart = watchCoreStartAt(slaveClient, 30*1000, null);
+        Date slaveCoreStart = watchCoreStartAt(secondaryClient, 30*1000, null);
         pullFromPrimaryToSecondary();
         if (confCoreReload) {
-          watchCoreStartAt(slaveClient, 30*1000, slaveCoreStart);
+          watchCoreStartAt(secondaryClient, 30*1000, slaveCoreStart);
         }
 
         // get docs from slave and check if number is equal to master
         @SuppressWarnings({"rawtypes"})
-        NamedList slaveQueryRsp = rQuery(totalDocs, "*:*", slaveClient);
+        NamedList slaveQueryRsp = rQuery(totalDocs, "*:*", secondaryClient);
         SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp
             .get("response");
         assertEquals(totalDocs, slaveQueryResult.getNumFound());
@@ -973,9 +973,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
             slaveQueryResult, 0, null);
         assertEquals(null, cmp);
         
-        assertVersions(masterClient, slaveClient);
+        assertVersions(masterClient, secondaryClient);
         
-        checkForSingleIndex(masterJetty);
+        checkForSingleIndex(primaryJetty);
         
         if (!Constants.WINDOWS) {
           checkForSingleIndex(slaveJetty);
@@ -984,9 +984,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         if (random().nextBoolean()) {
           // move the slave ahead
           for (int i = 0; i < 3; i++) {
-            index(slaveClient, "id", id++, "name", "name = " + i);
+            index(secondaryClient, "id", id++, "name", "name = " + i);
           }
-          slaveClient.commit();
+          secondaryClient.commit();
         }
         
       }
@@ -1052,21 +1052,21 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
   private void pullFromPrimaryToSecondary() throws MalformedURLException,
       IOException {
-    pullFromTo(masterJetty, slaveJetty);
+    pullFromTo(primaryJetty, slaveJetty);
   }
   
   @Test
   public void doTestRepeater() throws Exception {
     // no polling
-    slave.setTestPort(masterJetty.getLocalPort());
+    slave.setTestPort(primaryJetty.getLocalPort());
     slave.copyConfigFile(CONF_DIR + "solrconfig-slave1.xml", "solrconfig.xml");
     slaveJetty.stop();
     slaveJetty = createAndStartJetty(slave);
-    slaveClient.close();
-    slaveClient = createNewSolrClient(slaveJetty.getLocalPort());
+    secondaryClient.close();
+    secondaryClient = createNewSolrClient(slaveJetty.getLocalPort());
 
     try {
-      repeater = new SolrInstance(createTempDir("solr-instance").toFile(), "repeater", masterJetty.getLocalPort());
+      repeater = new SolrInstance(createTempDir("solr-instance").toFile(), "repeater", primaryJetty.getLocalPort());
       repeater.setUp();
       repeater.copyConfigFile(CONF_DIR + "solrconfig-repeater.xml",
           "solrconfig.xml");
@@ -1081,41 +1081,41 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
       masterClient.commit();
       
-      pullFromTo(masterJetty, repeaterJetty);
+      pullFromTo(primaryJetty, repeaterJetty);
       
       rQuery(3, "*:*", repeaterClient);
       
       pullFromTo(repeaterJetty, slaveJetty);
       
-      rQuery(3, "*:*", slaveClient);
+      rQuery(3, "*:*", secondaryClient);
       
       assertVersions(masterClient, repeaterClient);
-      assertVersions(repeaterClient, slaveClient);
+      assertVersions(repeaterClient, secondaryClient);
       
       for (int i = 0; i < 4; i++)
         index(repeaterClient, "id", i, "name", "name = " + i);
       repeaterClient.commit();
       
-      pullFromTo(masterJetty, repeaterJetty);
+      pullFromTo(primaryJetty, repeaterJetty);
       
       rQuery(3, "*:*", repeaterClient);
       
       pullFromTo(repeaterJetty, slaveJetty);
       
-      rQuery(3, "*:*", slaveClient);
+      rQuery(3, "*:*", secondaryClient);
       
       for (int i = 3; i < 6; i++)
         index(masterClient, "id", i, "name", "name = " + i);
       
       masterClient.commit();
       
-      pullFromTo(masterJetty, repeaterJetty);
+      pullFromTo(primaryJetty, repeaterJetty);
       
       rQuery(6, "*:*", repeaterClient);
       
       pullFromTo(repeaterJetty, slaveJetty);
       
-      rQuery(6, "*:*", slaveClient);
+      rQuery(6, "*:*", secondaryClient);
 
     } finally {
       if (repeater != null) {
@@ -1174,19 +1174,19 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
   private void pullFromSecondaryToPrimary() throws MalformedURLException,
       IOException {
-    pullFromTo(slaveJetty, masterJetty);
+    pullFromTo(slaveJetty, primaryJetty);
   }
   
   private void pullFromTo(JettySolrRunner from, JettySolrRunner to) throws IOException {
-    String masterUrl;
+    String primaryUrl;
     URL url;
     InputStream stream;
-    masterUrl = buildUrl(to.getLocalPort())
+    primaryUrl = buildUrl(to.getLocalPort())
         + "/" + DEFAULT_TEST_CORENAME
-        + ReplicationHandler.PATH+"?wait=true&command=fetchindex&masterUrl="
+        + ReplicationHandler.PATH+"?wait=true&command=fetchindex&primaryUrl="
         + buildUrl(from.getLocalPort())
         + "/" + DEFAULT_TEST_CORENAME + ReplicationHandler.PATH;
-    url = new URL(masterUrl);
+    url = new URL(primaryUrl);
     stream = url.openStream();
     stream.close();
   }
@@ -1207,11 +1207,11 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     master.copyConfigFile(CONF_DIR + "solrconfig-master2.xml",
                           "solrconfig.xml");
 
-    masterJetty.stop();
+    primaryJetty.stop();
 
-    masterJetty = createAndStartJetty(master);
+    primaryJetty = createAndStartJetty(master);
     masterClient.close();
-    masterClient = createNewSolrClient(masterJetty.getLocalPort());
+    masterClient = createNewSolrClient(primaryJetty.getLocalPort());
     
     for (int i = 0; i < nDocs; i++)
       index(masterClient, "id", i, "name", "name = " + i);
@@ -1224,17 +1224,17 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     assertEquals(nDocs, masterQueryResult.getNumFound());
     
 
-    slave.setTestPort(masterJetty.getLocalPort());
+    slave.setTestPort(primaryJetty.getLocalPort());
     slave.copyConfigFile(slave.getSolrConfigFile(), "solrconfig.xml");
 
     //start slave
     slaveJetty = createAndStartJetty(slave);
-    slaveClient.close();
-    slaveClient = createNewSolrClient(slaveJetty.getLocalPort());
+    secondaryClient.close();
+    secondaryClient = createNewSolrClient(slaveJetty.getLocalPort());
 
     //get docs from slave and check if number is equal to master
     @SuppressWarnings({"rawtypes"})
-    NamedList slaveQueryRsp = rQuery(nDocs, "*:*", slaveClient);
+    NamedList slaveQueryRsp = rQuery(nDocs, "*:*", secondaryClient);
     SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
     assertEquals(nDocs, slaveQueryResult.getNumFound());
 
@@ -1261,11 +1261,11 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       master.copyConfigFile(CONF_DIR + "solrconfig-master2.xml",
           "solrconfig.xml");
       
-      masterJetty.stop();
+      primaryJetty.stop();
       
-      masterJetty = createAndStartJetty(master);
+      primaryJetty = createAndStartJetty(master);
       masterClient.close();
-      masterClient = createNewSolrClient(masterJetty.getLocalPort());
+      masterClient = createNewSolrClient(primaryJetty.getLocalPort());
       
       for (int i = 0; i < nDocs; i++)
         index(masterClient, "id", i, "name", "name = " + i);
@@ -1275,10 +1275,10 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       // now we restart to test what happens with no activity before the slave
       // tries to
       // replicate
-      masterJetty.stop();
-      masterJetty.start();
+      primaryJetty.stop();
+      primaryJetty.start();
       
-      // masterClient = createNewSolrClient(masterJetty.getLocalPort());
+      // masterClient = createNewSolrClient(primaryJetty.getLocalPort());
       
       @SuppressWarnings({"rawtypes"})
       NamedList masterQueryRsp = rQuery(nDocs, "*:*", masterClient);
@@ -1286,17 +1286,17 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
           .get("response");
       assertEquals(nDocs, masterQueryResult.getNumFound());
       
-      slave.setTestPort(masterJetty.getLocalPort());
+      slave.setTestPort(primaryJetty.getLocalPort());
       slave.copyConfigFile(slave.getSolrConfigFile(), "solrconfig.xml");
       
       // start slave
       slaveJetty = createAndStartJetty(slave);
-      slaveClient.close();
-      slaveClient = createNewSolrClient(slaveJetty.getLocalPort());
+      secondaryClient.close();
+      secondaryClient = createNewSolrClient(slaveJetty.getLocalPort());
       
       // get docs from slave and check if number is equal to master
       @SuppressWarnings({"rawtypes"})
-      NamedList slaveQueryRsp = rQuery(nDocs, "*:*", slaveClient);
+      NamedList slaveQueryRsp = rQuery(nDocs, "*:*", secondaryClient);
       SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp
           .get("response");
       assertEquals(nDocs, slaveQueryResult.getNumFound());
@@ -1323,11 +1323,11 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     master.copyConfigFile(CONF_DIR + "solrconfig-master3.xml",
                           "solrconfig.xml");
 
-    masterJetty.stop();
+    primaryJetty.stop();
 
-    masterJetty = createAndStartJetty(master);
+    primaryJetty = createAndStartJetty(master);
     masterClient.close();
-    masterClient = createNewSolrClient(masterJetty.getLocalPort());
+    masterClient = createNewSolrClient(primaryJetty.getLocalPort());
 
     masterClient.deleteByQuery("*:*");
     for (int i = 0; i < docs; i++)
@@ -1340,17 +1340,17 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
     assertEquals(docs, masterQueryResult.getNumFound());
     
-    slave.setTestPort(masterJetty.getLocalPort());
+    slave.setTestPort(primaryJetty.getLocalPort());
     slave.copyConfigFile(slave.getSolrConfigFile(), "solrconfig.xml");
 
     //start slave
     slaveJetty = createAndStartJetty(slave);
-    slaveClient.close();
-    slaveClient = createNewSolrClient(slaveJetty.getLocalPort());
+    secondaryClient.close();
+    secondaryClient = createNewSolrClient(slaveJetty.getLocalPort());
     
     //get docs from slave and check if number is equal to master
     @SuppressWarnings({"rawtypes"})
-    NamedList slaveQueryRsp = rQuery(docs, "*:*", slaveClient);
+    NamedList slaveQueryRsp = rQuery(docs, "*:*", secondaryClient);
     SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
     assertEquals(docs, slaveQueryResult.getNumFound());
     
@@ -1375,7 +1375,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     assertEquals(docs + 2, masterQueryResult.getNumFound());
     
     //get docs from slave and check if number is equal to master
-    slaveQueryRsp = rQuery(docs + 2, "*:*", slaveClient);
+    slaveQueryRsp = rQuery(docs + 2, "*:*", secondaryClient);
     slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
     assertEquals(docs + 2, slaveQueryResult.getNumFound());
     
@@ -1399,7 +1399,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     //get docs from slave and check if number is equal to master
     @SuppressWarnings({"rawtypes"})
-    NamedList slaveQueryRsp = rQuery(nDocs, "*:*", slaveClient);
+    NamedList slaveQueryRsp = rQuery(nDocs, "*:*", secondaryClient);
     SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
 
     assertEquals(nDocs, slaveQueryResult.getNumFound());
@@ -1426,26 +1426,26 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     master.copyConfigFile(CONF_DIR + "schema-replication2.xml", 
                           "schema-replication2.xml");
 
-    masterJetty.stop();
+    primaryJetty.stop();
 
-    masterJetty = createAndStartJetty(master);
+    primaryJetty = createAndStartJetty(master);
     masterClient.close();
-    masterClient = createNewSolrClient(masterJetty.getLocalPort());
+    masterClient = createNewSolrClient(primaryJetty.getLocalPort());
 
-    slave.setTestPort(masterJetty.getLocalPort());
+    slave.setTestPort(primaryJetty.getLocalPort());
     slave.copyConfigFile(slave.getSolrConfigFile(), "solrconfig.xml");
 
     slaveJetty.stop();
     slaveJetty = createAndStartJetty(slave);
-    slaveClient.close();
-    slaveClient = createNewSolrClient(slaveJetty.getLocalPort());
+    secondaryClient.close();
+    secondaryClient = createNewSolrClient(slaveJetty.getLocalPort());
 
-    slaveClient.deleteByQuery("*:*");
-    slaveClient.commit();
-    rQuery(0, "*:*", slaveClient); // sanity check w/retry
+    secondaryClient.deleteByQuery("*:*");
+    secondaryClient.commit();
+    rQuery(0, "*:*", secondaryClient); // sanity check w/retry
     
     // record collection1's start time on slave
-    final Date slaveStartTime = watchCoreStartAt(slaveClient, 30*1000, null);
+    final Date slaveStartTime = watchCoreStartAt(secondaryClient, 30*1000, null);
 
     //add a doc with new field and commit on master to trigger index fetch from slave.
     index(masterClient, "id", "2000", "name", "name = " + 2000, "newname", "n2000");
@@ -1453,7 +1453,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     rQuery(1, "newname:n2000", masterClient);  // sanity check
 
     // wait for slave to reload core by watching updated startTime
-    watchCoreStartAt(slaveClient, 30*1000, slaveStartTime);
+    watchCoreStartAt(secondaryClient, 30*1000, slaveStartTime);
 
     @SuppressWarnings({"rawtypes"})
     NamedList masterQueryRsp2 = rQuery(1, "id:2000", masterClient);
@@ -1461,11 +1461,11 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     assertEquals(1, masterQueryResult2.getNumFound());
 
     @SuppressWarnings({"rawtypes"})
-    NamedList slaveQueryRsp2 = rQuery(1, "id:2000", slaveClient);
+    NamedList slaveQueryRsp2 = rQuery(1, "id:2000", secondaryClient);
     SolrDocumentList slaveQueryResult2 = (SolrDocumentList) slaveQueryRsp2.get("response");
     assertEquals(1, slaveQueryResult2.getNumFound());
     
-    checkForSingleIndex(masterJetty);
+    checkForSingleIndex(primaryJetty);
     checkForSingleIndex(slaveJetty, true);
   }
 
@@ -1474,19 +1474,19 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     //clean index
     masterClient.deleteByQuery("*:*");
-    slaveClient.deleteByQuery("*:*");
+    secondaryClient.deleteByQuery("*:*");
     masterClient.commit();
-    slaveClient.commit();
+    secondaryClient.commit();
 
-    masterJetty.stop();
+    primaryJetty.stop();
     slaveJetty.stop();
 
     //Start master with the new solrconfig
     master.copyConfigFile(CONF_DIR + "solrconfig-master-throttled.xml", "solrconfig.xml");
     useFactory(null);
-    masterJetty = createAndStartJetty(master);
+    primaryJetty = createAndStartJetty(master);
     masterClient.close();
-    masterClient = createNewSolrClient(masterJetty.getLocalPort());
+    masterClient = createNewSolrClient(primaryJetty.getLocalPort());
 
     //index docs
     final int totalDocs = TestUtil.nextInt(random(), 17, 53);
@@ -1498,7 +1498,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     //Check Index Size
     String dataDir = master.getDataDir();
     masterClient.close();
-    masterJetty.stop();
+    primaryJetty.stop();
 
     Directory dir = FSDirectory.open(Paths.get(dataDir).resolve("index"));
     String[] files = dir.listAll();
@@ -1511,15 +1511,15 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     //Start again and replicate the data
     useFactory(null);
-    masterJetty = createAndStartJetty(master);
-    masterClient = createNewSolrClient(masterJetty.getLocalPort());
+    primaryJetty = createAndStartJetty(master);
+    masterClient = createNewSolrClient(primaryJetty.getLocalPort());
 
     //start slave
-    slave.setTestPort(masterJetty.getLocalPort());
+    slave.setTestPort(primaryJetty.getLocalPort());
     slave.copyConfigFile(CONF_DIR + "solrconfig-slave1.xml", "solrconfig.xml");
     slaveJetty = createAndStartJetty(slave);
-    slaveClient.close();
-    slaveClient = createNewSolrClient(slaveJetty.getLocalPort());
+    secondaryClient.close();
+    secondaryClient = createNewSolrClient(slaveJetty.getLocalPort());
 
     long startTime = System.nanoTime();
 
@@ -1531,7 +1531,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     //Wait and make sure that it actually replicated correctly.
     @SuppressWarnings({"rawtypes"})
-    NamedList slaveQueryRsp = rQuery(totalDocs, "*:*", slaveClient);
+    NamedList slaveQueryRsp = rQuery(totalDocs, "*:*", secondaryClient);
     SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
     assertEquals(totalDocs, slaveQueryResult.getNumFound());
 
@@ -1554,7 +1554,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     for (String param : params) {
       for (String filename : illegalFilenames) {
         expectThrows(Exception.class, () ->
-            invokeReplicationCommand(masterJetty.getLocalPort(), "filecontent&" + param + "=" + filename));
+            invokeReplicationCommand(primaryJetty.getLocalPort(), "filecontent&" + param + "=" + filename));
       }
     }
   }
@@ -1566,7 +1566,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         .add("wt", "json")
         .add("command", "filelist")
         .add("generation", "-2"); // A 'generation' value not matching any commit point should cause error.
-    QueryResponse response = slaveClient.query(q);
+    QueryResponse response = secondaryClient.query(q);
     NamedList<Object> resp = response.getResponse();
     assertNotNull(resp);
     assertEquals("ERROR", resp.get("status"));
@@ -1575,15 +1575,15 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
   @Test
   public void testFetchIndexShouldReportErrorsWhenTheyOccur() throws Exception  {
-    int masterPort = masterJetty.getLocalPort();
-    masterJetty.stop();
+    int masterPort = primaryJetty.getLocalPort();
+    primaryJetty.stop();
     SolrQuery q = new SolrQuery();
     q.add("qt", "/replication")
         .add("wt", "json")
         .add("wait", "true")
         .add("command", "fetchindex")
-        .add("masterUrl", buildUrl(masterPort));
-    QueryResponse response = slaveClient.query(q);
+        .add("primaryUrl", buildUrl(masterPort));
+    QueryResponse response = secondaryClient.query(q);
     NamedList<Object> resp = response.getResponse();
     assertNotNull(resp);
     assertEquals("Fetch index with wait=true should have returned an error response", "ERROR", resp.get("status"));
@@ -1595,7 +1595,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     q.add("qt", "/replication")
         .add("wt", "json");
     SolrException thrown = expectThrows(SolrException.class, () -> {
-      slaveClient.query(q);
+      secondaryClient.query(q);
     });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, thrown.code());
     assertThat(thrown.getMessage(), containsString("Missing required parameter: command"));
@@ -1608,7 +1608,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         .add("wt", "json")
         .add("command", "deletebackup");
     SolrException thrown = expectThrows(SolrException.class, () -> {
-      slaveClient.query(q);
+      secondaryClient.query(q);
     });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, thrown.code());
     assertThat(thrown.getMessage(), containsString("Missing required parameter: name"));
@@ -1619,7 +1619,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     final File backupDir = createTempDir().toFile();
     final BackupStatusChecker backupStatus = new BackupStatusChecker(masterClient);
 
-    masterJetty.getCoreContainer().getAllowPaths().add(backupDir.toPath());
+    primaryJetty.getCoreContainer().getAllowPaths().add(backupDir.toPath());
 
     { // initial request w/o any committed docs
       final String backupName = "empty_backup1";

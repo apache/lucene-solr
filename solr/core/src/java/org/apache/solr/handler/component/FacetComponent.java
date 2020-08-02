@@ -1035,7 +1035,7 @@ public class FacetComponent extends SearchComponent {
       for (Entry<String,List<NamedList<Object>>> pivotFacetResponseFromShard : pivotFacetResponsesFromShard) {
         PivotFacet primaryPivotFacet = fi.pivotFacets.get(pivotFacetResponseFromShard.getKey());
         primaryPivotFacet.mergeResponseFromShard(shardNumber, rb, pivotFacetResponseFromShard.getValue());
-        masterPivotFacet.removeAllRefinementsForShard(shardNumber);
+        primaryPivotFacet.removeAllRefinementsForShard(shardNumber);
       }
     }
     
