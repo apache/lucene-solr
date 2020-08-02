@@ -84,4 +84,4 @@ List of parameters for JaegerTracerConfigurator include:
 |maxQueueSize|int|No|10000|The tracer's maximum queue size
 |===
 
-Other parameters which are not listed above can be configured using System Properties or Environment Variables. The full list are listed at https://github.com/jaegertracing/jaeger-client-java/blob/primary/jaeger-core/README.md[Jaeger-README].
+Other parameters which are not listed above can be configured using System Properties or Environment Variables. The full list are listed at https://github.com/jaegertracing/jaeger-client-java/blob/master/jaeger-core/README.md[Jaeger-README].

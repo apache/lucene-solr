@@ -57,7 +57,7 @@ Inserts and Deletes::
 As inserts and deletes occur in the index, the directory remains unchanged. Documents are always inserted into newly created segment files. Documents that are deleted are not removed from the segment files. They are flagged in the file, deletable, and are not removed from the segments until the segment is merged as part of normal index updates.
 
 Primary and Secondary::
-A Solr replication primary is a single node which receives all updates initially and keeps everything organized. Solr replication secondary nodes receive no updates directly, instead all changes (such as inserts, updates, deletes, etc.) are made against the single primary node. Changes made on the primary are distributed to all the secondary nodes which service all query requests from the clients.
+A Solr replication primary server is a single node which receives all updates initially and keeps everything organized. Solr replication secondary nodes receive no updates directly, instead all changes (such as inserts, updates, deletes, etc.) are made against the single primary node. Changes made on the primary server are distributed to all the secondary nodes which service all query requests from the clients.
 
 Update::
 An update is a single change request against a single Solr instance. It may be a request to delete a document, add a new document, change a document, delete all documents matching a query, etc. Updates are handled synchronously within an individual Solr instance.
@@ -130,25 +130,25 @@ In the configuration file on the primary server, include a line like the followi
 <str name="confFiles">solrconfig_secondary.xml:solrconfig.xml,x.xml,y.xml</str>
 ----
 
-This ensures that the local configuration `solrconfig_secondary.xml` will be saved as `solrconfig.xml` on the secondary. All other files will be saved with their original names.
+This ensures that the local configuration `solrconfig_secondary.xml` will be saved as `solrconfig.xml` on the secondary server. All other files will be saved with their original names.
 
-On the primary server, the file name of the secondary configuration file can be anything, as long as the name is correctly identified in the `confFiles` string; then it will be saved as whatever file name appears after the colon ':'.
+On the primary server, the file name of the secondary server configuration file can be anything, as long as the name is correctly identified in the `confFiles` string; then it will be saved as whatever file name appears after the colon ':'.
 
 === Configuring the Replication RequestHandler on a Secondary Server
 
-The code below shows how to configure a ReplicationHandler on a secondary.
+The code below shows how to configure a ReplicationHandler on a secondary server.
 
 [source,xml]
 ----
 <requestHandler name="/replication" class="solr.ReplicationHandler">
   <lst name="secondary">
 
-    <!-- fully qualified url for the replication handler of primary. It is
+    <!-- fully qualified url for the replication handler of primary server. It is
          possible to pass on this as a request param for the fetchindex command -->
     <str name="primaryUrl">http://remote_host:port/solr/core_name/replication</str>
 
-    <!-- Interval in which the secondary should poll primary.  Format is HH:mm:ss .
-         If this is absent secondary does not poll automatically.
+    <!-- Interval in which the secondary server should poll primary server.  Format is HH:mm:ss .
+         If this is absent secondary server does not poll automatically.
 
          But a fetchindex can be triggered from the admin or the http API -->
 
@@ -158,13 +158,13 @@ The code below shows how to configure a ReplicationHandler on a secondary.
 
     <!-- To use compression while transferring the index files. The possible
          values are internal|external.  If the value is 'external' make sure
-         that your primary Solr has the settings to honor the accept-encoding header.
+         that your primary Solr server has the settings to honor the accept-encoding header.
          If it is 'internal' everything will be taken care of automatically.
          USE THIS ONLY IF YOUR BANDWIDTH IS LOW.
          THIS CAN ACTUALLY SLOW DOWN REPLICATION IN A LAN -->
     <str name="compression">internal</str>
 
-    <!-- The following values are used when the secondary connects to the primary to
+    <!-- The following values are used when the secondary server connects to the primary server to
          download the index files.  Default values implicitly set as 5000ms and
          10000ms respectively. The user DOES NOT need to specify these unless the
          bandwidth is extremely low or if there is an extremely high latency -->
@@ -172,7 +172,7 @@ The code below shows how to configure a ReplicationHandler on a secondary.
     <str name="httpConnTimeout">5000</str>
     <str name="httpReadTimeout">10000</str>
 
-    <!-- If HTTP Basic authentication is enabled on the primary, then the secondary
+    <!-- If HTTP Basic authentication is enabled on the primary server, then the secondary server
          can be configured with the following -->
 
     <str name="httpBasicAuthUser">username</str>
@@ -183,11 +183,11 @@ The code below shows how to configure a ReplicationHandler on a secondary.
 
 == Setting Up a Repeater with the ReplicationHandler
 
-A primary may be able to serve only so many secondaries without affecting performance. Some organizations have deployed secondary servers across multiple data centers. If each secondary downloads the index from a remote data center, the resulting download may consume too much network bandwidth. To avoid performance degradation in cases like this, you can configure one or more secondaries as repeaters. A repeater is simply a node that acts as both a primary and a secondary.
+A primary server may be able to serve only so many secondaries without affecting performance. Some organizations have deployed secondary servers across multiple data centers. If each secondary server downloads the index from a remote data center, the resulting download may consume too much network bandwidth. To avoid performance degradation in cases like this, you can configure one or more secondaries as repeaters. A repeater is simply a node that acts as both a primary server and a secondary server.
 
 * To configure a server as a repeater, the definition of the Replication `requestHandler` in the `solrconfig.xml` file must include file lists of use for both primaries and secondaries.
-* Be sure to set the `replicateAfter` parameter to commit, even if `replicateAfter` is set to optimize on the main primary. This is because on a repeater (or any secondary), a commit is called only after the index is downloaded. The optimize command is never called on secondaries.
-* Optionally, one can configure the repeater to fetch compressed files from the primary through the compression parameter to reduce the index download time.
+* Be sure to set the `replicateAfter` parameter to commit, even if `replicateAfter` is set to optimize on the main primary server. This is because on a repeater (or any secondary server), a commit is called only after the index is downloaded. The optimize command is never called on secondaries.
+* Optionally, one can configure the repeater to fetch compressed files from the primary server through the compression parameter to reduce the index download time.
 
 Here is an example of a ReplicationHandler configuration for a repeater:
 
@@ -207,7 +207,7 @@ Here is an example of a ReplicationHandler configuration for a repeater:
 
 == Commit and Optimize Operations
 
-When a commit or optimize operation is performed on the primary, the RequestHandler reads the list of file names which are associated with each commit point. This relies on the `replicateAfter` parameter in the configuration to decide which types of events should trigger replication.
+When a commit or optimize operation is performed on the primary server, the RequestHandler reads the list of file names which are associated with each commit point. This relies on the `replicateAfter` parameter in the configuration to decide which types of events should trigger replication.
 
 These operations are supported:
 
@@ -226,15 +226,15 @@ The `replicateAfter` parameter can accept multiple arguments. For example:
 
 == Secondary Replication
 
-The primary is totally unaware of the secondaries.
+The primary server is totally unaware of the secondaries.
 
-The secondary continuously keeps polling the primary (depending on the `pollInterval` parameter) to check the current index version of the primary. If the secondary finds out that the primary has a newer version of the index it initiates a replication process. The steps are as follows:
+The secondary server continuously keeps polling the primary server (depending on the `pollInterval` parameter) to check the current index version of the primary server. If the secondary server finds out that the primary server has a newer version of the index it initiates a replication process. The steps are as follows:
 
-* The secondary issues a `filelist` command to get the list of the files. This command returns the names of the files as well as some metadata (for example, size, a lastmodified timestamp, an alias if any).
-* The secondary checks with its own index if it has any of those files in the local index. It then runs the filecontent command to download the missing files. This uses a custom format (akin to the HTTP chunked encoding) to download the full content or a part of each file. If the connection breaks in between, the download resumes from the point it failed. At any point, the secondary tries 5 times before giving up a replication altogether.
-* The files are downloaded into a temp directory, so that if either the secondary or the primary crashes during the download process, no files will be corrupted. Instead, the current replication will simply abort.
+* The secondary server issues a `filelist` command to get the list of the files. This command returns the names of the files as well as some metadata (for example, size, a lastmodified timestamp, an alias if any).
+* The secondary server checks with its own index if it has any of those files in the local index. It then runs the filecontent command to download the missing files. This uses a custom format (akin to the HTTP chunked encoding) to download the full content or a part of each file. If the connection breaks in between, the download resumes from the point it failed. At any point, the secondary server tries 5 times before giving up a replication altogether.
+* The files are downloaded into a temp directory, so that if either the secondary server or the primary server crashes during the download process, no files will be corrupted. Instead, the current replication will simply abort.
 * After the download completes, all the new files are moved to the live index directory and the file's timestamp is same as its counterpart on the primary.
-* A commit command is issued on the secondary by the Secondary's ReplicationHandler and the new index is loaded.
+* A commit command is issued on the secondary server by the Secondary's ReplicationHandler and the new index is loaded.
 
 === Replicating Configuration Files
 
@@ -242,7 +242,7 @@ To replicate configuration files, list them using using the `confFiles` paramete
 
 Solr replicates configuration files only when the index itself is replicated. That means even if a configuration file is changed on the primary, that file will be replicated only after there is a new commit/optimize on primary's index.
 
-Unlike the index files, where the timestamp is good enough to figure out if they are identical, configuration files are compared against their checksum. The `schema.xml` files (on primary and secondary) are judged to be identical if their checksums are identical.
+Unlike the index files, where the timestamp is good enough to figure out if they are identical, configuration files are compared against their checksum. The `schema.xml` files (on primary and secondary servers) are judged to be identical if their checksums are identical.
 
 As a precaution when replicating configuration files, Solr copies configuration files to a temporary directory before moving them into their ultimate location in the conf directory. The old configuration files are then renamed and kept in the same `conf/` directory. The ReplicationHandler does not automatically clean up these old files.
 
@@ -250,11 +250,11 @@ If a replication involved downloading of at least one configuration file, the Re
 
 === Resolving Corruption Issues on Secondary Servers
 
-If documents are added to the secondary, then the secondary is no longer in sync with its primary. However, the secondary will not undertake any action to put itself in sync, until the primary has new index data.
+If documents are added to the secondary server, then the secondary server is no longer in sync with its primary. However, the secondary server will not undertake any action to put itself in sync, until the primary has new index data.
 
-When a commit operation takes place on the primary, the index version of the primary becomes different from that of the secondary. The secondary then fetches the list of files and finds that some of the files present on the primary are also present in the local index but with different sizes and timestamps. This means that the primary and secondary have incompatible indexes.
+When a commit operation takes place on the primary, the index version of the primary server becomes different from that of the secondary server. The secondary server then fetches the list of files and finds that some of the files present on the primary are also present in the local index but with different sizes and timestamps. This means that the primary and secondary server have incompatible indexes.
 
-To correct this problem, the secondary then copies all the index files from primary to a new index directory and asks the core to load the fresh index from the new directory.
+To correct this problem, the secondary server then copies all the index files from primary to a new index directory and asks the core to load the fresh index from the new directory.
 
 == HTTP API Commands for the ReplicationHandler
 
@@ -273,21 +273,21 @@ Disable replication on the primary for all its secondaries.
 http://_primary_host:port_/solr/_core_name_/replication?command=disablereplication
 
 `indexversion`::
-Return the version of the latest replicatable index on the specified primary or secondary.
+Return the version of the latest replicatable index on the specified primary or secondary server.
 +
 [source,bash]
 http://_host:port_/solr/_core_name_/replication?command=indexversion
 
 `fetchindex`::
-Force the specified secondary to fetch a copy of the index from its primary.
+Force the specified secondary server to fetch a copy of the index from its primary.
 +
 [source.bash]
 http://_secondary_host:port_/solr/_core_name_/replication?command=fetchindex
 +
-If you like, you can pass an extra attribute such as `primaryUrl` or `compression` (or any other parameter which is specified in the `<lst name="secondary">` tag) to do a one time replication from a primary. This obviates the need for hard-coding the primary in the secondary.
+If you like, you can pass an extra attribute such as `primaryUrl` or `compression` (or any other parameter which is specified in the `<lst name="secondary">` tag) to do a one time replication from a primary. This obviates the need for hard-coding the primary server location in the secondary server.
 
 `abortfetch`::
-Abort copying an index from a primary to the specified secondary.
+Abort copying an index from a primary server to the specified secondary server.
 +
 [source,bash]
 http://_secondary_host:port_/solr/_core_name_/replication?command=abortfetch
@@ -299,7 +299,7 @@ Enable the specified secondary to poll for changes on the primary.
 http://_secondary_host:port_/solr/_core_name_/replication?command=enablepoll
 
 `disablepoll`::
-Disable the specified secondary from polling for changes on the primary.
+Disable the specified secondary server from polling for changes on the primary server.
 +
 [source,bash]
 http://_secondary_host:port_/solr/_core_name_/replication?command=disablepoll
@@ -375,7 +375,7 @@ Distributing a newly optimized index may take only a few minutes or up to an hou
 
 Copying an optimized index means that the *entire* index will need to be transferred during the next `snappull`. This is a large expense, but not nearly as huge as running the optimize everywhere.
 
-Consider this example: on a three-secondary one-primary configuration, distributing a newly-optimized index takes approximately 80 seconds _total_. Rolling the change across a tier would require approximately ten minutes per machine (or machine group). If this optimize were rolled across the query tier, and if each secondary node being optimized were disabled and not receiving queries, a rollout would take at least twenty minutes and potentially as long as an hour and a half. Additionally, the files would need to be synchronized so that the _following_ the optimize, `snappull` would not think that the independently optimized files were different in any way. This would also leave the door open to independent corruption of indexes instead of each being a perfect copy of the primary.
+Consider this example: on a three-secondary server one-primary server configuration, distributing a newly-optimized index takes approximately 80 seconds _total_. Rolling the change across a tier would require approximately ten minutes per machine (or machine group). If this optimize were rolled across the query tier, and if each secondary node being optimized were disabled and not receiving queries, a rollout would take at least twenty minutes and potentially as long as an hour and a half. Additionally, the files would need to be synchronized so that the _following_ the optimize, `snappull` would not think that the independently optimized files were different in any way. This would also leave the door open to independent corruption of indexes instead of each being a perfect copy of the primary.
 
 Optimizing on the primary allows for a straight-forward optimization operation. No query secondaries need to be taken out of service. The optimized index can be distributed in the background as queries are being normally serviced. The optimization can occur at any time convenient to the application providing index updates.
 
