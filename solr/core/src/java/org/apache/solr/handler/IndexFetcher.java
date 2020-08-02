@@ -112,7 +112,7 @@ import static org.apache.solr.handler.ReplicationHandler.*;
 
 /**
  * <p> Provides functionality of downloading changed index files as well as config files and a timer for scheduling fetches from the
- * master. </p>
+ * primary. </p>
  *
  *
  * @since solr 1.4
@@ -256,7 +256,7 @@ public class IndexFetcher {
     useExternalCompression = EXTERNAL.equals(compress);
     connTimeout = getParameter(initArgs, HttpClientUtil.PROP_CONNECTION_TIMEOUT, 30000, null);
     
-    // allow a master override for tests - you specify this in /replication secondary section of solrconfig and some
+    // allow a primary override for tests - you specify this in /replication secondary section of solrconfig and some
     // test don't want to define this
     soTimeout = Integer.getInteger("solr.indexfetcher.sotimeout", -1);
     if (soTimeout == -1) {
@@ -284,7 +284,7 @@ public class IndexFetcher {
   }
 
   /**
-   * Gets the latest commit version and generation from the master
+   * Gets the latest commit version and generation from the primary
    */
   @SuppressWarnings({"unchecked", "rawtypes"})
   NamedList getLatestVersion() throws IOException {
@@ -355,7 +355,7 @@ public class IndexFetcher {
   }
 
   /**
-   * This command downloads all the necessary files from master to install a index commit point. Only changed files are
+   * This command downloads all the necessary files from primary to install a index commit point. Only changed files are
    * downloaded. It also downloads the conf files (if they are modified).
    *
    * @param forceReplication force a replication in all cases
@@ -412,7 +412,7 @@ public class IndexFetcher {
           log.debug("primaryUrl didn't change");
         }
       }
-      //get the current 'replicateable' index version in the master
+      //get the current 'replicateable' index version in the primary
       @SuppressWarnings({"rawtypes"})
       NamedList response;
       try {
@@ -479,14 +479,14 @@ public class IndexFetcher {
 
         //there is nothing to be replicated
         successfulInstall = true;
-        log.debug("Nothing to replicate, master's version is 0");
+        log.debug("Nothing to replicate, primary's version is 0");
         return IndexFetchResult.MASTER_VERSION_ZERO;
       }
 
       // TODO: Should we be comparing timestamps (across machines) here?
       if (!forceReplication && IndexDeletionPolicyWrapper.getCommitTimestamp(commit) == latestVersion) {
-        //master and secondary are already in sync just return
-        log.info("Secondary in sync with master.");
+        //primary and secondary are already in sync just return
+        log.info("Secondary in sync with primary.");
         successfulInstall = true;
         return IndexFetchResult.ALREADY_IN_SYNC;
       }
@@ -498,11 +498,11 @@ public class IndexFetcher {
         return IndexFetchResult.PEER_INDEX_COMMIT_DELETED;
       }
       if (log.isInfoEnabled()) {
-        log.info("Number of files in latest index in master: {}", filesToDownload.size());
+        log.info("Number of files in latest index in primary: {}", filesToDownload.size());
       }
       if (tlogFilesToDownload != null) {
         if (log.isInfoEnabled()) {
-          log.info("Number of tlog files in master: {}", tlogFilesToDownload.size());
+          log.info("Number of tlog files in primary: {}", tlogFilesToDownload.size());
         }
       }
 
@@ -510,7 +510,7 @@ public class IndexFetcher {
       fsyncService = ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrNamedThreadFactory("fsyncService"));
       // use a synchronized list because the list is read by other threads (to show details)
       filesDownloaded = Collections.synchronizedList(new ArrayList<Map<String, Object>>());
-      // if the generation of master is older than that of the secondary , it means they are not compatible to be copied
+      // if the generation of primary is older than that of the secondary , it means they are not compatible to be copied
       // then a new index directory to be created and all the files need to be copied
       boolean isFullCopyNeeded = IndexDeletionPolicyWrapper
           .getCommitTimestamp(commit) >= latestVersion
@@ -533,7 +533,7 @@ public class IndexFetcher {
 
       try {
 
-        // We will compare all the index files from the master vs the index files on disk to see if there is a mismatch
+        // We will compare all the index files from the primary vs the index files on disk to see if there is a mismatch
         // in the metadata. If there is a mismatch for the same index file then we download the entire index
         // (except when differential copy is applicable) again.
         if (!isFullCopyNeeded && isIndexStale(indexDir)) {
@@ -964,7 +964,7 @@ public class IndexFetcher {
   }
 
   private void downloadConfFiles(List<Map<String, Object>> confFilesToDownload, long latestGeneration) throws Exception {
-    log.info("Starting download of configuration files from master: {}", confFilesToDownload);
+    log.info("Starting download of configuration files from primary: {}", confFilesToDownload);
     confFilesDownloaded = Collections.synchronizedList(new ArrayList<>());
     File tmpconfDir = new File(solrCore.getResourceLoader().getConfigDir(), "conf." + getDateAsStr(new Date()));
     try {
@@ -993,7 +993,7 @@ public class IndexFetcher {
    * Download all the tlog files to the temp tlog directory.
    */
   private long downloadTlogFiles(File tmpTlogDir, long latestGeneration) throws Exception {
-    log.info("Starting download of tlog files from master: {}", tlogFilesToDownload);
+    log.info("Starting download of tlog files from primary: {}", tlogFilesToDownload);
     tlogFilesDownloaded = Collections.synchronizedList(new ArrayList<>());
     long bytesDownloaded = 0;
 
@@ -1146,7 +1146,7 @@ public class IndexFetcher {
       // after considering the files actually available locally we really don't need to do any delete
       return;
     }
-    log.info("This disk does not have enough space to download the index from leader/master. So cleaning up the local index. "
+    log.info("This disk does not have enough space to download the index from leader/primary. So cleaning up the local index. "
         + " This may lead to loss of data/or node if index replication fails in between");
     //now we should disable searchers and index writers because this core will not have all the required files
     this.clearLocalIndexFirst = true;
@@ -1247,7 +1247,7 @@ public class IndexFetcher {
   }
 
   /**
-   * All the files which are common between master and secondary must have same size and same checksum else we assume
+   * All the files which are common between primary and secondary must have same size and same checksum else we assume
    * they are not compatible (stale).
    *
    * @return true if the index stale and we need to download a fresh copy, false otherwise.
@@ -1480,11 +1480,11 @@ public class IndexFetcher {
   private final Map<String, FileInfo> confFileInfoCache = new HashMap<>();
 
   /**
-   * The local conf files are compared with the conf files in the master. If they are same (by checksum) do not copy.
+   * The local conf files are compared with the conf files in the primary. If they are same (by checksum) do not copy.
    *
-   * @param confFilesToDownload The list of files obtained from master
+   * @param confFilesToDownload The list of files obtained from primary
    *
-   * @return a list of configuration files which have changed on the master and need to be downloaded.
+   * @return a list of configuration files which have changed on the primary and need to be downloaded.
    */
   @SuppressWarnings({"unchecked"})
   private Collection<Map<String, Object>> getModifiedConfFiles(List<Map<String, Object>> confFilesToDownload) {
@@ -1752,7 +1752,7 @@ public class IndexFetcher {
           }
           //then read the packet of bytes
           fis.readFully(buf, 0, packetSize);
-          //compare the checksum as sent from the master
+          //compare the checksum as sent from the primary
           if (includeChecksum) {
             checksum.reset();
             checksum.update(buf, 0, packetSize);

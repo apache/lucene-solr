@@ -130,9 +130,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 //    System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     // For manual testing only
     // useFactory(null); // force an FS factory.
-    master = new SolrInstance(createTempDir("solr-instance").toFile(), "master", null);
-    master.setUp();
-    primaryJetty = createAndStartJetty(master);
+    primary = new SolrInstance(createTempDir("solr-instance").toFile(), "primary", null);
+    primary.setUp();
+    primaryJetty = createAndStartJetty(primary);
     primaryClient = createNewSolrClient(primaryJetty.getLocalPort());
 
     secondary = new SolrInstance(createTempDir("solr-instance").toFile(), "secondary", primaryJetty.getLocalPort());
@@ -380,8 +380,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
                    "true", details.get("isPrimary"));
       assertEquals("repeater isSecondary?",
                    "true", details.get("isSecondary"));
-      assertNotNull("repeater has master section", 
-                    details.get("master"));
+      assertNotNull("repeater has primary section",
+                    details.get("primary"));
       assertNotNull("repeater has secondary section",
                     details.get("secondary"));
 
@@ -396,12 +396,12 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
   /**
    * Verify that empty commits and/or commits with openSearcher=false
-   * on the master do not cause subsequent replication problems on the secondary
+   * on the primary do not cause subsequent replication problems on the secondary
    */
   public void testEmptyCommits() throws Exception {
     clearIndexWithReplication();
     
-    // add a doc to master and commit
+    // add a doc to primary and commit
     index(primaryClient, "id", "1", "name", "empty1");
     emptyUpdate(primaryClient, "commit", "true");
     // force replication
@@ -410,7 +410,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     rQuery(1, "name:empty1", secondaryClient);
     assertVersions(primaryClient, secondaryClient);
 
-    // do a completely empty commit on master and force replication
+    // do a completely empty commit on primary and force replication
     emptyUpdate(primaryClient, "commit", "true");
     pullFromPrimaryToSecondary();
 
@@ -423,16 +423,16 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     rQuery(1, "name:empty2", secondaryClient);
     assertVersions(primaryClient, secondaryClient);
 
-    // add a third doc but don't open a new searcher on master
+    // add a third doc but don't open a new searcher on primary
     index(primaryClient, "id", "3", "name", "empty3");
     emptyUpdate(primaryClient, "commit", "true", "openSearcher", "false");
     pullFromPrimaryToSecondary();
     
-    // verify secondary can search the doc, but master doesn't
+    // verify secondary can search the doc, but primary doesn't
     rQuery(0, "name:empty3", primaryClient);
     rQuery(1, "name:empty3", secondaryClient);
 
-    // final doc with hard commit, secondary and master both showing all docs
+    // final doc with hard commit, secondary and primary both showing all docs
     index(primaryClient, "id", "4", "name", "empty4");
     emptyUpdate(primaryClient, "commit", "true");
     pullFromPrimaryToSecondary();
@@ -460,7 +460,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     assertEquals(nDocs, numFound(rQuery(nDocs, "*:*", primaryClient)));
 
     // Make sure that both the index version and index generation on the secondary is
-    // higher than that of the master, just to make the test harder.
+    // higher than that of the primary, just to make the test harder.
 
     index(secondaryClient, "id", 551, "name", "name = " + 551);
     secondaryClient.commit(true, true);
@@ -486,7 +486,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     secondaryQueryResult = (SolrDocumentList) secondaryQueryRsp.get("response");
     assertEquals(0, secondaryQueryResult.getNumFound());
 
-    // make sure we replicated the correct index from the master
+    // make sure we replicated the correct index from the primary
     secondaryQueryRsp = rQuery(nDocs, "*:*", secondaryClient);
     secondaryQueryResult = (SolrDocumentList) secondaryQueryRsp.get("response");
     assertEquals(nDocs, secondaryQueryResult.getNumFound());
@@ -518,18 +518,18 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     primaryClient.commit();
 
     @SuppressWarnings({"rawtypes"})
-    NamedList masterQueryRsp = rQuery(nDocs, "*:*", primaryClient);
-    SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
-    assertEquals(nDocs, numFound(masterQueryRsp));
+    NamedList primaryQueryRsp = rQuery(nDocs, "*:*", primaryClient);
+    SolrDocumentList primaryQueryResult = (SolrDocumentList) primaryQueryRsp.get("response");
+    assertEquals(nDocs, numFound(primaryQueryRsp));
 
-    //get docs from secondary and check if number is equal to master
+    //get docs from secondary and check if number is equal to primary
     @SuppressWarnings({"rawtypes"})
     NamedList secondaryQueryRsp = rQuery(nDocs, "*:*", secondaryClient);
     SolrDocumentList secondaryQueryResult = (SolrDocumentList) secondaryQueryRsp.get("response");
     assertEquals(nDocs, numFound(secondaryQueryRsp));
 
     //compare results
-    String cmp = BaseDistributedSearchTestCase.compare(masterQueryResult, secondaryQueryResult, 0, null);
+    String cmp = BaseDistributedSearchTestCase.compare(primaryQueryResult, secondaryQueryResult, 0, null);
     assertEquals(null, cmp);
     
     assertVersions(primaryClient, secondaryClient);

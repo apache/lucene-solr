@@ -61,7 +61,7 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
   
   JettySolrRunner primaryJetty, secondaryJetty;
   SolrClient primaryClient, secondaryClient;
-  TestReplicationHandler.SolrInstance master = null, secondary = null;
+  TestReplicationHandler.SolrInstance primary = null, secondary = null;
 
   static String context = "/solr";
 
@@ -74,7 +74,7 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     String factory = random().nextInt(100) < 75 ? "solr.NRTCachingDirectoryFactory" : "solr.StandardDirectoryFactory"; // test the default most of the time
     System.setProperty("solr.directoryFactory", factory);
-    master = new TestReplicationHandler.SolrInstance(createTempDir("solr-instance").toFile(), "master", null);
+    primary = new TestReplicationHandler.SolrInstance(createTempDir("solr-instance").toFile(), "primary", null);
     primary.setUp();
     primaryJetty = createAndStartJetty(primary);
     primaryClient = createNewSolrClient(primaryJetty.getLocalPort());

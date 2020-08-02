@@ -22,7 +22,6 @@
   <dataDir>${solr.data.dir:}</dataDir>
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
-
   <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
   <updateHandler class="solr.DirectUpdateHandler2">
@@ -33,10 +32,9 @@
   </requestHandler>
 
   <requestHandler name="/replication" class="solr.ReplicationHandler">
-    <lst name="master">
-      <str name="replicateAfter">commit</str>
-      <str name="backupAfter">commit</str>
-      <str name="confFiles">schema-replication2.xml:schema.xml</str>
+    <lst name="primary">
+      <str name="replicateAfter">startup</str>
+      <str name="confFiles">schema.xml</str>
     </lst>
   </requestHandler>
 

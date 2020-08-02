@@ -184,7 +184,7 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
     Path dataDir;
     
     /**
-     * if masterPort is null, this instance is a master -- otherwise this instance is a secondary, and assumes the master is
+     * if primaryPort is null, this instance is a primary -- otherwise this instance is a secondary, and assumes the primary is
      * on localhost at the specified port.
      */
     public SolrInstance(String name, Integer port) {

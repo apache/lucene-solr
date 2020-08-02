@@ -56,7 +56,7 @@ import org.slf4j.LoggerFactory;
 public class TestReplicationHandlerBackup extends SolrJettyTestBase {
 
   JettySolrRunner primaryJetty;
-  TestReplicationHandler.SolrInstance master = null;
+  TestReplicationHandler.SolrInstance primary = null;
   SolrClient primaryClient;
   
   private static final String CONF_DIR = "solr" + File.separator + "collection1" + File.separator + "conf"
@@ -95,18 +95,18 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    String configFile = "solrconfig-master1.xml";
+    String configFile = "solrconfig-primary1.xml";
 
     if(random().nextBoolean()) {
-      configFile = "solrconfig-master1-keepOneBackup.xml";
+      configFile = "solrconfig-primary1-keepOneBackup.xml";
       addNumberToKeepInRequest = false;
       backupKeepParamName = ReplicationHandler.NUMBER_BACKUPS_TO_KEEP_INIT_PARAM;
     }
-    master = new TestReplicationHandler.SolrInstance(createTempDir("solr-instance").toFile(), "master", null);
-    master.setUp();
-    master.copyConfigFile(CONF_DIR + configFile, "solrconfig.xml");
+    primary = new TestReplicationHandler.SolrInstance(createTempDir("solr-instance").toFile(), "primary", null);
+    primary.setUp();
+    primary.copyConfigFile(CONF_DIR + configFile, "solrconfig.xml");
 
-    primaryJetty = createAndStartJetty(master);
+    primaryJetty = createAndStartJetty(primary);
     primaryClient = createNewSolrClient(primaryJetty.getLocalPort());
     docsSeed = random().nextLong();
   }
@@ -123,7 +123,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
       primaryJetty.stop();
       primaryJetty = null;
     }
-    master = null;
+    primary = null;
   }
 
   @Test
@@ -141,7 +141,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     
     final String newBackupDir = backupStatus.waitForDifferentBackupDir(lastBackupDir, 30);
     //Validate
-    verify(Paths.get(master.getDataDir(), newBackupDir), nDocs);
+    verify(Paths.get(primary.getDataDir(), newBackupDir), nDocs);
   }
 
   private void verify(Path backup, int nDocs) throws IOException {
@@ -170,7 +170,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     int nDocs = BackupRestoreUtils.indexDocs(primaryClient, DEFAULT_TEST_COLLECTION_NAME, docsSeed);
 
     lastBackupDir = backupStatus.waitForDifferentBackupDir(lastBackupDir, 30);
-    snapDir[0] = Paths.get(master.getDataDir(), lastBackupDir);
+    snapDir[0] = Paths.get(primary.getDataDir(), lastBackupDir);
 
     final boolean namedBackup = random().nextBoolean();
 
@@ -192,7 +192,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
         lastBackupDir = backupStatus.waitForBackupSuccess(backupName, 30);
         backupNames[i] = backupName;
       }
-      snapDir[i+1] = Paths.get(master.getDataDir(), lastBackupDir);
+      snapDir[i+1] = Paths.get(primary.getDataDir(), lastBackupDir);
       verify(snapDir[i+1], nDocs);
     }
 
@@ -205,7 +205,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
       // Only the last two should still exist.
       final List<String> remainingBackups = new ArrayList<>();
       
-      try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(master.getDataDir()), "snapshot*")) {
+      try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(primary.getDataDir()), "snapshot*")) {
         Iterator<Path> iter = stream.iterator();
         while (iter.hasNext()) {
           remainingBackups.add(iter.next().getFileName().toString());
@@ -237,7 +237,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     final BackupStatusChecker backupStatus
       = new BackupStatusChecker(primaryClient, "/" + DEFAULT_TEST_CORENAME + "/replication");
     for (int i = 0; i < 2; i++) {
-      final Path p = Paths.get(master.getDataDir(), "snapshot." + backupNames[i]);
+      final Path p = Paths.get(primary.getDataDir(), "snapshot." + backupNames[i]);
       assertTrue("WTF: Backup doesn't exist: " + p.toString(),
                  Files.exists(p));
       runBackupCommand(primaryJetty, ReplicationHandler.CMD_DELETE_BACKUP, "&name=" +backupNames[i]);

@@ -32,7 +32,7 @@
   </requestHandler>
 
   <requestHandler name="/replication" class="solr.ReplicationHandler">
-    <lst name="master">
+    <lst name="primary">
       <str name="replicateAfter">commit</str>
       <str name="replicateAfter">startup</str>
       <str name="confFiles">schema.xml</str>

@@ -87,9 +87,9 @@ public class TestRestoreCore extends SolrJettyTestBase {
 
     primary = new TestReplicationHandler.SolrInstance(createTempDir("solr-instance").toFile(), "primary", null);
     primary.setUp();
-    master.copyConfigFile(CONF_DIR + configFile, "solrconfig.xml");
+    primary.copyConfigFile(CONF_DIR + configFile, "solrconfig.xml");
 
-    primaryJetty = createAndStartJetty(master);
+    primaryJetty = createAndStartJetty(primary);
     primaryClient = createNewSolrClient(primaryJetty.getLocalPort());
     docsSeed = random().nextLong();
   }
@@ -106,7 +106,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
       primaryJetty.stop();
       primaryJetty = null;
     }
-    master = null;
+    primary = null;
   }
 
   @Test

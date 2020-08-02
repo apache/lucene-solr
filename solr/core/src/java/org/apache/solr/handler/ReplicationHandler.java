@@ -112,14 +112,14 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 
 /**
  * <p> A Handler which provides a REST API for replication and serves replication requests from Secondaries. </p>
- * <p>When running on the master, it provides the following commands <ol> <li>Get the current replicable index version
+ * <p>When running on the primary, it provides the following commands <ol> <li>Get the current replicable index version
  * (command=indexversion)</li> <li>Get the list of files for a given index version
  * (command=filelist&amp;indexversion=&lt;VERSION&gt;)</li> <li>Get full or a part (chunk) of a given index or a config
  * file (command=filecontent&amp;file=&lt;FILE_NAME&gt;) You can optionally specify an offset and length to get that
  * chunk of the file. You can request a configuration file by using "cf" parameter instead of the "file" parameter.</li>
  * <li>Get status/statistics (command=details)</li> </ol> <p>When running on the secondary, it provides the following
  * commands <ol> <li>Perform an index fetch now (command=snappull)</li> <li>Get status/statistics (command=details)</li>
- * <li>Abort an index fetch (command=abort)</li> <li>Enable/Disable polling the master for new versions (command=enablepoll
+ * <li>Abort an index fetch (command=abort)</li> <li>Enable/Disable polling the primary for new versions (command=enablepoll
  * or command=disablepoll)</li> </ol>
  *
  *
@@ -240,7 +240,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     final SolrParams solrParams = req.getParams();
     String command = solrParams.required().get(COMMAND);
 
-    // This command does not give the current index version of the master
+    // This command does not give the current index version of the primary
     // It gives the current 'replicateable' index version
     if (command.equals(CMD_INDEX_VERSION)) {
       IndexCommit commitPoint = indexCommitPoint;  // make a copy so it won't change
@@ -944,7 +944,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
    */
   private NamedList<Object> getReplicationDetails(SolrQueryResponse rsp, boolean showSecondaryDetails) {
     NamedList<Object> details = new SimpleOrderedMap<>();
-    NamedList<Object> master = new SimpleOrderedMap<>();
+    NamedList<Object> primary = new SimpleOrderedMap<>();
     NamedList<Object> secondary = new SimpleOrderedMap<>();
 
     details.add("indexSize", NumberUtils.readableSize(core.getIndexSize()));
@@ -959,15 +959,15 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     IndexCommit commit = indexCommitPoint;  // make a copy so it won't change
 
     if (isPrimary) {
-      if (includeConfFiles != null) master.add(CONF_FILES, includeConfFiles);
-      master.add(REPLICATE_AFTER, getReplicateAfterStrings());
-      master.add("replicationEnabled", String.valueOf(replicationEnabled.get()));
+      if (includeConfFiles != null) primary.add(CONF_FILES, includeConfFiles);
+      primary.add(REPLICATE_AFTER, getReplicateAfterStrings());
+      primary.add("replicationEnabled", String.valueOf(replicationEnabled.get()));
     }
 
     if (isPrimary && commit != null) {
       CommitVersionInfo repCommitInfo = CommitVersionInfo.build(commit);
-      master.add("replicableVersion", repCommitInfo.version);
-      master.add("replicableGeneration", repCommitInfo.generation);
+      primary.add("replicableVersion", repCommitInfo.version);
+      primary.add("replicableGeneration", repCommitInfo.generation);
     }
 
     IndexFetcher fetcher = currentIndexFetcher;
@@ -977,12 +977,12 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         try {
           @SuppressWarnings({"rawtypes"})
           NamedList nl = fetcher.getDetails();
-          secondary.add("masterDetails", nl.get(CMD_DETAILS));
+          secondary.add("primaryDetails", nl.get(CMD_DETAILS));
         } catch (Exception e) {
           log.warn(
-              "Exception while invoking 'details' method for replication on master ",
+              "Exception while invoking 'details' method for replication on primary ",
               e);
-          secondary.add(ERR_STATUS, "invalid_master");
+          secondary.add(ERR_STATUS, "invalid_primary");
         }
       }
       secondary.add(PRIMARY_URL, fetcher.getPrimaryUrl());
@@ -1094,7 +1094,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
 
     if (isPrimary)
-      details.add("master", master);
+      details.add("primary", primary);
     if (secondary.size() > 0)
       details.add("secondary", secondary);
 
@@ -1249,8 +1249,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       isSecondary = true;
     }
     @SuppressWarnings({"rawtypes"})
-    NamedList master = (NamedList) initArgs.get("master");
-    boolean enablePrimary = isEnabled( master );
+    NamedList primary = (NamedList) initArgs.get("primary");
+    boolean enablePrimary = isEnabled( primary );
 
     if (enablePrimary || (enableSecondary && !currentIndexFetcher.fetchFromLeader)) {
       if (core.getCoreContainer().getZkController() != null) {
@@ -1263,11 +1263,11 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
     if (!enableSecondary && !enablePrimary) {
       enablePrimary = true;
-      master = new NamedList<>();
+      primary = new NamedList<>();
     }
 
     if (enablePrimary) {
-      includeConfFiles = (String) master.get(CONF_FILES);
+      includeConfFiles = (String) primary.get(CONF_FILES);
       if (includeConfFiles != null && includeConfFiles.trim().length() > 0) {
         List<String> files = Arrays.asList(includeConfFiles.split(","));
         for (String file : files) {
@@ -1279,11 +1279,11 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         log.info("Replication enabled for following config files: {}", includeConfFiles);
       }
       @SuppressWarnings({"rawtypes"})
-      List backup = master.getAll("backupAfter");
+      List backup = primary.getAll("backupAfter");
       boolean backupOnCommit = backup.contains("commit");
       boolean backupOnOptimize = !backupOnCommit && backup.contains("optimize");
       @SuppressWarnings({"rawtypes"})
-      List replicateAfter = master.getAll(REPLICATE_AFTER);
+      List replicateAfter = primary.getAll(REPLICATE_AFTER);
       replicateOnCommit = replicateAfter.contains("commit");
       replicateOnOptimize = !replicateOnCommit && replicateAfter.contains("optimize");
 
@@ -1363,7 +1363,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     log.info("Commits will be reserved for {} ms", reserveCommitDuration);
   }
 
-  // check master or secondary is enabled
+  // check primary or secondary is enabled
   private boolean isEnabled( @SuppressWarnings({"rawtypes"})NamedList params ){
     if( params == null ) return false;
     Object enable = params.get( "enable" );
@@ -1772,7 +1772,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   public static final String FETCH_FROM_LEADER = "fetchFromLeader";
 
-  // in case of TLOG replica, if masterVersion = zero, don't do commit
+  // in case of TLOG replica, if primaryVersion = zero, don't do commit
   // otherwise updates from current tlog won't copied over properly to the new tlog, leading to data loss
   public static final String SKIP_COMMIT_ON_MASTER_VERSION_ZERO = "skipCommitOnPrimaryVersionZero";
 

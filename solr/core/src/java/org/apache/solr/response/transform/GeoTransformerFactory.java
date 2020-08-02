@@ -51,7 +51,7 @@ import org.locationtech.spatial4j.shape.Shape;
  *  <li>WKT</li>
  *  <li>Polyshape</li>
  * </ul>
- * For more information see: <a href="https://github.com/locationtech/spatial4j/blob/master/FORMATS.md">spatial4j/FORMATS.md</a>
+ * For more information see: <a href="https://github.com/locationtech/spatial4j/blob/primary/FORMATS.md">spatial4j/FORMATS.md</a>
  * 
  * The shape is either read from a stored field, or a ValueSource.
  * 
