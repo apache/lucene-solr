@@ -22,21 +22,19 @@ import static org.apache.solr.packagemanager.PackageUtils.getMapper;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Scanner;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.apache.commons.collections4.MultiValuedMap;
 import org.apache.commons.collections4.multimap.HashSetValuedHashMap;
+import org.apache.http.client.methods.HttpDelete;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.V2Request;
+import org.apache.solr.client.solrj.request.beans.Package;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
+import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.common.NavigableObject;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -44,6 +42,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.filestore.DistribPackageStore;
 import org.apache.solr.packagemanager.SolrPackage.Command;
 import org.apache.solr.packagemanager.SolrPackage.Manifest;
 import org.apache.solr.packagemanager.SolrPackage.Plugin;
@@ -85,6 +84,67 @@ public class PackageManager implements Closeable {
     }
   }
 
+  public void uninstall(String packageName, String version) {
+    SolrPackageInstance packageInstance = getPackageInstance(packageName, version);
+    if (packageInstance == null) {
+      PackageUtils.printRed("Package " + packageName + ":" + version + " doesn't exist. Use the install command to install this package version first.");
+      System.exit(1);
+    }
+
+    // Make sure that this package instance is not deployed on any collection
+    Map<String, String> collectionsDeployedOn = getDeployedCollections(packageName);
+    for (String collection: collectionsDeployedOn.keySet()) {
+      if (version.equals(collectionsDeployedOn.get(collection))) {
+        PackageUtils.printRed("Package " + packageName + " is currently deployed on collection: " + collection + ". Undeploy the package with undeploy <package-name> -collections <collection1>[,<collection2>,...] before attempting to uninstall the package.");
+        System.exit(1);
+      }
+    }
+
+    // Make sure that no plugin from this package instance has been deployed as cluster level plugins
+    Map<String, SolrPackageInstance> clusterPackages = getPackagesDeployedAsClusterLevelPlugins();
+    for (String clusterPackageName: clusterPackages.keySet()) {
+      SolrPackageInstance clusterPackageInstance = clusterPackages.get(clusterPackageName);
+      if (packageName.equals(clusterPackageName) && version.equals(clusterPackageInstance.version)) {
+        PackageUtils.printRed("Package " + packageName + "is currently deployed as a cluster-level plugin (" + clusterPackageInstance.getCustomData() + "). Undeploy the package with undeploy <package-name> -collections <collection1>[,<collection2>,...] before uninstalling the package.");
+        System.exit(1);
+      }
+    }
+
+    // Delete the package by calling the Package API and remove the Jar
+
+    PackageUtils.printGreen("Executing Package API to remove this package...");
+    Package.DelVersion del = new Package.DelVersion();
+    del.version = version;
+    del.pkg = packageName;
+
+    V2Request req = new V2Request.Builder(PackageUtils.PACKAGE_PATH)
+            .forceV2(true)
+            .withMethod(SolrRequest.METHOD.POST)
+            .withPayload(Collections.singletonMap("delete", del))
+            .build();
+
+    try {
+      V2Response resp = req.process(solrClient);
+      PackageUtils.printGreen("Response: " + resp.jsonStr());
+    } catch (SolrServerException | IOException e) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, e);
+    }
+
+    PackageUtils.printGreen("Executing Package Store API to remove the " + packageName + " package...");
+
+    List<String> filesToDelete = new ArrayList<>(packageInstance.files);
+    filesToDelete.add(String.format(Locale.ROOT, "/package/%s/%s/%s", packageName, version, "manifest.json"));
+    for (String filePath: filesToDelete) {
+      DistribPackageStore.deleteZKFileEntry(zkClient, filePath);
+      String path = solrClient.getBaseURL() + "/api/cluster/files" + filePath;
+      PackageUtils.printGreen("Deleting " + path);
+      HttpDelete httpDel = new HttpDelete(path);
+      Utils.executeHttpMethod(solrClient.getHttpClient(), path, Utils.JSONCONSUMER, httpDel);
+    }
+
+    PackageUtils.printGreen("Package uninstalled: " + packageName + ":" + version + ":-)");
+  }
+
   @SuppressWarnings({"unchecked", "rawtypes"})
   public List<SolrPackageInstance> fetchInstalledPackageInstances() throws SolrException {
     log.info("Getting packages from packages.json...");
@@ -100,10 +160,13 @@ public class PackageManager implements Closeable {
           List pkg = (List)packagesZnodeMap.get(packageName);
           for (Map pkgVersion: (List<Map>)pkg) {
             Manifest manifest = PackageUtils.fetchManifest(solrClient, solrBaseUrl, pkgVersion.get("manifest").toString(), pkgVersion.get("manifestSHA512").toString());
-            List<Plugin> solrplugins = manifest.plugins;
-            SolrPackageInstance pkgInstance = new SolrPackageInstance(packageName.toString(), null, 
-                pkgVersion.get("version").toString(), manifest, solrplugins, manifest.parameterDefaults);
-            List<SolrPackageInstance> list = packages.containsKey(packageName)? packages.get(packageName): new ArrayList<SolrPackageInstance>();
+            List<Plugin> solrPlugins = manifest.plugins;
+            SolrPackageInstance pkgInstance = new SolrPackageInstance(packageName.toString(), null,
+                    pkgVersion.get("version").toString(), manifest, solrPlugins, manifest.parameterDefaults);
+            if (pkgVersion.containsKey("files")) {
+              pkgInstance.files = (List) pkgVersion.get("files");
+            }
+            List<SolrPackageInstance> list = packages.containsKey(packageName) ? packages.get(packageName) : new ArrayList<SolrPackageInstance>();
             list.add(pkgInstance);
             packages.put(packageName.toString(), list);
             ret.add(pkgInstance);
@@ -139,18 +202,27 @@ public class PackageManager implements Closeable {
   }
 
   /**
-   * Get a list of packages that have their plugins deployed as cluster level plugins.
-   * The returned packages also contain the "pluginMeta" from "clusterprops.json" as custom data. 
+   * Get a map of packages (key: package name, value: package instance) that have their plugins deployed as cluster level plugins.
+   * The returned packages also contain the "pluginMeta" from "clusterprops.json" as custom data.
    */
   public Map<String, SolrPackageInstance> getPackagesDeployedAsClusterLevelPlugins() {
     Map<String, String> packageVersions = new HashMap<>();
     MultiValuedMap<String, PluginMeta> packagePlugins = new HashSetValuedHashMap<>(); // map of package name to multiple values of pluginMeta (Map<String, String>)
     @SuppressWarnings({"unchecked"})
-    Map<String, Object> result =  (Map<String, Object>)Utils.executeGET(solrClient.getHttpClient(),
-        solrBaseUrl + PackageUtils.CLUSTERPROPS_PATH, Utils.JSONCONSUMER);
+    Map<String, Object> result;
+    try {
+      result = (Map<String, Object>) Utils.executeGET(solrClient.getHttpClient(),
+              +solrBaseUrl + PackageUtils.CLUSTERPROPS_PATH, Utils.JSONCONSUMER);
+    } catch (SolrException ex) {
+      if (ex.code() == ErrorCode.NOT_FOUND.code) {
+        result = Collections.emptyMap(); // Cluster props doesn't exist, that means there are no cluster level plugins installed.
+      } else {
+        throw ex;
+      }
+    }
     @SuppressWarnings({"unchecked"})
     Map<String, Object> clusterPlugins = (Map<String, Object>) result.getOrDefault("plugin", Collections.emptyMap());
-    for (String key: clusterPlugins.keySet()) {
+    for (String key : clusterPlugins.keySet()) {
       // Map<String, String> pluginMeta = (Map<String, String>) clusterPlugins.get(key);
       PluginMeta pluginMeta;
       try {
@@ -485,7 +557,7 @@ public class PackageManager implements Closeable {
             }
             if (actualValue != null) {
               String expectedValue = PackageUtils.resolve(cmd.expected, pkg.parameterDefaults, overridesMap, systemParams);
-              PackageUtils.printGreen("Actual: " + actualValue+", expected: " + expectedValue);
+              PackageUtils.printGreen("Actual: " + actualValue + ", expected: " + expectedValue);
               if (!expectedValue.equals(actualValue)) {
                 PackageUtils.printRed("Failed to deploy plugin: " + plugin.name);
                 success = false;
@@ -516,7 +588,7 @@ public class PackageManager implements Closeable {
               }
               if (actualValue != null) {
                 String expectedValue = PackageUtils.resolve(cmd.expected, pkg.parameterDefaults, collectionParameterOverrides, systemParams);
-                PackageUtils.printGreen("Actual: "+actualValue+", expected: "+expectedValue);
+                PackageUtils.printGreen("Actual: " + actualValue + ", expected: "+expectedValue);
                 if (!expectedValue.equals(actualValue)) {
                   PackageUtils.printRed("Failed to deploy plugin: " + plugin.name);
                   success = false;
@@ -542,7 +614,7 @@ public class PackageManager implements Closeable {
     SolrPackageInstance latest = null;
     if (versions != null && !versions.isEmpty()) {
       latest = versions.get(0);
-      for (int i=0; i<versions.size(); i++) {
+      for (int i=0; i < versions.size(); i++) {
         SolrPackageInstance pkg = versions.get(i);
         if (pkg.version.equals(version)) {
           return pkg;
