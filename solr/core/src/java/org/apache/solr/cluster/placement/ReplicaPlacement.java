@@ -15,16 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cloud.gumi;
+package org.apache.solr.cluster.placement;
 
 /**
- * A key for a given metric on a target {@link PropertyKeyTarget}.
+ * <p>Placement decision for a single {@link Replica}. Note this placement decision is used as part of a {@link WorkOrder},
+ * it does not directly lead to the plugin code getting a corresponding {@link Replica} instance, nor does it require the
+ * plugin to provide a {@link Shard} instance (the plugin code gets such instances for existing replicas and shard in the
+ * cluster but does not create them directly for adding new replicas for new or existing shards).
+ *
+ * <p>Captures the {@link Shard} (via the shard name), {@link Node} and {@link Replica.ReplicaType} of a Replica to be created.
  */
-public interface MetricPropertyKey extends PropertyKey {
-
-  /**
-   * @return the name of the metric on the target {@link PropertyKeyTarget} this property key is going to ask to retrieve.
-   * This is the value passed into {@link PropertyKeyFactory#createMetricKey}.
-   */
-  String getMetricName();
+public interface ReplicaPlacement {
 }

@@ -15,15 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cloud.gumi;
+package org.apache.solr.cluster.placement;
 
 import java.lang.management.OperatingSystemMXBean;
 
 public interface SystemLoadPropertyValue extends PropertyValue {
-
-  @Override
-  SystemLoadPropertyKey getKey();
-
   /**
    * Matches {@link OperatingSystemMXBean#getSystemLoadAverage()}
    */

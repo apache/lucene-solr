@@ -15,13 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cloud.gumi;
+package org.apache.solr.cluster.placement;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.Map;
 
 import com.google.common.collect.Ordering;
@@ -34,14 +36,14 @@ import org.apache.solr.common.util.SuppressForbidden;
  *
  * TODO: code not tested and never run, there are no implementation yet for used interfaces
  */
-public class SamplePluginMinimizeCores implements GumiPlugin {
+public class SamplePluginMinimizeCores implements PlacementPlugin {
 
-  @SuppressForbidden(reason = "Ordering.arbitrary() has no Comparator equivalent. Reuse > copy.")
+  @SuppressForbidden(reason = "Ordering.arbitrary() has no equivalent in Comparator class. Rather reuse than copy.")
   public List<WorkOrder> computePlacement(Topo clusterTopo, List<Request> placementRequests, PropertyKeyFactory propertyFactory,
-                                          PropertyKeyFetcher propertyFetcher, WorkOrderFactory workOrderFactory) throws GumiException {
+                                          PropertyValueFetcher propertyFetcher, WorkOrderFactory workOrderFactory) throws PlacementException {
     // This plugin only supports Creating a collection, and only one collection. Real code would be different...
-    if (placementRequests.size() != 1 ||  !(placementRequests.get(0) instanceof CreateCollectionRequest)) {
-      throw new GumiException("This plugin only supports creating collections");
+    if (placementRequests.size() != 1 || !(placementRequests.get(0) instanceof CreateCollectionRequest)) {
+      throw new PlacementException("This plugin only supports creating collections");
     }
 
     final CreateCollectionRequest reqCreateCollection = (CreateCollectionRequest) placementRequests.get(0);
@@ -50,16 +52,8 @@ public class SamplePluginMinimizeCores implements GumiPlugin {
         reqCreateCollection.getTLOGReplicationFactor() + reqCreateCollection.getPULLReplicationFactor();
 
     if (clusterTopo.getLiveNodes().size() < totalReplicasPerShard) {
-      throw new GumiException("Cluster size too small for number of replicas per shard");
+      throw new PlacementException("Cluster size too small for number of replicas per shard");
     }
-
-    // Will have one WorkOrder for creating the collection and then one per replica
-    List<WorkOrder> workToDo = new ArrayList<>(1 + totalReplicasPerShard * reqCreateCollection.getShardNames().size());
-
-    // First need a work order to create the collection
-    NewCollectionWorkOrder newCollection = workOrderFactory.createWorkOrderNewCollection(reqCreateCollection,
-        reqCreateCollection.getCollectionName(), reqCreateCollection.getShardNames());
-    workToDo.add(newCollection);
 
     // Get number of cores on each Node
     TreeMultimap<Integer, Node> nodesByCores = TreeMultimap.create(Comparator.naturalOrder(), Ordering.arbitrary());
@@ -67,61 +61,60 @@ public class SamplePluginMinimizeCores implements GumiPlugin {
     // Get the number of cores on each node and sort the nodes by increasing number of cores
     for (Node node : clusterTopo.getLiveNodes()) {
       // TODO: redo this. It is potentially less efficient to call propertyFetcher.getProperties() multiple times rather than once
-      final CoresCountPropertyKey coresCountPropertyKey = propertyFactory.createCoreCountKey(node);
+      final PropertyKey coresCountPropertyKey = propertyFactory.createCoreCountKey(node);
       Map<PropertyKey, PropertyValue> propMap = propertyFetcher.fetchProperties(Collections.singleton(coresCountPropertyKey));
       PropertyValue returnedValue = propMap.get(coresCountPropertyKey);
       if (returnedValue == null) {
-        throw new GumiException("Can't get number of cores in " + node);
+        throw new PlacementException("Can't get number of cores in " + node);
       }
       CoresCountPropertyValue coresCountPropertyValue = (CoresCountPropertyValue) returnedValue;
       nodesByCores.put(coresCountPropertyValue.getCoresCount(), node);
     }
 
+    Set<ReplicaPlacement> replicaPlacements = new HashSet<>(totalReplicasPerShard * reqCreateCollection.getShardNames().size());
+
     // Now place all replicas of all shards on nodes, by placing on nodes with the smallest number of cores and taking
-    // into account replicas placed during this computation. Note for each shard we must place on different nodes but
-    // when moving to the next shard should use the newly sorted order.
+    // into account replicas placed during this computation. Note that for each shard we must place replicas on different
+    // nodes, when moving to the next shard we use the nodes sorted by their updated number of cores (due to replica
+    // placements for previous shards).
     for (String shardName : reqCreateCollection.getShardNames()) {
-      // Capture a list for assignment order based on the sort order of the treemap to put replicas on nodes with less
-      // cores first. We only need totalReplicasPerShard nodes. Need to capture the pair in order to update the treemap
-      // as we go. TODO I guess and hope there's a more elegant way to do that but it's getting late here.
+      // Assign replicas based on the sort order of the nodesByCores tree multimap to put replicas on nodes with less
+      // cores first. We only need totalReplicasPerShard nodes given that's the number of replicas to place.
+      // We assign based on the passed nodeEntriesToAssign list so the right nodes get replicas.
       ArrayList<Map.Entry<Integer, Node>> nodeEntriesToAssign = new ArrayList<>(totalReplicasPerShard);
       Iterator<Map.Entry<Integer, Node>> treeIterator = nodesByCores.entries().iterator();
       for (int i = 0; i < totalReplicasPerShard; i++) {
         nodeEntriesToAssign.add(treeIterator.next());
       }
 
-      placeForReplicaType(reqCreateCollection, nodeEntriesToAssign, workOrderFactory, workToDo,
-          shardName, reqCreateCollection.getNRTReplicationFactor(), ReplicaType.NRT, nodesByCores);
-      placeForReplicaType(reqCreateCollection, nodeEntriesToAssign, workOrderFactory, workToDo,
-          shardName, reqCreateCollection.getTLOGReplicationFactor(), ReplicaType.TLOG, nodesByCores);
-      placeForReplicaType(reqCreateCollection, nodeEntriesToAssign, workOrderFactory, workToDo,
-          shardName, reqCreateCollection.getPULLReplicationFactor(), ReplicaType.PULL, nodesByCores);
+      // Update the number of cores each node will have once the assignments below got executed so the next shard picks the
+      // lowest loaded nodes for its replicas.
+      for (Map.Entry<Integer, Node> e : nodeEntriesToAssign) {
+        int coreCount = e.getKey();
+        Node node = e.getValue();
+        nodesByCores.remove(coreCount, node);
+        nodesByCores.put(coreCount + 1, node);
+      }
+
+      placeReplicas(nodeEntriesToAssign, workOrderFactory, replicaPlacements, shardName, reqCreateCollection.getNRTReplicationFactor(), Replica.ReplicaType.NRT);
+      placeReplicas(nodeEntriesToAssign, workOrderFactory, replicaPlacements, shardName, reqCreateCollection.getTLOGReplicationFactor(), Replica.ReplicaType.TLOG);
+      placeReplicas(nodeEntriesToAssign, workOrderFactory, replicaPlacements, shardName, reqCreateCollection.getPULLReplicationFactor(), Replica.ReplicaType.PULL);
     }
 
-    return workToDo;
+    WorkOrder newCollectionWO = workOrderFactory.createWorkOrderNewCollection(
+        reqCreateCollection, reqCreateCollection.getCollectionName(), replicaPlacements);
+
+    return Collections.singletonList(newCollectionWO);
   }
 
-  /**
-   * Pulled out of {@link #computePlacement} to avoid repeating code.
-   */
-  private void placeForReplicaType(CreateCollectionRequest reqCreateCollection, ArrayList<Map.Entry<Integer, Node>> nodeEntriesToAssign,
-                                   WorkOrderFactory workOrderFactory, List<WorkOrder> workToDo,
-                                   String shardName, int countReplicas, ReplicaType replicaType,
-                                   TreeMultimap<Integer, Node> nodesByCores) {
+  private void placeReplicas(ArrayList<Map.Entry<Integer, Node>> nodeEntriesToAssign,
+                                   WorkOrderFactory workOrderFactory, Set<ReplicaPlacement> replicaPlacements,
+                                   String shardName, int countReplicas, Replica.ReplicaType replicaType) {
     for (int replica = 0; replica < countReplicas; replica++) {
       final Map.Entry<Integer, Node> entry = nodeEntriesToAssign.remove(0);
       final Node node = entry.getValue();
-      final Integer coreCount = entry.getKey();
 
-      CreateReplicaWorkOrder createReplica = workOrderFactory.createWorkOrderCreateReplica(reqCreateCollection,
-          replicaType, reqCreateCollection.getCollectionName(), shardName, node);
-
-      workToDo.add(createReplica);
-
-      // Update the entry in the treemap, there's one more core on the node. This does not impact the iteration order
-      // for the current shard, we're working off a copy of the treemap.
-      nodesByCores.remove(coreCount, node);
-      nodesByCores.put(coreCount + 1, node);
+      replicaPlacements.add(workOrderFactory.createReplicaPlacement(shardName, node, replicaType));
     }
   }
 }

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cloud.gumi;
+package org.apache.solr.cluster.placement;
 
 import java.util.List;
 
@@ -24,7 +24,7 @@ import java.util.List;
  * such as cluster elasticity?) when cluster changes are required (initiated elsewhere, most likely following a Collection
  * API call).
  */
-public interface GumiPlugin {
+public interface PlacementPlugin {
 
   /**
    * @param clusterTopo initial state of the cluster
@@ -32,10 +32,10 @@ public interface GumiPlugin {
    * @param propertyFactory Factory used by the plugin to build instances of {@link PropertyKey} to resolve properties
    *                        to their values.
    * @param propertyFetcher Allows resolving {@link PropertyKey}'s to {@link PropertyValue}'s by contacting the
-   *                        relevant {@link PropertyKeyTarget} defined in each {@link PropertyKey}.
+   *                        relevant {@link PropertyValueSource} defined in each {@link PropertyKey}.
    * @param workOrderFactory Factory in used to create instances of {@link WorkOrder} to return computed decisions.
    * @return work orders to be executed (in order) and that will lead to satisfying all of the placement requests.
    */
   List<WorkOrder> computePlacement(Topo clusterTopo, List<Request> placementRequests, PropertyKeyFactory propertyFactory,
-                                   PropertyKeyFetcher propertyFetcher, WorkOrderFactory workOrderFactory) throws GumiException, InterruptedException;
+                                   PropertyValueFetcher propertyFetcher, WorkOrderFactory workOrderFactory) throws PlacementException, InterruptedException;
 }

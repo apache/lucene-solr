@@ -15,12 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cloud.gumi;
+package org.apache.solr.cluster.placement;
 
 /**
- * Key for requesting disk space info from a given {@link Node}).
+ * A {@link PropertyValue} representing a System property on the target {@link Node}.
  */
-public interface DiskInfoPropertyKey extends PropertyKey {
-  @Override
-  Node getPropertyKeyTarget();
+public interface SystemPropertyPropertyValue extends PropertyValue {
+  /**
+   * Returns the system property value from the target {@link Node} on which it was retrieved.
+   */
+  String getSystemPropertyValue();
 }

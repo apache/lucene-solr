@@ -15,15 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cloud.gumi;
-
-import java.util.Set;
+package org.apache.solr.cluster.placement;
 
 /**
- * A work order for the bookkeeping work required for collection creation before it is possible to create replicas.
+ * A fully specified work order for placement, deletion or move to be applied to the cluster.<p>
+ * Fully specified means the actual {@link Node}'s on which to place replicas have been decided.
+ *
+ * Instances are created by plugin code using {@link WorkOrderFactory}. This interface obviously doesn't expose much but
+ * the underlying Solr side implementation has all that is needed (and will do at least one cast in order to execute the
+ * work order, likely then using some type of visitor pattern).
  */
-public interface NewCollectionWorkOrder extends WorkOrder {
-  String getCollectionName();
-
-  Set<String> getShardNames();
+public interface WorkOrder {
 }

@@ -15,34 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cloud.gumi;
+package org.apache.solr.cluster.placement;
 
 /**
- * Exception thrown by a {@link GumiPlugin} when it is unable to compute placement for whatever reason (except an
- * {@link InterruptedException} that {@link GumiPlugin#computePlacement}
- * is also allowed to throw).
+ * An instantiation (or one of the copies) of a given {@link Shard} of a given {@link SolrCollection}.
+ * Objects of this type are returned by the Solr framework to the plugin, they are not built by the plugin. When the
+ * plugin wants to add a replica it goes through appropriate method in {@link WorkOrderFactory}). TODO update javadoc
+ * TODO is there an elegant way to have this type also used by the plugin to add replicas? (insisting on elegant)
  */
-public class GumiException extends Exception {
+public interface Replica extends PropertyValueSource {
+  Shard getShard();
 
-  public GumiException() {
-    super();
+  ReplicaType getType();
+  ReplicaState getState();
+
+  // TODO: needed? Different?
+  String getReplicaName();
+  String getCoreName();
+
+  enum ReplicaType {
+    NRT, TLOG, PULL;
   }
 
-  public GumiException(String message) {
-    super(message);
-  }
-
-  public GumiException(String message, Throwable cause) {
-    super(message, cause);
-  }
-
-  public GumiException(Throwable cause) {
-    super(cause);
-  }
-
-  protected GumiException(String message, Throwable cause,
-                      boolean enableSuppression,
-                      boolean writableStackTrace) {
-    super(message, cause, enableSuppression, writableStackTrace);
+  enum ReplicaState {
+    ACTIVE, DOWN, RECOVERING, RECOVERY_FAILED;
   }
 }

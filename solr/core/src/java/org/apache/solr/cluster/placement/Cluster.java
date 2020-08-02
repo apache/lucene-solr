@@ -15,21 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cloud.gumi;
+package org.apache.solr.cluster.placement;
 
 /**
- * A {@link PropertyValue} representing a System property on the target {@link Node}.
+ * This empty interface represents the entire SolrCloud cluster in case {@link PropertyKey}'s need to be specified with
+ * a global cluster target (for example if there are global cluster metrics that need to be retrieved).
+ * If not used or doesn't make sense, should be removed.
  */
-public interface SystemPropertyPropertyValue extends PropertyValue {
-
-  /**
-   * Strongly typed property key retrieval corresponding to that property value.
-   */
-  @Override
-  SystemPropertyPropertyKey getKey();
-
-  /**
-   * Returns the system property value from the target {@link Node} on which it was retrieved.
-   */
-  String getSystemPropertyValue();
+public interface Cluster extends PropertyValueSource {
 }

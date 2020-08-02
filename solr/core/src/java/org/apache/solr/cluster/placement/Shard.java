@@ -15,15 +15,15 @@
  * limitations under the License.
  */
 
+package org.apache.solr.cluster.placement;
+
+import java.util.Set;
+
 /**
- * <p>This package contains interfaces visible by plugins implementing cluster elasticity, placement and scalability,
- * as well as a few examples on how plugins can be implemented.</p>
- *
- * <p>At this stage this is only a proposal for discussion or proof of concept.<br>
- * Gumi (גומי) is Hebrew for "elastic" (noun)</p>
- *
- * <p>The entry point is the {@link org.apache.solr.cloud.gumi.GumiPlugin} interface plugins should implement</p>
- *
- * TODO: document more
+ * Shard in a {@link SolrCollection}, i.e. a subset of the data indexed in that collection.
  */
-package org.apache.solr.cloud.gumi;
+public interface Shard extends PropertyValueSource {
+  String getShardName();
+
+  Set<Replica> getReplicas();
+}

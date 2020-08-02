@@ -15,15 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cloud.gumi;
+package org.apache.solr.cluster.placement;
 
-/**
- * A property key used by plugins to request values from Solr
- */
-public interface PropertyKey {
+public interface CoresCountPropertyValue extends PropertyValue {
   /**
-   * @return the target of this {@link PropertyKey}, i.e. from where the corresponding {@link PropertyValue} should be
-   * (or was) obtained.
+   * Returns the number of cores on the {@link Node}) this instance was obtained from.
    */
-  PropertyKeyTarget getPropertyKeyTarget();
+  int getCoresCount();
 }

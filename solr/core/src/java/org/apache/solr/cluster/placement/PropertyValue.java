@@ -15,11 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cloud.gumi;
+package org.apache.solr.cluster.placement;
 
 /**
- * TODO: move into {@link Replica}?
+ *  The value corresponding to a specific {@link PropertyKey}, in a specific context (e.g. property of a specific
+ *  {@link Node} instance). The context is not tracked in the {@link PropertyKey} nor in the {@code PropertyValue}.
  */
-public enum ReplicaType {
-  NRT, TLOG, PULL;
+public interface PropertyValue {
+  /**
+   * The property key used for retrieving this property value.
+   */
+  PropertyKey getKey();
 }

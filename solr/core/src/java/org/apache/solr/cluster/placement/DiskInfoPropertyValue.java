@@ -15,15 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cloud.gumi;
+package org.apache.solr.cluster.placement;
 
-/**
- *  The value corresponding to a specific {@link PropertyKey}, in a specific context (e.g. property of a specific
- *  {@link Node} instance). The context is not tracked in the {@link PropertyKey} nor in the {@code PropertyValue}.
- */
-public interface PropertyValue {
+public interface DiskInfoPropertyValue extends PropertyValue {
   /**
-   * The property key used for retrieving this property value.
+   * Total disk size of the partition in which cores are stored on the {@link Node}) from which this instance was obtained.
    */
-  PropertyKey getKey();
+  int getTotalSizeGB();
+
+  /**
+   * Free disk size of the partition in which cores are stored on the {@link Node}) from which this instance was obtained.
+   */
+  int getFreeSizeGB();
+
+  /**
+   * Type of disk hardware used for the partition in which cores are stored on the {@link Node}) from which this instance
+   * was obtained.
+   */
+  DiskType getDiskType();
+
+  enum DiskType {
+    SSD, ROTATIONAL;
+  }
 }

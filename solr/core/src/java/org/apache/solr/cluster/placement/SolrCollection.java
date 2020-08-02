@@ -15,15 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cloud.gumi;
+package org.apache.solr.cluster.placement;
 
-public interface CoresCountPropertyValue extends PropertyValue {
+import java.util.Set;
 
-  @Override
-  CoresCountPropertyKey getKey();
+/**
+ * Represents a Collection in SolrCloud. Although naming this class "Collection" is possible it would be confusing.
+ */
+public interface SolrCollection {
+  /**
+   * The collection name (value passed to {@link Topo#getCollection(String)}).
+   */
+  String getName();
 
   /**
-   * Returns the number of cores on the {@link Node}) this instance was obtained from.
+   * The {@link Shard}'s over which the data of this {@link SolrCollection} is distributed.
    */
-  int getCoresCount();
+  Set<Shard> getShards();
 }

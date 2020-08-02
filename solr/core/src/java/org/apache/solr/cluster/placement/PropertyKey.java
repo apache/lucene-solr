@@ -15,18 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cloud.gumi;
+package org.apache.solr.cluster.placement;
 
 /**
- * A key for a given system property on a target {@link Node}.
+ * A property key used by plugins to request values from Solr
  */
-public interface SystemPropertyPropertyKey extends PropertyKey {
-  @Override
-  Node getPropertyKeyTarget();
-
+public interface PropertyKey {
   /**
-   * @return the name of the system property on the target {@link Node} this property key is going to ask to retrieve.
-   * This is the value passed into {@link PropertyKeyFactory#createSystemPropertyKey}.
+   * @return the target of this {@link PropertyKey}, i.e. from where the corresponding {@link PropertyValue}'s should be
+   * (or were) obtained.
    */
-  String getSystemPropertyName();
+  PropertyValueSource getPropertyKeyTarget();
 }

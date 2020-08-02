@@ -15,23 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cloud.gumi;
+package org.apache.solr.cluster.placement;
 
 /**
- * A {@link PropertyValue} representing a metric on the target {@link PropertyKeyTarget}.
- * Note there might be overlap with {@link SystemLoadPropertyValue} (only applicable to {@link Node}'s), may need to clarify.
+ * A cluster related change request that Solr asks a {@link PlacementPlugin} plugin to resolve and compute {@link WorkOrder}s for.
  */
-public interface MetricPropertyValue extends PropertyValue {
-
-  /**
-   * Strongly typed property key retrieval corresponding to that property value.
-   */
-  @Override
-  MetricPropertyKey getKey();
-
-  /**
-   * Returns the metric value from the {@link PropertyKeyTarget} on which it was retrieved.
-   * TODO: what type should the metric be? Maybe offer multiple getters for different java types and have each metric implement the right one and throw from the wrong ones? This avoids casting...
-   */
-  Double getMetricValue();
+public interface Request {
 }

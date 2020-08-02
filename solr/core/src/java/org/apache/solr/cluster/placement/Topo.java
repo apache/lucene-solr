@@ -15,21 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cloud.gumi;
+package org.apache.solr.cluster.placement;
 
+import java.util.Optional;
 import java.util.Set;
 
 /**
- * Represents a Collection in SolrCloud. Although naming this class "Collection" is possible it would be confusing.
+ * A (topographical) map of the cluster state, providing information on which nodes are part of the cluster and a mean
+ * to get to more detailed info.
  */
-public interface SolrCollection {
+public interface Topo {
   /**
-   * The collection name (value passed to {@link Topo#getCollection(String)}).
+   * @return current set of live nodes. Never <code>null</code>, never empty (Solr wouldn't call the plugin if empty
+   * since no useful could then be done).
    */
-  String getName();
+  Set<Node> getLiveNodes();
 
   /**
-   * The {@link Shard}'s over which the data of this {@link SolrCollection} is distributed.
+   * Returns info about the given collection if one exists. Because it is not expected for plugins to request info about
+   * a large number of collections, requests can only be made one by one.
    */
-  Set<Shard> getShards();
+  Optional<SolrCollection> getCollection(String collectionName);
 }

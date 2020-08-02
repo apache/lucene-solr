@@ -15,14 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cloud.gumi;
+package org.apache.solr.cluster.placement;
 
 /**
- * Representation of a SolrCloud node or server in the SolrCloud cluster.
+ * Getting the {@link PropertyValue} for a {@link PropertyKey} involves a "resolution" of that key in a certain context.
+ * Depending on the type of the key, the context can be the whole {@link Cluster}, a {@link Node}, a {@link SolrCollection},
+ * a {@link Shard} or a {@link Replica}. Not all {@link PropertyKey}'s make sense for all {@link PropertyValueSource}'s of course.<p>
+ *
+ * When only one type of {@link PropertyValueSource} is appropriate for a given {@link PropertyKey}, that type (extending
+ * {@link PropertyValueSource}) is used instead to reduce confusion.<p>
+ *
+ * This is an empty marker interface that identifies the possible targets for which a {@link PropertyKey} can be defined.
  */
-public interface Node extends PropertyKeyTarget {
-  /**
-   * TODO Do we need a node name?
-   */
-  String getNodeName();
+public interface PropertyValueSource {
 }

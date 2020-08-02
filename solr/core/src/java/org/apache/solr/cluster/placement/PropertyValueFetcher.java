@@ -15,17 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cloud.gumi;
+package org.apache.solr.cluster.placement;
 
-/**
- * Getting the {@link PropertyValue} for a {@link PropertyKey} involves a "resolution" of that key in a certain context.
- * Depending on the type of the key, the context can be the whole {@link Cluster}, a {@link Node}, a {@link SolrCollection},
- * a {@link Shard} or a {@link Replica}. Not all {@link PropertyKey}'s make sense for all {@link PropertyKeyTarget}'s of course.<p>
- *
- * When only one type of {@link PropertyKeyTarget} is appropriate for a given {@link PropertyKey}, that type (extending
- * {@link PropertyKeyTarget}) is used instead to reduce confusion.<p>
- *
- * This is an empty marker interface that identifies the possible targets for which a {@link PropertyKey} can be defined.
- */
-public interface PropertyKeyTarget {
+import java.util.Map;
+import java.util.Set;
+
+public interface PropertyValueFetcher {
+  /**
+   * Retrieves {@link PropertyValue}s from the configured {@link PropertyValueSource}s of passed in {@link PropertyKey}s
+   * and returns those that are defined.
+   * @param props the properties to retrieve
+   * @return a map whose keys are the requested property keys and the values are the requested property values, when such
+   *    values are defined on the corresponding {@link PropertyValueSource}. If there's no value for a given key, it will
+   *    not appear in the returned map. The returned value will never be {@code null} but may be an empty map.
+   */
+  Map<PropertyKey, PropertyValue> fetchProperties(Set<PropertyKey> props);
 }

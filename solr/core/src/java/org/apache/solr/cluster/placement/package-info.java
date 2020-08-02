@@ -15,21 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cloud.gumi;
-
 /**
- * An instantiation (or one of the copies) of a given {@link Shard} of a given {@link SolrCollection}.
- * Objects of this type are returned by the Solr framework to the plugin, they are not built by the plugin. When the
- * plugin wants to add a replica it goes through {@link WorkOrderFactory#createWorkOrderCreateReplica}).
- * TODO is there an elegant way to have this type also used by the plugin to add replicas? (insisting on elegant)
+ * <p>This package contains interfaces visible by plugins implementing cluster elasticity, placement and scalability,
+ * as well as a few examples on how plugins can be implemented.</p>
+ *
+ * <p>The entry point is the {@link org.apache.solr.cluster.placement.PlacementPlugin} interface plugins should implement</p>
+ *
+ * TODO: document more
  */
-public interface Replica extends PropertyKeyTarget {
-  Shard getShard();
-
-  ReplicaType getType();
-  ReplicaState getState();
-
-  // TODO: needed? Different?
-  String getReplicaName();
-  String getCoreName();
-}
+package org.apache.solr.cluster.placement;

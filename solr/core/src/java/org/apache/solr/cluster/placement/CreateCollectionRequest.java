@@ -15,16 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cloud.gumi;
+package org.apache.solr.cluster.placement;
 
 import java.util.Set;
 
 /**
- * <p>Request for creating a new collection with a given set of shards and replication factor for various replica types.</p>
+ * <p>Request for creating a new collection with a given set of shards and replication factor for various replica types.
  *
- * Note there is no need at this stage to allow the request to convey each shard hash range for example, this can be handled
- * by the Solr side implementation without needing the plugin to worry about it.
+ * <p>Note there is no need at this stage to allow the plugin to know each shard hash range for example, this can be handled
+ * by the Solr side implementation of this interface without needing the plugin to worry about it (the implementation of this interface on
+ * the Solr side can maintain the ranges for each shard).
  *
+ * <p>Same goes for the {@link org.apache.solr.core.ConfigSet} name or other collection parameters. They are needed for
+ * creating a Collection but likely do not have to be exposed to the plugin (this can easily be changed if needed by
+ * adding accessors here, the underlying Solr side implementation of this interface has the information).
  */
 public interface CreateCollectionRequest extends Request {
   String getCollectionName();
