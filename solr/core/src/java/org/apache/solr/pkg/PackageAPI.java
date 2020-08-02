@@ -433,5 +433,22 @@ public class PackageAPI {
     log.error("Error reading package config from zookeeper", SolrZkClient.checkInterrupted(e));
   }
 
-
+  public boolean isJarInuse(String path) {
+    Packages pkg = null;
+    try {
+      pkg = readPkgsFromZk(null, null);
+    } catch (KeeperException.NoNodeException nne) {
+      return false;
+    } catch (InterruptedException | KeeperException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
+    for (List<PkgVersion> vers : pkg.packages.values()) {
+      for (PkgVersion ver : vers) {
+        if (ver.files.contains(path)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
 }

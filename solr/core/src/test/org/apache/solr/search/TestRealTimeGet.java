@@ -56,17 +56,25 @@ public class TestRealTimeGet extends TestRTGBase {
         "a_f","-1.5", "a_fd","-1.5", "a_fdS","-1.5",                        "a_fs","1.0","a_fs","2.5", "a_fds","1.0","a_fds","2.5",  "a_fdsS","1.0","a_fdsS","2.5",
         "a_d","-1.2E99", "a_dd","-1.2E99", "a_ddS","-1.2E99",               "a_ds","1.0","a_ds","2.5", "a_dds","1.0","a_dds","2.5",  "a_ddsS","1.0","a_ddsS","2.5",
         "a_i","-1", "a_id","-1", "a_idS","-1",                              "a_is","1","a_is","2",     "a_ids","1","a_ids","2",      "a_idsS","1","a_idsS","2",
-        "a_l","-9999999999", "a_ld","-9999999999", "a_ldS","-9999999999",   "a_ls","1","a_ls","9999999999",     "a_lds","1","a_lds","9999999999",      "a_ldsS","1","a_ldsS","9999999999"
+        "a_l","-9999999999", "a_ld","-9999999999", "a_ldS","-9999999999",   "a_ls","1","a_ls","9999999999",     "a_lds","1","a_lds","9999999999",      "a_ldsS","1","a_ldsS","9999999999",
+        "a_s", "abc", "a_sd", "bcd", "a_sdS", "cde",                        "a_ss","def","a_ss", "efg",    "a_sds","fgh","a_sds","ghi",   "a_sdsS","hij","a_sdsS","ijk",
+        "a_b", "false", "a_bd", "true", "a_bdS", "false",                    "a_bs","true","a_bs", "false",    "a_bds","true","a_bds","false",   "a_bdsS","true","a_bdsS","false"
     ));
     assertJQ(req("q","id:1")
         ,"/response/numFound==0"
     );
-    assertJQ(req("qt","/get", "id","1", "fl","id, a_f,a_fd,a_fdS   a_fs,a_fds,a_fdsS,  a_d,a_dd,a_ddS,  a_ds,a_dds,a_ddsS,  a_i,a_id,a_idS   a_is,a_ids,a_idsS,   a_l,a_ld,a_ldS   a_ls,a_lds,a_ldsS")
+    assertJQ(req("qt","/get", "id","1", "fl","id, a_f,a_fd,a_fdS   a_fs,a_fds,a_fdsS,  " +
+            "a_d,a_dd,a_ddS,  a_ds,a_dds,a_ddsS,  a_i,a_id,a_idS   a_is,a_ids,a_idsS,   " +
+            "a_l,a_ld,a_ldS,   a_ls,a_lds,a_ldsS,  a_s,a_sd,a_sdS   a_ss,a_sds,a_sdsS,   " +
+            "a_b,a_bd,a_bdS,   a_bs,a_bds,a_bdsS"
+        )
         ,"=={'doc':{'id':'1'" +
             ", a_f:-1.5, a_fd:-1.5, a_fdS:-1.5,  a_fs:[1.0,2.5],      a_fds:[1.0,2.5],a_fdsS:[1.0,2.5]" +
             ", a_d:-1.2E99, a_dd:-1.2E99, a_ddS:-1.2E99,              a_ds:[1.0,2.5],a_dds:[1.0,2.5],a_ddsS:[1.0,2.5]" +
             ", a_i:-1, a_id:-1, a_idS:-1,                             a_is:[1,2],a_ids:[1,2],a_idsS:[1,2]" +
             ", a_l:-9999999999, a_ld:-9999999999, a_ldS:-9999999999,  a_ls:[1,9999999999],a_lds:[1,9999999999],a_ldsS:[1,9999999999]" +
+            ", a_s:'abc', a_sd:'bcd', a_sdS:'cde',  a_ss:['def','efg'],a_sds:['fgh','ghi'],a_sdsS:['hij','ijk']" +
+            ", a_b:false, a_bd:true, a_bdS:false,  a_bs:[true,false],a_bds:[true,false],a_bdsS:[true,false]" +
             "       }}"
     );
     assertJQ(req("qt","/get","ids","1", "fl","id")

@@ -21,6 +21,7 @@ New Features
 
 * SOLR-14588: Introduce Circuit Breaker Infrastructure and a JVM heap usage memory tracking circuit breaker implementation (Atri Sharma)
 
+
 Improvements
 ----------------------
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
@@ -113,6 +114,8 @@ New Features
 
 * SOLR-14151 Make schema components load from packages (noble)
 
+* SOLR-14681: Introduce ability to delete .jar stored in the Package Store. (MarcusSorealheis , Mike Drob)
+
 Improvements
 ---------------------
 
@@ -126,7 +129,7 @@ Improvements
 
 * SOLR-14635: ThreadDumpHandler has been enhanced to show lock ownership (hossman)
 
-* SOLR-11262: Implement writeMap and writeIterator in XMLWriter (yonik, Munendra S N)
+* SOLR-11262: Add support to stream data out using push APIs when wt=xml (yonik, Munendra S N)
 
 * SOLR-13205: Prevent StringIndexOutOfBoundsException when parsing field names in SolrQueryParserBase
   (pramodkumar9 via Jason Gerlowski)
@@ -149,6 +152,9 @@ Bug Fixes
 
 * SOLR-11656: TLOG replication doesn't work properly after rebalancing leaders. (Yuki Yano via
   Erick Erickson)
+
+* SOLR-14516: Fix NPE in JSON response writer(wt=json) with /get when writing non-stored, non-indexed docvalue field
+  from an uncommitted document (noble, Ishan Chattopadhyaya, Munendra S N)
 
 Other Changes
 ---------------------
