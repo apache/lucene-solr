@@ -65,8 +65,8 @@ public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
   @Test
   @ShardsFixed(num = 2)
   public void testFullReplication() throws Exception {
-    List<CloudJettyRunner> slaves = this.getShardToSlaveJetty(SOURCE_COLLECTION, SHARD1);
-    slaves.get(0).jetty.stop();
+    List<CloudJettyRunner> followers = this.getShardToSlaveJetty(SOURCE_COLLECTION, SHARD1);
+    followers.get(0).jetty.stop();
 
     for (int i = 0; i < 10; i++) {
       List<SolrInputDocument> docs = new ArrayList<>();
@@ -79,7 +79,7 @@ public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
     assertNumDocs(100, SOURCE_COLLECTION);
 
     // Restart the slave node to trigger Replication strategy
-    this.restartServer(slaves.get(0));
+    this.restartServer(followers.get(0));
 
     this.assertUpdateLogsEquals(SOURCE_COLLECTION, 10);
   }
@@ -99,8 +99,8 @@ public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
       index(SOURCE_COLLECTION, docs);
     }
 
-    List<CloudJettyRunner> slaves = this.getShardToSlaveJetty(SOURCE_COLLECTION, SHARD1);
-    slaves.get(0).jetty.stop();
+    List<CloudJettyRunner> followers = this.getShardToSlaveJetty(SOURCE_COLLECTION, SHARD1);
+    followers.get(0).jetty.stop();
 
     for (int i = 5; i < 10; i++) {
       List<SolrInputDocument> docs = new ArrayList<>();
@@ -113,7 +113,7 @@ public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
     assertNumDocs(200, SOURCE_COLLECTION);
 
     // Restart the slave node to trigger Replication strategy
-    this.restartServer(slaves.get(0));
+    this.restartServer(followers.get(0));
 
     // at this stage, the slave should have replicated the 5 missing tlog files
     this.assertUpdateLogsEquals(SOURCE_COLLECTION, 10);
@@ -128,7 +128,7 @@ public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
   @ShardsFixed(num = 2)
   public void testPartialReplicationWithTruncatedTlog() throws Exception {
     CloudSolrClient client = createCloudClient(SOURCE_COLLECTION);
-    List<CloudJettyRunner> slaves = this.getShardToSlaveJetty(SOURCE_COLLECTION, SHARD1);
+    List<CloudJettyRunner> followers = this.getShardToSlaveJetty(SOURCE_COLLECTION, SHARD1);
 
     try {
       for (int i = 0; i < 10; i++) {
@@ -137,7 +137,7 @@ public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
 
           // Stop the slave in the middle of a batch to create a truncated tlog on the slave
           if (j == 45) {
-            slaves.get(0).jetty.stop();
+            followers.get(0).jetty.stop();
           }
 
         }
@@ -150,7 +150,7 @@ public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
     assertNumDocs(200, SOURCE_COLLECTION);
 
     // Restart the slave node to trigger Replication recovery
-    this.restartServer(slaves.get(0));
+    this.restartServer(followers.get(0));
 
     // at this stage, the slave should have replicated the 5 missing tlog files
     this.assertUpdateLogsEquals(SOURCE_COLLECTION, 10);
@@ -173,8 +173,8 @@ public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
       index(SOURCE_COLLECTION, docs);
     }
 
-    List<CloudJettyRunner> slaves = this.getShardToSlaveJetty(SOURCE_COLLECTION, SHARD1);
-    slaves.get(0).jetty.stop();
+    List<CloudJettyRunner> followers = this.getShardToSlaveJetty(SOURCE_COLLECTION, SHARD1);
+    followers.get(0).jetty.stop();
 
     for (int i = 5; i < 10; i++) {
       List<SolrInputDocument> docs = new ArrayList<>();
@@ -188,9 +188,9 @@ public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
 
     // Restart the slave node to trigger PeerSync recovery
     // (the update windows between leader and slave is small enough)
-    this.restartServer(slaves.get(0));
+    this.restartServer(followers.get(0));
 
-    slaves.get(0).jetty.stop();
+    followers.get(0).jetty.stop();
 
     for (int i = 10; i < 15; i++) {
       List<SolrInputDocument> docs = new ArrayList<>();
@@ -201,7 +201,7 @@ public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
     }
 
     // restart the slave node to trigger Replication recovery
-    this.restartServer(slaves.get(0));
+    this.restartServer(followers.get(0));
 
     // at this stage, the slave should have replicated the 5 missing tlog files
     this.assertUpdateLogsEquals(SOURCE_COLLECTION, 15);
@@ -216,14 +216,14 @@ public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
   @Test
   @ShardsFixed(num = 2)
   public void testReplicationWithBufferedUpdates() throws Exception {
-    List<CloudJettyRunner> slaves = this.getShardToSlaveJetty(SOURCE_COLLECTION, SHARD1);
+    List<CloudJettyRunner> followers = this.getShardToSlaveJetty(SOURCE_COLLECTION, SHARD1);
 
     AtomicInteger numDocs = new AtomicInteger(0);
     ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(new SolrNamedThreadFactory("cdcr-test-update-scheduler"));
     executor.scheduleWithFixedDelay(new UpdateThread(numDocs), 10, 10, TimeUnit.MILLISECONDS);
 
     // Restart the slave node to trigger Replication strategy
-    this.restartServer(slaves.get(0));
+    this.restartServer(followers.get(0));
 
     // shutdown the update thread and wait for its completion
     executor.shutdown();
@@ -233,7 +233,7 @@ public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
     assertNumDocs(numDocs.get(), SOURCE_COLLECTION);
 
     // check that we have the expected number of documents on the slave
-    assertNumDocs(numDocs.get(), slaves.get(0));
+    assertNumDocs(numDocs.get(), followers.get(0));
   }
 
   private void assertNumDocs(int expectedNumDocs, CloudJettyRunner jetty)
@@ -295,7 +295,7 @@ public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
   }
 
   /**
-   * Asserts that the update logs are in sync between the leader and slave. The leader and the slaves
+   * Asserts that the update logs are in sync between the leader and slave. The leader and the followers
    * must have identical tlog files.
    */
   protected void assertUpdateLogsEquals(String collection, int numberOfTLogs) throws Exception {

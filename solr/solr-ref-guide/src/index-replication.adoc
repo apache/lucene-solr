@@ -16,9 +16,9 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Index Replication distributes complete copies of a master index to one or more slave servers. The master server continues to manage updates to the index. All querying is handled by the slaves. This division of labor enables Solr to scale to provide adequate responsiveness to queries against large search volumes.
+Index Replication distributes complete copies of a master index to one or more slave servers. The master server continues to manage updates to the index. All querying is handled by the followers. This division of labor enables Solr to scale to provide adequate responsiveness to queries against large search volumes.
 
-The figure below shows a Solr configuration using index replication. The master server's index is replicated on the slaves.
+The figure below shows a Solr configuration using index replication. The master server's index is replicated on the followers.
 
 .A Solr index can be replicated across multiple slave servers, which then process requests.
 image::images/index-replication/worddav2b7e14725d898b4104cdd9c502fc77cd.png[image,width=159,height=235]
@@ -51,7 +51,7 @@ Index::
 A Lucene index is a directory of files. These files make up the searchable and returnable data of a Solr Core.
 
 Distribution::
-The copying of an index from the master server to all slaves. The distribution process takes advantage of Lucene's index file structure.
+The copying of an index from the master server to all followers. The distribution process takes advantage of Lucene's index file structure.
 
 Inserts and Deletes::
 As inserts and deletes occur in the index, the directory remains unchanged. Documents are always inserted into newly created segment files. Documents that are deleted are not removed from the segment files. They are flagged in the file, deletable, and are not removed from the segments until the segment is merged as part of normal index updates.
@@ -74,7 +74,7 @@ mergeFactor::
 A parameter that controls the number of segments in an index. For example, when mergeFactor is set to 3, Solr will fill one segment with documents until the limit maxBufferedDocs is met, then it will start a new segment. When the number of segments specified by mergeFactor is reached (in this example, 3) then Solr will merge all the segments into a single index file, then begin writing new documents to a new segment.
 
 Snapshot::
-A directory containing hard links to the data files of an index. Snapshots are distributed from the master nodes when the slaves pull them, "smart copying" any segments the slave node does not have in snapshot directory that contains the hard links to the most recent index data files.
+A directory containing hard links to the data files of an index. Snapshots are distributed from the master nodes when the followers pull them, "smart copying" any segments the slave node does not have in snapshot directory that contains the hard links to the most recent index data files.
 
 
 == Configuring the ReplicationHandler
@@ -103,7 +103,7 @@ The configuration files to replicate, separated by a comma.
 `commitReserveDuration`::
 If your commits are very frequent and your network is slow, you can tweak this parameter to increase the amount of time expected to be required to transfer data. The default is `00:00:10` i.e., 10 seconds.
 
-The example below shows a possible 'master' configuration for the `ReplicationHandler`, including a fixed number of backups and an invariant setting for the `maxWriteMBPerSec` request parameter to prevent slaves from saturating its network interface
+The example below shows a possible 'master' configuration for the `ReplicationHandler`, including a fixed number of backups and an invariant setting for the `maxWriteMBPerSec` request parameter to prevent followers from saturating its network interface
 
 [source,xml]
 ----
@@ -183,10 +183,10 @@ The code below shows how to configure a ReplicationHandler on a slave.
 
 == Setting Up a Repeater with the ReplicationHandler
 
-A master may be able to serve only so many slaves without affecting performance. Some organizations have deployed slave servers across multiple data centers. If each slave downloads the index from a remote data center, the resulting download may consume too much network bandwidth. To avoid performance degradation in cases like this, you can configure one or more slaves as repeaters. A repeater is simply a node that acts as both a master and a slave.
+A master may be able to serve only so many followers without affecting performance. Some organizations have deployed slave servers across multiple data centers. If each slave downloads the index from a remote data center, the resulting download may consume too much network bandwidth. To avoid performance degradation in cases like this, you can configure one or more followers as repeaters. A repeater is simply a node that acts as both a master and a slave.
 
-* To configure a server as a repeater, the definition of the Replication `requestHandler` in the `solrconfig.xml` file must include file lists of use for both masters and slaves.
-* Be sure to set the `replicateAfter` parameter to commit, even if `replicateAfter` is set to optimize on the main master. This is because on a repeater (or any slave), a commit is called only after the index is downloaded. The optimize command is never called on slaves.
+* To configure a server as a repeater, the definition of the Replication `requestHandler` in the `solrconfig.xml` file must include file lists of use for both masters and followers.
+* Be sure to set the `replicateAfter` parameter to commit, even if `replicateAfter` is set to optimize on the main master. This is because on a repeater (or any slave), a commit is called only after the index is downloaded. The optimize command is never called on followers.
 * Optionally, one can configure the repeater to fetch compressed files from the master through the compression parameter to reduce the index download time.
 
 Here is an example of a ReplicationHandler configuration for a repeater:
@@ -226,7 +226,7 @@ The `replicateAfter` parameter can accept multiple arguments. For example:
 
 == Slave Replication
 
-The master is totally unaware of the slaves.
+The master is totally unaware of the followers.
 
 The slave continuously keeps polling the master (depending on the `pollInterval` parameter) to check the current index version of the master. If the slave finds out that the master has a newer version of the index it initiates a replication process. The steps are as follows:
 
@@ -261,13 +261,13 @@ To correct this problem, the slave then copies all the index files from master t
 You can use the HTTP commands below to control the ReplicationHandler's operations.
 
 `enablereplication`::
-Enable replication on the "master" for all its slaves.
+Enable replication on the "master" for all its followers.
 +
 [source,bash]
 http://_master_host:port_/solr/_core_name_/replication?command=enablereplication
 
 `disablereplication`::
-Disable replication on the master for all its slaves.
+Disable replication on the master for all its followers.
 +
 [source,bash]
 http://_master_host:port_/solr/_core_name_/replication?command=disablereplication
@@ -371,13 +371,13 @@ Optimizing an index is not something most users should generally worry about - b
 
 The time required to optimize a master index can vary dramatically. A small index may be optimized in minutes. A very large index may take hours. The variables include the size of the index and the speed of the hardware.
 
-Distributing a newly optimized index may take only a few minutes or up to an hour or more, again depending on the size of the index and the performance capabilities of network connections and disks. During optimization the machine is under load and does not process queries very well. Given a schedule of updates being driven a few times an hour to the slaves, we cannot run an optimize with every committed snapshot.
+Distributing a newly optimized index may take only a few minutes or up to an hour or more, again depending on the size of the index and the performance capabilities of network connections and disks. During optimization the machine is under load and does not process queries very well. Given a schedule of updates being driven a few times an hour to the followers, we cannot run an optimize with every committed snapshot.
 
 Copying an optimized index means that the *entire* index will need to be transferred during the next `snappull`. This is a large expense, but not nearly as huge as running the optimize everywhere.
 
 Consider this example: on a three-slave one-master configuration, distributing a newly-optimized index takes approximately 80 seconds _total_. Rolling the change across a tier would require approximately ten minutes per machine (or machine group). If this optimize were rolled across the query tier, and if each slave node being optimized were disabled and not receiving queries, a rollout would take at least twenty minutes and potentially as long as an hour and a half. Additionally, the files would need to be synchronized so that the _following_ the optimize, `snappull` would not think that the independently optimized files were different in any way. This would also leave the door open to independent corruption of indexes instead of each being a perfect copy of the master.
 
-Optimizing on the master allows for a straight-forward optimization operation. No query slaves need to be taken out of service. The optimized index can be distributed in the background as queries are being normally serviced. The optimization can occur at any time convenient to the application providing index updates.
+Optimizing on the master allows for a straight-forward optimization operation. No query followers need to be taken out of service. The optimized index can be distributed in the background as queries are being normally serviced. The optimization can occur at any time convenient to the application providing index updates.
 
 While optimizing may have some benefits in some situations, a rapidly changing index will not retain those benefits for long, and since optimization is an intensive process, it may be better to consider other options, such as lowering the merge factor (discussed in the section on <<indexconfig-in-solrconfig.adoc#merge-factors,Index Configuration>>).
 
