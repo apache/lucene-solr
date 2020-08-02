@@ -178,7 +178,7 @@ $ bin/solr package undeploy <package-name> -collections <collection1>[,<collecti
 
 === Uninstall a Package
 
-If a package has been undeployed, then it can be uninstalled as follows:
+If a package has been undeployed or was never deployed, then it can be uninstalled as follows:
 
 [source,bash]
 ----
