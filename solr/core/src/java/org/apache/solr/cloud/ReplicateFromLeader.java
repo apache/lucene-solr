@@ -76,12 +76,12 @@ public class ReplicateFromLeader {
       }
       log.info("Will start replication from leader with poll interval: {}", pollIntervalStr );
 
-      NamedList<Object> slaveConfig = new NamedList<>();
-      slaveConfig.add("fetchFromLeader", Boolean.TRUE);
-      slaveConfig.add(ReplicationHandler.SKIP_COMMIT_ON_MASTER_VERSION_ZERO, switchTransactionLog);
-      slaveConfig.add("pollInterval", pollIntervalStr);
+      NamedList<Object> secondaryConfig = new NamedList<>();
+      secondaryConfig.add("fetchFromLeader", Boolean.TRUE);
+      secondaryConfig.add(ReplicationHandler.SKIP_COMMIT_ON_MASTER_VERSION_ZERO, switchTransactionLog);
+      secondaryConfig.add("pollInterval", pollIntervalStr);
       NamedList<Object> replicationConfig = new NamedList<>();
-      replicationConfig.add("slave", slaveConfig);
+      replicationConfig.add("secondary", secondaryConfig);
 
       String lastCommitVersion = getCommitVersion(core);
       if (lastCommitVersion != null) {

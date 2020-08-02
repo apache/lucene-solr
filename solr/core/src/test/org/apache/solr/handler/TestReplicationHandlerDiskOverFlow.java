@@ -121,7 +121,7 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
     log.info("Indexing to MASTER");
     int docsInPrimary = 1000;
     long szPrimary = indexDocs(primaryClient, docsInPrimary, 0);
-    log.info("Indexing to SLAVE");
+    log.info("Indexing to SECONDARY");
     long szSecondary = indexDocs(secondaryClient, 1200, 1000);
 
     IndexFetcher.usableDiskSpaceProvider = new Function<String, Long>() {
