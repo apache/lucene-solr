@@ -176,6 +176,15 @@ If a package supports undeploying the plugins it contains (check package author'
 $ bin/solr package undeploy <package-name> -collections <collection1>[,<collection2>,...]
 ----
 
+=== Uninstall a Package
+
+If a package has been undeployed, then it can be uninstalled as follows:
+
+[source,bash]
+----
+$ bin/solr package uninstall <package-name>:<package-version>
+----
+
 or
 
 [source,bash]
