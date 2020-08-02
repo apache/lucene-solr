@@ -47,7 +47,7 @@ import org.apache.solr.util.LongIterator;
  *   <li><a href="https://github.com/aggregateknowledge/postgresql-hll">postgresql-hll</a>, and</li>
  *   <li><a href="https://github.com/aggregateknowledge/js-hll">js-hll</a></li>
  * </ul>
- * when <a href="https://github.com/aggregateknowledge/postgresql-hll/blob/master/STORAGE.markdown">properly serialized</a>.
+ * when <a href="https://github.com/aggregateknowledge/postgresql-hll/blob/secondaryy/STORAGE.markdown">properly serialized</a>.
  */
 public class HLL implements Cloneable {
     // minimum and maximum values for the log-base-2 of the number of registers

@@ -169,7 +169,7 @@ public class IndexFetcher {
 
   private boolean downloadTlogFiles = false;
 
-  private boolean skipCommitOnMasterVersionZero = true;
+  private boolean skipCommitOnPrimaryVersionZero = true;
 
   private boolean clearLocalIndexFirst = false;
 
@@ -236,9 +236,9 @@ public class IndexFetcher {
     if (fetchFromLeader != null && fetchFromLeader instanceof Boolean) {
       this.fetchFromLeader = (boolean) fetchFromLeader;
     }
-    Object skipCommitOnMasterVersionZero = initArgs.get(SKIP_COMMIT_ON_MASTER_VERSION_ZERO);
-    if (skipCommitOnMasterVersionZero != null && skipCommitOnMasterVersionZero instanceof Boolean) {
-      this.skipCommitOnMasterVersionZero = (boolean) skipCommitOnMasterVersionZero;
+    Object skipCommitOnPrimaryVersionZero = initArgs.get(SKIP_COMMIT_ON_MASTER_VERSION_ZERO);
+    if (skipCommitOnPrimaryVersionZero != null && skipCommitOnPrimaryVersionZero instanceof Boolean) {
+      this.skipCommitOnPrimaryVersionZero = (boolean) skipCommitOnPrimaryVersionZero;
     }
     String masterUrl = (String) initArgs.get(MASTER_URL);
     if (masterUrl == null && !this.fetchFromLeader)
@@ -420,10 +420,10 @@ public class IndexFetcher {
       } catch (Exception e) {
         final String errorMsg = e.toString();
         if (!Strings.isNullOrEmpty(errorMsg) && errorMsg.contains(INTERRUPT_RESPONSE_MESSAGE)) {
-            log.warn("Master at: {} is not available. Index fetch failed by interrupt. Exception: {}", masterUrl, errorMsg);
+            log.warn("Primary at: {} is not available. Index fetch failed by interrupt. Exception: {}", masterUrl, errorMsg);
             return new IndexFetchResult(IndexFetchResult.FAILED_BY_INTERRUPT_MESSAGE, false, e);
         } else {
-            log.warn("Master at: {} is not available. Index fetch failed by exception: {}", masterUrl, errorMsg);
+            log.warn("Primary at: {} is not available. Index fetch failed by exception: {}", masterUrl, errorMsg);
             return new IndexFetchResult(IndexFetchResult.FAILED_BY_EXCEPTION_MESSAGE, false, e);
         }
     }
@@ -431,8 +431,8 @@ public class IndexFetcher {
       long latestVersion = (Long) response.get(CMD_INDEX_VERSION);
       long latestGeneration = (Long) response.get(GENERATION);
 
-      log.info("Master's generation: {}", latestGeneration);
-      log.info("Master's version: {}", latestVersion);
+      log.info("Primary's generation: {}", latestGeneration);
+      log.info("Primary's version: {}", latestVersion);
 
       // TODO: make sure that getLatestCommit only returns commit points for the main index (i.e. no side-car indexes)
       IndexCommit commit = solrCore.getDeletionPolicy().getLatestCommit();
@@ -453,23 +453,23 @@ public class IndexFetcher {
       }
 
       if (log.isInfoEnabled()) {
-        log.info("Slave's generation: {}", commit.getGeneration());
-        log.info("Slave's version: {}", IndexDeletionPolicyWrapper.getCommitTimestamp(commit)); // logOK
+        log.info("Secondary's generation: {}", commit.getGeneration());
+        log.info("Secondary's version: {}", IndexDeletionPolicyWrapper.getCommitTimestamp(commit)); // logOK
       }
 
       if (latestVersion == 0L) {
         if (commit.getGeneration() != 0) {
           // since we won't get the files for an empty index,
           // we just clear ours and commit
-          log.info("New index in Master. Deleting mine...");
+          log.info("New index in Primary. Deleting mine...");
           RefCounted<IndexWriter> iw = solrCore.getUpdateHandler().getSolrCoreState().getIndexWriter(solrCore);
           try {
             iw.get().deleteAll();
           } finally {
             iw.decref();
           }
-          assert TestInjection.injectDelayBeforeSlaveCommitRefresh();
-          if (skipCommitOnMasterVersionZero) {
+          assert TestInjection.injectDelayBeforeSecondaryCommitRefresh();
+          if (skipCommitOnPrimaryVersionZero) {
             openNewSearcherAndUpdateCommitPoint();
           } else {
             SolrQueryRequest req = new LocalSolrQueryRequest(solrCore, new ModifiableSolrParams());
@@ -486,7 +486,7 @@ public class IndexFetcher {
       // TODO: Should we be comparing timestamps (across machines) here?
       if (!forceReplication && IndexDeletionPolicyWrapper.getCommitTimestamp(commit) == latestVersion) {
         //master and slave are already in sync just return
-        log.info("Slave in sync with master.");
+        log.info("Secondary in sync with master.");
         successfulInstall = true;
         return IndexFetchResult.ALREADY_IN_SYNC;
       }
@@ -1998,7 +1998,7 @@ public class IndexFetcher {
     HttpClientUtil.close(myHttpClient);
   }
 
-  String getMasterUrl() {
+  String getPrimaryUrl() {
     return masterUrl;
   }
 

@@ -111,13 +111,13 @@ import org.slf4j.MDC;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 /**
- * <p> A Handler which provides a REST API for replication and serves replication requests from Slaves. </p>
+ * <p> A Handler which provides a REST API for replication and serves replication requests from Secondaries. </p>
  * <p>When running on the master, it provides the following commands <ol> <li>Get the current replicable index version
  * (command=indexversion)</li> <li>Get the list of files for a given index version
  * (command=filelist&amp;indexversion=&lt;VERSION&gt;)</li> <li>Get full or a part (chunk) of a given index or a config
  * file (command=filecontent&amp;file=&lt;FILE_NAME&gt;) You can optionally specify an offset and length to get that
  * chunk of the file. You can request a configuration file by using "cf" parameter instead of the "file" parameter.</li>
- * <li>Get status/statistics (command=details)</li> </ol> <p>When running on the slave, it provides the following
+ * <li>Get status/statistics (command=details)</li> </ol> <p>When running on the secondary, it provides the following
  * commands <ol> <li>Perform an index fetch now (command=snappull)</li> <li>Get status/statistics (command=details)</li>
  * <li>Abort an index fetch (command=abort)</li> <li>Enable/Disable polling the master for new versions (command=enablepoll
  * or command=disablepoll)</li> </ol>
@@ -185,9 +185,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   private NamedList<String> confFileNameAlias = new NamedList<>();
 
-  private boolean isMaster = false;
+  private boolean isPrimary = false;
 
-  private boolean isSlave = false;
+  private boolean isSecondary = false;
 
   private boolean replicateOnOptimize = false;
 
@@ -291,12 +291,12 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       if (abortFetch()) {
         rsp.add(STATUS, OK_STATUS);
       } else {
-        reportErrorOnResponse(rsp, "No slave configured", null);
+        reportErrorOnResponse(rsp, "No secondary configured", null);
       }
     } else if (command.equals(CMD_SHOW_COMMITS)) {
       populateCommitInfo(rsp);
     } else if (command.equals(CMD_DETAILS)) {
-      getReplicationDetails(rsp, solrParams.getBool("slave", true));
+      getReplicationDetails(rsp, solrParams.getBool("secondary", true));
     } else if (CMD_ENABLE_REPL.equalsIgnoreCase(command)) {
       replicationEnabled.set(true);
       rsp.add(STATUS, OK_STATUS);
@@ -338,8 +338,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   private void fetchIndex(SolrParams solrParams, SolrQueryResponse rsp) throws InterruptedException {
     String masterUrl = solrParams.get(MASTER_URL);
-    if (!isSlave && masterUrl == null) {
-      reportErrorOnResponse(rsp, "No slave configured or no 'masterUrl' specified", null);
+    if (!isSecondary && masterUrl == null) {
+      reportErrorOnResponse(rsp, "No secondary configured or no 'masterUrl' specified", null);
       return;
     }
     final SolrParams paramsCopy = new ModifiableSolrParams(solrParams);
@@ -826,7 +826,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       log.info("inside disable poll, value of pollDisabled = {}", pollDisabled);
       rsp.add(STATUS, OK_STATUS);
     } else {
-      reportErrorOnResponse(rsp, "No slave configured", null);
+      reportErrorOnResponse(rsp, "No secondary configured", null);
     }
   }
 
@@ -836,7 +836,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       log.info("inside enable poll, value of pollDisabled = {}", pollDisabled);
       rsp.add(STATUS, OK_STATUS);
     } else {
-      reportErrorOnResponse(rsp, "No slave configured", null);
+      reportErrorOnResponse(rsp, "No secondary configured", null);
     }
   }
 
@@ -871,7 +871,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   @Override
   public String getDescription() {
-    return "ReplicationHandler provides replication of index and configuration files from Master to Slaves";
+    return "ReplicationHandler provides replication of index and configuration files from Primary to Secondaries";
   }
 
   /**
@@ -897,14 +897,14 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         true, GENERATION, getCategory().toString(), scope);
     solrMetricsContext.gauge(() -> (core != null && !core.isClosed() ? core.getIndexDir() : ""),
         true, "indexPath", getCategory().toString(), scope);
-    solrMetricsContext.gauge(() -> isMaster,
-         true, "isMaster", getCategory().toString(), scope);
-    solrMetricsContext.gauge(() -> isSlave,
-         true, "isSlave", getCategory().toString(), scope);
+    solrMetricsContext.gauge(() -> isPrimary,
+         true, "isPrimary", getCategory().toString(), scope);
+    solrMetricsContext.gauge(() -> isSecondary,
+         true, "isSecondary", getCategory().toString(), scope);
     final MetricsMap fetcherMap = new MetricsMap((detailed, map) -> {
       IndexFetcher fetcher = currentIndexFetcher;
       if (fetcher != null) {
-        map.put(MASTER_URL, fetcher.getMasterUrl());
+        map.put(MASTER_URL, fetcher.getPrimaryUrl());
         if (getPollInterval() != null) {
           map.put(POLL_INTERVAL, getPollInterval());
         }
@@ -930,11 +930,11 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       }
     });
     solrMetricsContext.gauge(fetcherMap, true, "fetcher", getCategory().toString(), scope);
-    solrMetricsContext.gauge(() -> isMaster && includeConfFiles != null ? includeConfFiles : "",
+    solrMetricsContext.gauge(() -> isPrimary && includeConfFiles != null ? includeConfFiles : "",
          true, "confFilesToReplicate", getCategory().toString(), scope);
-    solrMetricsContext.gauge(() -> isMaster ? getReplicateAfterStrings() : Collections.<String>emptyList(),
+    solrMetricsContext.gauge(() -> isPrimary ? getReplicateAfterStrings() : Collections.<String>emptyList(),
         true, REPLICATE_AFTER, getCategory().toString(), scope);
-    solrMetricsContext.gauge( () -> isMaster && replicationEnabled.get(),
+    solrMetricsContext.gauge( () -> isPrimary && replicationEnabled.get(),
         true, "replicationEnabled", getCategory().toString(), scope);
   }
 
@@ -942,29 +942,29 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   /**
    * Used for showing statistics and progress information.
    */
-  private NamedList<Object> getReplicationDetails(SolrQueryResponse rsp, boolean showSlaveDetails) {
+  private NamedList<Object> getReplicationDetails(SolrQueryResponse rsp, boolean showSecondaryDetails) {
     NamedList<Object> details = new SimpleOrderedMap<>();
     NamedList<Object> master = new SimpleOrderedMap<>();
-    NamedList<Object> slave = new SimpleOrderedMap<>();
+    NamedList<Object> secondary = new SimpleOrderedMap<>();
 
     details.add("indexSize", NumberUtils.readableSize(core.getIndexSize()));
     details.add("indexPath", core.getIndexDir());
     details.add(CMD_SHOW_COMMITS, getCommits());
-    details.add("isMaster", String.valueOf(isMaster));
-    details.add("isSlave", String.valueOf(isSlave));
+    details.add("isPrimary", String.valueOf(isPrimary));
+    details.add("isSecondary", String.valueOf(isSecondary));
     CommitVersionInfo vInfo = getIndexVersion();
     details.add("indexVersion", null == vInfo ? 0 : vInfo.version);
     details.add(GENERATION, null == vInfo ? 0 : vInfo.generation);
 
     IndexCommit commit = indexCommitPoint;  // make a copy so it won't change
 
-    if (isMaster) {
+    if (isPrimary) {
       if (includeConfFiles != null) master.add(CONF_FILES, includeConfFiles);
       master.add(REPLICATE_AFTER, getReplicateAfterStrings());
       master.add("replicationEnabled", String.valueOf(replicationEnabled.get()));
     }
 
-    if (isMaster && commit != null) {
+    if (isPrimary && commit != null) {
       CommitVersionInfo repCommitInfo = CommitVersionInfo.build(commit);
       master.add("replicableVersion", repCommitInfo.version);
       master.add("replicableGeneration", repCommitInfo.generation);
@@ -973,45 +973,45 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     IndexFetcher fetcher = currentIndexFetcher;
     if (fetcher != null) {
       Properties props = loadReplicationProperties();
-      if (showSlaveDetails) {
+      if (showSecondaryDetails) {
         try {
           @SuppressWarnings({"rawtypes"})
           NamedList nl = fetcher.getDetails();
-          slave.add("masterDetails", nl.get(CMD_DETAILS));
+          secondary.add("masterDetails", nl.get(CMD_DETAILS));
         } catch (Exception e) {
           log.warn(
               "Exception while invoking 'details' method for replication on master ",
               e);
-          slave.add(ERR_STATUS, "invalid_master");
+          secondary.add(ERR_STATUS, "invalid_master");
         }
       }
-      slave.add(MASTER_URL, fetcher.getMasterUrl());
+      secondary.add(MASTER_URL, fetcher.getPrimaryUrl());
       if (getPollInterval() != null) {
-        slave.add(POLL_INTERVAL, getPollInterval());
+        secondary.add(POLL_INTERVAL, getPollInterval());
       }
       Date nextScheduled = getNextScheduledExecTime();
       if (nextScheduled != null && !isPollingDisabled()) {
-        slave.add(NEXT_EXECUTION_AT, nextScheduled.toString());
+        secondary.add(NEXT_EXECUTION_AT, nextScheduled.toString());
       } else if (isPollingDisabled()) {
-        slave.add(NEXT_EXECUTION_AT, "Polling disabled");
+        secondary.add(NEXT_EXECUTION_AT, "Polling disabled");
       }
-      addVal(slave, IndexFetcher.INDEX_REPLICATED_AT, props, Date.class);
-      addVal(slave, IndexFetcher.INDEX_REPLICATED_AT_LIST, props, List.class);
-      addVal(slave, IndexFetcher.REPLICATION_FAILED_AT_LIST, props, List.class);
-      addVal(slave, IndexFetcher.TIMES_INDEX_REPLICATED, props, Integer.class);
-      addVal(slave, IndexFetcher.CONF_FILES_REPLICATED, props, Integer.class);
-      addVal(slave, IndexFetcher.TIMES_CONFIG_REPLICATED, props, Integer.class);
-      addVal(slave, IndexFetcher.CONF_FILES_REPLICATED_AT, props, Integer.class);
-      addVal(slave, IndexFetcher.LAST_CYCLE_BYTES_DOWNLOADED, props, Long.class);
-      addVal(slave, IndexFetcher.TIMES_FAILED, props, Integer.class);
-      addVal(slave, IndexFetcher.REPLICATION_FAILED_AT, props, Date.class);
-      addVal(slave, IndexFetcher.PREVIOUS_CYCLE_TIME_TAKEN, props, Long.class);
-      addVal(slave, IndexFetcher.CLEARED_LOCAL_IDX, props, Long.class);
+      addVal(secondary, IndexFetcher.INDEX_REPLICATED_AT, props, Date.class);
+      addVal(secondary, IndexFetcher.INDEX_REPLICATED_AT_LIST, props, List.class);
+      addVal(secondary, IndexFetcher.REPLICATION_FAILED_AT_LIST, props, List.class);
+      addVal(secondary, IndexFetcher.TIMES_INDEX_REPLICATED, props, Integer.class);
+      addVal(secondary, IndexFetcher.CONF_FILES_REPLICATED, props, Integer.class);
+      addVal(secondary, IndexFetcher.TIMES_CONFIG_REPLICATED, props, Integer.class);
+      addVal(secondary, IndexFetcher.CONF_FILES_REPLICATED_AT, props, Integer.class);
+      addVal(secondary, IndexFetcher.LAST_CYCLE_BYTES_DOWNLOADED, props, Long.class);
+      addVal(secondary, IndexFetcher.TIMES_FAILED, props, Integer.class);
+      addVal(secondary, IndexFetcher.REPLICATION_FAILED_AT, props, Date.class);
+      addVal(secondary, IndexFetcher.PREVIOUS_CYCLE_TIME_TAKEN, props, Long.class);
+      addVal(secondary, IndexFetcher.CLEARED_LOCAL_IDX, props, Long.class);
 
-      slave.add("currentDate", new Date().toString());
-      slave.add("isPollingDisabled", String.valueOf(isPollingDisabled()));
+      secondary.add("currentDate", new Date().toString());
+      secondary.add("isPollingDisabled", String.valueOf(isPollingDisabled()));
       boolean isReplicating = isReplicating();
-      slave.add("isReplicating", String.valueOf(isReplicating));
+      secondary.add("isReplicating", String.valueOf(isReplicating));
       if (isReplicating) {
         try {
           long bytesToDownload = 0;
@@ -1027,9 +1027,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
             bytesToDownload += (Long) file.get(SIZE);
           }
 
-          slave.add("filesToDownload", filesToDownload);
-          slave.add("numFilesToDownload", String.valueOf(filesToDownload.size()));
-          slave.add("bytesToDownload", NumberUtils.readableSize(bytesToDownload));
+          secondary.add("filesToDownload", filesToDownload);
+          secondary.add("numFilesToDownload", String.valueOf(filesToDownload.size()));
+          secondary.add("bytesToDownload", NumberUtils.readableSize(bytesToDownload));
 
           long bytesDownloaded = 0;
           List<String> filesDownloaded = new ArrayList<>();
@@ -1058,17 +1058,17 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
                 percentDownloaded = (currFileSizeDownloaded * 100) / currFileSize;
             }
           }
-          slave.add("filesDownloaded", filesDownloaded);
-          slave.add("numFilesDownloaded", String.valueOf(filesDownloaded.size()));
+          secondary.add("filesDownloaded", filesDownloaded);
+          secondary.add("numFilesDownloaded", String.valueOf(filesDownloaded.size()));
 
           long estimatedTimeRemaining = 0;
 
           Date replicationStartTimeStamp = fetcher.getReplicationStartTimeStamp();
           if (replicationStartTimeStamp != null) {
-            slave.add("replicationStartTime", replicationStartTimeStamp.toString());
+            secondary.add("replicationStartTime", replicationStartTimeStamp.toString());
           }
           long elapsed = fetcher.getReplicationTimeElapsed();
-          slave.add("timeElapsed", String.valueOf(elapsed) + "s");
+          secondary.add("timeElapsed", String.valueOf(elapsed) + "s");
 
           if (bytesDownloaded > 0)
             estimatedTimeRemaining = ((bytesToDownload - bytesDownloaded) * elapsed) / bytesDownloaded;
@@ -1079,24 +1079,24 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           if (elapsed > 0)
             downloadSpeed = (bytesDownloaded / elapsed);
           if (currFile != null)
-            slave.add("currentFile", currFile);
-          slave.add("currentFileSize", NumberUtils.readableSize(currFileSize));
-          slave.add("currentFileSizeDownloaded", NumberUtils.readableSize(currFileSizeDownloaded));
-          slave.add("currentFileSizePercent", String.valueOf(percentDownloaded));
-          slave.add("bytesDownloaded", NumberUtils.readableSize(bytesDownloaded));
-          slave.add("totalPercent", String.valueOf(totalPercent));
-          slave.add("timeRemaining", String.valueOf(estimatedTimeRemaining) + "s");
-          slave.add("downloadSpeed", NumberUtils.readableSize(downloadSpeed));
+            secondary.add("currentFile", currFile);
+          secondary.add("currentFileSize", NumberUtils.readableSize(currFileSize));
+          secondary.add("currentFileSizeDownloaded", NumberUtils.readableSize(currFileSizeDownloaded));
+          secondary.add("currentFileSizePercent", String.valueOf(percentDownloaded));
+          secondary.add("bytesDownloaded", NumberUtils.readableSize(bytesDownloaded));
+          secondary.add("totalPercent", String.valueOf(totalPercent));
+          secondary.add("timeRemaining", String.valueOf(estimatedTimeRemaining) + "s");
+          secondary.add("downloadSpeed", NumberUtils.readableSize(downloadSpeed));
         } catch (Exception e) {
           log.error("Exception while writing replication details: ", e);
         }
       }
     }
 
-    if (isMaster)
+    if (isPrimary)
       details.add("master", master);
-    if (slave.size() > 0)
-      details.add("slave", slave);
+    if (secondary.size() > 0)
+      details.add("secondary", secondary);
 
     @SuppressWarnings({"rawtypes"})
     NamedList snapshotStats = snapShootDetails;
@@ -1241,32 +1241,32 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       numberBackupsToKeep = 0;
     }
     @SuppressWarnings({"rawtypes"})
-    NamedList slave = (NamedList) initArgs.get("slave");
-    boolean enableSlave = isEnabled( slave );
-    if (enableSlave) {
-      currentIndexFetcher = pollingIndexFetcher = new IndexFetcher(slave, this, core);
-      setupPolling((String) slave.get(POLL_INTERVAL));
-      isSlave = true;
+    NamedList secondary = (NamedList) initArgs.get("secondary");
+    boolean enableSecondary = isEnabled( secondary );
+    if (enableSecondary) {
+      currentIndexFetcher = pollingIndexFetcher = new IndexFetcher(secondary, this, core);
+      setupPolling((String) secondary.get(POLL_INTERVAL));
+      isSecondary = true;
     }
     @SuppressWarnings({"rawtypes"})
     NamedList master = (NamedList) initArgs.get("master");
-    boolean enableMaster = isEnabled( master );
+    boolean enablePrimary = isEnabled( master );
 
-    if (enableMaster || (enableSlave && !currentIndexFetcher.fetchFromLeader)) {
+    if (enablePrimary || (enableSecondary && !currentIndexFetcher.fetchFromLeader)) {
       if (core.getCoreContainer().getZkController() != null) {
         log.warn("SolrCloud is enabled for core {} but so is old-style replication. "
                 + "Make sure you intend this behavior, it usually indicates a mis-configuration. "
-                + "Master setting is {} and slave setting is {}"
-        , core.getName(), enableMaster, enableSlave);
+                + "Primary setting is {} and secondary setting is {}"
+        , core.getName(), enablePrimary, enableSecondary);
       }
     }
 
-    if (!enableSlave && !enableMaster) {
-      enableMaster = true;
+    if (!enableSecondary && !enablePrimary) {
+      enablePrimary = true;
       master = new NamedList<>();
     }
 
-    if (enableMaster) {
+    if (enablePrimary) {
       includeConfFiles = (String) master.get(CONF_FILES);
       if (includeConfFiles != null && includeConfFiles.trim().length() > 0) {
         List<String> files = Arrays.asList(includeConfFiles.split(","));
@@ -1351,7 +1351,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           if (s!=null) s.decref();
         }
       }
-      isMaster = true;
+      isPrimary = true;
     }
 
     {
@@ -1363,7 +1363,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     log.info("Commits will be reserved for {} ms", reserveCommitDuration);
   }
 
-  // check master or slave is enabled
+  // check master or secondary is enabled
   private boolean isEnabled( @SuppressWarnings({"rawtypes"})NamedList params ){
     if( params == null ) return false;
     Object enable = params.get( "enable" );
@@ -1774,7 +1774,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   // in case of TLOG replica, if masterVersion = zero, don't do commit
   // otherwise updates from current tlog won't copied over properly to the new tlog, leading to data loss
-  public static final String SKIP_COMMIT_ON_MASTER_VERSION_ZERO = "skipCommitOnMasterVersionZero";
+  public static final String SKIP_COMMIT_ON_MASTER_VERSION_ZERO = "skipCommitOnPrimaryVersionZero";
 
   public static final String STATUS = "status";
 

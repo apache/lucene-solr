@@ -47,9 +47,9 @@ import org.junit.Test;
 @SolrTestCaseJ4.SuppressSSL     // Currently unknown why SSL does not work with this test
 public class TestRestoreCore extends SolrJettyTestBase {
 
-  JettySolrRunner masterJetty;
-  TestReplicationHandler.SolrInstance master = null;
-  SolrClient masterClient;
+  JettySolrRunner primaryJetty;
+  TestReplicationHandler.SolrInstance primary = null;
+  SolrClient primaryClient;
 
   private static final String CONF_DIR = "solr" + File.separator + DEFAULT_TEST_CORENAME + File.separator + "conf"
       + File.separator;
@@ -83,10 +83,10 @@ public class TestRestoreCore extends SolrJettyTestBase {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    String configFile = "solrconfig-master.xml";
+    String configFile = "solrconfig-primary.xml";
 
-    master = new TestReplicationHandler.SolrInstance(createTempDir("solr-instance").toFile(), "master", null);
-    master.setUp();
+    primary = new TestReplicationHandler.SolrInstance(createTempDir("solr-instance").toFile(), "primary", null);
+    primary.setUp();
     master.copyConfigFile(CONF_DIR + configFile, "solrconfig.xml");
 
     masterJetty = createAndStartJetty(master);

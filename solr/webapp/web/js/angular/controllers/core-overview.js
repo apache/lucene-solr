@@ -33,8 +33,8 @@ function($scope, $rootScope, $routeParams, Luke, CoreSystem, Update, Replication
   $scope.refreshReplication = function() {
     Replication.details({core: $routeParams.core},
       function(data) {
-        $scope.isSlave = data.details.isSlave == "true";
-        $scope.isMaster = data.details.isMaster == "true";
+        $scope.isSecondary = data.details.isSecondary == "true";
+        $scope.isPrimary = data.details.isPrimary == "true";
         $scope.replication = data.details;
       },
       function(error) {

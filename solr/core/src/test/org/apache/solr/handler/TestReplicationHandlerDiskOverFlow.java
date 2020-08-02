@@ -59,9 +59,9 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
   Function<String, Long> originalDiskSpaceprovider = null;
   BooleanSupplier originalTestWait = null;
   
-  JettySolrRunner masterJetty, slaveJetty;
-  SolrClient masterClient, slaveClient;
-  TestReplicationHandler.SolrInstance master = null, slave = null;
+  JettySolrRunner masterJetty, secondaryJetty;
+  SolrClient masterClient, secondaryClient;
+  TestReplicationHandler.SolrInstance master = null, secondary = null;
 
   static String context = "/solr";
 
@@ -75,14 +75,14 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
     String factory = random().nextInt(100) < 75 ? "solr.NRTCachingDirectoryFactory" : "solr.StandardDirectoryFactory"; // test the default most of the time
     System.setProperty("solr.directoryFactory", factory);
     master = new TestReplicationHandler.SolrInstance(createTempDir("solr-instance").toFile(), "master", null);
-    master.setUp();
-    masterJetty = createAndStartJetty(master);
-    masterClient = createNewSolrClient(masterJetty.getLocalPort());
+    primary.setUp();
+    primaryJetty = createAndStartJetty(primary);
+    primaryClient = createNewSolrClient(primaryJetty.getLocalPort());
 
-    slave = new TestReplicationHandler.SolrInstance(createTempDir("solr-instance").toFile(), "slave", masterJetty.getLocalPort());
-    slave.setUp();
-    slaveJetty = createAndStartJetty(slave);
-    slaveClient = createNewSolrClient(slaveJetty.getLocalPort());
+    secondary = new TestReplicationHandler.SolrInstance(createTempDir("solr-instance").toFile(), "secondary", primaryJetty.getLocalPort());
+    secondary.setUp();
+    secondaryJetty = createAndStartJetty(secondary);
+    secondaryClient = createNewSolrClient(secondaryJetty.getLocalPort());
 
     System.setProperty("solr.indexfetcher.sotimeout2", "45000");
   }
@@ -91,22 +91,22 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
   @After
   public void tearDown() throws Exception {
     super.tearDown();
-    if (null != masterJetty) {
-      masterJetty.stop();
-      masterJetty = null;
+    if (null != primaryJetty) {
+      primaryJetty.stop();
+      primaryJetty = null;
     }
-    if (null != slaveJetty) {
-      slaveJetty.stop();
-       slaveJetty = null;
+    if (null != secondaryJetty) {
+      secondaryJetty.stop();
+       secondaryJetty = null;
     }
-    master = slave = null;
-    if (null != masterClient) {
-      masterClient.close();
-      masterClient = null;
+    primary = secondary = null;
+    if (null != primaryClient) {
+      primaryClient.close();
+      primaryClient = null;
     }
-    if (null != slaveClient) {
-      slaveClient.close();
-      slaveClient = null;
+    if (null != secondaryClient) {
+      secondaryClient.close();
+      secondaryClient = null;
     }
     System.clearProperty("solr.indexfetcher.sotimeout");
     
@@ -116,18 +116,18 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
 
   @Test
   public void testDiskOverFlow() throws Exception {
-    invokeReplicationCommand(slaveJetty.getLocalPort(), "disablepoll");
+    invokeReplicationCommand(secondaryJetty.getLocalPort(), "disablepoll");
     //index docs
     log.info("Indexing to MASTER");
-    int docsInMaster = 1000;
-    long szMaster = indexDocs(masterClient, docsInMaster, 0);
+    int docsInPrimary = 1000;
+    long szPrimary = indexDocs(primaryClient, docsInPrimary, 0);
     log.info("Indexing to SLAVE");
-    long szSlave = indexDocs(slaveClient, 1200, 1000);
+    long szSecondary = indexDocs(secondaryClient, 1200, 1000);
 
     IndexFetcher.usableDiskSpaceProvider = new Function<String, Long>() {
       @Override
       public Long apply(String s) {
-        return szMaster;
+        return szPrimary;
       }
     };
 
@@ -161,7 +161,7 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
             assertNotNull("why is query thread still looping if barrier has already been cleared?",
                           barrier);
             try {
-              QueryResponse rsp = slaveClient.query(new SolrQuery()
+              QueryResponse rsp = secondaryClient.query(new SolrQuery()
                                                     .setQuery("*:*")
                                                     .setRows(0));
               Thread.sleep(200);
@@ -187,7 +187,7 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
         }
       }).start();
 
-    QueryResponse response = slaveClient.query(new SolrQuery()
+    QueryResponse response = secondaryClient.query(new SolrQuery()
                                                .add("qt", "/replication")
                                                .add("command", CMD_FETCH_INDEX)
                                                .add("wait", "true")
@@ -198,18 +198,18 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
     assertEquals("threads encountered failures (see logs for when)",
                  Collections.emptyList(), threadFailures);
 
-    response = slaveClient.query(new SolrQuery().setQuery("*:*").setRows(0));
-    assertEquals("docs in slave", docsInMaster, response.getResults().getNumFound());
+    response = secondaryClient.query(new SolrQuery().setQuery("*:*").setRows(0));
+    assertEquals("docs in secondary", docsInPrimary, response.getResults().getNumFound());
 
-    response = slaveClient.query(new SolrQuery()
+    response = secondaryClient.query(new SolrQuery()
         .add("qt", "/replication")
         .add("command", ReplicationHandler.CMD_DETAILS)
     );
     if (log.isInfoEnabled()) {
       log.info("DETAILS {}", Utils.writeJson(response, new StringWriter(), true).toString());
     }
-    assertEquals("slave's clearedLocalIndexFirst (from rep details)",
-                 "true", response._getStr("details/slave/clearedLocalIndexFirst", null));
+    assertEquals("secondary's clearedLocalIndexFirst (from rep details)",
+                 "true", response._getStr("details/secondary/clearedLocalIndexFirst", null));
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})

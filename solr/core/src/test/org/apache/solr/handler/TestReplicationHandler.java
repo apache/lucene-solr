@@ -109,9 +109,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       + File.separator + "collection1" + File.separator + "conf"
       + File.separator;
 
-  JettySolrRunner masterJetty, slaveJetty, repeaterJetty;
-  HttpSolrClient masterClient, slaveClient, repeaterClient;
-  SolrInstance master = null, slave = null, repeater = null;
+  JettySolrRunner masterJetty, secondaryJetty, repeaterJetty;
+  HttpSolrClient masterClient, secondaryClient, repeaterClient;
+  SolrInstance master = null, secondary = null, repeater = null;
 
   static String context = "/solr";
 
@@ -135,10 +135,10 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     masterJetty = createAndStartJetty(master);
     masterClient = createNewSolrClient(masterJetty.getLocalPort());
 
-    slave = new SolrInstance(createTempDir("solr-instance").toFile(), "slave", masterJetty.getLocalPort());
-    slave.setUp();
-    slaveJetty = createAndStartJetty(slave);
-    slaveClient = createNewSolrClient(slaveJetty.getLocalPort());
+    secondary = new SolrInstance(createTempDir("solr-instance").toFile(), "secondary", masterJetty.getLocalPort());
+    secondary.setUp();
+    secondaryJetty = createAndStartJetty(secondary);
+    secondaryClient = createNewSolrClient(secondaryJetty.getLocalPort());
     
     System.setProperty("solr.indexfetcher.sotimeout2", "45000");
   }
@@ -148,7 +148,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       masterClient.deleteByQuery("*:*");
       masterClient.commit();
       // wait for replication to sync & verify
-      assertEquals(0, numFound(rQuery(0, "*:*", slaveClient)));
+      assertEquals(0, numFound(rQuery(0, "*:*", secondaryClient)));
     }
   }
 
@@ -160,17 +160,17 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       masterJetty.stop();
       masterJetty = null;
     }
-    if (null != slaveJetty) {
-      slaveJetty.stop();
-      slaveJetty = null;
+    if (null != secondaryJetty) {
+      secondaryJetty.stop();
+      secondaryJetty = null;
     }
     if (null != masterClient) {
       masterClient.close();
       masterClient = null;
     }
-    if (null != slaveClient) {
-      slaveClient.close();
-      slaveClient = null;
+    if (null != secondaryClient) {
+      secondaryClient.close();
+      secondaryClient = null;
     }
     System.clearProperty("solr.indexfetcher.sotimeout");
   }
@@ -300,67 +300,67 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
   @Test
   public void doTestDetails() throws Exception {
-    slaveJetty.stop();
+    secondaryJetty.stop();
     
-    slave.setTestPort(masterJetty.getLocalPort());
-    slave.copyConfigFile(CONF_DIR + "solrconfig-slave.xml", "solrconfig.xml");
-    slaveJetty = createAndStartJetty(slave);
+    secondary.setTestPort(masterJetty.getLocalPort());
+    secondary.copyConfigFile(CONF_DIR + "solrconfig-secondary.xml", "solrconfig.xml");
+    secondaryJetty = createAndStartJetty(secondary);
     
-    slaveClient.close();
+    secondaryClient.close();
     masterClient.close();
     masterClient = createNewSolrClient(masterJetty.getLocalPort());
-    slaveClient = createNewSolrClient(slaveJetty.getLocalPort());
+    secondaryClient = createNewSolrClient(secondaryJetty.getLocalPort());
     
     clearIndexWithReplication();
     { 
       NamedList<Object> details = getDetails(masterClient);
       
-      assertEquals("master isMaster?", 
-                   "true", details.get("isMaster"));
-      assertEquals("master isSlave?", 
-                   "false", details.get("isSlave"));
-      assertNotNull("master has master section", 
-                    details.get("master"));
+      assertEquals("primary isPrimary?",
+                   "true", details.get("isPrimary"));
+      assertEquals("primary isSecondary?",
+                   "false", details.get("isSecondary"));
+      assertNotNull("primary has primary section",
+                    details.get("primary"));
     }
 
-    // check details on the slave a couple of times before & after fetching
+    // check details on the secondary a couple of times before & after fetching
     for (int i = 0; i < 3; i++) {
-      NamedList<Object> details = getDetails(slaveClient);
+      NamedList<Object> details = getDetails(secondaryClient);
       assertNotNull(i + ": " + details);
-      assertNotNull(i + ": " + details.toString(), details.get("slave"));
+      assertNotNull(i + ": " + details.toString(), details.get("secondary"));
 
       if (i > 0) {
-        rQuery(i, "*:*", slaveClient);
+        rQuery(i, "*:*", secondaryClient);
         @SuppressWarnings({"rawtypes"})
-        List replicatedAtCount = (List) ((NamedList) details.get("slave")).get("indexReplicatedAtList");
+        List replicatedAtCount = (List) ((NamedList) details.get("secondary")).get("indexReplicatedAtList");
         int tries = 0;
         while ((replicatedAtCount == null || replicatedAtCount.size() < i) && tries++ < 5) {
           Thread.sleep(1000);
-          details = getDetails(slaveClient);
-          replicatedAtCount = (List) ((NamedList) details.get("slave")).get("indexReplicatedAtList");
+          details = getDetails(secondaryClient);
+          replicatedAtCount = (List) ((NamedList) details.get("secondary")).get("indexReplicatedAtList");
         }
         
-        assertNotNull("Expected to see that the slave has replicated" + i + ": " + details.toString(), replicatedAtCount);
+        assertNotNull("Expected to see that the secondary has replicated" + i + ": " + details.toString(), replicatedAtCount);
         
         // we can have more replications than we added docs because a replication can legally fail and try 
         // again (sometimes we cannot merge into a live index and have to try again)
         assertTrue("i:" + i + " replicationCount:" + replicatedAtCount.size(), replicatedAtCount.size() >= i); 
       }
 
-      assertEquals(i + ": " + "slave isMaster?", "false", details.get("isMaster"));
-      assertEquals(i + ": " + "slave isSlave?", "true", details.get("isSlave"));
-      assertNotNull(i + ": " + "slave has slave section", details.get("slave"));
+      assertEquals(i + ": " + "secondary isPrimary?", "false", details.get("isPrimary"));
+      assertEquals(i + ": " + "secondary isSlave?", "true", details.get("isSlave"));
+      assertNotNull(i + ": " + "secondary has secondary section", details.get("secondary"));
       // SOLR-2677: assert not false negatives
-      Object timesFailed = ((NamedList)details.get("slave")).get(IndexFetcher.TIMES_FAILED);
+      Object timesFailed = ((NamedList)details.get("secondary")).get(IndexFetcher.TIMES_FAILED);
       // SOLR-7134: we can have a fail because some mock index files have no checksum, will
       // always be downloaded, and may not be able to be moved into the existing index
-      assertTrue(i + ": " + "slave has fetch error count: " + (String)timesFailed, timesFailed == null || ((String) timesFailed).equals("1"));
+      assertTrue(i + ": " + "secondary has fetch error count: " + (String)timesFailed, timesFailed == null || ((String) timesFailed).equals("1"));
 
       if (3 != i) {
         // index & fetch
         index(masterClient, "id", i, "name", "name = " + i);
         masterClient.commit();
-        pullFromTo(masterJetty, slaveJetty);
+        pullFromTo(masterJetty, secondaryJetty);
       }
     }
 
@@ -376,14 +376,14 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       
       NamedList<Object> details = getDetails(repeaterClient);
       
-      assertEquals("repeater isMaster?", 
-                   "true", details.get("isMaster"));
-      assertEquals("repeater isSlave?", 
-                   "true", details.get("isSlave"));
+      assertEquals("repeater isPrimary?",
+                   "true", details.get("isPrimary"));
+      assertEquals("repeater isSecondary?",
+                   "true", details.get("isSecondary"));
       assertNotNull("repeater has master section", 
                     details.get("master"));
-      assertNotNull("repeater has slave section", 
-                    details.get("slave"));
+      assertNotNull("repeater has secondary section",
+                    details.get("secondary"));
 
     } finally {
       try { 
@@ -396,7 +396,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
   /**
    * Verify that empty commits and/or commits with openSearcher=false
-   * on the master do not cause subsequent replication problems on the slave 
+   * on the master do not cause subsequent replication problems on the secondary
    */
   public void testEmptyCommits() throws Exception {
     clearIndexWithReplication();
@@ -405,47 +405,47 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     index(masterClient, "id", "1", "name", "empty1");
     emptyUpdate(masterClient, "commit", "true");
     // force replication
-    pullFromMasterToSlave();
-    // verify doc is on slave
-    rQuery(1, "name:empty1", slaveClient);
-    assertVersions(masterClient, slaveClient);
+    pullFromPrimaryToSecondary();
+    // verify doc is on secondary
+    rQuery(1, "name:empty1", secondaryClient);
+    assertVersions(masterClient, secondaryClient);
 
     // do a completely empty commit on master and force replication
     emptyUpdate(masterClient, "commit", "true");
-    pullFromMasterToSlave();
+    pullFromPrimaryToSecondary();
 
-    // add another doc and verify slave gets it
+    // add another doc and verify secondary gets it
     index(masterClient, "id", "2", "name", "empty2");
     emptyUpdate(masterClient, "commit", "true");
     // force replication
-    pullFromMasterToSlave();
+    pullFromPrimaryToSecondary();
 
-    rQuery(1, "name:empty2", slaveClient);
-    assertVersions(masterClient, slaveClient);
+    rQuery(1, "name:empty2", secondaryClient);
+    assertVersions(masterClient, secondaryClient);
 
     // add a third doc but don't open a new searcher on master
     index(masterClient, "id", "3", "name", "empty3");
     emptyUpdate(masterClient, "commit", "true", "openSearcher", "false");
-    pullFromMasterToSlave();
+    pullFromPrimaryToSecondary();
     
-    // verify slave can search the doc, but master doesn't
+    // verify secondary can search the doc, but master doesn't
     rQuery(0, "name:empty3", masterClient);
-    rQuery(1, "name:empty3", slaveClient);
+    rQuery(1, "name:empty3", secondaryClient);
 
-    // final doc with hard commit, slave and master both showing all docs
+    // final doc with hard commit, secondary and master both showing all docs
     index(masterClient, "id", "4", "name", "empty4");
     emptyUpdate(masterClient, "commit", "true");
-    pullFromMasterToSlave();
+    pullFromPrimaryToSecondary();
 
     String q = "name:(empty1 empty2 empty3 empty4)";
     rQuery(4, q, masterClient);
-    rQuery(4, q, slaveClient);
-    assertVersions(masterClient, slaveClient);
+    rQuery(4, q, secondaryClient);
+    assertVersions(masterClient, secondaryClient);
 
   }
 
   @Test
-  public void doTestReplicateAfterWrite2Slave() throws Exception {
+  public void doTestReplicateAfterWrite2Secondary() throws Exception {
     clearIndexWithReplication();
     nDocs--;
     for (int i = 0; i < nDocs; i++) {
@@ -453,43 +453,43 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     }
 
     invokeReplicationCommand(masterJetty.getLocalPort(), "disableReplication");
-    invokeReplicationCommand(slaveJetty.getLocalPort(), "disablepoll");
+    invokeReplicationCommand(secondaryJetty.getLocalPort(), "disablepoll");
     
     masterClient.commit();
 
     assertEquals(nDocs, numFound(rQuery(nDocs, "*:*", masterClient)));
 
-    // Make sure that both the index version and index generation on the slave is
+    // Make sure that both the index version and index generation on the secondary is
     // higher than that of the master, just to make the test harder.
 
-    index(slaveClient, "id", 551, "name", "name = " + 551);
-    slaveClient.commit(true, true);
-    index(slaveClient, "id", 552, "name", "name = " + 552);
-    slaveClient.commit(true, true);
-    index(slaveClient, "id", 553, "name", "name = " + 553);
-    slaveClient.commit(true, true);
-    index(slaveClient, "id", 554, "name", "name = " + 554);
-    slaveClient.commit(true, true);
-    index(slaveClient, "id", 555, "name", "name = " + 555);
-    slaveClient.commit(true, true);
+    index(secondaryClient, "id", 551, "name", "name = " + 551);
+    secondaryClient.commit(true, true);
+    index(secondaryClient, "id", 552, "name", "name = " + 552);
+    secondaryClient.commit(true, true);
+    index(secondaryClient, "id", 553, "name", "name = " + 553);
+    secondaryClient.commit(true, true);
+    index(secondaryClient, "id", 554, "name", "name = " + 554);
+    secondaryClient.commit(true, true);
+    index(secondaryClient, "id", 555, "name", "name = " + 555);
+    secondaryClient.commit(true, true);
 
-    //this doc is added to slave so it should show an item w/ that result
-    assertEquals(1, numFound(rQuery(1, "id:555", slaveClient)));
+    //this doc is added to secondary so it should show an item w/ that result
+    assertEquals(1, numFound(rQuery(1, "id:555", secondaryClient)));
 
     //Let's fetch the index rather than rely on the polling.
     invokeReplicationCommand(masterJetty.getLocalPort(), "enablereplication");
-    invokeReplicationCommand(slaveJetty.getLocalPort(), "fetchindex");
+    invokeReplicationCommand(secondaryJetty.getLocalPort(), "fetchindex");
 
     /*
-    //the slave should have done a full copy of the index so the doc with id:555 should not be there in the slave now
-    slaveQueryRsp = rQuery(0, "id:555", slaveClient);
-    slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
-    assertEquals(0, slaveQueryResult.getNumFound());
+    //the secondary should have done a full copy of the index so the doc with id:555 should not be there in the secondary now
+    secondaryQueryRsp = rQuery(0, "id:555", secondaryClient);
+    secondaryQueryResult = (SolrDocumentList) secondaryQueryRsp.get("response");
+    assertEquals(0, secondaryQueryResult.getNumFound());
 
     // make sure we replicated the correct index from the master
-    slaveQueryRsp = rQuery(nDocs, "*:*", slaveClient);
-    slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
-    assertEquals(nDocs, slaveQueryResult.getNumFound());
+    secondaryQueryRsp = rQuery(nDocs, "*:*", secondaryClient);
+    secondaryQueryResult = (SolrDocumentList) secondaryQueryRsp.get("response");
+    assertEquals(nDocs, secondaryQueryResult.getNumFound());
     
     */
   }
@@ -507,7 +507,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   @Test
   public void doTestIndexAndConfigReplication() throws Exception {
 
-    TestInjection.delayBeforeSlaveCommitRefresh = random().nextInt(10);
+    TestInjection.delayBeforeSecondaryCommitRefresh = random().nextInt(10);
 
     clearIndexWithReplication();
 
@@ -522,17 +522,17 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
     assertEquals(nDocs, numFound(masterQueryRsp));
 
-    //get docs from slave and check if number is equal to master
+    //get docs from secondary and check if number is equal to master
     @SuppressWarnings({"rawtypes"})
-    NamedList slaveQueryRsp = rQuery(nDocs, "*:*", slaveClient);
-    SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
-    assertEquals(nDocs, numFound(slaveQueryRsp));
+    NamedList secondaryQueryRsp = rQuery(nDocs, "*:*", secondaryClient);
+    SolrDocumentList secondaryQueryResult = (SolrDocumentList) secondaryQueryRsp.get("response");
+    assertEquals(nDocs, numFound(secondaryQueryRsp));
 
     //compare results
-    String cmp = BaseDistributedSearchTestCase.compare(masterQueryResult, slaveQueryResult, 0, null);
+    String cmp = BaseDistributedSearchTestCase.compare(masterQueryResult, secondaryQueryResult, 0, null);
     assertEquals(null, cmp);
     
-    assertVersions(masterClient, slaveClient);
+    assertVersions(masterClient, secondaryClient);
 
     //start config files replication test
     masterClient.deleteByQuery("*:*");
@@ -547,8 +547,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     masterClient.close();
     masterClient = createNewSolrClient(masterJetty.getLocalPort());
 
-    slave.setTestPort(masterJetty.getLocalPort());
-    slave.copyConfigFile(slave.getSolrConfigFile(), "solrconfig.xml");
+    secondary.setTestPort(masterJetty.getLocalPort());
+    secondary.copyConfigFile(slave.getSolrConfigFile(), "solrconfig.xml");
 
     slaveJetty.stop();
 
@@ -588,7 +588,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     clearIndexWithReplication();
 
     // Test:
-    // setup master/slave.
+    // setup primary/secondary.
     // stop polling on slave, add a doc to master and verify slave hasn't picked it.
     nDocs--;
     for (int i = 0; i < nDocs; i++)
@@ -639,7 +639,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
    * the index hasn't changed. See SOLR-9036
    */
   @Test
-  public void doTestIndexFetchOnMasterRestart() throws Exception  {
+  public void doTestIndexFetchOnPrimaryRestart() throws Exception  {
     useFactory(null);
     try {
       clearIndexWithReplication();
@@ -675,14 +675,14 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       String cmp = BaseDistributedSearchTestCase.compare(masterQueryResult, slaveQueryResult, 0, null);
       assertEquals(null, cmp);
 
-      String timesReplicatedString = getSlaveDetails("timesIndexReplicated");
+      String timesReplicatedString = getSecondaryDetails("timesIndexReplicated");
       String timesFailed;
       Integer previousTimesFailed = null;
       if (timesReplicatedString == null) {
         timesFailed = "0";
       } else {
         int timesReplicated = Integer.parseInt(timesReplicatedString);
-        timesFailed = getSlaveDetails("timesFailed");
+        timesFailed = getSecondaryDetails("timesFailed");
         if (null == timesFailed) {
           timesFailed = "0";
         }
@@ -708,7 +708,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         
         NamedList<Object> slaveDetails=null;
         try {
-          slaveDetails = getSlaveDetails();
+          slaveDetails = getSecondaryDetails();
           int failed = Integer.parseInt(getStringOrNull(slaveDetails,"timesFailed"));
           if (previousTimesFailed != null) {
             assertTrue(failed > previousTimesFailed);
@@ -740,8 +740,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     }
   }
 
-  private String getSlaveDetails(String keyName) throws SolrServerException, IOException {
-    NamedList<Object> details = getSlaveDetails();
+  private String getSecondaryDetails(String keyName) throws SolrServerException, IOException {
+    NamedList<Object> details = getSecondaryDetails();
     return getStringOrNull(details, keyName);
   }
 
@@ -750,7 +750,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     return o != null ? o.toString() : null;
   }
 
-  private NamedList<Object> getSlaveDetails() throws SolrServerException, IOException {
+  private NamedList<Object> getSecondaryDetails() throws SolrServerException, IOException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(CommonParams.QT, "/replication");
     params.set("command", "details");
@@ -765,7 +765,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void doTestIndexFetchWithMasterUrl() throws Exception {
+  public void doTestIndexFetchWithPrimaryUrl() throws Exception {
     //change solrconfig on slave
     //this has no entry for pollinginterval
     slave.setTestPort(masterJetty.getLocalPort());
@@ -817,7 +817,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     slaveClient.commit();
     
-    pullFromSlaveToMaster();
+    pullFromSecondaryToPrimary();
     rQuery(nDocs + 3, "*:*", masterClient);
     
     //get docs from slave and check if number is equal to master
@@ -832,7 +832,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     assertVersions(masterClient, slaveClient);
     
-    pullFromSlaveToMaster();
+    pullFromSecondaryToPrimary();
     
     //get docs from slave and check if number is equal to master
     slaveQueryRsp = rQuery(nDocs + 3, "*:*", slaveClient);
@@ -852,7 +852,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     
     masterClient.commit();
     
-    pullFromSlaveToMaster();
+    pullFromSecondaryToPrimary();
     rQuery((int) slaveQueryResult.getNumFound(), "*:*", masterClient);
     
     //get docs from slave and check if number is equal to master
@@ -866,7 +866,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     assertEquals(null, cmp);
     
     assertVersions(masterClient, slaveClient);
-    pullFromSlaveToMaster();
+    pullFromSecondaryToPrimary();
     
     //get docs from slave and check if number is equal to master
     slaveQueryRsp = rQuery(nDocs + 3, "*:*", slaveClient);
@@ -957,7 +957,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         
         // index fetch
         Date slaveCoreStart = watchCoreStartAt(slaveClient, 30*1000, null);
-        pullFromMasterToSlave();
+        pullFromPrimaryToSecondary();
         if (confCoreReload) {
           watchCoreStartAt(slaveClient, 30*1000, slaveCoreStart);
         }
@@ -1050,7 +1050,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     return list.length;
   }
 
-  private void pullFromMasterToSlave() throws MalformedURLException,
+  private void pullFromPrimaryToSecondary() throws MalformedURLException,
       IOException {
     pullFromTo(masterJetty, slaveJetty);
   }
@@ -1164,15 +1164,15 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     ArrayList<NamedList<Object>> commits;
     details = getDetails(client);
     commits = (ArrayList<NamedList<Object>>) details.get("commits");
-    Long maxVersionSlave= 0L;
+    Long maxVersionSecondary= 0L;
     for(NamedList<Object> commit : commits) {
       Long version = (Long) commit.get("indexVersion");
-      maxVersionSlave = Math.max(version, maxVersionSlave);
+      maxVersionSecondary = Math.max(version, maxVersionSecondary);
     }
-    return maxVersionSlave;
+    return maxVersionSecondary;
   }
 
-  private void pullFromSlaveToMaster() throws MalformedURLException,
+  private void pullFromSecondaryToPrimary() throws MalformedURLException,
       IOException {
     pullFromTo(slaveJetty, masterJetty);
   }
@@ -1523,7 +1523,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     long startTime = System.nanoTime();
 
-    pullFromMasterToSlave();
+    pullFromPrimaryToSecondary();
 
     //Add a few more docs in the master. Just to make sure that we are replicating the correct index point
     //These extra docs should not get replicated

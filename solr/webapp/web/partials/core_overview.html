@@ -99,8 +99,8 @@ limitations under the License.
       <h2>
         <span class="is-replicating">
           Replication
-          <span ng-show="isSlave"> (Slave)</span>
-          <span ng-show="isMaster"> (Master)</span>
+          <span ng-show="isSecondary"> (Secondary)</span>
+          <span ng-show="isPrimary"> (Primary)</span>
         </span>
       </h2>
 
@@ -126,45 +126,45 @@ limitations under the License.
           </thead>
           <tbody>
 
-            <tr class="masterSearch" ng-show="isMaster">
+            <tr class="primarySearch" ng-show="isPrimary">
 
-              <th>Master (Searching)</th>
+              <th>Primary (Searching)</th>
               <td class="version"><div>{{replication.indexVersion}}</div></td>
               <td class="generation"><div>{{replication.generation}}</div></td>
               <td class="size"><div>{{replication.indexSize || '-'}}</div></td>
 
             </tr>
 
-            <tr class="master" ng-show="isMaster">
+            <tr class="primary" ng-show="isPrimary">
 
-              <th>Master (Replicable)</th>
-              <td class="version"><div>{{replication.master.replicableVersion || '-'}}</div></td>
-              <td class="generation"><div>{{replication.master.replicableGeneration || '-'}}</div></td>
+              <th>Primary (Replicable)</th>
+              <td class="version"><div>{{replication.primary.replicableVersion || '-'}}</div></td>
+              <td class="generation"><div>{{replication.primary.replicableGeneration || '-'}}</div></td>
               <td class="size"><div>-</div></td>
 
             </tr>
 
-            <tr class="master" ng-show="isSlave">
+            <tr class="primary" ng-show="isSecondary">
 
-              <th>Master (Replicable)</th>
-              <td class="version"><div>{{replication.master.replicableVersion || '-'}}</div></td>
-              <td class="generation"><div>{{replication.master.replicableGeneration || '-'}}</div></td>
+              <th>Primary (Replicable)</th>
+              <td class="version"><div>{{replication.primary.replicableVersion || '-'}}</div></td>
+              <td class="generation"><div>{{replication.primary.replicableGeneration || '-'}}</div></td>
               <td class="size"><div>-</div></td>
 
             </tr>
 
-            <tr class="masterSearch" ng-show="isSlave">
+            <tr class="primarySearch" ng-show="isSecondary">
 
-              <th>Master (Searching)</th>
-              <td class="version"><div>{{replication.slave.masterDetails.indexVersion}}</div></td>
-              <td class="generation"><div>{{replication.slave.masterDetails.generation}}</div></td>
-              <td class="size"><div>{{replication.slave.masterDetails.indexSize || '-'}}</div></td>
+              <th>Primary (Searching)</th>
+              <td class="version"><div>{{replication.secondary.primaryDetails.indexVersion}}</div></td>
+              <td class="generation"><div>{{replication.secondary.primaryDetails.generation}}</div></td>
+              <td class="size"><div>{{replication.secondary.primaryDetails.indexSize || '-'}}</div></td>
 
             </tr>
 
-            <tr class="slave slaveOnly" ng-show="isSlave">
+            <tr class="secondary secondaryOnly" ng-show="isSecondary">
 
-              <th>Slave (Searching)</th>
+              <th>Secondary (Searching)</th>
               <td class="version"><div>{{replication.indexVersion}}</div></td>
               <td class="generation"><div>{{replication.generation}}</div></td>
               <td class="size"><div>{{replication.indexSize || '-'}}</div></td>

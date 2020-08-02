@@ -143,7 +143,7 @@ public class TestInjection {
 
   private volatile static AtomicInteger countPrepRecoveryOpPauseForever = new AtomicInteger(0);
 
-  public volatile static Integer delayBeforeSlaveCommitRefresh=null;
+  public volatile static Integer delayBeforeSecondaryCommitRefresh=null;
 
   public volatile static Integer delayInExecutePlanAction=null;
 
@@ -185,7 +185,7 @@ public class TestInjection {
     countPrepRecoveryOpPauseForever = new AtomicInteger(0);
     failIndexFingerprintRequests = null;
     wrongIndexFingerprint = null;
-    delayBeforeSlaveCommitRefresh = null;
+    delayBeforeSecondaryCommitRefresh = null;
     delayInExecutePlanAction = null;
     failInExecutePlanAction = false;
     skipIndexWriterCommitOnClose = false;
@@ -521,11 +521,11 @@ public class TestInjection {
     return new Pair<>(Boolean.parseBoolean(val), Integer.parseInt(percent));
   }
 
-  public static boolean injectDelayBeforeSlaveCommitRefresh() {
-    if (delayBeforeSlaveCommitRefresh!=null) {
+  public static boolean injectDelayBeforeSecondaryCommitRefresh() {
+    if (delayBeforeSecondaryCommitRefresh!=null) {
       try {
-        log.info("Pausing IndexFetcher for {}ms", delayBeforeSlaveCommitRefresh);
-        Thread.sleep(delayBeforeSlaveCommitRefresh);
+        log.info("Pausing IndexFetcher for {}ms", delayBeforeSecondaryCommitRefresh);
+        Thread.sleep(delayBeforeSecondaryCommitRefresh);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
       }

@@ -20,7 +20,7 @@
 <ivy-module version="2.0">
   <info organisation="org.apache.solr" module="solrj"/>
 
-  <configurations defaultconfmapping="compile->master;test->master">
+  <configurations defaultconfmapping="compile->primary;test->primary">
     <!-- artifacts in the "compile" configuration will go into solr/solrj/lib/ -->
     <conf name="compile" transitive="false"/>
     <!-- artifacts in the "test" configuration will go into solr/solrj/test-lib/ -->

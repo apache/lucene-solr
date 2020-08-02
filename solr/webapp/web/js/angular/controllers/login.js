@@ -241,7 +241,7 @@ solrAdminApp.controller('LoginController',
         };
       }]);
 
-// This function is copied and adapted from MIT-licensed https://github.com/randymized/www-authenticate/blob/master/lib/parsers.js
+// This function is copied and adapted from MIT-licensed https://github.com/randymized/www-authenticate/blob/primary/lib/parsers.js
 www_auth_parse_params= function (header) {
   // This parser will definitely fail if there is more than one challenge
   var params = {};

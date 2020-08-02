@@ -33,7 +33,7 @@
   </requestHandler>
 
   <requestHandler name="/replication" class="solr.ReplicationHandler">
-    <lst name="master">
+    <lst name="primary">
       <str name="replicateAfter">commit</str>
       <!-- we don't really need dummy.xsl, but we want to be sure subdir 
            files replicate (see SOLR-3809)

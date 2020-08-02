@@ -26,12 +26,12 @@ solrAdminApp.controller('ReplicationController',
                 var timeout;
                 var interval;
                 if ($scope.interval) $interval.cancel($scope.interval);
-                $scope.isSlave = (response.details.isSlave === 'true');
-                if ($scope.isSlave) {
+                $scope.isSecondary = (response.details.isSecondary === 'true');
+                if ($scope.isSecondary) {
                     $scope.progress = getProgressDetails(response.details.slave);
                     $scope.iterations = getIterations(response.details.slave);
-                    $scope.versions = getSlaveVersions(response.details);
-                    $scope.settings = getSlaveSettings(response.details);
+                    $scope.versions = getSecondaryVersions(response.details);
+                    $scope.settings = getSecondarySettings(response.details);
                     if ($scope.settings.isReplicating) {
                         timeout = $timeout($scope.refresh, 1000);
                     } else if(!$scope.settings.isPollingDisabled && $scope.settings.pollInterval) {
@@ -41,9 +41,9 @@ solrAdminApp.controller('ReplicationController',
                         timeout = $timeout($scope.refresh, 1000*(1+$scope.settings.tick));
                     }
                 } else {
-                    $scope.versions = getMasterVersions(response.details);
+                    $scope.versions = getPrimaryVersions(response.details);
                 }
-                $scope.master = getMasterSettings(response.details, $scope.isSlave);
+                $scope.primary = getPrimarySettings(response.details, $scope.isSecondary);
 
                 var onRouteChangeOff = $scope.$on('$routeChangeStart', function() {
                     if (interval) $interval.cancel(interval);
@@ -120,37 +120,37 @@ var getIterations = function(slave) {
     return iterations;
 };
 
-var getMasterVersions = function(data) {
-    versions = {masterSearch:{}, master:{}};
+var getPrimaryVersions = function(data) {
+    versions = {primarySearch:{}, primary:{}};
 
-    versions.masterSearch.version = data.indexVersion;
-    versions.masterSearch.generation = data.generation;
-    versions.masterSearch.size = data.indexSize;
+    versions.primarySearch.version = data.indexVersion;
+    versions.primarySearch.generation = data.generation;
+    versions.primarySearch.size = data.indexSize;
 
-    versions.master.version = data.master.replicableVersion || '-';
-    versions.master.generation = data.master.replicableGeneration || '-';
-    versions.master.size = '-';
+    versions.primary.version = data.primary.replicableVersion || '-';
+    versions.primary.generation = data.primary.replicableGeneration || '-';
+    versions.primary.size = '-';
 
     return versions;
 };
 
-var getSlaveVersions = function(data) {
-    versions = {masterSearch: {}, master: {}, slave: {}};
+var getSecondaryVersions = function(data) {
+    versions = {primarySearch: {}, primary: {}, slave: {}};
 
     versions.slave.version = data.indexVersion;
     versions.slave.generation = data.generation;
     versions.slave.size = data.indexSize;
 
-    versions.master.version = data.slave.masterDetails.replicableVersion || '-';
-    versions.master.generation = data.slave.masterDetails.replicableGeneration || '-';
-    versions.master.size = '-';
+    versions.primary.version = data.slave.primaryDetails.replicableVersion || '-';
+    versions.primary.generation = data.slave.primaryDetails.replicableGeneration || '-';
+    versions.primary.size = '-';
 
-    versions.masterSearch.version = data.slave.masterDetails.indexVersion;
-    versions.masterSearch.generation = data.slave.masterDetails.generation;
-    versions.masterSearch.size = data.slave.masterDetails.indexSize;
+    versions.primarySearch.version = data.slave.primaryDetails.indexVersion;
+    versions.primarySearch.generation = data.slave.primaryDetails.generation;
+    versions.primarySearch.size = data.slave.primaryDetails.indexSize;
 
-    versions.changedVersion = data.indexVersion !== data.slave.masterDetails.indexVersion;
-    versions.changedGeneration = data.generation !== data.slave.masterDetails.generation;
+    versions.changedVersion = data.indexVersion !== data.slave.primaryDetails.indexVersion;
+    versions.changedGeneration = data.generation !== data.slave.primaryDetails.generation;
 
     return versions;
 };
@@ -181,9 +181,9 @@ var parseSeconds = function(time) {
     return seconds;
 }
 
-var getSlaveSettings = function(data) {
+var getSecondarySettings = function(data) {
     var settings = {};
-    settings.masterUrl = data.slave.masterUrl;
+    settings.primaryUrl = data.slave.primaryUrl;
     settings.isPollingDisabled = data.slave.isPollingDisabled == 'true';
     settings.pollInterval = data.slave.pollInterval;
     settings.isReplicating = data.slave.isReplicating == 'true';
@@ -206,15 +206,15 @@ var getSlaveSettings = function(data) {
     return settings;
 };
 
-var getMasterSettings = function(details, isSlave) {
-    var master = {};
-    var masterData = isSlave ? details.slave.masterDetails.master : details.master;
-    master.replicationEnabled = masterData.replicationEnabled == "true";
-    master.replicateAfter = masterData.replicateAfter.join(", ");
+var getPrimarySettings = function(details, isSecondary) {
+    var primary = {};
+    var primaryData = isSecondary ? details.slave.primaryDetails.primary : details.primary;
+    primary.replicationEnabled = primaryData.replicationEnabled == "true";
+    primary.replicateAfter = primaryData.replicateAfter.join(", ");
 
-    if (masterData.confFiles) {
-        master.files = [];
-        var confFiles = masterData.confFiles.split(',');
+    if (primaryData.confFiles) {
+        primary.files = [];
+        var confFiles = primaryData.confFiles.split(',');
         for (var i=0; i<confFiles.length; i++) {
             var file = confFiles[i];
             var short = file;
@@ -222,14 +222,14 @@ var getMasterSettings = function(details, isSlave) {
             if (file.indexOf(":")>=0) {
                 title = file.replace(':', ' » ');
                 var parts = file.split(':');
-                if (isSlave) {
+                if (isSecondary) {
                     short = parts[1];
                 } else {
                     short = parts[0];
                 }
             }
-            master.files.push({title:title, name:short});
+            primary.files.push({title:title, name:short});
         }
     }
-    return master;
+    return primary;
 }
