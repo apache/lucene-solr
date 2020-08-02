@@ -21,6 +21,7 @@ New Features
 
 * SOLR-14588: Introduce Circuit Breaker Infrastructure and a JVM heap usage memory tracking circuit breaker implementation (Atri Sharma)
 
+* SOLR-14702: Pull oppressive language out the project (marcussorealheis via Kevin Risden)
 
 Improvements
 ----------------------
