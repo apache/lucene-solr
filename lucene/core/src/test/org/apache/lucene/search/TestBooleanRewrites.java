@@ -326,6 +326,14 @@ public class TestBooleanRewrites extends LuceneTestCase {
     expected = new BoostQuery(new ConstantScoreQuery(
             new TermQuery(new Term("foo", "bar"))), 0.0f);
     assertEquals(expected, searcher.rewrite(bq));
+
+    bq = new BooleanQuery.Builder()
+            .add(new MatchAllDocsQuery(), Occur.FILTER)
+            .add(new MatchAllDocsQuery(), Occur.FILTER)
+            .build();
+    expected = new BoostQuery(new ConstantScoreQuery(
+            new MatchAllDocsQuery()), 0.0f);
+    assertEquals(expected, searcher.rewrite(bq));
   }
 
   public void testRandom() throws IOException {
