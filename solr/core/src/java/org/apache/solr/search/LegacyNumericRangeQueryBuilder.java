@@ -16,13 +16,13 @@
  */
 package org.apache.solr.search;
 
-import org.apache.lucene.search.Query;
-import org.apache.solr.legacy.LegacyNumericRangeQuery;
-import org.apache.solr.legacy.LegacyNumericUtils;
 import org.apache.lucene.queryparser.xml.DOMUtils;
 import org.apache.lucene.queryparser.xml.ParserException;
 import org.apache.lucene.queryparser.xml.QueryBuilder;
 import org.apache.lucene.queryparser.xml.builders.PointRangeQueryBuilder;
+import org.apache.lucene.search.Query;
+import org.apache.solr.legacy.LegacyNumericRangeQuery;
+import org.apache.solr.legacy.LegacyNumericUtils;
 import org.w3c.dom.Element;
 
 /**

@@ -17,14 +17,12 @@
 
 package org.apache.solr.common.util;
 
+import static java.util.Collections.emptyList;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
-import static java.util.Collections.emptyList;
 
 /**
  * A utility class to efficiently parse/store/lookup hierarchical paths which are templatized

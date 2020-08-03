@@ -17,6 +17,12 @@
 
 package org.apache.solr.common.cloud;
 
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.data.Stat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -34,13 +40,6 @@ import java.util.Map;
 import java.util.TreeSet;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
-
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.common.SolrException;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.data.Stat;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Class to hold  ZK upload/download/move common code. With the advent of the upconfig/downconfig/cp/ls/mv commands

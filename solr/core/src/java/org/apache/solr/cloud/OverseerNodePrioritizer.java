@@ -16,11 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import java.lang.invoke.MethodHandles;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -39,6 +34,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.ID;
+import java.lang.invoke.MethodHandles;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Responsible for prioritization of Overseer nodes, for example with the

@@ -16,6 +16,25 @@
  */
 package org.apache.solr.update;
 
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.MergePolicy;
+import org.apache.lucene.search.Sort;
+import org.apache.solr.cloud.ActionThrottle;
+import org.apache.solr.cloud.RecoveryStrategy;
+import org.apache.solr.common.AlreadyClosedException;
+import org.apache.solr.common.ParWork;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.core.DirectoryFactory;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.index.SortingMergePolicy;
+import org.apache.solr.logging.MDCLoggingContext;
+import org.apache.solr.util.RefCounted;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.Callable;
@@ -29,27 +48,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.MergePolicy;
-import org.apache.lucene.search.Sort;
-import org.apache.lucene.store.Directory;
-import org.apache.solr.cloud.ActionThrottle;
-import org.apache.solr.cloud.RecoveryStrategy;
-import org.apache.solr.common.AlreadyClosedException;
-import org.apache.solr.common.ParWork;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.CoreDescriptor;
-import org.apache.solr.core.DirectoryFactory;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.index.SortingMergePolicy;
-import org.apache.solr.logging.MDCLoggingContext;
-import org.apache.solr.util.RefCounted;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public final class DefaultSolrCoreState extends SolrCoreState implements RecoveryStrategy.RecoveryListener {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

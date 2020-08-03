@@ -17,17 +17,15 @@
 
 package org.apache.solr.common.util;
 
+import org.apache.solr.common.AlreadyClosedException;
+import org.apache.solr.common.ParWork;
+
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Semaphore;
-
-import org.apache.solr.common.AlreadyClosedException;
-import org.apache.solr.common.ParWork;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.ExecutorUtil;
 
 public class OrderedExecutor implements Executor {
   private final ExecutorService delegate;

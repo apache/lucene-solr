@@ -16,17 +16,16 @@
  */
 package org.apache.solr.common;
 
-import java.io.CharArrayWriter;
+import org.apache.commons.io.output.StringBuilderWriter;
+import org.apache.solr.common.util.NamedList;
+import org.slf4j.Logger;
+import org.slf4j.MDC;
+
 import java.io.PrintWriter;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import org.apache.commons.io.output.StringBuilderWriter;
-import org.apache.solr.common.util.NamedList;
-import org.slf4j.Logger;
-import org.slf4j.MDC;
 
 /**
  *

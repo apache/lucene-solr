@@ -16,6 +16,16 @@
  */
 package org.apache.solr.common;
 
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.common.util.OrderedExecutor;
+import org.apache.solr.common.util.SysStats;
+import org.apache.zookeeper.KeeperException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
@@ -33,20 +43,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.ObjectReleaseTracker;
-import org.apache.solr.common.util.OrderedExecutor;
-import org.apache.solr.common.util.SysStats;
-import org.apache.zookeeper.KeeperException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * ParWork. A workhorse utility class that tries to use good patterns,

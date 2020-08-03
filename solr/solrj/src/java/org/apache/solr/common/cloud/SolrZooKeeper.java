@@ -16,6 +16,14 @@
  */
 package org.apache.solr.common.cloud;
 
+import org.apache.solr.common.ParWork;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.CloseTracker;
+import org.apache.solr.common.util.SuppressForbidden;
+import org.apache.zookeeper.ClientCnxn;
+import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.ZooKeeper;
+
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -23,26 +31,8 @@ import java.lang.reflect.Method;
 import java.net.SocketAddress;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
-import java.util.Collections;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
-
-import org.apache.solr.common.ParWork;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.CloseTracker;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.RetryUtil;
-import org.apache.solr.common.util.SuppressForbidden;
-import org.apache.zookeeper.ClientCnxn;
-import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.ZooDefs;
-import org.apache.zookeeper.ZooKeeper;
-import org.apache.zookeeper.ZooKeeperExposed;
-import org.apache.zookeeper.proto.RequestHeader;
 
 // we use this class to expose nasty stuff for tests
 @SuppressWarnings({"try"})

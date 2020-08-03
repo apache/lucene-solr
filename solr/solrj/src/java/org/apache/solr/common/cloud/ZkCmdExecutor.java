@@ -16,20 +16,15 @@
  */
 package org.apache.solr.common.cloud;
 
-import org.apache.solr.common.AlreadyClosedException;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ConnectionManager.IsClosed;
 import org.apache.solr.common.util.TimeOut;
 import org.apache.solr.common.util.TimeSource;
-import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 
 public class ZkCmdExecutor {

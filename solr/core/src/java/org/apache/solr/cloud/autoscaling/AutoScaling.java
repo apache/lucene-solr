@@ -17,17 +17,16 @@
 
 package org.apache.solr.cloud.autoscaling;
 
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.SolrResourceLoader;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import org.apache.lucene.store.AlreadyClosedException;
-import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
-import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.SolrResourceLoader;
 
 public class AutoScaling {
 

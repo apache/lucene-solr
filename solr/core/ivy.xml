@@ -67,6 +67,8 @@
     <dependency org="com.fasterxml.jackson.core" name="jackson-annotations" rev="${/com.fasterxml.jackson.core/jackson-annotations}" conf="compile"/>
     <dependency org="com.fasterxml.jackson.dataformat" name="jackson-dataformat-smile" rev="${/com.fasterxml.jackson.dataformat/jackson-dataformat-smile}" conf="compile"/>
     <dependency org="com.fasterxml.staxmate" name="staxmate" rev="${/com.fasterxml.staxmate/staxmate}" conf="compile"/>
+    <dependency org="com.fasterxml" name="aalto-xml" rev="${/com.fasterxml/aalto-xml}" conf="compile"/>
+
 
     <dependency org="com.fasterxml.woodstox" name="woodstox-core" rev="${/com.fasterxml.woodstox/woodstox-core}" conf="compile"/>
 

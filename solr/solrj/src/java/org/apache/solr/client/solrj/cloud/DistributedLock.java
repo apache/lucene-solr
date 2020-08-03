@@ -18,26 +18,20 @@
 
 package org.apache.solr.client.solrj.cloud;
 
-import static org.apache.zookeeper.CreateMode.EPHEMERAL_SEQUENTIAL;
-
-import java.lang.invoke.MethodHandles;
-import java.util.List;
-import java.util.SortedSet;
-import java.util.TreeSet;
-
-import org.apache.solr.client.solrj.cloud.LockListener;
-import org.apache.solr.client.solrj.cloud.ProtocolSupport;
-import org.apache.solr.client.solrj.cloud.ZNodeName;
-import org.apache.solr.client.solrj.cloud.ZooKeeperOperation;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.zookeeper.CreateMode.EPHEMERAL_SEQUENTIAL;
+import java.lang.invoke.MethodHandles;
+import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 /**
  * A <a href="package.html">protocol to implement an exclusive
@@ -186,9 +180,9 @@ public class DistributedLock extends ProtocolSupport {
          *
          * @param prefix    the prefix node
          * @param zookeeper teh zookeeper client
-         * @param dir       the dir paretn
-         * @throws KeeperException
-         * @throws InterruptedException
+         * @param dir       the dir parent
+         * @throws KeeperException on zk exception
+         * @throws InterruptedException on interrupt
          */
         private void findPrefixInChildren(String prefix, SolrZkClient zookeeper, String dir)
                 throws KeeperException, InterruptedException {

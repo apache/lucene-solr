@@ -22,17 +22,17 @@
 
 package org.apache.solr.handler.tagger;
 
-import javax.xml.stream.XMLResolver;
-import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.events.XMLEvent;
-import java.io.InputStream;
-import java.io.StringReader;
-
 import com.ctc.wstx.stax.WstxInputFactory;
 import org.apache.commons.io.input.ClosedInputStream;
 import org.codehaus.stax2.LocationInfo;
 import org.codehaus.stax2.XMLInputFactory2;
 import org.codehaus.stax2.XMLStreamReader2;
+
+import javax.xml.stream.XMLResolver;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.events.XMLEvent;
+import java.io.InputStream;
+import java.io.StringReader;
 
 /**
  * Corrects offsets to adjust for XML formatted data. The goal is such that the caller should be

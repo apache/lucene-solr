@@ -63,6 +63,7 @@ dependencies {
 
   api 'net.sf.saxon:Saxon-HE'
 
+  api 'com.fasterxml:aalto-xml'
   implementation 'xerces:xercesImpl'
   implementation 'com.fasterxml.staxmate:staxmate'
 

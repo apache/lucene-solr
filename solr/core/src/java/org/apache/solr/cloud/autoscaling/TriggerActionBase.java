@@ -16,16 +16,15 @@
  */
 package org.apache.solr.cloud.autoscaling;
 
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.core.SolrResourceLoader;
+
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-
-import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.core.SolrResourceLoader;
 
 /**
  * Base class for {@link TriggerAction} implementations.

@@ -1,6 +1,5 @@
 package org.apache.zookeeper;
 
-import org.apache.solr.common.ParWork;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
