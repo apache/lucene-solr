@@ -21,6 +21,8 @@ import java.util.Set;
 
 /**
  * <p>Request for creating a new collection with a given set of shards and replication factor for various replica types.
+ * The expected {@link WorkOrder} corresponding to this {@link Request} is created using
+ * {@link WorkOrderFactory#createWorkOrderNewCollection}
  *
  * <p>Note there is no need at this stage to allow the plugin to know each shard hash range for example, this can be handled
  * by the Solr side implementation of this interface without needing the plugin to worry about it (the implementation of this interface on
@@ -30,12 +32,12 @@ import java.util.Set;
  * creating a Collection but likely do not have to be exposed to the plugin (this can easily be changed if needed by
  * adding accessors here, the underlying Solr side implementation of this interface has the information).
  */
-public interface CreateCollectionRequest extends Request {
+public interface CreateNewCollectionRequest extends Request {
   String getCollectionName();
 
   Set<String> getShardNames();
 
-  int getNRTReplicationFactor();
-  int getTLOGReplicationFactor();
-  int getPULLReplicationFactor();
+  int getNrtReplicationFactor();
+  int getTlogReplicationFactor();
+  int getPullReplicationFactor();
 }

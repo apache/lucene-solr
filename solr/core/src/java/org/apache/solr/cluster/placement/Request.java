@@ -18,7 +18,7 @@
 package org.apache.solr.cluster.placement;
 
 /**
- * A cluster related change request that Solr asks a {@link PlacementPlugin} plugin to resolve and compute {@link WorkOrder}s for.
+ * <p>A cluster related change request that Solr asks a {@link PlacementPlugin} plugin to resolve and compute {@link WorkOrder}s for.
  */
 public interface Request {
 }

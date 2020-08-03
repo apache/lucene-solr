@@ -17,25 +17,22 @@
 
 package org.apache.solr.cluster.placement;
 
-import java.util.List;
-
 /**
  * Implemented by external plugins to control replica placement and movement on the search cluster (as well as other things
  * such as cluster elasticity?) when cluster changes are required (initiated elsewhere, most likely following a Collection
  * API call).
  */
 public interface PlacementPlugin {
-
   /**
    * @param clusterTopo initial state of the cluster
-   * @param placementRequests requests for placing new data, moving or removing data on the cluster. These are ordered
+   * @param placementRequest request for placing new replicas or moving existing replicas on the cluster.
    * @param propertyFactory Factory used by the plugin to build instances of {@link PropertyKey} to resolve properties
    *                        to their values.
    * @param propertyFetcher Allows resolving {@link PropertyKey}'s to {@link PropertyValue}'s by contacting the
    *                        relevant {@link PropertyValueSource} defined in each {@link PropertyKey}.
-   * @param workOrderFactory Factory in used to create instances of {@link WorkOrder} to return computed decisions.
-   * @return work orders to be executed (in order) and that will lead to satisfying all of the placement requests.
+   * @param workOrderFactory Factory used to create instances of {@link WorkOrder} to return computed decision.
+   * @return work order satisfying the placement request.
    */
-  List<WorkOrder> computePlacement(Topo clusterTopo, List<Request> placementRequests, PropertyKeyFactory propertyFactory,
+  WorkOrder computePlacement(Topo clusterTopo, Request placementRequest, PropertyKeyFactory propertyFactory,
                                    PropertyValueFetcher propertyFetcher, WorkOrderFactory workOrderFactory) throws PlacementException, InterruptedException;
 }

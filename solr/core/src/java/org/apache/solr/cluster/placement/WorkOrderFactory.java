@@ -19,18 +19,31 @@ package org.apache.solr.cluster.placement;
 
 import java.util.Set;
 
+/**
+ * Allows pluging to create {@link WorkOrder}s telling the Solr layer where to create replicas following the processing of
+ * a {@link Request}. The Solr layer can (and will) check that the {@link WorkOrder} conforms to the {@link Request} (and
+ * if it does not, the requested operation will fail).
+ */
 public interface WorkOrderFactory {
   /**
    * <p>Creates a {@link WorkOrder} for adding a new collection and its replicas.
    *
    * <p>This is in support of {@link org.apache.solr.cloud.api.collections.CreateCollectionCmd}.
    */
-  WorkOrder createWorkOrderNewCollection(CreateCollectionRequest request, String CollectionName, Set<ReplicaPlacement> replicaPlacements);
+  WorkOrder createWorkOrderNewCollection(CreateNewCollectionRequest request, String CollectionName, Set<ReplicaPlacement> replicaPlacements);
 
-//  /**
-//   * Creates a {@link WorkOrder} for adding a replica to an existing shard of an existing collection.
-//   */
-//  WorkOrder createWorkOrderCreateReplica(Request request, String CollectionName, ReplicaPlacement replicaPlacement);
+  /**
+   * <p>Creates a {@link WorkOrder} for adding replicas to a given shard of a given collection.
+   *
+   * <p>This is in support (directly or indirectly) of {@link org.apache.solr.cloud.api.collections.AddReplicaCmd},
+   * {@link org.apache.solr.cloud.api.collections.CreateShardCmd}, {@link org.apache.solr.cloud.api.collections.ReplaceNodeCmd},
+   * {@link org.apache.solr.cloud.api.collections.MoveReplicaCmd}, {@link org.apache.solr.cloud.api.collections.SplitShardCmd},
+   * {@link org.apache.solr.cloud.api.collections.RestoreCmd} and {@link org.apache.solr.cloud.api.collections.MigrateCmd}.
+   * (as well as of {@link org.apache.solr.cloud.api.collections.CreateCollectionCmd} in the specific case of
+   * {@link org.apache.solr.common.params.CollectionAdminParams#WITH_COLLECTION} but this should be removed shortly and
+   * the section in parentheses of this comment should be removed when the {@code withCollection} javadoc link appears broken).
+   */
+  WorkOrder createWorkOrderAddReplicas(AddReplicasRequest request, String CollectionName, Set<ReplicaPlacement> replicaPlacements);
 
   /**
    * Creates a {@link ReplicaPlacement} needed to be passed to some/all {@link WorkOrder} factory methods.

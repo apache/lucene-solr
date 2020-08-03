@@ -20,7 +20,6 @@ package org.apache.solr.cluster.placement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
@@ -31,17 +30,17 @@ import java.util.Set;
  */
 public class SamplePluginRandomPlacement implements PlacementPlugin {
 
-  public List<WorkOrder> computePlacement(Topo clusterTopo, List<Request> placementRequests, PropertyKeyFactory propertyFactory,
+  public WorkOrder computePlacement(Topo clusterTopo, Request placementRequest, PropertyKeyFactory propertyFactory,
                                           PropertyValueFetcher propertyFetcher, WorkOrderFactory workOrderFactory) throws PlacementException {
     // This plugin only supports Creating a collection, and only one collection. Real code would be different...
-    if (placementRequests.size() != 1 ||  !(placementRequests.get(0) instanceof CreateCollectionRequest)) {
+    if (!(placementRequest instanceof CreateNewCollectionRequest)) {
       throw new PlacementException("This plugin only supports creating collections");
     }
 
-    CreateCollectionRequest reqCreateCollection = (CreateCollectionRequest) placementRequests.get(0);
+    CreateNewCollectionRequest reqCreateCollection = (CreateNewCollectionRequest) placementRequest;
 
-    final int totalReplicasPerShard = reqCreateCollection.getNRTReplicationFactor() +
-        reqCreateCollection.getTLOGReplicationFactor() + reqCreateCollection.getPULLReplicationFactor();
+    final int totalReplicasPerShard = reqCreateCollection.getNrtReplicationFactor() +
+        reqCreateCollection.getTlogReplicationFactor() + reqCreateCollection.getPullReplicationFactor();
 
     if (clusterTopo.getLiveNodes().size() < totalReplicasPerShard) {
       throw new PlacementException("Cluster size too small for number of replicas per shard");
@@ -56,17 +55,17 @@ public class SamplePluginRandomPlacement implements PlacementPlugin {
       Collections.shuffle(nodesToAssign, new Random());
 
       placeForReplicaType(nodesToAssign, workOrderFactory, replicaPlacements,
-          shardName, reqCreateCollection.getNRTReplicationFactor(), Replica.ReplicaType.NRT);
+          shardName, reqCreateCollection.getNrtReplicationFactor(), Replica.ReplicaType.NRT);
       placeForReplicaType(nodesToAssign, workOrderFactory, replicaPlacements,
-          shardName, reqCreateCollection.getTLOGReplicationFactor(), Replica.ReplicaType.TLOG);
+          shardName, reqCreateCollection.getTlogReplicationFactor(), Replica.ReplicaType.TLOG);
       placeForReplicaType(nodesToAssign, workOrderFactory, replicaPlacements,
-          shardName, reqCreateCollection.getPULLReplicationFactor(), Replica.ReplicaType.PULL);
+          shardName, reqCreateCollection.getPullReplicationFactor(), Replica.ReplicaType.PULL);
     }
 
     WorkOrder newCollectionWO = workOrderFactory.createWorkOrderNewCollection(
         reqCreateCollection, reqCreateCollection.getCollectionName(), replicaPlacements);
 
-    return Collections.singletonList(newCollectionWO);
+    return newCollectionWO;
   }
 
   private void placeForReplicaType(ArrayList<Node> nodesToAssign, WorkOrderFactory workOrderFactory,

@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
 import java.util.Map;
 
@@ -39,17 +38,17 @@ import org.apache.solr.common.util.SuppressForbidden;
 public class SamplePluginMinimizeCores implements PlacementPlugin {
 
   @SuppressForbidden(reason = "Ordering.arbitrary() has no equivalent in Comparator class. Rather reuse than copy.")
-  public List<WorkOrder> computePlacement(Topo clusterTopo, List<Request> placementRequests, PropertyKeyFactory propertyFactory,
+  public WorkOrder computePlacement(Topo clusterTopo, Request placementRequest, PropertyKeyFactory propertyFactory,
                                           PropertyValueFetcher propertyFetcher, WorkOrderFactory workOrderFactory) throws PlacementException {
-    // This plugin only supports Creating a collection, and only one collection. Real code would be different...
-    if (placementRequests.size() != 1 || !(placementRequests.get(0) instanceof CreateCollectionRequest)) {
-      throw new PlacementException("This plugin only supports creating collections");
+    // This plugin only supports Creating a collection.
+    if (!(placementRequest instanceof CreateNewCollectionRequest)) {
+      throw new PlacementException("This toy plugin only supports creating collections");
     }
 
-    final CreateCollectionRequest reqCreateCollection = (CreateCollectionRequest) placementRequests.get(0);
+    final CreateNewCollectionRequest reqCreateCollection = (CreateNewCollectionRequest) placementRequest;
 
-    final int totalReplicasPerShard = reqCreateCollection.getNRTReplicationFactor() +
-        reqCreateCollection.getTLOGReplicationFactor() + reqCreateCollection.getPULLReplicationFactor();
+    final int totalReplicasPerShard = reqCreateCollection.getNrtReplicationFactor() +
+        reqCreateCollection.getTlogReplicationFactor() + reqCreateCollection.getPullReplicationFactor();
 
     if (clusterTopo.getLiveNodes().size() < totalReplicasPerShard) {
       throw new PlacementException("Cluster size too small for number of replicas per shard");
@@ -96,15 +95,15 @@ public class SamplePluginMinimizeCores implements PlacementPlugin {
         nodesByCores.put(coreCount + 1, node);
       }
 
-      placeReplicas(nodeEntriesToAssign, workOrderFactory, replicaPlacements, shardName, reqCreateCollection.getNRTReplicationFactor(), Replica.ReplicaType.NRT);
-      placeReplicas(nodeEntriesToAssign, workOrderFactory, replicaPlacements, shardName, reqCreateCollection.getTLOGReplicationFactor(), Replica.ReplicaType.TLOG);
-      placeReplicas(nodeEntriesToAssign, workOrderFactory, replicaPlacements, shardName, reqCreateCollection.getPULLReplicationFactor(), Replica.ReplicaType.PULL);
+      placeReplicas(nodeEntriesToAssign, workOrderFactory, replicaPlacements, shardName, reqCreateCollection.getNrtReplicationFactor(), Replica.ReplicaType.NRT);
+      placeReplicas(nodeEntriesToAssign, workOrderFactory, replicaPlacements, shardName, reqCreateCollection.getTlogReplicationFactor(), Replica.ReplicaType.TLOG);
+      placeReplicas(nodeEntriesToAssign, workOrderFactory, replicaPlacements, shardName, reqCreateCollection.getPullReplicationFactor(), Replica.ReplicaType.PULL);
     }
 
     WorkOrder newCollectionWO = workOrderFactory.createWorkOrderNewCollection(
         reqCreateCollection, reqCreateCollection.getCollectionName(), replicaPlacements);
 
-    return Collections.singletonList(newCollectionWO);
+    return newCollectionWO;
   }
 
   private void placeReplicas(ArrayList<Map.Entry<Integer, Node>> nodeEntriesToAssign,
