@@ -22,6 +22,8 @@ import org.apache.solr.common.util.SimpleMap;
 /** Represents a collection in Solr */
 public interface SolrCollection {
 
+  String name();
+
   /** shards of a collection */
   SimpleMap<Shard> shards();
 
