@@ -111,9 +111,9 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
       assertTrue("Incoming request count did not match. Expected == 25  incoming " + mockQueryRateLimiter.incomingRequestCount.get(),
           mockQueryRateLimiter.incomingRequestCount.get() == 25);
       assertTrue("Incoming accepted new request count did not match. Expected 5 incoming " + mockQueryRateLimiter.acceptedNewRequestCount.get(),
-          mockQueryRateLimiter.acceptedNewRequestCount.get() == 5);
+          mockQueryRateLimiter.acceptedNewRequestCount.get() >= 5 && mockQueryRateLimiter.acceptedNewRequestCount.get() < 10);
       assertTrue("Incoming rejected new request count did not match. Expected 20 incoming " + mockQueryRateLimiter.rejectedRequestCount.get(),
-          mockQueryRateLimiter.rejectedRequestCount.get() == 20);
+          mockQueryRateLimiter.rejectedRequestCount.get() > 10 &&  mockQueryRateLimiter.rejectedRequestCount.get() <= 20);
       assertTrue("Incoming total processed requests count did not match. Expected " + mockQueryRateLimiter.incomingRequestCount.get() + " incoming "
               + (mockQueryRateLimiter.acceptedNewRequestCount.get() + mockQueryRateLimiter.rejectedRequestCount.get()),
           (mockQueryRateLimiter.acceptedNewRequestCount.get() + mockQueryRateLimiter.rejectedRequestCount.get()) == mockQueryRateLimiter.incomingRequestCount.get());

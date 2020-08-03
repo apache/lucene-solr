@@ -466,9 +466,6 @@ public class SolrDispatchFilter extends BaseSolrFilter {
 
       if (accepted) {
         rateLimitManager.decrementActiveRequests(request);
-
-        // Try to get work from existing pending state
-        //rateLimitManager.resumePendingRequest(request);
       }
     }
   }

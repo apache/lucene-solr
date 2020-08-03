@@ -21,6 +21,7 @@ import javax.servlet.FilterConfig;
 import javax.servlet.http.HttpServletRequest;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.solr.client.solrj.SolrRequest;
 
@@ -40,9 +41,11 @@ public class RateLimitManager {
   public final static int DEFAULT_CONCURRENT_REQUESTS= (Runtime.getRuntime().availableProcessors()) * 3;
   public final static long DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS = -1;
   private final Map<String, RequestRateLimiter> requestRateLimiterMap;
+  private final Map<HttpServletRequest, RequestRateLimiter> activeRequestsMap;
 
   public RateLimitManager() {
     this.requestRateLimiterMap = new HashMap<>();
+    this.activeRequestsMap = new ConcurrentHashMap<>();
   }
 
   // Handles an incoming request. The main orchestration code path, this method will
@@ -70,7 +73,15 @@ public class RateLimitManager {
       return true;
     }
 
-    if (requestRateLimiter.handleRequest() || tryWorkStealing(typeOfRequest)) {
+    if (requestRateLimiter.handleRequest()) {
+      activeRequestsMap.put(request, requestRateLimiter);
+      return true;
+    }
+
+    requestRateLimiter = tryWorkStealing(typeOfRequest);
+
+    if (requestRateLimiter != null) {
+      activeRequestsMap.put(request, requestRateLimiter);
       return true;
     }
 
@@ -82,7 +93,7 @@ public class RateLimitManager {
    * check if work stealing is enabled. If enabled, try to acquire a slot.
    * If allotted, return else try next request type.
    */
-  private boolean tryWorkStealing(String requestType) {
+  private RequestRateLimiter tryWorkStealing(String requestType) {
     for (Map.Entry<String, RequestRateLimiter> currentEntry : requestRateLimiterMap.entrySet()) {
       RequestRateLimiter requestRateLimiter = currentEntry.getValue();
 
@@ -91,18 +102,16 @@ public class RateLimitManager {
       }
 
       if (requestRateLimiter.getRateLimiterConfig().isWorkStealingEnabled && requestRateLimiter.allowSlotStealing()) {
-        return true;
+        return requestRateLimiter;
       }
     }
 
-    return false;
+    return null;
   }
 
   // Decrement the active requests in the rate limiter for the corresponding request type.
   public void decrementActiveRequests(HttpServletRequest request) {
-    String typeOfRequest = request.getHeader(SOLR_REQUEST_TYPE_PARAM);
-
-    RequestRateLimiter requestRateLimiter = requestRateLimiterMap.get(typeOfRequest);
+    RequestRateLimiter requestRateLimiter = activeRequestsMap.get(request);
 
     if (requestRateLimiter == null) {
       // No rate limiter for this request type
@@ -110,6 +119,7 @@ public class RateLimitManager {
     }
 
     requestRateLimiter.decrementConcurrentRequests();
+    activeRequestsMap.remove(request);
   }
 
   public void registerRequestRateLimiter(RequestRateLimiter requestRateLimiter, SolrRequest.SolrRequestType requestType) {
