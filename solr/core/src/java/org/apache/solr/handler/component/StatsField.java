@@ -604,7 +604,7 @@ public class StatsField {
     final HashFunction hasher;
     
     // NOTE: this explanation linked to from the java-hll jdocs...
-    // https://github.com/aggregateknowledge/postgresql-hll/blob/primary/README.markdown#explanation-of-parameters-and-tuning
+    // https://github.com/aggregateknowledge/postgresql-hll/blob/master/README.markdown#explanation-of-parameters-and-tuning
     // ..if i'm understanding the regwidth chart correctly, a value of 6 should be a enough
     // to support any max cardinality given that we're always dealing with hashes and 
     // the cardinality of the set of all long values is 2**64 == 1.9e19
