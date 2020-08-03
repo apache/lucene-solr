@@ -14,12 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.solr.cloud.assign;
 
 import org.apache.solr.cluster.api.SolrCluster;
-import org.apache.solr.common.util.SimpleMap;
 
-import java.util.Set;
+import java.util.List;
 
 /**An interface through which the plugin can interact with the Assign framework system
  */
@@ -34,6 +34,6 @@ public interface AssignContext {
      * @param nodeName Nam eof the node
      * @param metricsKeys full name of metrics keys
      */
-    SimpleMap<Object> fetchMetrics(String nodeName, Set<String> metricsKeys);
+    List<Object> fetchMetrics(String nodeName, List<NodeMetrics> metricsKeys);
 
 }
