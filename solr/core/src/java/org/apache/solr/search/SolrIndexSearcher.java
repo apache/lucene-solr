@@ -35,7 +35,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.codahale.metrics.Gauge;
 import com.google.common.collect.Iterables;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.ExitableDirectoryReader;
@@ -51,6 +53,7 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.TotalHits.Relation;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -2276,12 +2279,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     parentContext.gauge(this, () -> warmupTime, true, "warmupTime", Category.SEARCHER.toString(), scope);
     parentContext.gauge(this, () -> registerTime, true, "registeredAt", Category.SEARCHER.toString(), scope);
     // reader stats
-    parentContext.gauge(this, () -> reader.numDocs(), true, "numDocs", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(this, () -> reader.maxDoc(), true, "maxDoc", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(this, () -> reader.maxDoc() - reader.numDocs(), true, "deletedDocs", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(this, () -> reader.toString(), true, "reader", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(this, () -> reader.directory().toString(), true, "readerDir", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(this, () -> reader.getVersion(), true, "indexVersion", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(this, rgauge(-1, () -> reader.numDocs()), true, "numDocs", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(this, rgauge(-1, () -> reader.maxDoc()), true, "maxDoc", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(this, rgauge(-1, () -> reader.maxDoc() - reader.numDocs()), true, "deletedDocs", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(this, rgauge(-1, () -> reader.toString()), true, "reader", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(this, rgauge("", () -> reader.directory().toString()), true, "readerDir", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(this, rgauge(-1, () -> reader.getVersion()), true, "indexVersion", Category.SEARCHER.toString(), scope);
     // size of the currently opened commit
     parentContext.gauge(this, () -> {
       try {
@@ -2303,6 +2306,20 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         }), true, "statsCache", Category.CACHE.toString(), scope);
   }
 
+  /** 
+   * wraps a gauge (related to an IndexReader) and swallows any {@link AlreadyClosedException} that 
+   * might be thrown, returning the specified default in it's place. 
+   */
+  private <T> Gauge<T> rgauge(T closedDefault, Gauge<T> g) {
+    return () -> {
+      try {
+        return g.getValue();
+      } catch (AlreadyClosedException ignore) {
+        return closedDefault;
+      }
+    };
+  }
+  
   private static class FilterImpl extends Filter {
     private final Filter topFilter;
     private final List<Weight> weights;
