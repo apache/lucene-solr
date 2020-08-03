@@ -1241,7 +1241,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       numberBackupsToKeep = 0;
     }
     @SuppressWarnings({"rawtypes"})
-    // this ternary operator should go away in the next version because legacy terminology has beeen deprecated
+    // this ternary operator should go away in the next version because legacy terminology has been deprecated
     NamedList secondary = (NamedList)(initArgs.get("secondary") != null ? initArgs.get("secondary") : initArgs.get("slave"));
     boolean enableSecondary = isEnabled( secondary );
     if (enableSecondary) {
@@ -1250,7 +1250,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       isSecondary = true;
     }
     @SuppressWarnings({"rawtypes"})
-    // this ternary operator should go away in the next version because legacy terminology has beeen deprecated
+    // this ternary operator should go away in the next version because legacy terminology has been deprecated
     NamedList primary = (NamedList)(initArgs.get("primary") != null ? initArgs.get("primary") : initArgs.get("master"));
     boolean enablePrimary = isEnabled( primary );
 
