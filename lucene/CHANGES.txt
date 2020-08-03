@@ -136,6 +136,9 @@ Bug fixes
 * LUCENE-9365: FuzzyQuery was missing matches when prefix length was equal to the term length
   (Mark Harwood, Mike Drob)
 
+* LUCENE-9427: Fix a regression where the unified highlighter didn't produce
+  highlights on fuzzy queries that correspond to exact matches. (Julie Tibshirani)
+
 Other
 
 * LUCENE-9391: Upgrade HPPC to 0.8.2. (Haoyu Zhai)
