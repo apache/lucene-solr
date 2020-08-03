@@ -32,4 +32,6 @@ public interface SolrCollection {
    * The {@link Shard}'s over which the data of this {@link SolrCollection} is distributed.
    */
   Set<Shard> getShards();
+
+  // TODO: access/return properties
 }
