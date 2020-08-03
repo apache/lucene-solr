@@ -203,7 +203,7 @@ This setting controls whether search requests for which there is not a currently
 
 === maxWarmingSearchers
 
-This parameter sets the maximum number of searchers that may be warming up in the background at any given time. Exceeding this limit will raise an error. For read-only secondaries, a value of two is reasonable. Primary servers should probably be set a little higher.
+This parameter sets the maximum number of searchers that may be warming up in the background at any given time. Exceeding this limit will raise an error. For read-only secondary servers, a value of two is reasonable. Primary servers should probably be set a little higher.
 
 [source,xml]
 ----

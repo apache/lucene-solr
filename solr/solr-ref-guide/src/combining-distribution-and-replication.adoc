@@ -18,7 +18,7 @@
 
 When your index is too large for a single machine and you have a query volume that single shards cannot keep up with, it's time to replicate each shard in your distributed search setup.
 
-The idea is to combine distributed search with replication. As shown in the figure below, a combined distributed-replication configuration features a primary server for each shard and then 1-_n_ secondaries that are replicated from the primary server. As in a standard replicated configuration, the primary server handles updates and optimizations without adversely affecting query handling performance.
+The idea is to combine distributed search with replication. As shown in the figure below, a combined distributed-replication configuration features a primary server for each shard and then 1-_n_ secondary servers that are replicated from the primary server. As in a standard replicated configuration, the primary server handles updates and optimizations without adversely affecting query handling performance.
 
 Query requests should be load balanced across each of the shard secondaries. This gives you both increased query handling capacity and fail-over backup if a server goes down.
 
