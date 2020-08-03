@@ -20,6 +20,7 @@ import org.apache.solr.common.EmptyEntityResolver;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.rest.schema.FieldTypeXmlAdapter;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.SystemIdResolver;
 import org.apache.solr.common.util.NamedList;
@@ -193,7 +194,7 @@ public class DataImporter {
 
     DIHConfiguration dihcfg = null;
     try {
-      DocumentBuilder builder =  SolrResourceLoader.dbf.newDocumentBuilder();
+      DocumentBuilder builder =  FieldTypeXmlAdapter.dbf.newDocumentBuilder();
       // only enable xinclude / external entities, if XML is coming from
       // safe source (local file) and a a SolrCore and SystemId is present:
       if (core != null && configFile.getSystemId() != null) {

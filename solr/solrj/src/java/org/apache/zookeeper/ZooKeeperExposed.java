@@ -25,6 +25,7 @@ public class ZooKeeperExposed {
         clientCnxn.sendThread.interrupt();
     }
 
+
     public void interruptEventThread() {
     //    while (clientCnxn.eventThread.isAlive()) {
            clientCnxn.eventThread.interrupt();

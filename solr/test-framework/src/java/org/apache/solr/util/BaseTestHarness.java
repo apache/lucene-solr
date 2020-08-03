@@ -33,6 +33,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.XmlConfigFile;
+import org.apache.solr.rest.schema.FieldTypeXmlAdapter;
 import org.apache.solr.schema.IndexSchema;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
@@ -47,7 +48,7 @@ abstract public class BaseTestHarness {
       return db;
     } else {
       try {
-        db = SolrResourceLoader.dbf.newDocumentBuilder();
+        db = FieldTypeXmlAdapter.dbf.newDocumentBuilder();
       } catch (ParserConfigurationException e) {
         throw new RuntimeException(e);
       }

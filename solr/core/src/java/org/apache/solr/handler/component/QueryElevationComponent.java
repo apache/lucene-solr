@@ -17,6 +17,7 @@
 package org.apache.solr.handler.component;
 
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.stream.XMLStreamException;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
@@ -364,7 +365,9 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
    * @throws RuntimeException             If the configuration resource is not an XML content of the expected format
    *                                      (either {@link RuntimeException} or {@link org.apache.solr.common.SolrException}).
    */
-  private ElevationProvider loadElevationProvider(SolrCore core) throws IOException, SAXException, ParserConfigurationException {
+  private ElevationProvider loadElevationProvider(SolrCore core)
+      throws IOException, SAXException, ParserConfigurationException,
+      XMLStreamException {
     String configFileName = initArgs.get(CONFIG_FILE);
     if (configFileName == null) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,

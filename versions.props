@@ -4,6 +4,7 @@ com.carrotsearch:hppc=0.8.1
 com.cybozu.labs:langdetect=1.1-20120112
 com.drewnoakes:metadata-extractor=2.11.0
 com.epam:parso=2.0.11
+com.fasterxml:aalto-xml=1.2.2
 com.fasterxml.jackson*:*=2.10.1
 com.fasterxml.staxmate:staxmate=2.3.1
 com.fasterxml.woodstox:woodstox-core:6.0.3

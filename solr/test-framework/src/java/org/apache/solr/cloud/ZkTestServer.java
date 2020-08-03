@@ -67,6 +67,7 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Op;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.ZooKeeperExposed;
 import org.apache.zookeeper.data.Stat;
 import org.apache.zookeeper.jmx.ManagedUtil;
 import org.apache.zookeeper.server.NIOServerCnxn;
@@ -400,10 +401,13 @@ public class ZkTestServer implements Closeable {
         try (ParWork worker = new ParWork(this, true)) {
           worker.add("ZkTestInternals", () -> {
             zooKeeperServer.shutdown(false);
+
             return zooKeeperServer;
           }, () -> {
             cnxnFactory.shutdown();
             cnxnFactory.join();
+            zkServer.zooKeeperServer.getSessionTracker().shutdown();
+            ((Thread)zkServer.zooKeeperServer.getSessionTracker()).interrupt();
             return cnxnFactory;
           });
         }
@@ -638,6 +642,7 @@ public class ZkTestServer implements Closeable {
         return zkServer;
       });
     }
+
     startupWait = new CountDownLatch(1);
     if (zooThread != null) {
       ObjectReleaseTracker.release(zooThread);

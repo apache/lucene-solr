@@ -84,32 +84,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
       "cloud.autoscaling."
   };
   private static final Charset UTF_8 = StandardCharsets.UTF_8;
-
-  public static final javax.xml.parsers.DocumentBuilderFactory dbf;
-
-  protected final static ThreadLocal<DocumentBuilder> THREAD_LOCAL_DB= new ThreadLocal<>();
-  static {
-    dbf = new DocumentBuilderFactoryImpl();
-    try {
-      dbf.setXIncludeAware(true);
-      dbf.setNamespaceAware(true);
-      dbf.setValidating(false);
-      trySetDOMFeature(dbf, XMLConstants.FEATURE_SECURE_PROCESSING, true);
-    } catch(UnsupportedOperationException e) {
-      log.warn("XML parser doesn't support XInclude option");
-    }
-  }
-
   private final SystemIdResolver sysIdResolver;
-
-  private static void trySetDOMFeature(DocumentBuilderFactory factory, String feature, boolean enabled) {
-    try {
-      factory.setFeature(feature, enabled);
-    } catch (Exception ex) {
-      ParWork.propegateInterrupt(ex);
-      // ignore
-    }
-  }
 
   private String name = "";
   protected URLClassLoader classLoader;
@@ -188,23 +163,6 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
     this.classLoader = URLClassLoader.newInstance(new URL[0], parent);
     this.resourceClassLoader = URLClassLoader.newInstance(new URL[0], parent);
     this.sysIdResolver = new SystemIdResolver(this);
-  }
-
-  public DocumentBuilder getDocumentBuilder() {
-    DocumentBuilder db = THREAD_LOCAL_DB.get();
-    if (db == null) {
-      try {
-        db = dbf.newDocumentBuilder();
-      } catch (ParserConfigurationException e) {
-        log.error("Error in parser configuration", e);
-        throw new RuntimeException(e);
-      }
-      db.setErrorHandler(xmllog);
-      THREAD_LOCAL_DB.set(db);
-
-    }
-    db.setEntityResolver(sysIdResolver);
-    return db;
   }
 
   public SystemIdResolver getSysIdResolver() {

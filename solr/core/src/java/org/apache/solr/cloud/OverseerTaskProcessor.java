@@ -73,7 +73,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
    * Maximum number of overseer collection operations which can be
    * executed concurrently
    */
-  public static final int MAX_PARALLEL_TASKS = 100;
+  public static final int MAX_PARALLEL_TASKS = 10;
   public static final int MAX_BLOCKED_TASKS = 1000;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -116,6 +116,8 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     }
 
   };
+
+  private final Object waitLock = new Object();
 
   protected final OverseerMessageHandlerSelector selector;
 
@@ -165,16 +167,17 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
       if (e instanceof KeeperException.SessionExpiredException) {
         return;
       }
-      if (e instanceof InterruptedException || e instanceof AlreadyClosedException) {
+      if (e instanceof InterruptedException
+          || e instanceof AlreadyClosedException) {
         return;
       }
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
 
-    if (oldestItemInWorkQueue == null)
-      hasLeftOverItems = false;
-    else
-      log.debug("Found already existing elements in the work-queue. Last element: {}", oldestItemInWorkQueue);
+    if (oldestItemInWorkQueue == null) hasLeftOverItems = false;
+    else log.debug(
+        "Found already existing elements in the work-queue. Last element: {}",
+        oldestItemInWorkQueue);
 
     if (prioritizer != null) {
       try {
@@ -184,7 +187,8 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
         if (e instanceof KeeperException.SessionExpiredException) {
           return;
         }
-        if (e instanceof InterruptedException || e instanceof AlreadyClosedException) {
+        if (e instanceof InterruptedException
+            || e instanceof AlreadyClosedException) {
           return;
         }
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -195,12 +199,26 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
       while (!this.isClosed) {
         try {
 
-          if (log.isDebugEnabled()) log.debug("Cleaning up work-queue. #Running tasks: {} #Completed tasks: {}",  runningTasksSize(), completedTasks.size());
+          if (log.isDebugEnabled()) log.debug(
+              "Cleaning up work-queue. #Running tasks: {} #Completed tasks: {}",
+              runningTasksSize(), completedTasks.size());
           cleanUpWorkQueue();
 
           printTrackingMaps();
 
-          ArrayList<QueueEvent> heads = new ArrayList<>(blockedTasks.size() + MAX_PARALLEL_TASKS);
+          boolean waited = false;
+
+          while (runningTasksSize() > MAX_PARALLEL_TASKS) {
+            synchronized (waitLock) {
+              waitLock.wait(1000);//wait for 100 ms or till a task is complete
+            }
+            waited = true;
+          }
+
+          if (waited) cleanUpWorkQueue();
+
+          ArrayList<QueueEvent> heads = new ArrayList<>(
+              blockedTasks.size() + MAX_PARALLEL_TASKS);
           heads.addAll(blockedTasks.values());
 
           //If we have enough items in the blocked tasks already, it makes
@@ -208,84 +226,88 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
           // to clear out at least a few items in the queue before we read more items
           if (heads.size() < MAX_BLOCKED_TASKS) {
             //instead of reading MAX_PARALLEL_TASKS items always, we should only fetch as much as we can execute
-            int toFetch = Math.min(MAX_BLOCKED_TASKS - heads.size(), MAX_PARALLEL_TASKS - runningTasksSize());
-            List<QueueEvent> newTasks = workQueue.peekTopN(toFetch, excludedTasks, 2500);
-            log.debug("Got {} tasks from work-queue : [{}]", newTasks.size(), newTasks);
+            int toFetch = Math.min(MAX_BLOCKED_TASKS - heads.size(),
+                MAX_PARALLEL_TASKS - runningTasksSize());
+            List<QueueEvent> newTasks = workQueue
+                .peekTopN(toFetch, excludedTasks, 2500);
+            log.debug("Got {} tasks from work-queue : [{}]", newTasks.size(),
+                newTasks);
             heads.addAll(newTasks);
           }
 
-//          if (heads.isEmpty()) {
-//            log.debug()
-//            continue;
-//          }
+          if (isClosed) return;
 
           blockedTasks.clear(); // clear it now; may get refilled below.
 
           taskBatch.batchId++;
-          boolean tooManyTasks = false;
-          try (ParWork worker = new ParWork(this)) {
 
-            for (QueueEvent head : heads) {
-              if (!tooManyTasks) {
-                tooManyTasks = runningTasksSize() >= MAX_PARALLEL_TASKS;
-              }
-// nocommit
-              if (runningZKTasks.contains(head.getId())) {
-                log.warn("Task found in running ZKTasks already, continuing");
-                continue;
-              }
+          for (QueueEvent head : heads) {
 
-              final ZkNodeProps message = ZkNodeProps.load(head.getBytes());
-              final String asyncId = message.getStr(ASYNC);
-              if (hasLeftOverItems) {
-                if (head.getId().equals(oldestItemInWorkQueue))
-                  hasLeftOverItems = false;
-                if (asyncId != null && (completedMap.contains(asyncId) || failureMap.contains(asyncId))) {
-                  log.debug("Found already processed task in workQueue, cleaning up. AsyncId [{}]", asyncId);
-                  workQueue.remove(head);
-                  continue;
-                }
-              }
-              String operation = message.getStr(Overseer.QUEUE_OPERATION);
-              if (operation == null) {
-                log.error("Msg does not have required " + Overseer.QUEUE_OPERATION + ": {}", message);
+            if (runningZKTasks.contains(head.getId())) {
+              log.warn("Task found in running ZKTasks already, continuing");
+              continue;
+            }
+
+            final ZkNodeProps message = ZkNodeProps.load(head.getBytes());
+            final String asyncId = message.getStr(ASYNC);
+            if (hasLeftOverItems) {
+              if (head.getId().equals(oldestItemInWorkQueue))
+                hasLeftOverItems = false;
+              if (asyncId != null && (completedMap.contains(asyncId)
+                  || failureMap.contains(asyncId))) {
+                log.debug(
+                    "Found already processed task in workQueue, cleaning up. AsyncId [{}]",
+                    asyncId);
                 workQueue.remove(head);
                 continue;
               }
-              OverseerMessageHandler messageHandler = selector.selectOverseerMessageHandler(message);
-              OverseerMessageHandler.Lock lock = messageHandler.lockTask(message, taskBatch);
-              if (lock == null) {
-                log.debug("Exclusivity check failed for [{}]", message.toString());
-                // we may end crossing the size of the MAX_BLOCKED_TASKS. They are fine
-                if (blockedTasks.size() < MAX_BLOCKED_TASKS)
-                  blockedTasks.put(head.getId(), head);
-                continue;
-              }
-              try {
-                markTaskAsRunning(head, asyncId);
-                log.debug("Marked task [{}] as running", head.getId());
-              } catch (Exception e) {
-                if (e instanceof KeeperException.SessionExpiredException || e instanceof InterruptedException) {
-                  ParWork.propegateInterrupt(e);
-                  log.error("ZooKeeper session has expired");
-                  return;
-                }
-
-                throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-              }
-              if (log.isDebugEnabled()) log.debug(
-                      messageHandler.getName() + ": Get the message id:" + head.getId() + " message:" + message.toString());
-              Runner runner = new Runner(messageHandler, message,
-                      operation, head, lock);
-              worker.add(runner);
             }
+            String operation = message.getStr(Overseer.QUEUE_OPERATION);
+            if (operation == null) {
+              log.error("Msg does not have required " + Overseer.QUEUE_OPERATION
+                  + ": {}", message);
+              workQueue.remove(head);
+              continue;
+            }
+            OverseerMessageHandler messageHandler = selector
+                .selectOverseerMessageHandler(message);
+            OverseerMessageHandler.Lock lock = messageHandler
+                .lockTask(message, taskBatch);
+            if (lock == null) {
+              log.debug("Exclusivity check failed for [{}]",
+                  message.toString());
+              // we may end crossing the size of the MAX_BLOCKED_TASKS. They are fine
+              if (blockedTasks.size() < MAX_BLOCKED_TASKS)
+                blockedTasks.put(head.getId(), head);
+              continue;
+            }
+            try {
+              markTaskAsRunning(head, asyncId);
+              if (log.isDebugEnabled()) {
+                log.debug("Marked task [{}] as running", head.getId());
+              }
+            } catch (Exception e) {
+              if (e instanceof KeeperException.SessionExpiredException
+                  || e instanceof InterruptedException) {
+                ParWork.propegateInterrupt(e);
+                log.error("ZooKeeper session has expired");
+                return;
+              }
 
+              throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+            }
+            if (log.isDebugEnabled()) log.debug(
+                messageHandler.getName() + ": Get the message id:" + head
+                    .getId() + " message:" + message.toString());
+            Runner runner = new Runner(messageHandler, message, operation, head,
+                lock);
+            ParWork.getExecutor().submit(runner);
           }
 
         } catch (InterruptedException | AlreadyClosedException e) {
           ParWork.propegateInterrupt(e);
           return;
-        }  catch (KeeperException.SessionExpiredException e) {
+        } catch (KeeperException.SessionExpiredException e) {
           log.warn("Zookeeper expiration");
           return;
         } catch (Exception e) {

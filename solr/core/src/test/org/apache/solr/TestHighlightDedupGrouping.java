@@ -31,6 +31,7 @@ import org.junit.Test;
  * Tests that highlighting doesn't break on grouped documents
  * with duplicate unique key fields stored on multiple shards.
  */
+@Ignore // nocommit
 public class TestHighlightDedupGrouping extends BaseDistributedSearchTestCase {
 
   private static final String id_s1 = "id_s1"; // string copy of the id for highlighting

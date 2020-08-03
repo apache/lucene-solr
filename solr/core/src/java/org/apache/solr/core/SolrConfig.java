@@ -18,6 +18,7 @@ package org.apache.solr.core;
 
 
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.stream.XMLStreamException;
 import javax.xml.xpath.XPathConstants;
 import java.io.IOException;
 import java.io.InputStream;
@@ -81,6 +82,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
@@ -139,7 +141,8 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
    * @param name        the configuration name used by the loader if the stream is null
    */
   public SolrConfig(Path instanceDir, String name)
-      throws ParserConfigurationException, IOException, SAXException {
+      throws ParserConfigurationException, IOException, SAXException,
+      XMLStreamException {
     this(new SolrResourceLoader(instanceDir), name, true, null);
   }
 
@@ -168,9 +171,10 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
    * @param substitutableProperties optional properties to substitute into the XML
    */
   private SolrConfig(SolrResourceLoader loader, String name, boolean isConfigsetTrusted, Properties substitutableProperties)
-      throws ParserConfigurationException, IOException, SAXException {
+      throws ParserConfigurationException, IOException, SAXException,
+      XMLStreamException {
     // insist we have non-null substituteProperties; it might get overlayed
-    super(loader, name, null, "/config/", substitutableProperties == null ? new Properties() : substitutableProperties);
+    super(loader, name, (InputSource) null, "/config/", substitutableProperties == null ? new Properties() : substitutableProperties);
     getOverlay();//just in case it is not initialized
     getRequestParams();
     initLibs(loader, isConfigsetTrusted);

@@ -651,7 +651,6 @@ public class Overseer implements SolrCloseable {
 
     stats = new Stats();
     log.info("Overseer (id={}) starting", id);
-    //createOverseerNode(reader.getZkClient());
     //launch cluster state updater thread
     ThreadGroup tg = new ThreadGroup("Overseer state updater.");
     updaterThread = new OverseerThread(tg, new ClusterStateUpdater(reader, id, stats), "OverseerStateUpdate-" + id);

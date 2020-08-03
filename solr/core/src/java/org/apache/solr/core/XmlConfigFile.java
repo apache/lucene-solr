@@ -16,12 +16,20 @@
  */
 package org.apache.solr.core;
 
+import com.fasterxml.aalto.AsyncByteBufferFeeder;
+import com.fasterxml.aalto.AsyncInputFeeder;
+import com.fasterxml.aalto.AsyncXMLStreamReader;
+import com.fasterxml.aalto.WFCException;
+import com.fasterxml.aalto.dom.DOMWriterImpl;
+import com.fasterxml.aalto.stax.InputFactoryImpl;
+import com.fasterxml.aalto.util.IllegalCharHandler;
 import net.sf.saxon.dom.DocumentBuilderImpl;
 import net.sf.saxon.jaxp.SaxonTransformerFactory;
 import net.sf.saxon.xpath.XPathFactoryImpl;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.XML;
 import org.apache.solr.common.util.XMLErrorLogger;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.DOMUtil;
@@ -37,22 +45,29 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
+import static javax.xml.stream.XMLStreamConstants.END_DOCUMENT;
 import javax.xml.namespace.QName;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.transform.Source;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMResult;
 import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stax.StAXSource;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.RandomAccessFile;
 import java.lang.invoke.MethodHandles;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
@@ -90,16 +105,18 @@ public class XmlConfigFile { // formerly simply "Config"
   /**
    * Builds a config from a resource name with no xpath prefix.  Does no property substitution.
    */
-  public XmlConfigFile(SolrResourceLoader loader, String name) throws ParserConfigurationException, IOException, SAXException
-  {
+  public XmlConfigFile(SolrResourceLoader loader, String name)
+      throws ParserConfigurationException, IOException, SAXException,
+      XMLStreamException {
     this( loader, name, null, null);
   }
 
   /**
    * Builds a config.  Does no property substitution.
    */
-  public XmlConfigFile(SolrResourceLoader loader, String name, InputSource is, String prefix) throws ParserConfigurationException, IOException, SAXException
-  {
+  public XmlConfigFile(SolrResourceLoader loader, String name, InputSource is, String prefix)
+      throws ParserConfigurationException, IOException, SAXException,
+      XMLStreamException {
     this(loader, name, is, prefix, null);
   }
 
@@ -120,8 +137,9 @@ public class XmlConfigFile { // formerly simply "Config"
    * @param prefix an optional prefix that will be prepended to all non-absolute xpath expressions
    * @param substituteProps optional property substitution
    */
-  public XmlConfigFile(SolrResourceLoader loader, String name, InputSource is, String prefix, Properties substituteProps) throws ParserConfigurationException, IOException, SAXException
-  {
+  public XmlConfigFile(SolrResourceLoader loader, String name, InputSource is, String prefix, Properties substituteProps)
+      throws ParserConfigurationException, IOException, SAXException,
+      XMLStreamException {
     if( loader == null ) {
       loader = new SolrResourceLoader(SolrPaths.locateSolrHome());
     }
@@ -142,31 +160,134 @@ public class XmlConfigFile { // formerly simply "Config"
         is.setSystemId(SystemIdResolver.createSystemIdFromResourceName(name));
       }
 
+
+    try {
+
+      DocumentBuilderImpl b = new DocumentBuilderImpl();
+
+      if (is.getSystemId() != null) {
+        b.setEntityResolver(loader.getSysIdResolver());
+        b.setXIncludeAware(true);
+        b.setValidating(false);
+        b.setErrorHandler(xmllog);
+        b.getConfiguration().setExpandAttributeDefaults(true);
+      }
       try {
-
-        DocumentBuilderImpl b = new DocumentBuilderImpl();
-        if (is.getSystemId() != null) {
-          b.setEntityResolver(loader.getSysIdResolver());
-          b.setXIncludeAware(true);
-          b.setValidating(false);
-          b.getConfiguration().setExpandAttributeDefaults(true);
-        }
-        try {
-          doc = copyDoc(b.parse(is));
-        } catch (TransformerException e) {
-          throw new RuntimeException(e);
-        }
-
-      } finally {
-        // some XML parsers are broken and don't close the byte stream (but they should according to spec)
-        ParWork.close(is.getByteStream());
+        doc = copyDoc(b.parse(is));
+      } catch (TransformerException e) {
+        throw new RuntimeException(e);
       }
 
+    } finally {
+      // some XML parsers are broken and don't close the byte stream (but they should according to spec)
+      ParWork.close(is.getByteStream());
+    }
 
-      this.substituteProperties = substituteProps;
+
+    this.substituteProperties = substituteProps;
     if (substituteProps != null) {
-        DOMUtil.substituteProperties(doc, substituteProperties);
+      DOMUtil.substituteProperties(doc, substituteProperties);
+    }
+  }
+
+  public XmlConfigFile(SolrResourceLoader loader, String name, ByteBuffer buffer, String prefix, Properties substituteProps) throws ParserConfigurationException, IOException, SAXException
+  {
+    if( loader == null ) {
+      loader = new SolrResourceLoader(SolrPaths.locateSolrHome());
+    }
+    this.loader = loader;
+    this.name = name;
+    this.prefix = (prefix != null && !prefix.endsWith("/"))? prefix + '/' : prefix;
+
+    if (buffer == null) {
+      if (name == null || name.length() == 0) {
+        throw new IllegalArgumentException("Null or empty name:" + name);
       }
+      InputStream in = loader.openResource(name);
+      if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
+        zkVersion = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
+        log.debug("loaded config {} with version {} ",name,zkVersion);
+      }
+     // is = new InputSource(in);
+     // is.setSystemId(SystemIdResolver.createSystemIdFromResourceName(name));
+    }
+
+    //    try {
+    //      DOMWriterImpl writer = new DOMWriterImpl();
+    //    } catch (XMLStreamException e) {
+    //      e.printStackTrace();
+    //    }
+
+    AsyncXMLStreamReader asyncReader = null;
+    try {
+
+      InputFactoryImpl factory = new InputFactoryImpl();
+      factory.configureForSpeed();
+      factory.setXMLResolver(loader.getSysIdResolver().asXMLResolver());
+      factory.setProperty(XMLInputFactory.IS_VALIDATING, Boolean.FALSE);
+      asyncReader = factory.createAsyncFor(buffer);
+//      asyncReader.getConfig().setActualEncoding("UTF-8");
+//      asyncReader.getConfig().setXmlEncoding("UTF-8");
+//      asyncReader.getConfig().setActualEncoding("UTF-8");
+//      asyncReader.getConfig().setIllegalCharHandler(new IllegalCharHandler() {
+//        @Override
+//        public char convertIllegalChar(int invalidChar) throws WFCException {
+//          return 0;
+//        }
+//      });
+
+    } catch (XMLStreamException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
+    final AsyncByteBufferFeeder feeder = (AsyncByteBufferFeeder) asyncReader.getInputFeeder();
+    int type = 0;
+
+    do {
+      // May need to feed multiple "segments"
+      while (true) {
+        try {
+          if (!((type = asyncReader.next()) == AsyncXMLStreamReader.EVENT_INCOMPLETE))
+            break;
+        } catch (XMLStreamException e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        }
+//        if (feeder.needMoreInput()) {
+//          try {
+//            feeder.feedInput(buffer);
+//          } catch (XMLStreamException e) {
+//            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+//          }
+//        }
+//        if (!buffer.hasRemaining()) { // to indicate end-of-content (important for error handling)
+//          feeder.endOfInput();
+//        }
+      }
+      // and once we have full event, we just dump out event type (for now)
+      System.out.println("Got event of type: "+type);
+      // could also just copy event as is, using Stax, or do any other normal non-blocking handling:
+      // xmlStreamWriter.copyEventFromReader(asyncReader, false);
+    } while (type != END_DOCUMENT);
+
+    Source src=new StAXSource(asyncReader);
+    DOMResult dst=new DOMResult();
+    try {
+      tfactory.newTransformer().transform(src, dst);
+    } catch (TransformerException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
+    doc = (Document) dst.getNode(); //
+    try {
+      asyncReader.close();
+    } catch (XMLStreamException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
+
+
+
+    this.substituteProperties = substituteProps;
+    if (substituteProps != null) {
+      DOMUtil.substituteProperties(doc, substituteProperties);
+    }
   }
 
   private static Document copyDoc(Document doc) throws TransformerException {

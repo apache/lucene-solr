@@ -20,10 +20,13 @@ import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
 
+import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
+import com.ctc.wstx.shaded.msv_core.verifier.jaxp.DocumentBuilderFactoryImpl;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
@@ -45,11 +48,26 @@ public class FieldTypeXmlAdapter {
 
   protected final static ThreadLocal<DocumentBuilder> THREAD_LOCAL_DB= new ThreadLocal<>();
 
+
+  public static final javax.xml.parsers.DocumentBuilderFactory dbf;
+
+  static {
+    dbf = new DocumentBuilderFactoryImpl();
+    try {
+      dbf.setXIncludeAware(true);
+      dbf.setNamespaceAware(true);
+      dbf.setValidating(false);
+      trySetDOMFeature(dbf, XMLConstants.FEATURE_SECURE_PROCESSING, true);
+    } catch(UnsupportedOperationException e) {
+      log.warn("XML parser doesn't support XInclude option");
+    }
+  }
+
   public synchronized  static DocumentBuilder getDocumentBuilder() {
     DocumentBuilder db = THREAD_LOCAL_DB.get();
     if (db == null) {
       try {
-        db = SolrResourceLoader.dbf.newDocumentBuilder();
+        db = dbf.newDocumentBuilder();
       } catch (ParserConfigurationException e) {
         log.error("Error in parser configuration", e);
         throw new RuntimeException(e);
@@ -57,6 +75,16 @@ public class FieldTypeXmlAdapter {
       THREAD_LOCAL_DB.set(db);
     }
     return db;
+  }
+
+
+  private static void trySetDOMFeature(DocumentBuilderFactory factory, String feature, boolean enabled) {
+    try {
+      factory.setFeature(feature, enabled);
+    } catch (Exception ex) {
+      ParWork.propegateInterrupt(ex);
+      // ignore
+    }
   }
 
   public static Node toNode(Map<String,?> json) {

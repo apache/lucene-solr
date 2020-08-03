@@ -21,11 +21,16 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.RandomAccessFile;
 import java.lang.invoke.MethodHandles;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -117,6 +122,28 @@ public class SolrXmlConfig {
 
     log.info("Loading container configuration from {}", configFile);
 
+//    if (!Files.exists(configFile)) {
+//      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+//          "solr.xml does not exist in " + configFile.getParent()
+//              + " cannot start Solr");
+//    }
+//    ByteBuffer buffer = null;
+//    try {
+//      FileChannel channel = FileChannel
+//          .open(configFile, StandardOpenOption.READ);
+//
+//      long fileSize = channel.size();
+//      buffer = ByteBuffer.allocate((int) fileSize);
+//      channel.read(buffer);
+//      buffer.flip();
+//      channel.close();
+//
+//    } catch (IOException e) {
+//      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+//          "Could not load SOLR configuration", e);
+//    }
+//
+//    return fromInputStream(solrHome, buffer, substituteProps);
     if (!Files.exists(configFile)) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "solr.xml does not exist in " + configFile.getParent() + " cannot start Solr");
@@ -156,6 +183,30 @@ public class SolrXmlConfig {
         XmlConfigFile config = new XmlConfigFile(loader, null, new InputSource(dup), null, substituteProps);
         return fromConfig(solrHome, config, fromZookeeper);
       }
+    } catch (SolrException exc) {
+      log.error("Exception reading config", exc);
+      throw exc;
+    } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
+  }
+
+
+  public static NodeConfig fromInputStream(Path solrHome, ByteBuffer buffer, Properties substituteProps) {
+    return fromInputStream(solrHome, buffer, substituteProps, false);
+  }
+
+  public static NodeConfig fromInputStream(Path solrHome, ByteBuffer buffer, Properties substituteProps, boolean fromZookeeper) {
+    SolrResourceLoader loader = new SolrResourceLoader(solrHome);
+    if (substituteProps == null) {
+      substituteProps = new Properties();
+    }
+    try {
+
+        XmlConfigFile config = new XmlConfigFile(loader, null, buffer, null, substituteProps);
+        return fromConfig(solrHome, config, fromZookeeper);
+
     } catch (SolrException exc) {
       log.error("Exception reading config", exc);
       throw exc;

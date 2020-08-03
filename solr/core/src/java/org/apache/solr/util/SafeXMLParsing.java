@@ -81,7 +81,7 @@ public final class SafeXMLParsing  {
 
   private static DocumentBuilder getUntrustedDocumentBuilder(Logger log) {
     try {
-      final DocumentBuilder db = SolrResourceLoader.dbf.newDocumentBuilder();
+      final DocumentBuilder db = FieldTypeXmlAdapter.dbf.newDocumentBuilder();
       db.setEntityResolver(EmptyEntityResolver.SAX_INSTANCE);
       db.setErrorHandler(new XMLErrorLogger(log));
       return db;
