@@ -368,4 +368,9 @@ public class Replica extends ZkNodeProps implements MapWriter, ShardReplica {
   public Type type() {
     return type;
   }
+
+  @Override
+  public long size() {
+    throw new UnsupportedOperationException("Not yet implemented");
+  }
 }
