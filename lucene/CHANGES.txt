@@ -61,7 +61,13 @@ API Changes
 * LUCENE-9462: Fields without positions should still return MatchIterator.
   (Alan Woodward, Dawid Weiss)
 
+* LUCENE-9445: QueryParserBase.getRegexpQuery and newRegexpQuery now take a 
+  caseSensitive flag to allow new case insensitive matching option. (Mark Harwood)
+
 Improvements
+
+* LUCENE-9445: QueryParser syntax for regular expressions extended to support 
+  trailing i for case insensitive matching e.g. /.*Foo/i (Mark Harwood)
 
 * LUCENE-9463: Query match region retrieval component, passage scoring and formatting
   for building custom highlighters. (Alan Woodward, Dawid Weiss)
