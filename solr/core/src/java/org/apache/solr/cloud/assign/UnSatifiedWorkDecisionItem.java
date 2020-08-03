@@ -16,10 +16,10 @@
  */
 package org.apache.solr.cloud.assign;
 
-public class UnSatifiedWorkItem implements ComputedWork {
+public class UnSatifiedWorkDecisionItem implements WorkDecision {
     private final WorkItem workItem;
 
-    public UnSatifiedWorkItem(WorkItem workItem) {
+    public UnSatifiedWorkDecisionItem(WorkItem workItem) {
         this.workItem = workItem;
     }
 

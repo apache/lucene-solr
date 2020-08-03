@@ -20,6 +20,6 @@ package org.apache.solr.cloud.assign;
 /**Work Item computed
  *
  */
-public interface ComputedWork {
+public interface WorkDecision {
     WorkItem getWorkItem();
 }

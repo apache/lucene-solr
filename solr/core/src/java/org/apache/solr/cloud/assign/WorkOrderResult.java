@@ -26,6 +26,6 @@ public interface WorkOrderResult {
      */
     SolrCluster computedClusterState();
 
-    List<ComputedWork> getResult();
+    List<WorkDecision> getResult();
 
 }

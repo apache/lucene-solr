@@ -17,7 +17,7 @@
 
 package org.apache.solr.cloud.assign;
 
-public interface CreateReplicaWork extends ComputedWork {
+public interface CreateReplicaWorkDecision extends WorkDecision {
     /**The node in which the replica should be created
      */
     String getNode();
