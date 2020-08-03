@@ -17,10 +17,26 @@
 
 package org.apache.solr.cluster.placement;
 
+import java.util.Optional;
+import java.util.Set;
+
 /**
- * This empty interface represents the entire SolrCloud cluster in case {@link PropertyKey}'s need to be specified with
- * a global cluster target (for example if there are global cluster metrics that need to be retrieved).
- * If not used or doesn't make sense, should be removed.
+ * <p>A representation of the (initial) cluster state, providing information on which nodes are part of the cluster and a way
+ * to get to more detailed info.
+ *
+ * <p>This instance can also be used as a {@link PropertyValueSource} if {@link PropertyKey}'s need to be specified with
+ * a global cluster target.
  */
 public interface Cluster extends PropertyValueSource {
+  /**
+   * @return current set of live nodes. Never <code>null</code>, never empty (Solr wouldn't call the plugin if empty
+   * since no useful could then be done).
+   */
+  Set<Node> getLiveNodes();
+
+  /**
+   * Returns info about the given collection if one exists. Because it is not expected for plugins to request info about
+   * a large number of collections, requests can only be made one by one.
+   */
+  Optional<SolrCollection> getCollection(String collectionName);
 }

@@ -26,7 +26,7 @@ import java.util.Set;
  * will take care of this.
  *
  * <p>As opposed to {@link CreateNewCollectionRequest}, the set of {@link Node}s on which the replicas should be placed
- * is specified (defaults to being equal to the set returned by {@link Topo#getLiveNodes()}).
+ * is specified (defaults to being equal to the set returned by {@link Cluster#getLiveNodes()}).
  *
  * <p>There is no extension between this interface and {@link CreateNewCollectionRequest} in either direction
  * or from a common ancestor for readability. An ancestor could make sense and would be an "abstract interface" not intended

@@ -38,7 +38,7 @@ import org.apache.solr.common.util.SuppressForbidden;
 public class SamplePluginMinimizeCores implements PlacementPlugin {
 
   @SuppressForbidden(reason = "Ordering.arbitrary() has no equivalent in Comparator class. Rather reuse than copy.")
-  public WorkOrder computePlacement(Topo clusterTopo, Request placementRequest, PropertyKeyFactory propertyFactory,
+  public WorkOrder computePlacement(Cluster cluster, Request placementRequest, PropertyKeyFactory propertyFactory,
                                           PropertyValueFetcher propertyFetcher, WorkOrderFactory workOrderFactory) throws PlacementException {
     // This plugin only supports Creating a collection.
     if (!(placementRequest instanceof CreateNewCollectionRequest)) {
@@ -50,7 +50,7 @@ public class SamplePluginMinimizeCores implements PlacementPlugin {
     final int totalReplicasPerShard = reqCreateCollection.getNrtReplicationFactor() +
         reqCreateCollection.getTlogReplicationFactor() + reqCreateCollection.getPullReplicationFactor();
 
-    if (clusterTopo.getLiveNodes().size() < totalReplicasPerShard) {
+    if (cluster.getLiveNodes().size() < totalReplicasPerShard) {
       throw new PlacementException("Cluster size too small for number of replicas per shard");
     }
 
@@ -58,7 +58,7 @@ public class SamplePluginMinimizeCores implements PlacementPlugin {
     TreeMultimap<Integer, Node> nodesByCores = TreeMultimap.create(Comparator.naturalOrder(), Ordering.arbitrary());
 
     // Get the number of cores on each node and sort the nodes by increasing number of cores
-    for (Node node : clusterTopo.getLiveNodes()) {
+    for (Node node : cluster.getLiveNodes()) {
       // TODO: redo this. It is potentially less efficient to call propertyFetcher.getProperties() multiple times rather than once
       final PropertyKey coresCountPropertyKey = propertyFactory.createCoreCountKey(node);
       Map<PropertyKey, PropertyValue> propMap = propertyFetcher.fetchProperties(Collections.singleton(coresCountPropertyKey));
@@ -100,10 +100,8 @@ public class SamplePluginMinimizeCores implements PlacementPlugin {
       placeReplicas(nodeEntriesToAssign, workOrderFactory, replicaPlacements, shardName, reqCreateCollection.getPullReplicationFactor(), Replica.ReplicaType.PULL);
     }
 
-    WorkOrder newCollectionWO = workOrderFactory.createWorkOrderNewCollection(
+    return workOrderFactory.createWorkOrderNewCollection(
         reqCreateCollection, reqCreateCollection.getCollectionName(), replicaPlacements);
-
-    return newCollectionWO;
   }
 
   private void placeReplicas(ArrayList<Map.Entry<Integer, Node>> nodeEntriesToAssign,

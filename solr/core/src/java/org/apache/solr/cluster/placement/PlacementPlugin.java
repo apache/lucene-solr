@@ -24,7 +24,7 @@ package org.apache.solr.cluster.placement;
  */
 public interface PlacementPlugin {
   /**
-   * @param clusterTopo initial state of the cluster
+   * @param cluster initial state of the cluster
    * @param placementRequest request for placing new replicas or moving existing replicas on the cluster.
    * @param propertyFactory Factory used by the plugin to build instances of {@link PropertyKey} to resolve properties
    *                        to their values.
@@ -33,6 +33,6 @@ public interface PlacementPlugin {
    * @param workOrderFactory Factory used to create instances of {@link WorkOrder} to return computed decision.
    * @return work order satisfying the placement request.
    */
-  WorkOrder computePlacement(Topo clusterTopo, Request placementRequest, PropertyKeyFactory propertyFactory,
+  WorkOrder computePlacement(Cluster cluster, Request placementRequest, PropertyKeyFactory propertyFactory,
                                    PropertyValueFetcher propertyFetcher, WorkOrderFactory workOrderFactory) throws PlacementException, InterruptedException;
 }

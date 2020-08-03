@@ -24,7 +24,7 @@ import java.util.Set;
  */
 public interface SolrCollection {
   /**
-   * The collection name (value passed to {@link Topo#getCollection(String)}).
+   * The collection name (value passed to {@link Cluster#getCollection(String)}).
    */
   String getName();
 

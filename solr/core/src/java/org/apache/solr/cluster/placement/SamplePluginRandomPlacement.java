@@ -30,7 +30,7 @@ import java.util.Set;
  */
 public class SamplePluginRandomPlacement implements PlacementPlugin {
 
-  public WorkOrder computePlacement(Topo clusterTopo, Request placementRequest, PropertyKeyFactory propertyFactory,
+  public WorkOrder computePlacement(Cluster cluster, Request placementRequest, PropertyKeyFactory propertyFactory,
                                           PropertyValueFetcher propertyFetcher, WorkOrderFactory workOrderFactory) throws PlacementException {
     // This plugin only supports Creating a collection, and only one collection. Real code would be different...
     if (!(placementRequest instanceof CreateNewCollectionRequest)) {
@@ -42,7 +42,7 @@ public class SamplePluginRandomPlacement implements PlacementPlugin {
     final int totalReplicasPerShard = reqCreateCollection.getNrtReplicationFactor() +
         reqCreateCollection.getTlogReplicationFactor() + reqCreateCollection.getPullReplicationFactor();
 
-    if (clusterTopo.getLiveNodes().size() < totalReplicasPerShard) {
+    if (cluster.getLiveNodes().size() < totalReplicasPerShard) {
       throw new PlacementException("Cluster size too small for number of replicas per shard");
     }
 
@@ -51,7 +51,7 @@ public class SamplePluginRandomPlacement implements PlacementPlugin {
     // Now place randomly all replicas of all shards on available nodes
     for (String shardName : reqCreateCollection.getShardNames()) {
       // Shuffle the nodes for each shard so that replicas for a shard are placed on distinct yet random nodes
-      ArrayList<Node> nodesToAssign = new ArrayList<>(clusterTopo.getLiveNodes());
+      ArrayList<Node> nodesToAssign = new ArrayList<>(cluster.getLiveNodes());
       Collections.shuffle(nodesToAssign, new Random());
 
       placeForReplicaType(nodesToAssign, workOrderFactory, replicaPlacements,
@@ -62,10 +62,8 @@ public class SamplePluginRandomPlacement implements PlacementPlugin {
           shardName, reqCreateCollection.getPullReplicationFactor(), Replica.ReplicaType.PULL);
     }
 
-    WorkOrder newCollectionWO = workOrderFactory.createWorkOrderNewCollection(
+    return workOrderFactory.createWorkOrderNewCollection(
         reqCreateCollection, reqCreateCollection.getCollectionName(), replicaPlacements);
-
-    return newCollectionWO;
   }
 
   private void placeForReplicaType(ArrayList<Node> nodesToAssign, WorkOrderFactory workOrderFactory,
