@@ -1241,7 +1241,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       numberBackupsToKeep = 0;
     }
     @SuppressWarnings({"rawtypes"})
-    NamedList secondary = (NamedList) initArgs.get("secondary");
+    // this ternary operator should go away in the next version because legacy terminology has beeen deprecated
+    NamedList secondary = (NamedList)(initArgs.get("secondary") != null ? initArgs.get("secondary") : initArgs.get("slave"));
     boolean enableSecondary = isEnabled( secondary );
     if (enableSecondary) {
       currentIndexFetcher = pollingIndexFetcher = new IndexFetcher(secondary, this, core);
@@ -1249,7 +1250,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       isSecondary = true;
     }
     @SuppressWarnings({"rawtypes"})
-    NamedList primary = (NamedList) initArgs.get("primary");
+    // this ternary operator should go away in the next version because legacy terminology has beeen deprecated
+    NamedList primary = (NamedList)(initArgs.get("primary") != null ? initArgs.get("primary") : initArgs.get("master"));
     boolean enablePrimary = isEnabled( primary );
 
     if (enablePrimary || (enableSecondary && !currentIndexFetcher.fetchFromLeader)) {
