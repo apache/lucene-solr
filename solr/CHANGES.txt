@@ -156,6 +156,9 @@ Bug Fixes
 * SOLR-14516: Fix NPE in JSON response writer(wt=json) with /get when writing non-stored, non-indexed docvalue field
   from an uncommitted document (noble, Ishan Chattopadhyaya, Munendra S N)
 
+* SOLR-14657: Improve error handling in IndexReader realted metrics that were causing scary ERROR logging
+  if metrics were requested while Solr was in the process of closing/re-opening a new IndexReader. (hossman)
+
 Other Changes
 ---------------------
 
