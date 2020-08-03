@@ -799,6 +799,12 @@ public class ExtendedDismaxQParser extends QParser {
         }
         
         if (inString == 0) {
+          if (!ignoreQuote && ch == '"') {
+            // end of the token if we aren't in a string, backing
+            // up the position.
+            pos--;
+            break;
+          }
           switch (ch) {
             case '!':
             case '(':

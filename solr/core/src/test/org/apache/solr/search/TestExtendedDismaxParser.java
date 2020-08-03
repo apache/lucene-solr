@@ -964,6 +964,69 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     );
   }
 
+    @Test
+    public void testWhitespaceCharacters() throws Exception {
+        // create a document that contains all reserved characters
+
+        assertU(adoc("id", "whitespaceChars",
+                "cat_s", "foo\nfoo"));
+        assertU(commit());
+
+        assertQ(req("q", "(\"foo\nfoo\")",
+                        "qf", "cat_s",
+                        "defType", "edismax")
+                , "*[count(//doc)=1]");
+
+        assertQ(req("q", "cat_s:[\"foo\nfoo\" TO \"foo\nfoo\"]",
+                        "qf", "name",
+                        "defType", "edismax")
+                , "*[count(//doc)=1]");
+
+        assertQ(req("q", "cat_s:[ \"foo\nfoo\" TO \"foo\nfoo\"]",
+                        "qf", "name",
+                        "defType", "edismax")
+                , "*[count(//doc)=1]");
+
+        assertQ(req("q", "{!edismax qf=cat_s v='[\"foo\nfoo\" TO \"foo\nfoo\"]'}")
+                , "*[count(//doc)=1]");
+
+        assertQ(req("q", "{!edismax qf=cat_s v='[ \"foo\nfoo\" TO \"foo\nfoo\"]'}")
+                , "*[count(//doc)=1]");
+
+    }
+
+    @Test
+    public void testDoubleQuoteCharacters() throws Exception {
+        // create a document that contains all reserved characters
+
+        assertU(adoc("id", "doubleQuote",
+                "cat_s", "foo\"foo"));
+        assertU(commit());
+
+        assertQ(req("q", "cat_s:[\"foo\\\"foo\" TO \"foo\\\"foo\"]",
+                        "qf", "name",
+                        "defType", "edismax")
+                , "*[count(//doc)=1]");
+
+        assertQ(req("q", "cat_s:\"foo\\\"foo\"",
+                        "qf", "name",
+                        "defType", "edismax")
+                , "*[count(//doc)=1]");
+
+        assertQ(req("q", "cat_s:foo\\\"foo",
+                        "qf", "name",
+                        "defType", "edismax")
+                , "*[count(//doc)=1]");
+
+        assertQ(req("q", "cat_s:foo\"foo",
+                        "qf", "name",
+                        "defType", "edismax")
+                , "*[count(//doc)=1]");
+
+
+
+    }
+
   /**
    * verify that all reserved characters are properly escaped when being set in
    * {@link org.apache.solr.search.ExtendedDismaxQParser.Clause#val}.
