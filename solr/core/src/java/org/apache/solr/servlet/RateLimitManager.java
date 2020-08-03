@@ -38,9 +38,7 @@ import static org.apache.solr.common.params.CommonParams.SOLR_REQUEST_TYPE_PARAM
  */
 public class RateLimitManager {
   public final static int DEFAULT_CONCURRENT_REQUESTS= (Runtime.getRuntime().availableProcessors()) * 3;
-  public final static long DEFAULT_EXPIRATION_TIME_INMS = 300;
   public final static long DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS = -1;
-
   private final Map<String, RequestRateLimiter> requestRateLimiterMap;
 
   public RateLimitManager() {
@@ -51,8 +49,6 @@ public class RateLimitManager {
   // identify which (if any) rate limiter can handle this request. Internal requests will not be
   // rate limited
   // Returns true if request is accepted for processing, false if it should be rejected
-
-  // NOTE: It is upto specific rate limiter implementation to handle queuing of rejected requests.
   public boolean handleRequest(HttpServletRequest request) throws InterruptedException {
     String requestContext = request.getHeader(SOLR_REQUEST_CONTEXT_PARAM);
     String typeOfRequest = request.getHeader(SOLR_REQUEST_TYPE_PARAM);
@@ -74,38 +70,32 @@ public class RateLimitManager {
       return true;
     }
 
-    return requestRateLimiter.handleRequest(request);
+    if (requestRateLimiter.handleRequest() || tryWorkStealing(typeOfRequest)) {
+      return true;
+    }
+
+    return false;
   }
 
-  // Resume a pending request from one of the registered rate limiters.
-  // The current model is round robin -- iterate over the list and get a pending request and resume it.
+  /* For a rejected request type, do the following:
+   * For each request rate limiter whose type that is not of the type of the request which got rejected,
+   * check if work stealing is enabled. If enabled, try to acquire a slot.
+   * If allotted, return else try next request type.
+   */
+  private boolean tryWorkStealing(String requestType) {
+    for (Map.Entry<String, RequestRateLimiter> currentEntry : requestRateLimiterMap.entrySet()) {
+      RequestRateLimiter requestRateLimiter = currentEntry.getValue();
 
-  // TODO: This should be a priority queue based model
-  public void resumePendingRequest(HttpServletRequest request) {
-    String typeOfRequest = request.getHeader(SOLR_REQUEST_TYPE_PARAM);
+      if (requestRateLimiter.getRateLimiterConfig().requestType.equals(requestType)) {
+        continue;
+      }
 
-    RequestRateLimiter previousRequestRateLimiter = requestRateLimiterMap.get(typeOfRequest);
-
-    if (previousRequestRateLimiter == null) {
-      // No rate limiter for this request type
-      return;
-    }
-
-    // Give preference to the previous request's rate limiter
-    if (previousRequestRateLimiter.resumePendingOperation()) {
-      return;
-    }
-
-    if (previousRequestRateLimiter.getRateLimiterConfig().isWorkStealingEnabled) {
-      for (Map.Entry<String, RequestRateLimiter> currentEntry : requestRateLimiterMap.entrySet()) {
-        RequestRateLimiter requestRateLimiter = currentEntry.getValue();
-        boolean isRequestResumed = requestRateLimiter.resumePendingOperation();
-
-        if (isRequestResumed) {
-          return;
-        }
+      if (requestRateLimiter.getRateLimiterConfig().isWorkStealingEnabled && requestRateLimiter.allowSlotStealing()) {
+        return true;
       }
     }
+
+    return false;
   }
 
   // Decrement the active requests in the rate limiter for the corresponding request type.
@@ -120,13 +110,6 @@ public class RateLimitManager {
     }
 
     requestRateLimiter.decrementConcurrentRequests();
-  }
-
-  public void close() {
-
-    for (RequestRateLimiter requestRateLimiter : requestRateLimiterMap.values()) {
-      requestRateLimiter.close();
-    }
   }
 
   public void registerRequestRateLimiter(RequestRateLimiter requestRateLimiter, SolrRequest.SolrRequestType requestType) {

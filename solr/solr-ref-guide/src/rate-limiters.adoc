@@ -19,8 +19,7 @@
 Solr allows rate limiting per request type. Each request type can be allocated a maximum allowed number of concurrent requests
 that can be active. The default rate limiting is implemented for updates and searches.
 
-If a request exceeds the request quota, further incoming requests are automatically queued asynchronously with
-a configurable timeout.
+If a request exceeds the request quota, further incoming requests are rejected with HTTP error code 429 (Too Many Requests).
 
 == When To Use Rate Limiters
 Rate limiters should be used when the user wishes to allocate a guaranteed capacity of the request threadpool to a specific
@@ -72,18 +71,6 @@ is -1, indicating no wait. 0 will represent the same -- no wait.
 <param-value>100</param-value>
 ----
 
-==== Request Expiration Time
-Time in ms after which a request will expire in the wait queue. Default value is 200 ms. Zero or negative
-values indicate no timeout.
-[source,xml]
-----
-<param-name>queryRequestExpirationTimeInMS</param-name>
-----
-[source,xml]
-----
-<param-value>200</param-value>
-----
-
 ==== Work Stealing Enabled
 If work stealing (described below) is enabled or not. Default value is false.
 [source,xml]
@@ -93,6 +80,20 @@ If work stealing (described below) is enabled or not. Default value is false.
 [source,xml]
 ----
 <param-value>true</param-value>
+----
+
+==== Guaranteed Slots
+The number of guaranteed slots that the query rate limiter will reserve irrespective
+of the load of query requests. This is used only if work stealing is enabled and acts
+as the threshold beyond which query rate limiter will not allow other request types to
+steal slots from its quota. Default value is allowed number of concurrent requests / 2.
+[source,xml]
+----
+<param-name>queryGuaranteedSlots</param-name>
+----
+[source,xml]
+----
+<param-value>200</param-value>
 ----
 
 == Salient Points

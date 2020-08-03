@@ -31,6 +31,7 @@ import java.security.Principal;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -98,6 +99,8 @@ public class HttpSolrClient extends BaseHttpSolrClient {
   private static final Charset FALLBACK_CHARSET = StandardCharsets.UTF_8;
   private static final String DEFAULT_PATH = "/select";
   private static final long serialVersionUID = -946812319974801896L;
+
+  protected static final Set<Integer> UNMATCHED_ACCEPTED_ERROR_CODES = new HashSet<>(Arrays.asList(429));
   
   /**
    * User-Agent String.
@@ -720,9 +723,9 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     }
   }
 
-  // When raising an error from an async context that is managing a request, mime types can be unmatched
+  // When raising an error using HTTP sendError, mime types can be mismatched
   private boolean isUnmatchedErrorCode(String mimeType, int httpStatus) {
-    if (mimeType.equalsIgnoreCase("text/html") && httpStatus == HttpStatus.SC_SERVICE_UNAVAILABLE) {
+    if (mimeType.equalsIgnoreCase("text/html") && UNMATCHED_ACCEPTED_ERROR_CODES.contains(httpStatus)) {
       return true;
     }
 

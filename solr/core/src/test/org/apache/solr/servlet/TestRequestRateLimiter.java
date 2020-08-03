@@ -17,11 +17,9 @@
 
 package org.apache.solr.servlet;
 
-import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -37,7 +35,6 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.apache.solr.servlet.RateLimitManager.DEFAULT_EXPIRATION_TIME_INMS;
 import static org.apache.solr.servlet.RateLimitManager.DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS;
 
 public class TestRequestRateLimiter extends SolrCloudTestCase {
@@ -58,8 +55,8 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
 
     SolrDispatchFilter solrDispatchFilter = cluster.getJettySolrRunner(0).getSolrDispatchFilter();
 
-    RequestRateLimiter.RateLimiterConfig rateLimiterConfig = new RequestRateLimiter.RateLimiterConfig(true, DEFAULT_EXPIRATION_TIME_INMS,
-        DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS, 5 /* allowedRequests */, true /* isWorkStealingEnabled */);
+    RequestRateLimiter.RateLimiterConfig rateLimiterConfig = new RequestRateLimiter.RateLimiterConfig(SolrRequest.SolrRequestType.QUERY,
+        true, 1, DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS, 5 /* allowedRequests */, true /* isWorkStealingEnabled */);
     RateLimitManager.Builder builder = new MockBuilder(new MockRequestRateLimiter(rateLimiterConfig, 5));
     RateLimitManager rateLimitManager = builder.build();
 
@@ -102,17 +99,21 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
       futures = executor.invokeAll(callableList);
 
       for (Future<?> future : futures) {
-        future.get();
+        try {
+          future.get();
+        } catch (Exception e) {
+          assertTrue("Not true " + e.getMessage(), e.getMessage().contains("non ok status: 429, message:Too Many Requests"));
+        }
       }
 
       MockRequestRateLimiter mockQueryRateLimiter = (MockRequestRateLimiter) rateLimitManager.getRequestRateLimiter(SolrRequest.SolrRequestType.QUERY);
 
-      assertTrue("Incoming request count did not match. Expected >=25  incoming " + mockQueryRateLimiter.incomingRequestCount.get(),
-          mockQueryRateLimiter.incomingRequestCount.get() >= 25);
-      assertTrue("Incoming accepted new request count did not match. Expected 25 incoming " + mockQueryRateLimiter.acceptedNewRequestCount.get(),
-          mockQueryRateLimiter.acceptedNewRequestCount.get() == 25);
-      assertTrue("Incoming rejected new request count did not match. Expected >0 incoming " + mockQueryRateLimiter.rejectedRequestCount.get(),
-          mockQueryRateLimiter.rejectedRequestCount.get() > 0);
+      assertTrue("Incoming request count did not match. Expected == 25  incoming " + mockQueryRateLimiter.incomingRequestCount.get(),
+          mockQueryRateLimiter.incomingRequestCount.get() == 25);
+      assertTrue("Incoming accepted new request count did not match. Expected 5 incoming " + mockQueryRateLimiter.acceptedNewRequestCount.get(),
+          mockQueryRateLimiter.acceptedNewRequestCount.get() == 5);
+      assertTrue("Incoming rejected new request count did not match. Expected 20 incoming " + mockQueryRateLimiter.rejectedRequestCount.get(),
+          mockQueryRateLimiter.rejectedRequestCount.get() == 20);
       assertTrue("Incoming total processed requests count did not match. Expected " + mockQueryRateLimiter.incomingRequestCount.get() + " incoming "
               + (mockQueryRateLimiter.acceptedNewRequestCount.get() + mockQueryRateLimiter.rejectedRequestCount.get()),
           (mockQueryRateLimiter.acceptedNewRequestCount.get() + mockQueryRateLimiter.rejectedRequestCount.get()) == mockQueryRateLimiter.incomingRequestCount.get());
@@ -140,10 +141,10 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
     }
 
     @Override
-    public boolean handleRequest(HttpServletRequest request) throws InterruptedException {
+    public boolean handleRequest() throws InterruptedException {
       incomingRequestCount.getAndIncrement();
 
-      boolean response = super.handleRequest(request);
+      boolean response = super.handleRequest();
 
       if (response) {
           acceptedNewRequestCount.getAndIncrement();
@@ -162,26 +163,6 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
     public void decrementConcurrentRequests() {
       activeRequestCount.decrementAndGet();
       super.decrementConcurrentRequests();
-    }
-  }
-
-  private static class MockBlockingRequestRateLimiter extends MockRequestRateLimiter {
-    private final CountDownLatch countDownLatch;
-
-    public MockBlockingRequestRateLimiter(RateLimiterConfig config, int maxCount, final CountDownLatch countDownLatch) {
-      super(config, maxCount);
-
-      this.countDownLatch = countDownLatch;
-    }
-
-    @Override
-    public void decrementConcurrentRequests() {
-      try {
-        super.decrementConcurrentRequests();
-        countDownLatch.await();
-      } catch (InterruptedException e) {
-        throw new RuntimeException(e.getMessage());
-      }
     }
   }
 

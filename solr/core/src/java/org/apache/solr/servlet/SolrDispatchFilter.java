@@ -338,10 +338,6 @@ public class SolrDispatchFilter extends BaseSolrFilter {
           metricManager = null;
         }
       }
-
-      if (rateLimitManager != null) {
-        rateLimitManager.close();
-      }
     } finally {
       if (cc != null) {
         httpClient = null;
@@ -396,7 +392,11 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       }
 
       if (!accepted) {
-        return;
+        String errorMessage = "Too many requests for this request type." +
+            "Please try after some time or increase the quota for this request type";
+
+        response.sendError(429, errorMessage);
+        //throw new SolrException(ErrorCode.TOO_MANY_REQUESTS, "FOOFOOOFOO");
       }
 
       SpanContext parentSpan = GlobalTracer.get().extract(request);
@@ -468,7 +468,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         rateLimitManager.decrementActiveRequests(request);
 
         // Try to get work from existing pending state
-        rateLimitManager.resumePendingRequest(request);
+        //rateLimitManager.resumePendingRequest(request);
       }
     }
   }

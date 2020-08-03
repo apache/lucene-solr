@@ -19,15 +19,16 @@ package org.apache.solr.servlet;
 
 import javax.servlet.FilterConfig;
 
+import org.apache.solr.client.solrj.SolrRequest;
+
 import static org.apache.solr.servlet.RateLimitManager.DEFAULT_CONCURRENT_REQUESTS;
-import static org.apache.solr.servlet.RateLimitManager.DEFAULT_EXPIRATION_TIME_INMS;
 import static org.apache.solr.servlet.RateLimitManager.DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS;
 
 public class QueryRateLimiter extends RequestRateLimiter {
   final static String IS_QUERY_RATE_LIMITER_ENABLED = "isQueryRateLimiterEnabled";
   final static String MAX_QUERY_REQUESTS = "maxQueryRequests";
   final static String QUERY_WAIT_FOR_SLOT_ALLOCATION_INMS = "queryWaitForSlotAllocationInMS";
-  final static String QUERY_REQUEST_EXPIRATION_TIME_INMS = "queryRequestExpirationTimeInMS";
+  final static String QUERY_GUARANTEED_SLOTS = "queryGuaranteedSlots";
   final static String QUERY_ALLOW_WORK_STEALING = "queryAllowWorkStealing";
 
   public QueryRateLimiter(FilterConfig filterConfig) {
@@ -37,14 +38,14 @@ public class QueryRateLimiter extends RequestRateLimiter {
   protected static RequestRateLimiter.RateLimiterConfig constructQueryRateLimiterConfig(FilterConfig filterConfig) {
     RequestRateLimiter.RateLimiterConfig queryRateLimiterConfig = new RequestRateLimiter.RateLimiterConfig();
 
+    queryRateLimiterConfig.requestType = SolrRequest.SolrRequestType.QUERY;
     queryRateLimiterConfig.isEnabled = getParamAndParseBoolean(filterConfig, IS_QUERY_RATE_LIMITER_ENABLED, false);
-    queryRateLimiterConfig.requestExpirationTimeInMS = getParamAndParseLong(filterConfig, QUERY_REQUEST_EXPIRATION_TIME_INMS,
-        DEFAULT_EXPIRATION_TIME_INMS);
     queryRateLimiterConfig.waitForSlotAcquisition = getParamAndParseLong(filterConfig, QUERY_WAIT_FOR_SLOT_ALLOCATION_INMS,
         DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS);
     queryRateLimiterConfig.allowedRequests = getParamAndParseInt(filterConfig, MAX_QUERY_REQUESTS,
         DEFAULT_CONCURRENT_REQUESTS);
     queryRateLimiterConfig.isWorkStealingEnabled = getParamAndParseBoolean(filterConfig, QUERY_ALLOW_WORK_STEALING, false);
+    queryRateLimiterConfig.guaranteedSlotsThreshold = getParamAndParseInt(filterConfig, QUERY_GUARANTEED_SLOTS, queryRateLimiterConfig.allowedRequests / 2);
 
     return queryRateLimiterConfig;
   }

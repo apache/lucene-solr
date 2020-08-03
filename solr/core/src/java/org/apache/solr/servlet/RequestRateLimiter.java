@@ -17,81 +17,52 @@
 
 package org.apache.solr.servlet;
 
-import javax.servlet.AsyncContext;
-import javax.servlet.AsyncEvent;
-import javax.servlet.AsyncListener;
 import javax.servlet.FilterConfig;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.solr.client.solrj.SolrRequest;
 
 /**
  * Handles rate limiting for a specific request type.
  *
  * The control flow is as follows:
  * Handle request -- Check if slot is available -- If available, acquire slot and proceed --
- * else asynchronously queue the request.
- *
- * When an active request completes, a check is performed to see if there are any pending requests.
- * If there is an available pending request, process the same.
+ * else reject the same.
  */
 public class RequestRateLimiter {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
   private Semaphore allowedConcurrentRequests;
   private RateLimiterConfig rateLimiterConfig;
-  private Queue<AsyncContext> waitQueue;
 
   public RequestRateLimiter(RateLimiterConfig rateLimiterConfig) {
     this.rateLimiterConfig = rateLimiterConfig;
     this.allowedConcurrentRequests = new Semaphore(rateLimiterConfig.allowedRequests);
-    this.waitQueue = new ConcurrentLinkedQueue<>();
   }
 
-  public boolean handleRequest(HttpServletRequest request) throws InterruptedException {
+  /* Handles an incoming request. Returns true if accepted, false if quota for this rate limiter is exceeded */
+  public boolean handleRequest() throws InterruptedException {
 
     if (!rateLimiterConfig.isEnabled) {
       return true;
     }
 
-    boolean accepted = allowedConcurrentRequests.tryAcquire(rateLimiterConfig.waitForSlotAcquisition, TimeUnit.MILLISECONDS);
-
-    if (!accepted) {
-      AsyncContext asyncContext = request.startAsync();
-      AsyncListener asyncListener = buildAsyncListener();
-
-      if (rateLimiterConfig.requestExpirationTimeInMS > 0) {
-        asyncContext.setTimeout(rateLimiterConfig.requestExpirationTimeInMS);
-      }
-
-      asyncContext.addListener(asyncListener);
-      waitQueue.add(asyncContext);
-    }
-
-    return accepted;
+    return allowedConcurrentRequests.tryAcquire(rateLimiterConfig.waitForSlotAcquisition, TimeUnit.MILLISECONDS);
   }
 
-  public boolean resumePendingOperation() {
-    AsyncContext asyncContext = waitQueue.poll();
-
-    if (asyncContext != null) {
-      try {
-        asyncContext.dispatch();
-        return true;
-      }
-      catch (IllegalStateException x) {
-        if (log.isWarnEnabled()) {
-          String errorMessage = x.getMessage();
-          log.warn(errorMessage);
+  /**
+   * Whether to allow another request type to steal a slot from this request rate limiter. Typically works fine
+   * if there is a relatively lesser load on this request rate limiter's type compared to the others (think of skew).
+   * @return true if allow, false otherwise
+   */
+  public boolean allowSlotStealing() {
+    synchronized (this) {
+      if (allowedConcurrentRequests.availablePermits() > rateLimiterConfig.guaranteedSlotsThreshold) {
+        try {
+          allowedConcurrentRequests.acquire();
+        } catch (InterruptedException e) {
+          throw new RuntimeException(e.getMessage());
         }
+        return true;
       }
     }
 
@@ -102,53 +73,8 @@ public class RequestRateLimiter {
     allowedConcurrentRequests.release();
   }
 
-  public void close() {
-    while (!waitQueue.isEmpty()) {
-      AsyncContext asyncContext = waitQueue.poll();
-
-      asyncContext.complete();
-    }
-
-  }
-
   public RateLimiterConfig getRateLimiterConfig() {
     return rateLimiterConfig;
-  }
-
-  private AsyncListener buildAsyncListener() {
-    return new AsyncListener() {
-      @Override
-      public void onComplete(AsyncEvent asyncEvent) throws IOException {
-
-      }
-
-      @Override
-      public void onTimeout(AsyncEvent asyncEvent) throws IOException {
-        AsyncContext asyncContext = asyncEvent.getAsyncContext();
-
-        if (!waitQueue.remove(asyncContext)) {
-          return;
-        }
-
-        HttpServletResponse servletResponse = ((HttpServletResponse)asyncEvent.getSuppliedResponse());
-        String responseMessage = "Too many requests for this request type." +
-            "Please try after some time or increase the quota for this request type";
-
-        servletResponse.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE, responseMessage);
-
-        asyncContext.complete();
-      }
-
-      @Override
-      public void onError(AsyncEvent asyncEvent) throws IOException {
-
-      }
-
-      @Override
-      public void onStartAsync(AsyncEvent asyncEvent) throws IOException {
-
-      }
-    };
   }
 
   static long getParamAndParseLong(FilterConfig config, String parameterName, long defaultValue) {
@@ -181,19 +107,22 @@ public class RequestRateLimiter {
     return defaultValue;
   }
 
+  /* Rate limiter config for a specific request rate limiter instance */
   static class RateLimiterConfig {
+    public SolrRequest.SolrRequestType requestType;
     public boolean isEnabled;
-    public long requestExpirationTimeInMS;
     public long waitForSlotAcquisition;
     public int allowedRequests;
     public boolean isWorkStealingEnabled;
+    public int guaranteedSlotsThreshold;
 
     public RateLimiterConfig() { }
 
-    public RateLimiterConfig(boolean isEnabled, long requestExpirationTimeInMS, long waitForSlotAcquisition, int allowedRequests,
-                             boolean isWorkStealingEnabled) {
+    public RateLimiterConfig(SolrRequest.SolrRequestType requestType, boolean isEnabled, int guaranteedSlotsThreshold,
+                             long waitForSlotAcquisition, int allowedRequests, boolean isWorkStealingEnabled) {
+      this.requestType = requestType;
       this.isEnabled = isEnabled;
-      this.requestExpirationTimeInMS = requestExpirationTimeInMS;
+      this.guaranteedSlotsThreshold = guaranteedSlotsThreshold;
       this.waitForSlotAcquisition = waitForSlotAcquisition;
       this.allowedRequests = allowedRequests;
       this.isWorkStealingEnabled = isWorkStealingEnabled;
