@@ -114,6 +114,8 @@ Improvements
   with doc values and points. In this case, there is an assumption that the same data is
   stored in these points and doc values (Mayya Sharipova, Jim Ferenczi, Adrien Grand)
 
+* LUCENE-9446: In BooleanQuery rewrite, always remove MatchAllDocsQuery filter clauses
+  when possible. (Julie Tibshirani)
 
 Bug fixes
 
