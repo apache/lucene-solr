@@ -24,12 +24,15 @@ import org.apache.solr.client.solrj.SolrRequest;
 import static org.apache.solr.servlet.RateLimitManager.DEFAULT_CONCURRENT_REQUESTS;
 import static org.apache.solr.servlet.RateLimitManager.DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS;
 
+/** Implementation of RequestRateLimiter specific to query request types. Most of the actual work is delegated
+ *  to the parent class but specific configurations and parsing are handled by this class.
+ */
 public class QueryRateLimiter extends RequestRateLimiter {
   final static String IS_QUERY_RATE_LIMITER_ENABLED = "isQueryRateLimiterEnabled";
   final static String MAX_QUERY_REQUESTS = "maxQueryRequests";
   final static String QUERY_WAIT_FOR_SLOT_ALLOCATION_INMS = "queryWaitForSlotAllocationInMS";
   final static String QUERY_GUARANTEED_SLOTS = "queryGuaranteedSlots";
-  final static String QUERY_ALLOW_WORK_STEALING = "queryAllowWorkStealing";
+  final static String QUERY_ALLOW_SLOT_BORROWING = "queryAllowSlotBorrowing";
 
   public QueryRateLimiter(FilterConfig filterConfig) {
     super(constructQueryRateLimiterConfig(filterConfig));
@@ -44,7 +47,7 @@ public class QueryRateLimiter extends RequestRateLimiter {
         DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS);
     queryRateLimiterConfig.allowedRequests = getParamAndParseInt(filterConfig, MAX_QUERY_REQUESTS,
         DEFAULT_CONCURRENT_REQUESTS);
-    queryRateLimiterConfig.isWorkStealingEnabled = getParamAndParseBoolean(filterConfig, QUERY_ALLOW_WORK_STEALING, false);
+    queryRateLimiterConfig.isSlotBorrowingEnabled = getParamAndParseBoolean(filterConfig, QUERY_ALLOW_SLOT_BORROWING, false);
     queryRateLimiterConfig.guaranteedSlotsThreshold = getParamAndParseInt(filterConfig, QUERY_GUARANTEED_SLOTS, queryRateLimiterConfig.allowedRequests / 2);
 
     return queryRateLimiterConfig;

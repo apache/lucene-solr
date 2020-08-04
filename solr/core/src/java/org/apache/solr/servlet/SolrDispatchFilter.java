@@ -53,6 +53,7 @@ import com.codahale.metrics.jvm.ClassLoadingGaugeSet;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
+import com.google.common.annotations.VisibleForTesting;
 import io.opentracing.Scope;
 import io.opentracing.Span;
 import io.opentracing.SpanContext;
@@ -396,7 +397,6 @@ public class SolrDispatchFilter extends BaseSolrFilter {
             "Please try after some time or increase the quota for this request type";
 
         response.sendError(429, errorMessage);
-        //throw new SolrException(ErrorCode.TOO_MANY_REQUESTS, "FOOFOOOFOO");
       }
 
       SpanContext parentSpan = GlobalTracer.get().extract(request);
@@ -695,7 +695,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     this.closeOnDestroy = closeOnDestroy;
   }
 
-  // Only for testing
+  @VisibleForTesting
   void replaceRateLimitManager(RateLimitManager rateLimitManager) {
     this.rateLimitManager = rateLimitManager;
   }

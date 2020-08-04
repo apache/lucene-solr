@@ -71,11 +71,11 @@ is -1, indicating no wait. 0 will represent the same -- no wait.
 <param-value>100</param-value>
 ----
 
-==== Work Stealing Enabled
-If work stealing (described below) is enabled or not. Default value is false.
+==== Slot Borrowing Enabled
+If slot borrowing (described below) is enabled or not. Default value is false.
 [source,xml]
 ----
-<param-name>queryAllowWorkStealing</param-name>
+<param-name>queryAllowSlotBorrowing</param-name>
 ----
 [source,xml]
 ----
@@ -84,9 +84,9 @@ If work stealing (described below) is enabled or not. Default value is false.
 
 ==== Guaranteed Slots
 The number of guaranteed slots that the query rate limiter will reserve irrespective
-of the load of query requests. This is used only if work stealing is enabled and acts
+of the load of query requests. This is used only if slot borrowing is enabled and acts
 as the threshold beyond which query rate limiter will not allow other request types to
-steal slots from its quota. Default value is allowed number of concurrent requests / 2.
+borrow slots from its quota. Default value is allowed number of concurrent requests / 2.
 [source,xml]
 ----
 <param-name>queryGuaranteedSlots</param-name>
@@ -107,8 +107,8 @@ can be define for a request type. This is intentionally done to allow users full
 control on their quota allocation. However, if the quota exceeds the available threadpool's
 size, the standard queuing policies of the threadpool will kick in.
 
-=== Work Stealing
+=== Slot Borrowing
 If a quota does not have backlog but other quotas do, then the relatively less busier quota can
-"steal" work from the busier quotas. This is done on a round robin basis today with a futuristic
+"borrow" slot from the busier quotas. This is done on a round robin basis today with a futuristic
 pending task to make it a priority based model.
 

@@ -50,11 +50,11 @@ public class RequestRateLimiter {
   }
 
   /**
-   * Whether to allow another request type to steal a slot from this request rate limiter. Typically works fine
+   * Whether to allow another request type to borrow a slot from this request rate limiter. Typically works fine
    * if there is a relatively lesser load on this request rate limiter's type compared to the others (think of skew).
    * @return true if allow, false otherwise
    */
-  public boolean allowSlotStealing() {
+  public boolean allowSlotBorrowing() {
     synchronized (this) {
       if (allowedConcurrentRequests.availablePermits() > rateLimiterConfig.guaranteedSlotsThreshold) {
         try {
@@ -113,19 +113,19 @@ public class RequestRateLimiter {
     public boolean isEnabled;
     public long waitForSlotAcquisition;
     public int allowedRequests;
-    public boolean isWorkStealingEnabled;
+    public boolean isSlotBorrowingEnabled;
     public int guaranteedSlotsThreshold;
 
     public RateLimiterConfig() { }
 
     public RateLimiterConfig(SolrRequest.SolrRequestType requestType, boolean isEnabled, int guaranteedSlotsThreshold,
-                             long waitForSlotAcquisition, int allowedRequests, boolean isWorkStealingEnabled) {
+                             long waitForSlotAcquisition, int allowedRequests, boolean isSlotBorrowingEnabled) {
       this.requestType = requestType;
       this.isEnabled = isEnabled;
       this.guaranteedSlotsThreshold = guaranteedSlotsThreshold;
       this.waitForSlotAcquisition = waitForSlotAcquisition;
       this.allowedRequests = allowedRequests;
-      this.isWorkStealingEnabled = isWorkStealingEnabled;
+      this.isSlotBorrowingEnabled = isSlotBorrowingEnabled;
     }
   }
 }

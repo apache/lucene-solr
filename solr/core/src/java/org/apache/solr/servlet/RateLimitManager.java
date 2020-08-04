@@ -78,7 +78,7 @@ public class RateLimitManager {
       return true;
     }
 
-    requestRateLimiter = tryWorkStealing(typeOfRequest);
+    requestRateLimiter = trySlotBorrowing(typeOfRequest);
 
     if (requestRateLimiter != null) {
       activeRequestsMap.put(request, requestRateLimiter);
@@ -90,10 +90,10 @@ public class RateLimitManager {
 
   /* For a rejected request type, do the following:
    * For each request rate limiter whose type that is not of the type of the request which got rejected,
-   * check if work stealing is enabled. If enabled, try to acquire a slot.
+   * check if slot borrowing is enabled. If enabled, try to acquire a slot.
    * If allotted, return else try next request type.
    */
-  private RequestRateLimiter tryWorkStealing(String requestType) {
+  private RequestRateLimiter trySlotBorrowing(String requestType) {
     for (Map.Entry<String, RequestRateLimiter> currentEntry : requestRateLimiterMap.entrySet()) {
       RequestRateLimiter requestRateLimiter = currentEntry.getValue();
 
@@ -101,7 +101,7 @@ public class RateLimitManager {
         continue;
       }
 
-      if (requestRateLimiter.getRateLimiterConfig().isWorkStealingEnabled && requestRateLimiter.allowSlotStealing()) {
+      if (requestRateLimiter.getRateLimiterConfig().isSlotBorrowingEnabled && requestRateLimiter.allowSlotBorrowing()) {
         return requestRateLimiter;
       }
     }
