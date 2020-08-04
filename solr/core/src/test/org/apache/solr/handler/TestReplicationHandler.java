@@ -1667,6 +1667,31 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     }
   }
   
+  public void testGetBoolWithBackwardCompatibility() {
+    assertTrue(ReplicationHandler.getBoolWithBackwardCompatibility(params(), "foo", "bar", true));
+    assertFalse(ReplicationHandler.getBoolWithBackwardCompatibility(params(), "foo", "bar", false));
+    assertTrue(ReplicationHandler.getBoolWithBackwardCompatibility(params("foo", "true"), "foo", "bar", false));
+    assertTrue(ReplicationHandler.getBoolWithBackwardCompatibility(params("bar", "true"), "foo", "bar", false));
+    assertTrue(ReplicationHandler.getBoolWithBackwardCompatibility(params("foo", "true", "bar", "false"), "foo", "bar", false));
+  }
+  
+  public void testGetObjectWithBackwardCompatibility() {
+    assertEquals("aaa", ReplicationHandler.getObjectWithBackwardCompatibility(params(), "foo", "bar", "aaa"));
+    assertEquals("bbb", ReplicationHandler.getObjectWithBackwardCompatibility(params("foo", "bbb"), "foo", "bar", "aaa"));
+    assertEquals("bbb", ReplicationHandler.getObjectWithBackwardCompatibility(params("bar", "bbb"), "foo", "bar", "aaa"));
+    assertEquals("bbb", ReplicationHandler.getObjectWithBackwardCompatibility(params("foo", "bbb", "bar", "aaa"), "foo", "bar", "aaa"));
+    assertNull(ReplicationHandler.getObjectWithBackwardCompatibility(params(), "foo", "bar", null));
+  }
+  
+  public void testGetObjectWithBackwardCompatibilityFromNL() {
+    NamedList<Object> nl = new NamedList<>();
+    assertNull(ReplicationHandler.getObjectWithBackwardCompatibility(nl, "foo", "bar"));
+    nl.add("bar", "bbb");
+    assertEquals("bbb", ReplicationHandler.getObjectWithBackwardCompatibility(nl, "foo", "bar"));
+    nl.add("foo", "aaa");
+    assertEquals("aaa", ReplicationHandler.getObjectWithBackwardCompatibility(nl, "foo", "bar"));
+  }
+  
   
   private class AddExtraDocs implements Runnable {
 
