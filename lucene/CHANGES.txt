@@ -31,6 +31,9 @@ Improvements
 * LUCENE-9440: FieldInfo#checkConsistency called twice from Lucene50(60)FieldInfosFormat#read;
   Removed the (redundant?) assert and do these checks for real. (Yauheni Putsykovich)
 
+* LUCENE-9446: In BooleanQuery rewrite, always remove MatchAllDocsQuery filter clauses
+  when possible. (Julie Tibshirani)
+
 Optimizations
 ---------------------
 
