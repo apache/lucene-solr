@@ -82,13 +82,13 @@ public class BackupRestoreUtils extends SolrTestCase {
       builder.append("=");
       builder.append(p.getValue());
     }
-    String masterUrl = builder.toString();
-    executeHttpRequest(masterUrl);
+    String leaderUrl = builder.toString();
+    executeHttpRequest(leaderUrl);
   }
 
   public static void runReplicationHandlerCommand(String baseUrl, String coreName, String action, String repoName, String backupName) throws IOException {
-    String masterUrl = baseUrl + "/" + coreName + ReplicationHandler.PATH + "?command=" + action + "&repository="+repoName+"&name="+backupName;
-    executeHttpRequest(masterUrl);
+    String leaderUrl = baseUrl + "/" + coreName + ReplicationHandler.PATH + "?command=" + action + "&repository="+repoName+"&name="+backupName;
+    executeHttpRequest(leaderUrl);
   }
 
   static void executeHttpRequest(String requestUrl) throws IOException {

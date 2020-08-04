@@ -61,12 +61,12 @@ limitations under the License.
   border-bottom: 0;
 }
 
-#content #replication .masterOnly,
+#content #replication .leaderOnly,
 #content #replication .followerOnly
 {
 }
 
-#content #replication.master .masterOnly
+#content #replication.leader .leaderOnly
 {
   display: block;
 }

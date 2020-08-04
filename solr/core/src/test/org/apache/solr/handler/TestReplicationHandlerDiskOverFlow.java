@@ -59,9 +59,9 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
   Function<String, Long> originalDiskSpaceprovider = null;
   BooleanSupplier originalTestWait = null;
   
-  JettySolrRunner masterJetty, followerJetty;
+  JettySolrRunner leaderJetty, followerJetty;
   SolrClient leaderClient, followerClient;
-  TestReplicationHandler.SolrInstance master = null, follower = null;
+  TestReplicationHandler.SolrInstance leader = null, follower = null;
 
   static String context = "/solr";
 
@@ -74,12 +74,12 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     String factory = random().nextInt(100) < 75 ? "solr.NRTCachingDirectoryFactory" : "solr.StandardDirectoryFactory"; // test the default most of the time
     System.setProperty("solr.directoryFactory", factory);
-    master = new TestReplicationHandler.SolrInstance(createTempDir("solr-instance").toFile(), "master", null);
-    master.setUp();
-    masterJetty = createAndStartJetty(master);
-    leaderClient = createNewSolrClient(masterJetty.getLocalPort());
+    leader = new TestReplicationHandler.SolrInstance(createTempDir("solr-instance").toFile(), "leader", null);
+    leader.setUp();
+    leaderJetty = createAndStartJetty(leader);
+    leaderClient = createNewSolrClient(leaderJetty.getLocalPort());
 
-    follower = new TestReplicationHandler.SolrInstance(createTempDir("solr-instance").toFile(), "follower", masterJetty.getLocalPort());
+    follower = new TestReplicationHandler.SolrInstance(createTempDir("solr-instance").toFile(), "follower", leaderJetty.getLocalPort());
     follower.setUp();
     followerJetty = createAndStartJetty(follower);
     followerClient = createNewSolrClient(followerJetty.getLocalPort());
@@ -91,15 +91,15 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
   @After
   public void tearDown() throws Exception {
     super.tearDown();
-    if (null != masterJetty) {
-      masterJetty.stop();
-      masterJetty = null;
+    if (null != leaderJetty) {
+      leaderJetty.stop();
+      leaderJetty = null;
     }
     if (null != followerJetty) {
       followerJetty.stop();
        followerJetty = null;
     }
-    master = follower = null;
+    leader = follower = null;
     if (null != leaderClient) {
       leaderClient.close();
       leaderClient = null;

@@ -126,7 +126,7 @@ limitations under the License.
           </thead>
           <tbody>
 
-            <tr class="masterSearch" ng-show="isLeader">
+            <tr class="leaderSearch" ng-show="isLeader">
 
               <th>Leader (Searching)</th>
               <td class="version"><div>{{replication.indexVersion}}</div></td>
@@ -135,30 +135,30 @@ limitations under the License.
 
             </tr>
 
-            <tr class="master" ng-show="isLeader">
+            <tr class="leader" ng-show="isLeader">
 
               <th>Leader (Replicable)</th>
-              <td class="version"><div>{{replication.master.replicableVersion || '-'}}</div></td>
-              <td class="generation"><div>{{replication.master.replicableGeneration || '-'}}</div></td>
+              <td class="version"><div>{{replication.leader.replicableVersion || '-'}}</div></td>
+              <td class="generation"><div>{{replication.leader.replicableGeneration || '-'}}</div></td>
               <td class="size"><div>-</div></td>
 
             </tr>
 
-            <tr class="master" ng-show="isFollower">
+            <tr class="leader" ng-show="isFollower">
 
               <th>Leader (Replicable)</th>
-              <td class="version"><div>{{replication.master.replicableVersion || '-'}}</div></td>
-              <td class="generation"><div>{{replication.master.replicableGeneration || '-'}}</div></td>
+              <td class="version"><div>{{replication.leader.replicableVersion || '-'}}</div></td>
+              <td class="generation"><div>{{replication.leader.replicableGeneration || '-'}}</div></td>
               <td class="size"><div>-</div></td>
 
             </tr>
 
-            <tr class="masterSearch" ng-show="isFollower">
+            <tr class="leaderSearch" ng-show="isFollower">
 
               <th>Leader (Searching)</th>
-              <td class="version"><div>{{replication.follower.masterDetails.indexVersion}}</div></td>
-              <td class="generation"><div>{{replication.follower.masterDetails.generation}}</div></td>
-              <td class="size"><div>{{replication.follower.masterDetails.indexSize || '-'}}</div></td>
+              <td class="version"><div>{{replication.follower.leaderDetails.indexVersion}}</div></td>
+              <td class="generation"><div>{{replication.follower.leaderDetails.generation}}</div></td>
+              <td class="size"><div>{{replication.follower.leaderDetails.indexSize || '-'}}</div></td>
 
             </tr>
 

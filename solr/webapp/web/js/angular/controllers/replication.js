@@ -183,7 +183,7 @@ var parseSeconds = function(time) {
 
 var getFollowerSettings = function(data) {
     var settings = {};
-    settings.leaderUrl = data.follower.masterUrl;
+    settings.leaderUrl = data.follower.leaderUrl;
     settings.isPollingDisabled = data.follower.isPollingDisabled == 'true';
     settings.pollInterval = data.follower.pollInterval;
     settings.isReplicating = data.follower.isReplicating == 'true';
@@ -207,14 +207,14 @@ var getFollowerSettings = function(data) {
 };
 
 var getLeaderSettings = function(details, isFollower) {
-    var master = {};
-    var masterData = isFollower ? details.follower.masterDetails.master : details.master;
-    master.replicationEnabled = masterData.replicationEnabled == "true";
-    master.replicateAfter = masterData.replicateAfter.join(", ");
+    var leader = {};
+    var leaderData = isFollower ? details.follower.leaderDetails.leader : details.leader;
+    leader.replicationEnabled = leaderData.replicationEnabled == "true";
+    leader.replicateAfter = leaderData.replicateAfter.join(", ");
 
-    if (masterData.confFiles) {
-        master.files = [];
-        var confFiles = masterData.confFiles.split(',');
+    if (leaderData.confFiles) {
+        leader.files = [];
+        var confFiles = leaderData.confFiles.split(',');
         for (var i=0; i<confFiles.length; i++) {
             var file = confFiles[i];
             var short = file;
@@ -228,8 +228,8 @@ var getLeaderSettings = function(details, isFollower) {
                     short = parts[0];
                 }
             }
-            master.files.push({title:title, name:short});
+            leader.files.push({title:title, name:short});
         }
     }
-    return master;
+    return leader;
 }

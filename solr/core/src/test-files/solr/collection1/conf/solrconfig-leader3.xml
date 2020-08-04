@@ -16,28 +16,46 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
+
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
   <dataDir>${solr.data.dir:}</dataDir>
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
-
   <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
   <updateHandler class="solr.DirectUpdateHandler2">
   </updateHandler>
 
-  <requestHandler name="/select" class="solr.SearchHandler" />
+  <requestHandler name="/select" class="solr.SearchHandler">
+    <bool name="httpCaching">true</bool>
+  </requestHandler>
 
   <requestHandler name="/replication" class="solr.ReplicationHandler">
-    <lst name="master">
+    <lst name="leader">
       <str name="replicateAfter">commit</str>
-      <str name="confFiles">schema-replication2.xml:schema.xml</str>
-      <str name="backupAfter">commit</str>
-    </lst>    
-    <str name="maxNumberOfBackups">1</str>
+      <str name="replicateAfter">startup</str>
+      <str name="confFiles">schema.xml</str>
+    </lst>
   </requestHandler>
-  
+
+  <!-- test query parameter defaults -->
+  <requestHandler name="/defaults" class="solr.SearchHandler">
+    <lst name="defaults">
+      <int name="rows">4</int>
+      <bool name="hl">true</bool>
+      <str name="hl.fl">text,name,subject,title,whitetok</str>
+    </lst>
+  </requestHandler>
+
+  <!-- test query parameter defaults -->
+  <requestHandler name="/lazy" class="solr.SearchHandler" startup="lazy">
+    <lst name="defaults">
+      <int name="rows">4</int>
+      <bool name="hl">true</bool>
+      <str name="hl.fl">text,name,subject,title,whitetok</str>
+    </lst>
+  </requestHandler>
 
   <requestDispatcher>
     <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="-1"/>
