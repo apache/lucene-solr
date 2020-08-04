@@ -112,7 +112,7 @@ import static org.apache.solr.handler.ReplicationHandler.*;
 
 /**
  * <p> Provides functionality of downloading changed index files as well as config files and a timer for scheduling fetches from the
- * master. </p>
+ * leader. </p>
  *
  *
  * @since solr 1.4
@@ -124,7 +124,7 @@ public class IndexFetcher {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private String masterUrl;
+  private String leaderUrl;
 
   final ReplicationHandler replicationHandler;
 
@@ -169,7 +169,7 @@ public class IndexFetcher {
 
   private boolean downloadTlogFiles = false;
 
-  private boolean skipCommitOnMasterVersionZero = true;
+  private boolean skipCommitOnLeaderVersionZero = true;
 
   private boolean clearLocalIndexFirst = false;
 
@@ -189,7 +189,7 @@ public class IndexFetcher {
     public static final IndexFetchResult INDEX_FETCH_SUCCESS = new IndexFetchResult("Fetching latest index is successful", true, null);
     public static final IndexFetchResult LOCK_OBTAIN_FAILED = new IndexFetchResult("Obtaining SnapPuller lock failed", false, null);
     public static final IndexFetchResult CONTAINER_IS_SHUTTING_DOWN = new IndexFetchResult("I was asked to replicate but CoreContainer is shutting down", false, null);
-    public static final IndexFetchResult MASTER_VERSION_ZERO = new IndexFetchResult("Index in peer is empty and never committed yet", true, null);
+    public static final IndexFetchResult LEADER_VERSION_ZERO = new IndexFetchResult("Index in peer is empty and never committed yet", true, null);
     public static final IndexFetchResult NO_INDEX_COMMIT_EXIST = new IndexFetchResult("No IndexCommit in local index", false, null);
     public static final IndexFetchResult PEER_INDEX_COMMIT_DELETED = new IndexFetchResult("No files to download because IndexCommit in peer was deleted", false, null);
     public static final IndexFetchResult LOCAL_ACTIVITY_DURING_REPLICATION = new IndexFetchResult("Local index modification during replication", false, null);
@@ -236,11 +236,11 @@ public class IndexFetcher {
     if (fetchFromLeader != null && fetchFromLeader instanceof Boolean) {
       this.fetchFromLeader = (boolean) fetchFromLeader;
     }
-    Object skipCommitOnMasterVersionZero = initArgs.get(SKIP_COMMIT_ON_MASTER_VERSION_ZERO);
-    if (skipCommitOnMasterVersionZero != null && skipCommitOnMasterVersionZero instanceof Boolean) {
-      this.skipCommitOnMasterVersionZero = (boolean) skipCommitOnMasterVersionZero;
+    Object skipCommitOnLeaderVersionZero = initArgs.get(SKIP_COMMIT_ON_LEADER_VERSION_ZERO);
+    if (skipCommitOnLeaderVersionZero != null && skipCommitOnLeaderVersionZero instanceof Boolean) {
+      this.skipCommitOnLeaderVersionZero = (boolean) skipCommitOnLeaderVersionZero;
     }
-    String masterUrl = (String) initArgs.get(MASTER_URL);
+    String masterUrl = (String) initArgs.get(LEADER_URL);
     if (masterUrl == null && !this.fetchFromLeader)
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
               "'masterUrl' is required for a follower");
@@ -420,10 +420,10 @@ public class IndexFetcher {
       } catch (Exception e) {
         final String errorMsg = e.toString();
         if (!Strings.isNullOrEmpty(errorMsg) && errorMsg.contains(INTERRUPT_RESPONSE_MESSAGE)) {
-            log.warn("Master at: {} is not available. Index fetch failed by interrupt. Exception: {}", masterUrl, errorMsg);
+            log.warn("Leader at: {} is not available. Index fetch failed by interrupt. Exception: {}", masterUrl, errorMsg);
             return new IndexFetchResult(IndexFetchResult.FAILED_BY_INTERRUPT_MESSAGE, false, e);
         } else {
-            log.warn("Master at: {} is not available. Index fetch failed by exception: {}", masterUrl, errorMsg);
+            log.warn("Leader at: {} is not available. Index fetch failed by exception: {}", masterUrl, errorMsg);
             return new IndexFetchResult(IndexFetchResult.FAILED_BY_EXCEPTION_MESSAGE, false, e);
         }
     }
@@ -431,8 +431,8 @@ public class IndexFetcher {
       long latestVersion = (Long) response.get(CMD_INDEX_VERSION);
       long latestGeneration = (Long) response.get(GENERATION);
 
-      log.info("Master's generation: {}", latestGeneration);
-      log.info("Master's version: {}", latestVersion);
+      log.info("Leader's generation: {}", latestGeneration);
+      log.info("Leader's version: {}", latestVersion);
 
       // TODO: make sure that getLatestCommit only returns commit points for the main index (i.e. no side-car indexes)
       IndexCommit commit = solrCore.getDeletionPolicy().getLatestCommit();
@@ -461,7 +461,7 @@ public class IndexFetcher {
         if (commit.getGeneration() != 0) {
           // since we won't get the files for an empty index,
           // we just clear ours and commit
-          log.info("New index in Master. Deleting mine...");
+          log.info("New index in Leader. Deleting mine...");
           RefCounted<IndexWriter> iw = solrCore.getUpdateHandler().getSolrCoreState().getIndexWriter(solrCore);
           try {
             iw.get().deleteAll();
@@ -469,7 +469,7 @@ public class IndexFetcher {
             iw.decref();
           }
           assert TestInjection.injectDelayBeforeFollowerCommitRefresh();
-          if (skipCommitOnMasterVersionZero) {
+          if (skipCommitOnLeaderVersionZero) {
             openNewSearcherAndUpdateCommitPoint();
           } else {
             SolrQueryRequest req = new LocalSolrQueryRequest(solrCore, new ModifiableSolrParams());
@@ -480,7 +480,7 @@ public class IndexFetcher {
         //there is nothing to be replicated
         successfulInstall = true;
         log.debug("Nothing to replicate, master's version is 0");
-        return IndexFetchResult.MASTER_VERSION_ZERO;
+        return IndexFetchResult.LEADER_VERSION_ZERO;
       }
 
       // TODO: Should we be comparing timestamps (across machines) here?
@@ -1998,7 +1998,7 @@ public class IndexFetcher {
     HttpClientUtil.close(myHttpClient);
   }
 
-  String getMasterUrl() {
+  String getLeaderUrl() {
     return masterUrl;
   }
 

@@ -652,7 +652,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
           coreState.setCdcrBootstrapRunning(true);
           latch.countDown(); // free the latch as current bootstrap is executing
           //running.set(true);
-          String leaderUrl = req.getParams().get(ReplicationHandler.MASTER_URL);
+          String leaderUrl = req.getParams().get(ReplicationHandler.LEADER_URL);
           BootstrapCallable bootstrapCallable = new BootstrapCallable(leaderUrl, core);
           coreState.setCdcrBootstrapCallable(bootstrapCallable);
           Future<Boolean> bootstrapFuture = core.getCoreContainer().getUpdateShardHandler().getRecoveryExecutor()
@@ -773,7 +773,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
         }
 
         ModifiableSolrParams solrParams = new ModifiableSolrParams();
-        solrParams.set(ReplicationHandler.MASTER_URL, leaderUrl);
+        solrParams.set(ReplicationHandler.LEADER_URL, leaderUrl);
         // we do not want the raw tlog files from the source
         solrParams.set(ReplicationHandler.TLOG_FILES, false);
 

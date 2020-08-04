@@ -41,9 +41,9 @@ solrAdminApp.controller('ReplicationController',
                         timeout = $timeout($scope.refresh, 1000*(1+$scope.settings.tick));
                     }
                 } else {
-                    $scope.versions = getMasterVersions(response.details);
+                    $scope.versions = getLeaderVersions(response.details);
                 }
-                $scope.master = getMasterSettings(response.details, $scope.isFollower);
+                $scope.leader = getLeaderSettings(response.details, $scope.isFollower);
 
                 var onRouteChangeOff = $scope.$on('$routeChangeStart', function() {
                     if (interval) $interval.cancel(interval);
@@ -120,37 +120,37 @@ var getIterations = function(follower) {
     return iterations;
 };
 
-var getMasterVersions = function(data) {
-    versions = {masterSearch:{}, master:{}};
+var getLeaderVersions = function(data) {
+    versions = {leaderSearch:{}, leader:{}};
 
-    versions.masterSearch.version = data.indexVersion;
-    versions.masterSearch.generation = data.generation;
-    versions.masterSearch.size = data.indexSize;
+    versions.leaderSearch.version = data.indexVersion;
+    versions.leaderSearch.generation = data.generation;
+    versions.leaderSearch.size = data.indexSize;
 
-    versions.master.version = data.master.replicableVersion || '-';
-    versions.master.generation = data.master.replicableGeneration || '-';
-    versions.master.size = '-';
+    versions.leader.version = data.leader.replicableVersion || '-';
+    versions.leader.generation = data.leader.replicableGeneration || '-';
+    versions.leader.size = '-';
 
     return versions;
 };
 
 var getFollowerVersions = function(data) {
-    versions = {masterSearch: {}, master: {}, follower: {}};
+    versions = {leaderSearch: {}, leader: {}, follower: {}};
 
     versions.follower.version = data.indexVersion;
     versions.follower.generation = data.generation;
     versions.follower.size = data.indexSize;
 
-    versions.master.version = data.follower.masterDetails.replicableVersion || '-';
-    versions.master.generation = data.follower.masterDetails.replicableGeneration || '-';
-    versions.master.size = '-';
+    versions.leader.version = data.follower.leaderDetails.replicableVersion || '-';
+    versions.leader.generation = data.follower.leaderDetails.replicableGeneration || '-';
+    versions.leader.size = '-';
 
-    versions.masterSearch.version = data.follower.masterDetails.indexVersion;
-    versions.masterSearch.generation = data.follower.masterDetails.generation;
-    versions.masterSearch.size = data.follower.masterDetails.indexSize;
+    versions.leaderSearch.version = data.follower.leaderDetails.indexVersion;
+    versions.leaderSearch.generation = data.follower.leaderDetails.generation;
+    versions.leaderSearch.size = data.follower.leaderDetails.indexSize;
 
-    versions.changedVersion = data.indexVersion !== data.follower.masterDetails.indexVersion;
-    versions.changedGeneration = data.generation !== data.follower.masterDetails.generation;
+    versions.changedVersion = data.indexVersion !== data.follower.leaderDetails.indexVersion;
+    versions.changedGeneration = data.generation !== data.follower.leaderDetails.generation;
 
     return versions;
 };
@@ -183,7 +183,7 @@ var parseSeconds = function(time) {
 
 var getFollowerSettings = function(data) {
     var settings = {};
-    settings.masterUrl = data.follower.masterUrl;
+    settings.leaderUrl = data.follower.masterUrl;
     settings.isPollingDisabled = data.follower.isPollingDisabled == 'true';
     settings.pollInterval = data.follower.pollInterval;
     settings.isReplicating = data.follower.isReplicating == 'true';
@@ -206,7 +206,7 @@ var getFollowerSettings = function(data) {
     return settings;
 };
 
-var getMasterSettings = function(details, isFollower) {
+var getLeaderSettings = function(details, isFollower) {
     var master = {};
     var masterData = isFollower ? details.follower.masterDetails.master : details.master;
     master.replicationEnabled = masterData.replicationEnabled == "true";

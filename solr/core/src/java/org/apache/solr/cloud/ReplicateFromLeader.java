@@ -78,7 +78,7 @@ public class ReplicateFromLeader {
 
       NamedList<Object> followerConfig = new NamedList<>();
       followerConfig.add("fetchFromLeader", Boolean.TRUE);
-      followerConfig.add(ReplicationHandler.SKIP_COMMIT_ON_MASTER_VERSION_ZERO, switchTransactionLog);
+      followerConfig.add(ReplicationHandler.SKIP_COMMIT_ON_LEADER_VERSION_ZERO, switchTransactionLog);
       followerConfig.add("pollInterval", pollIntervalStr);
       NamedList<Object> replicationConfig = new NamedList<>();
       replicationConfig.add("follower", followerConfig);

@@ -57,7 +57,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
 
   JettySolrRunner masterJetty;
   TestReplicationHandler.SolrInstance master = null;
-  SolrClient masterClient;
+  SolrClient leaderClient;
   
   private static final String CONF_DIR = "solr" + File.separator + "collection1" + File.separator + "conf"
       + File.separator;
@@ -107,7 +107,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     master.copyConfigFile(CONF_DIR + configFile, "solrconfig.xml");
 
     masterJetty = createAndStartJetty(master);
-    masterClient = createNewSolrClient(masterJetty.getLocalPort());
+    leaderClient = createNewSolrClient(masterJetty.getLocalPort());
     docsSeed = random().nextLong();
   }
 
@@ -115,9 +115,9 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
   @After
   public void tearDown() throws Exception {
     super.tearDown();
-    if (null != masterClient) {
-      masterClient.close();
-      masterClient  = null;
+    if (null != leaderClient) {
+      leaderClient.close();
+      leaderClient  = null;
     }
     if (null != masterJetty) {
       masterJetty.stop();
@@ -129,7 +129,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
   @Test
   public void testBackupOnCommit() throws Exception {
     final BackupStatusChecker backupStatus
-      = new BackupStatusChecker(masterClient, "/" + DEFAULT_TEST_CORENAME + "/replication");
+      = new BackupStatusChecker(leaderClient, "/" + DEFAULT_TEST_CORENAME + "/replication");
 
     final String lastBackupDir = backupStatus.checkBackupSuccess();
     // sanity check no backups yet
@@ -137,7 +137,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
                lastBackupDir);
     
     //Index
-    int nDocs = BackupRestoreUtils.indexDocs(masterClient, DEFAULT_TEST_COLLECTION_NAME, docsSeed);
+    int nDocs = BackupRestoreUtils.indexDocs(leaderClient, DEFAULT_TEST_COLLECTION_NAME, docsSeed);
     
     final String newBackupDir = backupStatus.waitForDifferentBackupDir(lastBackupDir, 30);
     //Validate
@@ -158,7 +158,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
   @Test
   public void doTestBackup() throws Exception {
     final BackupStatusChecker backupStatus
-      = new BackupStatusChecker(masterClient, "/" + DEFAULT_TEST_CORENAME + "/replication");
+      = new BackupStatusChecker(leaderClient, "/" + DEFAULT_TEST_CORENAME + "/replication");
 
     String lastBackupDir = backupStatus.checkBackupSuccess();
     assertNull("Already have a successful backup",
@@ -167,7 +167,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     final Path[] snapDir = new Path[5]; //One extra for the backup on commit
     //First snapshot location
     
-    int nDocs = BackupRestoreUtils.indexDocs(masterClient, DEFAULT_TEST_COLLECTION_NAME, docsSeed);
+    int nDocs = BackupRestoreUtils.indexDocs(leaderClient, DEFAULT_TEST_COLLECTION_NAME, docsSeed);
 
     lastBackupDir = backupStatus.waitForDifferentBackupDir(lastBackupDir, 30);
     snapDir[0] = Paths.get(master.getDataDir(), lastBackupDir);
@@ -235,7 +235,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
 
   private void testDeleteNamedBackup(String backupNames[]) throws Exception {
     final BackupStatusChecker backupStatus
-      = new BackupStatusChecker(masterClient, "/" + DEFAULT_TEST_CORENAME + "/replication");
+      = new BackupStatusChecker(leaderClient, "/" + DEFAULT_TEST_CORENAME + "/replication");
     for (int i = 0; i < 2; i++) {
       final Path p = Paths.get(master.getDataDir(), "snapshot." + backupNames[i]);
       assertTrue("WTF: Backup doesn't exist: " + p.toString(),

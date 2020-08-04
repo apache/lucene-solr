@@ -34,7 +34,7 @@ function($scope, $rootScope, $routeParams, Luke, CoreSystem, Update, Replication
     Replication.details({core: $routeParams.core},
       function(data) {
         $scope.isFollower = data.details.isFollower == "true";
-        $scope.isMaster = data.details.isMaster == "true";
+        $scope.isLeader = data.details.isLeader == "true";
         $scope.replication = data.details;
       },
       function(error) {

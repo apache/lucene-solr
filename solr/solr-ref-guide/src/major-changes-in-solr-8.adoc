@@ -390,7 +390,7 @@ When upgrading to Solr 7.4, users should be aware of the following major changes
 
 *Legacy Scaling (non-SolrCloud)*
 
-* In the <<index-replication.adoc#index-replication,master-follower model>> of scaling Solr, a follower no longer commits an empty index when a completely new index is detected on master during replication. To return to the previous behavior pass `false` to `skipCommitOnMasterVersionZero` in the follower section of replication handler configuration, or pass it to the `fetchindex` command.
+* In the <<index-replication.adoc#index-replication,leader-follower model>> of scaling Solr, a follower no longer commits an empty index when a completely new index is detected on leader during replication. To return to the previous behavior pass `false` to `skipCommitOnLeaderVersionZero` in the follower section of replication handler configuration, or pass it to the `fetchindex` command.
 
 If you are upgrading from a version earlier than Solr 7.3, please see previous version notes below.
 
@@ -493,7 +493,7 @@ See the section <<metrics-reporting.adoc#shard-and-cluster-reporters,Shard and C
 
 *ReplicationHandler*
 
-* In the ReplicationHandler, the `master.commitReserveDuration` sub-element is deprecated. Instead please configure a direct `commitReserveDuration` element for use in all modes (master, follower, cloud).
+* In the ReplicationHandler, the `leader.commitReserveDuration` sub-element is deprecated. Instead please configure a direct `commitReserveDuration` element for use in all modes (leader, follower, cloud).
 
 *RunExecutableListener*
 

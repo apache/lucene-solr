@@ -60,7 +60,7 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
   BooleanSupplier originalTestWait = null;
   
   JettySolrRunner masterJetty, followerJetty;
-  SolrClient masterClient, followerClient;
+  SolrClient leaderClient, followerClient;
   TestReplicationHandler.SolrInstance master = null, follower = null;
 
   static String context = "/solr";
@@ -77,7 +77,7 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
     master = new TestReplicationHandler.SolrInstance(createTempDir("solr-instance").toFile(), "master", null);
     master.setUp();
     masterJetty = createAndStartJetty(master);
-    masterClient = createNewSolrClient(masterJetty.getLocalPort());
+    leaderClient = createNewSolrClient(masterJetty.getLocalPort());
 
     follower = new TestReplicationHandler.SolrInstance(createTempDir("solr-instance").toFile(), "follower", masterJetty.getLocalPort());
     follower.setUp();
@@ -100,9 +100,9 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
        followerJetty = null;
     }
     master = follower = null;
-    if (null != masterClient) {
-      masterClient.close();
-      masterClient = null;
+    if (null != leaderClient) {
+      leaderClient.close();
+      leaderClient = null;
     }
     if (null != followerClient) {
       followerClient.close();
@@ -118,16 +118,16 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
   public void testDiskOverFlow() throws Exception {
     invokeReplicationCommand(followerJetty.getLocalPort(), "disablepoll");
     //index docs
-    log.info("Indexing to MASTER");
-    int docsInMaster = 1000;
-    long szMaster = indexDocs(masterClient, docsInMaster, 0);
-    log.info("Indexing to SLAVE");
+    log.info("Indexing to LEADER");
+    int docsInLeader = 1000;
+    long szLeader = indexDocs(leaderClient, docsInLeader, 0);
+    log.info("Indexing to FOLLOWER");
     long szFollower = indexDocs(followerClient, 1200, 1000);
 
     IndexFetcher.usableDiskSpaceProvider = new Function<String, Long>() {
       @Override
       public Long apply(String s) {
-        return szMaster;
+        return szLeader;
       }
     };
 
@@ -199,7 +199,7 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
                  Collections.emptyList(), threadFailures);
 
     response = followerClient.query(new SolrQuery().setQuery("*:*").setRows(0));
-    assertEquals("docs in follower", docsInMaster, response.getResults().getNumFound());
+    assertEquals("docs in follower", docsInLeader, response.getResults().getNumFound());
 
     response = followerClient.query(new SolrQuery()
         .add("qt", "/replication")

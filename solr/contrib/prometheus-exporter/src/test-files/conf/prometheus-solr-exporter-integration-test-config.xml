@@ -989,7 +989,7 @@
             (if $parent_key_item_len == 5 then $parent_key_items[3] else "" end) as $shard |
             (if $parent_key_item_len == 5 then $parent_key_items[4] else "" end) as $replica |
             (if $parent_key_item_len == 5 then ($collection + "_" + $shard + "_" + $replica) else $core end) as $core |
-            $parent.value | to_entries | .[] | select(.key == "REPLICATION./replication.isMaster") as $object |
+            $parent.value | to_entries | .[] | select(.key == "REPLICATION./replication.isLeader") as $object |
             $object.key | split(".")[0] as $category |
             $object.key | split(".")[1] as $handler |
             (if $object.value == true then 1.0 else 0.0 end) as $value |
