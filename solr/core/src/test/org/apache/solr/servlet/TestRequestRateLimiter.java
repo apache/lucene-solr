@@ -56,7 +56,7 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
     SolrDispatchFilter solrDispatchFilter = cluster.getJettySolrRunner(0).getSolrDispatchFilter();
 
     RequestRateLimiter.RateLimiterConfig rateLimiterConfig = new RequestRateLimiter.RateLimiterConfig(SolrRequest.SolrRequestType.QUERY,
-        true, 1, DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS, 5 /* allowedRequests */, true /* isWorkStealingEnabled */);
+        true, 1, DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS, 5 /* allowedRequests */, true /* isSlotBorrowing */);
     RateLimitManager.Builder builder = new MockBuilder(new MockRequestRateLimiter(rateLimiterConfig, 5));
     RateLimitManager rateLimitManager = builder.build();
 

@@ -21,6 +21,8 @@ that can be active. The default rate limiting is implemented for updates and sea
 
 If a request exceeds the request quota, further incoming requests are rejected with HTTP error code 429 (Too Many Requests).
 
+Note that rate limiting works at an instance (JVM) level, not at a core or collection level. Consider that when planning capacity.
+
 == When To Use Rate Limiters
 Rate limiters should be used when the user wishes to allocate a guaranteed capacity of the request threadpool to a specific
 request type. Indexing and search requests are mostly competing with each other for CPU resources. This becomes especially
