@@ -315,11 +315,11 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
       } else {
         appliedFilters = true;
       }
-      ToChildBlockJoinQuery toChildQuery = new ToChildBlockJoinQuery(collapseFilters(fcontext.baseFilters), BlockJoinParentQParser.getCachedFilter(fcontext.req, parentQuery).getFilter());
+      ToChildBlockJoinQuery toChildQuery = new ToChildBlockJoinQuery(collapseFilters(fcontext.baseFilters), BlockJoinParentQParser.getCachedBitSetProducer(fcontext.req, parentQuery));
       q = appliedFilters ? new FilteredToChildBlockJoinQuery(toChildQuery, filterQs) : toChildQuery;
       result = BlockJoin.toChildren(input, parents, acceptDocs, fcontext.qcontext);
     } else {
-      q = new ToParentBlockJoinQuery(collapseFilters(fcontext.baseFilters), BlockJoinParentQParser.getCachedFilter(fcontext.req, parentQuery).getFilter(), ScoreMode.None);
+      q = new ToParentBlockJoinQuery(collapseFilters(fcontext.baseFilters), BlockJoinParentQParser.getCachedBitSetProducer(fcontext.req, parentQuery), ScoreMode.None);
       result = BlockJoin.toParents(input, parents, fcontext.qcontext);
     }
 

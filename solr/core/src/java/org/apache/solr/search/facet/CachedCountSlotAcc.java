@@ -19,34 +19,73 @@ package org.apache.solr.search.facet;
 import java.io.IOException;
 import java.util.function.IntFunction;
 import org.apache.lucene.util.LongValues;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.request.TermFacetCache.CacheUpdater;
+import org.apache.solr.search.DocSet;
+import org.apache.solr.search.QueryResultKey;
+import org.apache.solr.search.facet.SlotAcc.CountSlotAcc;
+import org.apache.solr.search.facet.SlotAcc.SweepCoordinationPoint;
+import org.apache.solr.search.facet.SlotAcc.SweepCoordinator;
 
-final class CachedCountSlotAcc extends CountSlotAcc implements CacheUpdater {
+//nocommit: is this implementing CacheUpdater to signal something? It's not actually updating a cache.
+final class CachedCountSlotAcc extends CountSlotAcc implements CacheUpdater, SweepCoordinationPoint {
 
+  //nocommit: probably should make this a long[]?
   private final int[] topLevelCounts;
+  private final SweepCoordinator sweepCoordinator;
 
-  CachedCountSlotAcc(FacetContext fcontext, int[] topLevelCounts) {
-    super(fcontext);
+  static SweepCountAccStruct create(QueryResultKey qKey, DocSet docs, boolean isBase, FacetFieldProcessor p, int[] topLevelCounts) {
+    CachedCountSlotAcc count = new CachedCountSlotAcc(qKey, docs, isBase, p, topLevelCounts);
+    return isBase ? count.sweepCoordinator.base : new SweepCountAccStruct(docs, isBase, count, qKey, CacheState.CACHED, null, count);
+  }
+
+  private CachedCountSlotAcc(QueryResultKey qKey, DocSet docs, boolean isBase, FacetFieldProcessor p, int[] topLevelCounts) {
+    super(p.fcontext);
     this.topLevelCounts = topLevelCounts;
+    if (!isBase) {
+      this.sweepCoordinator = null;
+    } else {
+      SweepCountAccStruct struct = new SweepCountAccStruct(docs, isBase, this, qKey, CacheState.CACHED, null, this);
+      this.sweepCoordinator = new SweepCoordinator(p, struct);
+    }
+  }
+
+  @Override
+  public SweepCoordinator getSweepCoordinator() {
+    return sweepCoordinator;
+  }
+
+  /**
+   * Always populates the bucket with the current count for that slot. If the count is positive, or if
+   * <code>processEmpty==true</code>, then this method also populates the values from mapped "output" accumulators.
+   *
+   * @see SweepCoordinator#setSweepValues(SimpleOrderedMap, int)
+   */
+  @Override
+  public void setValues(SimpleOrderedMap<Object> bucket, int slotNum) throws IOException {
+    super.setValues(bucket, slotNum);
+    if (sweepCoordinator != null && (0 < getCount(slotNum) || fcontext.processor.freq.processEmpty)) {
+      sweepCoordinator.setSweepValues(bucket, slotNum);
+    }
   }
 
   @Override
   public boolean incrementFromCachedSegment(LongValues toGlobal) {
-    return true;
+    throw new RuntimeException("TODO?");//return true;
   }
 
   @Override
   public void updateLeaf(int[] leafCounts) {
-    //NoOp
+    throw new RuntimeException("TODO?");//NoOp
   }
 
   @Override
   public void updateTopLevel() {
-    //NoOp
+    throw new RuntimeException("TODO?");//NoOp
   }
 
   @Override
-  public int getCount(int slot) {
+  public long getCount(int slot) {
     return topLevelCounts[slot];
   }
 
@@ -61,7 +100,7 @@ final class CachedCountSlotAcc extends CountSlotAcc implements CacheUpdater {
   }
 
   @Override
-  public void incrementCount(int slot, int increment) {
+  public void incrementCount(int slot, long increment) {
     //NoOp
   }
 

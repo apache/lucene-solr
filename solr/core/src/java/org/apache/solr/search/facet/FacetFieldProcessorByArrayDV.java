@@ -36,7 +36,7 @@ import org.apache.solr.request.TermFacetCache.CacheUpdater;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.facet.SlotAcc.CountSlotAcc;
 import org.apache.solr.search.facet.SlotAcc.SweepCountAccStruct;
-import org.apache.solr.search.facet.SlotAcc.SweepingCountSlotAcc;
+import org.apache.solr.search.facet.SlotAcc.SweepCoordinator;
 import org.apache.solr.search.facet.SweepCountAware.SegCountGlobal;
 import org.apache.solr.search.facet.SweepCountAware.SegCountGlobalCache;
 import org.apache.solr.search.facet.SweepCountAware.SegCountPerSeg;
@@ -103,8 +103,8 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
       return;
     }
 
-    final SweepCountAccStruct base = SweepingCountSlotAcc.baseStructOf(this);
-    final List<SweepCountAccStruct> others = SweepingCountSlotAcc.otherStructsOf(this);
+    final SweepCountAccStruct base = SweepCoordinator.baseStructOf(this);
+    final List<SweepCountAccStruct> others = SweepCoordinator.otherStructsOf(this);
     assert null != base;
     
     // TODO: refactor some of this logic into a base class
@@ -148,13 +148,13 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
 
       setNextReaderFirstPhase(subCtx);
 
-      final SweepDISI disi = SweepDISI.newInstance(base, others, subIterators, activeCountAccs, cacheUpdaters, subCtx);
+      final LongValues toGlobal = ordinalMap == null ? null : ordinalMap.getGlobalOrds(subIdx);
+      final SweepDISI disi = SweepDISI.newInstance(base, others, subIterators, activeCountAccs, toGlobal, cacheUpdaters, subCtx, maySkipBaseSetCollection);
       if (disi == null) {
         continue;
       }
       final boolean hasBase = disi.hasBase();
-      updateTopLevelCache |= disi.hasCacheUpdater();
-      LongValues toGlobal = ordinalMap == null ? null : ordinalMap.getGlobalOrds(subIdx);
+      updateTopLevelCache |= disi.cacheUpdaters != null;
 
       SortedDocValues singleDv = null;
       SortedSetDocValues multiDv = null;

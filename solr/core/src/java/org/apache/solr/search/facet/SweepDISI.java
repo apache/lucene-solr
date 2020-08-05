@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.LongValues;
@@ -40,63 +41,36 @@ abstract class SweepDISI extends DocIdSetIterator implements SweepCountAware {
     this.cacheUpdaters = cacheUpdaters;
   }
 
-  private static boolean addAcc(SweepCountAccStruct entry, DocIdSetIterator[] subIterators, CountSlotAcc[] activeCountAccs, CacheUpdater[] cacheUpdaters, LeafReaderContext subCtx, int idx) throws IOException {
+  private static boolean addAcc(SweepCountAccStruct entry, DocIdSetIterator[] subIterators, CountSlotAcc[] activeCountAccs,
+      CacheUpdater[] cacheUpdaters, LeafReaderContext subCtx, int idx, LongValues toGlobal, boolean maySkip) throws IOException {
+    CacheUpdater cacheUpdater = entry.cacheUpdater;
+    if (cacheUpdater != null && cacheUpdater.incrementFromCachedSegment(toGlobal)) {
+      if (maySkip) {
+        return false;
+      } else {
+        cacheUpdater = null;
+      }
+    }
     final DocIdSet docIdSet = entry.docSet.getTopFilter().getDocIdSet(subCtx, null);
     if (docIdSet == null || (subIterators[idx] = docIdSet.iterator()) == null) {
       return false;
     }
     activeCountAccs[idx] = entry.countAcc;
-    cacheUpdaters[idx] = entry.cacheUpdater;
+    cacheUpdaters[idx] = cacheUpdater;
     return true;
   }
 
-  static Object blah(DocIdSetIterator[] subIterators, CountSlotAcc[] activeCountAccs, CacheUpdater[] cacheUpdaters, int subIdx, LeafReaderContext subCtx) {
-    final SweepDISI disi;
-    int activeCt = 0;
-    final boolean hasBase;
-    boolean hasCacheUpdater = false;
-    LongValues toGlobal = ordinalMap == null ? null : ordinalMap.getGlobalOrds(subIdx);
-    for (int i = 0; ; ) {
-      FilterCtStruct filterEntry = filters[i];
-      final CacheUpdater cacheUpdater = filterEntry.cacheUpdater;
-      if (cacheUpdater != null && cacheUpdater.incrementFromCachedSegment(toGlobal) && (maySkipBaseSetCollection || !filterEntry.isBase)) {
-        if (++i == filters.length) {
-          hasBase = false;
-          break;
-        }
-      } else {
-        DocIdSet docIdSet = filterEntry.filter.getDocIdSet(subCtx, null);
-        subIterators[activeCt] = docIdSet.iterator();
-        activeCountAccs[activeCt] = filterEntry.countAcc;
-        hasCacheUpdater |= (cacheUpdaters[activeCt++] = cacheUpdater) != null;
-        if (++i == filters.length) {
-          hasBase = filterEntry.isBase;
-          break;
-        }
-      }
-    }
-    updateTopLevelCache |= hasCacheUpdater;
-    switch (activeCt) {
-      case 0:
-        continue;
-      case 1:
-        disi = new SingletonDISI(subIterators[0], activeCountAccs, hasCacheUpdater ? cacheUpdaters : null, hasBase); // solr docsets already exclude any deleted docs
-        break;
-      default:
-        disi = new UnionDISI(subIterators, activeCountAccs, hasCacheUpdater ? cacheUpdaters : null, activeCt, hasBase);
-        break;
-    }
-  }
-  static SweepDISI newInstance(SweepCountAccStruct base, List<SweepCountAccStruct> others, DocIdSetIterator[] subIterators, CountSlotAcc[] activeCountAccs, CacheUpdater[] cacheUpdaters, LeafReaderContext subCtx) throws IOException {
+  static SweepDISI newInstance(SweepCountAccStruct base, List<SweepCountAccStruct> others, DocIdSetIterator[] subIterators,
+      CountSlotAcc[] activeCountAccs, LongValues toGlobal, CacheUpdater[] cacheUpdaters, LeafReaderContext subCtx, boolean maySkipBaseSetCollection) throws IOException {
     int activeCt = 0;
     final int baseIdx;
-    if (base == null || !addAcc(base, subIterators, activeCountAccs, cacheUpdaters, subCtx, activeCt)) {
+    if (base == null || !addAcc(base, subIterators, activeCountAccs, cacheUpdaters, subCtx, activeCt, toGlobal, maySkipBaseSetCollection)) {
       baseIdx = -1;
     } else {
       baseIdx = activeCt++;
     }
     for (SweepCountAccStruct entry : others) {
-      if (addAcc(entry, subIterators, activeCountAccs, cacheUpdaters, subCtx, activeCt)) {
+      if (addAcc(entry, subIterators, activeCountAccs, cacheUpdaters, subCtx, activeCt, toGlobal, true)) {
         activeCt++;
       }
     }
@@ -104,15 +78,20 @@ abstract class SweepDISI extends DocIdSetIterator implements SweepCountAware {
       case 0:
         return null;
       case 1:
-        return new SingletonDISI(subIterators[0], activeCountAccs, cacheUpdaters, baseIdx >= 0); // solr docsets already exclude any deleted docs
+        return new SingletonDISI(subIterators[0], activeCountAccs, cacheUpdaters[0] == null ? null : cacheUpdaters, baseIdx >= 0); // solr docsets already exclude any deleted docs
       default:
-        return new UnionDISI(subIterators, activeCountAccs, cacheUpdaters, activeCt, baseIdx);
+        boolean hasCacheUpdaters = false;
+        for (int i = 0; i < activeCt; i++) {
+          if (cacheUpdaters[i] != null) {
+            hasCacheUpdaters = true;
+            break;
+          }
+        }
+        return new UnionDISI(subIterators, activeCountAccs, hasCacheUpdaters ? cacheUpdaters : null, activeCt, baseIdx);
     }
   }
 
   public abstract boolean hasBase();
-
-  public abstract boolean hasCacheUpdater();
 
   @Override
   public int docID() {

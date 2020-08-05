@@ -98,7 +98,7 @@ public class TermFacetCache {
       int count = segCounts.readVInt();
       while (!segCounts.eof()) {
         if (count != 0) {
-          counts[(int)ordMap.get(ord)] += count;
+          counts[ordMap == null ? ord : (int)ordMap.get(ord)] += count;
         }
         ord++;
         count = segCounts.readVInt();

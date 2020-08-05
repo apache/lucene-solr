@@ -48,6 +48,7 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.facet.SweepCountAware.SegCountGlobal;
 import org.apache.solr.search.facet.SlotAcc.CountSlotAcc;
 import org.apache.solr.search.facet.SlotAcc.SlotContext;
+import org.apache.solr.search.facet.SlotAcc.SweepCoordinator;
 import org.apache.solr.search.facet.SlotAcc.SweepCountAccStruct;
 import org.apache.solr.search.facet.SlotAcc.SweepingCountSlotAcc;
 import org.apache.solr.search.facet.SweepDocIterator.SweepIteratorAndCounts;
@@ -330,8 +331,8 @@ public class UnInvertedField extends DocTermOrds {
       return;
     }
 
-    SweepCountAccStruct baseCountAccStruct = SweepingCountSlotAcc.baseStructOf(processor);
-    final List<SweepCountAccStruct> others = SweepingCountSlotAcc.otherStructsOf(processor);
+    SweepCountAccStruct baseCountAccStruct = SweepCoordinator.baseStructOf(processor);
+    final List<SweepCountAccStruct> others = SweepCoordinator.otherStructsOf(processor);
     boolean hasCacheUpdater;
     final CacheUpdater[] cacheUpdaters;
 
@@ -391,7 +392,7 @@ public class UnInvertedField extends DocTermOrds {
             }
             if (delta == 0) break;
             tnum += delta - TNUM_OFFSET;
-            counts.incrementCount(tnum, 1, maxIdx);
+            counts.incrementCount(-1, tnum, 1, maxIdx);
           }
         } else {
           int tnum = 0;
@@ -401,7 +402,7 @@ public class UnInvertedField extends DocTermOrds {
             if ((code & 0x80) == 0) {
               if (delta == 0) break;
               tnum += delta - TNUM_OFFSET;
-              counts.incrementCount(tnum, 1, maxIdx);
+              counts.incrementCount(-1, tnum, 1, maxIdx);
               delta = 0;
             }
             code >>>= 8;
@@ -460,8 +461,8 @@ public class UnInvertedField extends DocTermOrds {
 
     int uniqueTerms = 0;
     final CountSlotAcc countAcc = processor.countAcc;
-    final SweepCountAccStruct baseCountAccStruct = SweepingCountSlotAcc.baseStructOf(processor);
-    final List<SweepCountAccStruct> others = SweepingCountSlotAcc.otherStructsOf(processor);
+    final SweepCountAccStruct baseCountAccStruct = SweepCoordinator.baseStructOf(processor);
+    final List<SweepCountAccStruct> others = SweepCoordinator.otherStructsOf(processor);
     boolean hasCacheUpdater;
     final CacheUpdater[] cacheUpdaters;
 
@@ -541,7 +542,7 @@ public class UnInvertedField extends DocTermOrds {
             int arrIdx = tnum - startTermIndex;
             if (arrIdx < 0) continue;
             if (arrIdx >= nTerms) break;
-            counts.incrementCount(arrIdx, 1, maxIdx);
+            counts.incrementCount(-1, arrIdx, 1, maxIdx);
             if (collectBase) {
               processor.collectFirstPhase(segDoc, arrIdx, processor.slotContext);
             }
@@ -557,7 +558,7 @@ public class UnInvertedField extends DocTermOrds {
               int arrIdx = tnum - startTermIndex;
               if (arrIdx >= 0) {
                 if (arrIdx >= nTerms) break;
-                counts.incrementCount(arrIdx, 1, maxIdx);
+                counts.incrementCount(-1, arrIdx, 1, maxIdx);
                 if (collectBase) {
                   processor.collectFirstPhase(segDoc, arrIdx, processor.slotContext);
                 }
