@@ -209,7 +209,7 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
       log.info("DETAILS {}", Utils.writeJson(response, new StringWriter(), true).toString());
     }
     assertEquals("follower's clearedLocalIndexFirst (from rep details)",
-                 "true", response._getStr("details/follower/clearedLocalIndexFirst", null));
+                 "true", response._getStr("details/slave/clearedLocalIndexFirst", null));
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})

@@ -918,7 +918,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
   }
 
-  //TODO: Handle compatibility in 8.x
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     super.initializeMetrics(parentContext, scope);
@@ -937,7 +936,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     final MetricsMap fetcherMap = new MetricsMap((detailed, map) -> {
       IndexFetcher fetcher = currentIndexFetcher;
       if (fetcher != null) {
-        map.put(LEADER_URL, fetcher.getLeaderUrl());
+        map.put(LEGACY_LEADER_URL, fetcher.getLeaderUrl());
         if (getPollInterval() != null) {
           map.put(POLL_INTERVAL, getPollInterval());
         }
@@ -983,8 +982,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     details.add("indexSize", NumberUtils.readableSize(core.getIndexSize()));
     details.add("indexPath", core.getIndexDir());
     details.add(CMD_SHOW_COMMITS, getCommits());
-    details.add("isLeader", String.valueOf(isLeader));
-    details.add("isFollower", String.valueOf(isFollower));
+    details.add("isMaster", String.valueOf(isLeader));
+    details.add("isSlave", String.valueOf(isFollower));
     CommitVersionInfo vInfo = getIndexVersion();
     details.add("indexVersion", null == vInfo ? 0 : vInfo.version);
     details.add(GENERATION, null == vInfo ? 0 : vInfo.generation);
@@ -1010,7 +1009,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         try {
           @SuppressWarnings({"rawtypes"})
           NamedList nl = fetcher.getDetails();
-          follower.add("leaderDetails", nl.get(CMD_DETAILS));
+          follower.add("masterDetails", nl.get(CMD_DETAILS));
         } catch (Exception e) {
           log.warn(
               "Exception while invoking 'details' method for replication on leader ",
@@ -1018,7 +1017,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           follower.add(ERR_STATUS, "invalid_leader");
         }
       }
-      follower.add(LEADER_URL, fetcher.getLeaderUrl());
+      follower.add(LEGACY_LEADER_URL, fetcher.getLeaderUrl());
       if (getPollInterval() != null) {
         follower.add(POLL_INTERVAL, getPollInterval());
       }
@@ -1127,9 +1126,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
 
     if (isLeader)
-      details.add("leader", leader);
+      details.add("master", leader);
     if (follower.size() > 0)
-      details.add("follower", follower);
+      details.add("slave", follower);
 
     @SuppressWarnings({"rawtypes"})
     NamedList snapshotStats = snapShootDetails;

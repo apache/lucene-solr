@@ -26,10 +26,10 @@ solrAdminApp.controller('ReplicationController',
                 var timeout;
                 var interval;
                 if ($scope.interval) $interval.cancel($scope.interval);
-                $scope.isFollower = (response.details.isFollower === 'true');
+                $scope.isFollower = (response.details.isSlave === 'true');
                 if ($scope.isFollower) {
-                    $scope.progress = getProgressDetails(response.details.follower);
-                    $scope.iterations = getIterations(response.details.follower);
+                    $scope.progress = getProgressDetails(response.details.slave);
+                    $scope.iterations = getIterations(response.details.slave);
                     $scope.versions = getFollowerVersions(response.details);
                     $scope.settings = getFollowerSettings(response.details);
                     if ($scope.settings.isReplicating) {
@@ -127,8 +127,8 @@ var getLeaderVersions = function(data) {
     versions.leaderSearch.generation = data.generation;
     versions.leaderSearch.size = data.indexSize;
 
-    versions.leader.version = data.leader.replicableVersion || '-';
-    versions.leader.generation = data.leader.replicableGeneration || '-';
+    versions.leader.version = data.master.replicableVersion || '-';
+    versions.leader.generation = data.master.replicableGeneration || '-';
     versions.leader.size = '-';
 
     return versions;
@@ -141,16 +141,16 @@ var getFollowerVersions = function(data) {
     versions.follower.generation = data.generation;
     versions.follower.size = data.indexSize;
 
-    versions.leader.version = data.follower.leaderDetails.replicableVersion || '-';
-    versions.leader.generation = data.follower.leaderDetails.replicableGeneration || '-';
+    versions.leader.version = data.slave.masterDetails.replicableVersion || '-';
+    versions.leader.generation = data.slave.masterDetails.replicableGeneration || '-';
     versions.leader.size = '-';
 
-    versions.leaderSearch.version = data.follower.leaderDetails.indexVersion;
-    versions.leaderSearch.generation = data.follower.leaderDetails.generation;
-    versions.leaderSearch.size = data.follower.leaderDetails.indexSize;
+    versions.leaderSearch.version = data.slave.masterDetails.indexVersion;
+    versions.leaderSearch.generation = data.slave.masterDetails.generation;
+    versions.leaderSearch.size = data.slave.masterDetails.indexSize;
 
-    versions.changedVersion = data.indexVersion !== data.follower.leaderDetails.indexVersion;
-    versions.changedGeneration = data.generation !== data.follower.leaderDetails.generation;
+    versions.changedVersion = data.indexVersion !== data.slave.masterDetails.indexVersion;
+    versions.changedGeneration = data.generation !== data.slave.masterDetails.generation;
 
     return versions;
 };
@@ -183,11 +183,11 @@ var parseSeconds = function(time) {
 
 var getFollowerSettings = function(data) {
     var settings = {};
-    settings.leaderUrl = data.follower.leaderUrl;
-    settings.isPollingDisabled = data.follower.isPollingDisabled == 'true';
-    settings.pollInterval = data.follower.pollInterval;
-    settings.isReplicating = data.follower.isReplicating == 'true';
-    settings.nextExecutionAt = data.follower.nextExecutionAt;
+    settings.leaderUrl = data.slave.masterUrl;
+    settings.isPollingDisabled = data.slave.isPollingDisabled == 'true';
+    settings.pollInterval = data.slave.pollInterval;
+    settings.isReplicating = data.slave.isReplicating == 'true';
+    settings.nextExecutionAt = data.slave.nextExecutionAt;
 
     if(settings.isReplicating) {
         settings.isApprox = true;
@@ -208,7 +208,7 @@ var getFollowerSettings = function(data) {
 
 var getLeaderSettings = function(details, isFollower) {
     var leader = {};
-    var leaderData = isFollower ? details.follower.leaderDetails.leader : details.leader;
+    var leaderData = isFollower ? details.slave.masterDetails.master : details.master;
     leader.replicationEnabled = leaderData.replicationEnabled == "true";
     leader.replicateAfter = leaderData.replicateAfter.join(", ");
 

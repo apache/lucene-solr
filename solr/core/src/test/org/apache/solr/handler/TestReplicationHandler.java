@@ -124,7 +124,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   
   @BeforeClass
   public static void beforeClass() {
-    useLegacyParams = rarely();
+    useLegacyParams = usually();
 
   }
   
@@ -320,28 +320,28 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       NamedList<Object> details = getDetails(leaderClient);
       
       assertEquals("leader isLeader?",
-                   "true", details.get("isLeader"));
+                   "true", details.get("isMaster"));
       assertEquals("leader isFollower?",
-                   "false", details.get("isFollower"));
+                   "false", details.get("isSlave"));
       assertNotNull("leader has leader section",
-                    details.get("leader"));
+                    details.get("master"));
     }
 
     // check details on the follower a couple of times before & after fetching
     for (int i = 0; i < 3; i++) {
       NamedList<Object> details = getDetails(followerClient);
       assertNotNull(i + ": " + details);
-      assertNotNull(i + ": " + details.toString(), details.get("follower"));
+      assertNotNull(i + ": " + details.toString(), details.get("slave"));
 
       if (i > 0) {
         rQuery(i, "*:*", followerClient);
         @SuppressWarnings({"rawtypes"})
-        List replicatedAtCount = (List) ((NamedList) details.get("follower")).get("indexReplicatedAtList");
+        List replicatedAtCount = (List) ((NamedList) details.get("slave")).get("indexReplicatedAtList");
         int tries = 0;
         while ((replicatedAtCount == null || replicatedAtCount.size() < i) && tries++ < 5) {
           Thread.sleep(1000);
           details = getDetails(followerClient);
-          replicatedAtCount = (List) ((NamedList) details.get("follower")).get("indexReplicatedAtList");
+          replicatedAtCount = (List) ((NamedList) details.get("slave")).get("indexReplicatedAtList");
         }
         
         assertNotNull("Expected to see that the follower has replicated" + i + ": " + details.toString(), replicatedAtCount);
@@ -351,11 +351,11 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         assertTrue("i:" + i + " replicationCount:" + replicatedAtCount.size(), replicatedAtCount.size() >= i); 
       }
 
-      assertEquals(i + ": " + "follower isLeader?", "false", details.get("isLeader"));
-      assertEquals(i + ": " + "follower isFollower?", "true", details.get("isFollower"));
-      assertNotNull(i + ": " + "follower has follower section", details.get("follower"));
+      assertEquals(i + ": " + "follower isLeader?", "false", details.get("isMaster"));
+      assertEquals(i + ": " + "follower isFollower?", "true", details.get("isSlave"));
+      assertNotNull(i + ": " + "follower has follower section", details.get("slave"));
       // SOLR-2677: assert not false negatives
-      Object timesFailed = ((NamedList)details.get("follower")).get(IndexFetcher.TIMES_FAILED);
+      Object timesFailed = ((NamedList)details.get("slave")).get(IndexFetcher.TIMES_FAILED);
       // SOLR-7134: we can have a fail because some mock index files have no checksum, will
       // always be downloaded, and may not be able to be moved into the existing index
       assertTrue(i + ": " + "follower has fetch error count: " + (String)timesFailed, timesFailed == null || ((String) timesFailed).equals("1"));
@@ -381,13 +381,13 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       NamedList<Object> details = getDetails(repeaterClient);
       
       assertEquals("repeater isLeader?",
-                   "true", details.get("isLeader"));
+                   "true", details.get("isMaster"));
       assertEquals("repeater isFollower?",
-                   "true", details.get("isFollower"));
+                   "true", details.get("isSlave"));
       assertNotNull("repeater has leader section",
-                    details.get("leader"));
+                    details.get("master"));
       assertNotNull("repeater has follower section",
-                    details.get("follower"));
+                    details.get("slave"));
 
     } finally {
       try { 
@@ -412,13 +412,13 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       NamedList<Object> details = getDetails(client);
       
       assertEquals("repeater isLeader?",
-                   "true", details.get("isLeader"));
+                   "true", details.get("isMaster"));
       assertEquals("repeater isFollower?",
-                   "true", details.get("isFollower"));
+                   "true", details.get("isSlave"));
       assertNotNull("repeater has leader section",
-                    details.get("leader"));
+                    details.get("master"));
       assertNotNull("repeater has follower section",
-                    details.get("follower"));
+                    details.get("slave"));
 
     } finally {
       if (instanceJetty != null) {
@@ -800,7 +800,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     @SuppressWarnings({"unchecked"})
     NamedList<Object> details = (NamedList<Object>) response.getResponse().get("details");
     @SuppressWarnings({"unchecked"})
-    NamedList<Object> follower = (NamedList<Object>) details.get("follower");
+    NamedList<Object> follower = (NamedList<Object>) details.get("slave");
     return follower;
   }
 

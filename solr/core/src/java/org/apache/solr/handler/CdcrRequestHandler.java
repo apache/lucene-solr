@@ -773,7 +773,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
         }
 
         ModifiableSolrParams solrParams = new ModifiableSolrParams();
-        solrParams.set(ReplicationHandler.LEADER_URL, leaderUrl);
+        solrParams.set(ReplicationHandler.LEGACY_LEADER_URL, leaderUrl);
         // we do not want the raw tlog files from the source
         solrParams.set(ReplicationHandler.TLOG_FILES, false);
 
