@@ -101,7 +101,7 @@ public class RateLimitManager {
    * check if slot borrowing is enabled. If enabled, try to acquire a slot.
    * If allotted, return else try next request type.
    *
-   * @experimental -- Can cause slots to be blocked if a request borrows a slot and is itself long lived.
+   * @lucene.gexperimental -- Can cause slots to be blocked if a request borrows a slot and is itself long lived.
    */
   private RequestRateLimiter trySlotBorrowing(String requestType) {
     for (Map.Entry<String, RequestRateLimiter> currentEntry : requestRateLimiterMap.entrySet()) {

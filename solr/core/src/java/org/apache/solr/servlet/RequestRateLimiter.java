@@ -54,7 +54,7 @@ public class RequestRateLimiter {
    * if there is a relatively lesser load on this request rate limiter's type compared to the others (think of skew).
    * @return true if allow, false otherwise
    *
-   * @experimental -- Can cause slots to be blocked if a request borrows a slot and is itself long lived.
+   * @lucene.experimental -- Can cause slots to be blocked if a request borrows a slot and is itself long lived.
    */
   public boolean allowSlotBorrowing() {
     synchronized (this) {
