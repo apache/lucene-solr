@@ -369,7 +369,7 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
         log.info("Attempting to bootstrap target collection: {} shard: {} leader: {}", targetCollection, shard, leaderCoreUrl);
         try {
           @SuppressWarnings({"rawtypes"})
-          NamedList response = sendCdcrCommand(client, CdcrParams.CdcrAction.BOOTSTRAP, ReplicationHandler.MASTER_URL, myCoreUrl);
+          NamedList response = sendCdcrCommand(client, CdcrParams.CdcrAction.BOOTSTRAP, ReplicationHandler.LEADER_URL, myCoreUrl);
           log.debug("CDCR Bootstrap response: {}", response);
           String status = response.get(RESPONSE_STATUS).toString();
           return BootstrapStatus.valueOf(status.toUpperCase(Locale.ROOT));

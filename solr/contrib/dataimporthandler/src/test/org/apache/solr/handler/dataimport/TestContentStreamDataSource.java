@@ -120,7 +120,7 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
     File dataDir;
     
     /**
-     * if masterPort is null, this instance is a master -- otherwise this instance is a slave, and assumes the master is
+     * if leaderPort is null, this instance is a leader -- otherwise this instance is a follower, and assumes the leader is
      * on localhost at the specified port.
      */
     public SolrInstance(String name, Integer port) {

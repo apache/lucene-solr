@@ -24,7 +24,7 @@ In the left-hand navigation bar, you will see a pull-down menu titled "Collectio
 ====
 The "Collection Selector" pull-down menu is only available on Solr instances running in <<solrcloud.adoc#solrcloud,SolrCloud mode>>.
 
-Single node or master/slave replication instances of Solr will not display this menu, instead the Collection specific UI pages described in this section will be available in the <<core-specific-tools.adoc#core-specific-tools,Core Selector pull-down menu>>.
+Single node or leader/follower replication instances of Solr will not display this menu, instead the Collection specific UI pages described in this section will be available in the <<core-specific-tools.adoc#core-specific-tools,Core Selector pull-down menu>>.
 ====
 
 Clicking on the Collection Selector pull-down menu will show a list of the collections in your Solr cluster, with a search box that can be used to find a specific collection by name. When you select a collection from the pull-down, the main display of the page will display some basic metadata about the collection, and a secondary menu will appear in the left nav with links to additional collection specific administration screens.
