@@ -236,11 +236,11 @@ public class IndexFetcher {
     if (fetchFromLeader != null && fetchFromLeader instanceof Boolean) {
       this.fetchFromLeader = (boolean) fetchFromLeader;
     }
-    Object skipCommitOnLeaderVersionZero = initArgs.get(SKIP_COMMIT_ON_LEADER_VERSION_ZERO);
+    Object skipCommitOnLeaderVersionZero = ReplicationHandler.getObjectWithBackwardCompatibility(initArgs, SKIP_COMMIT_ON_LEADER_VERSION_ZERO, LEGACY_SKIP_COMMIT_ON_LEADER_VERSION_ZERO);
     if (skipCommitOnLeaderVersionZero != null && skipCommitOnLeaderVersionZero instanceof Boolean) {
       this.skipCommitOnLeaderVersionZero = (boolean) skipCommitOnLeaderVersionZero;
     }
-    String leaderUrl = (String) initArgs.get(LEADER_URL);
+    String leaderUrl = ReplicationHandler.getObjectWithBackwardCompatibility(initArgs, LEADER_URL, LEGACY_LEADER_URL);
     if (leaderUrl == null && !this.fetchFromLeader)
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
               "'leaderUrl' is required for a follower");
@@ -1146,7 +1146,7 @@ public class IndexFetcher {
       // after considering the files actually available locally we really don't need to do any delete
       return;
     }
-    log.info("This disk does not have enough space to download the index from leader/leader. So cleaning up the local index. "
+    log.info("This disk does not have enough space to download the index from leader. So cleaning up the local index. "
         + " This may lead to loss of data/or node if index replication fails in between");
     //now we should disable searchers and index writers because this core will not have all the required files
     this.clearLocalIndexFirst = true;

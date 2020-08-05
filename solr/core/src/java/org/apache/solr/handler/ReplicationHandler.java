@@ -296,7 +296,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     } else if (command.equals(CMD_SHOW_COMMITS)) {
       populateCommitInfo(rsp);
     } else if (command.equals(CMD_DETAILS)) {
-      getReplicationDetails(rsp, solrParams.getBool("follower", true));
+      getReplicationDetails(rsp, getBoolWithBackwardCompatibility(solrParams, "follower", "slave", true));
     } else if (CMD_ENABLE_REPL.equalsIgnoreCase(command)) {
       replicationEnabled.set(true);
       rsp.add(STATUS, OK_STATUS);
@@ -304,6 +304,36 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       replicationEnabled.set(false);
       rsp.add(STATUS, OK_STATUS);
     }
+  }
+  
+  static boolean getBoolWithBackwardCompatibility(SolrParams params, String preferredKey, String alternativeKey, boolean defaultValue) {
+    Boolean value = params.getBool(preferredKey);
+    if (value != null) {
+      return value;
+    }
+    return params.getBool(alternativeKey, defaultValue);
+  }
+  
+  @SuppressWarnings("unchecked")
+  static <T> T getObjectWithBackwardCompatibility(SolrParams params, String preferredKey, String alternativeKey, T defaultValue) {
+    Object value = params.get(preferredKey);
+    if (value != null) {
+      return (T) value;
+    }
+    value = params.get(alternativeKey);
+    if (value != null) {
+      return (T) value;
+    }
+    return defaultValue;
+  }
+  
+  @SuppressWarnings("unchecked")
+  static <T> T getObjectWithBackwardCompatibility(NamedList<?> params, String preferredKey, String alternativeKey) {
+    Object value = params.get(preferredKey);
+    if (value != null) {
+      return (T) value;
+    }
+    return (T) params.get(alternativeKey);
   }
 
   private void reportErrorOnResponse(SolrQueryResponse response, String message, Exception e) {
@@ -337,7 +367,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
   private void fetchIndex(SolrParams solrParams, SolrQueryResponse rsp) throws InterruptedException {
-    String leaderUrl = solrParams.get(LEADER_URL);
+    String leaderUrl = getObjectWithBackwardCompatibility(solrParams, LEADER_URL, LEGACY_LEADER_URL, null);
     if (!isFollower && leaderUrl == null) {
       reportErrorOnResponse(rsp, "No follower configured or no 'leaderUrl' specified", null);
       return;
@@ -886,6 +916,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
   }
 
+  //TODO: Handle compatibility in 8.x
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     super.initializeMetrics(parentContext, scope);
@@ -1230,7 +1261,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
   @Override
-  @SuppressWarnings({"unchecked", "resource"})
+  @SuppressWarnings({"resource"})
   public void inform(SolrCore core) {
     this.core = core;
     registerCloseHook();
@@ -1241,7 +1272,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       numberBackupsToKeep = 0;
     }
     @SuppressWarnings({"rawtypes"})
-    NamedList follower = (NamedList) initArgs.get("follower");
+    NamedList follower = getObjectWithBackwardCompatibility(initArgs,  "follower",  "slave");
     boolean enableFollower = isEnabled( follower );
     if (enableFollower) {
       currentIndexFetcher = pollingIndexFetcher = new IndexFetcher(follower, this, core);
@@ -1249,7 +1280,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       isFollower = true;
     }
     @SuppressWarnings({"rawtypes"})
-    NamedList leader = (NamedList) initArgs.get("leader");
+    NamedList leader = getObjectWithBackwardCompatibility(initArgs, "leader", "master");
     boolean enableLeader = isEnabled( leader );
 
     if (enableLeader || (enableFollower && !currentIndexFetcher.fetchFromLeader)) {
@@ -1769,12 +1800,18 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   private static final String EXCEPTION = "exception";
 
   public static final String LEADER_URL = "leaderUrl";
+  @Deprecated
+  /** @deprecated: Only used for backwards compatibility. Use {@link #LEADER_URL} */
+  public static final String LEGACY_LEADER_URL = "masterUrl";
 
   public static final String FETCH_FROM_LEADER = "fetchFromLeader";
 
   // in case of TLOG replica, if leaderVersion = zero, don't do commit
   // otherwise updates from current tlog won't copied over properly to the new tlog, leading to data loss
   public static final String SKIP_COMMIT_ON_LEADER_VERSION_ZERO = "skipCommitOnLeaderVersionZero";
+  @Deprecated
+  /** @deprecated: Only used for backwards compatibility. Use {@link #SKIP_COMMIT_ON_LEADER_VERSION_ZERO} */
+  public static final String LEGACY_SKIP_COMMIT_ON_LEADER_VERSION_ZERO = "skipCommitOnMasterVersionZero";
 
   public static final String STATUS = "status";
 
