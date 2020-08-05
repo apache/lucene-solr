@@ -35,6 +35,8 @@ Improvements
 
 * SOLR-10814: Add short-name feature to RuleBasedAuthz plugin (Mike Drob, Hrishikesh Gadre)
 
+* SOLR-14702: This PR removes the oppressive master/slave terminology from Solr core that has been in Solr for a decade. (MarcusSorealheis)
+
 Other Changes
 ----------------------
 * SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
@@ -2956,7 +2958,7 @@ Upgrade Notes
   start scripts will no longer attempt this nor move existing console or GC logs into logs/archived either (SOLR-12144).
 
 * SOLR-11673: Slave doesn't commit empty index when completely new index is detected on master during replication.
-  To return the previous behavior pass false to skipCommitOnMasterVersionZero in slave section of replication
+  To return the previous behavior pass false to skipCommitOnLeaderVersionZero in slave section of replication
   handler configuration, or pass it to the fetchindex command.
 
 * SOLR-11453: Configuring slowQueryThresholdMillis now logs slow requests to a separate file - solr_slow_requests.log.
@@ -3116,7 +3118,7 @@ Bug Fixes
 * SOLR-12155: Exception from UnInvertedField constructor puts threads to infinite wait.
  (Andrey Kudryavtsev, Mikhail Khludnev)
 
-* SOLR-12201: TestReplicationHandler.doTestIndexFetchOnMasterRestart(): handle unexpected replication failures
+* SOLR-12201: TestReplicationHandler.doTestIndexFetchOnLeaderRestart(): handle unexpected replication failures
   (Steve Rowe)
 
 * SOLR-12190: Need to properly escape output in GraphMLResponseWriter. (yonik)
@@ -3752,7 +3754,7 @@ Other Changes
 * SOLR-12067: Increase autoAddReplicas default 30 second wait time to 120 seconds.
   (Varun Thacker, Mark Miller via shalin)
 
-* SOLR-12078: Fixed reproducable Failure in TestReplicationHandler.doTestIndexFetchOnMasterRestart that happened
+* SOLR-12078: Fixed reproducable Failure in TestReplicationHandler.doTestIndexFetchOnLeaderRestart that happened
   due to using stale http connections. (Gus Heck, shalin)
 
 * SOLR-12099: Remove reopenReaders attribute from 'IndexConfig in SolrConfig' page in ref guide. (shalin)
