@@ -119,8 +119,12 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   // index from previous test method
   static int nDocs = 500;
   
+  /* For testing backward compatibility, remove for 10.x */
+  private static boolean useLegacyParams = false; 
+  
   @BeforeClass
   public static void beforeClass() {
+    useLegacyParams = rarely();
 
   }
   
@@ -390,6 +394,37 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         if (repeaterJetty != null) repeaterJetty.stop(); 
       } catch (Exception e) { /* :NOOP: */ }
       if (repeaterClient != null) repeaterClient.close();
+    }
+  }
+  
+  @Test
+  public void testLegacyConfiguration() throws Exception {
+    SolrInstance solrInstance = null;
+    JettySolrRunner instanceJetty = null;
+    SolrClient client = null;
+    try {
+      solrInstance = new SolrInstance(createTempDir("solr-instance").toFile(), "replication-legacy", leaderJetty.getLocalPort());
+      solrInstance.setUp();
+      instanceJetty = createAndStartJetty(solrInstance);
+      client = createNewSolrClient(instanceJetty.getLocalPort());
+
+      
+      NamedList<Object> details = getDetails(client);
+      
+      assertEquals("repeater isLeader?",
+                   "true", details.get("isLeader"));
+      assertEquals("repeater isFollower?",
+                   "true", details.get("isFollower"));
+      assertNotNull("repeater has leader section",
+                    details.get("leader"));
+      assertNotNull("repeater has follower section",
+                    details.get("follower"));
+
+    } finally {
+      if (instanceJetty != null) {
+        instanceJetty.stop();
+      }
+      if (client != null) client.close();
     }
   }
 
@@ -754,6 +789,11 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(CommonParams.QT, "/replication");
     params.set("command", "details");
+    if (useLegacyParams) {
+      params.set("slave", "true");
+    } else {
+      params.set("follower", "true");
+    }
     QueryResponse response = followerClient.query(params);
 
     // details/follower/timesIndexReplicated
@@ -793,9 +833,14 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     NamedList leaderQueryRsp = rQuery(nDocs, "*:*", leaderClient);
     SolrDocumentList leaderQueryResult = (SolrDocumentList) leaderQueryRsp.get("response");
     assertEquals(nDocs, leaderQueryResult.getNumFound());
+    
+    String urlKey = "leaderUrl";
+    if (useLegacyParams) {
+      urlKey = "masterUrl";
+    }
 
     // index fetch
-    String leaderUrl = buildUrl(followerJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME + ReplicationHandler.PATH+"?command=fetchindex&leaderUrl=";
+    String leaderUrl = buildUrl(followerJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME + ReplicationHandler.PATH+"?command=fetchindex&" + urlKey + "=";
     leaderUrl += buildUrl(leaderJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME + ReplicationHandler.PATH;
     URL url = new URL(leaderUrl);
     InputStream stream = url.openStream();
