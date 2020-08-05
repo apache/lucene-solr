@@ -38,7 +38,9 @@ import org.apache.solr.search.facet.SlotAcc.CountSlotAcc;
 import org.apache.solr.search.facet.SlotAcc.SweepCountAccStruct;
 import org.apache.solr.search.facet.SlotAcc.SweepingCountSlotAcc;
 import org.apache.solr.search.facet.SweepCountAware.SegCountGlobal;
+import org.apache.solr.search.facet.SweepCountAware.SegCountGlobalCache;
 import org.apache.solr.search.facet.SweepCountAware.SegCountPerSeg;
+import org.apache.solr.search.facet.SweepCountAware.SegCountPerSegCache;
 import org.apache.solr.search.facet.SlotAcc.SlotContext;
 import org.apache.solr.uninverting.FieldCacheImpl;
 
@@ -150,6 +152,8 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
       if (disi == null) {
         continue;
       }
+      final boolean hasBase = disi.hasBase();
+      updateTopLevelCache |= disi.hasCacheUpdater();
       LongValues toGlobal = ordinalMap == null ? null : ordinalMap.getGlobalOrds(subIdx);
 
       SortedDocValues singleDv = null;
@@ -298,7 +302,8 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
     if (disi.cacheUpdaters == null) {
       return new SegCountGlobal(disi.countAccs);
     } else {
-      return new SegCountGlobalCache(this, dv.getValueCount(), disi.countAccs, disi.cacheUpdaters);
+      int segMax = dv.getValueCount();
+      return new SegCountGlobalCache(getSegmentCountArrays(segMax, disi.cacheUpdaters), segMax, disi.countAccs, disi.cacheUpdaters);
     }
   }
 
@@ -306,7 +311,8 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
     if (disi.cacheUpdaters == null) {
       return new SegCountGlobal(disi.countAccs);
     } else {
-      return new SegCountGlobalCache(this, (int)dv.getValueCount(), disi.countAccs, disi.cacheUpdaters);
+      int segMax = (int)dv.getValueCount();
+      return new SegCountGlobalCache(getSegmentCountArrays(segMax, disi.cacheUpdaters), segMax, disi.countAccs, disi.cacheUpdaters);
     }
   }
 
@@ -385,163 +391,6 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
       ret[i] = getCountArr(segMax, i);
     } while (i-- > 0);
     return ret;
-  }
-
-  static interface SegCounter {
-    void map(int allIdx, int activeIdx);
-  }
-
-  static final class SegCountGlobalCache extends SegCountGlobal {
-    private final int[][] allSegCounts;
-    private final int[][] activeSegCounts;
-    private final CacheUpdater[] cacheUpdaters;
-    private final int segMissingIdx;
-
-    public SegCountGlobalCache(FacetFieldProcessorByArrayDV parent, int segMax, CountSlotAcc[] allCounts, CacheUpdater[] cacheUpdaters) {
-      super(allCounts);
-      this.allSegCounts = parent.getSegmentCountArrays(segMax, cacheUpdaters);
-      this.activeSegCounts = Arrays.copyOf(this.allSegCounts, this.allSegCounts.length);
-      this.cacheUpdaters = cacheUpdaters;
-      this.segMissingIdx = segMax - 1;
-    }
-
-    @Override
-    public void map(int allIdx, int activeIdx) {
-      super.map(allIdx, activeIdx);
-      activeSegCounts[activeIdx] = allSegCounts[allIdx];
-    }
-
-    @Override
-    protected void incrementIdxCount(int idx, int segOrd, int globalOrd, int inc) {
-      super.incrementIdxCount(idx, segOrd, globalOrd, inc);
-      if (activeSegCounts[idx] != null) {
-        activeSegCounts[idx][segOrd] += inc;
-      }
-    }
-
-    @Override
-    public void register() {
-      int i = allSegCounts.length - 1;
-      do {
-        if (cacheUpdaters[i] != null) {
-          cacheUpdaters[i].updateLeaf(allSegCounts[i]);
-        }
-      } while (i-- > 0);
-    }
-
-    @Override
-    public int getSegMissingIdx() {
-      return segMissingIdx;
-    }
-  }
-
-  static class SegCountGlobal implements SegCounter {
-    private final CountSlotAcc[] allCounts;
-    private final CountSlotAcc[] activeCounts;
-
-    public SegCountGlobal(CountSlotAcc[] allCounts) {
-      this.allCounts = allCounts;
-      this.activeCounts = Arrays.copyOf(allCounts, allCounts.length);
-    }
-
-    @Override
-    public void map(int allIdx, int activeIdx) {
-      activeCounts[activeIdx] = allCounts[allIdx];
-    }
-
-    public final void incrementCount(int segOrd, int globalOrd, int inc, int maxIdx) {
-      int i = maxIdx;
-      do {
-        incrementIdxCount(i, segOrd, globalOrd, inc);
-      } while (i-- > 0);
-    }
-
-    protected void incrementIdxCount(int idx, int segOrd, int globalOrd, int inc) {
-      activeCounts[idx].incrementCount(globalOrd, inc);
-    }
-
-    public void register() {
-      //NoOp
-    }
-
-    public int getSegMissingIdx() {
-      return -1;
-    }
-  }
-
-  static class SegCountPerSeg implements SegCounter {
-    protected final int[][] allSegCounts;
-    private final int[][] activeSegCounts;
-    private final boolean[] seen;
-
-    public SegCountPerSeg(FacetFieldProcessorByArrayDV parent, int segMax, int size) {
-      this.allSegCounts = parent.getSegmentCountArrays(segMax, size);
-      this.activeSegCounts = Arrays.copyOf(this.allSegCounts, size);
-      this.seen = parent.getBoolArr(segMax);
-    }
-
-    @Override
-    public final void map(int allIdx, int activeIdx) {
-      activeSegCounts[activeIdx] = allSegCounts[allIdx];
-    }
-
-    public final void incrementCount(int segOrd, int inc, int maxIdx) {
-      seen[segOrd] = true;
-      int i = maxIdx;
-      do {
-        activeSegCounts[i][segOrd] += inc;
-      } while (i-- > 0);
-    }
-
-    public void register(CountSlotAcc[] countAccs, LongValues toGlobal, int segMissingIdx, int globalMissingIdx) {
-      int segOrd;
-      int slot;
-      if (segMissingIdx < 0) {
-        // not tracking "missing"; segMissingIdx represents (-maxSegOrd - 1)
-        segOrd = ~segMissingIdx;
-        slot = toGlobal == null ? (segOrd) : (int)toGlobal.get(segOrd);
-      } else {
-        segOrd = segMissingIdx;
-        slot = globalMissingIdx;
-      }
-      final int maxIdx = countAccs.length - 1;
-      for (;;) {
-        if (seen[segOrd]) {
-          int i = maxIdx;
-          do {
-            final int inc = allSegCounts[i][segOrd];
-            if (inc > 0) {
-              countAccs[i].incrementCount(slot, inc);
-            }
-          } while (i-- > 0);
-        }
-        if (segOrd-- > 0) {
-          slot = toGlobal == null ? (segOrd) : (int)toGlobal.get(segOrd);
-        } else {
-          break;
-        }
-      }
-    }
-  }
-  static final class SegCountPerSegCache extends SegCountPerSeg {
-
-    private final CacheUpdater[] cacheUpdaters;
-
-    public SegCountPerSegCache(FacetFieldProcessorByArrayDV parent, int segMax, int size, CacheUpdater[] cacheUpdaters) {
-      super(parent, segMax, size);
-      this.cacheUpdaters = cacheUpdaters;
-    }
-
-    @Override
-    public void register(CountSlotAcc[] countAccs, LongValues toGlobal, int segMax, int globalMissingIdx) {
-      super.register(countAccs, toGlobal, segMax, globalMissingIdx);
-      int i = cacheUpdaters.length - 1;
-      do {
-        if (cacheUpdaters[i] != null) {
-          cacheUpdaters[i].updateLeaf(allSegCounts[i]);
-        }
-      } while (i-- > 0);
-    }
   }
 
   private void collectDocs(SortedDocValues singleDv, SweepDISI disi, LongValues toGlobal) throws IOException {

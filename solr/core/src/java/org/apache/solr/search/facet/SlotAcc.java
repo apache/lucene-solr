@@ -24,18 +24,27 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.function.IntFunction;
 
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.IndexReader.CacheKey;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.request.TermFacetCache.CacheUpdater;
+import org.apache.solr.request.TermFacetCache.SegmentCacheEntry;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
+import org.apache.solr.search.QueryResultKey;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.facet.FacetFieldProcessor.CacheState;
+import org.apache.solr.search.facet.FacetFieldProcessor.CountAccEntry;
+import org.apache.solr.search.facet.FacetFieldProcessor.SweepCountAccStruct;
+import org.apache.solr.search.facet.SlotAcc.CountSlotAcc;
 
 /**
  * Accumulates statistics separated by a slot number. 
@@ -645,15 +654,30 @@ public abstract class SlotAcc implements Closeable {
     final DocSet docSet;
     final boolean isBase;
     final CountSlotAcc countAcc;
-    public SweepCountAccStruct(DocSet docSet, boolean isBase, CountSlotAcc countAcc) {
+
+    final QueryResultKey qKey;
+    final CacheState cacheState;
+    final Map<CacheKey, SegmentCacheEntry> alreadyCached;
+    final CacheUpdater cacheUpdater;
+
+    public SweepCountAccStruct(DocSet docSet, boolean isBase, CountSlotAcc countAcc,
+        QueryResultKey qKey, CacheState cacheState, Map<CacheKey, SegmentCacheEntry> alreadyCached, CacheUpdater cacheUpdater) {
       this.docSet = docSet;
       this.isBase = isBase;
       this.countAcc = countAcc;
+      this.qKey = qKey;
+      this.cacheState = cacheState;
+      this.alreadyCached = alreadyCached;
+      this.cacheUpdater = cacheUpdater;
     }
     public SweepCountAccStruct(SweepCountAccStruct t, DocSet replaceDocSet) {
       this.docSet = replaceDocSet;
       this.isBase = t.isBase;
       this.countAcc = t.countAcc;
+      this.qKey = t.qKey;
+      this.cacheState = t.cacheState;
+      this.alreadyCached = t.alreadyCached;
+      this.cacheUpdater = t.cacheUpdater;
     }
     /**
      * Because sweep collection offloads "collect" methods to count accumulation code,
@@ -668,6 +692,8 @@ public abstract class SlotAcc implements Closeable {
       return this.countAcc.toString();
     }
   }
+
+  static enum CacheState { DO_NOT_CACHE, NOT_CACHED, PARTIALLY_CACHED, CACHED }
 
   /**
    * Special CountSlotAcc used by processors that support sweeping to decide what to sweep over and how to "collect"
@@ -690,7 +716,8 @@ public abstract class SlotAcc implements Closeable {
     SweepingCountSlotAcc(int numSlots, FacetFieldProcessor p) {
       super(p.fcontext, numSlots);
       this.p = p;
-      this.base = new SweepCountAccStruct(fcontext.base, true, this);
+      QueryResultKey baseQKey = p.fcontext.baseFilters == null ? null : new QueryResultKey(null, Arrays.asList(p.fcontext.baseFilters), null, 0);
+      this.base = new SweepCountAccStruct(fcontext.base, true, this, );
       final FacetDebugInfo fdebug = fcontext.getDebugInfo();
       this.debug = null != fdebug ? new SimpleOrderedMap<>() : null;
       if (null != this.debug) {

@@ -98,4 +98,9 @@ final class UnionDISI extends SweepDISI {
     return i;
   }
 
+  @Override
+  public boolean hasBase() {
+    return baseSub != null;
+  }
+
 }

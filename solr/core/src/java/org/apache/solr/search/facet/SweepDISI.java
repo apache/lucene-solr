@@ -110,6 +110,10 @@ abstract class SweepDISI extends DocIdSetIterator implements SweepCountAware {
     }
   }
 
+  public abstract boolean hasBase();
+
+  public abstract boolean hasCacheUpdater();
+
   @Override
   public int docID() {
     throw new UnsupportedOperationException("Not supported.");

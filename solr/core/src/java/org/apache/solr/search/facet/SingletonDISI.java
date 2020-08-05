@@ -46,4 +46,9 @@ final class SingletonDISI extends SweepDISI {
   public int registerCounts(SegCounter segCounter) {
     return 0;
   }
+
+  @Override
+  public boolean hasBase() {
+    return isBase;
+  }
 }

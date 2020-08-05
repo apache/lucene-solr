@@ -21,16 +21,16 @@ import java.util.Arrays;
 
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.LongValues;
+import org.apache.solr.request.TermFacetCache.CacheUpdater;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.facet.SlotAcc.CountSlotAcc;
-import org.apache.solr.search.facet.SweepCountAware.SegCounter;
 
 /**
  * Implemented by extensions of doc iterators (i.e., {@link DocIdSetIterator}, {@link DocIterator} over one or
  * more domain, to support facet count accumulation corresponding to each domain (and via {@link #collectBase()}
  * to inform the necessity of "collection" for a single optional backing "base" set).
  */
-interface SweepCountAware<T extends SegCounter> {
+interface SweepCountAware {
 
   /**
    * Returns true if one of the domains underlying this iterator is the "base" domain, and if that base domain
@@ -53,7 +53,7 @@ interface SweepCountAware<T extends SegCounter> {
    * contain the current doc, the return value would be "n - 1"
    * @throws IOException - if thrown by advancing an underlying doc iterator
    */
-  int registerCounts(T segCounts) throws IOException;
+  int registerCounts(SegCounter segCounts) throws IOException;
 
   /**
    * Used to coordinate multiple count accumulations over multiple domains. Implementers will have "n" backing term-ord-indexed
@@ -83,15 +83,6 @@ interface SweepCountAware<T extends SegCounter> {
      * the domain/CountSlotAcc indicated by "allIdx".
      */
     void map(int allIdx, int activeIdx);
-
-    /**
-     * Increments counts for active domains/CountSlotAccs.
-     * 
-     * @param ord - the term ord (either global ord per-seg) for which to increment counts
-     * @param inc - the amount by which to increment the count for the specified term ord
-     * @param maxIdx - the max index (inclusive) of active domains/CountSlotAccs to be incremented for the current doc
-     */
-    void incrementCount(int ord, int inc, int maxIdx);
   }
 
   /**
@@ -114,12 +105,74 @@ interface SweepCountAware<T extends SegCounter> {
       activeCounts[activeIdx] = allCounts[allIdx];
     }
 
-    @Override
-    public final void incrementCount(int globalOrd, int inc, int maxIdx) {
+    /**
+     * Increments counts for active domains/CountSlotAccs.
+     * 
+     * @param ord - the term ord (either global ord per-seg) for which to increment counts
+     * @param inc - the amount by which to increment the count for the specified term ord
+     * @param maxIdx - the max index (inclusive) of active domains/CountSlotAccs to be incremented for the current doc
+     */
+    public final void incrementCount(int segOrd, int globalOrd, int inc, int maxIdx) {
       int i = maxIdx;
       do {
-        activeCounts[i].incrementCount(globalOrd, inc);
+        incrementIdxCount(i, segOrd, globalOrd, inc);
       } while (i-- > 0);
+    }
+
+    protected void incrementIdxCount(int idx, int segOrd, int globalOrd, int inc) {
+      activeCounts[idx].incrementCount(globalOrd, inc);
+    }
+
+    public void register() {
+      //NoOp
+    }
+
+    public int getSegMissingIdx() {
+      return -1;
+    }
+  }
+
+  static final class SegCountGlobalCache extends SegCountGlobal {
+    private final int[][] allSegCounts;
+    private final int[][] activeSegCounts;
+    private final CacheUpdater[] cacheUpdaters;
+    private final int segMissingIdx;
+
+    public SegCountGlobalCache(int[][] allSegCounts, int segMax, CountSlotAcc[] allCounts, CacheUpdater[] cacheUpdaters) {
+      super(allCounts);
+      this.allSegCounts = allSegCounts;
+      this.activeSegCounts = Arrays.copyOf(this.allSegCounts, this.allSegCounts.length);
+      this.cacheUpdaters = cacheUpdaters;
+      this.segMissingIdx = segMax - 1;
+    }
+
+    @Override
+    public void map(int allIdx, int activeIdx) {
+      super.map(allIdx, activeIdx);
+      activeSegCounts[activeIdx] = allSegCounts[allIdx];
+    }
+
+    @Override
+    protected void incrementIdxCount(int idx, int segOrd, int globalOrd, int inc) {
+      super.incrementIdxCount(idx, segOrd, globalOrd, inc);
+      if (activeSegCounts[idx] != null) {
+        activeSegCounts[idx][segOrd] += inc;
+      }
+    }
+
+    @Override
+    public void register() {
+      int i = allSegCounts.length - 1;
+      do {
+        if (cacheUpdaters[i] != null) {
+          cacheUpdaters[i].updateLeaf(allSegCounts[i]);
+        }
+      } while (i-- > 0);
+    }
+
+    @Override
+    public int getSegMissingIdx() {
+      return segMissingIdx;
     }
   }
 
@@ -145,7 +198,6 @@ interface SweepCountAware<T extends SegCounter> {
       activeSegCounts[activeIdx] = allSegCounts[allIdx];
     }
 
-    @Override
     public final void incrementCount(int segOrd, int inc, int maxIdx) {
       seen[segOrd] = true;
       int i = maxIdx;
@@ -164,13 +216,21 @@ interface SweepCountAware<T extends SegCounter> {
      * @param toGlobal - mapping of per-segment term ords to global term ords for the most recently accumulated segment
      * @param maxSegOrd - the max per-seg term ord for the most recently accumulated segment
      */
-    public void register(CountSlotAcc[] countAccs, LongValues toGlobal, int maxSegOrd) {
-      int segOrd = maxSegOrd;
+    public void register(CountSlotAcc[] countAccs, LongValues toGlobal, int segMissingIdx, int globalMissingIdx) {
+      int segOrd;
+      int slot;
+      if (segMissingIdx < 0) {
+        // not tracking "missing"; segMissingIdx represents (-maxSegOrd - 1)
+        segOrd = ~segMissingIdx;
+        slot = toGlobal == null ? (segOrd) : (int)toGlobal.get(segOrd);
+      } else {
+        segOrd = segMissingIdx;
+        slot = globalMissingIdx;
+      }
       final int maxIdx = countAccs.length - 1;
       for (;;) {
         if (seen[segOrd]) {
           int i = maxIdx;
-          int slot = toGlobal == null ? segOrd : (int)toGlobal.get(segOrd);
           do {
             final int inc = allSegCounts[i][segOrd];
             if (inc > 0) {
@@ -178,10 +238,33 @@ interface SweepCountAware<T extends SegCounter> {
             }
           } while (i-- > 0);
         }
-        if (--segOrd < 0) {
+        if (segOrd-- > 0) {
+          slot = toGlobal == null ? (segOrd) : (int)toGlobal.get(segOrd);
+        } else {
           break;
         }
       }
+    }
+  }
+
+  static final class SegCountPerSegCache extends SegCountPerSeg {
+
+    private final CacheUpdater[] cacheUpdaters;
+
+    public SegCountPerSegCache(int[][] allSegCounts, boolean[] seen, int segMax, int size, CacheUpdater[] cacheUpdaters) {
+      super(allSegCounts, seen, segMax, size);
+      this.cacheUpdaters = cacheUpdaters;
+    }
+
+    @Override
+    public void register(CountSlotAcc[] countAccs, LongValues toGlobal, int segMax, int globalMissingIdx) {
+      super.register(countAccs, toGlobal, segMax, globalMissingIdx);
+      int i = cacheUpdaters.length - 1;
+      do {
+        if (cacheUpdaters[i] != null) {
+          cacheUpdaters[i].updateLeaf(allSegCounts[i]);
+        }
+      } while (i-- > 0);
     }
   }
 
