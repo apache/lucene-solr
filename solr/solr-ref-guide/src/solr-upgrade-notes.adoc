@@ -36,22 +36,27 @@ If you are upgrading from 7.x, see the section <<Upgrading from 7.x Releases>> b
 
 === Solr 8.6.1 (Upgrading from 8.6.0 only)
 
+See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote861[8.6.1 Release Notes^]
+for an overview of the fixes included in Solr 8.6.1.
+
+When upgrading to 8.6.1 users should be aware of the following major changes from 8.6.0.
+
 *Autoscaling*
 
 * As mentioned in the 8.6 upgrade notes, a default autoscaling policy was provided starting in 8.6.0.
 This default autoscaling policy resulted in increasingly slow collection creation calls in large clusters (50+ collections).
 +
 In 8.6.1 the default autoscaling policy has been removed, and clouds will not use autoscaling unless a policy has explicitly been created.
-If your cloud has been upgraded to 8.6.0 and you wish to fix this performance degredations, upgrade to 8.6.1 and remove the default cluster policy via the following command.
+If your cloud is running 8.6.0 and **not using an explicit autoscaling policy**, upgrade to 8.6.1 and remove the default cluster policy and preferences via the following command.
 Replace `localhost:8983` with your Solr endpoint.
 +
 ```
-curl -X POST -H 'Content-type:application/json'  -d '{set-cluster-policy : []}' http://localhost:8983/api/cluster/autoscaling
+curl -X POST -H 'Content-type:application/json'  -d '{set-cluster-policy : [], set-cluster-preferences : []}' http://localhost:8983/api/cluster/autoscaling
 ```
 +
 For more details on autoscaling policies, see the section <<solrcloud-autoscaling-overview.adoc#cluster-policy,Cluster Policy>>.
 +
-This information is only relevant for users upgrading from 8.6.0. If upgrading from an earlier version, this warning can be ignored.
+This information is only relevant for users upgrading from 8.6.0. If upgrading from an earlier version to 8.6.1+, this warning can be ignored.
 
 === Solr 8.6
 
