@@ -117,10 +117,10 @@ public class Clause implements MapWriter, Comparable<Clause> {
     strict = Boolean.parseBoolean(String.valueOf(m.getOrDefault("strict", "true")));
     Optional<String> globalTagName = m.keySet().stream().filter(Policy.GLOBAL_ONLY_TAGS::contains).findFirst();
     if (globalTagName.isPresent()) {
-      globalTag = parse(globalTagName.get(), m);
       if (m.size() > 3) {
-        throw new RuntimeException("Only one extra tag supported for the tag " + globalTagName.get() + " in " + toJSONString(m));
+        throw new RuntimeException("Only two extra tags supported for the tag " + globalTagName.get() + " in " + toJSONString(m));
       }
+      globalTag = parse(globalTagName.get(), m);
       tag = parse(m.keySet().stream()
           .filter(s -> (!globalTagName.get().equals(s) && !IGNORE_TAGS.contains(s)))
           .findFirst().get(), m);
