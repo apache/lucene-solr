@@ -187,9 +187,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       coresInit = createCoreContainer(solrHomePath, extraProperties);
       this.httpClient = coresInit.getUpdateShardHandler().getDefaultHttpClient();
       setupJvmMetrics(coresInit);
-      RateLimitManager.Builder builder = new RateLimitManager.Builder();
-
-      builder.setConfig(config);
+      RateLimitManager.Builder builder = new RateLimitManager.Builder(config);
 
       this.rateLimitManager = builder.build();
       if (log.isDebugEnabled()) {
@@ -389,6 +387,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       try {
         accepted = rateLimitManager.handleRequest(request);
       } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
         throw new SolrException(ErrorCode.SERVER_ERROR, e.getMessage());
       }
 

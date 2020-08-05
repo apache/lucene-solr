@@ -152,7 +152,7 @@ public class RateLimitManager {
   public static class Builder {
     protected FilterConfig config;
 
-    public void setConfig(FilterConfig config) {
+    public Builder(FilterConfig config) {
       this.config = config;
     }
 

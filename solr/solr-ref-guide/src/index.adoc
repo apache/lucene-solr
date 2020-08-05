@@ -126,7 +126,7 @@ The *<<getting-started.adoc#getting-started,Getting Started>>* section guides yo
 
 *<<circuit-breakers.adoc#circuit-breakers,Circuit Breakers>>*: This section talks about circuit breakers, a way of allowing a higher stability of Solr nodes and increased service level guarantees of requests that are accepted by Solr.
 
-*<<rate-limiters.adoc#rate-limiters,Request Rate Limiters>>*: This section talks about request rate limiters, a way of guaranteeing throughput per request type and dedicating resource quotas by resource type.
+*<<rate-limiters.adoc#rate-limiters,Request Rate Limiters>>*: This section talks about request rate limiters, a way of guaranteeing throughput per request type and dedicating resource quotas by resource type. Rate limiter configurations are per instance/JVM and applied to the entire JVM, not at a core/collection level.
 ****
 
 .Advanced Configuration
