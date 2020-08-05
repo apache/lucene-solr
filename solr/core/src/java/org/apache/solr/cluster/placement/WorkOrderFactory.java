@@ -20,7 +20,7 @@ package org.apache.solr.cluster.placement;
 import java.util.Set;
 
 /**
- * Allows pluging to create {@link WorkOrder}s telling the Solr layer where to create replicas following the processing of
+ * Allows plugins to create {@link WorkOrder}s telling the Solr layer where to create replicas following the processing of
  * a {@link Request}. The Solr layer can (and will) check that the {@link WorkOrder} conforms to the {@link Request} (and
  * if it does not, the requested operation will fail).
  */
@@ -33,7 +33,7 @@ public interface WorkOrderFactory {
   WorkOrder createWorkOrderNewCollection(CreateNewCollectionRequest request, String CollectionName, Set<ReplicaPlacement> replicaPlacements);
 
   /**
-   * <p>Creates a {@link WorkOrder} for adding replicas to a given shard of a given collection.
+   * <p>Creates a {@link WorkOrder} for adding replicas to a given shard of an existing collection.
    *
    * <p>This is in support (directly or indirectly) of {@link org.apache.solr.cloud.api.collections.AddReplicaCmd},
    * {@link org.apache.solr.cloud.api.collections.CreateShardCmd}, {@link org.apache.solr.cloud.api.collections.ReplaceNodeCmd},

@@ -17,7 +17,7 @@
 
 package org.apache.solr.cluster.placement;
 
-import java.util.Set;
+import java.util.Map;
 
 /**
  * Shard in a {@link SolrCollection}, i.e. a subset of the data indexed in that collection.
@@ -25,5 +25,23 @@ import java.util.Set;
 public interface Shard extends PropertyValueSource {
   String getShardName();
 
-  Set<Replica> getReplicas();
+  /**
+   * <p>The {@link Replica} of this {@link Shard}.
+   *
+   * <p>The map is from {@link Replica#getReplicaName()} to {@link Replica} instance.
+   */
+  Map<String, Replica> getReplicas();
+
+  /**
+   * The current leader {@link Replica} of this {@link Shard}. Note that by the time this method returns the leader might
+   * have changed. Also, if there's no leader for any reason (don't shoot the messenger), this method will return {@code null}.
+   */
+  Replica getLeader();
+
+  ShardState getState();
+
+  enum ShardState {
+    ACTIVE, INACTIVE, CONSTRUCTION, RECOVERY, RECOVERY_FAILED;
+  }
+
 }

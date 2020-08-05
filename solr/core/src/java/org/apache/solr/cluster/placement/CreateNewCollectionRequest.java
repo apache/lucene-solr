@@ -33,9 +33,28 @@ import java.util.Set;
  * adding accessors here, the underlying Solr side implementation of this interface has the information).
  */
 public interface CreateNewCollectionRequest extends Request {
+  /**
+   * <p>The name of the collection to be created and for which placement should be computed.
+   *
+   * <p>Compare this method with {@link AddReplicasRequest#getCollection()}, there the collection already exists so can be
+   * directly passed in the {@link Request}.
+   *
+   * <p>When processing this request, plugin code doesn't have to worry about existing {@link Replica}'s for the collection
+   * given that the collection is assumed not to exist.
+   */
   String getCollectionName();
 
   Set<String> getShardNames();
+
+  /**
+   * <p>Properties passed through the Collection API by the client creating the collection.
+   * See {@link SolrCollection#getCustomProperty(String)}.
+   *
+   * <p>Given this {@link Request} is for creating a new collection, it is not possible to pass the custom property values through
+   * the {@link SolrCollection} object. That instance does not exist yet, and is the reason {@link #getCollectionName()} exists
+   * rather than a method returning {@link SolrCollection}...
+   */
+  String getCustomProperty(String customPropertyName);
 
   int getNrtReplicationFactor();
   int getTlogReplicationFactor();

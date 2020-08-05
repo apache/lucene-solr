@@ -17,10 +17,10 @@
 
 package org.apache.solr.cluster.placement;
 
-import java.util.Set;
+import java.util.Map;
 
 /**
- * Represents a Collection in SolrCloud. Although naming this class "Collection" is possible it would be confusing.
+ * Represents a Collection in SolrCloud (unrelated to {@link java.util.Collection} that uses the nicer name).
  */
 public interface SolrCollection {
   /**
@@ -29,9 +29,38 @@ public interface SolrCollection {
   String getName();
 
   /**
-   * The {@link Shard}'s over which the data of this {@link SolrCollection} is distributed.
+   * <p>The {@link Shard}'s over which the data of this {@link SolrCollection} is distributed.
+   *
+   * <p>The map is from {@link Shard#getShardName()} to {@link Shard} instance.
    */
-  Set<Shard> getShards();
+  Map<String, Shard> getShards();
 
-  // TODO: access/return properties
+  /**
+   * <p>Returns the value of a custom property name set on the {@link SolrCollection} or {@code null} when no such
+   * property was set.
+   *
+   * <p>Properties are set through the Collection API. See for example {@code COLLECTIONPROP} in the Solr reference guide.
+   * Using custom properties in conjunction with plugin code understanding them allows the Solr client to customize placement
+   * decisions per collection.
+   *
+   * <p>For example if a collection is to be placed only on nodes using SSD storage and not rotating disks, it can be
+   * identified as such using some custom property (collection property could for example be called "diskType" and have
+   * value "ssd" in that case), and the placement plugin (implementing {@link PlacementPlugin}) would then request a
+   * {@link DiskInfoPropertyValue} for all nodes and only place replicas of this collection on {@link Node}'s for which
+   * {@link DiskInfoPropertyValue#getDiskType()} is {@link DiskInfoPropertyValue.DiskType#SSD}.
+   */
+  String getCustomProperty(String customPropertyName);
+
+  /*
+   * There might be missing pieces here (and in other classes in this package) and these would have to be added when
+   * starting to use these interfaces to code real world placement and balancing code (plugins) as well as when the Solr
+   * side implementation of these interfaces is done.
+   *
+   * For example, attributes that are associated to a collection internally but that are (currently) not believed to be
+   * of interest to placement plugin code:
+   * - Routing hash range per shard (or the router used in a collection)
+   * -
+   *
+   * This comment should be removed eventually.
+   */
 }

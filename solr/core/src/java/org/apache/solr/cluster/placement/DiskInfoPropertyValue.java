@@ -19,18 +19,20 @@ package org.apache.solr.cluster.placement;
 
 public interface DiskInfoPropertyValue extends PropertyValue {
   /**
-   * Total disk size of the partition in which cores are stored on the {@link Node}) from which this instance was obtained.
+   * Total disk size of the partition on which cores are stored on the {@link Node}) from which this instance was obtained
+   * (i.e. instance passed to {@link PropertyKeyFactory#createDiskInfoKey(Node)}).
    */
   int getTotalSizeGB();
 
   /**
-   * Free disk size of the partition in which cores are stored on the {@link Node}) from which this instance was obtained.
+   * Free disk size of the partition on which cores are stored on the {@link Node}) from which this instance was obtained
+   *  (i.e. instance passed to {@link PropertyKeyFactory#createDiskInfoKey(Node)}).
    */
   int getFreeSizeGB();
 
   /**
-   * Type of disk hardware used for the partition in which cores are stored on the {@link Node}) from which this instance
-   * was obtained.
+   * Type of storage hardware used for the partition on which cores are stored on the {@link Node}) from which this instance
+   * was obtained (i.e. instance passed to {@link PropertyKeyFactory#createDiskInfoKey(Node)}).
    */
   DiskType getDiskType();
 

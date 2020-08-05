@@ -19,9 +19,8 @@ package org.apache.solr.cluster.placement;
 
 /**
  * An instantiation (or one of the copies) of a given {@link Shard} of a given {@link SolrCollection}.
- * Objects of this type are returned by the Solr framework to the plugin, they are not built by the plugin. When the
- * plugin wants to add a replica it goes through appropriate method in {@link WorkOrderFactory}). TODO update javadoc
- * TODO is there an elegant way to have this type also used by the plugin to add replicas? (insisting on elegant)
+ * Objects of this type are returned by the Solr framework to the plugin, they are not directly built by the plugin. When the
+ * plugin wants to add a replica it goes through appropriate method in {@link WorkOrderFactory}).
  */
 public interface Replica extends PropertyValueSource {
   Shard getShard();
@@ -29,9 +28,13 @@ public interface Replica extends PropertyValueSource {
   ReplicaType getType();
   ReplicaState getState();
 
-  // TODO: needed? Different?
   String getReplicaName();
   String getCoreName();
+
+  /**
+   * {@link Node} on which this {@link Replica} is located.
+   */
+  Node getNode();
 
   enum ReplicaType {
     NRT, TLOG, PULL;

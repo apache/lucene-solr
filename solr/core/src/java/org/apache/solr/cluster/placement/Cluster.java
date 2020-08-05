@@ -35,8 +35,11 @@ public interface Cluster extends PropertyValueSource {
   Set<Node> getLiveNodes();
 
   /**
-   * Returns info about the given collection if one exists. Because it is not expected for plugins to request info about
+   * <p>Returns info about the given collection if one exists. Because it is not expected for plugins to request info about
    * a large number of collections, requests can only be made one by one.
+   *
+   * <p>This is also the reason we do not return a {@link java.util.Map} or {@link Set} of {@link SolrCollection}'s here: it would be
+   * wasteful to fetch all data and fill such a map when plugin code likely needs info about at most one or two collections.
    */
   Optional<SolrCollection> getCollection(String collectionName);
 }

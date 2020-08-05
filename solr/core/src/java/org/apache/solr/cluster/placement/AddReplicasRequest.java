@@ -20,29 +20,35 @@ package org.apache.solr.cluster.placement;
 import java.util.Set;
 
 /**
- * <p>Request for creating one or more replicas for a given shard of a given Collection. The shard might or might not
- * already exist but this shouldn't matter to plugin placement code. The Solr code handling the corresponding
- * {@link WorkOrder} (created using {@link WorkOrderFactory#createWorkOrderAddReplicas}
- * will take care of this.
+ * <p>Request for creating one or more {@link Replica}'s for one or more {@link Shard}'s of an existing {@link SolrCollection}.
+ * The shard might or might not already exist, plugin code can easily find out by using {@link SolrCollection#getShards()}
+ * and verifying if the shard name(s) from {@link #getShardNames()} are there.
  *
  * <p>As opposed to {@link CreateNewCollectionRequest}, the set of {@link Node}s on which the replicas should be placed
  * is specified (defaults to being equal to the set returned by {@link Cluster#getLiveNodes()}).
  *
  * <p>There is no extension between this interface and {@link CreateNewCollectionRequest} in either direction
  * or from a common ancestor for readability. An ancestor could make sense and would be an "abstract interface" not intended
- * to be implemented directly, but this does not exist in Java, so skipping. Plugin code would likely unpack
- * {@link Request}s in specific code sections per type then call shared code.
+ * to be implemented directly, but this does not exist in Java.
+ *
+ * <p>Plugin code would likely treat the two types of requests differently since here existing {@link Replica}'s must be taken
+ * into account for placement whereas in {@link CreateNewCollectionRequest} no {@link Replica}'s are assumed to exist.
  */
 public interface AddReplicasRequest extends Request {
   /**
-   * In theory we could return here a {@link SolrCollection} rather than a name, but given the Shard might not exist as
-   * the plugin is asked to compute placement, it would not be possible to return a {@link Shard} from {@link #getShardName}
-   * so sticking to {@link String}. This comment is intended for API review and likely can be removed at some point.
+   * The {@link SolrCollection} to add {@link Replica}(s) to. The replicas are to be added to a shard that might or might
+   * not yet exist when the plugin's {@link PlacementPlugin#computePlacement} is called.
    */
-  String getCollectionName();
+  SolrCollection getCollection();
 
-  /** Shard name for which new replicas placement should be computed. */
-  String getShardName();
+  /**
+   * <p>Shard name(s) for which new replicas placement should be computed. The shard(s) might exist or not (that's why this
+   * method returns a {@link Set} of {@link String}'s and not directly a set of {@link Shard} instances).
+   *
+   * <p>Note the Collection API allows specifying the shard name or a {@code _route_} parameter. The Solr implementation will
+   * convert either specification into the relevant shard name so the plugin code doesn't have to worry about this.
+   */
+  Set<String> getShardNames();
 
   /** Replicas should only be placed on nodes from the set returned by this method. */
   Set<Node> getTargetNodes();

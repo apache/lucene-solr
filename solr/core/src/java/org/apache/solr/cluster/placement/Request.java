@@ -18,7 +18,11 @@
 package org.apache.solr.cluster.placement;
 
 /**
- * <p>A cluster related change request that Solr asks a {@link PlacementPlugin} plugin to resolve and compute {@link WorkOrder}s for.
+ * A cluster related change request that Solr asks a {@link PlacementPlugin} plugin to resolve and compute {@link WorkOrder}s for.
  */
 public interface Request {
+  /**
+   * "Unique" request ID that can be used for logging in the plugin code and that will also be used in logs on the Solr side.
+   */
+  String getUniqueRequestId();
 }

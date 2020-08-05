@@ -19,7 +19,8 @@ package org.apache.solr.cluster.placement;
 
 public interface CoresCountPropertyValue extends PropertyValue {
   /**
-   * Returns the number of cores on the {@link Node}) this instance was obtained from.
+   * Returns the number of cores on the {@link Node}) this instance was obtained from (i.e. instance
+   * passed to {@link PropertyKeyFactory#createCoreCountKey(Node)}).
    */
   int getCoresCount();
 }
