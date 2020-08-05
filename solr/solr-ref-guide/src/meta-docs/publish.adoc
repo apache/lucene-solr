@@ -33,7 +33,7 @@ In order to build the Ref Guide, you must have the following:
 * You have installed Ruby and several gems described in the README file located at `solr/solr-ref-guide/README.adoc` in your Lucene/Solr checkout.
 * All builds must be done from the release branch the Guide is for.
 
-NOTE: Builds are available via https://builds.apache.org/view/L/view/Lucene/[Jenkins] for several branches. However, these HTML pages will have the `DRAFT` status noted in them and are not suitable for final production publishing.
+NOTE: Builds are available via https://ci-builds.apache.org/job/Lucene/[Jenkins] for several branches. However, these HTML pages will have the `DRAFT` status noted in them and are not suitable for final production publishing.
 
 == Build the DRAFT Guide
 

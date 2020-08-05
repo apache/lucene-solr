@@ -72,7 +72,7 @@
   </issueManagement>
   <ciManagement>
     <system>Jenkins</system>
-    <url>https://builds.apache.org/computer/lucene/</url>
+    <url>https://ci-builds.apache.org/label/lucene/</url>
   </ciManagement>
   <mailingLists>
     <mailingList>
