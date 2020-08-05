@@ -100,7 +100,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
   private static final String DEFAULT_PATH = "/select";
   private static final long serialVersionUID = -946812319974801896L;
 
-  protected static final Set<Integer> UNMATCHED_ACCEPTED_ERROR_CODES = new HashSet<>(Arrays.asList(429));
+  protected static final Set<Integer> UNMATCHED_ACCEPTED_ERROR_CODES = Collections.singleton(429);
   
   /**
    * User-Agent String.
@@ -362,9 +362,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       parser = this.parser;
     }
 
-    Header[] contextHeaders = new Header[2];
-    contextHeaders[0] = new BasicHeader(CommonParams.SOLR_REQUEST_CONTEXT_PARAM, getContext().toString());
-    contextHeaders[1] = new BasicHeader(CommonParams.SOLR_REQUEST_TYPE_PARAM, request.getRequestType());
+    Header[] contextHeaders = buildRequestSpecificHeaders(request);
 
     // The parser 'wt=' and 'version=' params are used instead of the original
     // params
@@ -394,12 +392,9 @@ public class HttpSolrClient extends BaseHttpSolrClient {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "GET can't send streams!");
       }
 
-      //return new HttpGet(basePath + path + wparams.toQueryString());
-
       HttpGet result = new HttpGet(basePath + path + wparams.toQueryString());
 
-      result.addHeader(contextHeaders[0]);
-      result.addHeader(contextHeaders[1]);
+      populateHeadersInResult(result, contextHeaders);
       return result;
     }
 
@@ -442,8 +437,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
           }
         });
 
-        postOrPut.addHeader(contextHeaders[0]);
-        postOrPut.addHeader(contextHeaders[1]);
+        populateHeadersInRequestBase(postOrPut, contextHeaders);
 
         return postOrPut;
 
@@ -723,13 +717,34 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     }
   }
 
-  // When raising an error using HTTP sendError, mime types can be mismatched
+  // When raising an error using HTTP sendError, mime types can be mismatched. This is specifically true when
+  // SolrDispatchFilter uses the sendError mechanism since the expected MIME type of response is not HTML but
+  // HTTP sendError generates a HTML output, which can lead to mismatch
   private boolean isUnmatchedErrorCode(String mimeType, int httpStatus) {
     if (mimeType.equalsIgnoreCase("text/html") && UNMATCHED_ACCEPTED_ERROR_CODES.contains(httpStatus)) {
       return true;
     }
 
     return false;
+  }
+
+  private Header[] buildRequestSpecificHeaders(@SuppressWarnings({"rawtypes"}) final SolrRequest request) {
+    Header[] contextHeaders = new Header[2];
+
+    contextHeaders[0] = new BasicHeader(CommonParams.SOLR_REQUEST_CONTEXT_PARAM, getContext().toString());
+    contextHeaders[1] = new BasicHeader(CommonParams.SOLR_REQUEST_TYPE_PARAM, request.getRequestType());
+
+    return contextHeaders;
+  }
+
+  private void populateHeadersInResult(HttpGet result, Header[] contextHeaders) {
+    result.addHeader(contextHeaders[0]);
+    result.addHeader(contextHeaders[1]);
+  }
+
+  private void populateHeadersInRequestBase(HttpEntityEnclosingRequestBase postOrPut, Header[] contextHeaders) {
+    postOrPut.addHeader(contextHeaders[0]);
+    postOrPut.addHeader(contextHeaders[1]);
   }
   
   // -------------------------------------------------------------------

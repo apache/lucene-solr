@@ -31,8 +31,8 @@ import org.apache.solr.client.solrj.SolrRequest;
  * else reject the same.
  */
 public class RequestRateLimiter {
-  private Semaphore allowedConcurrentRequests;
-  private RateLimiterConfig rateLimiterConfig;
+  private final Semaphore allowedConcurrentRequests;
+  private final RateLimiterConfig rateLimiterConfig;
 
   public RequestRateLimiter(RateLimiterConfig rateLimiterConfig) {
     this.rateLimiterConfig = rateLimiterConfig;
@@ -53,6 +53,8 @@ public class RequestRateLimiter {
    * Whether to allow another request type to borrow a slot from this request rate limiter. Typically works fine
    * if there is a relatively lesser load on this request rate limiter's type compared to the others (think of skew).
    * @return true if allow, false otherwise
+   *
+   * @experimental -- Can cause slots to be blocked if a request borrows a slot and is itself long lived.
    */
   public boolean allowSlotBorrowing() {
     synchronized (this) {

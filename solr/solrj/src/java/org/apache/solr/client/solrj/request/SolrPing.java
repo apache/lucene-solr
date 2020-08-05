@@ -57,7 +57,7 @@ public class SolrPing extends SolrRequest<SolrPingResponse> {
 
   @Override
   public String getRequestType() {
-    return SolrRequestType.QUERY.toString();
+    return SolrRequestType.ADMIN.toString();
   }
   
   /**

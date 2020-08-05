@@ -36,22 +36,24 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static org.apache.solr.servlet.RateLimitManager.DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS;
+import static org.hamcrest.CoreMatchers.containsString;
 
 public class TestRequestRateLimiter extends SolrCloudTestCase {
-  private final static String COLLECTION = "c1";
+  private final static String FIRST_COLLECTION = "c1";
+  private final static String SECOND_COLLECTION = "c2";
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(1).addConfig(COLLECTION, configset("cloud-minimal")).configure();
+    configureCluster(1).addConfig(FIRST_COLLECTION, configset("cloud-minimal")).configure();
   }
 
   @Test
   public void testConcurrentQueries() throws Exception {
     CloudSolrClient client = cluster.getSolrClient();
-    client.setDefaultCollection(COLLECTION);
+    client.setDefaultCollection(FIRST_COLLECTION);
 
-    CollectionAdminRequest.createCollection(COLLECTION, 1, 1).process(client);
-    cluster.waitForActiveCollection(COLLECTION, 1, 1);
+    CollectionAdminRequest.createCollection(FIRST_COLLECTION, 1, 1).process(client);
+    cluster.waitForActiveCollection(FIRST_COLLECTION, 1, 1);
 
     SolrDispatchFilter solrDispatchFilter = cluster.getJettySolrRunner(0).getSolrDispatchFilter();
 
@@ -78,21 +80,18 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
 
     try {
       for (int i = 0; i < 25; i++) {
-        callableList.add(new Callable<Boolean>() {
-          @Override
-          public Boolean call() throws Exception {
-            try {
-              QueryResponse response = client.query(new SolrQuery("*:*"));
+        callableList.add(() -> {
+          try {
+            QueryResponse response = client.query(new SolrQuery("*:*"));
 
-              if (response.getResults().getNumFound() > 0) {
-                assertEquals(100, response.getResults().getNumFound());
-              }
-            } catch (Exception e) {
-              throw new RuntimeException(e.getMessage());
+            if (response.getResults().getNumFound() > 0) {
+              assertEquals(100, response.getResults().getNumFound());
             }
-
-            return true;
+          } catch (Exception e) {
+            throw new RuntimeException(e.getMessage());
           }
+
+          return true;
         });
       }
 
@@ -102,31 +101,100 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
         try {
           future.get();
         } catch (Exception e) {
-          assertTrue("Not true " + e.getMessage(), e.getMessage().contains("non ok status: 429, message:Too Many Requests"));
+          assertThat(e.getMessage(), containsString("non ok status: 429, message:Too Many Requests"));
         }
       }
 
       MockRequestRateLimiter mockQueryRateLimiter = (MockRequestRateLimiter) rateLimitManager.getRequestRateLimiter(SolrRequest.SolrRequestType.QUERY);
 
-      assertTrue("Incoming request count did not match. Expected == 25  incoming " + mockQueryRateLimiter.incomingRequestCount.get(),
-          mockQueryRateLimiter.incomingRequestCount.get() == 25);
+      assertEquals(mockQueryRateLimiter.incomingRequestCount.get(),25);
       assertTrue("Incoming accepted new request count did not match. Expected 5 incoming " + mockQueryRateLimiter.acceptedNewRequestCount.get(),
           mockQueryRateLimiter.acceptedNewRequestCount.get() < 25);
       assertTrue("Incoming rejected new request count did not match. Expected 20 incoming " + mockQueryRateLimiter.rejectedRequestCount.get(),
           mockQueryRateLimiter.rejectedRequestCount.get() > 0);
-      assertTrue("Incoming total processed requests count did not match. Expected " + mockQueryRateLimiter.incomingRequestCount.get() + " incoming "
-              + (mockQueryRateLimiter.acceptedNewRequestCount.get() + mockQueryRateLimiter.rejectedRequestCount.get()),
-          (mockQueryRateLimiter.acceptedNewRequestCount.get() + mockQueryRateLimiter.rejectedRequestCount.get()) == mockQueryRateLimiter.incomingRequestCount.get());
+      assertEquals(mockQueryRateLimiter.acceptedNewRequestCount.get() + mockQueryRateLimiter.rejectedRequestCount.get(),
+          mockQueryRateLimiter.incomingRequestCount.get());
+    } finally {
+      executor.shutdown();
+    }
+  }
+
+  @Test
+  public void testSlotBorrowing() throws Exception {
+    CloudSolrClient client = cluster.getSolrClient();
+    client.setDefaultCollection(SECOND_COLLECTION);
+
+    CollectionAdminRequest.createCollection(SECOND_COLLECTION, 1, 1).process(client);
+    cluster.waitForActiveCollection(SECOND_COLLECTION, 1, 1);
+
+
+    SolrDispatchFilter solrDispatchFilter = cluster.getJettySolrRunner(0).getSolrDispatchFilter();
+
+    RequestRateLimiter.RateLimiterConfig queryRateLimiterConfig = new RequestRateLimiter.RateLimiterConfig(SolrRequest.SolrRequestType.QUERY,
+        true, 1, DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS, 5 /* allowedRequests */, true /* isSlotBorrowing */);
+    RequestRateLimiter.RateLimiterConfig indexRateLimiterConfig = new RequestRateLimiter.RateLimiterConfig(SolrRequest.SolrRequestType.UPDATE,
+        true, 1, DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS, 5 /* allowedRequests */, true /* isSlotBorrowing */);
+    RateLimitManager.Builder builder = new MockBuilder(new MockRequestRateLimiter(queryRateLimiterConfig, 5), new MockRequestRateLimiter(indexRateLimiterConfig, 5));
+    RateLimitManager rateLimitManager = builder.build();
+
+    solrDispatchFilter.replaceRateLimitManager(rateLimitManager);
+
+    for (int i = 0; i < 100; i++) {
+      SolrInputDocument doc = new SolrInputDocument();
+
+      doc.setField("id", i);
+      doc.setField("text", "foo");
+      client.add(doc);
+    }
+
+    client.commit();
+
+    ExecutorService executor = ExecutorUtil.newMDCAwareCachedThreadPool("threadpool");
+    List<Callable<Boolean>> callableList = new ArrayList<>();
+    List<Future<Boolean>> futures;
+
+    try {
+      for (int i = 0; i < 25; i++) {
+        callableList.add(() -> {
+          try {
+            QueryResponse response = client.query(new SolrQuery("*:*"));
+
+            if (response.getResults().getNumFound() > 0) {
+              assertEquals(100, response.getResults().getNumFound());
+            }
+          } catch (Exception e) {
+            throw new RuntimeException(e.getMessage());
+          }
+
+          return true;
+        });
+      }
+
+      futures = executor.invokeAll(callableList);
+
+      for (Future<?> future : futures) {
+        try {
+          future.get();
+        } catch (Exception e) {
+          assertThat(e.getMessage(), containsString("non ok status: 429, message:Too Many Requests"));
+        }
+      }
+
+      MockRequestRateLimiter mockIndexRateLimiter = (MockRequestRateLimiter) rateLimitManager.getRequestRateLimiter(SolrRequest.SolrRequestType.UPDATE);
+
+      assertTrue("Incoming slots borrowed count did not match. Expected > 0  incoming " + mockIndexRateLimiter.borrowedSlotCount.get(),
+          mockIndexRateLimiter.borrowedSlotCount.get() > 0);
     } finally {
       executor.shutdown();
     }
   }
 
   private static class MockRequestRateLimiter extends RequestRateLimiter {
-    AtomicInteger incomingRequestCount;
-    AtomicInteger acceptedNewRequestCount;
-    AtomicInteger rejectedRequestCount;
-    AtomicInteger activeRequestCount;
+    final AtomicInteger incomingRequestCount;
+    final AtomicInteger acceptedNewRequestCount;
+    final AtomicInteger rejectedRequestCount;
+    final AtomicInteger activeRequestCount;
+    final AtomicInteger borrowedSlotCount;
 
     private final int maxCount;
 
@@ -137,6 +205,7 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
       this.acceptedNewRequestCount = new AtomicInteger(0);
       this.rejectedRequestCount = new AtomicInteger(0);
       this.activeRequestCount = new AtomicInteger(0);
+      this.borrowedSlotCount = new AtomicInteger(0);
       this.maxCount = maxCount;
     }
 
@@ -164,13 +233,31 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
       activeRequestCount.decrementAndGet();
       super.decrementConcurrentRequests();
     }
+
+    @Override
+    public boolean allowSlotBorrowing() {
+      boolean result = super.allowSlotBorrowing();
+
+      if (result) {
+        borrowedSlotCount.incrementAndGet();
+      }
+
+      return result;
+    }
   }
 
   private static class MockBuilder extends RateLimitManager.Builder {
     private final RequestRateLimiter queryRequestRateLimiter;
+    private final RequestRateLimiter indexRequestRateLimiter;
 
     public MockBuilder(RequestRateLimiter queryRequestRateLimiter) {
       this.queryRequestRateLimiter = queryRequestRateLimiter;
+      this.indexRequestRateLimiter = null;
+    }
+
+    public MockBuilder(RequestRateLimiter queryRequestRateLimiter, RequestRateLimiter indexRequestRateLimiter) {
+      this.queryRequestRateLimiter = queryRequestRateLimiter;
+      this.indexRequestRateLimiter = indexRequestRateLimiter;
     }
 
     @Override
@@ -178,6 +265,10 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
       RateLimitManager rateLimitManager = new RateLimitManager();
 
       rateLimitManager.registerRequestRateLimiter(queryRequestRateLimiter, SolrRequest.SolrRequestType.QUERY);
+
+      if (indexRequestRateLimiter != null) {
+        rateLimitManager.registerRequestRateLimiter(indexRequestRateLimiter, SolrRequest.SolrRequestType.UPDATE);
+      }
 
       return rateLimitManager;
     }

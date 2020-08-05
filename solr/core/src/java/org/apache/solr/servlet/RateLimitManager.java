@@ -19,11 +19,14 @@ package org.apache.solr.servlet;
 
 import javax.servlet.FilterConfig;
 import javax.servlet.http.HttpServletRequest;
+import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.solr.client.solrj.SolrRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.SOLR_REQUEST_CONTEXT_PARAM;
 import static org.apache.solr.common.params.CommonParams.SOLR_REQUEST_TYPE_PARAM;
@@ -38,9 +41,14 @@ import static org.apache.solr.common.params.CommonParams.SOLR_REQUEST_TYPE_PARAM
  * rate limiting is being done for a specific request type.
  */
 public class RateLimitManager {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   public final static int DEFAULT_CONCURRENT_REQUESTS= (Runtime.getRuntime().availableProcessors()) * 3;
   public final static long DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS = -1;
   private final Map<String, RequestRateLimiter> requestRateLimiterMap;
+
+  // IMPORTANT: The slot from the corresponding rate limiter should be acquired before adding the request
+  // to this map. Subsequently, the request should be deleted from the map before the slot is released.
   private final Map<HttpServletRequest, RequestRateLimiter> activeRequestsMap;
 
   public RateLimitManager() {
@@ -92,17 +100,28 @@ public class RateLimitManager {
    * For each request rate limiter whose type that is not of the type of the request which got rejected,
    * check if slot borrowing is enabled. If enabled, try to acquire a slot.
    * If allotted, return else try next request type.
+   *
+   * @experimental -- Can cause slots to be blocked if a request borrows a slot and is itself long lived.
    */
   private RequestRateLimiter trySlotBorrowing(String requestType) {
     for (Map.Entry<String, RequestRateLimiter> currentEntry : requestRateLimiterMap.entrySet()) {
       RequestRateLimiter requestRateLimiter = currentEntry.getValue();
 
-      if (requestRateLimiter.getRateLimiterConfig().requestType.equals(requestType)) {
+      if (requestRateLimiter.getRateLimiterConfig().requestType.toString().equals(requestType)) {
         continue;
       }
 
-      if (requestRateLimiter.getRateLimiterConfig().isSlotBorrowingEnabled && requestRateLimiter.allowSlotBorrowing()) {
-        return requestRateLimiter;
+      if (requestRateLimiter.getRateLimiterConfig().isSlotBorrowingEnabled) {
+        if (log.isWarnEnabled()) {
+          String msg = "WARN: Experimental feature slots borrowing is enabled for request rate limiter type " +
+              requestRateLimiter.getRateLimiterConfig().requestType.toString();
+
+          log.warn(msg);
+        }
+
+        if (requestRateLimiter.allowSlotBorrowing()) {
+          return requestRateLimiter;
+        }
       }
     }
 
@@ -118,8 +137,8 @@ public class RateLimitManager {
       return;
     }
 
-    requestRateLimiter.decrementConcurrentRequests();
     activeRequestsMap.remove(request);
+    requestRateLimiter.decrementConcurrentRequests();
   }
 
   public void registerRequestRateLimiter(RequestRateLimiter requestRateLimiter, SolrRequest.SolrRequestType requestType) {
