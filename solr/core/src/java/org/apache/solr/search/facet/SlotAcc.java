@@ -770,8 +770,10 @@ public abstract class SlotAcc implements Closeable {
      * @return a read-only representation of the count acc which is guaranteed to be populated after sweep count
      *         collection
      */
-    public ReadOnlyCountSlotAcc add(String key, DocSet docs, int numSlots, CountSlotAccFactory factory, QueryResultKey qKey, boolean includeMissingCount) {
-      final SweepCountAccStruct ret = factory.newInstance(qKey, docs, false, p, numSlots, includeMissingCount);
+    public ReadOnlyCountSlotAcc add(String key, DocSet docs, int numSlots, QueryResultKey qKey) {
+      final SweepCountAccStruct ret = p.getSweepCountAcc(qKey, docs, false, numSlots);
+      // nocommit: below is potentially *really* bad! we're modifying the key on a countAcc instance that might be shared.
+      // nocommit: change this to return a cloned instance or something.
       ret.countAcc.key = key;
       if (null != debug) {
         @SuppressWarnings("unchecked")

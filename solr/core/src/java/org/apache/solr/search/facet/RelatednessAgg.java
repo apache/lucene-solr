@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -37,6 +38,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.QueryResultKey;
 import org.apache.solr.search.facet.SlotAcc.SweepableSlotAcc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -160,10 +162,9 @@ public class RelatednessAgg extends AggValueSource {
         break;
       }
     }
-    
     DocSet fgSet = fcontext.searcher.getDocSet(fgFilters);
     DocSet bgSet = fcontext.searcher.getDocSet(bgQ);
-    return new SKGSlotAcc(this, fcontext, numSlots, fgSet, bgSet);
+    return new SKGSlotAcc(this, fcontext, numSlots, fgSet, bgSet, fgFilters);
   }
 
   @Override
@@ -296,14 +297,16 @@ public class RelatednessAgg extends AggValueSource {
     private BucketData[] slotvalues;
     private final DocSet fgSet;
     private final DocSet bgSet;
+    private final List<Query> fgFilters;
     private final long fgSize;
     private final long bgSize;
     public SKGSlotAcc(final RelatednessAgg agg, final FacetContext fcontext, final int numSlots,
-                      final DocSet fgSet, final DocSet bgSet) throws IOException {
+                      final DocSet fgSet, final DocSet bgSet, final List<Query> fgFilters) throws IOException {
       super(fcontext);
       this.agg = agg;
       this.fgSet = fgSet;
       this.bgSet = bgSet;
+      this.fgFilters = fgFilters;
       // cache the set sizes for frequent re-use on every slot
       this.fgSize = fgSet.size();
       this.bgSize = bgSet.size();
@@ -322,8 +325,8 @@ public class RelatednessAgg extends AggValueSource {
       if (!this.agg.useSweep) {
         return this;
       } else {
-        final ReadOnlyCountSlotAcc fgCount = sweepCoordinator.add(key + "!fg", fgSet, slotvalues.length);
-        final ReadOnlyCountSlotAcc bgCount = sweepCoordinator.add(key + "!bg", bgSet, slotvalues.length);
+        final ReadOnlyCountSlotAcc fgCount = sweepCoordinator.add(key + "!fg", fgSet, slotvalues.length, new QueryResultKey(null, fgFilters, null, 0));
+        final ReadOnlyCountSlotAcc bgCount = sweepCoordinator.add(key + "!bg", bgSet, slotvalues.length, new QueryResultKey(null, Collections.singletonList(agg.bgQ), null, 0));
         SweepSKGSlotAcc readOnlyReplacement = new SweepSKGSlotAcc(agg.min_pop, fcontext, slotvalues.length, fgSize, bgSize, fgCount, bgCount);
         readOnlyReplacement.key = key;
         sweepCoordinator.registerMapping(this, readOnlyReplacement);

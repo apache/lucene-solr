@@ -38,7 +38,6 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.index.SlowCompositeReaderWrapper;
-import org.apache.solr.request.TermFacetCache.CacheUpdater;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.BitDocSet;
@@ -46,11 +45,11 @@ import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.facet.SweepCountAware.SegCountGlobal;
+import org.apache.solr.search.facet.SlotAcc.CacheState;
 import org.apache.solr.search.facet.SlotAcc.CountSlotAcc;
 import org.apache.solr.search.facet.SlotAcc.SlotContext;
 import org.apache.solr.search.facet.SlotAcc.SweepCoordinator;
 import org.apache.solr.search.facet.SlotAcc.SweepCountAccStruct;
-import org.apache.solr.search.facet.SlotAcc.SweepingCountSlotAcc;
 import org.apache.solr.search.facet.SweepDocIterator.SweepIteratorAndCounts;
 import org.apache.solr.uninverting.DocTermOrds;
 import org.apache.solr.util.TestInjection;
@@ -319,7 +318,17 @@ public class UnInvertedField extends DocTermOrds {
     public void call(int termNum);
   }
 
-
+  private static boolean shortcircuit(SweepCountAccStruct base, List<SweepCountAccStruct> others) {
+    if (base != null && base.cacheState != CacheState.CACHED) {
+      return false;
+    }
+    for (SweepCountAccStruct other : others) {
+      if (other.cacheState != CacheState.CACHED) {
+        return false;
+      }
+    }
+    return true;
+  }
 
   private void getCounts(FacetFieldProcessorByArrayUIF processor) throws IOException {
     DocSet docs = processor.fcontext.base;
@@ -333,8 +342,9 @@ public class UnInvertedField extends DocTermOrds {
 
     SweepCountAccStruct baseCountAccStruct = SweepCoordinator.baseStructOf(processor);
     final List<SweepCountAccStruct> others = SweepCoordinator.otherStructsOf(processor);
-    boolean hasCacheUpdater;
-    final CacheUpdater[] cacheUpdaters;
+    if (shortcircuit(baseCountAccStruct, others)) {
+      return;
+    }
 
     final int[] index = this.index;
 
@@ -419,13 +429,7 @@ public class UnInvertedField extends DocTermOrds {
       }
     }
 
-    if (hasCacheUpdater) {
-      for (CacheUpdater cacheUpdater : cacheUpdaters) {
-        if (cacheUpdater != null) {
-          cacheUpdater.updateTopLevel();
-        }
-      }
-    }
+    SweepDocIterator.updateTopLevel(baseCountAccStruct, others);
 
     /*** TODO - future optimization to handle allBuckets
     if (processor.allBucketsSlot >= 0) {
@@ -463,8 +467,9 @@ public class UnInvertedField extends DocTermOrds {
     final CountSlotAcc countAcc = processor.countAcc;
     final SweepCountAccStruct baseCountAccStruct = SweepCoordinator.baseStructOf(processor);
     final List<SweepCountAccStruct> others = SweepCoordinator.otherStructsOf(processor);
-    boolean hasCacheUpdater;
-    final CacheUpdater[] cacheUpdaters;
+    if (shortcircuit(baseCountAccStruct, others)) {
+      return;
+    }
 
     for (TopTerm tt : bigTerms.values()) {
       if (tt.termNum >= startTermIndex && tt.termNum < endTermIndex) {
@@ -571,13 +576,7 @@ public class UnInvertedField extends DocTermOrds {
       }
     }
 
-    if (hasCacheUpdater) {
-      for (CacheUpdater cacheUpdater : cacheUpdaters) {
-        if (cacheUpdater != null) {
-          cacheUpdater.updateTopLevel();
-        }
-      }
-    }
+    SweepDocIterator.updateTopLevel(baseCountAccStruct, others);
 
   }
 

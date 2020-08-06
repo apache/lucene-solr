@@ -161,7 +161,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
 
   private final CountSlotAccFactory cachingCountSlotAccFactory;
 
-  private SweepCountAccStruct getSweepCountAcc(QueryResultKey qKey, DocSet docs, boolean isBase, int numSlots, CountSlotAccFactory factory) {
+  SweepCountAccStruct getSweepCountAcc(QueryResultKey qKey, DocSet docs, boolean isBase, int numSlots) {
     final int size = docs.size();
     final SweepCountAccStruct qrkCandidate;
     if (qKey != null && (qrkCandidate = trackSweepCountAccsQRK.get(qKey)) != null) {
@@ -181,12 +181,11 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       extantSameSize = new ArrayList<>(4); // will likely be *very* small
       trackSweepCountAccs.put(size, extantSameSize);
     }
-    if (factory == null) {
-      if (cachingCountSlotAccFactory == null || size < (freq.countCacheDf == 0 ? TermFacetCache.DEFAULT_THRESHOLD : (freq.countCacheDf < 0 ? Integer.MAX_VALUE : freq.countCacheDf))) {
-        factory = DEFAULT_COUNT_ACC_FACTORY;
-      } else {
-        factory = cachingCountSlotAccFactory;
-      }
+    final CountSlotAccFactory factory;
+    if (cachingCountSlotAccFactory == null || size < (freq.countCacheDf == 0 ? TermFacetCache.DEFAULT_THRESHOLD : (freq.countCacheDf < 0 ? Integer.MAX_VALUE : freq.countCacheDf))) {
+      factory = DEFAULT_COUNT_ACC_FACTORY;
+    } else {
+      factory = cachingCountSlotAccFactory;
     }
     final boolean cacheIncludesMissingCount = this instanceof FacetFieldProcessorByArrayDV;
     final SweepCountAccStruct ret = factory.newInstance(qKey, docs, isBase, this, numSlots, cacheIncludesMissingCount);
@@ -260,7 +259,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
 
   protected CountSlotAcc createBaseCountAcc(int slotCount) {
     QueryResultKey baseQKey = fcontext.baseFilters == null ? null : new QueryResultKey(null, Arrays.asList(fcontext.baseFilters), null, 0);
-    SweepCountAccStruct struct = getSweepCountAcc(baseQKey, fcontext.base, true, slotCount, null);
+    SweepCountAccStruct struct = getSweepCountAcc(baseQKey, fcontext.base, true, slotCount);
     return struct.countAcc;
   }
 

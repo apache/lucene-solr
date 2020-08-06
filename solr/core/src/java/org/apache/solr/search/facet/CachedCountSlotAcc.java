@@ -71,17 +71,17 @@ final class CachedCountSlotAcc extends CountSlotAcc implements CacheUpdater, Swe
 
   @Override
   public boolean incrementFromCachedSegment(LongValues toGlobal) {
-    throw new RuntimeException("TODO?");//return true;
+    return true; // nocommit: can we change this to throw UnsupportedOperationException?
   }
 
   @Override
   public void updateLeaf(int[] leafCounts) {
-    throw new RuntimeException("TODO?");//NoOp
+    //NoOp nocommit: can we change this to throw UnsupportedOperationException?
   }
 
   @Override
   public void updateTopLevel() {
-    throw new RuntimeException("TODO?");//NoOp
+    //NoOp nocommit: can we change this to throw UnsupportedOperationException?
   }
 
   @Override
