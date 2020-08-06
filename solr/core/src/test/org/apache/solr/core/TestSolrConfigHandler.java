@@ -579,7 +579,7 @@ public class TestSolrConfigHandler extends RestTestBase {
 
     for (String component : new String[] {
         "requesthandler", "searchcomponent", "initparams", "queryresponsewriter", "queryparser",
-        "valuesourceparser", "transformer", "updateprocessor", "queryconverter", "listener", "runtimelib"}) {
+        "valuesourceparser", "transformer", "updateprocessor", "queryconverter", "listener"}) {
       for (String operation : new String[] { "add", "update" }) {
         payload = "{ " + operation + "-" + component + ": { param1: value1 } }";
         runConfigCommandExpectFailure(restTestHarness, "/config", payload, "'name' is a required field");
