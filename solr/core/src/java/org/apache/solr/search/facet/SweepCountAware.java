@@ -227,7 +227,7 @@ interface SweepCountAware {
         segOrd = segMissingIdx;
         slot = globalMissingIdx;
       }
-      final int maxIdx = countAccs.length - 1;
+      final int maxIdx = activeSegCounts.length - 1; // based on actual size -- countAccs may be oversized nocommit: until better idea of why this?
       for (;;) {
         if (seen[segOrd]) {
           int i = maxIdx;

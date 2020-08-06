@@ -467,7 +467,7 @@ public class UnInvertedField extends DocTermOrds {
     final CountSlotAcc countAcc = processor.countAcc;
     final SweepCountAccStruct baseCountAccStruct = SweepCoordinator.baseStructOf(processor);
     final List<SweepCountAccStruct> others = SweepCoordinator.otherStructsOf(processor);
-    if (shortcircuit(baseCountAccStruct, others)) {
+    if (processor.collectAcc == null && processor.allBucketsAcc == null && shortcircuit(baseCountAccStruct, others)) {
       return;
     }
 

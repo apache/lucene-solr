@@ -96,7 +96,7 @@ final class CachedCountSlotAcc extends CountSlotAcc implements CacheUpdater, Swe
 
   @Override
   public Object getValue(int slotNum) throws IOException {
-    return topLevelCounts[slotNum];
+    return (long) topLevelCounts[slotNum];
   }
 
   @Override
