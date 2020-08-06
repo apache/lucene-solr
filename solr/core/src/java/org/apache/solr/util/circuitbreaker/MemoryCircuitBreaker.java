@@ -43,6 +43,7 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final MemoryMXBean MEMORY_MX_BEAN = ManagementFactory.getMemoryMXBean();
 
+  private boolean isMemoryCircuitBreakerEnabled;
   private final long heapMemoryThreshold;
 
   // Assumption -- the value of these parameters will be set correctly before invoking getDebugInfo()
@@ -73,6 +74,11 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
   @Override
   public boolean isTripped() {
     if (!isEnabled()) {
+      return false;
+    }
+
+    if (!isMemoryCircuitBreakerEnabled) {
+      System.out.println("Memory circuit breaker is disabled");
       return false;
     }
 

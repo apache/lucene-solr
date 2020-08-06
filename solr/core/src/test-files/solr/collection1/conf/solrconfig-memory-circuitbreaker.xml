@@ -82,7 +82,13 @@
 
     <useCircuitBreakers>true</useCircuitBreakers>
 
+    <isMemoryCircuitBreakerEnabled>true</isMemoryCircuitBreakerEnabled>
+
+    <isCpuCircuitBreakerEnabled>true</isCpuCircuitBreakerEnabled>
+
     <memoryCircuitBreakerThresholdPct>75</memoryCircuitBreakerThresholdPct>
+
+    <cpuCircuitBreakerThresholdPct>75</cpuCircuitBreakerThresholdPct>
 
   </circuitBreaker>
 

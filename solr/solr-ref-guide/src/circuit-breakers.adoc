@@ -35,6 +35,9 @@ will be disabled globally. Per circuit breaker configurations are specified in t
 <useCircuitBreakers>false</useCircuitBreakers>
 ----
 
+This flag acts as the highest authority and global controller of circuit breakers. For using specific circuit breakers, each one
+needs to be individually enabled in addition to this flag being enabled.
+
 == Currently Supported Circuit Breakers
 
 === JVM Heap Usage Based Circuit Breaker
@@ -42,26 +45,57 @@ This circuit breaker tracks JVM heap memory usage and rejects incoming search re
 exceeds a configured percentage of maximum heap allocated to the JVM (-Xmx). The main configuration for this circuit breaker is
 controlling the threshold percentage at which the breaker will trip.
 
-It does not logically make sense to have a threshold below 50% and above 95% of the max heap allocated to the JVM. Hence, the range
-of valid values for this parameter is [50, 95], both inclusive.
+To enable/disable JVM heap usage based circuit breaker, use the following configuration:
+
+[source,xml]
+----
+<isMemoryCircuitBreakerEnabled>true</isMemoryCircuitBreakerEnabled>
+----
+
+Note that this configuration will be overridden by the global circuit breaker flag -- if circuit breakers are disabled, this flag
+will not help you.
+
+To set the triggering threshold as a percentage of the max heap allocated to the JVM, use the following parameter.
 
 [source,xml]
 ----
 <memoryCircuitBreakerThresholdPct>75</memoryCircuitBreakerThresholdPct>
 ----
+It does not logically make sense to have a threshold below 50% and above 95% of the max heap allocated to the JVM. Hence, the range
+of valid values for this parameter is [50, 95], both inclusive.
 
 Consider the following example:
 
 JVM has been allocated a maximum heap of 5GB (-Xmx) and memoryCircuitBreakerThresholdPct is set to 75. In this scenario, the heap usage
 at which the circuit breaker will trip is 3.75GB.
 
-Note that this circuit breaker is checked for each incoming search request and considers the current heap usage of the node, i.e every search
-request will get the live heap usage and compare it against the set memory threshold. The check does not impact performance,
-but any performance regressions that are suspected to be caused by this feature should be reported to the dev list.
 
+=== CPU Utilization Based Circuit Breaker
+This circuit breaker tracks CPU utilization and triggers if the average CPU utilization over the last minute
+exceeds a configurable threshold.
+
+To enable/disable CPU utilization based circuit breaker, use the following configuration:
+
+[source,xml]
+----
+<isCpuCircuitBreakerEnabled>true</isCpuCircuitBreakerEnabled>
+----
+
+Note that this configuration will be overridden by the global circuit breaker flag -- if circuit breakers are disabled, this flag
+will not help you.
+
+To set the triggering threshold in CPU utilization percentage, use the following parameter.
+[source,xml]
+----
+<cpuCircuitBreakerThresholdPct>75</cpuCircuitBreakerThresholdPct>
+----
+The range of valid values for this parameter is [40, 95], both inclusive.
+
+Note that both these circuit breakers are checked for each incoming search request and consider the current heap usage of the node and average CPU usage over the last minute, respectively.
+The checks does not impact performance, but any performance regressions that are suspected to be caused by this feature should be reported to the dev list.
 
 == Performance Considerations
-It is worth noting that while JVM circuit breaker does not add any noticeable overhead per query, having too many
+It is worth noting that while JVM or CPU circuit breakers does not add any noticeable overhead per query, having too many
 circuit breakers checked for a single request can cause a performance overhead.
 
 In addition, it is a good practice to exponentially back off while retrying requests on a busy node.

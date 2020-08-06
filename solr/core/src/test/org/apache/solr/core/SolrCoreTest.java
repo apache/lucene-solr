@@ -268,6 +268,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     assertEquals("wrong config for queryResultWindowSize", 10, solrConfig.queryResultWindowSize);
     assertEquals("wrong config for useCircuitBreakers", false, solrConfig.useCircuitBreakers);
     assertEquals("wrong config for memoryCircuitBreakerThresholdPct", 95, solrConfig.memoryCircuitBreakerThresholdPct);
+    assertEquals("wrong config for cpuCircuitBreakerThresholdPct", 95, solrConfig.cpuCircuitBreakerThresholdPct);
   }
 
   /**
