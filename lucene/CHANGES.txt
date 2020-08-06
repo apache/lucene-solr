@@ -191,7 +191,10 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+
+* LUCENE-9427: Fix a regression where the unified highlighter didn't produce
+  highlights on fuzzy queries that correspond to exact matches. (Julie Tibshirani)
+
 
 Documentation
 ---------------------
