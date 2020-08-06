@@ -72,7 +72,7 @@ public class SolrIndexConfig implements MapSerializable {
    * <p>
    * When using a custom merge policy that allows triggering synchronous merges on commit
    * (see {@link MergePolicy#findFullFlushMerges(org.apache.lucene.index.MergeTrigger, org.apache.lucene.index.SegmentInfos, org.apache.lucene.index.MergePolicy.MergeContext)}),
-   * a timeout (in milliseconds) can be set for those merges to finish. Use {@code <maxCommitMergeWait>1000</maxCommitMergeWait>} in the {@code <indexConfig>} section.
+   * a timeout (in milliseconds) can be set for those merges to finish. Use {@code <maxCommitMergeWaitTime>1000</maxCommitMergeWaitTime>} in the {@code <indexConfig>} section.
    * See {@link IndexWriterConfig#setMaxCommitMergeWaitMillis(long)}.
    * </p>
    * <p>
@@ -145,7 +145,7 @@ public class SolrIndexConfig implements MapSerializable {
     useCompoundFile = solrConfig.getBool(prefix+"/useCompoundFile", def.useCompoundFile);
     maxBufferedDocs = solrConfig.getInt(prefix+"/maxBufferedDocs", def.maxBufferedDocs);
     ramBufferSizeMB = solrConfig.getDouble(prefix+"/ramBufferSizeMB", def.ramBufferSizeMB);
-    maxCommitMergeWaitMillis = solrConfig.getInt(prefix+"/maxCommitMergeWait", def.maxCommitMergeWaitMillis);
+    maxCommitMergeWaitMillis = solrConfig.getInt(prefix+"/maxCommitMergeWaitTime", def.maxCommitMergeWaitMillis);
 
     // how do we validate the value??
     ramPerThreadHardLimitMB = solrConfig.getInt(prefix+"/ramPerThreadHardLimitMB", def.ramPerThreadHardLimitMB);
@@ -200,7 +200,7 @@ public class SolrIndexConfig implements MapSerializable {
         "maxBufferedDocs", maxBufferedDocs,
         "ramBufferSizeMB", ramBufferSizeMB,
         "ramPerThreadHardLimitMB", ramPerThreadHardLimitMB,
-        "maxCommitMergeWait", maxCommitMergeWaitMillis,
+        "maxCommitMergeWaitTime", maxCommitMergeWaitMillis,
         "writeLockTimeout", writeLockTimeout,
         "lockType", lockType,
         "infoStreamEnabled", infoStream != InfoStream.NO_OUTPUT);

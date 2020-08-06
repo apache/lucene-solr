@@ -36,6 +36,7 @@ import org.apache.solr.core.TestMergePolicyConfig;
 import org.apache.solr.index.SortingMergePolicy;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
+import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -56,6 +57,12 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore(solrConfigFileName,schemaFileName);
+  }
+  
+  @After
+  public void tearDown() throws Exception {
+    System.clearProperty("solr.tests.maxCommitMergeWait");
+    super.tearDown();
   }
   
   private final Path instanceDir = TEST_PATH().resolve("collection1");
@@ -178,7 +185,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
 
     ++mSizeExpected; assertTrue(m.get("ramBufferSizeMB") instanceof Double);
     
-    ++mSizeExpected; assertTrue(m.get("maxCommitMergeWait") instanceof Integer);
+    ++mSizeExpected; assertTrue(m.get("maxCommitMergeWaitTime") instanceof Integer);
 
     ++mSizeExpected; assertTrue(m.get("ramPerThreadHardLimitMB") instanceof Integer);
 
@@ -211,15 +218,13 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     assertEquals(mSizeExpected, m.size());
   }
   
-  public void testMaxCommitMergeWaitSeconds() throws Exception {
+  public void testMaxCommitMergeWaitTime() throws Exception {
     SolrConfig sc = new SolrConfig(TEST_PATH().resolve("collection1"), "solrconfig-test-misc.xml");
     assertEquals(-1, sc.indexConfig.maxCommitMergeWaitMillis);
     assertEquals(IndexWriterConfig.DEFAULT_MAX_COMMIT_MERGE_WAIT_MILLIS, sc.indexConfig.toIndexWriterConfig(h.getCore()).getMaxCommitMergeWaitMillis());
-    System.setProperty("solr.tests.maxCommitMergeWait", "10");
+    System.setProperty("solr.tests.maxCommitMergeWaitTime", "10");
     sc = new SolrConfig(TEST_PATH().resolve("collection1"), "solrconfig-test-misc.xml");
     assertEquals(10, sc.indexConfig.maxCommitMergeWaitMillis);
     assertEquals(10, sc.indexConfig.toIndexWriterConfig(h.getCore()).getMaxCommitMergeWaitMillis());
-    System.clearProperty("solr.tests.maxCommitMergeWait");
-    
   }
 }
