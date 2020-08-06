@@ -26,6 +26,15 @@ import java.io.OutputStream;
 import java.util.Map;
 import java.util.function.Function;
 
+/**A factory that creates any type of RPC calls in Solr
+ * This is designed to create low level access to the RPC mechanism.
+ * This is agnostic of Solr documents or other internal concepts of Solr
+ * But it knows certain things
+ * a) how to locate a Solr core/replica
+ * b) basic HTTP access,
+ * c) serialization/deserialization is the responsibility of the code that is making a request
+ *
+ */
 public interface RpcFactory {
 
     Rpc create();
