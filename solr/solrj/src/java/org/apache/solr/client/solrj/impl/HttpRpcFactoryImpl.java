@@ -27,8 +27,13 @@ public class HttpRpcFactoryImpl implements HttpRpcFactory {
 
     @Override
     //TODO
-    public HttpRpc create() {
+    public CallRouter createCallRouter() {
         return null;
     }
 
+    @Override
+    //TODO
+    public HttpRpc createHttpRpc() {
+        return null;
+    }
 }

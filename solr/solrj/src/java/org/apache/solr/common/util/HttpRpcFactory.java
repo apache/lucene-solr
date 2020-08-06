@@ -37,51 +37,53 @@ import java.util.function.Function;
  */
 public interface HttpRpcFactory {
 
-    HttpRpc create();
+    CallRouter createCallRouter();
+
+    HttpRpc createHttpRpc();
+
+    interface CallRouter {
+        /**send to a specific node . usually admin requests
+         */
+        CallRouter toNode(String nodeName);
+        /** A request is made to the leader of the shard
+         */
+        CallRouter toShardLeader(String collection, String shard);
+
+        /** Make a request to any replica of the shard
+         */
+        CallRouter toShard(String collection, String shard);
+
+        /** Make a request to any replica of the shard of type
+         */
+        CallRouter toShard(String collection, String shard, Replica.Type type);
+
+        /**Identify the shard using the routeKey and send the request to the leader
+         * replica
+         */
+        CallRouter routeToShardLeader(String collection, String routeKey);
+
+        /**Identify the shard using the route key and send the request to a given replica type
+         */
+        CallRouter routeToShard(String collection, String routeKey, Replica.Type type);
+
+        /**Identify the shard using the route key and send the request to a random replica
+         */
+        CallRouter routeToShard(String collection, String routeKey);
+        /**Make a request to a specific replica
+         */
+        CallRouter toReplica(String collection, String shard, String replica);
+
+        /**To any dolr vore  that may host this collection
+         */
+        CallRouter toCollection(String collection);
+        
+        HttpRpc createHttpRpc() ;
+    }
+
 
 
      interface HttpRpc {
-         /**send to a specific node
-          */
-         HttpRpc toNode(String nodeName);
-         /** A request is made to the leader of the shard
-          *
-          */
-        HttpRpc toShardLeader(String collection, String shard);
-
-         /** Make a request to any replica of the shard
-          */
-        HttpRpc toShard(String collection, String shard);
-
-         /** Make a request to any replica of the shard of type
-          */
-        HttpRpc toShard(String collection, String shard, Replica.Type type);
-
-         /**Identify the shard using the routeKey and send the request to the leader
-          * replica
-          */
-        HttpRpc routeToShardLeader(String collection, String routeKey);
-
-         /**Identify the shard using the route key and send the request to a given replica type
-          */
-        HttpRpc routeToShard(String collection, String routeKey, Replica.Type type);
-
-         /**Identify the shard using the route key and send the request to a random replica
-          */
-         HttpRpc routeToShard(String collection, String routeKey);
-         /**Make a request to a specific replica
-          */
-        HttpRpc toReplica(String collection, String shard, String replica);
-
-         /**To any dolr vore  that may host this collection
-          */
-        HttpRpc toCollection(String collection);
-
-         /**The request is to a specific node
-          *
-          */
-        HttpRpc withTargetNode(String node);
-
+        HttpRpc withCallRouter(CallRouter callRouter);
          /** Add a request param
           */
         HttpRpc addParam(String key, String val);
@@ -108,17 +110,17 @@ public interface HttpRpcFactory {
 
          /**The uri. The semantics depends on
           * whether it is made to a node or replica
-          * if it is a shard/replica the uri is the name of the handler
-          * if it is node it is a full path
+          * if it is a shard/replica the uri is the name of the handler (e.g /select , /update/json etc)
+          * if it is node it is a full path (e.g: /admin/collections)
           */
-        HttpRpc withV1Uri(String uri);
+        HttpRpc withV1Path(String uri);
 
          /**The uri. The semantics depends on
           * whether it is made to a node or replica
           * if it is a shard/replica the uri is the name of the handler
           * if it is node it is a full path
           */
-        HttpRpc withV2Uri(String uri);
+        HttpRpc withV2Path(String uri);
 
 
          /**Invoke a synchronous request. The return object depends on the output of the
