@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.search.matchhighlight;
 
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.PriorityQueue;
 
 import java.util.ArrayList;
@@ -219,7 +220,7 @@ public class PassageSelector {
 
     // Remove nullified slots.
     if (passages.length != last) {
-      passages = Arrays.copyOf(passages, last);
+      passages = ArrayUtil.copyOfSubArray(passages, 0, last);
     }
 
     // Sort in the offset order again.

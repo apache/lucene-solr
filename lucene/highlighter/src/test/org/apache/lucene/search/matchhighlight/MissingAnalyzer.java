@@ -21,7 +21,7 @@ import org.apache.lucene.analysis.Analyzer;
 import java.io.Reader;
 
 /** An {@link Analyzer} that throws a runtime exception when used for anything. */
-public final class MissingAnalyzer extends Analyzer {
+final class MissingAnalyzer extends Analyzer {
   @Override
   protected Reader initReader(String fieldName, Reader reader) {
     throw new RuntimeException("Field must have an explicit Analyzer: " + fieldName);

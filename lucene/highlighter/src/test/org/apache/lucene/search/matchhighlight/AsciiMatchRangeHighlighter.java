@@ -25,9 +25,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * A simple ASCII hit range highlighter for tests.
+ * A simple ASCII match range highlighter for tests.
  */
-final class SimpleHighlightFormatter {
+final class AsciiMatchRangeHighlighter {
   private final Analyzer analyzer;
   private final PassageFormatter passageFormatter;
   private final PassageSelector selector;
@@ -35,7 +35,7 @@ final class SimpleHighlightFormatter {
   private int maxPassageWindow = 160;
   private int maxPassages = 10;
 
-  public SimpleHighlightFormatter(Analyzer analyzer) {
+  public AsciiMatchRangeHighlighter(Analyzer analyzer) {
     this.passageFormatter = new PassageFormatter("...", ">", "<");
     this.selector = new PassageSelector();
     this.analyzer = analyzer;
@@ -54,6 +54,8 @@ final class SimpleHighlightFormatter {
           if (values.length == 1) {
             value = values[0];
           } else {
+            // This can be inefficient if offset gap is large but recomputing
+            // offsets in a smart way doesn't make sense for tests.
             String fieldGapPadding = " ".repeat(offsetGap);
             value = String.join(fieldGapPadding, values);
           }

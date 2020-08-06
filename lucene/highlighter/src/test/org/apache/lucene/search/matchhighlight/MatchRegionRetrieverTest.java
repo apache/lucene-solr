@@ -37,6 +37,8 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queries.intervals.IntervalQuery;
+import org.apache.lucene.queries.intervals.Intervals;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.standard.StandardQueryParser;
 import org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfigHandler;
@@ -73,7 +75,7 @@ import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class HitRegionRetrieverTest extends LuceneTestCase {
+public class MatchRegionRetrieverTest extends LuceneTestCase {
   private static final String FLD_ID = "field_id";
 
   private static final String FLD_TEXT_POS_OFFS1 = "field_text_offs1";
@@ -301,6 +303,60 @@ public class HitRegionRetrieverTest extends LuceneTestCase {
   }
 
   @Test
+  public void testIntervalQueries() throws IOException {
+    String field = FLD_TEXT_POS_OFFS;
+
+    withReader(
+        List.of(
+            Map.of(field, values("foo baz foo")),
+            Map.of(field, values("bas baz foo")),
+            Map.of(field, values("bar baz foo xyz"))),
+        reader -> {
+          Assertions.assertThat(
+              highlights(reader, new IntervalQuery(field,
+                  Intervals.unordered(
+                      Intervals.term("foo"),
+                      Intervals.term("bas"),
+                      Intervals.term("baz")))))
+              .containsOnly(
+                  fmt("1: (field_text_offs: '>bas baz foo<')", field)
+              );
+
+          Assertions.assertThat(
+              highlights(reader, new IntervalQuery(field,
+                  Intervals.maxgaps(1,
+                  Intervals.unordered(
+                      Intervals.term("foo"),
+                      Intervals.term("bar"))))))
+              .containsOnly(
+                  fmt("2: (field_text_offs: '>bar baz foo< xyz')", field)
+              );
+
+          Assertions.assertThat(
+              highlights(reader, new IntervalQuery(field,
+                  Intervals.containing(
+                      Intervals.unordered(
+                          Intervals.term("foo"),
+                          Intervals.term("bar")),
+                        Intervals.term("foo")))))
+              .containsOnly(
+                  fmt("2: (field_text_offs: '>bar baz foo< xyz')", field)
+              );
+
+          Assertions.assertThat(
+              highlights(reader, new IntervalQuery(field,
+                  Intervals.containedBy(
+                      Intervals.term("foo"),
+                      Intervals.unordered(
+                          Intervals.term("foo"),
+                          Intervals.term("bar"))))))
+              .containsOnly(
+                  fmt("2: (field_text_offs: '>bar baz foo< xyz')", field)
+              );
+        });
+  }
+
+  @Test
   public void testMultivaluedFieldsWithOffsets() throws IOException {
     checkMultivaluedFields(FLD_TEXT_POS_OFFS);
   }
@@ -506,8 +562,8 @@ public class HitRegionRetrieverTest extends LuceneTestCase {
     String field = FLD_TEXT_NOPOS;
     withReader(
         List.of(
-            Map.of(
-                FLD_TEXT_NOPOS, values("foo bar"))
+            Map.of(FLD_TEXT_NOPOS, values("foo bar")),
+            Map.of(FLD_TEXT_NOPOS, values("foo bar", "baz baz"))
             ),
         reader -> {
           Assertions.assertThat(
@@ -515,7 +571,8 @@ public class HitRegionRetrieverTest extends LuceneTestCase {
                       reader,
                       new TermQuery(new Term(field, "bar"))))
               .containsOnly(
-                  fmt("0: (%s: '>foo bar<')", field));
+                  fmt("0: (%s: '>foo bar<')", field),
+                  fmt("1: (%s: '>foo bar< | >baz baz<')", field));
         });
   }
 
@@ -528,9 +585,9 @@ public class HitRegionRetrieverTest extends LuceneTestCase {
 
     ArrayList<String> highlights = new ArrayList<>();
 
-    SimpleHighlightFormatter formatter = new SimpleHighlightFormatter(analyzer);
+    AsciiMatchRangeHighlighter formatter = new AsciiMatchRangeHighlighter(analyzer);
 
-    HitRegionRetriever.DocumentHitsConsumer highlightCollector =
+    MatchRegionRetriever.HitRegionConsumer highlightCollector =
         (leafReader, docId, fieldHighlights) -> {
           StringBuilder sb = new StringBuilder();
 
@@ -548,7 +605,7 @@ public class HitRegionRetrieverTest extends LuceneTestCase {
           highlights.add(sb.toString());
         };
 
-    HitRegionRetriever highlighter = new HitRegionRetriever(searcher, rewrittenQuery, analyzer);
+    MatchRegionRetriever highlighter = new MatchRegionRetriever(searcher, rewrittenQuery, analyzer);
     highlighter.highlightDocuments(
         Arrays.stream(topDocs.scoreDocs).mapToInt(scoreDoc -> scoreDoc.doc).sorted().iterator(),
         highlightCollector);

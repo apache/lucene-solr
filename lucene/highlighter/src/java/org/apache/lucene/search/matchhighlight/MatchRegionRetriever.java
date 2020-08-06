@@ -49,16 +49,17 @@ import java.util.TreeSet;
 import java.util.function.Predicate;
 
 /**
- * Utility class to compute a list of "hit regions" for a document.
+ * Utility class to compute a list of "hit regions" for a given query, searcher and
+ * document(s) using {@link Matches} API.
  */
-public class HitRegionRetriever {
+public class MatchRegionRetriever {
   private final List<LeafReaderContext> leaves;
   private final Weight weight;
   private final TreeSet<String> affectedFields;
   private final Map<String, OffsetsFromMatchesStrategy> offsetStrategies;
   private final Set<String> preloadFields;
 
-  public HitRegionRetriever(IndexSearcher searcher, Query query, Analyzer analyzer)
+  public MatchRegionRetriever(IndexSearcher searcher, Query query, Analyzer analyzer)
       throws IOException {
     leaves = searcher.getIndexReader().leaves();
     assert checkOrderConsistency(leaves);
@@ -95,7 +96,7 @@ public class HitRegionRetriever {
     preloadFields.retainAll(affectedFields);
   }
 
-  public void highlightDocuments(PrimitiveIterator.OfInt docIds, DocumentHitsConsumer consumer)
+  public void highlightDocuments(PrimitiveIterator.OfInt docIds, HitRegionConsumer consumer)
       throws IOException {
     if (leaves.isEmpty() || affectedFields.isEmpty()) {
       return;
@@ -148,13 +149,13 @@ public class HitRegionRetriever {
       return;
     }
 
-    // TODO: improve no-position field highlighting if this is merged:
-    // https://issues.apache.org/jira/browse/LUCENE-9439
     for (String field : affectedFields) {
       if (acceptField.test(field)) {
         MatchesIterator matchesIterator = matches.getMatches(field);
         if (matchesIterator == null) {
-          // No matches on this field or the field is not indexed with positions.
+          // No matches on this field, even though the field was part of the query. This may be possible
+          // with complex queries that source non-text fields (have no "hit regions" in any textual
+          // representation).
         } else {
           OffsetsFromMatchesStrategy offsetStrategy = offsetStrategies.get(field);
           if (offsetStrategy == null) {
@@ -191,11 +192,17 @@ public class HitRegionRetriever {
       if (fieldInfo != null && fieldInfo.getIndexOptions() != null) {
         switch (fieldInfo.getIndexOptions()) {
           case DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS:
-            offsetStrategy = new OffsetsStored(field);
+            offsetStrategy = new OffsetsFromMatchIterator(field);
             break;
 
           case DOCS_AND_FREQS_AND_POSITIONS:
             offsetStrategy = new OffsetsFromPositions(field, analyzer);
+            break;
+
+
+          case DOCS_AND_FREQS:
+            // offsetStrategy = new OffsetsFromTokens(field, analyzer);
+            offsetStrategy = new OffsetsFromValues(field, analyzer);
             break;
 
           default:
@@ -214,11 +221,17 @@ public class HitRegionRetriever {
     return offsetStrategies;
   }
 
-  public interface DocumentHitsConsumer {
+  public interface HitRegionConsumer {
     void accept(LeafReader leafReader, int leafDocId, Map<String, List<OffsetRange>> hits)
         throws IOException;
   }
 
+  /**
+   * An abstraction that provides document values for a given field. Default implementation
+   * in {@link DocumentFieldValueProvider} just reaches to a preloaded {@link Document}. It is
+   * possible to write a more efficient implementation on top of a reusable character buffer
+   * (that reuses the buffer while retrieving hit regions for documents).
+   */
   public interface FieldValueProvider {
     List<CharSequence> getValues(String field);
   }
@@ -236,6 +249,11 @@ public class HitRegionRetriever {
     }
   }
 
+  /**
+   * Determines how match offset regions are computed from {@link MatchesIterator}. Several
+   * possibilities exist, ranging from retrieving offsets directly from a match instance
+   * to re-evaluating the document's field and recomputing offsets from there.
+   */
   private interface OffsetsFromMatchesStrategy {
     List<OffsetRange> get(MatchesIterator matchesIterator, FieldValueProvider doc)
         throws IOException;
@@ -245,10 +263,13 @@ public class HitRegionRetriever {
     }
   }
 
-  private static class OffsetsStored implements OffsetsFromMatchesStrategy {
+  /**
+   * This strategy retrieves offsets directly from {@link MatchesIterator}.
+   */
+  private static class OffsetsFromMatchIterator implements OffsetsFromMatchesStrategy {
     private final String field;
 
-    OffsetsStored(String field) {
+    OffsetsFromMatchIterator(String field) {
       this.field = field;
     }
 
@@ -268,6 +289,106 @@ public class HitRegionRetriever {
     }
   }
 
+  /**
+   * This strategy works for fields where we know the match occurred but there are
+   * no known positions or offsets.
+   *
+   * We re-analyze field values and return offset ranges for entire values
+   * (not individual tokens). Re-analysis is required because analyzer may return
+   * an unknown offset gap.
+   */
+  private static class OffsetsFromValues implements OffsetsFromMatchesStrategy {
+    private final String field;
+    private final Analyzer analyzer;
+
+    public OffsetsFromValues(String field, Analyzer analyzer) {
+      this.field = field;
+      this.analyzer = analyzer;
+    }
+
+    @Override
+    public List<OffsetRange> get(MatchesIterator matchesIterator, FieldValueProvider doc) throws IOException {
+      List<CharSequence> values = doc.getValues(field);
+
+      ArrayList<OffsetRange> ranges = new ArrayList<>();
+      int valueOffset = 0;
+      for (CharSequence charSequence : values) {
+        final String value = charSequence.toString();
+
+        TokenStream ts = analyzer.tokenStream(field, value);
+        OffsetAttribute offsetAttr = ts.getAttribute(OffsetAttribute.class);
+        ts.reset();
+        int startOffset = valueOffset;
+        while (ts.incrementToken()) {
+          // Go through all tokens to increment offset attribute properly.
+        }
+        ts.end();
+        valueOffset += offsetAttr.endOffset();
+        ranges.add(new OffsetRange(startOffset, valueOffset));
+        valueOffset += analyzer.getOffsetGap(field);
+        ts.close();
+      }
+      return ranges;
+    }
+
+    @Override
+    public boolean requiresDocument() {
+      return true;
+    }
+  }
+
+  /**
+   * This strategy works for fields where we know the match occurred but there are
+   * no known positions or offsets.
+   *
+   * We re-analyze field values and return offset ranges for all returned tokens.
+   */
+  private static class OffsetsFromTokens implements OffsetsFromMatchesStrategy {
+    private final String field;
+    private final Analyzer analyzer;
+
+    public OffsetsFromTokens(String field, Analyzer analyzer) {
+      this.field = field;
+      this.analyzer = analyzer;
+    }
+
+    @Override
+    public List<OffsetRange> get(MatchesIterator matchesIterator, FieldValueProvider doc) throws IOException {
+      List<CharSequence> values = doc.getValues(field);
+
+      ArrayList<OffsetRange> ranges = new ArrayList<>();
+      int valueOffset = 0;
+      for (int valueIndex = 0, max = values.size(); valueIndex < max; valueIndex++) {
+        final String value = values.get(valueIndex).toString();
+
+        TokenStream ts = analyzer.tokenStream(field, value);
+        OffsetAttribute offsetAttr = ts.getAttribute(OffsetAttribute.class);
+        ts.reset();
+        while (ts.incrementToken()) {
+          int startOffset = valueOffset + offsetAttr.startOffset();
+          int endOffset = valueOffset + offsetAttr.endOffset();
+          ranges.add(new OffsetRange(startOffset, endOffset));
+        }
+        ts.end();
+        valueOffset += offsetAttr.endOffset() + analyzer.getOffsetGap(field);
+        ts.close();
+      }
+      return ranges;
+    }
+
+    @Override
+    public boolean requiresDocument() {
+      return true;
+    }
+  }
+
+  /**
+   * This strategy applies to fields with stored positions but no offsets. We re-analyze
+   * the field's value to find out offsets of match positions.
+   *
+   * Note that this may fail if index data (positions stored in the index) is out of sync
+   * with the field values or the analyzer. This strategy assumes it'll never happen.
+   */
   private static class OffsetsFromPositions implements OffsetsFromMatchesStrategy {
     private final String field;
     private final Analyzer analyzer;

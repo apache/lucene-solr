@@ -201,8 +201,9 @@ final class DisjunctionMatchesIterator implements MatchesIterator {
 
   @Override
   public boolean next() throws IOException {
-    if (started == false) {
-      return started = true;
+    if (!started) {
+      started = true;
+      return queue.size() > 0;
     }
     if (queue.top().next() == false) {
       queue.pop();

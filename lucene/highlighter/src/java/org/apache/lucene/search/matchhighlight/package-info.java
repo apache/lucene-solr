@@ -16,6 +16,7 @@
  */
 
 /**
- * Highlighter that works on top of {@link org.apache.lucene.search.Matches} API.
+ * This package contains components that retrieve document "match regions"
+ * for a given query using {@link org.apache.lucene.search.Matches} API.
  */
 package org.apache.lucene.search.matchhighlight;
