@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.lucene.util.WeakIdentityMap;
@@ -52,7 +53,7 @@ public final class HttpCacheHeaderUtil {
    *
    * @see #calcEtag
    */
-  private static WeakIdentityMap<String, EtagCacheVal> etagCoreCache = WeakIdentityMap.newConcurrentHashMap();
+  private static WeakIdentityMap<UUID, EtagCacheVal> etagCoreCache = WeakIdentityMap.newConcurrentHashMap();
 
   /** @see #etagCoreCache */
   private static class EtagCacheVal {
@@ -92,7 +93,7 @@ public final class HttpCacheHeaderUtil {
       final String etagSeed
         = core.getSolrConfig().getHttpCachingConfig().getEtagSeed();
       etagCache = new EtagCacheVal(etagSeed);
-      etagCoreCache.put(core.getName(), etagCache);
+      etagCoreCache.put(core.uniqueId, etagCache);
     }
     
     return etagCache.calcEtag(currentIndexVersion);
