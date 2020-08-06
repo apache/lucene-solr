@@ -42,38 +42,23 @@ public interface HttpRpcFactory {
     HttpRpc createHttpRpc();
 
     interface CallRouter {
-        /**send to a specific node . usually admin requests
+        /**send to a specific node. usually admin requests
          */
         CallRouter toNode(String nodeName);
-        /** A request is made to the leader of the shard
-         */
-        CallRouter toShardLeader(String collection, String shard);
-
-        /** Make a request to any replica of the shard
-         */
-        CallRouter toShard(String collection, String shard);
 
         /** Make a request to any replica of the shard of type
          */
-        CallRouter toShard(String collection, String shard, Replica.Type type);
-
-        /**Identify the shard using the routeKey and send the request to the leader
-         * replica
-         */
-        CallRouter routeToShardLeader(String collection, String routeKey);
+        CallRouter toShard(String collection, String shard, ReplicaType type);
 
         /**Identify the shard using the route key and send the request to a given replica type
          */
-        CallRouter routeToShard(String collection, String routeKey, Replica.Type type);
+        CallRouter toShard(String collection, ReplicaType type,  String routeKey);
 
-        /**Identify the shard using the route key and send the request to a random replica
-         */
-        CallRouter routeToShard(String collection, String routeKey);
         /**Make a request to a specific replica
          */
-        CallRouter toReplica(String collection, String shard, String replica);
+        CallRouter toReplica(String collection, String replicaName);
 
-        /**To any dolr vore  that may host this collection
+        /**To any Solr node  that may host this collection
          */
         CallRouter toCollection(String collection);
         
@@ -159,5 +144,8 @@ public interface HttpRpcFactory {
          * @return true to proceed to processing body. if false , ignore the body
          */
         boolean readHeader(int status, Function<String, String> headerProvider);
+    }
+    enum ReplicaType {
+        LEADER, NRT, TLOG, PULL, NON_LEADER, ANY
     }
 }

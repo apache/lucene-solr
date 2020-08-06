@@ -480,7 +480,7 @@ public class CloudSolrClient extends BaseCloudSolrClient {
     }
   }
 
-  private final HttpRpcFactory factory = new HttpRpcFactoryImpl(this);
+  private final HttpRpcFactory factory = null;//TODO
 
   public HttpRpcFactory getRpcFactory() {
     return factory;
