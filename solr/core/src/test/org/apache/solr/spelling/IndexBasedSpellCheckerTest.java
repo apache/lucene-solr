@@ -101,9 +101,11 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testSpelling() throws Exception {
     IndexBasedSpellChecker checker = new IndexBasedSpellChecker();
 
+    @SuppressWarnings({"rawtypes"})
     NamedList spellchecker = new NamedList();
     spellchecker.add("classname", IndexBasedSpellChecker.class.getName());
 
@@ -175,8 +177,10 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testExtendedResults() throws Exception {
     IndexBasedSpellChecker checker = new IndexBasedSpellChecker();
+    @SuppressWarnings({"rawtypes"})
     NamedList spellchecker = new NamedList();
     spellchecker.add("classname", IndexBasedSpellChecker.class.getName());
 
@@ -229,8 +233,10 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testAlternateDistance() throws Exception {
     TestSpellChecker checker = new TestSpellChecker();
+    @SuppressWarnings({"rawtypes"})
     NamedList spellchecker = new NamedList();
     spellchecker.add("classname", IndexBasedSpellChecker.class.getName());
 
@@ -256,6 +262,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testAlternateLocation() throws Exception {
     String[] ALT_DOCS = new String[]{
             "jumpin jack flash",
@@ -268,6 +275,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     };
 
     IndexBasedSpellChecker checker = new IndexBasedSpellChecker();
+    @SuppressWarnings({"rawtypes"})
     NamedList spellchecker = new NamedList();
     spellchecker.add("classname", IndexBasedSpellChecker.class.getName());
     

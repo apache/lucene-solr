@@ -304,7 +304,7 @@ public class SolrLogPostToolTest extends SolrTestCaseJ4 {
 
   private List<SolrInputDocument> readDocs(String records) throws Exception {
     BufferedReader bufferedReader = new BufferedReader(new StringReader(records));
-    ArrayList<SolrInputDocument> list = new ArrayList();
+    ArrayList<SolrInputDocument> list = new ArrayList<>();
 
     try {
       LogRecordReader logRecordReader = new SolrLogPostTool.LogRecordReader(bufferedReader);

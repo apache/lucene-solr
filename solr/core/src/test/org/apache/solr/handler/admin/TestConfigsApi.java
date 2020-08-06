@@ -36,6 +36,7 @@ import static org.apache.solr.handler.admin.TestCollectionAPIs.compareOutput;
 public class TestConfigsApi extends SolrTestCaseJ4 {
 
 
+  @SuppressWarnings({"unchecked"})
   public void testCommands() throws Exception {
 
     try (ConfigSetsHandler handler = new ConfigSetsHandler(null) {

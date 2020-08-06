@@ -256,8 +256,6 @@ curl -X POST -H 'Content-type:application/json' --data-binary '
 ----
 
 * A new command-line option is available via `bin/solr autoscaling` to calculate autoscaling policy suggestions and diagnostic information outside of the running Solr cluster. This option can use the existing autoscaling policy, or test the impact of a new one from a file located on the server filesystem.
-+
-These options have been documented in the section <<solrcloud-autoscaling-policy-preferences.adoc#testing-autoscaling-configuration-and-suggestions,Testing Autoscaling Configuration and Suggestions>>.
 
 === Dependency Updates in 8.0
 
@@ -392,7 +390,7 @@ When upgrading to Solr 7.4, users should be aware of the following major changes
 
 *Legacy Scaling (non-SolrCloud)*
 
-* In the <<index-replication.adoc#index-replication,master-slave model>> of scaling Solr, a slave no longer commits an empty index when a completely new index is detected on master during replication. To return to the previous behavior pass `false` to `skipCommitOnMasterVersionZero` in the slave section of replication handler configuration, or pass it to the `fetchindex` command.
+* In the <<index-replication.adoc#index-replication,leader-follower model>> of scaling Solr, a follower no longer commits an empty index when a completely new index is detected on leader during replication. To return to the previous behavior pass `false` to `skipCommitOnLeaderVersionZero` in the follower section of replication handler configuration, or pass it to the `fetchindex` command.
 
 If you are upgrading from a version earlier than Solr 7.3, please see previous version notes below.
 
@@ -414,7 +412,7 @@ When upgrading to Solr 7.3, users should be aware of the following major changes
 
 * The behaviour of the autoscaling system will now pause all triggers from execution between the start of actions and the end of a cool down period. The triggers will resume after the cool down period expires. Previously, the cool down period was a fixed period started after actions for a trigger event completed and during this time all triggers continued to run but any events were rejected and tried later.
 
-* The throttling mechanism used to limit the rate of autoscaling events processed has been removed. This deprecates the `actionThrottlePeriodSeconds` setting in the <<solrcloud-autoscaling-api.adoc#change-autoscaling-properties,`set-properties` Autoscaling API>> which is now non-operational. Use the `triggerCooldownPeriodSeconds` parameter instead to pause event processing.
+* The throttling mechanism used to limit the rate of autoscaling events processed has been removed. This deprecates the `actionThrottlePeriodSeconds` setting in the Autoscaling API which is now non-operational. Use the `triggerCooldownPeriodSeconds` parameter instead to pause event processing.
 
 * The default value of `autoReplicaFailoverWaitAfterExpiration`, used with the AutoAddReplicas feature, has increased to 120 seconds from the previous default of 30 seconds. This affects how soon Solr adds new replicas to replace the replicas on nodes which have either crashed or shutdown.
 
@@ -480,8 +478,6 @@ Existing users of this feature should not have to change anything. However, they
 
 ** Behavior: Changing the `autoAddReplicas` property from disabled (`false`) to enabled (`true`) using <<collection-management.adoc#modifycollection,MODIFYCOLLECTION API>> no longer replaces down replicas for the collection immediately. Instead, replicas are only added if a node containing them went down while `autoAddReplicas` was enabled. The parameters `autoReplicaFailoverBadNodeExpiration` and `autoReplicaFailoverWorkLoopDelay` are no longer used.
 ** Deprecations: Enabling/disabling autoAddReplicas cluster-wide with the API will be deprecated; use suspend/resume trigger APIs with `name=".auto_add_replicas"` instead.
-+
-More information about the changes to this feature can be found in the section <<solrcloud-autoscaling-auto-add-replicas.adoc#solrcloud-autoscaling-auto-add-replicas,SolrCloud Automatically Adding Replicas>>.
 
 *Metrics Reporters*
 
@@ -497,7 +493,7 @@ See the section <<metrics-reporting.adoc#shard-and-cluster-reporters,Shard and C
 
 *ReplicationHandler*
 
-* In the ReplicationHandler, the `master.commitReserveDuration` sub-element is deprecated. Instead please configure a direct `commitReserveDuration` element for use in all modes (master, slave, cloud).
+* In the ReplicationHandler, the `leader.commitReserveDuration` sub-element is deprecated. Instead please configure a direct `commitReserveDuration` element for use in all modes (leader, follower, cloud).
 
 *RunExecutableListener*
 

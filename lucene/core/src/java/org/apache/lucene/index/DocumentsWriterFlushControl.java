@@ -130,7 +130,7 @@ final class DocumentsWriterFlushControl implements Accountable, Closeable {
          * several DWPT in flight indexing large documents (compared to the ram
          * buffer). This means that those DWPT and their threads will not hit
          * the stall control before asserting the memory which would in turn
-         * fail. To prevent this we only assert if the the largest document seen
+         * fail. To prevent this we only assert if the largest document seen
          * is smaller than the 1/2 of the maxRamBufferMB
          */
         assert ram <= expected : "actual mem: " + ram + " byte, expected mem: " + expected

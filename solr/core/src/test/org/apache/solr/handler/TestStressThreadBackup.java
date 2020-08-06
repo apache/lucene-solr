@@ -55,7 +55,9 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.util.TimeOut;
 import org.apache.solr.util.LogLevel;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,6 +72,17 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
   private SolrClient adminClient;
   private SolrClient coreClient;
   private String coreName;
+
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    System.setProperty("solr.allowPaths", "*");
+  }
+
+  @AfterClass
+  public static void afterClass() throws Exception {
+    System.clearProperty("solr.allowPaths");
+  }
+
   @Before
   public void beforeTest() throws Exception {
     backupDir = createTempDir(getTestClass().getSimpleName() + "_backups").toFile();

@@ -43,7 +43,9 @@ import org.slf4j.LoggerFactory;
  * decoded and reuse if the tlog file is reopened. This is achieved by extending the constructor, and the
  * methods {@link #writeCommit(CommitUpdateCommand)} and {@link #getReader(long)}.</li>
  * </ul>
+ * @deprecated since 8.6
  */
+@Deprecated(since = "8.6")
 public class CdcrTransactionLog extends TransactionLog {
 
   private boolean isReplaying;

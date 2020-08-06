@@ -55,6 +55,7 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
 
   @Override
   @Before
+  @SuppressWarnings({"rawtypes"})
   public void setUp() throws Exception {
     super.setUp();
     handler = new DocumentAnalysisRequestHandler();
@@ -204,6 +205,7 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
    * org.apache.solr.schema.IndexSchema)}
    */
   @Test
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void testHandleAnalysisRequest() throws Exception {
 
     SolrInputDocument document = new SolrInputDocument();

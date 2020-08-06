@@ -411,7 +411,6 @@ public class DeepRandomStream extends TupleStream implements Expressible {
     }
   }
 
-  @SuppressWarnings({"overrides"})
   protected class TupleWrapper implements Comparable<TupleWrapper> {
     private Tuple tuple;
     private SolrStream stream;
@@ -435,10 +434,15 @@ public class DeepRandomStream extends TupleStream implements Expressible {
       }
     }
 
+    @Override
     public boolean equals(Object o) {
       return this == o;
     }
 
+    @Override
+    public int hashCode() {
+      return Objects.hash(tuple);
+    }
     public Tuple getTuple() {
       return tuple;
     }

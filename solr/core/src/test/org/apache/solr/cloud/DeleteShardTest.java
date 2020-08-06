@@ -114,7 +114,6 @@ public class DeleteShardTest extends SolrCloudTestCase {
 
     final String collection = "deleteshard_test";
     CollectionAdminRequest.createCollectionWithImplicitRouter(collection, "conf", "a,b,c", 1)
-        .setMaxShardsPerNode(2)
         .process(cluster.getSolrClient());
     
     cluster.waitForActiveCollection(collection, 3, 3);

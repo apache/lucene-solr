@@ -114,9 +114,7 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
       putParamOptional(params, "kerberos.keytab", KEYTAB_PARAM);
     }
 
-    String delegationTokenStr = System.getProperty(DELEGATION_TOKEN_ENABLED, null);
-    boolean delegationTokenEnabled =
-        (delegationTokenStr == null) ? false : Boolean.parseBoolean(delegationTokenStr);
+    boolean delegationTokenEnabled = Boolean.getBoolean(DELEGATION_TOKEN_ENABLED);
     ZkController controller = coreContainer.getZkController();
 
     if (delegationTokenEnabled) {
@@ -162,7 +160,7 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
     }
 
     // check impersonator config
-    for (@SuppressWarnings({"rawtypes"})Enumeration e = System.getProperties().propertyNames(); e.hasMoreElements();) {
+    for (Enumeration<?> e = System.getProperties().propertyNames(); e.hasMoreElements();) {
       String key = e.nextElement().toString();
       if (key.startsWith(IMPERSONATOR_PREFIX)) {
         if (!delegationTokenEnabled) {

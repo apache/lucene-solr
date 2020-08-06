@@ -173,11 +173,9 @@ public class SolrFeature extends Feature {
             }
           }
 
-          if (filterQueries.isEmpty() == false) { // TODO optimize getDocSet to make this check unnecessary SOLR-14376
-            DocSet filtersDocSet = searcher.getDocSet(filterQueries); // execute
-            if (filtersDocSet != searcher.getLiveDocSet()) {
-              filterDocSetQuery = filtersDocSet.getTopFilter();
-            }
+          DocSet filtersDocSet = searcher.getDocSet(filterQueries); // execute
+          if (filtersDocSet != searcher.getLiveDocSet()) {
+            filterDocSetQuery = filtersDocSet.getTopFilter();
           }
         }
 

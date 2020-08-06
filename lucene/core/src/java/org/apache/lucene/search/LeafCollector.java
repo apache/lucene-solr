@@ -93,4 +93,16 @@ public interface LeafCollector {
    */
   void collect(int doc) throws IOException;
 
+  /**
+   * Optionally returns an iterator over competitive documents.
+   *
+   * Collectors should delegate this method to their comparators if
+   * their comparators provide the skipping functionality over non-competitive docs.
+   *
+   * The default is to return {@code null} which is interpreted as the collector provide any competitive iterator.
+   */
+  default DocIdSetIterator competitiveIterator() throws IOException {
+    return null;
+  }
+
 }

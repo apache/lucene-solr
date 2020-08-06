@@ -141,7 +141,7 @@ Step 2: Get the `sha512` hash of the jar
  openssl dgst -sha512 runtimelibs.jar
 ----
 
-Step 3 :  Start Solr with runtime lib enabled
+Step 3:  Start Solr with runtime lib enabled
 
 [source,bash]
 ----

@@ -40,14 +40,10 @@ abstract class TermsHash {
   final ByteBlockPool bytePool;
   ByteBlockPool termBytePool;
   final Counter bytesUsed;
-
-  final DocumentsWriterPerThread.DocState docState;
-
   final boolean trackAllocations;
 
   TermsHash(final DocumentsWriterPerThread docWriter, boolean trackAllocations, TermsHash nextTermsHash) {
-    this.docState = docWriter.docState;
-    this.trackAllocations = trackAllocations; 
+    this.trackAllocations = trackAllocations;
     this.nextTermsHash = nextTermsHash;
     this.bytesUsed = trackAllocations ? docWriter.bytesUsed : Counter.newCounter();
     intPool = new IntBlockPool(docWriter.intBlockAllocator);
@@ -90,9 +86,9 @@ abstract class TermsHash {
 
   abstract TermsHashPerField addField(FieldInvertState fieldInvertState, FieldInfo fieldInfo);
 
-  void finishDocument() throws IOException {
+  void finishDocument(int docID) throws IOException {
     if (nextTermsHash != null) {
-      nextTermsHash.finishDocument();
+      nextTermsHash.finishDocument(docID);
     }
   }
 

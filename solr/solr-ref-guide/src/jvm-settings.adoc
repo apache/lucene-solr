@@ -36,7 +36,7 @@ There are several points to keep in mind:
 * The G1GC garbage collector is currently preferred when using a JVM that supports it (Java 9 and later).
 * Modern hardware can be configured with hundreds of gigabytes of physical RAM and many CPUs. It is often better in these cases to run multiple JVMs, each with a limited amount of memory allocated to their heaps. One way to achieve this is to run Solr as a https://hub.docker.com/_/solr?tab=tags[Docker container].
 * It's good practice to periodically re-analyze the GC logs and/or monitor with <<metrics-reporting#metrics-reporting,Metrics Reporting>> to see if the memory usage has changed due to changes in your application, number of documents, etc.
-* On *nix systems, we recommend that Solr be run with the "OOM killer script" (see `solr/bin/oom_solr.sh`). This will forcefully stop Solr when the heap is exhausted rather than continue in an indeterminate state.
+* On *nix systems, we recommend that Solr be run with the "OOM killer script" (see `solr/bin/oom_solr.sh`). This will forcefully stop Solr when the heap is exhausted rather than continue in an indeterminate state. If `jstack` is available, a heap dump will also be taken before the process is killed.
 * All current (Java 11) garbage collectors can hit "stop the world" collections, which suspend the JVM until completed. If, through monitoring, these garbage collections are frequent and greater than your application can tolerate, additional tuning should be considered. "Stop the world" pauses greater than 5 seconds are rarely acceptable, and having them be less than 1 second is desirable.
 
 Consult your JVM vendor's documentation for specifics in your particular case, the recommendations above are intended as starting points.

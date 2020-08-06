@@ -45,6 +45,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 @SuppressPointFields(bugUrl="https://issues.apache.org/jira/browse/SOLR-10844")
 public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
 
+  @SuppressWarnings({"unchecked"})
   public TestDistributedGrouping() {
     // SOLR-10844: Even with points suppressed, this test breaks if we (randomize) docvalues="true" on trie fields?!?!?!!?
     System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"false");
@@ -62,6 +63,7 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
   String oddField="oddField_s1";
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void test() throws Exception {
     del("*:*");
     commit();
@@ -309,6 +311,7 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     int which = r.nextInt(clients.size());
     SolrClient client = clients.get(which);
     QueryResponse rsp = client.query(params);
+    @SuppressWarnings({"rawtypes"})
     NamedList nl = (NamedList<?>) rsp.getResponse().get("grouped");
     nl = (NamedList<?>) nl.getVal(0);
     int matches = (Integer) nl.getVal(0);

@@ -365,7 +365,7 @@ public class Rule {
 
     @Override
     public int hashCode() {
-      throw new UnsupportedOperationException("TODO unimplemented");
+      return Objects.hash(name, operand);
     }
 
     @Override

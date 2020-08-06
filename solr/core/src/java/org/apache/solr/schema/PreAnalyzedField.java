@@ -79,7 +79,7 @@ public class PreAnalyzedField extends TextField implements HasImplicitIndexAnaly
         parser = new SimplePreAnalyzedParser();
       } else {
         try {
-          Class<? extends PreAnalyzedParser> implClazz = schema.getResourceLoader().findClass(implName, PreAnalyzedParser.class);
+          Class<? extends PreAnalyzedParser> implClazz = schema.getSolrClassLoader().findClass(implName, PreAnalyzedParser.class);
           Constructor<?> c = implClazz.getConstructor(new Class<?>[0]);
           parser = (PreAnalyzedParser) c.newInstance(new Object[0]);
         } catch (Exception e) {
@@ -149,7 +149,7 @@ public class PreAnalyzedField extends TextField implements HasImplicitIndexAnaly
   @Override
   public void write(TextResponseWriter writer, String name, IndexableField f)
           throws IOException {
-    writer.writeStr(name, f.stringValue(), true);
+    writer.writeStr(name, toExternal(f), true);
   }
   
   /** Utility method to convert a field to a string that is parse-able by this

@@ -62,7 +62,7 @@ public abstract class PointField extends NumericFieldType {
   /**
    * <p>
    * The Test framework can set this global variable to instruct PointField that
-   * (on init) it should be tollerant of the <code>precisionStep</code> argument used by TrieFields.
+   * (on init) it should be tolerant of the <code>precisionStep</code> argument used by TrieFields.
    * This allows for simple randomization of TrieFields and PointFields w/o extensive duplication
    * of <code>&lt;fieldType/&gt;</code> declarations.
    * </p>

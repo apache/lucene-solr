@@ -107,7 +107,7 @@ public class OutputWriterTest extends SolrTestCaseJ4 {
         public UselessOutputWriter() {}
 
         @Override
-        public void init(NamedList n) {}
+        public void init(@SuppressWarnings({"rawtypes"})NamedList n) {}
         
         @Override
         public void write(Writer writer, SolrQueryRequest request, SolrQueryResponse response)

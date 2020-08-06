@@ -82,6 +82,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
         new File(subHome, "solrconfig.snippet.randomindexconfig.xml"));
 
     final CoreContainer cores = h.getCoreContainer();
+    cores.getAllowPaths().add(workDir.toPath());
 
     final CoreAdminHandler admin = new CoreAdminHandler(cores);
 
@@ -125,6 +126,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     final File workDir = createTempDir().toFile();
     
     final CoreContainer cores = h.getCoreContainer();
+    cores.getAllowPaths().add(workDir.toPath());
 
     final CoreAdminHandler admin = new CoreAdminHandler(cores);
 
@@ -197,6 +199,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
       (Map<String,Exception>) resp.getValues().get("initFailures");
     assertNotNull("core failures is null", failures);
 
+    @SuppressWarnings({"rawtypes"})
     NamedList status = (NamedList)resp.getValues().get("status");
     assertNotNull("core status is null", status);
 

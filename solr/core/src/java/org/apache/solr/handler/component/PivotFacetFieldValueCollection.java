@@ -71,7 +71,7 @@ public class PivotFacetFieldValueCollection implements Iterable<PivotFacetValue>
   }
 
   /**
-   * The {@link PivotFacetValue} with corisponding to a a value of 
+   * The {@link PivotFacetValue} with corresponding to a value of 
    * <code>null</code> when {@link FacetParams#FACET_MISSING} is used.
    * 
    * @return the appropriate <code>PivotFacetValue</code> object, may be null 

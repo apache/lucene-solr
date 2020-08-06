@@ -228,7 +228,7 @@ limitations under the License.
 #content #collections #data #alias-data h2 { background-image: url( ../../img/ico/box.png ); }
 #content #collections #data #collection-data h2 { background-image: url( ../../img/ico/box.png ); }
 #content #collections #data #shard-data h2 { background-image: url( ../../img/ico/sitemap.png ); }
-#content #collections #data #shard-data .replica h2 { background-image: url( ../../img/ico/node-slave.png ); }
+#content #collections #data #shard-data .replica h2 { background-image: url( ../../img/ico/node-follower.png ); }
 
 #content #collections #data #index-data
 {

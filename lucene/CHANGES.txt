@@ -107,6 +107,13 @@ Improvements
 
 * LUCENE-9074: Introduce Slice Executor For Dynamic Runtime Execution Of Slices (Atri Sharma)
 
+* LUCENE-9280: Add an ability for field comparators to skip non-competitive documents.
+  Creating a TopFieldCollector with totalHitsThreshold less than Integer.MAX_VALUE
+  instructs Lucene to skip non-competitive documents whenever possible. For numeric
+  sort fields the skipping functionality works when the same field is indexed both
+  with doc values and points. In this case, there is an assumption that the same data is
+  stored in these points and doc values (Mayya Sharipova, Jim Ferenczi, Adrien Grand)
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
@@ -126,6 +133,8 @@ Bug fixes
 
 Other
 
+* LUCENE-9312: Allow gradle builds against arbitrary JVMs. (Tomoko Uchida, Dawid Weiss)
+
 * LUCENE-9391: Upgrade HPPC to 0.8.2. (Haoyu Zhai)
 
 * LUCENE-8768: Fix Javadocs build in Java 11. (Namgyu Kim)
@@ -139,6 +148,67 @@ Other
 
 * LUCENE-9267: Update MatchingQueries documentation to correct
   time unit. (Pierre-Luc Perron via Mike Drob)
+
+* LUCENE-9411: Fail complation on warnings, 9x gradle-only (Erick Erickson, Dawid Weiss)
+  Deserves mention here as well as Lucene CHANGES.txt since it affects both.
+
+======================= Lucene 8.7.0 =======================
+
+API Changes
+---------------------
+(No changes)
+
+* LUCENE-9437: Lucene's facet module's DocValuesOrdinalsReader.decode method
+  is now public, making it easier for applications to decode facet
+  ordinals into their corresponding labels (Ankur)
+
+New Features
+---------------------
+
+* LUCENE-9386: RegExpQuery added case insensitive matching option. (Mark Harwood)
+
+Improvements
+---------------------
+
+* LUCENE-8574: Add a new ExpressionValueSource which will enforce only one value per name
+  per hit in dependencies, ExpressionFunctionValues will no longer
+  recompute already computed values (Haoyu Zhai)
+
+* LUCENE-9416: Fix CheckIndex to print an invalid non-zero norm as
+  unsigned long when detecting corruption.
+
+* LUCENE-9440: FieldInfo#checkConsistency called twice from Lucene50(60)FieldInfosFormat#read;
+  Removed the (redundant?) assert and do these checks for real. (Yauheni Putsykovich)
+
+* LUCENE-9446: In BooleanQuery rewrite, always remove MatchAllDocsQuery filter clauses
+  when possible. (Julie Tibshirani)
+
+Optimizations
+---------------------
+
+* LUCENE-9395: ConstantValuesSource now shares a single DoubleValues
+  instance across all segments (Tony Xu)
+
+Bug Fixes
+---------------------
+(No changes)
+
+Documentation
+---------------------
+
+* LUCENE-9424: Add a performance warning to AttributeSource.captureState javadocs (Haoyu Zhai)
+
+
+Other
+---------------------
+(No changes)
+
+======================= Lucene 8.6.1 =======================
+
+Bug Fixes
+---------------------
+* LUCENE-9443: The UnifiedHighlighter was closing the underlying reader when there were multiple term-vector fields.
+  This was a regression in 8.6.0.  (David Smiley, Chris Beer)
 
 ======================= Lucene 8.6.0 =======================
 
@@ -181,6 +251,10 @@ New Features
 * LUCENE-7889: Grouping by range based on values from DoubleValuesSource and LongValuesSource
   (Alan Woodward)
 
+* LUCENE-8962: Add IndexWriter merge-on-commit feature to selectively merge small segments on commit,
+  subject to a configurable timeout, to improve search performance by reducing the number of small
+  segments for searching (Michael Froh, Mike Sokolov, Mike Mccandless, Simon Willnauer)
+
 Improvements
 ---------------------
 * LUCENE-9276: Use same code-path for updateDocuments and updateDocument in IndexWriter and
@@ -215,6 +289,8 @@ Improvements
 * LUCENE-9397: UniformSplit supports encodable fields metadata. (Bruno Roustant)
 
 * LUCENE-9396: Improved truncation detection for points. (Adrien Grand, Robert Muir)
+
+* LUCENE-9402: Let MultiCollector handle minCompetitiveScore (Tomás Fernández Löbbe, Adrien Grand)
 
 Optimizations
 ---------------------
@@ -277,6 +353,11 @@ Bug Fixes
 
 * LUCENE-9400: Tessellator might build illegal polygons when several holes share the shame vertex. (Ignacio Vera)
 
+* LUCENE-9417: Tessellator might build illegal polygons when several holes share are connected to the same
+  vertex. (Ignacio Vera)
+
+* LUCENE-9418: Fix ordered intervals over interleaved terms (Alan Woodward)
+
 Other
 ---------------------
 
@@ -319,6 +400,8 @@ Build
   (Andras Salamon via Erick Erickson)
 
 * LUCENE-9380: Fix auxiliary class warnings in Lucene (Erick Erickson)
+
+* LUCENE-9389: Enhance gradle logging calls validation: eliminate getMessage() (Andras Salamon via Erick Erickson)
 
 ======================= Lucene 8.5.2 =======================
 

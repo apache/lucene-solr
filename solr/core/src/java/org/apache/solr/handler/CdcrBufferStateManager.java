@@ -32,7 +32,9 @@ import java.nio.charset.Charset;
 /**
  * Manage the state of the update log buffer. It is responsible of synchronising the state
  * through Zookeeper. The state of the buffer is stored in the zk node defined by {@link #getZnodePath()}.
+ * @deprecated since 8.6
  */
+@Deprecated(since = "8.6")
 class CdcrBufferStateManager extends CdcrStateManager {
 
   private CdcrParams.BufferState state = DEFAULT_STATE;

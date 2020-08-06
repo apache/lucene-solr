@@ -42,7 +42,11 @@ import org.apache.solr.util.HdfsUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** @lucene.experimental */
+/**
+ * @lucene.experimental
+ * @deprecated since 8.6
+ */
+@Deprecated
 public class HdfsUpdateLog extends UpdateLog {
   
   private final Object fsLock = new Object();
@@ -211,7 +215,7 @@ public class HdfsUpdateLog extends UpdateLog {
     try {
       versionInfo = new VersionInfo(this, numVersionBuckets);
     } catch (SolrException e) {
-      log.error("Unable to use updateLog: {}", e.getMessage(), e);
+      log.error("Unable to use updateLog: ", e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Unable to use updateLog: " + e.getMessage(), e);
     }

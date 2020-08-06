@@ -58,8 +58,8 @@ public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> ext
     private final int oneReverseMul;
     private final FieldComparator<?> oneComparator;
     
-    public OneComparatorFieldValueHitQueue(SortField[] fields, int size) {
-      super(fields, size);
+    public OneComparatorFieldValueHitQueue(SortField[] fields, int size, boolean filterNonCompetitiveDocs) {
+      super(fields, size, filterNonCompetitiveDocs);
 
       assert fields.length == 1;
       oneComparator = comparators[0];
@@ -95,8 +95,8 @@ public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> ext
    */
   private static final class MultiComparatorsFieldValueHitQueue<T extends FieldValueHitQueue.Entry> extends FieldValueHitQueue<T> {
 
-    public MultiComparatorsFieldValueHitQueue(SortField[] fields, int size) {
-      super(fields, size);
+    public MultiComparatorsFieldValueHitQueue(SortField[] fields, int size, boolean filterNonCompetitiveDocs) {
+      super(fields, size, filterNonCompetitiveDocs);
     }
   
     @Override
@@ -121,7 +121,7 @@ public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> ext
   }
   
   // prevent instantiation and extension.
-  private FieldValueHitQueue(SortField[] fields, int size) {
+  private FieldValueHitQueue(SortField[] fields, int size, boolean filterNonCompetitiveDocs) {
     super(size);
     // When we get here, fields.length is guaranteed to be > 0, therefore no
     // need to check it again.
@@ -135,9 +135,15 @@ public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> ext
     reverseMul = new int[numComparators];
     for (int i = 0; i < numComparators; ++i) {
       SortField field = fields[i];
-
       reverseMul[i] = field.reverse ? -1 : 1;
-      comparators[i] = field.getComparator(size, i);
+      if (i == 0 && filterNonCompetitiveDocs) {
+        // try to rewrite the 1st comparator to the comparator that can skip non-competitive documents
+        // skipping functionality is beneficial only for the 1st comparator
+        comparators[i] = FilteringFieldComparator.wrapToFilteringComparator(field.getComparator(size, i),
+            field.reverse, numComparators == 1);
+      } else {
+        comparators[i] = field.getComparator(size, i);
+      }
     }
   }
 
@@ -152,17 +158,20 @@ public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> ext
    *          priority first); cannot be <code>null</code> or empty
    * @param size
    *          The number of hits to retain. Must be greater than zero.
+   * @param filterNonCompetitiveDocs
+   *    {@code true} If comparators should be allowed to filter non-competitive documents, {@code false} otherwise
    */
-  public static <T extends FieldValueHitQueue.Entry> FieldValueHitQueue<T> create(SortField[] fields, int size) {
+  public static <T extends FieldValueHitQueue.Entry> FieldValueHitQueue<T> create(SortField[] fields, int size,
+      boolean filterNonCompetitiveDocs) {
 
     if (fields.length == 0) {
       throw new IllegalArgumentException("Sort must contain at least one field");
     }
 
     if (fields.length == 1) {
-      return new OneComparatorFieldValueHitQueue<>(fields, size);
+      return new OneComparatorFieldValueHitQueue<>(fields, size, filterNonCompetitiveDocs);
     } else {
-      return new MultiComparatorsFieldValueHitQueue<>(fields, size);
+      return new MultiComparatorsFieldValueHitQueue<>(fields, size, filterNonCompetitiveDocs);
     }
   }
   

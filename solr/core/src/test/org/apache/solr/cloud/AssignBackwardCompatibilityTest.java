@@ -51,7 +51,6 @@ public class AssignBackwardCompatibilityTest extends SolrCloudTestCase {
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-dynamic").resolve("conf"))
         .configure();
     CollectionAdminRequest.createCollection(COLLECTION, 1, 4)
-        .setMaxShardsPerNode(1000)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION, 1, 4);
   }

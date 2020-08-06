@@ -342,7 +342,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
         "-confname", dstConfigName,
         "-confdir", srcConfigSet,
         "-zkHost", zkAddr,
-        "-configsetsDir", configSetDir.toAbsolutePath().toString(),
+        "-configsetsDir", configSetDir.toString(),
     };
 
     SolrCLI.ConfigSetUploadTool tool = new SolrCLI.ConfigSetUploadTool();

@@ -23,7 +23,12 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
@@ -36,7 +41,9 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MergeInfo;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOSupplier;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
+import org.apache.lucene.util.ThreadInterruptedException;
 
 /**
  * <p>Expert: a MergePolicy determines the sequence of
@@ -76,7 +83,7 @@ public abstract class MergePolicy {
    * @lucene.experimental */
   public static class OneMergeProgress {
     /** Reason for pausing the merge thread. */
-    public static enum PauseReason {
+    public enum PauseReason {
       /** Stopped (because of throughput rate set to 0, typically). */
       STOPPED,
       /** Temporarily paused because of exceeded throughput rate. */
@@ -196,6 +203,7 @@ public abstract class MergePolicy {
    *
    * @lucene.experimental */
   public static class OneMerge {
+    private final CompletableFuture<Boolean> mergeCompleted = new CompletableFuture<>();
     SegmentCommitInfo info;         // used by IndexWriter
     boolean registerDone;           // used by IndexWriter
     long mergeGen;                  // used by IndexWriter
@@ -208,8 +216,7 @@ public abstract class MergePolicy {
     // Sum of sizeInBytes of all SegmentInfos; set by IW.mergeInit
     volatile long totalMergeBytes;
 
-    List<SegmentReader> readers;        // used by IndexWriter
-    List<Bits> hardLiveDocs;        // used by IndexWriter
+    private List<MergeReader> mergeReaders;        // used by IndexWriter
 
     /** Segments to be merged. */
     public final List<SegmentCommitInfo> segments;
@@ -222,7 +229,7 @@ public abstract class MergePolicy {
     volatile long mergeStartNS = -1;
 
     /** Total number of documents in segments to be merged, not accounting for deletions. */
-    public final int totalMaxDoc;
+    final int totalMaxDoc;
     Throwable error;
 
     /** Sole constructor.
@@ -233,14 +240,10 @@ public abstract class MergePolicy {
         throw new RuntimeException("segments must include at least one segment");
       }
       // clone the list, as the in list may be based off original SegmentInfos and may be modified
-      this.segments = new ArrayList<>(segments);
-      int count = 0;
-      for(SegmentCommitInfo info : segments) {
-        count += info.info.maxDoc();
-      }
-      totalMaxDoc = count;
-
+      this.segments = List.copyOf(segments);
+      totalMaxDoc = segments.stream().mapToInt(i -> i.info.maxDoc()).sum();
       mergeProgress = new OneMergeProgress();
+      mergeReaders = List.of();
     }
 
     /** 
@@ -250,9 +253,29 @@ public abstract class MergePolicy {
     public void mergeInit() throws IOException {
       mergeProgress.setMergeThread(Thread.currentThread());
     }
-    
-    /** Called by {@link IndexWriter} after the merge is done and all readers have been closed. */
-    public void mergeFinished() throws IOException {
+
+    /** Called by {@link IndexWriter} after the merge is done and all readers have been closed.
+     * @param success true iff the merge finished successfully ie. was committed
+     * @param segmentDropped true iff the merged segment was dropped since it was fully deleted
+     */
+    public void mergeFinished(boolean success, boolean segmentDropped) throws IOException {
+    }
+
+    /**
+     * Closes this merge and releases all merge readers
+     */
+    final void close(boolean success, boolean segmentDropped, IOUtils.IOConsumer<MergeReader> readerConsumer) throws IOException {
+      // this method is final to ensure we never miss a super call to cleanup and finish the merge
+      if (mergeCompleted.complete(success) == false) {
+        throw new IllegalStateException("merge has already finished");
+      }
+      try {
+        mergeFinished(success, segmentDropped);
+      } finally {
+        final List<MergeReader> readers = mergeReaders;
+        mergeReaders = List.of();
+        IOUtils.applyToAll(readers, readerConsumer);
+      }
     }
 
     /** Wrap the reader in order to add/remove information to the merged segment. */
@@ -362,6 +385,71 @@ public abstract class MergePolicy {
     public OneMergeProgress getMergeProgress() {
       return mergeProgress;
     }
+
+    /**
+     * Waits for this merge to be completed
+     * @return true if the merge finished within the specified timeout
+     */
+    boolean await(long timeout, TimeUnit timeUnit) {
+      try {
+        mergeCompleted.get(timeout, timeUnit);
+        return true;
+      } catch (InterruptedException e) {
+        throw new ThreadInterruptedException(e);
+      } catch (ExecutionException | TimeoutException e) {
+        return false;
+      }
+    }
+
+    /**
+     * Returns true if the merge has finished or false if it's still running or
+     * has not been started. This method will not block.
+     */
+    boolean hasFinished() {
+      return mergeCompleted.isDone();
+    }
+
+    /**
+     * Returns true iff the merge completed successfully or false if the merge succeeded with a failure.
+     * This method will not block and return an empty Optional if the merge has not finished yet
+     */
+    Optional<Boolean> hasCompletedSuccessfully() {
+      return Optional.ofNullable(mergeCompleted.getNow(null));
+    }
+
+
+    /**
+     * Called just before the merge is applied to IndexWriter's SegmentInfos
+     */
+    void onMergeComplete() {
+    }
+
+    /**
+     * Sets the merge readers for this merge.
+     */
+    void initMergeReaders(IOUtils.IOFunction<SegmentCommitInfo, MergeReader> readerFactory) throws IOException {
+      assert mergeReaders.isEmpty() : "merge readers must be empty";
+      assert mergeCompleted.isDone() == false : "merge is already done";
+      final ArrayList<MergeReader> readers = new ArrayList<>(segments.size());
+      try {
+        for (final SegmentCommitInfo info : segments) {
+          // Hold onto the "live" reader; we will use this to
+          // commit merged deletes
+          readers.add(readerFactory.apply(info));
+        }
+      } finally {
+        // ensure we assign this to close them in the case of an exception
+        this.mergeReaders = List.copyOf(readers); // we do a copy here to ensure that mergeReaders are an immutable list
+      }
+    }
+
+    /**
+     * Returns the merge readers or an empty list if the readers were not initialized yet.
+     */
+    List<MergeReader> getMergeReader() {
+      return mergeReaders;
+    }
+
   }
 
   /**
@@ -398,6 +486,22 @@ public abstract class MergePolicy {
         b.append("  ").append(1 + i).append(": ").append(merges.get(i).segString());
       }
       return b.toString();
+    }
+
+    /**
+     * Waits if necessary for at most the given time for all merges.
+     */
+    boolean await(long timeout, TimeUnit unit) {
+      try {
+        CompletableFuture<Void> future = CompletableFuture.allOf(merges.stream()
+            .map(m -> m.mergeCompleted).collect(Collectors.toList()).toArray(CompletableFuture<?>[]::new));
+        future.get(timeout, unit);
+        return true;
+      } catch (InterruptedException e) {
+        throw new ThreadInterruptedException(e);
+      } catch (ExecutionException | TimeoutException e) {
+        return false;
+      }
     }
   }
 
@@ -500,7 +604,7 @@ public abstract class MergePolicy {
  *          an original segment present in the
  *          to-be-merged index; else, it was a segment
  *          produced by a cascaded merge.
-   * @param mergeContext the IndexWriter to find the merges on
+   * @param mergeContext the MergeContext to find the merges on
    */
   public abstract MergeSpecification findForcedMerges(
       SegmentInfos segmentInfos, int maxSegmentCount, Map<SegmentCommitInfo,Boolean> segmentsToMerge, MergeContext mergeContext)
@@ -511,10 +615,34 @@ public abstract class MergePolicy {
    * deletes from the index.
    *  @param segmentInfos
    *          the total set of segments in the index
-   * @param mergeContext the IndexWriter to find the merges on
+   * @param mergeContext the MergeContext to find the merges on
    */
   public abstract MergeSpecification findForcedDeletesMerges(
       SegmentInfos segmentInfos, MergeContext mergeContext) throws IOException;
+
+  /**
+   * Identifies merges that we want to execute (synchronously) on commit. By default, this will do no merging on commit.
+   * If you implement this method in your {@code MergePolicy} you must also set a non-zero timeout using
+   * {@link IndexWriterConfig#setMaxCommitMergeWaitMillis}.
+   *
+   * Any merges returned here will make {@link IndexWriter#commit()} or {@link IndexWriter#prepareCommit()} block until
+   * the merges complete or until {@link IndexWriterConfig#getMaxCommitMergeWaitMillis()} has elapsed. This may be
+   * used to merge small segments that have just been flushed as part of the commit, reducing the number of segments in
+   * the commit. If a merge does not complete in the allotted time, it will continue to execute, and eventually finish and
+   * apply to future commits, but will not be reflected in the current commit.
+   *
+   * If a {@link OneMerge} in the returned {@link MergeSpecification} includes a segment already included in a registered
+   * merge, then {@link IndexWriter#commit()} or {@link IndexWriter#prepareCommit()} will throw a {@link IllegalStateException}.
+   * Use {@link MergeContext#getMergingSegments()} to determine which segments are currently registered to merge.
+   *
+   * @param mergeTrigger the event that triggered the merge (COMMIT or FULL_FLUSH).
+   * @param segmentInfos the total set of segments in the index (while preparing the commit)
+   * @param mergeContext the MergeContext to find the merges on, which should be used to determine which segments are
+ *                     already in a registered merge (see {@link MergeContext#getMergingSegments()}).
+   */
+  public MergeSpecification findFullFlushMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext) throws IOException {
+    return null;
+  }
 
   /**
    * Returns true if a new segment (regardless of its origin) should use the
@@ -691,5 +819,15 @@ public abstract class MergePolicy {
      * Returns an unmodifiable set of segments that are currently merging.
      */
     Set<SegmentCommitInfo> getMergingSegments();
+  }
+
+  final static class MergeReader {
+    final SegmentReader reader;
+    final Bits hardLiveDocs;
+
+    MergeReader(SegmentReader reader, Bits hardLiveDocs) {
+      this.reader = reader;
+      this.hardLiveDocs = hardLiveDocs;
+    }
   }
 }

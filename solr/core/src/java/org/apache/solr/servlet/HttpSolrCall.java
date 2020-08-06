@@ -113,6 +113,7 @@ import org.apache.solr.util.tracing.GlobalTracer;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MarkerFactory;
 
 import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
@@ -473,7 +474,7 @@ public class HttpSolrCall {
     log.debug("AuthorizationContext : {}", context);
     AuthorizationResponse authResponse = cores.getAuthorizationPlugin().authorize(context);
     int statusCode = authResponse.statusCode;
-    
+
     if (statusCode == AuthorizationResponse.PROMPT.statusCode) {
       @SuppressWarnings({"unchecked"})
       Map<String, String> headers = (Map) getReq().getAttribute(AuthenticationPlugin.class.getName());
@@ -492,7 +493,7 @@ public class HttpSolrCall {
     }
     if (statusCode == AuthorizationResponse.FORBIDDEN.statusCode) {
       if (log.isDebugEnabled()) {
-        log.debug("UNAUTHORIZED auth header {} context : {}, msg: {}", req.getHeader("Authorization"), context, authResponse.getMessage());
+        log.debug("UNAUTHORIZED auth header {} context : {}, msg: {}", req.getHeader("Authorization"), context, authResponse.getMessage()); // logOk
       }
       sendError(statusCode,
           "Unauthorized request, Response code: " + statusCode);
@@ -502,7 +503,7 @@ public class HttpSolrCall {
       return RETURN;
     }
     if (!(statusCode == HttpStatus.SC_ACCEPTED) && !(statusCode == HttpStatus.SC_OK)) {
-      log.warn("ERROR {} during authentication: {}", statusCode, authResponse.getMessage());
+      log.warn("ERROR {} during authentication: {}", statusCode, authResponse.getMessage()); // logOk
       sendError(statusCode,
           "ERROR during authorization, Response code: " + statusCode);
       if (shouldAudit(EventType.ERROR)) {
@@ -610,7 +611,7 @@ public class HttpSolrCall {
         cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.ERROR, ex, req));
       }
       sendError(ex);
-      // walk the the entire cause chain to search for an Error
+      // walk the entire cause chain to search for an Error
       Throwable t = ex;
       while (t != null) {
         if (t instanceof Error) {
@@ -637,7 +638,7 @@ public class HttpSolrCall {
   private boolean shouldAuthorize() {
     if(PublicKeyHandler.PATH.equals(path)) return false;
     //admin/info/key is the path where public key is exposed . it is always unsecured
-    if ("/".equals(path) || "/solr/".equals(path)) return false; // Static Admin UI files must always be served 
+    if ("/".equals(path) || "/solr/".equals(path)) return false; // Static Admin UI files must always be served
     if (cores.getPkiAuthenticationPlugin() != null && req.getUserPrincipal() != null) {
       boolean b = cores.getPkiAuthenticationPlugin().needsAuthorization(req);
       log.debug("PkiAuthenticationPlugin says authorization required : {} ", b);
@@ -816,8 +817,10 @@ public class HttpSolrCall {
     SolrCore.preDecorateResponse(solrReq, solrResp);
     handleAdmin(solrResp);
     SolrCore.postDecorateResponse(handler, solrReq, solrResp);
-    if (log.isInfoEnabled() && solrResp.getToLog().size() > 0) {
-      log.info(solrResp.getToLogAsString("[admin]"));
+    if (solrResp.getToLog().size() > 0) {
+      if (log.isInfoEnabled()) { // has to come second and in it's own if to keep ./gradlew check happy.
+        log.info(handler != null ? MarkerFactory.getMarker(handler.getClass().getName()) : MarkerFactory.getMarker(HttpSolrCall.class.getName()), solrResp.getToLogAsString("[admin]"));
+      }
     }
     QueryResponseWriter respWriter = SolrCore.DEFAULT_RESPONSE_WRITERS.get(solrReq.getParams().get(CommonParams.WT));
     if (respWriter == null) respWriter = getResponseWriter();
@@ -1131,10 +1134,15 @@ public class HttpSolrCall {
       }
 
       @Override
+      public String getUserName() {
+        return getReq().getRemoteUser();
+      }
+
+      @Override
       public String getHttpHeader(String s) {
         return getReq().getHeader(s);
       }
-      
+
       @Override
       public Enumeration<String> getHeaderNames() {
         return getReq().getHeaderNames();
@@ -1149,7 +1157,7 @@ public class HttpSolrCall {
       public RequestType getRequestType() {
         return requestType;
       }
-      
+
       public String getResource() {
         return path;
       }
@@ -1173,7 +1181,7 @@ public class HttpSolrCall {
         }
         if(collectionRequests.size() > 0)
           response.delete(response.length() - 1, response.length());
-        
+
         response.append("], Path: [").append(resource).append("]");
         response.append(" path : ").append(path).append(" params :").append(getParams());
         return response.toString();
@@ -1197,11 +1205,10 @@ public class HttpSolrCall {
   static final String CONTENT_LENGTH_HEADER = "Content-Length";
   List<CommandOperation> parsedCommands;
 
-  @SuppressWarnings({"unchecked"})
   public List<CommandOperation> getCommands(boolean validateInput) {
     if (parsedCommands == null) {
       Iterable<ContentStream> contentStreams = solrReq.getContentStreams();
-      if (contentStreams == null) parsedCommands = Collections.EMPTY_LIST;
+      if (contentStreams == null) parsedCommands = Collections.emptyList();
       else {
         parsedCommands = ApiBag.getCommandOperations(contentStreams.iterator().next(), getValidators(), validateInput);
       }

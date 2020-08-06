@@ -54,7 +54,7 @@ import org.apache.lucene.store.AlreadyClosedException;
  * <P>
  * This order is important, otherwise it would be possible for the main index
  * to refer to a category which is not yet visible in the old snapshot of
- * the taxonomy. Note that it is indeed fine for the the taxonomy to be opened
+ * the taxonomy. Note that it is indeed fine for the taxonomy to be opened
  * after the main index - even a long time after. The reason is that once
  * a category is added to the taxonomy, it can never be changed or deleted,
  * so there is no danger that a "too new" taxonomy not being consistent with

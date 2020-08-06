@@ -106,7 +106,7 @@ public abstract class SolrScraper implements Closeable {
         queryResponse = client.request(queryRequest, query.getCollection().get());
       }
     } catch (SolrServerException | IOException e) {
-      log.error("failed to request: {} {}", queryRequest.getPath(), e.getMessage());
+      log.error("failed to request: {}", queryRequest.getPath(), e);
     }
 
     JsonNode jsonNode = OBJECT_MAPPER.readTree((String) queryResponse.get("response"));

@@ -29,13 +29,8 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 
-import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.noggit.JSONWriter;
 
-import static org.apache.solr.common.cloud.ZkStateReader.AUTO_ADD_REPLICAS;
-import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.READ_ONLY;
@@ -46,7 +41,6 @@ import static org.apache.solr.common.util.Utils.toJSONString;
 /**
  * Models a Collection in zookeeper (but that Java name is obviously taken, hence "DocCollection")
  */
-@SuppressWarnings({"overrides"})
 public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
 
   public static final String DOC_ROUTER = "router";
@@ -68,9 +62,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   private final Integer numNrtReplicas;
   private final Integer numTlogReplicas;
   private final Integer numPullReplicas;
-  private final Integer maxShardsPerNode;
-  private final Boolean autoAddReplicas;
-  private final String policy;
   private final Boolean readOnly;
 
   public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router) {
@@ -97,10 +88,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     this.numNrtReplicas = (Integer) verifyProp(props, NRT_REPLICAS, 0);
     this.numTlogReplicas = (Integer) verifyProp(props, TLOG_REPLICAS, 0);
     this.numPullReplicas = (Integer) verifyProp(props, PULL_REPLICAS, 0);
-    this.maxShardsPerNode = (Integer) verifyProp(props, MAX_SHARDS_PER_NODE);
-    Boolean autoAddReplicas = (Boolean) verifyProp(props, AUTO_ADD_REPLICAS);
-    this.policy = (String) props.get(Policy.POLICY);
-    this.autoAddReplicas = autoAddReplicas == null ? Boolean.FALSE : autoAddReplicas;
     Boolean readOnly = (Boolean) verifyProp(props, READ_ONLY);
     this.readOnly = readOnly == null ? Boolean.FALSE : readOnly;
     
@@ -148,13 +135,11 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     Object o = props.get(propName);
     if (o == null) return def;
     switch (propName) {
-      case MAX_SHARDS_PER_NODE:
       case REPLICATION_FACTOR:
       case NRT_REPLICAS:
       case PULL_REPLICAS:
       case TLOG_REPLICAS:
         return Integer.parseInt(o.toString());
-      case AUTO_ADD_REPLICAS:
       case READ_ONLY:
         return Boolean.parseBoolean(o.toString());
       case "snitch":
@@ -254,18 +239,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     return replicationFactor;
   }
   
-  public boolean getAutoAddReplicas() {
-    return autoAddReplicas;
-  }
-  
-  public int getMaxShardsPerNode() {
-    if (maxShardsPerNode == null) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, MAX_SHARDS_PER_NODE + " is not in the cluster state.");
-    }
-    //maxShardsPerNode=0 when policy is used. This variable is not important then
-    return maxShardsPerNode == 0 ? Integer.MAX_VALUE : maxShardsPerNode;
-  }
-
   public DocRouter getRouter() {
     return router;
   }
@@ -383,10 +356,10 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     return super.equals(that) && Objects.equals(this.name, other.name) && this.znodeVersion == other.znodeVersion;
   }
 
-//  @Override
-//  public int hashCode() {
-//    throw new UnsupportedOperationException("TODO unimplemented DocCollection.hashCode");
-//  }
+  @Override
+  public int hashCode() {
+    return Objects.hash(name, znodeVersion);
+  }
 
   /**
    * @return the number of replicas of type {@link org.apache.solr.common.cloud.Replica.Type#NRT} this collection was created with
@@ -407,13 +380,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    */
   public Integer getNumPullReplicas() {
     return numPullReplicas;
-  }
-
-  /**
-   * @return the policy associated with this collection if any
-   */
-  public String getPolicyName() {
-    return policy;
   }
 
   public int getExpectedReplicaCount(Replica.Type type, int def) {

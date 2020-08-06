@@ -50,7 +50,7 @@ public class RetryUtil {
       } catch (Throwable t) {
         if (isInstanceOf(classes, t) && System.nanoTime() < timeout) {
           if (log.isInfoEnabled()) {
-            log.info("Retry due to Throwable, {} {}", t.getClass().getName(), t.getMessage());
+            log.info("Retry due to Throwable, {} ", t.getClass().getName(), t);
           }
           Thread.sleep(intervalms);
           continue;

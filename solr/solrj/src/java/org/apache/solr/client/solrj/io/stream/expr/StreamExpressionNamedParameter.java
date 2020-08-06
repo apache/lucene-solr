@@ -17,10 +17,11 @@
 package org.apache.solr.client.solrj.io.stream.expr;
 
 
+import java.util.Objects;
+
 /**
  * Provides a named parameter
  */
-@SuppressWarnings({"overrides"})
 public class StreamExpressionNamedParameter implements StreamExpressionParameter {
   private String name;
   private StreamExpressionParameter parameter;
@@ -105,5 +106,10 @@ public class StreamExpressionNamedParameter implements StreamExpressionParameter
     }
     
     return this.parameter.equals(check.parameter);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(name);
   }
 }

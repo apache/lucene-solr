@@ -16,10 +16,11 @@
  */
 package org.apache.solr.client.solrj.io.stream.expr;
 
-/** 
+import java.util.Objects;
+
+/**
  * Basic string stream expression
  */
-@SuppressWarnings({"overrides"})
 public class StreamExpressionValue implements StreamExpressionParameter {
   
   private String value;
@@ -62,5 +63,10 @@ public class StreamExpressionValue implements StreamExpressionParameter {
     }
     
     return this.value.equals(((StreamExpressionValue)other).value);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(value);
   }
 }

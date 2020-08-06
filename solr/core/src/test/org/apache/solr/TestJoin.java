@@ -177,6 +177,7 @@ public class TestJoin extends SolrTestCaseJ4 {
 
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testRandomJoin() throws Exception {
     int indexIter=50 * RANDOM_MULTIPLIER;
     int queryIter=50 * RANDOM_MULTIPLIER;
@@ -207,7 +208,9 @@ public class TestJoin extends SolrTestCaseJ4 {
       types.add(new FldType("small_is_dv",ZERO_ONE, new IRange(0,5+indexSize/3)));
 
       clearIndex();
+      @SuppressWarnings({"rawtypes"})
       Map<Comparable, Doc> model = indexDocs(types, null, indexSize);
+      @SuppressWarnings({"rawtypes"})
       Map<String, Map<Comparable, Set<Comparable>>> pivots = new HashMap<>();
 
       for (int qiter=0; qiter<queryIter; qiter++) {
@@ -228,6 +231,7 @@ public class TestJoin extends SolrTestCaseJ4 {
           toField = group[random().nextInt(group.length)];
         }
 
+        @SuppressWarnings({"rawtypes"})
         Map<Comparable, Set<Comparable>> pivot = pivots.get(fromField+"/"+toField);
         if (pivot == null) {
           pivot = createJoinMap(model, fromField, toField);
@@ -235,10 +239,12 @@ public class TestJoin extends SolrTestCaseJ4 {
         }
 
         Collection<Doc> fromDocs = model.values();
+        @SuppressWarnings({"rawtypes"})
         Set<Comparable> docs = join(fromDocs, pivot);
         List<Doc> docList = new ArrayList<>(docs.size());
-        for (Comparable id : docs) docList.add(model.get(id));
+        for (@SuppressWarnings({"rawtypes"})Comparable id : docs) docList.add(model.get(id));
         Collections.sort(docList, createComparator("_docid_",true,false,false,false));
+        @SuppressWarnings({"rawtypes"})
         List sortedDocs = new ArrayList();
         for (Doc doc : docList) {
           if (sortedDocs.size() >= 10) break;
@@ -279,6 +285,7 @@ public class TestJoin extends SolrTestCaseJ4 {
   }
 
 
+  @SuppressWarnings({"rawtypes"})
   Map<Comparable, Set<Comparable>> createJoinMap(Map<Comparable, Doc> model, String fromField, String toField) {
     Map<Comparable, Set<Comparable>> id_to_id = new HashMap<>();
 
@@ -305,9 +312,12 @@ public class TestJoin extends SolrTestCaseJ4 {
   }
 
 
+  @SuppressWarnings({"rawtypes"})
   Set<Comparable> join(Collection<Doc> input, Map<Comparable, Set<Comparable>> joinMap) {
+    @SuppressWarnings({"rawtypes"})
     Set<Comparable> ids = new HashSet<>();
     for (Doc doc : input) {
+      @SuppressWarnings({"rawtypes"})
       Collection<Comparable> output = joinMap.get(doc.id);
       if (output == null) continue;
       ids.addAll(output);

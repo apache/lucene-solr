@@ -145,7 +145,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
                   return false;
                 } else {
                   Principal principal = new BasicAuthUserPrincipal(username, pwd);
-                  request = wrapWithPrincipal(request, principal);
+                  request = wrapWithPrincipal(request, principal, username);
                   numAuthenticated.inc();
                   filterChain.doFilter(request, response);
                   return true;

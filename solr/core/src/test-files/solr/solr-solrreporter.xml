@@ -17,6 +17,8 @@
 -->
 
 <solr>
+  <str name="allowPaths">${solr.allowPaths:}</str>
+
   <shardHandlerFactory name="shardHandlerFactory" class="HttpShardHandlerFactory">
     <str name="urlScheme">${urlScheme:}</str>
     <int name="socketTimeout">${socketTimeout:90000}</int>
