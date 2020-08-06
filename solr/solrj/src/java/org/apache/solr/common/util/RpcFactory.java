@@ -18,7 +18,6 @@ package org.apache.solr.common.util;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.Replica;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,7 +34,7 @@ import java.util.function.Function;
  * c) serialization/deserialization is the responsibility of the code that is making a request
  *
  */
-public interface HttpRpcFactory {
+public interface RpcFactory {
 
     CallRouter createCallRouter();
 
