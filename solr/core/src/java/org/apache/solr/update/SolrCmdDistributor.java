@@ -26,18 +26,12 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.CompletionService;
-import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.Future;
 
 import io.opentracing.Span;
 import io.opentracing.Tracer;
 import io.opentracing.propagation.Format;
 import org.apache.http.NoHttpResponseException;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
@@ -70,49 +64,37 @@ public class SolrCmdDistributor implements Closeable {
   private int retryPause = 500;
   
   private final List<Error> allErrors = new ArrayList<>();
-  private final List<Error> errors = Collections.synchronizedList(new ArrayList<Error>());
-  
-  private final CompletionService<Object> completionService;
-  private final Set<Future<Object>> pending = new HashSet<>();
-  
-  public static interface AbortCheck {
-    public boolean abortCheck();
-  }
-  
+
   public SolrCmdDistributor(UpdateShardHandler updateShardHandler) {
     this.clients = new StreamingSolrClients(updateShardHandler);
-    this.completionService = new ExecutorCompletionService<>(updateShardHandler.getUpdateExecutor());
   }
   
   /* For tests only */
   SolrCmdDistributor(StreamingSolrClients clients, int retryPause) {
     this.clients = clients;
     this.retryPause = retryPause;
-    completionService = new ExecutorCompletionService<>(clients.getUpdateExecutor());
   }
   
-  public void finish() {    
+  public void finish() {
+    if (finished)
+      return;
     try {
-      assert !finished : "lifecycle sanity check";
       finished = true;
 
       blockAndDoRetries();
     } catch (IOException e) {
       log.warn("Unable to finish sending updates", e);
-    } finally {
-      clients.shutdown();
     }
   }
   
   public void close() {
-    clients.shutdown();
+    clients.finishStreams();
   }
 
   private void doRetriesIfNeeded() throws IOException {
     // NOTE: retries will be forwards to a single url
     
-    List<Error> errors = new ArrayList<>(this.errors);
-    errors.addAll(clients.getErrors());
+    List<Error> errors = new ArrayList<>(clients.getErrors());
     List<Error> resubmitList = new ArrayList<>();
     
     if (log.isInfoEnabled() && errors.size() > 0) {
@@ -150,6 +132,8 @@ public class SolrCmdDistributor implements Closeable {
           err.req.retries++;
           resubmitList.add(err);
         } else {
+          // only track the error if we are not retrying the request
+          err.req.trackRequestResult(null, false);
           allErrors.add(err);
         }
       } catch (Exception e) {
@@ -173,7 +157,6 @@ public class SolrCmdDistributor implements Closeable {
     }
     
     clients.clearErrors();
-    this.errors.clear();
     for (Error err : resubmitList) {
       if (err.req.node instanceof ForwardNode) {
         SolrException.log(SolrCmdDistributor.log, "forwarding update to "
@@ -188,7 +171,7 @@ public class SolrCmdDistributor implements Closeable {
             + err.req.cmd.toString() + " params:"
             + err.req.uReq.getParams() + " rsp:" + err.statusCode, err.e);
       }
-      submit(err.req, false);
+      submit(err.req);
     }
     
     if (resubmitList.size() > 0) {
@@ -217,7 +200,7 @@ public class SolrCmdDistributor implements Closeable {
       } else {
         uReq.deleteByQuery(cmd.query);
       }
-      submit(new Req(cmd, node, uReq, sync, rollupTracker, leaderTracker), false);
+      submit(new Req(cmd, node, uReq, sync, rollupTracker, leaderTracker));
     }
   }
   
@@ -241,7 +224,7 @@ public class SolrCmdDistributor implements Closeable {
       if (cmd.isInPlaceUpdate()) {
         params.set(DistributedUpdateProcessor.DISTRIB_INPLACE_PREVVERSION, String.valueOf(cmd.prevVersion));
       }
-      submit(new Req(cmd, node, uReq, synchronous, rollupTracker, leaderTracker), false);
+      submit(new Req(cmd, node, uReq, synchronous, rollupTracker, leaderTracker));
     }
     
   }
@@ -258,28 +241,14 @@ public class SolrCmdDistributor implements Closeable {
       uReq.setParams(params);
 
       addCommit(uReq, cmd);
-      submit(new Req(cmd, node, uReq, false), true);
+      submit(new Req(cmd, node, uReq, false));
     }
     
   }
 
   public void blockAndDoRetries() throws IOException {
-    clients.blockUntilFinished();
-    
-    // wait for any async commits to complete
-    while (pending != null && pending.size() > 0) {
-      Future<Object> future = null;
-      try {
-        future = completionService.take();
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        log.error("blockAndDoRetries interrupted", e);
-      }
-      if (future == null) break;
-      pending.remove(future);
-    }
+    clients.finishStreams();
     doRetriesIfNeeded();
-
   }
   
   void addCommit(UpdateRequest ureq, CommitUpdateCommand cmd) {
@@ -288,7 +257,7 @@ public class SolrCmdDistributor implements Closeable {
         : AbstractUpdateRequest.ACTION.COMMIT, false, cmd.waitSearcher, cmd.maxOptimizeSegments, cmd.softCommit, cmd.expungeDeletes, cmd.openSearcher);
   }
 
-  private void submit(final Req req, boolean isCommit) throws IOException {
+  private void submit(final Req req) throws IOException {
     // Copy user principal from the original request to the new update request, for later authentication interceptor use
     if (SolrRequestInfo.getRequestInfo() != null) {
       req.uReq.setUserPrincipal(SolrRequestInfo.getRequestInfo().getReq().getUserPrincipal());
@@ -301,60 +270,13 @@ public class SolrCmdDistributor implements Closeable {
           new SolrRequestCarrier(req.uReq));
     }
 
-    if (req.synchronous) {
-      blockAndDoRetries();
-
-      try {
-        req.uReq.setBasePath(req.node.getUrl());
-        clients.getHttpClient().request(req.uReq);
-      } catch (Exception e) {
-        SolrException.log(log, e);
-        Error error = new Error();
-        error.e = e;
-        error.req = req;
-        if (e instanceof SolrException) {
-          error.statusCode = ((SolrException) e).code();
-        }
-        errors.add(error);
-      }
-      
-      return;
-    }
-    
     if (log.isDebugEnabled()) {
       log.debug("sending update to {} retry: {} {} params {}"
-          , req.node.getUrl(), req.retries, req.cmd, req.uReq.getParams());
+              , req.node.getUrl(), req.retries, req.cmd, req.uReq.getParams());
     }
-    
-    if (isCommit) {
-      // a commit using ConncurrentUpdateSolrServer is not async,
-      // so we make it async to prevent commits from happening
-      // serially across multiple nodes
-      pending.add(completionService.submit(() -> {
-        doRequest(req);
-        return null;
-      }));
-    } else {
-      doRequest(req);
-    }
+    clients.getClient(req).request(req);
   }
-  
-  private void doRequest(final Req req) {
-    try {
-      SolrClient solrClient = clients.getSolrClient(req);
-      solrClient.request(req.uReq);
-    } catch (Exception e) {
-      SolrException.log(log, e);
-      Error error = new Error();
-      error.e = e;
-      error.req = req;
-      if (e instanceof SolrException) {
-        error.statusCode = ((SolrException) e).code();
-      }
-      errors.add(error);
-    }
-  }
-  
+
   public static class Req {
     public Node node;
     public UpdateRequest uReq;
@@ -406,11 +328,11 @@ public class SolrCmdDistributor implements Closeable {
     //
     // In the case of a leaderTracker and rollupTracker both being present, then we need to take care when assembling
     // the final response to check both the rollup and leader trackers on the aggregator node.
-    public void trackRequestResult(org.eclipse.jetty.client.api.Response resp, InputStream respBody, boolean success) {
+    public void trackRequestResult(NamedList<Object> rs, boolean success) {
 
       // Returning Integer.MAX_VALUE here means there was no "rf" on the response, therefore we just need to increment
       // our achieved rf if we are a leader, i.e. have a leaderTracker.
-      int rfFromResp = getRfFromResponse(respBody);
+      int rfFromResp = getRfFromResponse(rs);
 
       if (leaderTracker != null && rfFromResp == Integer.MAX_VALUE) {
         leaderTracker.trackRequestResult(node, success);
@@ -421,11 +343,9 @@ public class SolrCmdDistributor implements Closeable {
       }
     }
 
-    private int getRfFromResponse(InputStream inputStream) {
-      if (inputStream != null) {
+    private int getRfFromResponse(NamedList<Object> nl) {
+      if (nl != null) {
         try {
-          BinaryResponseParser brp = new BinaryResponseParser();
-          NamedList<Object> nl = brp.processResponse(inputStream, null);
           Object hdr = nl.get("responseHeader");
           if (hdr != null && hdr instanceof NamedList) {
             @SuppressWarnings({"unchecked"})
@@ -453,6 +373,7 @@ public class SolrCmdDistributor implements Closeable {
   public static class Error {
     public Exception e;
     public int statusCode = -1;
+    public Boolean retriable;
 
     /**
      * NOTE: This is the request that happened to be executed when this error was <b>triggered</b> the error, 
@@ -465,8 +386,8 @@ public class SolrCmdDistributor implements Closeable {
     public String toString() {
       StringBuilder sb = new StringBuilder();
       sb.append("SolrCmdDistributor$Error: statusCode=").append(statusCode);
-      sb.append("; exception=").append(String.valueOf(e));
-      sb.append("; req=").append(String.valueOf(req));
+      sb.append("; exception=").append(e);
+      sb.append("; req=").append(req);
       return sb.toString();
     }
   }
