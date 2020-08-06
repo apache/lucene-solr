@@ -85,6 +85,10 @@ public interface HttpRpcFactory {
           */
         HttpRpc withResponseConsumer(OutputConsumer sink);
 
+         /**Handle request headers if required
+          */
+        HttpRpc withHeaderConsumer(HeaderConsumer headerConsumer);
+
          /** Use Send a payload
           */
         HttpRpc withPayload(InputSupplier payload);
