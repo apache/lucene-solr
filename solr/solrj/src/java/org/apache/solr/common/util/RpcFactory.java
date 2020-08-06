@@ -60,6 +60,8 @@ public interface RpcFactory {
         /**To any Solr node  that may host this collection
          */
         CallRouter toCollection(String collection);
+
+        CallRouter toCore(String node, String core);
         
         HttpRpc createHttpRpc() ;
     }
