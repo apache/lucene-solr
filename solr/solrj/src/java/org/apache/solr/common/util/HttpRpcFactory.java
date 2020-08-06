@@ -41,6 +41,9 @@ public interface HttpRpcFactory {
 
 
      interface HttpRpc {
+         /**send to a specific node
+          */
+         HttpRpc toNode(String nodeName);
          /** A request is made to the leader of the shard
           *
           */
