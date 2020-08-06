@@ -32,7 +32,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.RpcFactory;
+import org.apache.solr.common.util.HttpRpcFactory;
 
 /**
  * SolrJ client class to communicate with SolrCloud.
@@ -480,9 +480,9 @@ public class CloudSolrClient extends BaseCloudSolrClient {
     }
   }
 
-  private final RpcFactory factory = new RpcFactoryImpl(this);
+  private final HttpRpcFactory factory = new HttpRpcFactoryImpl(this);
 
-  public RpcFactory getRpcFactory() {
+  public HttpRpcFactory getRpcFactory() {
     return factory;
 
   }

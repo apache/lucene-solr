@@ -16,18 +16,18 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import org.apache.solr.common.util.RpcFactory;
+import org.apache.solr.common.util.HttpRpcFactory;
 
-public class RpcFactoryImpl implements RpcFactory  {
+public class HttpRpcFactoryImpl implements HttpRpcFactory {
     private final CloudSolrClient cloudSolrClient;
 
-    RpcFactoryImpl(CloudSolrClient cloudSolrClient) {
+    HttpRpcFactoryImpl(CloudSolrClient cloudSolrClient) {
         this.cloudSolrClient = cloudSolrClient;
     }
 
     @Override
     //TODO
-    public Rpc create() {
+    public HttpRpc create() {
         return null;
     }
 
