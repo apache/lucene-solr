@@ -24,7 +24,10 @@ package org.apache.solr.cluster.placement;
  */
 public interface PlacementPlugin {
   /**
-   * @param cluster initial state of the cluster
+   * @param cluster initial state of the cluster. Note there are {@link java.util.Set}'s and {@link java.util.Map}'s
+   *                accessible from the {@link Cluster} and other reachable instances. These collection will not change
+   *                while the plugin is executing and will be thrown away once the plugin is done. The plugin code can
+   *                therefore modify them if needed.
    * @param placementRequest request for placing new replicas or moving existing replicas on the cluster.
    * @param propertyFactory Factory used by the plugin to build instances of {@link PropertyKey} to resolve properties
    *                        to their values.

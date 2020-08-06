@@ -17,6 +17,7 @@
 
 package org.apache.solr.cluster.placement;
 
+import java.io.IOException;
 import java.util.Optional;
 import java.util.Set;
 
@@ -41,5 +42,5 @@ public interface Cluster extends PropertyValueSource {
    * <p>This is also the reason we do not return a {@link java.util.Map} or {@link Set} of {@link SolrCollection}'s here: it would be
    * wasteful to fetch all data and fill such a map when plugin code likely needs info about at most one or two collections.
    */
-  Optional<SolrCollection> getCollection(String collectionName);
+  Optional<SolrCollection> getCollection(String collectionName) throws IOException;
 }

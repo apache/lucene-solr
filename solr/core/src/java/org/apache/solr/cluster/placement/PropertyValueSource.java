@@ -18,14 +18,17 @@
 package org.apache.solr.cluster.placement;
 
 /**
- * Getting the {@link PropertyValue} for a {@link PropertyKey} involves a "resolution" of that key in a certain context.
+ * <p>Getting the {@link PropertyValue} for a {@link PropertyKey} involves a "resolution" of that key in a certain context.
  * Depending on the type of the key, the context can be the whole {@link Cluster}, a {@link Node}, a {@link SolrCollection},
- * a {@link Shard} or a {@link Replica}. Not all {@link PropertyKey}'s make sense for all {@link PropertyValueSource}'s of course.<p>
+ * a {@link Shard} or a {@link Replica}. Not all {@link PropertyKey}'s make sense for all {@link PropertyValueSource}'s of course.
  *
- * When only one type of {@link PropertyValueSource} is appropriate for a given {@link PropertyKey}, that type (extending
- * {@link PropertyValueSource}) is used instead to reduce confusion.<p>
+ * <p>When only one type of {@link PropertyValueSource} is appropriate for a given {@link PropertyKey}, that type (extending
+ * {@link PropertyValueSource}) is used instead to reduce confusion.
  *
- * This is an empty marker interface that identifies the possible targets for which a {@link PropertyKey} can be defined.
+ * <p>This is an empty marker interface that identifies the possible targets for which a {@link PropertyKey} can be defined.
+ *
+ * <p>Classes implementing this interface will be used as keys in maps and therefore must correctly implement
+ * {@link Object#hashCode()} and {@link Object#equals(Object)}.
  */
 public interface PropertyValueSource {
 }

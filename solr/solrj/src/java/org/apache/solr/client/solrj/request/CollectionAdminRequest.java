@@ -57,6 +57,7 @@ import org.apache.solr.common.util.NamedList;
 
 import static org.apache.solr.common.cloud.DocCollection.RULE;
 import static org.apache.solr.common.cloud.DocCollection.SNITCH;
+import static org.apache.solr.common.cloud.DocCollection.PLACEMENT;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.READ_ONLY;
@@ -85,6 +86,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   public static final java.util.List<String> MODIFIABLE_COLLECTION_PROPERTIES = Arrays.asList(
       RULE,
       SNITCH,
+      PLACEMENT,
       REPLICATION_FACTOR,
       COLL_CONF,
       WITH_COLLECTION,
@@ -446,6 +448,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected Properties properties;
     protected String alias;
     protected String[] rule , snitch;
+    protected String placement;
 
     /** Constructor intended for typical use cases */
     protected Create(String collection, String config, Integer numShards, Integer numNrtReplicas, Integer numTlogReplicas, Integer numPullReplicas) { // TODO: maybe add other constructors
@@ -482,6 +485,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public Create setReplicationFactor(Integer repl) { this.nrtReplicas = repl; return this; }
     public Create setRule(String... s){ this.rule = s; return this; }
     public Create setSnitch(String... s){ this.snitch = s; return this; }
+    public Create setPlacement(String s) { this.placement = s; return this; }
 
     public Create setAlias(String alias) {
       this.alias = alias;
@@ -570,6 +574,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       }
       if (rule != null) params.set(DocCollection.RULE, rule);
       if (snitch != null) params.set(DocCollection.SNITCH, snitch);
+      if (placement != null) params.set(DocCollection.PLACEMENT, placement);
       params.setNonNull(ALIAS, alias);
       return params;
     }

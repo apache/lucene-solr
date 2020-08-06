@@ -15,11 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cluster.placement;
+package org.apache.solr.cluster.placement.impl;
 
-/**
- * Representation of a SolrCloud node or server in the SolrCloud cluster.
- */
-public interface Node extends PropertyValueSource {
-  String getNodeName();
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.apache.solr.cluster.placement.Node;
+
+class NodeImpl implements Node {
+  public final String nodeName;
+
+  /**
+   * Transforms a set of node names into a set of {@link Node} instances.
+   */
+  static Set<Node> getNodes(Set<String> nodeNames) {
+    return nodeNames.stream().map(NodeImpl::new).collect(Collectors.toSet());
+  }
+
+  NodeImpl(String nodeName) {
+    this.nodeName = nodeName;
+  }
+
+  @Override
+  public String getNodeName() {
+    return nodeName;
+  }
+
+  // TODO implement hashCode() and equals()
 }

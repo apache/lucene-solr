@@ -25,6 +25,8 @@ import java.util.Map;
 public interface Shard extends PropertyValueSource {
   String getShardName();
 
+  SolrCollection getCollection();
+
   /**
    * <p>The {@link Replica} of this {@link Shard}.
    *

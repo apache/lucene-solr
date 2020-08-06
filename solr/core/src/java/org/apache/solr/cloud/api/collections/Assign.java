@@ -44,6 +44,8 @@ import org.apache.solr.client.solrj.cloud.BadVersionException;
 import org.apache.solr.client.solrj.cloud.VersionedData;
 import org.apache.solr.cloud.rule.ReplicaAssigner;
 import org.apache.solr.cloud.rule.Rule;
+import org.apache.solr.cluster.placement.impl.PlacementPluginAssignStrategy;
+import org.apache.solr.cluster.placement.plugins.SamplePluginMinimizeCores;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -553,13 +555,16 @@ public class Assign {
 
     public AssignStrategy create(ClusterState clusterState, CloudConfig cloudConfig, DocCollection collection) throws IOException, InterruptedException {
       @SuppressWarnings({"unchecked", "rawtypes"})
-      List<Map> ruleMaps = (List<Map>) collection.get("rule");
-      @SuppressWarnings({"rawtypes"})
-      List snitches = (List) collection.get(SNITCH);
+      List<Map> ruleMaps = (List<Map>) collection.get(DocCollection.RULE);
+      @SuppressWarnings({"unchecked", "rawtypes"})
+      String placement = (String) collection.get(DocCollection.PLACEMENT);
+
 
       Strategy strategy = null;
       if (ruleMaps != null && !ruleMaps.isEmpty()) {
         strategy = Strategy.RULES;
+      } else if (placement != null) {
+        strategy = Strategy.PLUGIN_PLACEMENT;
       } else {
         strategy = Strategy.LEGACY;        
       }
@@ -570,14 +575,20 @@ public class Assign {
         case RULES:
           List<Rule> rules = new ArrayList<>();
           for (Object map : ruleMaps) rules.add(new Rule((Map) map));
+          @SuppressWarnings({"rawtypes"})
+          List snitches = (List) collection.get(SNITCH);
           return new RulesBasedAssignStrategy(rules, snitches, clusterState);
+        case PLUGIN_PLACEMENT:
+          // TODO need to decide which plugin class to use. Global config (single plugin for all PLUGIN_PLACEMENT collections?) or per collection config?
+          // TODO hardconding a sample plugin for now. DO NOT MERGE this as is.
+          return new PlacementPluginAssignStrategy(new SamplePluginMinimizeCores());
         default:
           throw new Assign.AssignmentException("Unknown strategy type: " + strategy);
       }
     }
 
     private enum Strategy {
-      LEGACY, RULES;
+      LEGACY, RULES, PLUGIN_PLACEMENT;
     }
   }
 }

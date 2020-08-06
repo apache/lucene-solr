@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cluster.placement;
+package org.apache.solr.cluster.placement.plugins;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,6 +27,21 @@ import java.util.Map;
 
 import com.google.common.collect.Ordering;
 import com.google.common.collect.TreeMultimap;
+import org.apache.solr.cluster.placement.Cluster;
+import org.apache.solr.cluster.placement.CoresCountPropertyValue;
+import org.apache.solr.cluster.placement.CreateNewCollectionRequest;
+import org.apache.solr.cluster.placement.Node;
+import org.apache.solr.cluster.placement.PlacementException;
+import org.apache.solr.cluster.placement.PlacementPlugin;
+import org.apache.solr.cluster.placement.PropertyKey;
+import org.apache.solr.cluster.placement.PropertyKeyFactory;
+import org.apache.solr.cluster.placement.PropertyValue;
+import org.apache.solr.cluster.placement.PropertyValueFetcher;
+import org.apache.solr.cluster.placement.Replica;
+import org.apache.solr.cluster.placement.ReplicaPlacement;
+import org.apache.solr.cluster.placement.Request;
+import org.apache.solr.cluster.placement.WorkOrder;
+import org.apache.solr.cluster.placement.WorkOrderFactory;
 import org.apache.solr.common.util.SuppressForbidden;
 
 /**
@@ -39,7 +54,7 @@ public class SamplePluginMinimizeCores implements PlacementPlugin {
 
   @SuppressForbidden(reason = "Ordering.arbitrary() has no equivalent in Comparator class. Rather reuse than copy.")
   public WorkOrder computePlacement(Cluster cluster, Request placementRequest, PropertyKeyFactory propertyFactory,
-                                          PropertyValueFetcher propertyFetcher, WorkOrderFactory workOrderFactory) throws PlacementException {
+                                    PropertyValueFetcher propertyFetcher, WorkOrderFactory workOrderFactory) throws PlacementException {
     // This plugin only supports Creating a collection.
     if (!(placementRequest instanceof CreateNewCollectionRequest)) {
       throw new PlacementException("This toy plugin only supports creating collections");

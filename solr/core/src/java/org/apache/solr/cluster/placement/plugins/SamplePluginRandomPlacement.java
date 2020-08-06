@@ -15,13 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cluster.placement;
+package org.apache.solr.cluster.placement.plugins;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
+
+import org.apache.solr.cluster.placement.Cluster;
+import org.apache.solr.cluster.placement.CreateNewCollectionRequest;
+import org.apache.solr.cluster.placement.Node;
+import org.apache.solr.cluster.placement.PlacementException;
+import org.apache.solr.cluster.placement.PlacementPlugin;
+import org.apache.solr.cluster.placement.PropertyKeyFactory;
+import org.apache.solr.cluster.placement.PropertyValueFetcher;
+import org.apache.solr.cluster.placement.Replica;
+import org.apache.solr.cluster.placement.ReplicaPlacement;
+import org.apache.solr.cluster.placement.Request;
+import org.apache.solr.cluster.placement.WorkOrder;
+import org.apache.solr.cluster.placement.WorkOrderFactory;
 
 /**
  * Implements random placement for new collection creation while preventing two replicas of same shard from being placed on same node.
@@ -31,7 +44,7 @@ import java.util.Set;
 public class SamplePluginRandomPlacement implements PlacementPlugin {
 
   public WorkOrder computePlacement(Cluster cluster, Request placementRequest, PropertyKeyFactory propertyFactory,
-                                          PropertyValueFetcher propertyFetcher, WorkOrderFactory workOrderFactory) throws PlacementException {
+                                    PropertyValueFetcher propertyFetcher, WorkOrderFactory workOrderFactory) throws PlacementException {
     // This plugin only supports Creating a collection, and only one collection. Real code would be different...
     if (!(placementRequest instanceof CreateNewCollectionRequest)) {
       throw new PlacementException("This plugin only supports creating collections");
