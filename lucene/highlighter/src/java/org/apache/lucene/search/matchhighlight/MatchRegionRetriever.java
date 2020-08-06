@@ -201,6 +201,7 @@ public class MatchRegionRetriever {
 
 
           case DOCS_AND_FREQS:
+          case DOCS:
             // offsetStrategy = new OffsetsFromTokens(field, analyzer);
             offsetStrategy = new OffsetsFromValues(field, analyzer);
             break;
