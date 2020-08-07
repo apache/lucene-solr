@@ -18,7 +18,7 @@ package org.apache.solr.cluster.api;
 
 import org.apache.solr.client.solrj.SolrRequest;
 
-import java.util.Map;
+import java.util.function.BiConsumer;
 
 /**
  * Abstract out HTTP aspects of a Solr request
@@ -42,7 +42,7 @@ public interface HttpRpc {
     /**
      * Add multiple request params
      */
-    HttpRpc addParams(Map<String, String> params);
+    HttpRpc addParams(BiConsumer<String, String> params);
 
     /**
      * Add a request header
