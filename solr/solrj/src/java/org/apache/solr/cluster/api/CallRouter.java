@@ -16,6 +16,8 @@
  */
 package org.apache.solr.cluster.api;
 
+import java.util.List;
+
 /**
  * Provide information to route a call to an appropriate node/core
  */
@@ -49,6 +51,18 @@ public interface CallRouter {
      * Make a call dirctly to a specific core in a node
      */
     CallRouter toCore(String node, String core);
+
+    /**
+     * Multiple requests to one replica of each shard.
+     * Can be used for distributed requests
+     */
+    List<CallRouter> toEachShard(String collection, ReplicaType type);
+
+    /**Make multiple calls to every replica of a collection
+     */
+    List<CallRouter> toEachReplica(String collection);
+
+
 
     HttpRpc createHttpRpc();
 
