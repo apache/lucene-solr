@@ -163,6 +163,7 @@ public class TestConfig extends SolrTestCaseJ4 {
 
   // If defaults change, add test methods to cover each version
   @Test
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-14582")
   public void testDefaults() throws Exception {
 
     int numDefaultsTested = 0;
