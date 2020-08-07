@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.common.annotation.SolrThreadSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,6 +41,7 @@ import static org.apache.solr.common.params.CommonParams.SOLR_REQUEST_TYPE_PARAM
  * implementation. RateLimitManager is responsible for the orchestration but not the specifics of how the
  * rate limiting is being done for a specific request type.
  */
+@SolrThreadSafe
 public class RateLimitManager {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -83,7 +85,7 @@ public class RateLimitManager {
 
     if (result != null) {
       // Can be the case if request rate limiter is disabled
-      if (!result.isUsedPoolNull()) {
+      if (!result.isReleasable()) {
         activeRequestsMap.put(request, result);
       }
       return true;
@@ -134,7 +136,7 @@ public class RateLimitManager {
           throw new IllegalStateException("Returned metadata object is null");
         }
 
-        if (!result.isUsedPoolNull()) {
+        if (!result.isReleasable()) {
           return result;
         }
       }
@@ -147,14 +149,10 @@ public class RateLimitManager {
   public void decrementActiveRequests(HttpServletRequest request) {
     RequestRateLimiter.SlotMetadata slotMetadata = activeRequestsMap.get(request);
 
-    if (slotMetadata == null) {
-      // No rate limiter for this request type
-      return;
+    if (slotMetadata != null) {
+      activeRequestsMap.remove(request);
+      slotMetadata.decrementRequest();
     }
-
-    activeRequestsMap.remove(request);
-
-    slotMetadata.decrementRequest();
   }
 
   public void registerRequestRateLimiter(RequestRateLimiter requestRateLimiter, SolrRequest.SolrRequestType requestType) {

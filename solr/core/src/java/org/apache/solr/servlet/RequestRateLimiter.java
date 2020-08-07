@@ -22,6 +22,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.common.annotation.SolrThreadSafe;
 
 /**
  * Handles rate limiting for a specific request type.
@@ -30,6 +31,7 @@ import org.apache.solr.client.solrj.SolrRequest;
  * Handle request -- Check if slot is available -- If available, acquire slot and proceed --
  * else reject the same.
  */
+@SolrThreadSafe
 public class RequestRateLimiter {
   // Slots that are guaranteed for this request rate limiter.
   private final Semaphore guaranteedSlotsPool;
@@ -40,32 +42,35 @@ public class RequestRateLimiter {
   private final Semaphore borrowableSlotsPool;
 
   private final RateLimiterConfig rateLimiterConfig;
+  private final SlotMetadata guaranteedSlotMetadata;
+  private final SlotMetadata borrowedSlotMetadata;
+  private final SlotMetadata nullSlotMetadata;
 
   public RequestRateLimiter(RateLimiterConfig rateLimiterConfig) {
     this.rateLimiterConfig = rateLimiterConfig;
     this.guaranteedSlotsPool = new Semaphore(rateLimiterConfig.guaranteedSlotsThreshold);
     this.borrowableSlotsPool = new Semaphore(rateLimiterConfig.allowedRequests - rateLimiterConfig.guaranteedSlotsThreshold);
+    this.guaranteedSlotMetadata = new SlotMetadata(guaranteedSlotsPool);
+    this.borrowedSlotMetadata = new SlotMetadata(borrowableSlotsPool);
+    this.nullSlotMetadata = new SlotMetadata(null);
   }
 
   /**
-   * Handles an incoming request. Returns true if accepted, false if quota for this rate limiter is exceeded. Also returns
-   * a metadata object representing the metadata for the acquired slot, if acquired. If a slot is not acquired, returns false
-   * with a null metadata object.
-   * NOTE: Always check for a null metadata object even if this method returns a true -- this will be the scenario when
-   * rate limiters are not enabled.
+   * Handles an incoming request. returns a metadata object representing the metadata for the acquired slot, if acquired.
+   * If a slot is not acquired, returns a null metadata object.
    * */
   public SlotMetadata handleRequest() throws InterruptedException {
 
     if (!rateLimiterConfig.isEnabled) {
-      return new SlotMetadata(null);
+      return nullSlotMetadata;
     }
 
     if (guaranteedSlotsPool.tryAcquire(rateLimiterConfig.waitForSlotAcquisition, TimeUnit.MILLISECONDS)) {
-      return new SlotMetadata(guaranteedSlotsPool);
+      return guaranteedSlotMetadata;
     }
 
     if (borrowableSlotsPool.tryAcquire(rateLimiterConfig.waitForSlotAcquisition, TimeUnit.MILLISECONDS)) {
-      return new SlotMetadata(borrowableSlotsPool);
+      return borrowedSlotMetadata;
     }
 
     return null;
@@ -74,17 +79,17 @@ public class RequestRateLimiter {
   /**
    * Whether to allow another request type to borrow a slot from this request rate limiter. Typically works fine
    * if there is a relatively lesser load on this request rate limiter's type compared to the others (think of skew).
-   * @return true if allow, false otherwise. Also returns a metadata object for the acquired slot, if acquired. If the
-   * slot was not acquired, returns a null metadata object.
+   * @return returns a metadata object for the acquired slot, if acquired. If the
+   * slot was not acquired, returns a metadata object with a null pool.
    *
    * @lucene.experimental -- Can cause slots to be blocked if a request borrows a slot and is itself long lived.
    */
   public SlotMetadata allowSlotBorrowing() throws InterruptedException {
     if (borrowableSlotsPool.tryAcquire(rateLimiterConfig.waitForSlotAcquisition, TimeUnit.MILLISECONDS)) {
-      return new SlotMetadata(borrowableSlotsPool);
+      return borrowedSlotMetadata;
     }
 
-    return new SlotMetadata(null);
+    return nullSlotMetadata;
   }
 
   public RateLimiterConfig getRateLimiterConfig() {
@@ -145,7 +150,7 @@ public class RequestRateLimiter {
 
   // Represents the metadata for a slot
   static class SlotMetadata {
-    private Semaphore usedPool;
+    private final Semaphore usedPool;
 
     public SlotMetadata(Semaphore usedPool) {
       this.usedPool = usedPool;
@@ -157,7 +162,7 @@ public class RequestRateLimiter {
       }
     }
 
-    public boolean isUsedPoolNull() {
+    public boolean isReleasable() {
       return usedPool == null;
     }
   }
