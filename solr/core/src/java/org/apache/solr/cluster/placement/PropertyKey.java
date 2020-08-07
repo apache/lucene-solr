@@ -18,12 +18,14 @@
 package org.apache.solr.cluster.placement;
 
 /**
- * A property key used by plugins to request values from Solr
+ * A property key used by plugins to request values from Solr.
+ *
+ * TODO: implementations must implement equals and hashCode as these are used as keys in maps
  */
 public interface PropertyKey {
   /**
    * @return the target of this {@link PropertyKey}, i.e. from where the corresponding {@link PropertyValue}'s should be
-   * (or were) obtained.
+   * (or were) obtained. The target of a {@link PropertyKey} is the source of its {@link PropertyValue}...
    */
-  PropertyValueSource getPropertyKeyTarget();
+  PropertyValueSource getPropertyValueSource();
 }

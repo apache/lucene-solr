@@ -557,19 +557,19 @@ public class Assign {
       @SuppressWarnings({"unchecked", "rawtypes"})
       List<Map> ruleMaps = (List<Map>) collection.get(DocCollection.RULE);
       @SuppressWarnings({"unchecked", "rawtypes"})
-      String placement = (String) collection.get(DocCollection.PLACEMENT);
+      String placementProp = (String) collection.get(DocCollection.PLACEMENT);
 
 
-      Strategy strategy = null;
+      final Placement placement;
       if (ruleMaps != null && !ruleMaps.isEmpty()) {
-        strategy = Strategy.RULES;
-      } else if (placement != null) {
-        strategy = Strategy.PLUGIN_PLACEMENT;
+        placement = Placement.RULES;
+      } else if (placementProp != null) {
+        placement = Placement.PLUGIN;
       } else {
-        strategy = Strategy.LEGACY;        
+        placement = Placement.LEGACY;
       }
       
-      switch (strategy) {
+      switch (placement) {
         case LEGACY:
           return new LegacyAssignStrategy();
         case RULES:
@@ -578,17 +578,17 @@ public class Assign {
           @SuppressWarnings({"rawtypes"})
           List snitches = (List) collection.get(SNITCH);
           return new RulesBasedAssignStrategy(rules, snitches, clusterState);
-        case PLUGIN_PLACEMENT:
-          // TODO need to decide which plugin class to use. Global config (single plugin for all PLUGIN_PLACEMENT collections?) or per collection config?
+        case PLUGIN:
+          // TODO need to decide which plugin class to use. Global config (single plugin for all PLUGIN collections?) or per collection config?
           // TODO hardconding a sample plugin for now. DO NOT MERGE this as is.
           return new PlacementPluginAssignStrategy(new SamplePluginMinimizeCores());
         default:
-          throw new Assign.AssignmentException("Unknown strategy type: " + strategy);
+          throw new Assign.AssignmentException("Unknown placement type: " + placement);
       }
     }
 
-    private enum Strategy {
-      LEGACY, RULES, PLUGIN_PLACEMENT;
+    private enum Placement {
+      LEGACY, RULES, PLUGIN;
     }
   }
 }

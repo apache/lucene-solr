@@ -18,11 +18,11 @@
 package org.apache.solr.cluster.placement;
 
 /**
- * A {@link PropertyValue} representing a System property on the target {@link Node}.
+ * A {@link PropertyValue} representing a string metric on the target {@link PropertyValueSource}.
  */
-public interface SystemPropertyPropertyValue extends PropertyValue {
+public interface StringMetricPropertyValue extends MetricPropertyValue {
   /**
-   * Returns the system property value from the target {@link Node} on which it was retrieved.
+   * Returns the metric value from the {@link PropertyValueSource} from which it was retrieved.
    */
-  String getSystemPropertyValue();
+  String getStringValue();
 }

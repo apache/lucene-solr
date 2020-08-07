@@ -37,12 +37,12 @@ class SolrCollectionImpl implements SolrCollection {
     if (docCollection == null) {
       return Optional.empty();
     } else {
-      return Optional.of(new SolrCollectionImpl(collectionName, docCollection));
+      return Optional.of(new SolrCollectionImpl(docCollection));
     }
   }
 
-  private SolrCollectionImpl(String collectionName, DocCollection docCollection) {
-    this.collectionName = collectionName;
+  SolrCollectionImpl(DocCollection docCollection) {
+    this.collectionName = docCollection.getName();
     this.shards = ShardImpl.getShards(this, docCollection.getSlices());
     this.docCollection = docCollection;
   }

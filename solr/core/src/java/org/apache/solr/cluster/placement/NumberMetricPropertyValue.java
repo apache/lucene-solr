@@ -17,17 +17,12 @@
 
 package org.apache.solr.cluster.placement;
 
-import java.util.Set;
-
 /**
- *  Instances are obtained by first getting a key using {@link PropertyKeyFactory#createCoreCountKey} then calling
- *  {@link PropertyValueFetcher#fetchProperties}, retrieving the appropriate {@link PropertyValue} from the returned map
- *  using the {@link PropertyKey} as key and finally casting it to {@link CoresCountPropertyValue}.
+ * A {@link PropertyValue} representing a numeric metric on the target {@link PropertyValueSource}.
  */
-public interface CoresCountPropertyValue extends PropertyValue {
+public interface NumberMetricPropertyValue extends MetricPropertyValue {
   /**
-   * Returns the number of cores on the {@link Node}) this instance was obtained from (i.e. instance
-   * passed to {@link PropertyKeyFactory#createCoreCountKey(Node)}).
+   * Returns the metric value from the {@link PropertyValueSource} from which it was retrieved.
    */
-  int getCoresCount();
+  Double getNumberValue();
 }

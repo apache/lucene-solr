@@ -31,7 +31,7 @@ import java.util.Set;
 public interface Cluster extends PropertyValueSource {
   /**
    * @return current set of live nodes. Never <code>null</code>, never empty (Solr wouldn't call the plugin if empty
-   * since no useful could then be done).
+   * since no useful work could then be done).
    */
   Set<Node> getLiveNodes();
 
@@ -43,4 +43,11 @@ public interface Cluster extends PropertyValueSource {
    * wasteful to fetch all data and fill such a map when plugin code likely needs info about at most one or two collections.
    */
   Optional<SolrCollection> getCollection(String collectionName) throws IOException;
+
+  /**
+   * <p>Allows getting all {@link SolrCollection} present in the cluster.
+   *
+   * <p><b>WARNING:</b> this call might be extremely inefficient on large clusters. Usage is discouraged.
+   */
+  Set<SolrCollection> getAllCollections();
 }

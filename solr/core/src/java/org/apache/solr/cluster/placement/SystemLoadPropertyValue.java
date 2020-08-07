@@ -19,6 +19,11 @@ package org.apache.solr.cluster.placement;
 
 import java.lang.management.OperatingSystemMXBean;
 
+/**
+ *  Instances are obtained by first getting a key using {@link PropertyKeyFactory#createSystemLoadKey} then calling
+ *  {@link PropertyValueFetcher#fetchProperties}, retrieving the appropriate {@link PropertyValue} from the returned map
+ *  using the {@link PropertyKey} as key and finally casting it to {@link SystemLoadPropertyValue}.
+ */
 public interface SystemLoadPropertyValue extends PropertyValue {
   /**
    * Matches {@link OperatingSystemMXBean#getSystemLoadAverage()}
@@ -26,7 +31,10 @@ public interface SystemLoadPropertyValue extends PropertyValue {
   double getSystemLoadAverage();
 
   /**
-   * This is the value of metric <code>os.processCpuLoad</code>
+   * <p>This is the value of metric <code>os.processCpuLoad</code>
+   *
+   * <p>TODO: There might be some overlap between the value returned by this method and a value that can be obtained using a {@link MetricPropertyValue}.
+   *
    * @return the "recent cpu usage" for the Java Virtual Machine process. This value is a double in the [0.0,1.0]
    * interval. A value of 0.0 means that none of the CPUs were running threads from the JVM process during the recent
    * period of time observed, while a value of 1.0 means that all CPUs were actively running threads from the JVM 100%

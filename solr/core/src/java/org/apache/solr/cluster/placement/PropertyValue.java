@@ -18,8 +18,11 @@
 package org.apache.solr.cluster.placement;
 
 /**
- *  The value corresponding to a specific {@link PropertyKey}, in a specific context (e.g. property of a specific
+ *  <p>The value corresponding to a specific {@link PropertyKey}, in a specific context (e.g. property of a specific
  *  {@link Node} instance). The context is not tracked in the {@link PropertyKey} nor in the {@code PropertyValue}.
+ *
+ *  <p>Instances are obtained by first getting a key using {@link PropertyKeyFactory} then getting the corresponding
+ *  {@link PropertyValue} using {@link PropertyValueFetcher}.
  */
 public interface PropertyValue {
   /**

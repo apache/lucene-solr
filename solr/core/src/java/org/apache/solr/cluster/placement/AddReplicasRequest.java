@@ -20,7 +20,8 @@ package org.apache.solr.cluster.placement;
 import java.util.Set;
 
 /**
- * <p>Request for creating one or more {@link Replica}'s for one or more {@link Shard}'s of an existing {@link SolrCollection}.
+ * <p>Request passed by Solr to a {@link PlacementPlugin} to compute placement for one or more {@link Replica}'s for one
+ * or more {@link Shard}'s of an existing {@link SolrCollection}.
  * The shard might or might not already exist, plugin code can easily find out by using {@link SolrCollection#getShards()}
  * and verifying if the shard name(s) from {@link #getShardNames()} are there.
  *
@@ -50,7 +51,16 @@ public interface AddReplicasRequest extends Request {
    */
   Set<String> getShardNames();
 
-  /** Replicas should only be placed on nodes from the set returned by this method. */
+  /**
+   * <p>Replicas should only be placed on nodes in the set returned by this method.
+   *
+   * <p>When Collection API calls do not specify a specific set of target nodes, replicas can be placed on any live node of
+   * the cluster. In such cases, this set will be equal to the set of all live nodes. The plugin placement code does not
+   * need to worry (or care) if a set of nodes was explicitly specified or not.
+   *
+   * @return never {@code null} and never empty set (if that set was to be empty for any reason, no placement would be
+   * possible and the Solr infrastructure driving the plugin code would detect the error itself rather than calling the plugin).
+   */
   Set<Node> getTargetNodes();
 
   /** Number of NRT replicas to create. */

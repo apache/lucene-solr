@@ -17,6 +17,11 @@
 
 package org.apache.solr.cluster.placement;
 
+/**
+ *  Instances are obtained by first getting a key using {@link PropertyKeyFactory#createDiskInfoKey} then getting the
+ *  {@link DiskInfoPropertyValue} using {@link PropertyValueFetcher#fetchProperties} and retrieving (then casting) the
+ *  appropriate {@link PropertyValue} from the returned map using the {@link PropertyKey} as key.
+ */
 public interface DiskInfoPropertyValue extends PropertyValue {
   /**
    * Total disk size of the partition on which cores are stored on the {@link Node}) from which this instance was obtained

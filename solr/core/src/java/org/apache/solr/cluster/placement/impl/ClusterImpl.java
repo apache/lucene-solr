@@ -20,6 +20,7 @@ package org.apache.solr.cluster.placement.impl;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.cluster.placement.Cluster;
@@ -44,6 +45,14 @@ class ClusterImpl implements Cluster {
   @Override
   public Optional<SolrCollection> getCollection(String collectionName) {
     return SolrCollectionImpl.createCollectionFacade(clusterState, collectionName);
+  }
+
+  /**
+   * Returns the set of all collections in the cluster. This is a costly method as it potentially builds a large set in
+   * memory. Usage is discouraged.
+   */
+  public Set<SolrCollection> getAllCollections() {
+    return clusterState.getCollectionsMap().values().stream().map(SolrCollectionImpl::new).collect(Collectors.toSet());
   }
 
   // TODO implement hashCode() and equals() (just in case we end up supporting multiple Cluster instances at some point)
