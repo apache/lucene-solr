@@ -58,18 +58,18 @@ public class RequestRateLimiter {
   public Pair<Boolean, AcquiredSlotMetadata> handleRequest() throws InterruptedException {
 
     if (!rateLimiterConfig.isEnabled) {
-      return new Pair(true, null);
+      return new Pair<Boolean, AcquiredSlotMetadata>(true, null);
     }
 
     if (guaranteedSlotsPool.tryAcquire(rateLimiterConfig.waitForSlotAcquisition, TimeUnit.MILLISECONDS)) {
-      return new Pair<>(true, new AcquiredSlotMetadata(this, false));
+      return new Pair<Boolean, AcquiredSlotMetadata>(true, new AcquiredSlotMetadata(this, false));
     }
 
     if (borrowableSlotsPool.tryAcquire(rateLimiterConfig.waitForSlotAcquisition, TimeUnit.MILLISECONDS)) {
-      return new Pair<>(true, new AcquiredSlotMetadata(this, true));
+      return new Pair<Boolean, AcquiredSlotMetadata>(true, new AcquiredSlotMetadata(this, true));
     }
 
-    return new Pair<>(false, null);
+    return new Pair<Boolean, AcquiredSlotMetadata>(false, null);
   }
 
   /**
@@ -82,10 +82,10 @@ public class RequestRateLimiter {
    */
   public Pair<Boolean, AcquiredSlotMetadata> allowSlotBorrowing() throws InterruptedException {
     if (borrowableSlotsPool.tryAcquire(rateLimiterConfig.waitForSlotAcquisition, TimeUnit.MILLISECONDS)) {
-      return new Pair<>(true, new AcquiredSlotMetadata(this, true));
+      return new Pair<Boolean, AcquiredSlotMetadata>(true, new AcquiredSlotMetadata(this, true));
     }
 
-    return new Pair<>(false, null);
+    return new Pair<Boolean, AcquiredSlotMetadata>(false, null);
   }
 
   public void decrementConcurrentRequests(boolean isBorrowedSlot) {
