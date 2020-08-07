@@ -44,6 +44,7 @@ import java.util.concurrent.Future;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpMessage;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.NameValuePair;
@@ -98,6 +99,8 @@ public class HttpSolrClient extends BaseHttpSolrClient {
   private static final Charset FALLBACK_CHARSET = StandardCharsets.UTF_8;
   private static final String DEFAULT_PATH = "/select";
   private static final long serialVersionUID = -946812319974801896L;
+
+  protected static final Set<Integer> UNMATCHED_ACCEPTED_ERROR_CODES = Collections.singleton(429);
   
   /**
    * User-Agent String.
@@ -358,7 +361,9 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     if (parser == null) {
       parser = this.parser;
     }
-    
+
+    Header[] contextHeaders = buildRequestSpecificHeaders(request);
+
     // The parser 'wt=' and 'version=' params are used instead of the original
     // params
     ModifiableSolrParams wparams = new ModifiableSolrParams(params);
@@ -387,7 +392,10 @@ public class HttpSolrClient extends BaseHttpSolrClient {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "GET can't send streams!");
       }
 
-      return new HttpGet(basePath + path + wparams.toQueryString());
+      HttpGet result = new HttpGet(basePath + path + wparams.toQueryString());
+
+      populateHeaders(result, contextHeaders);
+      return result;
     }
 
     if (SolrRequest.METHOD.DELETE == request.getMethod()) {
@@ -428,6 +436,9 @@ public class HttpSolrClient extends BaseHttpSolrClient {
             contentWriter.write(outstream);
           }
         });
+
+        populateHeaders(postOrPut, contextHeaders);
+
         return postOrPut;
 
       } else if (streams == null || isMultipart) {
@@ -624,6 +635,12 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       if (procCt != null) {
         String procMimeType = ContentType.parse(procCt).getMimeType().trim().toLowerCase(Locale.ROOT);
         if (!procMimeType.equals(mimeType)) {
+          if (isUnmatchedErrorCode(mimeType, httpStatus)) {
+            throw new RemoteSolrException(baseUrl, httpStatus, "non ok status: " + httpStatus
+                  + ", message:" + response.getStatusLine().getReasonPhrase(),
+                  null);
+          }
+
           // unexpected mime type
           String msg = "Expected mime type " + procMimeType + " but got " + mimeType + ".";
           Charset exceptionCharset = charset != null? charset : FALLBACK_CHARSET;
@@ -698,6 +715,37 @@ public class HttpSolrClient extends BaseHttpSolrClient {
         Utils.consumeFully(entity);
       }
     }
+  }
+
+  // When raising an error using HTTP sendError, mime types can be mismatched. This is specifically true when
+  // SolrDispatchFilter uses the sendError mechanism since the expected MIME type of response is not HTML but
+  // HTTP sendError generates a HTML output, which can lead to mismatch
+  private boolean isUnmatchedErrorCode(String mimeType, int httpStatus) {
+    if (mimeType == null) {
+      return false;
+    }
+
+    if (mimeType.equalsIgnoreCase("text/html") && UNMATCHED_ACCEPTED_ERROR_CODES.contains(httpStatus)) {
+      return true;
+    }
+
+    return false;
+  }
+
+  private Header[] buildRequestSpecificHeaders(@SuppressWarnings({"rawtypes"}) final SolrRequest request) {
+    Header[] contextHeaders = new Header[2];
+
+    //TODO: validate request context here: https://issues.apache.org/jira/browse/SOLR-14720
+    contextHeaders[0] = new BasicHeader(CommonParams.SOLR_REQUEST_CONTEXT_PARAM, getContext().toString());
+
+    contextHeaders[1] = new BasicHeader(CommonParams.SOLR_REQUEST_TYPE_PARAM, request.getRequestType());
+
+    return contextHeaders;
+  }
+
+  private void populateHeaders(HttpMessage message, Header[] contextHeaders) {
+    message.addHeader(contextHeaders[0]);
+    message.addHeader(contextHeaders[1]);
   }
   
   // -------------------------------------------------------------------
