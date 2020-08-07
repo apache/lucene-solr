@@ -33,6 +33,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.Pair;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -109,13 +110,13 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
 
       MockRequestRateLimiter mockQueryRateLimiter = (MockRequestRateLimiter) rateLimitManager.getRequestRateLimiter(SolrRequest.SolrRequestType.QUERY);
 
-      assertEquals(mockQueryRateLimiter.incomingRequestCount.get(),25);
+      assertEquals(25, mockQueryRateLimiter.incomingRequestCount.get());
       assertTrue("Incoming accepted new request count did not match. Expected 5 incoming " + mockQueryRateLimiter.acceptedNewRequestCount.get(),
           mockQueryRateLimiter.acceptedNewRequestCount.get() < 25);
       assertTrue("Incoming rejected new request count did not match. Expected 20 incoming " + mockQueryRateLimiter.rejectedRequestCount.get(),
           mockQueryRateLimiter.rejectedRequestCount.get() > 0);
-      assertEquals(mockQueryRateLimiter.acceptedNewRequestCount.get() + mockQueryRateLimiter.rejectedRequestCount.get(),
-          mockQueryRateLimiter.incomingRequestCount.get());
+      assertEquals(mockQueryRateLimiter.incomingRequestCount.get(),
+          mockQueryRateLimiter.acceptedNewRequestCount.get() + mockQueryRateLimiter.rejectedRequestCount.get());
     } finally {
       executor.shutdown();
     }
@@ -162,9 +163,7 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
           try {
             QueryResponse response = client.query(new SolrQuery("*:*"));
 
-            if (response.getResults().getNumFound() > 0) {
-              assertEquals(100, response.getResults().getNumFound());
-            }
+            assertEquals(100, response.getResults().getNumFound());
           } catch (Exception e) {
             throw new RuntimeException(e.getMessage());
           }
@@ -177,7 +176,7 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
 
       for (Future<?> future : futures) {
         try {
-          future.get();
+          assertTrue(future.get() != null);
         } catch (Exception e) {
           assertThat(e.getMessage(), containsString("non ok status: 429, message:Too Many Requests"));
         }
@@ -213,12 +212,12 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
     }
 
     @Override
-    public boolean handleRequest() throws InterruptedException {
+    public Pair<Boolean, AcquiredSlotMetadata> handleRequest() throws InterruptedException {
       incomingRequestCount.getAndIncrement();
 
-      boolean response = super.handleRequest();
+      Pair<Boolean, AcquiredSlotMetadata> response = super.handleRequest();
 
-      if (response) {
+      if (response.first()) {
           acceptedNewRequestCount.getAndIncrement();
         if (activeRequestCount.incrementAndGet() > maxCount) {
           throw new IllegalStateException("Active request count exceeds the count. Incoming " +
@@ -232,16 +231,16 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
     }
 
     @Override
-    public void decrementConcurrentRequests() {
+    public void decrementConcurrentRequests(boolean isSlotBorrowed) {
       activeRequestCount.decrementAndGet();
-      super.decrementConcurrentRequests();
+      super.decrementConcurrentRequests(isSlotBorrowed);
     }
 
     @Override
-    public boolean allowSlotBorrowing() {
-      boolean result = super.allowSlotBorrowing();
+    public Pair<Boolean, AcquiredSlotMetadata> allowSlotBorrowing() throws InterruptedException {
+      Pair<Boolean, AcquiredSlotMetadata> result = super.allowSlotBorrowing();
 
-      if (result) {
+      if (result.first()) {
         borrowedSlotCount.incrementAndGet();
       }
 

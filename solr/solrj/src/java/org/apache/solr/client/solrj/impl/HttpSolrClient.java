@@ -44,6 +44,7 @@ import java.util.concurrent.Future;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpMessage;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.NameValuePair;
@@ -393,7 +394,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
 
       HttpGet result = new HttpGet(basePath + path + wparams.toQueryString());
 
-      populateHeadersInResult(result, contextHeaders);
+      populateHeaders(result, contextHeaders);
       return result;
     }
 
@@ -436,7 +437,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
           }
         });
 
-        populateHeadersInRequestBase(postOrPut, contextHeaders);
+        populateHeaders(postOrPut, contextHeaders);
 
         return postOrPut;
 
@@ -720,6 +721,10 @@ public class HttpSolrClient extends BaseHttpSolrClient {
   // SolrDispatchFilter uses the sendError mechanism since the expected MIME type of response is not HTML but
   // HTTP sendError generates a HTML output, which can lead to mismatch
   private boolean isUnmatchedErrorCode(String mimeType, int httpStatus) {
+    if (mimeType == null) {
+      return false;
+    }
+
     if (mimeType.equalsIgnoreCase("text/html") && UNMATCHED_ACCEPTED_ERROR_CODES.contains(httpStatus)) {
       return true;
     }
@@ -730,20 +735,17 @@ public class HttpSolrClient extends BaseHttpSolrClient {
   private Header[] buildRequestSpecificHeaders(@SuppressWarnings({"rawtypes"}) final SolrRequest request) {
     Header[] contextHeaders = new Header[2];
 
+    //TODO: validate request context here: https://issues.apache.org/jira/browse/SOLR-14720
     contextHeaders[0] = new BasicHeader(CommonParams.SOLR_REQUEST_CONTEXT_PARAM, getContext().toString());
+
     contextHeaders[1] = new BasicHeader(CommonParams.SOLR_REQUEST_TYPE_PARAM, request.getRequestType());
 
     return contextHeaders;
   }
 
-  private void populateHeadersInResult(HttpGet result, Header[] contextHeaders) {
-    result.addHeader(contextHeaders[0]);
-    result.addHeader(contextHeaders[1]);
-  }
-
-  private void populateHeadersInRequestBase(HttpEntityEnclosingRequestBase postOrPut, Header[] contextHeaders) {
-    postOrPut.addHeader(contextHeaders[0]);
-    postOrPut.addHeader(contextHeaders[1]);
+  private void populateHeaders(HttpMessage message, Header[] contextHeaders) {
+    message.addHeader(contextHeaders[0]);
+    message.addHeader(contextHeaders[1]);
   }
   
   // -------------------------------------------------------------------

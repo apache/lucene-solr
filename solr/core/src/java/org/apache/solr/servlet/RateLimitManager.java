@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.common.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,9 +48,7 @@ public class RateLimitManager {
   public final static long DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS = -1;
   private final Map<String, RequestRateLimiter> requestRateLimiterMap;
 
-  // IMPORTANT: The slot from the corresponding rate limiter should be acquired before adding the request
-  // to this map. Subsequently, the request should be deleted from the map before the slot is released.
-  private final Map<HttpServletRequest, RequestRateLimiter> activeRequestsMap;
+  private final Map<HttpServletRequest, RequestRateLimiter.AcquiredSlotMetadata> activeRequestsMap;
 
   public RateLimitManager() {
     this.requestRateLimiterMap = new HashMap<>();
@@ -81,15 +80,21 @@ public class RateLimitManager {
       return true;
     }
 
-    if (requestRateLimiter.handleRequest()) {
-      activeRequestsMap.put(request, requestRateLimiter);
+    Pair<Boolean, RequestRateLimiter.AcquiredSlotMetadata> result = requestRateLimiter.handleRequest();
+
+    if (result.first()) {
+      if (result.second() == null) {
+        throw new IllegalStateException("AcquiredSlotMetadata object null even when slot is acquired and rate limiters are enabled");
+      }
+
+      activeRequestsMap.put(request, result.second());
       return true;
     }
 
-    requestRateLimiter = trySlotBorrowing(typeOfRequest);
+    RequestRateLimiter.AcquiredSlotMetadata acquiredSlotMetadata = trySlotBorrowing(typeOfRequest);
 
-    if (requestRateLimiter != null) {
-      activeRequestsMap.put(request, requestRateLimiter);
+    if (acquiredSlotMetadata != null) {
+      activeRequestsMap.put(request, acquiredSlotMetadata);
       return true;
     }
 
@@ -101,12 +106,14 @@ public class RateLimitManager {
    * check if slot borrowing is enabled. If enabled, try to acquire a slot.
    * If allotted, return else try next request type.
    *
-   * @lucene.gexperimental -- Can cause slots to be blocked if a request borrows a slot and is itself long lived.
+   * @lucene.experimental -- Can cause slots to be blocked if a request borrows a slot and is itself long lived.
    */
-  private RequestRateLimiter trySlotBorrowing(String requestType) {
+  private RequestRateLimiter.AcquiredSlotMetadata trySlotBorrowing(String requestType) {
     for (Map.Entry<String, RequestRateLimiter> currentEntry : requestRateLimiterMap.entrySet()) {
+      Pair<Boolean, RequestRateLimiter.AcquiredSlotMetadata> result = null;
       RequestRateLimiter requestRateLimiter = currentEntry.getValue();
 
+      // Cant borrow from ourselves
       if (requestRateLimiter.getRateLimiterConfig().requestType.toString().equals(requestType)) {
         continue;
       }
@@ -119,8 +126,18 @@ public class RateLimitManager {
           log.warn(msg);
         }
 
-        if (requestRateLimiter.allowSlotBorrowing()) {
-          return requestRateLimiter;
+        try {
+          result = requestRateLimiter.allowSlotBorrowing();
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        }
+
+        if (result != null && result.first()) {
+          if (result.second() == null) {
+            throw new IllegalStateException("AcquiredSlotMetadata object null even when slot is acquired and rate limiters are enabled");
+          }
+
+          return result.second();
         }
       }
     }
@@ -130,15 +147,16 @@ public class RateLimitManager {
 
   // Decrement the active requests in the rate limiter for the corresponding request type.
   public void decrementActiveRequests(HttpServletRequest request) {
-    RequestRateLimiter requestRateLimiter = activeRequestsMap.get(request);
+    RequestRateLimiter.AcquiredSlotMetadata acquiredSlotMetadata = activeRequestsMap.get(request);
 
-    if (requestRateLimiter == null) {
+    if (acquiredSlotMetadata == null) {
       // No rate limiter for this request type
       return;
     }
 
     activeRequestsMap.remove(request);
-    requestRateLimiter.decrementConcurrentRequests();
+
+    acquiredSlotMetadata.requestRateLimiter.decrementConcurrentRequests(acquiredSlotMetadata.isBorrowedSlot);
   }
 
   public void registerRequestRateLimiter(RequestRateLimiter requestRateLimiter, SolrRequest.SolrRequestType requestType) {

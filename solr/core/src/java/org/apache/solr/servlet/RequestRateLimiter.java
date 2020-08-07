@@ -22,6 +22,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.common.util.Pair;
 
 /**
  * Handles rate limiting for a specific request type.
@@ -31,48 +32,69 @@ import org.apache.solr.client.solrj.SolrRequest;
  * else reject the same.
  */
 public class RequestRateLimiter {
-  private final Semaphore allowedConcurrentRequests;
+  // Slots that are guaranteed for this request rate limiter.
+  private final Semaphore guaranteedSlotsPool;
+
+  // Competitive slots pool that are available for this rate limiter as well as borrowing by other request rate limiters.
+  // By competitive, the meaning is that there is no prioritization for the acquisition of these slots -- First Come First Serve,
+  // irrespective of whether the request is of this request rate limiter or other.
+  private final Semaphore borrowableSlotsPool;
+
   private final RateLimiterConfig rateLimiterConfig;
 
   public RequestRateLimiter(RateLimiterConfig rateLimiterConfig) {
     this.rateLimiterConfig = rateLimiterConfig;
-    this.allowedConcurrentRequests = new Semaphore(rateLimiterConfig.allowedRequests);
+    this.guaranteedSlotsPool = new Semaphore(rateLimiterConfig.guaranteedSlotsThreshold);
+    this.borrowableSlotsPool = new Semaphore(rateLimiterConfig.allowedRequests - rateLimiterConfig.guaranteedSlotsThreshold);
   }
 
-  /* Handles an incoming request. Returns true if accepted, false if quota for this rate limiter is exceeded */
-  public boolean handleRequest() throws InterruptedException {
+  /**
+   * Handles an incoming request. Returns true if accepted, false if quota for this rate limiter is exceeded. Also returns
+   * a metadata object representing the metadata for the acquired slot, if acquired. If a slot is not acquired, returns false
+   * with a null metadata object.
+   * NOTE: Always check for a null metadata object even if this method returns a true -- this will be the scenario when
+   * rate limiters are not enabled.
+   * */
+  public Pair<Boolean, AcquiredSlotMetadata> handleRequest() throws InterruptedException {
 
     if (!rateLimiterConfig.isEnabled) {
-      return true;
+      return new Pair(true, null);
     }
 
-    return allowedConcurrentRequests.tryAcquire(rateLimiterConfig.waitForSlotAcquisition, TimeUnit.MILLISECONDS);
+    if (guaranteedSlotsPool.tryAcquire(rateLimiterConfig.waitForSlotAcquisition, TimeUnit.MILLISECONDS)) {
+      return new Pair<>(true, new AcquiredSlotMetadata(this, false));
+    }
+
+    if (borrowableSlotsPool.tryAcquire(rateLimiterConfig.waitForSlotAcquisition, TimeUnit.MILLISECONDS)) {
+      return new Pair<>(true, new AcquiredSlotMetadata(this, true));
+    }
+
+    return new Pair<>(false, null);
   }
 
   /**
    * Whether to allow another request type to borrow a slot from this request rate limiter. Typically works fine
    * if there is a relatively lesser load on this request rate limiter's type compared to the others (think of skew).
-   * @return true if allow, false otherwise
+   * @return true if allow, false otherwise. Also returns a metadata object for the acquired slot, if acquired. If the
+   * slot was not acquired, returns a null metadata object.
    *
    * @lucene.experimental -- Can cause slots to be blocked if a request borrows a slot and is itself long lived.
    */
-  public boolean allowSlotBorrowing() {
-    synchronized (this) {
-      if (allowedConcurrentRequests.availablePermits() > rateLimiterConfig.guaranteedSlotsThreshold) {
-        try {
-          allowedConcurrentRequests.acquire();
-        } catch (InterruptedException e) {
-          throw new RuntimeException(e.getMessage());
-        }
-        return true;
-      }
+  public Pair<Boolean, AcquiredSlotMetadata> allowSlotBorrowing() throws InterruptedException {
+    if (borrowableSlotsPool.tryAcquire(rateLimiterConfig.waitForSlotAcquisition, TimeUnit.MILLISECONDS)) {
+      return new Pair<>(true, new AcquiredSlotMetadata(this, true));
     }
 
-    return false;
+    return new Pair<>(false, null);
   }
 
-  public void decrementConcurrentRequests() {
-    allowedConcurrentRequests.release();
+  public void decrementConcurrentRequests(boolean isBorrowedSlot) {
+    if (isBorrowedSlot) {
+      borrowableSlotsPool.release();
+      return;
+    }
+
+    guaranteedSlotsPool.release();
   }
 
   public RateLimiterConfig getRateLimiterConfig() {
@@ -128,6 +150,17 @@ public class RequestRateLimiter {
       this.waitForSlotAcquisition = waitForSlotAcquisition;
       this.allowedRequests = allowedRequests;
       this.isSlotBorrowingEnabled = isSlotBorrowingEnabled;
+    }
+  }
+
+  // Represents the metadata for an acquired slot
+  static class AcquiredSlotMetadata {
+    public RequestRateLimiter requestRateLimiter;
+    public boolean isBorrowedSlot;
+
+    public AcquiredSlotMetadata(RequestRateLimiter requestRateLimiter, boolean isBorrowedSlot) {
+      this.requestRateLimiter = requestRateLimiter;
+      this.isBorrowedSlot = isBorrowedSlot;
     }
   }
 }
