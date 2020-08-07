@@ -67,7 +67,7 @@ public interface HttpRpc {
     /**
      * Http method
      */
-    HttpRpc withHttpMethod(SolrRequest.METHOD method);
+    HttpRpc withMethod(SolrRequest.METHOD method);
 
     /**
      * The uri. The semantics depends on
