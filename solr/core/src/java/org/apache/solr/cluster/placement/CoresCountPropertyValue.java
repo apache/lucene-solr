@@ -17,8 +17,6 @@
 
 package org.apache.solr.cluster.placement;
 
-import java.util.Set;
-
 /**
  *  Instances are obtained by first getting a key using {@link PropertyKeyFactory#createCoreCountKey} then calling
  *  {@link PropertyValueFetcher#fetchProperties}, retrieving the appropriate {@link PropertyValue} from the returned map
