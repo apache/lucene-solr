@@ -81,7 +81,7 @@ public class TestRateLimiter extends SolrCloudTestCase {
     List<Future<Boolean>> futures;
 
     try {
-      for (int i = 0; i < 100; i++) {
+      for (int i = 0; i < 25; i++) {
         callableList.add(new Callable<Boolean>() {
           @Override
           public Boolean call() throws Exception {
@@ -106,9 +106,9 @@ public class TestRateLimiter extends SolrCloudTestCase {
       MockRequestRateLimiter mockQueryRateLimiter = (MockRequestRateLimiter) rateLimitManager.getRequestRateLimiter(SolrRequest.SolrRequestType.QUERY);
 
       assertTrue("Incoming request count did not match. Expected >200  incoming " + mockQueryRateLimiter.incomingRequestCount.get(),
-          mockQueryRateLimiter.incomingRequestCount.get() > 100);
+          mockQueryRateLimiter.incomingRequestCount.get() > 25);
       assertTrue("Incoming accepted new request count did not match. Expected 200 incoming " + mockQueryRateLimiter.acceptedNewRequestCount.get(),
-          mockQueryRateLimiter.acceptedNewRequestCount.get() == 100);
+          mockQueryRateLimiter.acceptedNewRequestCount.get() == 25);
       assertTrue("Incoming rejected new request count did not match. Expected >0 incoming " + mockQueryRateLimiter.rejectedRequestCount.get(),
           mockQueryRateLimiter.rejectedRequestCount.get() > 0);
       assertTrue("Incoming total processed requests count did not match. Expected " + mockQueryRateLimiter.incomingRequestCount.get() + " incoming "
@@ -225,10 +225,10 @@ public class TestRateLimiter extends SolrCloudTestCase {
     }
 
     @Override
-    public boolean handleNewRequest(HttpServletRequest request) throws InterruptedException {
+    public boolean handleRequest(HttpServletRequest request) throws InterruptedException {
       incomingRequestCount.getAndIncrement();
 
-      boolean response = super.handleNewRequest(request);
+      boolean response = super.handleRequest(request);
 
       if (response) {
           acceptedNewRequestCount.getAndIncrement();
