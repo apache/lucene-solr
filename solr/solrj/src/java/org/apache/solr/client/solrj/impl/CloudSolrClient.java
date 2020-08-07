@@ -32,7 +32,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.RpcFactory;
+import org.apache.solr.cluster.api.RpcFactory;
 
 /**
  * SolrJ client class to communicate with SolrCloud.

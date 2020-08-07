@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.common.util;
+package org.apache.solr.cluster.api;
 
 /**
  * Provide information to route a call to an appropriate node/core
