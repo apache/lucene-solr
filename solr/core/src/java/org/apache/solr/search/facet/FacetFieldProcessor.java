@@ -161,11 +161,11 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
 
   private final CountSlotAccFactory cachingCountSlotAccFactory;
 
-  SweepCountAccStruct getSweepCountAcc(QueryResultKey qKey, DocSet docs, boolean isBase, int numSlots) {
+  SweepCountAccStruct getSweepCountAcc(String key, QueryResultKey qKey, DocSet docs, boolean isBase, int numSlots) {
     final int size = docs.size();
     final SweepCountAccStruct qrkCandidate;
     if (qKey != null && (qrkCandidate = trackSweepCountAccsQRK.get(qKey)) != null) {
-      return qrkCandidate;
+      return new SweepCountAccStruct(qrkCandidate, key);
     }
     List<SweepCountAccStruct> extantSameSize = trackSweepCountAccs.get(size);
     if (extantSameSize != null) {
@@ -174,7 +174,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
           if (qKey != null) {
             trackSweepCountAccsQRK.put(qKey, candidate);
           }
-          return candidate;
+          return new SweepCountAccStruct(candidate, key);
         }
       }
     } else {
@@ -189,6 +189,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     }
     final boolean cacheIncludesMissingCount = this instanceof FacetFieldProcessorByArrayDV;
     final SweepCountAccStruct ret = factory.newInstance(qKey, docs, isBase, this, numSlots, cacheIncludesMissingCount);
+    ret.countAcc.key = key;
     extantSameSize.add(ret);
     sweepCountAccs.add(ret);
     if (qKey != null) {
@@ -197,69 +198,22 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     return ret;
   }
 
-  static final class FilterCtStruct {
-    final boolean isBase;
-    final Filter filter;
-    final CountSlotAcc countAcc;
-    final CacheUpdater cacheUpdater;
-
-    public FilterCtStruct(Filter filter, CountSlotAcc countAcc, CacheUpdater cacheUpdater, boolean isBase) {
-      this.isBase = isBase;
-      this.filter = filter;
-      this.countAcc = countAcc;
-      this.cacheUpdater = cacheUpdater;
+  static boolean shortcircuit(SweepCountAccStruct base, List<SweepCountAccStruct> others) {
+    if (base != null) {
+      // we need to collect whether or not base is CACHED
+      return false;
     }
-  }
-  protected FilterCtStruct[] getSweepFilters(boolean maySkipBaseSetCollection) {
-    final FilterCtStruct[] filters = new FilterCtStruct[sweepCountAccs.size()];
-    int i = 0;
-    SweepCountAccStruct base = null;
-    for (SweepCountAccStruct sweep : sweepCountAccs) {
-      if (sweep.isBase) {
-        base = sweep;
-      } else if (sweep.cacheState != CacheState.CACHED) {
-        filters[i++] = new FilterCtStruct(sweep.docSet.getTopFilter(), sweep.countAcc,
-            sweep.cacheUpdater, sweep.isBase);
+    for (SweepCountAccStruct other : others) {
+      if (other.cacheState != CacheState.CACHED) {
+        return false;
       }
     }
-    if (base.cacheState != CacheState.CACHED || !maySkipBaseSetCollection) {
-      filters[i++] = new FilterCtStruct(base.docSet.getTopFilter(), base.countAcc,
-          base.cacheUpdater, base.isBase);
-    }
-    if (i == 0) {
-      return null;
-    } else if (i == filters.length) {
-      return filters;
-    } else {
-      return Arrays.copyOf(filters, i);
-    }
-  }
-  protected SweepCountAccStruct[] getSweepDocSets(boolean maySkipBaseSetCollection) {
-    final SweepCountAccStruct[] ret = new SweepCountAccStruct[sweepCountAccs.size()];
-    int i = 0;
-    SweepCountAccStruct base = null;
-    for (SweepCountAccStruct sweep : sweepCountAccs) {
-      if (sweep.isBase) {
-        base = sweep;
-      } else if (sweep.cacheState != CacheState.CACHED) {
-        ret[i++] = sweep;
-      }
-    }
-    if (base.cacheState != CacheState.CACHED || !maySkipBaseSetCollection) {
-      ret[i++] = base;
-    }
-    if (i == 0) {
-      return null;
-    } else if (i == ret.length) {
-      return ret;
-    } else {
-      return Arrays.copyOf(ret, i);
-    }
+    return true;
   }
 
   protected CountSlotAcc createBaseCountAcc(int slotCount) {
     QueryResultKey baseQKey = fcontext.baseFilters == null ? null : new QueryResultKey(null, Arrays.asList(fcontext.baseFilters), null, 0);
-    SweepCountAccStruct struct = getSweepCountAcc(baseQKey, fcontext.base, true, slotCount);
+    SweepCountAccStruct struct = getSweepCountAcc("count", baseQKey, fcontext.base, true, slotCount);
     return struct.countAcc;
   }
 

@@ -102,10 +102,6 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
       missingSlot = -1; // handle by fieldMissingQuery
       return;
     }
-
-    final SweepCountAccStruct base = SweepCoordinator.baseStructOf(this);
-    final List<SweepCountAccStruct> others = SweepCoordinator.otherStructsOf(this);
-    assert null != base;
     
     // TODO: refactor some of this logic into a base class
     boolean countOnly = collectAcc==null && allBucketsAcc==null;
@@ -132,10 +128,12 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
     if (freq.perSeg != null) accumSeg = canDoPerSeg && freq.perSeg;  // internal - override perSeg heuristic
 
     final boolean maySkipBaseSetCollection = accumSeg || (canDoPerSeg && ordinalMap != null);
-    final FilterCtStruct[] filters = getSweepFilters(maySkipBaseSetCollection);
-    if (filters == null) {
+    final SweepCountAccStruct base = SweepCoordinator.baseStructOf(this, maySkipBaseSetCollection);
+    final List<SweepCountAccStruct> others = SweepCoordinator.otherStructsOf(this);
+    if (FacetFieldProcessor.shortcircuit(base, others)) {
       return;
     }
+
     final int maxSize = others.size() + 1; // others + base
     final List<LeafReaderContext> leaves = fcontext.searcher.getIndexReader().leaves();
     final DocIdSetIterator[] subIterators = new DocIdSetIterator[maxSize];

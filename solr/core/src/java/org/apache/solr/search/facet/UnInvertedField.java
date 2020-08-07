@@ -318,18 +318,6 @@ public class UnInvertedField extends DocTermOrds {
     public void call(int termNum);
   }
 
-  private static boolean shortcircuit(SweepCountAccStruct base, List<SweepCountAccStruct> others) {
-    if (base != null && base.cacheState != CacheState.CACHED) {
-      return false;
-    }
-    for (SweepCountAccStruct other : others) {
-      if (other.cacheState != CacheState.CACHED) {
-        return false;
-      }
-    }
-    return true;
-  }
-
   private void getCounts(FacetFieldProcessorByArrayUIF processor) throws IOException {
     DocSet docs = processor.fcontext.base;
     int baseSize = docs.size();
@@ -340,9 +328,9 @@ public class UnInvertedField extends DocTermOrds {
       return;
     }
 
-    SweepCountAccStruct baseCountAccStruct = SweepCoordinator.baseStructOf(processor);
+    SweepCountAccStruct baseCountAccStruct = SweepCoordinator.baseStructOf(processor, true);
     final List<SweepCountAccStruct> others = SweepCoordinator.otherStructsOf(processor);
-    if (shortcircuit(baseCountAccStruct, others)) {
+    if (FacetFieldProcessor.shortcircuit(baseCountAccStruct, others)) {
       return;
     }
 
@@ -465,9 +453,10 @@ public class UnInvertedField extends DocTermOrds {
 
     int uniqueTerms = 0;
     final CountSlotAcc countAcc = processor.countAcc;
-    final SweepCountAccStruct baseCountAccStruct = SweepCoordinator.baseStructOf(processor);
+    final boolean maySkipBaseSetCollection = processor.collectAcc == null && processor.allBucketsAcc == null;
+    final SweepCountAccStruct baseCountAccStruct = SweepCoordinator.baseStructOf(processor, maySkipBaseSetCollection);
     final List<SweepCountAccStruct> others = SweepCoordinator.otherStructsOf(processor);
-    if (processor.collectAcc == null && processor.allBucketsAcc == null && shortcircuit(baseCountAccStruct, others)) {
+    if (FacetFieldProcessor.shortcircuit(baseCountAccStruct, others)) {
       return;
     }
 

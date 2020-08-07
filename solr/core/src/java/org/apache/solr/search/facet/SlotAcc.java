@@ -676,6 +676,16 @@ public abstract class SlotAcc implements Closeable {
       this.alreadyCached = t.alreadyCached;
       this.cacheUpdater = t.cacheUpdater;
     }
+    public SweepCountAccStruct(SweepCountAccStruct t, String replaceKey) {
+      this.docSet = t.docSet;
+      this.isBase = t.isBase;
+      this.countAcc = new ShimCountSlotAcc(t.roCountAcc(), t.countAcc.fcontext);
+      this.countAcc.key = replaceKey;
+      this.qKey = t.qKey;
+      this.cacheState = CacheState.CACHED; // behave as cached, so will not double-populate
+      this.alreadyCached = t.alreadyCached;
+      this.cacheUpdater = t.cacheUpdater;
+    }
     /**
      * Because sweep collection offloads "collect" methods to count accumulation code,
      * it is helpful to provide a read-only view over the backing {@link CountSlotAcc}
@@ -691,6 +701,42 @@ public abstract class SlotAcc implements Closeable {
   }
 
   static enum CacheState { DO_NOT_CACHE, NOT_CACHED, PARTIALLY_CACHED, CACHED }
+
+  private static class ShimCountSlotAcc extends CountSlotAcc {
+    private final ReadOnlyCountSlotAcc backing;
+    public ShimCountSlotAcc(ReadOnlyCountSlotAcc backing, FacetContext fcontext) {
+      super(fcontext);
+      this.backing = backing;
+    }
+    @Override
+    public long getCount(int slot) {
+      return backing.getCount(slot);
+    }
+    @Override
+    public int compare(int slotA, int slotB) {
+      return backing.compare(slotA, slotB);
+    }
+    @Override
+    public Object getValue(int slotNum) throws IOException {
+      return backing.getValue(slotNum);
+    }
+    @Override
+    public void incrementCount(int slot, long count) {
+      throw new UnsupportedOperationException("not supported");
+    }
+    @Override
+    public void collect(int doc, int slot, IntFunction<SlotContext> slotContext) throws IOException {
+      throw new UnsupportedOperationException("not supported");
+    }
+    @Override
+    public void reset() throws IOException {
+      throw new UnsupportedOperationException("not supported");
+    }
+    @Override
+    public void resize(Resizer resizer) {
+      throw new UnsupportedOperationException("not supported");
+    }
+  }
 
   static interface SweepCoordinationPoint {
     SweepCoordinator getSweepCoordinator();
@@ -771,10 +817,7 @@ public abstract class SlotAcc implements Closeable {
      *         collection
      */
     public ReadOnlyCountSlotAcc add(String key, DocSet docs, int numSlots, QueryResultKey qKey) {
-      final SweepCountAccStruct ret = p.getSweepCountAcc(qKey, docs, false, numSlots);
-      // nocommit: below is potentially *really* bad! we're modifying the key on a countAcc instance that might be shared.
-      // nocommit: change this to return a cloned instance or something.
-      ret.countAcc.key = key;
+      final SweepCountAccStruct ret = p.getSweepCountAcc(key, qKey, docs, false, numSlots);
       if (null != debug) {
         @SuppressWarnings("unchecked")
         List<String> accsDebug = (List<String>) debug.get("accs");
@@ -835,11 +878,12 @@ public abstract class SlotAcc implements Closeable {
      *
      * @returns struct that wraps the {@link FacetContext#base} unless the {@link FacetProcessor#countAcc} is a {@link SweepingCountSlotAcc}
      */
-    public static SweepCountAccStruct baseStructOf(FacetProcessor<?> processor) {
+    public static SweepCountAccStruct baseStructOf(FacetProcessor<?> processor, boolean maySkipBaseSetCollection) {
       final SweepCoordinator sweepCoordinator;
       if (processor.countAcc instanceof SweepCoordinationPoint
           && (sweepCoordinator = ((SweepCoordinationPoint) processor.countAcc).getSweepCoordinator()) != null) {
-        return sweepCoordinator.base;
+        SweepCountAccStruct base = sweepCoordinator.base;
+        return (maySkipBaseSetCollection && base.cacheState == CacheState.CACHED) ? null : base;
       }
       return new SweepCountAccStruct(processor.fcontext.base, true, processor.countAcc, null, CacheState.DO_NOT_CACHE, null, null);
     }
@@ -853,7 +897,14 @@ public abstract class SlotAcc implements Closeable {
       final SweepCoordinator sweepCoordinator;
       if (processor.countAcc instanceof SweepCoordinationPoint
           && (sweepCoordinator = ((SweepCoordinationPoint) processor.countAcc).getSweepCoordinator()) != null) {
-        return sweepCoordinator.others;
+        List<SweepCountAccStruct> others = sweepCoordinator.others;
+        List<SweepCountAccStruct> ret = new ArrayList<>(others.size());
+        for (SweepCountAccStruct other : others) {
+          if (other.cacheState != CacheState.CACHED) {
+            ret.add(other);
+          }
+        }
+        return ret;
       }
       return Collections.emptyList();
     }
