@@ -44,7 +44,7 @@ public class RequestRateLimiter {
   private final RateLimiterConfig rateLimiterConfig;
   private final SlotMetadata guaranteedSlotMetadata;
   private final SlotMetadata borrowedSlotMetadata;
-  private static SlotMetadata nullSlotMetadata = null;
+  private static final SlotMetadata nullSlotMetadata = new SlotMetadata(null);
 
   public RequestRateLimiter(RateLimiterConfig rateLimiterConfig) {
     this.rateLimiterConfig = rateLimiterConfig;
@@ -52,7 +52,6 @@ public class RequestRateLimiter {
     this.borrowableSlotsPool = new Semaphore(rateLimiterConfig.allowedRequests - rateLimiterConfig.guaranteedSlotsThreshold);
     this.guaranteedSlotMetadata = new SlotMetadata(guaranteedSlotsPool);
     this.borrowedSlotMetadata = new SlotMetadata(borrowableSlotsPool);
-    nullSlotMetadata = new SlotMetadata(null);
   }
 
   /**
