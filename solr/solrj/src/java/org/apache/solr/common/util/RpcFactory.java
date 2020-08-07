@@ -18,6 +18,7 @@ package org.apache.solr.common.util;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -84,7 +85,7 @@ public interface RpcFactory {
 
          /**Consumer for the response data
           */
-        HttpRpc withResponseConsumer(OutputConsumer sink);
+        HttpRpc withResponseConsumer(ResponseConsumer sink);
 
          /**Handle request headers if required
           */
@@ -114,13 +115,21 @@ public interface RpcFactory {
 
 
          /**Invoke a synchronous request. The return object depends on the output of the
-          * {@link OutputConsumer}
+          * {@link ResponseConsumer}
           */
         Object invoke() throws RPCException;
 
     }
 
-    interface OutputConsumer {
+    interface ResponseConsumer {
+        /**Allows this impl to add request params/http headers before the request is fired
+         */
+        default void setRpc(HttpRpc rpc){};
+
+        /**Process the response.
+         * Ensure that the whole stream is eaten up before this method returns
+         * The stream will be closed after the method returns
+         */
         Object accept(InputStream is) throws IOException;
     }
 
@@ -143,6 +152,9 @@ public interface RpcFactory {
     /** Consumer of header data
      */
     interface HeaderConsumer {
+        /**Allows this impl to add request params/http headers before the request is fired
+         */
+        default void setRpc(HttpRpc rpc){};
         /**
          * read all required values from the header
          * @param status the HTTP status code
@@ -153,4 +165,27 @@ public interface RpcFactory {
     enum ReplicaType {
         LEADER, NRT, TLOG, PULL, NON_LEADER, ANY
     }
+
+    ResponseConsumer JAVABIN_CONSUMER = new ResponseConsumer() {
+        @Override
+        public void setRpc(HttpRpc rpc) {
+            rpc.addParam(CommonParams.WT , CommonParams.JAVABIN);
+        }
+
+        @Override
+        public Object accept(InputStream is) throws IOException {
+            return Utils.JAVABINCONSUMER.accept(is);
+        }
+    };
+    ResponseConsumer JSON_CONSUMER = new ResponseConsumer() {
+        @Override
+        public void setRpc(HttpRpc rpc) {
+            rpc.addParam(CommonParams.WT , CommonParams.JSON);
+        }
+
+        @Override
+        public Object accept(InputStream is) throws IOException {
+            return Utils.JSONCONSUMER.accept(is);
+        }
+    };
 }
