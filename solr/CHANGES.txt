@@ -125,6 +125,9 @@ New Features
 
 * SOLR-14604: Add the ability to uninstall a package from with the Package CLI. (MarcusSorealheis)
 
+* SOLR-14582: Expose IWC.setMaxCommitMergeWaitMillis in Solr's index config. This is an expert config option that can be
+  set when using a custom MergePolicy (doesn't have any effect on the default MP) (Tomás Fernández Löbbe)
+
 Improvements
 ---------------------
 
