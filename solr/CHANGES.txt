@@ -41,8 +41,8 @@ Improvements
 * SOLR-14702: This PR removes the oppressive master/slave terminology from Solr core that has been in Solr for a decade. (MarcusSorealheis)
 
 * SOLR-7683 Introduce support to identify Solr internal request types (Atri Sharma, Hrishikesh Gadre)
-G
-* SOLR-13528 Rate Limiting in Solr (Atri Sharma)
+
+* SOLR-13528 Rate Limiting in Solr (Atri Sharma, Mike Drob)
 
 Other Changes
 ----------------------
