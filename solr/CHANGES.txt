@@ -86,6 +86,9 @@ Other Changes
 
 * SOLR-11868: Deprecate CloudSolrClient.setIdField, use information from Zookeeper (Erick Erickson)
 
+* SOLR-14702: Most references to "master" and "slave" replaced with "leader" and "follower". Some references 
+  remain for compatibility purposes and were removed in master. (MarcusSorealheis, Erick Erickson, Tomás Fernández Löbbe)
+
 ==================  8.6.1 ==================
 
 Bug Fixes
