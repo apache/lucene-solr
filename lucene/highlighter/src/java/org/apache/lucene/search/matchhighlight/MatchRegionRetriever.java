@@ -64,7 +64,9 @@ public class MatchRegionRetriever {
     leaves = searcher.getIndexReader().leaves();
     assert checkOrderConsistency(leaves);
 
-    weight = searcher.createWeight(query, ScoreMode.COMPLETE_NO_SCORES, 0);
+    // We need full scoring mode so that we can receive matches from all sub-clauses
+    // (no optimizations in Boolean queries take place).
+    weight = searcher.createWeight(query, ScoreMode.COMPLETE, 0);
 
     // Compute the subset of fields affected by this query so that we don't load or scan
     // fields that are irrelevant.

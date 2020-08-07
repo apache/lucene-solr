@@ -411,6 +411,38 @@ public class MatchRegionRetrieverTest extends LuceneTestCase {
     }
   }
 
+  /**
+   * Rewritten Boolean queries may omit matches from {@link
+   * org.apache.lucene.search.BooleanClause.Occur#SHOULD} clauses. Check that this isn't the case.
+   */
+  @Test
+  public void testNoRewrite() throws IOException {
+    String field1 = FLD_TEXT_POS_OFFS1;
+    String field2 = FLD_TEXT_POS_OFFS2;
+    withReader(
+        List.of(
+            Map.of(
+                field1, values("0100"),
+                field2, values("loo bar")),
+            Map.of(
+                field1, values("0200"),
+                field2, values("foo bar"))),
+        reader -> {
+          String expected = fmt("0: (%s: '>0100<')(%s: 'loo >bar<')", field1, field2);
+          Assertions.assertThat(
+              highlights(
+                  reader,
+                  stdQueryParser.apply(fmt("+%s:01* OR %s:bar", field1, field2), field1)))
+              .containsOnly(expected);
+
+          Assertions.assertThat(
+              highlights(
+                  reader,
+                  stdQueryParser.apply(fmt("+%s:01* AND %s:bar", field1, field2), field1)))
+              .containsOnly(expected);
+        });
+  }
+
   @Test
   public void testNestedQueryHitsWithOffsets() throws IOException {
     checkNestedQueryHits(FLD_TEXT_POS_OFFS);
