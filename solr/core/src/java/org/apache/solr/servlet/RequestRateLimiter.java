@@ -41,10 +41,10 @@ public class RequestRateLimiter {
   // irrespective of whether the request is of this request rate limiter or other.
   private final Semaphore borrowableSlotsPool;
 
-  private final RateLimiterConfig rateLimiterConfig;
-  private final SlotMetadata guaranteedSlotMetadata;
-  private final SlotMetadata borrowedSlotMetadata;
-  private final SlotMetadata nullSlotMetadata;
+  private static RateLimiterConfig rateLimiterConfig = null;
+  private static SlotMetadata guaranteedSlotMetadata = null;
+  private static SlotMetadata borrowedSlotMetadata = null;
+  private static SlotMetadata nullSlotMetadata = null;
 
   public RequestRateLimiter(RateLimiterConfig rateLimiterConfig) {
     this.rateLimiterConfig = rateLimiterConfig;
