@@ -16,14 +16,12 @@
  */
 package org.apache.solr.common.util;
 
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Map;
 import java.util.function.Function;
 
 /**A factory that creates any type of RPC calls in Solr
@@ -41,85 +39,6 @@ public interface RpcFactory {
 
     HttpRpc createHttpRpc();
 
-    interface CallRouter {
-        /**send to a specific node. usually admin requests
-         */
-        CallRouter toNode(String nodeName);
-
-        /** Make a request to any replica of the shard of type
-         */
-        CallRouter toShard(String collection, String shard, ReplicaType type);
-
-        /**Identify the shard using the route key and send the request to a given replica type
-         */
-        CallRouter toShard(String collection, ReplicaType type,  String routeKey);
-
-        /**Make a request to a specific replica
-         */
-        CallRouter toReplica(String collection, String replicaName);
-
-        /**To any Solr node  that may host this collection
-         */
-        CallRouter toCollection(String collection);
-
-        CallRouter toCore(String node, String core);
-        
-        HttpRpc createHttpRpc() ;
-    }
-
-
-
-     interface HttpRpc {
-        HttpRpc withCallRouter(CallRouter callRouter);
-         /** Add a request param
-          */
-        HttpRpc addParam(String key, String val);
-
-         /**Add multiple request params
-          */
-        HttpRpc addParams(Map<String, String> params);
-
-         /** Add a request header
-          */
-        HttpRpc addHeader(String key, String val);
-
-         /**Consumer for the response data
-          */
-        HttpRpc withResponseConsumer(ResponseConsumer sink);
-
-         /**Handle request headers if required
-          */
-        HttpRpc withHeaderConsumer(HeaderConsumer headerConsumer);
-
-         /** Use Send a payload
-          */
-        HttpRpc withPayload(InputSupplier payload);
-
-         /**Http method
-          */
-        HttpRpc withHttpMethod(SolrRequest.METHOD method);
-
-         /**The uri. The semantics depends on
-          * whether it is made to a node or replica
-          * if it is a shard/replica the uri is the name of the handler (e.g /select , /update/json etc)
-          * if it is node it is a full path (e.g: /admin/collections)
-          */
-        HttpRpc withV1Path(String uri);
-
-         /**The uri. The semantics depends on
-          * whether it is made to a node or replica
-          * if it is a shard/replica the uri is the name of the handler
-          * if it is node it is a full path
-          */
-        HttpRpc withV2Path(String uri);
-
-
-         /**Invoke a synchronous request. The return object depends on the output of the
-          * {@link ResponseConsumer}
-          */
-        Object invoke() throws RPCException;
-
-    }
 
     interface ResponseConsumer {
         /**Allows this impl to add request params/http headers before the request is fired
@@ -161,9 +80,6 @@ public interface RpcFactory {
          * @return true to proceed to processing body. if false , ignore the body
          */
         boolean readHeader(int status, Function<String, String> headerProvider);
-    }
-    enum ReplicaType {
-        LEADER, NRT, TLOG, PULL, NON_LEADER, ANY
     }
 
     ResponseConsumer JAVABIN_CONSUMER = new ResponseConsumer() {
