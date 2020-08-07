@@ -156,7 +156,10 @@ public class RateLimitManager {
 
     activeRequestsMap.remove(request);
 
-    acquiredSlotMetadata.requestRateLimiter.decrementConcurrentRequests(acquiredSlotMetadata.isBorrowedSlot);
+    // We can have a null requestRateLimiter if the request rate limiter is disabled
+    if (acquiredSlotMetadata.requestRateLimiter != null) {
+      acquiredSlotMetadata.requestRateLimiter.decrementConcurrentRequests(acquiredSlotMetadata.usedPool);
+    }
   }
 
   public void registerRequestRateLimiter(RequestRateLimiter requestRateLimiter, SolrRequest.SolrRequestType requestType) {

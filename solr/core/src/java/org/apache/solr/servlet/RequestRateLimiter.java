@@ -58,18 +58,18 @@ public class RequestRateLimiter {
   public Pair<Boolean, AcquiredSlotMetadata> handleRequest() throws InterruptedException {
 
     if (!rateLimiterConfig.isEnabled) {
-      return new Pair<Boolean, AcquiredSlotMetadata>(true, null);
+      return new Pair<Boolean, AcquiredSlotMetadata>(true, new AcquiredSlotMetadata(null, null));
     }
 
     if (guaranteedSlotsPool.tryAcquire(rateLimiterConfig.waitForSlotAcquisition, TimeUnit.MILLISECONDS)) {
-      return new Pair<Boolean, AcquiredSlotMetadata>(true, new AcquiredSlotMetadata(this, false));
+      return new Pair<Boolean, AcquiredSlotMetadata>(true, new AcquiredSlotMetadata(this, guaranteedSlotsPool));
     }
 
     if (borrowableSlotsPool.tryAcquire(rateLimiterConfig.waitForSlotAcquisition, TimeUnit.MILLISECONDS)) {
-      return new Pair<Boolean, AcquiredSlotMetadata>(true, new AcquiredSlotMetadata(this, true));
+      return new Pair<Boolean, AcquiredSlotMetadata>(true, new AcquiredSlotMetadata(this, borrowableSlotsPool));
     }
 
-    return new Pair<Boolean, AcquiredSlotMetadata>(false, null);
+    return new Pair<Boolean, AcquiredSlotMetadata>(false, new AcquiredSlotMetadata(null, null));
   }
 
   /**
@@ -82,19 +82,18 @@ public class RequestRateLimiter {
    */
   public Pair<Boolean, AcquiredSlotMetadata> allowSlotBorrowing() throws InterruptedException {
     if (borrowableSlotsPool.tryAcquire(rateLimiterConfig.waitForSlotAcquisition, TimeUnit.MILLISECONDS)) {
-      return new Pair<Boolean, AcquiredSlotMetadata>(true, new AcquiredSlotMetadata(this, true));
+      return new Pair<Boolean, AcquiredSlotMetadata>(true, new AcquiredSlotMetadata(this, borrowableSlotsPool));
     }
 
-    return new Pair<Boolean, AcquiredSlotMetadata>(false, null);
+    return new Pair<Boolean, AcquiredSlotMetadata>(false, new AcquiredSlotMetadata(null, null));
   }
 
-  public void decrementConcurrentRequests(boolean isBorrowedSlot) {
-    if (isBorrowedSlot) {
-      borrowableSlotsPool.release();
-      return;
+  public void decrementConcurrentRequests(Semaphore usedPool) {
+    if (usedPool == null) {
+      throw new IllegalArgumentException("Passed in permits pool is null");
     }
 
-    guaranteedSlotsPool.release();
+    usedPool.release();
   }
 
   public RateLimiterConfig getRateLimiterConfig() {
@@ -156,11 +155,11 @@ public class RequestRateLimiter {
   // Represents the metadata for an acquired slot
   static class AcquiredSlotMetadata {
     public RequestRateLimiter requestRateLimiter;
-    public boolean isBorrowedSlot;
+    public Semaphore usedPool;
 
-    public AcquiredSlotMetadata(RequestRateLimiter requestRateLimiter, boolean isBorrowedSlot) {
+    public AcquiredSlotMetadata(RequestRateLimiter requestRateLimiter, Semaphore usedPool) {
       this.requestRateLimiter = requestRateLimiter;
-      this.isBorrowedSlot = isBorrowedSlot;
+      this.usedPool = usedPool;
     }
   }
 }
