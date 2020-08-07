@@ -22,7 +22,6 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.common.util.Pair;
 
 /**
  * Handles rate limiting for a specific request type.
@@ -55,21 +54,21 @@ public class RequestRateLimiter {
    * NOTE: Always check for a null metadata object even if this method returns a true -- this will be the scenario when
    * rate limiters are not enabled.
    * */
-  public Pair<Boolean, AcquiredSlotMetadata> handleRequest() throws InterruptedException {
+  public SlotMetadata handleRequest() throws InterruptedException {
 
     if (!rateLimiterConfig.isEnabled) {
-      return new Pair<Boolean, AcquiredSlotMetadata>(true, new AcquiredSlotMetadata(null, null));
+      return new SlotMetadata(null);
     }
 
     if (guaranteedSlotsPool.tryAcquire(rateLimiterConfig.waitForSlotAcquisition, TimeUnit.MILLISECONDS)) {
-      return new Pair<Boolean, AcquiredSlotMetadata>(true, new AcquiredSlotMetadata(this, guaranteedSlotsPool));
+      return new SlotMetadata(guaranteedSlotsPool);
     }
 
     if (borrowableSlotsPool.tryAcquire(rateLimiterConfig.waitForSlotAcquisition, TimeUnit.MILLISECONDS)) {
-      return new Pair<Boolean, AcquiredSlotMetadata>(true, new AcquiredSlotMetadata(this, borrowableSlotsPool));
+      return new SlotMetadata(borrowableSlotsPool);
     }
 
-    return new Pair<Boolean, AcquiredSlotMetadata>(false, new AcquiredSlotMetadata(null, null));
+    return null;
   }
 
   /**
@@ -80,20 +79,12 @@ public class RequestRateLimiter {
    *
    * @lucene.experimental -- Can cause slots to be blocked if a request borrows a slot and is itself long lived.
    */
-  public Pair<Boolean, AcquiredSlotMetadata> allowSlotBorrowing() throws InterruptedException {
+  public SlotMetadata allowSlotBorrowing() throws InterruptedException {
     if (borrowableSlotsPool.tryAcquire(rateLimiterConfig.waitForSlotAcquisition, TimeUnit.MILLISECONDS)) {
-      return new Pair<Boolean, AcquiredSlotMetadata>(true, new AcquiredSlotMetadata(this, borrowableSlotsPool));
+      return new SlotMetadata(borrowableSlotsPool);
     }
 
-    return new Pair<Boolean, AcquiredSlotMetadata>(false, new AcquiredSlotMetadata(null, null));
-  }
-
-  public void decrementConcurrentRequests(Semaphore usedPool) {
-    if (usedPool == null) {
-      throw new IllegalArgumentException("Passed in permits pool is null");
-    }
-
-    usedPool.release();
+    return new SlotMetadata(null);
   }
 
   public RateLimiterConfig getRateLimiterConfig() {
@@ -152,14 +143,22 @@ public class RequestRateLimiter {
     }
   }
 
-  // Represents the metadata for an acquired slot
-  static class AcquiredSlotMetadata {
-    public RequestRateLimiter requestRateLimiter;
-    public Semaphore usedPool;
+  // Represents the metadata for a slot
+  static class SlotMetadata {
+    private Semaphore usedPool;
 
-    public AcquiredSlotMetadata(RequestRateLimiter requestRateLimiter, Semaphore usedPool) {
-      this.requestRateLimiter = requestRateLimiter;
+    public SlotMetadata(Semaphore usedPool) {
       this.usedPool = usedPool;
+    }
+
+    public void decrementRequest() {
+      if (usedPool != null) {
+        usedPool.release();
+      }
+    }
+
+    public boolean isUsedPoolNull() {
+      return usedPool == null;
     }
   }
 }

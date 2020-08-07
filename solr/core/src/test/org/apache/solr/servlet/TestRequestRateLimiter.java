@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.solr.client.solrj.SolrQuery;
@@ -34,7 +33,6 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.Pair;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -158,7 +156,6 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
     final AtomicInteger incomingRequestCount;
     final AtomicInteger acceptedNewRequestCount;
     final AtomicInteger rejectedRequestCount;
-    final AtomicInteger activeRequestCount;
     final AtomicInteger borrowedSlotCount;
 
     private final int maxCount;
@@ -169,23 +166,18 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
       this.incomingRequestCount = new AtomicInteger(0);
       this.acceptedNewRequestCount = new AtomicInteger(0);
       this.rejectedRequestCount = new AtomicInteger(0);
-      this.activeRequestCount = new AtomicInteger(0);
       this.borrowedSlotCount = new AtomicInteger(0);
       this.maxCount = maxCount;
     }
 
     @Override
-    public Pair<Boolean, AcquiredSlotMetadata> handleRequest() throws InterruptedException {
+    public SlotMetadata handleRequest() throws InterruptedException {
       incomingRequestCount.getAndIncrement();
 
-      Pair<Boolean, AcquiredSlotMetadata> response = super.handleRequest();
+      SlotMetadata response = super.handleRequest();
 
-      if (response.first()) {
+      if (response != null) {
         acceptedNewRequestCount.getAndIncrement();
-        if (activeRequestCount.incrementAndGet() > maxCount) {
-          throw new IllegalStateException("Active request count exceeds the count. Incoming " +
-              activeRequestCount.get() + " maxCount " + maxCount);
-        }
       } else {
         rejectedRequestCount.getAndIncrement();
       }
@@ -194,16 +186,10 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
     }
 
     @Override
-    public void decrementConcurrentRequests(Semaphore usedPool) {
-      activeRequestCount.decrementAndGet();
-      super.decrementConcurrentRequests(usedPool);
-    }
+    public SlotMetadata allowSlotBorrowing() throws InterruptedException {
+      SlotMetadata result = super.allowSlotBorrowing();
 
-    @Override
-    public Pair<Boolean, AcquiredSlotMetadata> allowSlotBorrowing() throws InterruptedException {
-      Pair<Boolean, AcquiredSlotMetadata> result = super.allowSlotBorrowing();
-
-      if (result.first()) {
+      if (!result.isUsedPoolNull()) {
         borrowedSlotCount.incrementAndGet();
       }
 

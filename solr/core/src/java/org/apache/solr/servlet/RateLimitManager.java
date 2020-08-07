@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.common.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +47,7 @@ public class RateLimitManager {
   public final static long DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS = -1;
   private final Map<String, RequestRateLimiter> requestRateLimiterMap;
 
-  private final Map<HttpServletRequest, RequestRateLimiter.AcquiredSlotMetadata> activeRequestsMap;
+  private final Map<HttpServletRequest, RequestRateLimiter.SlotMetadata> activeRequestsMap;
 
   public RateLimitManager() {
     this.requestRateLimiterMap = new HashMap<>();
@@ -80,21 +79,20 @@ public class RateLimitManager {
       return true;
     }
 
-    Pair<Boolean, RequestRateLimiter.AcquiredSlotMetadata> result = requestRateLimiter.handleRequest();
+    RequestRateLimiter.SlotMetadata result = requestRateLimiter.handleRequest();
 
-    if (result.first()) {
-      if (result.second() == null) {
-        throw new IllegalStateException("AcquiredSlotMetadata object null even when slot is acquired and rate limiters are enabled");
+    if (result != null) {
+      // Can be the case if request rate limiter is disabled
+      if (!result.isUsedPoolNull()) {
+        activeRequestsMap.put(request, result);
       }
-
-      activeRequestsMap.put(request, result.second());
       return true;
     }
 
-    RequestRateLimiter.AcquiredSlotMetadata acquiredSlotMetadata = trySlotBorrowing(typeOfRequest);
+    RequestRateLimiter.SlotMetadata slotMetadata = trySlotBorrowing(typeOfRequest);
 
-    if (acquiredSlotMetadata != null) {
-      activeRequestsMap.put(request, acquiredSlotMetadata);
+    if (slotMetadata != null) {
+      activeRequestsMap.put(request, slotMetadata);
       return true;
     }
 
@@ -108,9 +106,9 @@ public class RateLimitManager {
    *
    * @lucene.experimental -- Can cause slots to be blocked if a request borrows a slot and is itself long lived.
    */
-  private RequestRateLimiter.AcquiredSlotMetadata trySlotBorrowing(String requestType) {
+  private RequestRateLimiter.SlotMetadata trySlotBorrowing(String requestType) {
     for (Map.Entry<String, RequestRateLimiter> currentEntry : requestRateLimiterMap.entrySet()) {
-      Pair<Boolean, RequestRateLimiter.AcquiredSlotMetadata> result = null;
+      RequestRateLimiter.SlotMetadata result = null;
       RequestRateLimiter requestRateLimiter = currentEntry.getValue();
 
       // Cant borrow from ourselves
@@ -132,12 +130,12 @@ public class RateLimitManager {
           Thread.currentThread().interrupt();
         }
 
-        if (result != null && result.first()) {
-          if (result.second() == null) {
-            throw new IllegalStateException("AcquiredSlotMetadata object null even when slot is acquired and rate limiters are enabled");
-          }
+        if (result == null) {
+          throw new IllegalStateException("Returned metadata object is null");
+        }
 
-          return result.second();
+        if (!result.isUsedPoolNull()) {
+          return result;
         }
       }
     }
@@ -147,19 +145,16 @@ public class RateLimitManager {
 
   // Decrement the active requests in the rate limiter for the corresponding request type.
   public void decrementActiveRequests(HttpServletRequest request) {
-    RequestRateLimiter.AcquiredSlotMetadata acquiredSlotMetadata = activeRequestsMap.get(request);
+    RequestRateLimiter.SlotMetadata slotMetadata = activeRequestsMap.get(request);
 
-    if (acquiredSlotMetadata == null) {
+    if (slotMetadata == null) {
       // No rate limiter for this request type
       return;
     }
 
     activeRequestsMap.remove(request);
 
-    // We can have a null requestRateLimiter if the request rate limiter is disabled
-    if (acquiredSlotMetadata.requestRateLimiter != null) {
-      acquiredSlotMetadata.requestRateLimiter.decrementConcurrentRequests(acquiredSlotMetadata.usedPool);
-    }
+    slotMetadata.decrementRequest();
   }
 
   public void registerRequestRateLimiter(RequestRateLimiter requestRateLimiter, SolrRequest.SolrRequestType requestType) {
