@@ -189,7 +189,7 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
     public SlotMetadata allowSlotBorrowing() throws InterruptedException {
       SlotMetadata result = super.allowSlotBorrowing();
 
-      if (!result.isUsedPoolNull()) {
+      if (!result.isReleasable()) {
         borrowedSlotCount.incrementAndGet();
       }
 
