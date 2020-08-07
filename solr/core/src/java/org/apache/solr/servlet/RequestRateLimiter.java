@@ -163,7 +163,7 @@ public class RequestRateLimiter {
     }
 
     public boolean isReleasable() {
-      return usedPool == null;
+      return usedPool != null;
     }
   }
 }

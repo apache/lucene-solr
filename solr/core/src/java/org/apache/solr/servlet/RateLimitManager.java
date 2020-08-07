@@ -85,7 +85,7 @@ public class RateLimitManager {
 
     if (result != null) {
       // Can be the case if request rate limiter is disabled
-      if (!result.isReleasable()) {
+      if (result.isReleasable()) {
         activeRequestsMap.put(request, result);
       }
       return true;
@@ -136,7 +136,7 @@ public class RateLimitManager {
           throw new IllegalStateException("Returned metadata object is null");
         }
 
-        if (!result.isReleasable()) {
+        if (result.isReleasable()) {
           return result;
         }
       }
