@@ -20,6 +20,9 @@ import org.apache.solr.client.solrj.SolrRequest;
 
 import java.util.Map;
 
+/**Abstract out HTTP aspects of the request
+ *
+ */
 public interface HttpRpc {
     HttpRpc withCallRouter(CallRouter callRouter);
 

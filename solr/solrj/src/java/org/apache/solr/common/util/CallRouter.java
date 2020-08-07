@@ -16,6 +16,9 @@
  */
 package org.apache.solr.common.util;
 
+/**
+ * Provide information to route a call to an appropriate node/core
+ */
 public interface CallRouter {
     /**
      * send to a specific node. usually admin requests
