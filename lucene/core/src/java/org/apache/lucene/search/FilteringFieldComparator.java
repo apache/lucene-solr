@@ -68,10 +68,12 @@ abstract class FilteringFieldComparator<T> extends FieldComparator<T> {
    * @param comparator – comparator to wrap
    * @param reverse – if this sort is reverse
    * @param singleSort – true if this sort is based on a single field and there are no other sort fields for tie breaking
+   * @param hasAfter – true if this sort has after FieldDoc
    * @return comparator wrapped as a filtering comparator or the original comparator if the filtering functionality
    * is not implemented for it
    */
-  public static FieldComparator<?> wrapToFilteringComparator(FieldComparator<?> comparator, boolean reverse, boolean singleSort) {
+  public static FieldComparator<?> wrapToFilteringComparator(FieldComparator<?> comparator, boolean reverse, boolean singleSort,
+      boolean hasAfter) {
     Class<?> comparatorClass = comparator.getClass();
     if (comparatorClass == FieldComparator.LongComparator.class){
       return new FilteringNumericComparator<>((FieldComparator.LongComparator) comparator, reverse, singleSort);
@@ -84,6 +86,9 @@ abstract class FilteringFieldComparator<T> extends FieldComparator<T> {
     }
     if (comparatorClass == FieldComparator.FloatComparator.class){
       return new FilteringNumericComparator<>((FieldComparator.FloatComparator) comparator, reverse, singleSort);
+    }
+    if (comparatorClass == FieldComparator.DocComparator.class && hasAfter && reverse == false) { // if SortField.DOC with after
+      return new FilteringDocComparator<>((FieldComparator.DocComparator) comparator, reverse, singleSort);
     }
     return comparator;
   }

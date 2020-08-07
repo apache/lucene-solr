@@ -31,6 +31,7 @@ import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
 
+import static org.apache.lucene.search.SortField.FIELD_DOC;
 import static org.apache.lucene.search.SortField.FIELD_SCORE;
 
 public class TestFieldSortOptimizationSkipping extends LuceneTestCase {
@@ -283,6 +284,71 @@ public class TestFieldSortOptimizationSkipping extends LuceneTestCase {
       }
       assertTrue(collector.isEarlyTerminated());
       assertTrue(topDocs.totalHits.value < numDocs);
+    }
+
+    writer.close();
+    reader.close();
+    dir.close();
+  }
+
+  public void testDocSortOptimizationWithAfter() throws IOException {
+    final Directory dir = newDirectory();
+    final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig());
+    final int numDocs = atLeast(1000);
+    for (int i = 0; i < numDocs; ++i) {
+      final Document doc = new Document();
+      writer.addDocument(doc);
+    }
+    final IndexReader reader = DirectoryReader.open(writer);
+    IndexSearcher searcher = new IndexSearcher(reader);
+    final int numHits = 3;
+    final int totalHitsThreshold = 3;
+    final int searchAfter = 990;
+
+    // sort by _doc with search after should trigger optimization
+    {
+      final Sort sort = new Sort(FIELD_DOC);
+      FieldDoc after = new FieldDoc(searchAfter, Float.NaN, new Integer[]{searchAfter});
+      final TopFieldCollector collector = TopFieldCollector.create(sort, numHits, after, totalHitsThreshold);
+      searcher.search(new MatchAllDocsQuery(), collector);
+      TopDocs topDocs = collector.topDocs();
+      assertEquals(topDocs.scoreDocs.length, numHits);
+      for (int i = 0; i < numHits; i++) {
+        int expectedDocID = searchAfter + 1 + i;
+        assertEquals(expectedDocID, topDocs.scoreDocs[i].doc);
+      }
+      assertTrue(collector.isEarlyTerminated());
+      // check that very few hits were collected, and most hits before searchAfter were skipped
+      assertTrue(topDocs.totalHits.value < (numDocs - searchAfter));
+    }
+
+    // sort by _doc + _score with search after should trigger optimization
+    {
+      final Sort sort = new Sort(FIELD_DOC, FIELD_SCORE);
+      FieldDoc after = new FieldDoc(searchAfter, Float.NaN, new Object[]{searchAfter, 1.0f});
+      final TopFieldCollector collector = TopFieldCollector.create(sort, numHits, after, totalHitsThreshold);
+      searcher.search(new MatchAllDocsQuery(), collector);
+      TopDocs topDocs = collector.topDocs();
+      assertEquals(topDocs.scoreDocs.length, numHits);
+      for (int i = 0; i < numHits; i++) {
+        int expectedDocID = searchAfter + 1 + i;
+        assertEquals(expectedDocID, topDocs.scoreDocs[i].doc);
+      }
+      assertTrue(collector.isEarlyTerminated());
+      // assert that very few hits were collected, and most hits before searchAfter were skipped
+      assertTrue(topDocs.totalHits.value < (numDocs - searchAfter));
+    }
+
+    // sort by _doc desc should not trigger optimization
+    {
+      final Sort sort = new Sort(new SortField(null, SortField.Type.DOC, true));
+      FieldDoc after = new FieldDoc(searchAfter, Float.NaN, new Integer[]{searchAfter});
+      final TopFieldCollector collector = TopFieldCollector.create(sort, numHits, after, totalHitsThreshold);
+      searcher.search(new MatchAllDocsQuery(), collector);
+      TopDocs topDocs = collector.topDocs();
+      assertEquals(topDocs.scoreDocs.length, numHits);
+      // assert that many hits were collected including all hits before searchAfter
+      assertTrue(topDocs.totalHits.value > searchAfter);
     }
 
     writer.close();

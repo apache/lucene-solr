@@ -90,13 +90,13 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       if (minScoreAcc != null && (totalHits & minScoreAcc.modInterval) == 0) {
         updateGlobalMinCompetitiveScore(scorer);
       }
-
-      if (filteringLeafComparator != null && queueFull &&
-          hitsThresholdChecker.isThresholdReached() && totalHitsRelation == TotalHits.Relation.EQUAL_TO) {
-        // for the first time queue becomes full and hitsThreshold is reached,
-        // notify leaf comparator that its competitive iterator can be updated
-        filteringLeafComparator.setCanUpdateIterator();
-        totalHitsRelation = TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO;
+      if (filteringLeafComparator != null && totalHitsRelation == TotalHits.Relation.EQUAL_TO &&
+              hitsThresholdChecker.isThresholdReached()) {
+        filteringLeafComparator.setHitsThresholdReached();
+        if (queueFull) filteringLeafComparator.setQueueFull();
+        if (filteringLeafComparator.iteratorUpdated()) {
+          totalHitsRelation = TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO;
+        }
       }
     }
 
@@ -150,11 +150,15 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       if (minScoreAcc != null) {
         updateGlobalMinCompetitiveScore(scorer);
       }
-      if (filteringLeafComparator != null && queueFull && hitsThresholdChecker.isThresholdReached()) {
-        // if queue became full and hitsThreshold was reached in previous segments,
-        // notify this segment's leaf comparator that its competitive iterator can be updated
-        filteringLeafComparator.setCanUpdateIterator();
-        totalHitsRelation = TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO;
+
+      if (filteringLeafComparator != null && hitsThresholdChecker.isThresholdReached()) {
+        // hitsThreshold was reached in previous segments, notify this segment's leaf comparator about it
+        filteringLeafComparator.setHitsThresholdReached();
+        // if queue became full in previous segments, notify this segment's leaf comparator about it
+        if (queueFull) filteringLeafComparator.setQueueFull();
+        if (filteringLeafComparator.iteratorUpdated()) {
+          totalHitsRelation = TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO;
+        }
       }
     }
 
@@ -471,7 +475,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
     // here we assume that if hitsThreshold was set, we let a comparator to skip non-competitive docs
     boolean filterNonCompetitiveDocs = hitsThresholdChecker.getHitsThreshold() == Integer.MAX_VALUE ? false : true;
-    FieldValueHitQueue<Entry> queue = FieldValueHitQueue.create(sort.fields, numHits, filterNonCompetitiveDocs);
+    FieldValueHitQueue<Entry> queue = FieldValueHitQueue.create(sort.fields, numHits, filterNonCompetitiveDocs, after != null);
 
     if (after == null) {
       return new SimpleFieldCollector(sort, queue, numHits, hitsThresholdChecker, minScoreAcc);

@@ -20,8 +20,9 @@ import java.io.IOException;
 
 /**
  * Decorates a wrapped LeafFieldComparator to add a functionality to skip over non-competitive docs.
- * FilteringLeafFieldComparator provides two additional functions to a LeafFieldComparator:
- *  {@code competitiveIterator()} and {@code setCanUpdateIterator()}.
+ * {code competitiveIterator()} provides an iterator over competitive documents.
+ * Collectors must inform this comparator when hits threshold is reached and when queue becomes full,
+ * which are signals for the comparator to start updating its competitive iterator.
  */
 public interface FilteringLeafFieldComparator extends LeafFieldComparator {
   /**
@@ -32,8 +33,22 @@ public interface FilteringLeafFieldComparator extends LeafFieldComparator {
   DocIdSetIterator competitiveIterator() throws IOException;
 
   /**
-   * Informs this leaf comparator that it is allowed to start updating its competitive iterator.
-   * This method is called from a collector when queue becomes full and threshold is reached.
+   * Informs this leaf comparator that hits threshold is reached.
+   * This method is called from a collector when hits threshold is reached.
+   * For some filtering comparators (e.g. {@code FilteringDocLeafComparator} reaching
+   * hits threshold is enough to start updating their iterators, even when queue is not yet full.
    */
-  void setCanUpdateIterator() throws IOException;
+  void setHitsThresholdReached() throws IOException;
+
+  /**
+   * Informs this leaf comparator that queue has become full.
+   * This method is called from a collector when queue becomes full.
+   */
+  void setQueueFull() throws IOException;
+
+  /**
+   * Returns {@code true} if the competitive iterator is updated.
+   * This tells the calling collector that it can update the {@code TotalHits.Relation} to {GREATER_THAN_OR_EQUAL_TO}
+   */
+  boolean iteratorUpdated() throws IOException;
 }

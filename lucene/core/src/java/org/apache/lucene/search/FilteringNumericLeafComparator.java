@@ -47,6 +47,8 @@ abstract class FilteringNumericLeafComparator implements FilteringLeafFieldCompa
   private int updateCounter = 0;
   private boolean canUpdateIterator = false; // set to true when queue becomes full and hitsThreshold is reached
   private DocIdSetIterator competitiveIterator;
+  private boolean queueFull = false;
+  private boolean hitsThresholdReached = false;
 
   public FilteringNumericLeafComparator(LeafFieldComparator in, LeafReaderContext context, String field,
         boolean reverse, boolean singleSort, boolean hasTopValue, int bytesCount) throws IOException {
@@ -97,9 +99,26 @@ abstract class FilteringNumericLeafComparator implements FilteringLeafFieldCompa
   }
 
   @Override
-  public void setCanUpdateIterator() throws IOException {
-    this.canUpdateIterator = true;
-    updateCompetitiveIterator();
+  public boolean iteratorUpdated() {
+    return canUpdateIterator && (updateCounter > 0);
+  }
+
+  @Override
+  public void setQueueFull() throws IOException {
+    queueFull = true;
+    if (hitsThresholdReached && canUpdateIterator == false) { // for the 1st time queue becomes full and hitsThreshold is reached
+      canUpdateIterator = true;
+      updateCompetitiveIterator();
+    }
+  }
+
+  @Override
+  public void setHitsThresholdReached() throws IOException {
+    hitsThresholdReached = true;
+    if (queueFull && canUpdateIterator == false) { // for the 1st time queue becomes full and hitsThreshold is reached
+      canUpdateIterator = true;
+      updateCompetitiveIterator();
+    }
   }
 
   @Override
