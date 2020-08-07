@@ -25,16 +25,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-import org.apache.solr.cluster.api.Config;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.cluster.api.SolrCluster;
-import org.apache.solr.cluster.api.SolrCollection;
-import org.apache.solr.cluster.api.SolrNode;
-import org.apache.solr.common.util.SimpleMap;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.noggit.JSONWriter;
@@ -44,7 +38,7 @@ import org.noggit.JSONWriter;
  * {@link ZkStateReader#getClusterState()}.
  * @lucene.experimental
  */
-public class ClusterState implements JSONWriter.Writable , SolrCluster {
+public class ClusterState implements JSONWriter.Writable {
 
   private final Map<String, CollectionRef> collectionStates, immutableCollectionStates;
   private Set<String> liveNodes;
@@ -63,55 +57,6 @@ public class ClusterState implements JSONWriter.Writable , SolrCluster {
       collRefs.put(entry.getKey(), new CollectionRef(c));
     }
     return collRefs;
-  }
-  private final SimpleMap<SolrCollection> _collections = new SimpleMap<>() {
-    @Override
-    public SolrCollection get(CharSequence key) {
-      CollectionRef ref = collectionStates.get(key.toString());
-      return ref ==null? null: ref.get();
-    }
-
-    @Override
-    public void forEach(BiConsumer<? super CharSequence, ? super SolrCollection> fun) {
-      collectionStates.forEach((s, collectionRef) -> {
-        DocCollection coll = collectionRef.get();
-        if (coll == null) return;
-        fun.accept(s, coll);
-      });
-    }
-  };
-
-  @Override
-  public SimpleMap<SolrCollection> collections() {
-    return _collections;
-  }
-
-
-
-  @Override
-  public SimpleMap<SolrNode> nodes() {
-    throw new UnsupportedOperationException("Not yet implemented");
-  }
-
-  @Override
-  public String overseerNode() {
-    throw new UnsupportedOperationException("Not yet implemented");
-
-  }
-
-  @Override
-  public SimpleMap<SolrCollection> collections(boolean includeAlias) {
-    throw new UnsupportedOperationException("Not yet implemented");
-  }
-
-  @Override
-  public SimpleMap<Config> configs() throws SolrException {
-    throw new UnsupportedOperationException("Not yet implemented");
-  }
-
-  @Override
-  public String thisNode() {
-    throw new UnsupportedOperationException("Not yet implemented");
   }
 
   /**
