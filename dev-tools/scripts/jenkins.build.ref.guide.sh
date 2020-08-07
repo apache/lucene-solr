@@ -41,7 +41,7 @@ RUBY_VERSION=ruby-2.5.1
 GEMSET=solr-refguide-gemset
 
 # Install the "stable" RVM release to ~/.rvm/, and don't mess with .bash_profile etc.
-\curl -sSL https://get.rvm.io | bash -s -- --ignore-dotfiles stable
+# \curl -sSL https://get.rvm.io | bash -s -- --ignore-dotfiles stable
 
 set +x                                   # Temporarily disable command echoing to reduce clutter
 
