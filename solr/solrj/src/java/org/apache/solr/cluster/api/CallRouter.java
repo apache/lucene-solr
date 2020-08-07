@@ -59,12 +59,12 @@ public interface CallRouter {
     CallRouter toCore(String node, String core);
 
     /**
-     * Multiple requests to one replica of each shard.
+     * Make a call to one replica of each shard.
      * Can be used for distributed requests
      */
     List<CallRouter> toEachShard(String collection, ReplicaType type);
 
-    /**Make multiple calls to every replica of a collection
+    /**Make a call to every replica of a collection
      */
     List<CallRouter> toEachReplica(String collection);
 
