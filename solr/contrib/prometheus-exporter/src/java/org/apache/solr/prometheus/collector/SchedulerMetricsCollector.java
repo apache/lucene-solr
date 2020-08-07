@@ -93,8 +93,8 @@ public class SchedulerMetricsCollector implements Closeable {
         try {
           metricSamples.addAll(future.get());
         } catch (ExecutionException e) {
-          log.error("Error occurred during metrics collection", e.getCause());
-          // make do
+          log.error("Error occurred during metrics collection", e.getCause());//logok
+          // continue any ways; do not fail
         }
       }
 
