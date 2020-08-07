@@ -36,15 +36,26 @@ import java.util.function.Function;
  */
 public interface RpcFactory {
 
+    /**
+     * Create a new router instance
+     * This instance can be reused.
+     */
     CallRouter createCallRouter();
 
+    /**
+     * Create a new {@link HttpRpc}
+     * This instance can be reused.
+     */
     HttpRpc createHttpRpc();
 
 
     interface ResponseConsumer {
-        /**Allows this impl to add request params/http headers before the request is fired
+        /**
+         * Allows this impl to add request params/http headers before the request is fired.
+         * All values must be set before this method returns. Do not hold a reference to this
+         *  {@link HttpRpc} and set values later
          */
-        default void setRpc(HttpRpc rpc){};
+        default void setRpc(HttpRpc rpc){}
 
         /**Process the response.
          * Ensure that the whole stream is eaten up before this method returns
@@ -59,7 +70,7 @@ public interface RpcFactory {
     interface InputSupplier {
         void write(OutputStream os) throws IOException;
 
-        String getContentType();
+        String contentType();
     }
 
 
@@ -73,8 +84,10 @@ public interface RpcFactory {
      */
     interface HeaderConsumer {
         /**Allows this impl to add request params/http headers before the request is fired
+         * All values must be set before this method returns. Do not hold a reference to this
+         *  {@link HttpRpc} and set values later
          */
-        default void setRpc(HttpRpc rpc){};
+        default void setRpc(HttpRpc rpc){}
         /**
          * read all required values from the header
          * @param status the HTTP status code
