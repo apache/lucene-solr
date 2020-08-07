@@ -54,7 +54,7 @@ public interface CallRouter {
     CallRouter toCollection(String collection);
 
     /**
-     * Make a call dirctly to a specific core in a node
+     * Make a call directly to a specific core in a node
      */
     CallRouter toCore(String node, String core);
 
