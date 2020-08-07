@@ -239,8 +239,8 @@ public class RecoveryStrategy implements Runnable, Closeable {
     }
 
     ModifiableSolrParams solrParams = new ModifiableSolrParams();
-    solrParams.set(ReplicationHandler.MASTER_URL, leaderUrl);
-    solrParams.set(ReplicationHandler.SKIP_COMMIT_ON_MASTER_VERSION_ZERO, replicaType == Replica.Type.TLOG);
+    solrParams.set(ReplicationHandler.LEGACY_LEADER_URL, leaderUrl);
+    solrParams.set(ReplicationHandler.LEGACY_SKIP_COMMIT_ON_LEADER_VERSION_ZERO, replicaType == Replica.Type.TLOG);
     // always download the tlogs from the leader when running with cdcr enabled. We need to have all the tlogs
     // to ensure leader failover doesn't cause missing docs on the target
     if (core.getUpdateHandler().getUpdateLog() != null

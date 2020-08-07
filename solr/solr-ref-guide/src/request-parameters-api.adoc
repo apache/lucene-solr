@@ -208,4 +208,4 @@ The RequestParams Object can be accessed using the method `SolrConfig#getRequest
 
 == Examples Using the Request Parameters API
 
-The Solr "films" example demonstrates the use of the parameters API. You can use this example in your Solr installation (in the `example/films` directory) or view the files in the Apache GitHub mirror at https://github.com/apache/lucene-solr/tree/master/solr/example/films.
+The Solr "films" example demonstrates the use of the parameters API. You can use this example in your Solr installation (in the `example/films` directory) or view the files in the Apache GitHub mirror at https://github.com/apache/lucene-solr/tree/leader/solr/example/films.

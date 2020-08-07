@@ -183,7 +183,7 @@ abstract class AbstractStatsValues<T> implements StatsValues {
     // "NumericValueSourceStatsValues" which would have diff parent classes
     //
     // part of the complexity here being that the StatsValues API serves two
-    // masters: collecting concrete Values from things like DocValuesStats and
+    // leaders: collecting concrete Values from things like DocValuesStats and
     // the distributed aggregation logic, but also collecting docIds which it
     // then
     // uses to go out and pull concreate values from the ValueSource
