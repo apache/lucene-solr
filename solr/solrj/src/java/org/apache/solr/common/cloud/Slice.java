@@ -25,10 +25,15 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import org.apache.solr.cluster.api.HashRange;
 import org.apache.solr.common.cloud.Replica.Type;
+import org.apache.solr.cluster.api.Shard;
+import org.apache.solr.cluster.api.ShardReplica;
+import org.apache.solr.common.util.SimpleMap;
 import org.noggit.JSONWriter;
 
 import static org.apache.solr.common.util.Utils.toJSONString;
@@ -36,7 +41,7 @@ import static org.apache.solr.common.util.Utils.toJSONString;
 /**
  * A Slice contains immutable information about a logical shard (all replicas that share the same shard id).
  */
-public class Slice extends ZkNodeProps implements Iterable<Replica> {
+public class Slice extends ZkNodeProps implements Iterable<Replica> , Shard {
   public final String collection;
 
   /** Loads multiple slices into a Map from a generic Map that probably came from deserialized JSON. */
@@ -294,4 +299,40 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
     jsonWriter.write(propMap);
   }
 
+  @Override
+  public String name() {
+    return name;
+  }
+
+  @Override
+  public String collection() {
+    return collection;
+  }
+
+  @Override
+  public HashRange range() {
+    return range;
+  }
+
+  private final SimpleMap<ShardReplica> _replicas = new SimpleMap<ShardReplica>() {
+    @Override
+    public ShardReplica get(CharSequence key) {
+      return replicas.get(key.toString());
+    }
+
+    @Override
+    public void forEach(BiConsumer<? super CharSequence, ? super ShardReplica> fun) {
+      replicas.forEach(fun::accept);
+    }
+  };
+  @Override
+  public SimpleMap<ShardReplica> replicas() {
+    return _replicas;
+  }
+
+  @Override
+  public String leader() {
+    Replica leader = getLeader();
+    return leader == null ? null : leader.getName();
+  }
 }

@@ -27,13 +27,14 @@ import java.util.Set;
 import java.util.function.BiPredicate;
 
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.cluster.api.ShardReplica;
 import org.apache.solr.common.util.Utils;
 import org.noggit.JSONWriter;
 
 import static org.apache.solr.common.ConditionalMapWriter.NON_NULL_VAL;
 import static org.apache.solr.common.ConditionalMapWriter.dedupeKeyPredicate;
 
-public class Replica extends ZkNodeProps implements MapWriter {
+public class Replica extends ZkNodeProps implements MapWriter, ShardReplica {
   
   /**
    * The replica's state. In general, if the node the replica is hosted on is
@@ -336,5 +337,40 @@ public class Replica extends ZkNodeProps implements MapWriter {
   @Override
   public String toString() {
     return name + ':' + Utils.toJSONString(propMap); // small enough, keep it on one line (i.e. no indent)
+  }
+
+  @Override
+  public String name() {
+    return name;
+  }
+
+  @Override
+  public String shard() {
+    return getShard();
+  }
+
+  @Override
+  public String collection() {
+    return getCollection();
+  }
+
+  @Override
+  public String  node() {
+    return getNodeName();
+  }
+
+  @Override
+  public String core() {
+    return getCoreName();
+  }
+
+  @Override
+  public Type type() {
+    return type;
+  }
+
+  @Override
+  public long size() {
+    throw new UnsupportedOperationException("Not yet implemented");
   }
 }
