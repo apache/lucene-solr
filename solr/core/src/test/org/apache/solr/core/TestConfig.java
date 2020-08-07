@@ -163,7 +163,6 @@ public class TestConfig extends SolrTestCaseJ4 {
 
   // If defaults change, add test methods to cover each version
   @Test
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-14582")
   public void testDefaults() throws Exception {
 
     int numDefaultsTested = 0;
@@ -184,6 +183,8 @@ public class TestConfig extends SolrTestCaseJ4 {
     ++numDefaultsTested; assertEquals("default infoStream", InfoStream.NO_OUTPUT, sic.infoStream);
 
     ++numDefaultsTested; assertNotNull("default metrics", sic.metricsInfo);
+
+    ++numDefaultsTested; assertEquals("default maxCommitMergeWaitTime", -1, sic.maxCommitMergeWaitMillis);
 
     ++numDefaultsTested; ++numNullDefaults;
     assertNull("default mergePolicyFactoryInfo", sic.mergePolicyFactoryInfo);
