@@ -16,12 +16,18 @@
  */
 package org.apache.solr.cluster.api;
 
+
 import java.util.List;
 
 /**
  * Provide information to route a call to an appropriate node/core
+ * One and only one method should be invoked on this
  */
 public interface CallRouter {
+    /**
+     * Any node in the cluster
+     */
+    CallRouter anyNode();
     /**
      * send to a specific node. usually admin requests
      */
