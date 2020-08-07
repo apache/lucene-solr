@@ -18,6 +18,7 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.lang.ref.WeakReference;
 import java.net.ConnectException;
 import java.net.MalformedURLException;
@@ -54,12 +55,15 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
 
 public abstract class LBSolrClient extends SolrClient {
 
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   // defaults
   protected static final Set<Integer> RETRY_CODES = new HashSet<>(Arrays.asList(404, 403, 503, 500));
   private static final int CHECK_INTERVAL = 60 * 1000; //1 minute between checks
@@ -155,6 +159,7 @@ public abstract class LBSolrClient extends SolrClient {
       this.req = req;
       this.zombieServers = zombieServers;
       this.timeAllowedNano = getTimeAllowedInNanos(req.getRequest());
+      log.info("TimeAllowedNano:{}", this.timeAllowedNano);
       this.timeOutTime = System.nanoTime() + timeAllowedNano;
       fetchNext();
     }
@@ -213,7 +218,8 @@ public abstract class LBSolrClient extends SolrClient {
       if (previousEx == null) {
         suffix = ":" + zombieServers.keySet();
       }
-      if (isTimeExceeded(timeAllowedNano, timeOutTime)) {
+      // Skipping check time exceeded for the first request
+      if (previousEx != null && isTimeExceeded(timeAllowedNano, timeOutTime)) {
         throw new SolrServerException("Time allowed to handle this request exceeded"+suffix, previousEx);
       }
       if (serverStr == null) {
