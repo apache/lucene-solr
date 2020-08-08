@@ -29,6 +29,8 @@ import java.util.TimeZone;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.lang.builder.EqualsBuilder;
+import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.solr.client.solrj.RoutedAliasTypes;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -146,6 +148,31 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     return jsonStr();
   }
 
+  @Override
+  public int hashCode() {
+    return new HashCodeBuilder()
+            .appendSuper(super.hashCode())
+            .append(action)
+            .toHashCode();
+  }
+
+  @Override
+  public boolean equals(Object rhs) {
+    if (rhs == null || getClass() != rhs.getClass()) {
+      return false;
+    } else if (this == rhs) {
+      return true;
+    } else if (hashCode() != rhs.hashCode()){
+      return false;
+    }
+
+    final CollectionAdminRequest rhsCast = (CollectionAdminRequest) rhs;
+    return new EqualsBuilder()
+            .appendSuper(super.equals(rhs))
+            .append(this.action, rhsCast.action)
+            .isEquals();
+  }
+
   /**
    * Base class for asynchronous collection admin requests
    */
@@ -241,6 +268,33 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       }
       return params;
     }
+
+    @Override
+    public int hashCode() {
+      return new HashCodeBuilder()
+              .appendSuper(super.hashCode())
+              .append(asyncId)
+              .append(waitForFinalState)
+              .toHashCode();
+    }
+
+    @Override
+    public boolean equals(Object rhs) {
+      if (rhs == null || getClass() != rhs.getClass()) {
+        return false;
+      } else if (this == rhs) {
+        return true;
+      } else if (hashCode() != rhs.hashCode()){
+        return false;
+      }
+
+      final AsyncCollectionAdminRequest rhsCast = (AsyncCollectionAdminRequest) rhs;
+      return new EqualsBuilder()
+              .appendSuper(super.equals(rhsCast))
+              .append(asyncId, rhsCast.asyncId)
+              .append(waitForFinalState, rhsCast.waitForFinalState)
+              .isEquals();
+    }
   }
 
   protected abstract static class AsyncCollectionSpecificAdminRequest extends AsyncCollectionAdminRequest {
@@ -268,6 +322,33 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       params.setNonNull(CollectionAdminParams.FOLLOW_ALIASES, followAliases);
       return params;
     }
+
+    @Override
+    public int hashCode() {
+      return new HashCodeBuilder()
+              .appendSuper(super.hashCode())
+              .append(collection)
+              .append(followAliases)
+              .toHashCode();
+    }
+
+    @Override
+    public boolean equals(Object rhs) {
+      if (rhs == null || getClass() != rhs.getClass()) {
+        return false;
+      } else if (this == rhs) {
+        return true;
+      } else if (hashCode() != rhs.hashCode()){
+        return false;
+      }
+
+      final AsyncCollectionSpecificAdminRequest rhsCast = (AsyncCollectionSpecificAdminRequest) rhs;
+      return new EqualsBuilder()
+              .appendSuper(super.equals(rhsCast))
+              .append(collection, rhsCast.collection)
+              .append(followAliases, rhsCast.followAliases)
+              .isEquals();
+    }
   }
 
   protected abstract static class AsyncShardSpecificAdminRequest extends AsyncCollectionAdminRequest {
@@ -287,6 +368,33 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       params.set(CoreAdminParams.COLLECTION, collection);
       params.set(CoreAdminParams.SHARD, shard);
       return params;
+    }
+
+    @Override
+    public int hashCode() {
+      return new HashCodeBuilder()
+              .appendSuper(super.hashCode())
+              .append(collection)
+              .append(shard)
+              .toHashCode();
+    }
+
+    @Override
+    public boolean equals(Object rhs) {
+      if (rhs == null || getClass() != rhs.getClass()) {
+        return false;
+      } else if (this == rhs) {
+        return true;
+      } else if (hashCode() != rhs.hashCode()){
+        return false;
+      }
+
+      final AsyncShardSpecificAdminRequest rhsCast = (AsyncShardSpecificAdminRequest) rhs;
+      return new EqualsBuilder()
+              .appendSuper(super.equals(rhsCast))
+              .append(collection, rhsCast.collection)
+              .append(shard, rhsCast.shard)
+              .isEquals();
     }
   }
 
@@ -314,6 +422,33 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     @Override
     protected SolrResponse createResponse(SolrClient client) {
       return new CollectionAdminResponse();
+    }
+
+    @Override
+    public int hashCode() {
+      return new HashCodeBuilder()
+              .appendSuper(super.hashCode())
+              .append(collection)
+              .append(shard)
+              .toHashCode();
+    }
+
+    @Override
+    public boolean equals(Object rhs) {
+      if (rhs == null || getClass() != rhs.getClass()) {
+        return false;
+      } else if (this == rhs) {
+        return true;
+      } else if (hashCode() != rhs.hashCode()){
+        return false;
+      }
+
+      final ShardSpecificAdminRequest rhsCast = (ShardSpecificAdminRequest) rhs;
+      return new EqualsBuilder()
+              .appendSuper(super.equals(rhsCast))
+              .append(collection, rhsCast.collection)
+              .append(shard, rhsCast.shard)
+              .isEquals();
     }
   }
 
@@ -349,6 +484,32 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return params;
     }
 
+    @Override
+    public int hashCode() {
+      return new HashCodeBuilder()
+              .appendSuper(super.hashCode())
+              .append(node)
+              .append(role)
+              .toHashCode();
+    }
+
+    @Override
+    public boolean equals(Object rhs) {
+      if (rhs == null || getClass() != rhs.getClass()) {
+        return false;
+      } else if (this == rhs) {
+        return true;
+      } else if (hashCode() != rhs.hashCode()){
+        return false;
+      }
+
+      final CollectionAdminRoleRequest rhsCast = (CollectionAdminRoleRequest) rhs;
+      return new EqualsBuilder()
+              .appendSuper(super.equals(rhsCast))
+              .append(node, rhsCast.node)
+              .append(role, rhsCast.role)
+              .isEquals();
+    }
   }
 
   /** Specific Collection API call implementations **/
@@ -573,6 +734,55 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       this.policy = policy;
       return this;
     }
+
+    @Override
+    public int hashCode() {
+      return new HashCodeBuilder()
+              .appendSuper(super.hashCode())
+              .append(configName)
+              .append(createNodeSet)
+              .append(routerName)
+              .append(policy)
+              .append(shards)
+              .append(routerField)
+              .append(numShards)
+              .append(nrtReplicas).append(pullReplicas).append(tlogReplicas)
+              .append(properties)
+              .append(alias)
+              .append(rule)
+              .append(snitch)
+              .toHashCode();
+    }
+
+    @Override
+    public boolean equals(Object rhs) {
+      if (rhs == null || getClass() != rhs.getClass()) {
+        return false;
+      } else if (this == rhs) {
+        return true;
+      } else if (hashCode() != rhs.hashCode()){
+        return false;
+      }
+
+      final Create rhsCast = (Create) rhs;
+      return new EqualsBuilder()
+              .appendSuper(super.equals(rhsCast))
+              .append(configName, rhsCast.configName)
+              .append(createNodeSet, rhsCast.createNodeSet)
+              .append(routerName, rhsCast.routerName)
+              .append(policy, rhsCast.policy)
+              .append(shards, rhsCast.shards)
+              .append(routerField, rhsCast.routerField)
+              .append(numShards, rhsCast.numShards)
+              .append(nrtReplicas, rhsCast.nrtReplicas)
+              .append(pullReplicas, rhsCast.pullReplicas)
+              .append(tlogReplicas, rhsCast.tlogReplicas)
+              .append(properties, rhsCast.properties)
+              .append(alias, rhsCast.alias)
+              .append(rule, rhsCast.rule)
+              .append(snitch, rhsCast.snitch)
+              .isEquals();
+    }
   }
 
   /**
@@ -608,6 +818,31 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       params.set(CollectionAdminParams.TARGET, target);
       return params;
     }
+
+    @Override
+    public int hashCode() {
+      return new HashCodeBuilder()
+              .appendSuper(super.hashCode())
+              .append(target)
+              .toHashCode();
+    }
+
+    @Override
+    public boolean equals(Object rhs) {
+      if (rhs == null || getClass() != rhs.getClass()) {
+        return false;
+      } else if (this == rhs) {
+        return true;
+      } else if (hashCode() != rhs.hashCode()){
+        return false;
+      }
+
+      final Rename rhsCast = (Rename) rhs;
+      return new EqualsBuilder()
+              .appendSuper(super.equals(rhsCast))
+              .append(target, rhsCast.target)
+              .isEquals();
+    }
   }
 
   /**
@@ -634,7 +869,30 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return params;
     }
 
+    @Override
+    public int hashCode() {
+      return new HashCodeBuilder()
+              .appendSuper(super.hashCode())
+              .append(node)
+              .toHashCode();
+    }
 
+    @Override
+    public boolean equals(Object rhs) {
+      if (rhs == null || getClass() != rhs.getClass()) {
+        return false;
+      } else if (this == rhs) {
+        return true;
+      } else if (hashCode() != rhs.hashCode()){
+        return false;
+      }
+
+      final DeleteNode rhsCast = (DeleteNode) rhs;
+      return new EqualsBuilder()
+              .appendSuper(super.equals(rhsCast))
+              .append(node, rhsCast.node)
+              .isEquals();
+    }
   }
 
   public static class ReplaceNode extends AsyncCollectionAdminRequest {
@@ -665,6 +923,34 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return params;
     }
 
+    @Override
+    public int hashCode() {
+      return new HashCodeBuilder()
+              .appendSuper(super.hashCode())
+              .append(sourceNode)
+              .append(targetNode)
+              .append(parallel)
+              .toHashCode();
+    }
+
+    @Override
+    public boolean equals(Object rhs) {
+      if (rhs == null || getClass() != rhs.getClass()) {
+        return false;
+      } else if (this == rhs) {
+        return true;
+      } else if (hashCode() != rhs.hashCode()){
+        return false;
+      }
+
+      final ReplaceNode rhsCast = (ReplaceNode) rhs;
+      return new EqualsBuilder()
+              .appendSuper(super.equals(rhsCast))
+              .append(sourceNode, rhsCast.sourceNode)
+              .append(targetNode, rhsCast.targetNode)
+              .append(parallel, rhsCast.parallel)
+              .isEquals();
+    }
   }
 
   public static MoveReplica moveReplica(String collection, String replica, String targetNode) {
@@ -719,6 +1005,45 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
         params.set(CoreAdminParams.REPLICA, replica);
       }
       return params;
+    }
+
+    @Override
+    public int hashCode() {
+      return new HashCodeBuilder()
+              .appendSuper(super.hashCode())
+              .append(collection)
+              .append(replica)
+              .append(targetNode)
+              .append(shard)
+              .append(sourceNode)
+              .append(randomlyMoveReplica)
+              .append(inPlaceMove)
+              .append(timeout)
+              .toHashCode();
+    }
+
+    @Override
+    public boolean equals(Object rhs) {
+      if (rhs == null || getClass() != rhs.getClass()) {
+        return false;
+      } else if (this == rhs) {
+        return true;
+      } else if (hashCode() != rhs.hashCode()){
+        return false;
+      }
+
+      final MoveReplica rhsCast = (MoveReplica) rhs;
+      return new EqualsBuilder()
+              .appendSuper(super.equals(rhsCast))
+              .append(collection, rhsCast.collection)
+              .append(replica, rhsCast.replica)
+              .append(targetNode, rhsCast.targetNode)
+              .append(shard, rhsCast.shard)
+              .append(sourceNode, rhsCast.sourceNode)
+              .append(randomlyMoveReplica, rhsCast.randomlyMoveReplica)
+              .append(inPlaceMove, rhsCast.inPlaceMove)
+              .append(timeout, rhsCast.timeout)
+              .isEquals();
     }
   }
 
@@ -776,6 +1101,34 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return params;
     }
 
+    @Override
+    public int hashCode() {
+      return new HashCodeBuilder()
+              .appendSuper(super.hashCode())
+              .append(collection)
+              .append(maxAtOnce)
+              .append(maxWaitSeconds)
+              .toHashCode();
+    }
+
+    @Override
+    public boolean equals(Object rhs) {
+      if (rhs == null || getClass() != rhs.getClass()) {
+        return false;
+      } else if (this == rhs) {
+        return true;
+      } else if (hashCode() != rhs.hashCode()){
+        return false;
+      }
+
+      final RebalanceLeaders rhsCast = (RebalanceLeaders) rhs;
+      return new EqualsBuilder()
+              .appendSuper(super.equals(rhsCast))
+              .append(collection, rhsCast.collection)
+              .append(maxAtOnce, rhsCast.maxAtOnce)
+              .append(maxWaitSeconds, rhsCast.maxWaitSeconds)
+              .isEquals();
+    }
   }
 
   /**
@@ -860,6 +1213,45 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       collectionParams.forEach((k, v) -> params.setNonNull(k, v));
       return params;
     }
+
+    @Override
+    public int hashCode() {
+      return new HashCodeBuilder()
+              .appendSuper(super.hashCode())
+              .append(target)
+              .append(query)
+              .append(fields)
+              .append(configName)
+              .append(removeSource)
+              .append(cmd)
+              .append(batchSize)
+              .append(collectionParams)
+              .toHashCode();
+    }
+
+    @Override
+    public boolean equals(Object rhs) {
+      if (rhs == null || getClass() != rhs.getClass()) {
+        return false;
+      } else if (this == rhs) {
+        return true;
+      } else if (hashCode() != rhs.hashCode()){
+        return false;
+      }
+
+      final ReindexCollection rhsCast = (ReindexCollection) rhs;
+      return new EqualsBuilder()
+              .appendSuper(super.equals(rhsCast))
+              .append(target, rhsCast.target)
+              .append(query, rhsCast.query)
+              .append(fields, rhsCast.fields)
+              .append(configName, rhsCast.configName)
+              .append(removeSource, rhsCast.removeSource)
+              .append(cmd, rhsCast.cmd)
+              .append(batchSize, rhsCast.batchSize)
+              .append(collectionParams, rhsCast.collectionParams)
+              .isEquals();
+    }
   }
 
   /**
@@ -935,6 +1327,45 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       params.setNonNull("rawSizeDetails", withRawSizeDetails);
       params.setNonNull("rawSizeSamplingPercent", rawSizeSamplingPercent);
       return params;
+    }
+
+    @Override
+    public int hashCode() {
+      return new HashCodeBuilder()
+              .appendSuper(super.hashCode())
+              .append(withSegments)
+              .append(withFieldInfo)
+              .append(withCoreInfo)
+              .append(withSizeInfo)
+              .append(withRawSizeInfo)
+              .append(withRawSizeSummary)
+              .append(withRawSizeDetails)
+              .append(rawSizeSamplingPercent)
+              .toHashCode();
+    }
+
+    @Override
+    public boolean equals(Object rhs) {
+      if (rhs == null || getClass() != rhs.getClass()) {
+        return false;
+      } else if (this == rhs) {
+        return true;
+      } else if (hashCode() != rhs.hashCode()){
+        return false;
+      }
+
+      final ColStatus rhsCast = (ColStatus) rhs;
+      return new EqualsBuilder()
+              .appendSuper(super.equals(rhsCast))
+              .append(withSegments, rhsCast.withSegments)
+              .append(withFieldInfo, rhsCast.withFieldInfo)
+              .append(withCoreInfo, rhsCast.withCoreInfo)
+              .append(withSizeInfo, rhsCast.withSizeInfo)
+              .append(withRawSizeInfo, rhsCast.withRawSizeInfo)
+              .append(withRawSizeSummary, rhsCast.withRawSizeSummary)
+              .append(withRawSizeDetails, rhsCast.withRawSizeDetails)
+              .append(rawSizeSamplingPercent, rhsCast.rawSizeSamplingPercent)
+              .isEquals();
     }
   }
 
@@ -1026,6 +1457,38 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return params;
     }
 
+    @Override
+    public int hashCode() {
+      return new HashCodeBuilder()
+              .appendSuper(super.hashCode())
+              .append(name)
+              .append(repositoryName)
+              .append(location)
+              .append(commitName)
+              .append(indexBackupStrategy)
+              .toHashCode();
+    }
+
+    @Override
+    public boolean equals(Object rhs) {
+      if (rhs == null || getClass() != rhs.getClass()) {
+        return false;
+      } else if (this == rhs) {
+        return true;
+      } else if (hashCode() != rhs.hashCode()){
+        return false;
+      }
+
+      final Backup rhsCast = (Backup) rhs;
+      return new EqualsBuilder()
+              .appendSuper(super.equals(rhsCast))
+              .append(name, rhsCast.name)
+              .append(repositoryName, rhsCast.repositoryName)
+              .append(location, rhsCast.location)
+              .append(commitName, rhsCast.commitName)
+              .append(indexBackupStrategy, rhsCast.indexBackupStrategy)
+              .isEquals();
+    }
   }
 
   public static Restore restoreCollection(String collection, String backupName) {
@@ -1149,6 +1612,48 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return params;
     }
 
+    @Override
+    public int hashCode() {
+      return new HashCodeBuilder()
+              .appendSuper(super.hashCode())
+              .append(backupName)
+              .append(repositoryName)
+              .append(location)
+              .append(configName)
+              .append(replicationFactor)
+              .append(nrtReplicas).append(tlogReplicas).append(pullReplicas)
+              .append(createNodeSet)
+              .append(createNodeSetShuffle)
+              .append(properties)
+              .toHashCode();
+    }
+
+    @Override
+    public boolean equals(Object rhs) {
+      if (rhs == null || getClass() != rhs.getClass()) {
+        return false;
+      } else if (this == rhs) {
+        return true;
+      } else if (hashCode() != rhs.hashCode()){
+        return false;
+      }
+
+      final Restore rhsCast = (Restore) rhs;
+      return new EqualsBuilder()
+              .appendSuper(super.equals(rhsCast))
+              .append(backupName, rhsCast.backupName)
+              .append(repositoryName, rhsCast.repositoryName)
+              .append(location, rhsCast.location)
+              .append(configName, rhsCast.configName)
+              .append(replicationFactor, rhsCast.replicationFactor)
+              .append(nrtReplicas, rhsCast.nrtReplicas)
+              .append(tlogReplicas, rhsCast.tlogReplicas)
+              .append(pullReplicas, rhsCast.pullReplicas)
+              .append(createNodeSet, rhsCast.createNodeSet)
+              .append(createNodeSetShuffle, rhsCast.createNodeSetShuffle)
+              .append(properties, rhsCast.properties)
+              .isEquals();
+    }
   }
 
   //Note : This method is added since solrj module does not use Google
@@ -1186,6 +1691,31 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       params.set(CoreAdminParams.COMMIT_NAME, commitName);
       return params;
     }
+
+    @Override
+    public int hashCode() {
+      return new HashCodeBuilder()
+              .appendSuper(super.hashCode())
+              .append(commitName)
+              .toHashCode();
+    }
+
+    @Override
+    public boolean equals(Object rhs) {
+      if (rhs == null || getClass() != rhs.getClass()) {
+        return false;
+      } else if (this == rhs) {
+        return true;
+      } else if (hashCode() != rhs.hashCode()){
+        return false;
+      }
+
+      final CreateSnapshot rhsCast = (CreateSnapshot) rhs;
+      return new EqualsBuilder()
+              .appendSuper(super.equals(rhsCast))
+              .append(commitName, rhsCast.commitName)
+              .isEquals();
+    }
   }
 
   @SuppressWarnings("serial")
@@ -1211,6 +1741,31 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       params.set(CoreAdminParams.COLLECTION, collection);
       params.set(CoreAdminParams.COMMIT_NAME, commitName);
       return params;
+    }
+
+    @Override
+    public int hashCode() {
+      return new HashCodeBuilder()
+              .appendSuper(super.hashCode())
+              .append(commitName)
+              .toHashCode();
+    }
+
+    @Override
+    public boolean equals(Object rhs) {
+      if (rhs == null || getClass() != rhs.getClass()) {
+        return false;
+      } else if (this == rhs) {
+        return true;
+      } else if (hashCode() != rhs.hashCode()){
+        return false;
+      }
+
+      final DeleteSnapshot rhsCast = (DeleteSnapshot) rhs;
+      return new EqualsBuilder()
+              .appendSuper(super.equals(rhsCast))
+              .append(commitName, rhsCast.commitName)
+              .isEquals();
     }
   }
 
@@ -1279,7 +1834,32 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return params;
     }
 
+    @Override
+    public int hashCode() {
+      return new HashCodeBuilder()
+              .appendSuper(super.hashCode())
+              .append(nodeSet)
+              .append(properties)
+              .toHashCode();
+    }
 
+    @Override
+    public boolean equals(Object rhs) {
+      if (rhs == null || getClass() != rhs.getClass()) {
+        return false;
+      } else if (this == rhs) {
+        return true;
+      } else if (hashCode() != rhs.hashCode()){
+        return false;
+      }
+
+      final CreateShard rhsCast = (CreateShard) rhs;
+      return new EqualsBuilder()
+              .appendSuper(super.equals(rhsCast))
+              .append(nodeSet, rhsCast.nodeSet)
+              .append(rhsCast.properties, rhsCast.properties)
+              .isEquals();
+    }
   }
 
   /**
@@ -1400,6 +1980,46 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return params;
     }
 
+    @Override
+    public int hashCode() {
+      return new HashCodeBuilder()
+              .appendSuper(super.hashCode())
+              .append(collection)
+              .append(ranges)
+              .append(splitKey)
+              .append(shard)
+              .append(splitMethod)
+              .append(splitByPrefix)
+              .append(numSubShards)
+              .append(splitFuzz)
+              .append(properties)
+              .toHashCode();
+    }
+
+    @Override
+    public boolean equals(Object rhs) {
+      if (rhs == null || getClass() != rhs.getClass()) {
+        return false;
+      } else if (this == rhs) {
+        return true;
+      } else if (hashCode() != rhs.hashCode()){
+        return false;
+      }
+
+      final SplitShard rhsCast = (SplitShard) rhs;
+      return new EqualsBuilder()
+              .appendSuper(super.equals(rhsCast))
+              .append(collection, rhsCast.collection)
+              .append(ranges, rhsCast.ranges)
+              .append(splitKey, rhsCast.splitKey)
+              .append(shard, rhsCast.shard)
+              .append(splitMethod, rhsCast.splitMethod)
+              .append(splitByPrefix, rhsCast.splitByPrefix)
+              .append(numSubShards, rhsCast.numSubShards)
+              .append(splitFuzz, rhsCast.splitFuzz)
+              .append(properties, rhsCast.properties)
+              .isEquals();
+    }
   }
 
   /**
@@ -1447,6 +2067,33 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
         params.set(CoreAdminParams.DELETE_DATA_DIR, deleteDataDir);
       }
       return params;
+    }
+
+    @Override
+    public int hashCode() {
+      return new HashCodeBuilder()
+              .appendSuper(super.hashCode())
+              .append(deleteInstanceDir)
+              .append(deleteDataDir)
+              .toHashCode();
+    }
+
+    @Override
+    public boolean equals(Object rhs) {
+      if (rhs == null || getClass() != rhs.getClass()) {
+        return false;
+      } else if (this == rhs) {
+        return true;
+      } else if (hashCode() != rhs.hashCode()){
+        return false;
+      }
+
+      final DeleteShard rhsCast = (DeleteShard) rhs;
+      return new EqualsBuilder()
+              .appendSuper(super.equals(rhsCast))
+              .append(deleteInstanceDir, rhsCast.deleteInstanceDir)
+              .append(deleteDataDir, rhsCast.deleteDataDir)
+              .isEquals();
     }
   }
 
@@ -1540,6 +2187,31 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       }
       return state;
     }
+
+    @Override
+    public int hashCode() {
+      return new HashCodeBuilder()
+              .appendSuper(super.hashCode())
+              .append(requestId)
+              .toHashCode();
+    }
+
+    @Override
+    public boolean equals(Object rhs) {
+      if (rhs == null || getClass() != rhs.getClass()) {
+        return false;
+      } else if (this == rhs) {
+        return true;
+      } else if (hashCode() != rhs.hashCode()){
+        return false;
+      }
+
+      final RequestStatus rhsCast = (RequestStatus) rhs;
+      return new EqualsBuilder()
+              .appendSuper(super.equals(rhsCast))
+              .append(requestId, rhsCast.requestId)
+              .isEquals();
+    }
   }
 
   /**
@@ -1596,6 +2268,32 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return new CollectionAdminResponse();
     }
 
+    @Override
+    public int hashCode() {
+      return new HashCodeBuilder()
+              .appendSuper(super.hashCode())
+              .append(requestId)
+              .append(flush)
+              .toHashCode();
+    }
+
+    @Override
+    public boolean equals(Object rhs) {
+      if (rhs == null || getClass() != rhs.getClass()) {
+        return false;
+      } else if (this == rhs) {
+        return true;
+      } else if (hashCode() != rhs.hashCode()){
+        return false;
+      }
+
+      final DeleteStatus rhsCast = (DeleteStatus) rhs;
+      return new EqualsBuilder()
+              .appendSuper(super.equals(rhsCast))
+              .append(requestId, rhsCast.requestId)
+              .append(flush, rhsCast.flush)
+              .isEquals();
+    }
   }
 
   // ALIASPROP request
@@ -1630,6 +2328,33 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       params.set(CoreAdminParams.NAME, aliasName);
       properties.forEach((key, value) ->  params.set("property." + key, value));
       return params;
+    }
+
+    @Override
+    public int hashCode() {
+      return new HashCodeBuilder()
+              .appendSuper(super.hashCode())
+              .append(aliasName)
+              .append(properties)
+              .toHashCode();
+    }
+
+    @Override
+    public boolean equals(Object rhs) {
+      if (rhs == null || getClass() != rhs.getClass()) {
+        return false;
+      } else if (this == rhs) {
+        return true;
+      } else if (hashCode() != rhs.hashCode()){
+        return false;
+      }
+
+      final SetAliasProperty rhsCast = (SetAliasProperty) rhs;
+      return new EqualsBuilder()
+              .appendSuper(super.equals(rhsCast))
+              .append(aliasName, rhsCast.aliasName)
+              .append(properties, rhsCast.properties)
+              .isEquals();
     }
   }
 
@@ -1670,6 +2395,32 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return params;
     }
 
+    @Override
+    public int hashCode() {
+      return new HashCodeBuilder()
+              .appendSuper(super.hashCode())
+              .append(aliasName)
+              .append(aliasedCollections)
+              .toHashCode();
+    }
+
+    @Override
+    public boolean equals(Object rhs) {
+      if (rhs == null || getClass() != rhs.getClass()) {
+        return false;
+      } else if (this == rhs) {
+        return true;
+      } else if (hashCode() != rhs.hashCode()){
+        return false;
+      }
+
+      final CreateAlias rhsCast = (CreateAlias) rhs;
+      return new EqualsBuilder()
+              .appendSuper(super.equals(rhsCast))
+              .append(aliasName, rhsCast.aliasName)
+              .append(aliasedCollections, rhsCast.aliasedCollections)
+              .isEquals();
+    }
   }
 
   /**
@@ -1789,6 +2540,47 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public java.util.List<String> getRequiredParamNames() {
       return java.util.List.of(ROUTER_TYPE_NAME, ROUTER_FIELD,ROUTER_START, ROUTER_INTERVAL);
     }
+
+    @Override
+    public int hashCode() {
+      return new HashCodeBuilder()
+              .appendSuper(super.hashCode())
+              .append(aliasName)
+              .append(routerField)
+              .append(start)
+              .append(interval)
+              .append(tz)
+              .append(maxFutureMs)
+              .append(preemptiveCreateMath)
+              .append(autoDeleteAge)
+              .append(createCollTemplate)
+              .toHashCode();
+    }
+
+    @Override
+    public boolean equals(Object rhs) {
+      if (rhs == null || getClass() != rhs.getClass()) {
+        return false;
+      } else if (this == rhs) {
+        return true;
+      } else if (hashCode() != rhs.hashCode()){
+        return false;
+      }
+
+      final CreateTimeRoutedAlias rhsCast = (CreateTimeRoutedAlias) rhs;
+      return new EqualsBuilder()
+              .appendSuper(super.equals(rhsCast))
+              .append(aliasName, rhsCast.aliasName)
+              .append(routerField, rhsCast.routerField)
+              .append(start, rhsCast.start)
+              .append(interval, rhsCast.interval)
+              .append(tz, rhsCast.tz)
+              .append(maxFutureMs, rhsCast.maxFutureMs)
+              .append(preemptiveCreateMath, rhsCast.preemptiveCreateMath)
+              .append(autoDeleteAge, rhsCast.autoDeleteAge)
+              .append(createCollTemplate, rhsCast.createCollTemplate)
+              .isEquals();
+    }
   }
   /**
    * Returns a SolrRequest to create a category routed alias.
@@ -1866,6 +2658,39 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     @Override
     public java.util.List<String> getRequiredParamNames() {
       return java.util.List.of(ROUTER_TYPE_NAME, ROUTER_FIELD,ROUTER_MAX_CARDINALITY);
+    }
+
+    @Override
+    public int hashCode() {
+      return new HashCodeBuilder()
+              .appendSuper(super.hashCode())
+              .append(aliasName)
+              .append(routerField)
+              .append(maxCardinality)
+              .append(mustMatch)
+              .append(createCollTemplate)
+              .toHashCode();
+    }
+
+    @Override
+    public boolean equals(Object rhs) {
+      if (rhs == null || getClass() != rhs.getClass()) {
+        return false;
+      } else if (this == rhs) {
+        return true;
+      } else if (hashCode() != rhs.hashCode()){
+        return false;
+      }
+
+      final CreateCategoryRoutedAlias rhsCast = (CreateCategoryRoutedAlias) rhs;
+      return new EqualsBuilder()
+              .appendSuper(super.equals(rhsCast))
+              .append(aliasName, rhsCast.aliasName)
+              .append(routerField, rhsCast.routerField)
+              .append(maxCardinality, rhsCast.maxCardinality)
+              .append(mustMatch, rhsCast.mustMatch)
+              .append(createCollTemplate, rhsCast.createCollTemplate)
+              .isEquals();
     }
   }
 
@@ -1964,8 +2789,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return SolrParams.wrapDefaults(params, createCollParams);
     }
 
-
-
     @Override
     public RoutedAliasTypes getType() {
       throw new UnsupportedOperationException("Dimensions of dimensions are not allowed, the multiverse might collapse!");
@@ -1984,6 +2807,35 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     @Override
     public java.util.List<String> getRequiredParamNames() {
       throw new UnsupportedOperationException("Dimensions of dimensions are not allowed, the multiverse might collapse!");
+    }
+
+    @Override
+    public int hashCode() {
+      return new HashCodeBuilder()
+              .appendSuper(super.hashCode())
+              .append(aliasName)
+              .append(createCollTemplate)
+              .append(dims)
+              .toHashCode();
+    }
+
+    @Override
+    public boolean equals(Object rhs) {
+      if (rhs == null || getClass() != rhs.getClass()) {
+        return false;
+      } else if (this == rhs) {
+        return true;
+      } else if (hashCode() != rhs.hashCode()){
+        return false;
+      }
+
+      final DimensionalRoutedAlias rhsCast = (DimensionalRoutedAlias) rhs;
+      return new EqualsBuilder()
+              .appendSuper(super.equals(rhsCast))
+              .append(aliasName, rhsCast.aliasName)
+              .append(createCollTemplate, rhsCast.createCollTemplate)
+              .append(dims, rhsCast.dims)
+              .isEquals();
     }
   }
 
@@ -2009,6 +2861,31 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
       params.set(CoreAdminParams.NAME, aliasName);
       return params;
+    }
+
+    @Override
+    public int hashCode() {
+      return new HashCodeBuilder()
+              .appendSuper(super.hashCode())
+              .append(aliasName)
+              .toHashCode();
+    }
+
+    @Override
+    public boolean equals(Object rhs) {
+      if (rhs == null || getClass() != rhs.getClass()) {
+        return false;
+      } else if (this == rhs) {
+        return true;
+      } else if (hashCode() != rhs.hashCode()){
+        return false;
+      }
+
+      final DeleteAlias rhsCast = (DeleteAlias) rhs;
+      return new EqualsBuilder()
+              .appendSuper(super.equals(rhsCast))
+              .append(aliasName, rhsCast.aliasName)
+              .isEquals();
     }
   }
 
@@ -2222,6 +3099,55 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return params;
     }
 
+    @Override
+    public int hashCode() {
+      return new HashCodeBuilder()
+              .appendSuper(super.hashCode())
+              .append(collection)
+              .append(shard)
+              .append(coreName)
+              .append(routeKey)
+              .append(instanceDir)
+              .append(dataDir)
+              .append(ulogDir)
+              .append(properties)
+              .append(type)
+              .append(nrtReplicas).append(tlogReplicas).append(pullReplicas)
+              .append(skipNodeAssignment)
+              .append(createNodeSet)
+              .toHashCode();
+    }
+
+    @Override
+    public boolean equals(Object rhs) {
+      if (rhs == null || getClass() != rhs.getClass()) {
+        return false;
+      } else if (this == rhs) {
+        return true;
+      } else if (hashCode() != rhs.hashCode()){
+        return false;
+      }
+
+      final AddReplica rhsCast = (AddReplica) rhs;
+      return new EqualsBuilder()
+              .appendSuper(super.equals(rhsCast))
+              .append(collection, rhsCast.collection)
+              .append(shard, rhsCast.shard)
+              .append(coreName, rhsCast.coreName)
+              .append(routeKey, rhsCast.routeKey)
+              .append(instanceDir, rhsCast.instanceDir)
+              .append(dataDir, rhsCast.dataDir)
+              .append(ulogDir, rhsCast.ulogDir)
+              .append(properties, rhsCast.properties)
+              .append(type, rhsCast.type)
+              .append(nrtReplicas, rhsCast.nrtReplicas)
+              .append(tlogReplicas, rhsCast.tlogReplicas)
+              .append(pullReplicas, rhsCast.pullReplicas)
+              .append(skipNodeAssignment, rhsCast.skipNodeAssignment)
+              .append(createNodeSet, rhsCast.createNodeSet)
+              .isEquals();
+    }
+
   }
 
   /**
@@ -2346,6 +3272,43 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       this.deleteIndexDir = deleteIndexDir;
       return this;
     }
+
+    @Override
+    public int hashCode() {
+      return new HashCodeBuilder()
+              .appendSuper(super.hashCode())
+              .append(shard)
+              .append(replica)
+              .append(onlyIfDown)
+              .append(deleteDataDir)
+              .append(deleteInstanceDir)
+              .append(deleteIndexDir)
+              .append(count)
+              .toHashCode();
+    }
+
+    @Override
+    public boolean equals(Object rhs) {
+      if (rhs == null || getClass() != rhs.getClass()) {
+        return false;
+      } else if (this == rhs) {
+        return true;
+      } else if (hashCode() != rhs.hashCode()){
+        return false;
+      }
+
+      final DeleteReplica rhsCast = (DeleteReplica) rhs;
+      return new EqualsBuilder()
+              .appendSuper(super.equals(rhsCast))
+              .append(shard, rhsCast.shard)
+              .append(replica, rhsCast.replica)
+              .append(onlyIfDown, rhsCast.onlyIfDown)
+              .append(deleteDataDir, rhsCast.deleteDataDir)
+              .append(deleteInstanceDir, rhsCast.deleteInstanceDir)
+              .append(deleteIndexDir, rhsCast.deleteIndexDir)
+              .append(count, rhsCast.count)
+              .isEquals();
+    }
   }
 
   /**
@@ -2389,7 +3352,32 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return new CollectionAdminResponse();
     }
 
+    @Override
+    public int hashCode() {
+      return new HashCodeBuilder()
+              .appendSuper(super.hashCode())
+              .append(propertyName)
+              .append(propertyValue)
+              .toHashCode();
+    }
 
+    @Override
+    public boolean equals(Object rhs) {
+      if (rhs == null || getClass() != rhs.getClass()) {
+        return false;
+      } else if (this == rhs) {
+        return true;
+      } else if (hashCode() != rhs.hashCode()){
+        return false;
+      }
+
+      final ClusterProp rhsCast = (ClusterProp) rhs;
+      return new EqualsBuilder()
+              .appendSuper(super.equals(rhsCast))
+              .append(propertyName, rhsCast.propertyName)
+              .append(propertyValue, rhsCast.propertyValue)
+              .isEquals();
+    }
   }
 
   public static CollectionProp setCollectionProperty(String collection, String propertyName, String propertyValue) {
@@ -2428,6 +3416,33 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     @Override
     protected CollectionAdminResponse createResponse(SolrClient client) {
       return new CollectionAdminResponse();
+    }
+
+    @Override
+    public int hashCode() {
+      return new HashCodeBuilder()
+              .appendSuper(super.hashCode())
+              .append(propertyName)
+              .append(propertyValue)
+              .toHashCode();
+    }
+
+    @Override
+    public boolean equals(Object rhs) {
+      if (rhs == null || getClass() != rhs.getClass()) {
+        return false;
+      } else if (this == rhs) {
+        return true;
+      } else if (hashCode() != rhs.hashCode()){
+        return false;
+      }
+
+      final CollectionProp rhsCast = (CollectionProp) rhs;
+      return new EqualsBuilder()
+              .appendSuper(super.equals(rhsCast))
+              .append(propertyName, rhsCast.propertyName)
+              .append(propertyValue, rhsCast.propertyValue)
+              .isEquals();
     }
   }
 
@@ -2500,7 +3515,38 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return params;
     }
 
+    @Override
+    public int hashCode() {
+      return new HashCodeBuilder()
+              .appendSuper(super.hashCode())
+              .append(collection)
+              .append(targetCollection)
+              .append(splitKey)
+              .append(forwardTimeout)
+              .append(properties)
+              .toHashCode();
+    }
 
+    @Override
+    public boolean equals(Object rhs) {
+      if (rhs == null || getClass() != rhs.getClass()) {
+        return false;
+      } else if (this == rhs) {
+        return true;
+      } else if (hashCode() != rhs.hashCode()){
+        return false;
+      }
+
+      final Migrate rhsCast = (Migrate) rhs;
+      return new EqualsBuilder()
+              .appendSuper(super.equals(rhsCast))
+              .append(collection, rhsCast.collection)
+              .append(targetCollection, rhsCast.targetCollection)
+              .append(splitKey, rhsCast.splitKey)
+              .append(forwardTimeout, rhsCast.forwardTimeout)
+              .append(properties, rhsCast.properties)
+              .isEquals();
+    }
   }
 
   /**
@@ -2612,6 +3658,34 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return new CollectionAdminResponse();
     }
 
+    @Override
+    public int hashCode() {
+      return new HashCodeBuilder()
+              .appendSuper(super.hashCode())
+              .append(shardName)
+              .append(collection)
+              .append(routeKey)
+              .toHashCode();
+    }
+
+    @Override
+    public boolean equals(Object rhs) {
+      if (rhs == null || getClass() != rhs.getClass()) {
+        return false;
+      } else if (this == rhs) {
+        return true;
+      } else if (hashCode() != rhs.hashCode()){
+        return false;
+      }
+
+      final ClusterStatus rhsCast = (ClusterStatus) rhs;
+      return new EqualsBuilder()
+              .appendSuper(super.equals(rhsCast))
+              .append(shardName, rhsCast.shardName)
+              .append(collection, rhsCast.collection)
+              .append(routeKey, rhsCast.routeKey)
+              .isEquals();
+    }
   }
 
   // LISTALIASES request
@@ -2707,6 +3781,36 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return params;
     }
 
+    @Override
+    public int hashCode() {
+      return new HashCodeBuilder()
+              .appendSuper(super.hashCode())
+              .append(replica)
+              .append(propertyName)
+              .append(propertyValue)
+              .append(shardUnique)
+              .toHashCode();
+    }
+
+    @Override
+    public boolean equals(Object rhs) {
+      if (rhs == null || getClass() != rhs.getClass()) {
+        return false;
+      } else if (this == rhs) {
+        return true;
+      } else if (hashCode() != rhs.hashCode()){
+        return false;
+      }
+
+      final AddReplicaProp rhsCast = (AddReplicaProp) rhs;
+      return new EqualsBuilder()
+              .appendSuper(super.equals(rhsCast))
+              .append(replica, rhsCast.replica)
+              .append(propertyName, rhsCast.propertyName)
+              .append(propertyValue, rhsCast.propertyValue)
+              .append(shardUnique, rhsCast.shardUnique)
+              .isEquals();
+    }
   }
 
   /**
@@ -2743,6 +3847,33 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       params.set(CoreAdminParams.REPLICA, replica);
       params.set("property", propertyName);
       return params;
+    }
+
+    @Override
+    public int hashCode() {
+      return new HashCodeBuilder()
+              .appendSuper(super.hashCode())
+              .append(replica)
+              .append(propertyName)
+              .toHashCode();
+    }
+
+    @Override
+    public boolean equals(Object rhs) {
+      if (rhs == null || getClass() != rhs.getClass()) {
+        return false;
+      } else if (this == rhs) {
+        return true;
+      } else if (hashCode() != rhs.hashCode()){
+        return false;
+      }
+
+      final DeleteReplicaProp rhsCast = (DeleteReplicaProp) rhs;
+      return new EqualsBuilder()
+              .appendSuper(super.equals(rhsCast))
+              .append(replica, rhsCast.replica)
+              .append(propertyName, rhsCast.propertyName)
+              .isEquals();
     }
   }
 
@@ -2805,6 +3936,36 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return params;
     }
 
+    @Override
+    public int hashCode() {
+      return new HashCodeBuilder()
+              .appendSuper(super.hashCode())
+              .append(collection)
+              .append(propertyName)
+              .append(onlyActiveNodes)
+              .append(shardUnique)
+              .toHashCode();
+    }
+
+    @Override
+    public boolean equals(Object rhs) {
+      if (rhs == null || getClass() != rhs.getClass()) {
+        return false;
+      } else if (this == rhs) {
+        return true;
+      } else if (hashCode() != rhs.hashCode()){
+        return false;
+      }
+
+      final BalanceShardUnique rhsCast = (BalanceShardUnique) rhs;
+      return new EqualsBuilder()
+              .appendSuper(super.equals(rhsCast))
+              .append(collection, rhsCast.collection)
+              .append(propertyName, rhsCast.propertyName)
+              .append(onlyActiveNodes, rhsCast.onlyActiveNodes)
+              .append(shardUnique, rhsCast.shardUnique)
+              .isEquals();
+    }
   }
 
   /**
@@ -2882,6 +4043,31 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
         params.set(entry.getKey(), String.valueOf(entry.getValue()));
       }
       return params;
+    }
+
+    @Override
+    public int hashCode() {
+      return new HashCodeBuilder()
+              .appendSuper(super.hashCode())
+              .append(attributes)
+              .toHashCode();
+    }
+
+    @Override
+    public boolean equals(Object rhs) {
+      if (rhs == null || getClass() != rhs.getClass()) {
+        return false;
+      } else if (this == rhs) {
+        return true;
+      } else if (hashCode() != rhs.hashCode()){
+        return false;
+      }
+
+      final Modify rhsCast = (Modify) rhs;
+      return new EqualsBuilder()
+              .appendSuper(super.equals(rhsCast))
+              .append(attributes, rhsCast.attributes)
+              .isEquals();
     }
   }
 
