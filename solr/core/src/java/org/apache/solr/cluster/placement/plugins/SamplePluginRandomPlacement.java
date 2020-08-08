@@ -24,7 +24,7 @@ import java.util.Random;
 import java.util.Set;
 
 import org.apache.solr.cluster.placement.Cluster;
-import org.apache.solr.cluster.placement.CreateNewCollectionRequest;
+import org.apache.solr.cluster.placement.CreateNewCollectionPlacementRequest;
 import org.apache.solr.cluster.placement.Node;
 import org.apache.solr.cluster.placement.PlacementException;
 import org.apache.solr.cluster.placement.PlacementPlugin;
@@ -32,9 +32,9 @@ import org.apache.solr.cluster.placement.PropertyKeyFactory;
 import org.apache.solr.cluster.placement.PropertyValueFetcher;
 import org.apache.solr.cluster.placement.Replica;
 import org.apache.solr.cluster.placement.ReplicaPlacement;
-import org.apache.solr.cluster.placement.Request;
-import org.apache.solr.cluster.placement.WorkOrder;
-import org.apache.solr.cluster.placement.WorkOrderFactory;
+import org.apache.solr.cluster.placement.PlacementRequest;
+import org.apache.solr.cluster.placement.PlacementPlan;
+import org.apache.solr.cluster.placement.PlacementPlanFactory;
 
 /**
  * Implements random placement for new collection creation while preventing two replicas of same shard from being placed on same node.
@@ -43,14 +43,14 @@ import org.apache.solr.cluster.placement.WorkOrderFactory;
  */
 public class SamplePluginRandomPlacement implements PlacementPlugin {
 
-  public WorkOrder computePlacement(Cluster cluster, Request placementRequest, PropertyKeyFactory propertyFactory,
-                                    PropertyValueFetcher propertyFetcher, WorkOrderFactory workOrderFactory) throws PlacementException {
+  public PlacementPlan computePlacement(Cluster cluster, PlacementRequest placementRequest, PropertyKeyFactory propertyFactory,
+                                        PropertyValueFetcher propertyFetcher, PlacementPlanFactory placementPlanFactory) throws PlacementException {
     // This plugin only supports Creating a collection, and only one collection. Real code would be different...
-    if (!(placementRequest instanceof CreateNewCollectionRequest)) {
+    if (!(placementRequest instanceof CreateNewCollectionPlacementRequest)) {
       throw new PlacementException("This plugin only supports creating collections");
     }
 
-    CreateNewCollectionRequest reqCreateCollection = (CreateNewCollectionRequest) placementRequest;
+    CreateNewCollectionPlacementRequest reqCreateCollection = (CreateNewCollectionPlacementRequest) placementRequest;
 
     final int totalReplicasPerShard = reqCreateCollection.getNrtReplicationFactor() +
         reqCreateCollection.getTlogReplicationFactor() + reqCreateCollection.getPullReplicationFactor();
@@ -67,25 +67,25 @@ public class SamplePluginRandomPlacement implements PlacementPlugin {
       ArrayList<Node> nodesToAssign = new ArrayList<>(cluster.getLiveNodes());
       Collections.shuffle(nodesToAssign, new Random());
 
-      placeForReplicaType(nodesToAssign, workOrderFactory, replicaPlacements,
+      placeForReplicaType(nodesToAssign, placementPlanFactory, replicaPlacements,
           shardName, reqCreateCollection.getNrtReplicationFactor(), Replica.ReplicaType.NRT);
-      placeForReplicaType(nodesToAssign, workOrderFactory, replicaPlacements,
+      placeForReplicaType(nodesToAssign, placementPlanFactory, replicaPlacements,
           shardName, reqCreateCollection.getTlogReplicationFactor(), Replica.ReplicaType.TLOG);
-      placeForReplicaType(nodesToAssign, workOrderFactory, replicaPlacements,
+      placeForReplicaType(nodesToAssign, placementPlanFactory, replicaPlacements,
           shardName, reqCreateCollection.getPullReplicationFactor(), Replica.ReplicaType.PULL);
     }
 
-    return workOrderFactory.createWorkOrderNewCollection(
+    return placementPlanFactory.createPlacementPlanNewCollection(
         reqCreateCollection, reqCreateCollection.getCollectionName(), replicaPlacements);
   }
 
-  private void placeForReplicaType(ArrayList<Node> nodesToAssign, WorkOrderFactory workOrderFactory,
+  private void placeForReplicaType(ArrayList<Node> nodesToAssign, PlacementPlanFactory placementPlanFactory,
                                    Set<ReplicaPlacement> replicaPlacements,
                                    String shardName, int countReplicas, Replica.ReplicaType replicaType) {
     for (int replica = 0; replica < countReplicas; replica++) {
       Node node = nodesToAssign.remove(0);
 
-      replicaPlacements.add(workOrderFactory.createReplicaPlacement(shardName, node, replicaType));
+      replicaPlacements.add(placementPlanFactory.createReplicaPlacement(shardName, node, replicaType));
     }
   }
 }

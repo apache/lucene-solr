@@ -18,11 +18,17 @@
 package org.apache.solr.cluster.placement;
 
 /**
- * A cluster related change request that Solr asks a {@link PlacementPlugin} plugin to resolve and compute {@link WorkOrder}s for.
+ * A fully specified plan or instructions for placement, deletion or move to be applied to the cluster.<p>
+ * Fully specified means the actual {@link Node}'s on which to place replicas have been decided.
+ *
+ * Instances are created by plugin code using {@link PlacementPlanFactory}. This interface obviously doesn't expose much but
+ * the underlying Solr side implementation has all that is needed (and will do at least one cast in order to execute the
+ * plan, likely then using some type of visitor pattern).
  */
-public interface Request {
+public interface PlacementPlan {
   /**
-   * "Unique" request ID that can be used for logging in the plugin code and that will also be used in logs on the Solr side.
+   * @return the {@link PlacementRequest} at the origin of this {@link PlacementPlan}, as passed to the {@link PlacementPlanFactory} method
+   * that created this instance.
    */
-  String getUniqueRequestId();
+  PlacementRequest getRequest();
 }

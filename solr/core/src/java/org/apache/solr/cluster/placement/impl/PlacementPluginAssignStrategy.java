@@ -25,8 +25,8 @@ import org.apache.solr.cloud.api.collections.Assign;
 import org.apache.solr.cluster.placement.Cluster;
 import org.apache.solr.cluster.placement.PlacementException;
 import org.apache.solr.cluster.placement.PlacementPlugin;
-import org.apache.solr.cluster.placement.Request;
-import org.apache.solr.cluster.placement.WorkOrder;
+import org.apache.solr.cluster.placement.PlacementRequest;
+import org.apache.solr.cluster.placement.PlacementPlan;
 import org.apache.solr.common.cloud.ReplicaPosition;
 
 /**
@@ -44,17 +44,17 @@ public class PlacementPluginAssignStrategy implements Assign.AssignStrategy {
     Cluster cluster = new ClusterImpl(solrCloudManager);
 
     // TODO create from assignRequest
-    Request placementRequest = null;
+    PlacementRequest placementRequest = null;
 
-    final WorkOrder workOrder;
+    final PlacementPlan placementPlan;
     try {
       // TODO Implement factories...
-      workOrder = plugin.computePlacement(cluster, placementRequest, null, null, null);
+      placementPlan = plugin.computePlacement(cluster, placementRequest, null, null, null);
     } catch (PlacementException pe) {
       throw new Assign.AssignmentException(pe);
     }
 
-    // TODO create replicaPositions from workOrder
+    // TODO create replicaPositions from placementPlan
     List<ReplicaPosition> replicaPositions = null;
 
     return replicaPositions;

@@ -25,17 +25,17 @@ import java.util.Set;
  * The shard might or might not already exist, plugin code can easily find out by using {@link SolrCollection#getShards()}
  * and verifying if the shard name(s) from {@link #getShardNames()} are there.
  *
- * <p>As opposed to {@link CreateNewCollectionRequest}, the set of {@link Node}s on which the replicas should be placed
+ * <p>As opposed to {@link CreateNewCollectionPlacementRequest}, the set of {@link Node}s on which the replicas should be placed
  * is specified (defaults to being equal to the set returned by {@link Cluster#getLiveNodes()}).
  *
- * <p>There is no extension between this interface and {@link CreateNewCollectionRequest} in either direction
+ * <p>There is no extension between this interface and {@link CreateNewCollectionPlacementRequest} in either direction
  * or from a common ancestor for readability. An ancestor could make sense and would be an "abstract interface" not intended
  * to be implemented directly, but this does not exist in Java.
  *
  * <p>Plugin code would likely treat the two types of requests differently since here existing {@link Replica}'s must be taken
- * into account for placement whereas in {@link CreateNewCollectionRequest} no {@link Replica}'s are assumed to exist.
+ * into account for placement whereas in {@link CreateNewCollectionPlacementRequest} no {@link Replica}'s are assumed to exist.
  */
-public interface AddReplicasRequest extends Request {
+public interface AddReplicasPlacementRequest extends PlacementRequest {
   /**
    * The {@link SolrCollection} to add {@link Replica}(s) to. The replicas are to be added to a shard that might or might
    * not yet exist when the plugin's {@link PlacementPlugin#computePlacement} is called.

@@ -33,9 +33,9 @@ public interface PlacementPlugin {
    *                        to their values.
    * @param propertyFetcher Allows resolving {@link PropertyKey}'s to {@link PropertyValue}'s by contacting the
    *                        relevant {@link PropertyValueSource} defined in each {@link PropertyKey}.
-   * @param workOrderFactory Factory used to create instances of {@link WorkOrder} to return computed decision.
-   * @return work order satisfying the placement request.
+   * @param placementPlanFactory Factory used to create instances of {@link PlacementPlan} to return computed decision.
+   * @return plan satisfying the placement request.
    */
-  WorkOrder computePlacement(Cluster cluster, Request placementRequest, PropertyKeyFactory propertyFactory,
-                                   PropertyValueFetcher propertyFetcher, WorkOrderFactory workOrderFactory) throws PlacementException, InterruptedException;
+  PlacementPlan computePlacement(Cluster cluster, PlacementRequest placementRequest, PropertyKeyFactory propertyFactory,
+                                 PropertyValueFetcher propertyFetcher, PlacementPlanFactory placementPlanFactory) throws PlacementException, InterruptedException;
 }

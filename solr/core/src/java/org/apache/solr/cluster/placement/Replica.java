@@ -20,7 +20,7 @@ package org.apache.solr.cluster.placement;
 /**
  * An instantiation (or one of the copies) of a given {@link Shard} of a given {@link SolrCollection}.
  * Objects of this type are returned by the Solr framework to the plugin, they are not directly built by the plugin. When the
- * plugin wants to add a replica it goes through appropriate method in {@link WorkOrderFactory}).
+ * plugin wants to add a replica it goes through appropriate method in {@link PlacementPlanFactory}).
  */
 public interface Replica extends PropertyValueSource {
   Shard getShard();

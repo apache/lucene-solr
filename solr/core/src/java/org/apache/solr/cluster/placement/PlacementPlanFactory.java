@@ -20,20 +20,20 @@ package org.apache.solr.cluster.placement;
 import java.util.Set;
 
 /**
- * Allows plugins to create {@link WorkOrder}s telling the Solr layer where to create replicas following the processing of
- * a {@link Request}. The Solr layer can (and will) check that the {@link WorkOrder} conforms to the {@link Request} (and
+ * Allows plugins to create {@link PlacementPlan}s telling the Solr layer where to create replicas following the processing of
+ * a {@link PlacementRequest}. The Solr layer can (and will) check that the {@link PlacementPlan} conforms to the {@link PlacementRequest} (and
  * if it does not, the requested operation will fail).
  */
-public interface WorkOrderFactory {
+public interface PlacementPlanFactory {
   /**
-   * <p>Creates a {@link WorkOrder} for adding a new collection and its replicas.
+   * <p>Creates a {@link PlacementPlan} for adding a new collection and its replicas.
    *
    * <p>This is in support of {@link org.apache.solr.cloud.api.collections.CreateCollectionCmd}.
    */
-  WorkOrder createWorkOrderNewCollection(CreateNewCollectionRequest request, String CollectionName, Set<ReplicaPlacement> replicaPlacements);
+  PlacementPlan createPlacementPlanNewCollection(CreateNewCollectionPlacementRequest request, String CollectionName, Set<ReplicaPlacement> replicaPlacements);
 
   /**
-   * <p>Creates a {@link WorkOrder} for adding replicas to a given shard of an existing collection.
+   * <p>Creates a {@link PlacementPlan} for adding replicas to a given shard of an existing collection.
    *
    * <p>This is in support (directly or indirectly) of {@link org.apache.solr.cloud.api.collections.AddReplicaCmd},
    * {@link org.apache.solr.cloud.api.collections.CreateShardCmd}, {@link org.apache.solr.cloud.api.collections.ReplaceNodeCmd},
@@ -43,10 +43,10 @@ public interface WorkOrderFactory {
    * {@link org.apache.solr.common.params.CollectionAdminParams#WITH_COLLECTION} but this should be removed shortly and
    * the section in parentheses of this comment should be removed when the {@code withCollection} javadoc link appears broken).
    */
-  WorkOrder createWorkOrderAddReplicas(AddReplicasRequest request, String CollectionName, Set<ReplicaPlacement> replicaPlacements);
+  PlacementPlan createPlacementPlanAddReplicas(AddReplicasPlacementRequest request, String CollectionName, Set<ReplicaPlacement> replicaPlacements);
 
   /**
-   * Creates a {@link ReplicaPlacement} needed to be passed to some/all {@link WorkOrder} factory methods.
+   * Creates a {@link ReplicaPlacement} needed to be passed to some/all {@link PlacementPlan} factory methods.
    */
   ReplicaPlacement createReplicaPlacement(String shardName, Node node, Replica.ReplicaType replicaType);
 }

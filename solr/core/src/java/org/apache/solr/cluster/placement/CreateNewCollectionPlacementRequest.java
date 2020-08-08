@@ -21,8 +21,8 @@ import java.util.Set;
 
 /**
  * <p>Request for creating a new collection with a given set of shards and replication factor for various replica types.
- * The expected {@link WorkOrder} corresponding to this {@link Request} is created using
- * {@link WorkOrderFactory#createWorkOrderNewCollection}
+ * The expected {@link PlacementPlan} corresponding to this {@link PlacementRequest} is created using
+ * {@link PlacementPlanFactory#createPlacementPlanNewCollection}
  *
  * <p>Note there is no need at this stage to allow the plugin to know each shard hash range for example, this can be handled
  * by the Solr side implementation of this interface without needing the plugin to worry about it (the implementation of this interface on
@@ -32,12 +32,12 @@ import java.util.Set;
  * creating a Collection but likely do not have to be exposed to the plugin (this can easily be changed if needed by
  * adding accessors here, the underlying Solr side implementation of this interface has the information).
  */
-public interface CreateNewCollectionRequest extends Request {
+public interface CreateNewCollectionPlacementRequest extends PlacementRequest {
   /**
    * <p>The name of the collection to be created and for which placement should be computed.
    *
-   * <p>Compare this method with {@link AddReplicasRequest#getCollection()}, there the collection already exists so can be
-   * directly passed in the {@link Request}.
+   * <p>Compare this method with {@link AddReplicasPlacementRequest#getCollection()}, there the collection already exists so can be
+   * directly passed in the {@link PlacementRequest}.
    *
    * <p>When processing this request, plugin code doesn't have to worry about existing {@link Replica}'s for the collection
    * given that the collection is assumed not to exist.
@@ -50,7 +50,7 @@ public interface CreateNewCollectionRequest extends Request {
    * <p>Properties passed through the Collection API by the client creating the collection.
    * See {@link SolrCollection#getCustomProperty(String)}.
    *
-   * <p>Given this {@link Request} is for creating a new collection, it is not possible to pass the custom property values through
+   * <p>Given this {@link PlacementRequest} is for creating a new collection, it is not possible to pass the custom property values through
    * the {@link SolrCollection} object. That instance does not exist yet, and is the reason {@link #getCollectionName()} exists
    * rather than a method returning {@link SolrCollection}...
    */

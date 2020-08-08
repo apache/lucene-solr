@@ -18,7 +18,7 @@
 package org.apache.solr.cluster.placement;
 
 /**
- * <p>Placement decision for a single {@link Replica}. Note this placement decision is used as part of a {@link WorkOrder},
+ * <p>Placement decision for a single {@link Replica}. Note this placement decision is used as part of a {@link PlacementPlan},
  * it does not directly lead to the plugin code getting a corresponding {@link Replica} instance, nor does it require the
  * plugin to provide a {@link Shard} instance (the plugin code gets such instances for existing replicas and shards in the
  * cluster but does not create them directly for adding new replicas for new or existing shards).

@@ -29,7 +29,7 @@ import com.google.common.collect.Ordering;
 import com.google.common.collect.TreeMultimap;
 import org.apache.solr.cluster.placement.Cluster;
 import org.apache.solr.cluster.placement.CoresCountPropertyValue;
-import org.apache.solr.cluster.placement.CreateNewCollectionRequest;
+import org.apache.solr.cluster.placement.CreateNewCollectionPlacementRequest;
 import org.apache.solr.cluster.placement.Node;
 import org.apache.solr.cluster.placement.PlacementException;
 import org.apache.solr.cluster.placement.PlacementPlugin;
@@ -39,9 +39,9 @@ import org.apache.solr.cluster.placement.PropertyValue;
 import org.apache.solr.cluster.placement.PropertyValueFetcher;
 import org.apache.solr.cluster.placement.Replica;
 import org.apache.solr.cluster.placement.ReplicaPlacement;
-import org.apache.solr.cluster.placement.Request;
-import org.apache.solr.cluster.placement.WorkOrder;
-import org.apache.solr.cluster.placement.WorkOrderFactory;
+import org.apache.solr.cluster.placement.PlacementRequest;
+import org.apache.solr.cluster.placement.PlacementPlan;
+import org.apache.solr.cluster.placement.PlacementPlanFactory;
 import org.apache.solr.common.util.SuppressForbidden;
 
 /**
@@ -53,14 +53,14 @@ import org.apache.solr.common.util.SuppressForbidden;
 public class SamplePluginMinimizeCores implements PlacementPlugin {
 
   @SuppressForbidden(reason = "Ordering.arbitrary() has no equivalent in Comparator class. Rather reuse than copy.")
-  public WorkOrder computePlacement(Cluster cluster, Request placementRequest, PropertyKeyFactory propertyFactory,
-                                    PropertyValueFetcher propertyFetcher, WorkOrderFactory workOrderFactory) throws PlacementException {
+  public PlacementPlan computePlacement(Cluster cluster, PlacementRequest placementRequest, PropertyKeyFactory propertyFactory,
+                                        PropertyValueFetcher propertyFetcher, PlacementPlanFactory placementPlanFactory) throws PlacementException {
     // This plugin only supports Creating a collection.
-    if (!(placementRequest instanceof CreateNewCollectionRequest)) {
+    if (!(placementRequest instanceof CreateNewCollectionPlacementRequest)) {
       throw new PlacementException("This toy plugin only supports creating collections");
     }
 
-    final CreateNewCollectionRequest reqCreateCollection = (CreateNewCollectionRequest) placementRequest;
+    final CreateNewCollectionPlacementRequest reqCreateCollection = (CreateNewCollectionPlacementRequest) placementRequest;
 
     final int totalReplicasPerShard = reqCreateCollection.getNrtReplicationFactor() +
         reqCreateCollection.getTlogReplicationFactor() + reqCreateCollection.getPullReplicationFactor();
@@ -110,23 +110,23 @@ public class SamplePluginMinimizeCores implements PlacementPlugin {
         nodesByCores.put(coreCount + 1, node);
       }
 
-      placeReplicas(nodeEntriesToAssign, workOrderFactory, replicaPlacements, shardName, reqCreateCollection.getNrtReplicationFactor(), Replica.ReplicaType.NRT);
-      placeReplicas(nodeEntriesToAssign, workOrderFactory, replicaPlacements, shardName, reqCreateCollection.getTlogReplicationFactor(), Replica.ReplicaType.TLOG);
-      placeReplicas(nodeEntriesToAssign, workOrderFactory, replicaPlacements, shardName, reqCreateCollection.getPullReplicationFactor(), Replica.ReplicaType.PULL);
+      placeReplicas(nodeEntriesToAssign, placementPlanFactory, replicaPlacements, shardName, reqCreateCollection.getNrtReplicationFactor(), Replica.ReplicaType.NRT);
+      placeReplicas(nodeEntriesToAssign, placementPlanFactory, replicaPlacements, shardName, reqCreateCollection.getTlogReplicationFactor(), Replica.ReplicaType.TLOG);
+      placeReplicas(nodeEntriesToAssign, placementPlanFactory, replicaPlacements, shardName, reqCreateCollection.getPullReplicationFactor(), Replica.ReplicaType.PULL);
     }
 
-    return workOrderFactory.createWorkOrderNewCollection(
+    return placementPlanFactory.createPlacementPlanNewCollection(
         reqCreateCollection, reqCreateCollection.getCollectionName(), replicaPlacements);
   }
 
   private void placeReplicas(ArrayList<Map.Entry<Integer, Node>> nodeEntriesToAssign,
-                                   WorkOrderFactory workOrderFactory, Set<ReplicaPlacement> replicaPlacements,
-                                   String shardName, int countReplicas, Replica.ReplicaType replicaType) {
+                             PlacementPlanFactory placementPlanFactory, Set<ReplicaPlacement> replicaPlacements,
+                             String shardName, int countReplicas, Replica.ReplicaType replicaType) {
     for (int replica = 0; replica < countReplicas; replica++) {
       final Map.Entry<Integer, Node> entry = nodeEntriesToAssign.remove(0);
       final Node node = entry.getValue();
 
-      replicaPlacements.add(workOrderFactory.createReplicaPlacement(shardName, node, replicaType));
+      replicaPlacements.add(placementPlanFactory.createReplicaPlacement(shardName, node, replicaType));
     }
   }
 }
