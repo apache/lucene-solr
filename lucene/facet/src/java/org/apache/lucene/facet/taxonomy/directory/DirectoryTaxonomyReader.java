@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.LRUHashMap;
@@ -33,8 +32,10 @@ import org.apache.lucene.facet.taxonomy.ParallelTaxonomyArrays;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.CorruptIndexException; // javadocs
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SegmentReader;
@@ -42,7 +43,6 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 
@@ -322,9 +322,10 @@ public class DirectoryTaxonomyReader extends TaxonomyReader implements Accountab
         return res;
       }
     }
-    
-    Document doc = indexReader.document(ordinal);
-    FacetLabel ret = new FacetLabel(FacetsConfig.stringToPath(doc.get(Consts.FULL)));
+
+    FacetLabel ret = new FacetLabel(FacetsConfig.stringToPath(MultiDocValues.getBinaryValues(indexReader, Consts.FULL).binaryValue().utf8ToString()));
+
+    // FacetLabel ret = new FacetLabel(FacetsConfig.stringToPath(doc.getBinaryValue(Consts.FULL).toString()));
     synchronized (categoryCache) {
       categoryCache.put(catIDInteger, ret);
     }
