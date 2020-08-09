@@ -325,7 +325,6 @@ public class DirectoryTaxonomyReader extends TaxonomyReader implements Accountab
 
     FacetLabel ret = new FacetLabel(FacetsConfig.stringToPath(MultiDocValues.getBinaryValues(indexReader, Consts.FULL).binaryValue().utf8ToString()));
 
-    // FacetLabel ret = new FacetLabel(FacetsConfig.stringToPath(doc.getBinaryValue(Consts.FULL).toString()));
     synchronized (categoryCache) {
       categoryCache.put(catIDInteger, ret);
     }
