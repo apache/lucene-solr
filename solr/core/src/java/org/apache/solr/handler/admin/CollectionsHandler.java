@@ -56,7 +56,6 @@ import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
@@ -103,7 +102,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
-import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.POLICY;
 import static org.apache.solr.client.solrj.response.RequestStatusState.COMPLETED;
 import static org.apache.solr.client.solrj.response.RequestStatusState.FAILED;
 import static org.apache.solr.client.solrj.response.RequestStatusState.NOT_FOUND;
@@ -125,9 +123,7 @@ import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
 import static org.apache.solr.common.cloud.DocCollection.RULE;
 import static org.apache.solr.common.cloud.DocCollection.SNITCH;
-import static org.apache.solr.common.cloud.ZkStateReader.AUTO_ADD_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_VALUE_PROP;
@@ -144,6 +140,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_NAME;
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_VALUE;
+import static org.apache.solr.common.params.CollectionAdminParams.SKIP_NODE_ASSIGNMENT;
 import static org.apache.solr.common.params.CollectionAdminParams.WITH_COLLECTION;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.*;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
@@ -459,17 +456,14 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           REPLICATION_FACTOR,
           COLL_CONF,
           NUM_SLICES,
-          MAX_SHARDS_PER_NODE,
           CREATE_NODE_SET,
           CREATE_NODE_SET_SHUFFLE,
           SHARDS_PROP,
-          AUTO_ADD_REPLICAS,
           RULE,
           SNITCH,
           PULL_REPLICAS,
           TLOG_REPLICAS,
           NRT_REPLICAS,
-          POLICY,
           WAIT_FOR_FINAL_STATE,
           WITH_COLLECTION,
           ALIAS);
@@ -559,11 +553,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           PULL_REPLICAS,
           TLOG_REPLICAS,
           REPLICATION_FACTOR,
-          MAX_SHARDS_PER_NODE,
-          POLICY,
           CREATE_NODE_SET,
           CREATE_NODE_SET_SHUFFLE,
-          AUTO_ADD_REPLICAS,
           "shards",
           CommonParams.ROWS,
           CommonParams.Q,
@@ -942,7 +933,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           TLOG_REPLICAS,
           PULL_REPLICAS,
           CREATE_NODE_SET,
-          FOLLOW_ALIASES);
+          FOLLOW_ALIASES,
+          SKIP_NODE_ASSIGNMENT);
       return copyPropertiesWithPrefix(req.getParams(), props, COLL_PROP_PREFIX);
     }),
     OVERSEERSTATUS_OP(OVERSEERSTATUS, (req, rsp, h) -> new LinkedHashMap<>()),
@@ -974,9 +966,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       new ClusterStatus(h.coreContainer.getZkController().getZkStateReader(),
           new ZkNodeProps(all)).getClusterStatus(rsp.getValues());
       return null;
-    }),
-    UTILIZENODE_OP(UTILIZENODE, (req, rsp, h) -> {
-      return copy(req.getParams().required(), null, AutoScalingParams.NODE);
     }),
     ADDREPLICAPROP_OP(ADDREPLICAPROP, (req, rsp, h) -> {
       Map<String, Object> map = copy(req.getParams().required(), null,
@@ -1170,7 +1159,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       }
       // from CREATE_OP:
       copy(req.getParams(), params, COLL_CONF, REPLICATION_FACTOR, NRT_REPLICAS, TLOG_REPLICAS,
-          PULL_REPLICAS, MAX_SHARDS_PER_NODE, AUTO_ADD_REPLICAS, CREATE_NODE_SET, CREATE_NODE_SET_SHUFFLE);
+          PULL_REPLICAS, CREATE_NODE_SET, CREATE_NODE_SET_SHUFFLE);
       copyPropertiesWithPrefix(req.getParams(), params, COLL_PROP_PREFIX);
       return params;
     }),

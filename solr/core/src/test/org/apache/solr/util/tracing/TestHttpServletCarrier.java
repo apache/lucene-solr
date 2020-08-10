@@ -25,7 +25,7 @@ import java.util.Map;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
-import org.apache.commons.collections.IteratorUtils;
+import org.apache.commons.collections4.IteratorUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Test;
 import org.mockito.stubbing.Answer;
@@ -37,7 +37,6 @@ import static org.mockito.Mockito.when;
 public class TestHttpServletCarrier extends SolrTestCaseJ4 {
 
   @Test
-  @SuppressWarnings({"unchecked"})
   public void test() {
     SolrTestCaseJ4.assumeWorkingMockito();
     HttpServletRequest req = mock(HttpServletRequest.class);

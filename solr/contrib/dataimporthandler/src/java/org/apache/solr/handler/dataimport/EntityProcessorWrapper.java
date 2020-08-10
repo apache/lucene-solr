@@ -79,12 +79,12 @@ public class EntityProcessorWrapper extends EntityProcessor {
 
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked"})
   void loadTransformers() {
     String transClasses = context.getEntityAttribute(TRANSFORMER);
 
     if (transClasses == null) {
-      transformers = Collections.EMPTY_LIST;
+      transformers = Collections.emptyList();
       return;
     }
 

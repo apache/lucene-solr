@@ -67,7 +67,7 @@ public final class SolrPaths {
     } catch (NamingException e) {
       log.debug("No /solr/home in JNDI");
     } catch (RuntimeException ex) {
-      log.warn("Odd RuntimeException while testing for JNDI: {}", ex.getMessage());
+      log.warn("Odd RuntimeException while testing for JNDI: ", ex);
     }
 
     // Now try system property
@@ -117,6 +117,7 @@ public final class SolrPaths {
    * @throws SolrException if path is outside allowed paths
    */
   public static void assertPathAllowed(Path pathToAssert, Set<Path> allowPaths) throws SolrException {
+    if (pathToAssert == null) return;
     if (OS.isFamilyWindows() && pathToAssert.toString().startsWith("\\\\")) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           "Path " + pathToAssert + " disallowed. UNC paths not supported. Please use drive letter instead.");

@@ -64,9 +64,9 @@ public interface TextWriter extends PushWriter {
     } else if (val instanceof Path) {
       writeStr(name, ((Path) val).toAbsolutePath().toString(), true);
     } else if (val instanceof IteratorWriter) {
-      writeIterator((IteratorWriter) val);
+      writeIterator(name, (IteratorWriter) val);
     } else if (val instanceof MapWriter) {
-      writeMap((MapWriter) val);
+      writeMap(name, (MapWriter) val);
     } else if (val instanceof MapSerializable) {
       //todo find a better way to reuse the map more efficiently
       writeMap(name, ((MapSerializable) val).toMap(new LinkedHashMap<>()), false, true);
@@ -212,10 +212,19 @@ public interface TextWriter extends PushWriter {
     //todo
   }
 
+  default void writeMap(String name, MapWriter mw) throws IOException {
+    writeMap(mw);
+  }
+
   @Override
   default void writeIterator(IteratorWriter iw) throws IOException {
     /*todo*/
   }
+
+  default void writeIterator(String name, IteratorWriter iw) throws IOException {
+    writeIterator(iw);
+  }
+
   default void indent() throws IOException {
     if (doIndent()) indent(level());
   }

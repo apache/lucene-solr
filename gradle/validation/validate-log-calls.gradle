@@ -134,7 +134,10 @@ class ValidateLogCallsTask extends DefaultTask {
         violation = true
       }
     }
-
+    if (stripped.contains("getMessage()") || stripped.contains("getCause()")) {
+      cause = "getMessage or getCause in log line";
+      violation = true;
+    }
     if (violation) {
       reportViolation(String.format("cause: '%s' Suspicious logging call, Parameterize and possibly surround with 'if (log.is*Enabled) {..}'. Help at: 'gradlew helpValidateLogCalls' %s    %s:%d"
           , cause , System.lineSeparator, file.getAbsolutePath(), lineNumber))
@@ -235,7 +238,7 @@ class ValidateLogCallsTask extends DefaultTask {
   @TaskAction
   def checkLogLines() {
     sourceFiles.each { checkFile(it) }
-    logger.warn("Checked: ${sourceFiles.files.size()}")
+    logger.info("Checked: ${sourceFiles.files.size()}")
 
     if (errsFound > 0) {
       throw new BuildException(String.format(Locale.ENGLISH, 'Found %d violations in source files (%s).',

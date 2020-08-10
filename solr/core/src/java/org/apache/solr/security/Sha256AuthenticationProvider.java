@@ -116,7 +116,7 @@ public class Sha256AuthenticationProvider implements ConfigEditablePlugin,  Basi
     try {
       digest = MessageDigest.getInstance("SHA-256");
     } catch (NoSuchAlgorithmException e) {
-      log.error(e.getMessage(), e);
+      log.error("Cannot find algorithm ", e);
       return null;//should not happen
     }
     if (saltKey != null) {

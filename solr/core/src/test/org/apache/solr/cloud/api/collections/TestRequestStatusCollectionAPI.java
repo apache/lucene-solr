@@ -49,7 +49,6 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
     params.set("numShards", numShards);
     int replicationFactor = 1;
     params.set("replicationFactor", replicationFactor);
-    params.set("maxShardsPerNode", 100);
     params.set("collection.configName", "conf1");
     params.set(CommonAdminParams.ASYNC, "1000");
     try {
@@ -130,7 +129,6 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
     params.set("name", "collection2");
     params.set("numShards", 2);
     params.set("replicationFactor", 1);
-    params.set("maxShardsPerNode", 100);
     params.set("collection.configName", "conf1");
     params.set(CommonAdminParams.ASYNC, "1002");
     try {
@@ -158,7 +156,6 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
     params.set("name", "collection3");
     params.set("numShards", 1);
     params.set("replicationFactor", 1);
-    params.set("maxShardsPerNode", 100);
     params.set("collection.configName", "conf1");
     params.set(CommonAdminParams.ASYNC, "1002");
     try {

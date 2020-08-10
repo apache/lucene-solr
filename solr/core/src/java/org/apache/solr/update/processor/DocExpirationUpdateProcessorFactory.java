@@ -432,12 +432,10 @@ public final class DocExpirationUpdateProcessorFactory
 
           log.info("Finished periodic deletion of expired docs");
         } catch (IOException ioe) {
-          log.error("IOException in periodic deletion of expired docs: {}",
-                    ioe.getMessage(), ioe);
+          log.error("IOException in periodic deletion of expired docs: ", ioe);
           // DO NOT RETHROW: ScheduledExecutor will suppress subsequent executions
         } catch (RuntimeException re) {
-          log.error("Runtime error in periodic deletion of expired docs: {}",
-                    re.getMessage(), re);
+          log.error("Runtime error in periodic deletion of expired docs: ", re);
           // DO NOT RETHROW: ScheduledExecutor will suppress subsequent executions
         } finally {
           SolrRequestInfo.clearRequestInfo();

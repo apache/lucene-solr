@@ -493,7 +493,7 @@ public class HttpSolrCall {
     }
     if (statusCode == AuthorizationResponse.FORBIDDEN.statusCode) {
       if (log.isDebugEnabled()) {
-        log.debug("UNAUTHORIZED auth header {} context : {}, msg: {}", req.getHeader("Authorization"), context, authResponse.getMessage());
+        log.debug("UNAUTHORIZED auth header {} context : {}, msg: {}", req.getHeader("Authorization"), context, authResponse.getMessage()); // logOk
       }
       sendError(statusCode,
           "Unauthorized request, Response code: " + statusCode);
@@ -503,7 +503,7 @@ public class HttpSolrCall {
       return RETURN;
     }
     if (!(statusCode == HttpStatus.SC_ACCEPTED) && !(statusCode == HttpStatus.SC_OK)) {
-      log.warn("ERROR {} during authentication: {}", statusCode, authResponse.getMessage());
+      log.warn("ERROR {} during authentication: {}", statusCode, authResponse.getMessage()); // logOk
       sendError(statusCode,
           "ERROR during authorization, Response code: " + statusCode);
       if (shouldAudit(EventType.ERROR)) {
@@ -1134,6 +1134,11 @@ public class HttpSolrCall {
       }
 
       @Override
+      public String getUserName() {
+        return getReq().getRemoteUser();
+      }
+
+      @Override
       public String getHttpHeader(String s) {
         return getReq().getHeader(s);
       }
@@ -1200,11 +1205,10 @@ public class HttpSolrCall {
   static final String CONTENT_LENGTH_HEADER = "Content-Length";
   List<CommandOperation> parsedCommands;
 
-  @SuppressWarnings({"unchecked"})
   public List<CommandOperation> getCommands(boolean validateInput) {
     if (parsedCommands == null) {
       Iterable<ContentStream> contentStreams = solrReq.getContentStreams();
-      if (contentStreams == null) parsedCommands = Collections.EMPTY_LIST;
+      if (contentStreams == null) parsedCommands = Collections.emptyList();
       else {
         parsedCommands = ApiBag.getCommandOperations(contentStreams.iterator().next(), getValidators(), validateInput);
       }

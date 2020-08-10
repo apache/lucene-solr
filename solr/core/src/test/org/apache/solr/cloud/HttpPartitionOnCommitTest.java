@@ -73,7 +73,7 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
 
     // create a collection that has 2 shard and 2 replicas
     String testCollectionName = "c8n_2x2_commits";
-    createCollection(testCollectionName, "conf1", 2, 2, 1);
+    createCollection(testCollectionName, "conf1", 2, 2);
     cloudClient.setDefaultCollection(testCollectionName);
 
     List<Replica> notLeaders =
@@ -122,7 +122,7 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
 
     // create a collection that has 1 shard and 3 replicas
     String testCollectionName = "c8n_1x3_commits";
-    createCollection(testCollectionName, "conf1", 1, 3, 1);
+    createCollection(testCollectionName, "conf1", 1, 3);
     cloudClient.setDefaultCollection(testCollectionName);
 
     List<Replica> notLeaders =

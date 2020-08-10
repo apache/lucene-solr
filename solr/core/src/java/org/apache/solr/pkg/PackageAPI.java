@@ -115,7 +115,7 @@ public class PackageAPI {
                 packageLoader.refreshPackageConf();
               }
             } catch (KeeperException.ConnectionLossException | KeeperException.SessionExpiredException e) {
-              log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK: [{}]", e.getMessage());
+              log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK: ", e);
             } catch (KeeperException e) {
               log.error("A ZK error has occurred", e);
               throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
@@ -192,7 +192,7 @@ public class PackageAPI {
 
     public PkgVersion(Package.AddVersion addVersion) {
       this.version = addVersion.version;
-      this.files = addVersion.files;
+      this.files = addVersion.files == null? null : Collections.unmodifiableList(addVersion.files);
       this.manifest = addVersion.manifest;
       this.manifestSHA512 = addVersion.manifestSHA512;
     }
@@ -220,6 +220,15 @@ public class PackageAPI {
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
+    }
+
+    public PkgVersion copy() {
+      PkgVersion result = new PkgVersion();
+      result.version = this.version;
+      result.files =  this.files;
+      result.manifest =  this.manifest;
+      result.manifestSHA512 =  this.manifestSHA512;
+      return result;
     }
   }
 
@@ -424,5 +433,22 @@ public class PackageAPI {
     log.error("Error reading package config from zookeeper", SolrZkClient.checkInterrupted(e));
   }
 
-
+  public boolean isJarInuse(String path) {
+    Packages pkg = null;
+    try {
+      pkg = readPkgsFromZk(null, null);
+    } catch (KeeperException.NoNodeException nne) {
+      return false;
+    } catch (InterruptedException | KeeperException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
+    for (List<PkgVersion> vers : pkg.packages.values()) {
+      for (PkgVersion ver : vers) {
+        if (ver.files.contains(path)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
 }

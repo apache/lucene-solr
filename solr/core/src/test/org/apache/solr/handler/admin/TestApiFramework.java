@@ -149,7 +149,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
 
   }
 
-  public void testPayload() {
+  public void testPayload() throws IOException {
     String json = "{package:pkg1, version: '0.1', files  :[a.jar, b.jar]}";
     Utils.fromJSONString(json);
 
@@ -176,7 +176,18 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     assertEquals("b.jar", addversion.files.get(1));
 
 
+    apiBag.registerObject(new C());
+    rsp = v2ApiInvoke(apiBag, "/path1", "POST", new ModifiableSolrParams(),
+            new ByteArrayInputStream("{\"package\":\"mypkg\", \"version\": \"1.0\", \"files\" : [\"a.jar\", \"b.jar\"]}".getBytes(UTF_8)));
+    assertEquals("mypkg", rsp.getValues()._getStr("payload/package", null));
+    assertEquals("1.0", rsp.getValues()._getStr("payload/version", null));
+  }
 
+  public static class C {
+    @EndPoint(path = "/path1", method = POST, permission = PermissionNameProvider.Name.ALL)
+    public void m1(PayloadObj<AddVersion> add) {
+      add.getResponse().add("payload",add.get());
+    }
   }
 
   @EndPoint(method = POST, path = "/cluster/package", permission = PermissionNameProvider.Name.ALL)
@@ -195,7 +206,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
 
   }
 
-  public static class AddVersion {
+  public static class AddVersion implements ReflectMapWriter {
     @JsonProperty(value = "package", required = true)
     public String pkg;
     @JsonProperty(value = "version", required = true)

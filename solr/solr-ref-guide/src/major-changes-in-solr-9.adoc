@@ -108,6 +108,21 @@ _(raw; not yet edited)_
 * SOLR-12823: Remove /clusterstate.json support, i.e. support for collections created with stateFormat=1 as well as support
   for Collection API MIGRATESTATEFORMAT action. Also removes support for cluster property `legacyCloud` (as if always false now).
 
+* SOLR-14656: Autoscaling framework removed
+  This includes:
+    Autoscaling, policy, triggers etc.
+    withCollection handling
+    UTILIZENODE command
+    Sim framework
+    Suggestions tab in UI
+    Reference guide pages for autoscaling
+    autoAddReplicas feature
+
+* SOLR-14702: All references to "master" and "slave" were replaced in the code with "leader"
+  and "follower". This includes API calls for the replication handler and metrics. For rolling
+  upgrades into 9.0, you need to be on Solr version 8.7 or greater. Some metrics also changed, alerts and
+  monitors on Solr KPIs that mention "master" or "slave" will also now be "leader" and "follower"
+  
 === Upgrade Prerequisites in Solr 9
 
 * Upgrade all collections in stateFormat=1 to stateFormat=2 *before* upgrading to Solr 9, as Solr 9 does not support the

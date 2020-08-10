@@ -25,10 +25,10 @@ import org.apache.lucene.index.NumericDocValues;
 
 public class LongValue implements SortValue {
 
+  final protected String field;
+  final protected LongComp comp;
   protected NumericDocValues vals;
-  protected String field;
   protected long currentValue;
-  protected LongComp comp;
   private int lastDocID;
   private boolean present;
 

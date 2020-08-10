@@ -75,7 +75,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
 
 
     String testCollectionName = "forceleader_lower_terms_collection";
-    createCollection(testCollectionName, "conf1", 1, 3, 1);
+    createCollection(testCollectionName, "conf1", 1, 3);
     
 
     try {

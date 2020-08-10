@@ -36,7 +36,9 @@ import org.slf4j.LoggerFactory;
  * It takes care of notifying the {@link CdcrReplicatorManager} in case
  * of a process state change.
  * </p>
+ * @deprecated since 8.6
  */
+@Deprecated(since = "8.6")
 class CdcrProcessStateManager extends CdcrStateManager {
 
   private CdcrParams.ProcessState state = DEFAULT_STATE;

@@ -26,7 +26,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.index.IndexableField;
@@ -104,8 +104,7 @@ public class Grouping {
   private Query query;
   private DocSet filter;
   private Filter luceneFilter;
-  @SuppressWarnings({"rawtypes"})
-  private NamedList grouped = new SimpleOrderedMap();
+  private NamedList<Object> grouped = new SimpleOrderedMap<>();
   private Set<Integer> idSet = new LinkedHashSet<>();  // used for tracking unique docs when we need a doclist
   private int maxMatches;  // max number of matches from any grouping command
   private float maxScore = Float.NaN;  // max score seen in any doclist
@@ -444,7 +443,7 @@ public class Grouping {
     try {
       searcher.search(QueryUtils.combineQueryAndFilter(query, luceneFilter), collector);
     } catch (TimeLimitingCollector.TimeExceededException | ExitableDirectoryReader.ExitingReaderException x) {
-      log.warn("Query: {}; {}", query, x.getMessage());
+      log.warn("Query: {}; ", query, x);
       qr.setPartialResults(true);
     }
   }

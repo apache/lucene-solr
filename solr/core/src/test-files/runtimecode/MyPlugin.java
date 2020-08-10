@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.handler;
+package runtimecode;
 
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
