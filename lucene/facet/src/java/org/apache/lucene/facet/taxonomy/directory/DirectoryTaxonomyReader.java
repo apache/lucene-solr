@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.LRUHashMap;
@@ -35,6 +34,7 @@ import org.apache.lucene.index.CorruptIndexException; // javadocs
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SegmentReader;
@@ -323,8 +323,9 @@ public class DirectoryTaxonomyReader extends TaxonomyReader implements Accountab
       }
     }
     
-    Document doc = indexReader.document(ordinal);
-    FacetLabel ret = new FacetLabel(FacetsConfig.stringToPath(doc.get(Consts.FULL)));
+    boolean found = MultiDocValues.getBinaryValues(indexReader, Consts.FULL).advanceExact(catIDInteger);
+    assert found;
+    FacetLabel ret = new FacetLabel(FacetsConfig.stringToPath(MultiDocValues.getBinaryValues(indexReader, Consts.FULL).binaryValue().utf8ToString()));
     synchronized (categoryCache) {
       categoryCache.put(catIDInteger, ret);
     }
