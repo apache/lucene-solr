@@ -35,6 +35,7 @@ import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
@@ -102,6 +103,8 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
 
   private SinglePositionTokenStream parentStream = new SinglePositionTokenStream(Consts.PAYLOAD_PARENT);
   private Field parentStreamField;
+  private Field fullPathField;
+  
   private int cacheMissesUntilFill = 11;
   private boolean shouldFillCache = true;
   
@@ -192,6 +195,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
     ft.setOmitNorms(true);
     parentStreamField = new Field(Consts.FIELD_PAYLOADS, parentStream, ft);
+    fullPathField = new StringField(Consts.FULL, "", Field.Store.NO);
 
     nextID = indexWriter.getDocStats().maxDoc;
 
@@ -490,6 +494,8 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     Document d = new Document();
     d.add(parentStreamField);
 
+    fullPathField.setStringValue(FacetsConfig.pathToString(categoryPath.components, categoryPath.length));
+    d.add(fullPathField);
     d.add(new BinaryDocValuesField(Consts.FULL, new BytesRef(FacetsConfig.pathToString(categoryPath.components, categoryPath.length))));
 
     // Note that we do no pass an Analyzer here because the fields that are

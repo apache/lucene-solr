@@ -322,9 +322,10 @@ public class DirectoryTaxonomyReader extends TaxonomyReader implements Accountab
         return res;
       }
     }
-
+    
+    boolean found = MultiDocValues.getBinaryValues(indexReader, Consts.FULL).advanceExact(catIDInteger);
+    assert found;
     FacetLabel ret = new FacetLabel(FacetsConfig.stringToPath(MultiDocValues.getBinaryValues(indexReader, Consts.FULL).binaryValue().utf8ToString()));
-
     synchronized (categoryCache) {
       categoryCache.put(catIDInteger, ret);
     }
