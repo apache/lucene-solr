@@ -22,7 +22,7 @@ import org.apache.solr.common.SolrException;
 import java.io.IOException;
 import java.io.InputStream;
 
-/**A binary resource. The system is agnostic of the content type */
+/**A binary resource. The impl is agnostic of the content type */
 public interface Resource {
     /** read a file/resource.
      * The caller should consume the stream completely and should not hold a reference to this stream.
