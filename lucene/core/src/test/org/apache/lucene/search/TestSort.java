@@ -26,6 +26,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatDocValuesField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
@@ -56,9 +57,9 @@ public class TestSort extends LuceneTestCase {
   }
 
   private void assertDifferent(Sort a, Sort b) {
-    assertFalse(a.equals(b));
-    assertFalse(b.equals(a));
-    assertFalse(a.hashCode() == b.hashCode());
+    assertNotEquals(a, b);
+    assertNotEquals(b, a);
+    assertNotEquals(a.hashCode(), b.hashCode());
   }
 
   public void testEquals() {
@@ -877,5 +878,23 @@ public class TestSort extends LuceneTestCase {
 
     ir.close();
     dir.close();
+  }
+
+  public void testRewrite() throws IOException {
+    try (Directory dir = newDirectory()) {
+      RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+      IndexSearcher searcher = newSearcher(writer.getReader());
+      writer.close();
+
+      LongValuesSource longSource = LongValuesSource.constant(1L);
+      Sort sort = new Sort(longSource.getSortField(false));
+
+      assertSame(sort, sort.rewrite(searcher));
+
+      DoubleValuesSource doubleSource = DoubleValuesSource.constant(1.0);
+      sort = new Sort(doubleSource.getSortField(false));
+
+      assertSame(sort, sort.rewrite(searcher));
+    }
   }
 }

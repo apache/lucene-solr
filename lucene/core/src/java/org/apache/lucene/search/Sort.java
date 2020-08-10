@@ -177,12 +177,12 @@ public class Sort {
     SortField[] rewrittenSortFields = new SortField[fields.length];
     for (int i = 0; i < fields.length; i++) {
       rewrittenSortFields[i] = fields[i].rewrite(searcher);
-      if (fields[i] != rewrittenSortFields[i]) {
+      if (! fields[i].equals(rewrittenSortFields[i])) {
         changed = true;
       }
     }
 
-    return (changed) ? new Sort(rewrittenSortFields) : this;
+    return changed ? new Sort(rewrittenSortFields) : this;
   }
 
   @Override
