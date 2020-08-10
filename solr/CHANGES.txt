@@ -111,6 +111,8 @@ Other Changes
 * SOLR-14731: Rename @SolrSingleThreaded to @SolrThreadUnsafe, mark DistribPackageStore with the annotation
   (marcussorealheis)
 
+* SOLR-14641: PeerSync, remove canHandleVersionRanges check (Cao Manh Dat)
+
 ==================  8.6.1 ==================
 
 Bug Fixes
