@@ -17,8 +17,6 @@
 
 package org.apache.solr.cluster.api;
 
-import org.apache.solr.common.util.SimpleMap;
-
 /** A read only view of a Solr node */
 public interface SolrNode {
 

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.common.util;
+package org.apache.solr.cluster.api;
 
 import org.apache.solr.common.MapWriter;
 
@@ -33,45 +33,39 @@ import java.util.function.Function;
 public interface SimpleMap<T> extends MapWriter {
 
   /**get a value by key. If not present , null is returned */
-  T get(CharSequence key);
+  T get(String key);
 
   /**Navigate through all keys and values */
-  void forEach(BiConsumer<? super CharSequence, ? super T> fun);
+  void forEachEntry(BiConsumer<String, ? super T> fun);
 
   /** iterate through all keys
    * The default impl is suboptimal. Proper implementations must do it more efficiently
    * */
-  default void forEachKey(Consumer<CharSequence> fun) {
-    forEach((k, t) -> fun.accept(k));
+  default void forEachKey(Consumer<String> fun) {
+    forEachEntry((k, t) -> fun.accept(k));
   }
 
+  int size();
   /**
-   * iterate through all keys but stop in between if required
+   * iterate through all keys but abort in between if required
    *  The default impl is suboptimal. Proper implementations must do it more efficiently
    * @param fun Consume each key and return a boolean to signal whether to proceed or not. If true , continue. If false stop
    * */
-  default void conditionalForEachKey(Function<? super CharSequence, Boolean> fun){
-    forEachKey(new Consumer<>() {
-      boolean end = false;
-      @Override
-      public void accept(CharSequence k) {
-        if (end) return;
-        end = fun.apply(k);
-      }
-    });
+  default void abortableForEachKey(Function<String, Boolean> fun) {
+    abortableForEach((key, t) -> fun.apply(key));
   }
 
 
   /**
-   * Navigate through all keys but stop in between if required.
+   * Navigate through all key-values but abort in between if required.
    * The default impl is suboptimal. Proper implementations must do it more efficiently
    * @param fun Consume each entry and return a boolean to signal whether to proceed or not. If true, continue, if false stop
    */
-  default void conditionalForEach(BiFunction<? super CharSequence, ? super T, Boolean> fun) {
-    forEach(new BiConsumer<>() {
+  default void abortableForEach(BiFunction<String, ? super T, Boolean> fun) {
+    forEachEntry(new BiConsumer<>() {
       boolean end = false;
       @Override
-      public void accept(CharSequence k, T v) {
+      public void accept(String k, T v) {
         if (end) return;
         end = fun.apply(k, v);
       }
@@ -81,6 +75,6 @@ public interface SimpleMap<T> extends MapWriter {
 
   @Override
   default void writeMap(EntryWriter ew) throws IOException {
-    forEach(ew::putNoEx);
+    forEachEntry(ew::putNoEx);
   }
 }

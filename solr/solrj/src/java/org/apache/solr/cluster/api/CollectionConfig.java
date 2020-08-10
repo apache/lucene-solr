@@ -14,14 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.common.util;
 
-import java.util.LinkedHashMap;
+package org.apache.solr.cluster.api;
 
-public class LinkedSimpleHashMap<T> extends LinkedHashMap<CharSequence, T>  implements SimpleMap<T> {
-    @Override
-    public T get(CharSequence key) {
-        return super.get(key);
-    }
+
+public interface CollectionConfig {
+
+  String name();
+
+  SimpleMap<Resource> resources();
 
 }

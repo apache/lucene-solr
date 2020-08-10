@@ -17,8 +17,6 @@
 
 package org.apache.solr.cluster.api;
 
-import org.apache.solr.common.util.SimpleMap;
-
 /** Represents a collection in Solr */
 public interface SolrCollection {
 
@@ -27,8 +25,8 @@ public interface SolrCollection {
   /** shards of a collection */
   SimpleMap<Shard> shards();
 
-  /** configset used by this collection */
-  String configSet();
+  /** Name of the configset used by this collection */
+  String config();
 
   /**Router used in this collection */
   Router router();

@@ -17,24 +17,25 @@
 
 package org.apache.solr.cluster.api;
 
-import java.io.InputStream;
-import java.util.Set;
-import java.util.function.Consumer;
-
 import org.apache.solr.common.SolrException;
 
-public interface Config {
+import java.io.IOException;
+import java.io.InputStream;
 
-  String name();
+/**A binary resource. The impl is agnostic of the content type */
+public interface Resource {
+    /**
+     * This is a full path. e.g schema.xml , solrconfig.xml , lang/stopwords.txt etc
+     */
+    String name();
+    /** read a file/resource.
+     * The caller should consume the stream completely and should not hold a reference to this stream.
+     * This method closes the stream soon after the method returns
+     * @param resourceConsumer This should be a full path. e.g schema.xml , solrconfig.xml , lang/stopwords.txt etc
+     */
+    void get(Consumer resourceConsumer) throws SolrException;
 
-  /**set of files in the config */
-  Set<String> resources() throws SolrException;
-
-  /** read a file inside the config.
-   * The caller should consume the stream completely and should not hold a reference to this stream.
-   * This method closes the stream soon after the method returns
-   * @param file  name of the file e.g: schema.xml
-   */
-  void  resource(Consumer<InputStream> file) throws SolrException;
-
+    interface Consumer {
+        void read(InputStream is) throws IOException;
+    }
 }
