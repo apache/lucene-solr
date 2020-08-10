@@ -73,7 +73,7 @@ public abstract class SolrParams implements Serializable, MapWriter, Iterable<Ma
   public void writeMap(EntryWriter ew) throws IOException {
     //TODO don't call toNamedList; more efficiently implement here
     //note: multiple values, if present, are a String[] under 1 key
-    toNamedList().forEach((k, v) -> {
+    toNamedList().forEachEntry((k, v) -> {
       if (v == null || "".equals(v)) return;
       try {
         ew.put(k, v);

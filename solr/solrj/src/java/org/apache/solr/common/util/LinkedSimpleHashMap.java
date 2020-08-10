@@ -16,12 +16,19 @@
  */
 package org.apache.solr.common.util;
 
-import java.util.LinkedHashMap;
+import org.apache.solr.cluster.api.SimpleMap;
 
-public class LinkedSimpleHashMap<T> extends LinkedHashMap<CharSequence, T>  implements SimpleMap<T> {
+import java.util.LinkedHashMap;
+import java.util.function.BiConsumer;
+
+public class LinkedSimpleHashMap<T> extends LinkedHashMap<String, T>  implements SimpleMap<T> {
     @Override
-    public T get(CharSequence key) {
+    public T get(String key) {
         return super.get(key);
     }
 
+    @Override
+    public void forEachEntry(BiConsumer<String, ? super T> fun) {
+
+    }
 }

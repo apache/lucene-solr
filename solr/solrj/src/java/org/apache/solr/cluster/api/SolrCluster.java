@@ -18,7 +18,6 @@
 package org.apache.solr.cluster.api;
 
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.SimpleMap;
 
 /** Represents a Solr cluster */
 
@@ -35,7 +34,7 @@ public interface SolrCluster {
 
 
   /** Config sets in the cluster*/
-  SimpleMap<Config> configs() throws SolrException;
+  SimpleMap<CollectionConfig> configs() throws SolrException;
 
   /** Name of the node in which the overseer is running */
   String overseerNode() throws SolrException;

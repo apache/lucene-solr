@@ -39,9 +39,12 @@ public interface ShardReplica {
   /** type of the replica */
   Replica.Type type();
 
+  /** Is the replica alive now */
+  boolean alive();
+
   /**Size of the index in bytes. Keep in mind that this may result in a network call.
    * Also keep in mind that the value that you get is at best an approximation.
    * The exact size may vary from replica to replica
    */
-  long size();
+  long indexSize();
 }

@@ -17,24 +17,11 @@
 
 package org.apache.solr.cluster.api;
 
-import java.io.InputStream;
-import java.util.Set;
-import java.util.function.Consumer;
 
-import org.apache.solr.common.SolrException;
-
-public interface Config {
+public interface CollectionConfig {
 
   String name();
 
-  /**set of files in the config */
-  Set<String> resources() throws SolrException;
-
-  /** read a file inside the config.
-   * The caller should consume the stream completely and should not hold a reference to this stream.
-   * This method closes the stream soon after the method returns
-   * @param file  name of the file e.g: schema.xml
-   */
-  void  resource(Consumer<InputStream> file) throws SolrException;
+  SimpleMap<Resource> resources();
 
 }

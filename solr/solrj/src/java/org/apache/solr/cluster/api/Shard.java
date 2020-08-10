@@ -17,8 +17,6 @@
 
 package org.apache.solr.cluster.api;
 
-import org.apache.solr.common.util.SimpleMap;
-
 /**A shard of a collection */
 public interface Shard {
 

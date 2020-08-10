@@ -2178,4 +2178,8 @@ public class ZkStateReader implements SolrCloseable {
       return result;
     }
   }
+
+  public DocCollection getCollection(String collection) {
+    return clusterState.getCollectionOrNull(collection);
+  }
 }
