@@ -17,6 +17,8 @@
 
 package org.apache.solr.cluster.api;
 
+import org.apache.solr.cluster.api.SolrCluster.ApiPrefix;
+
 /** A read only view of a Solr node */
 public interface SolrNode {
 
@@ -25,9 +27,8 @@ public interface SolrNode {
 
   /**Base http url for this node
    *
-   * @param isV2 if true gives the /api endpoint , else /solr endpoint
    */
-  String baseUrl(boolean isV2);
+  String baseUrl(ApiPrefix  type);
 
   /**
    * Get all the cores in a given node.

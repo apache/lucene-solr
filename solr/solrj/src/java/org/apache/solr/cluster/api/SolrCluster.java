@@ -45,4 +45,13 @@ public interface SolrCluster {
    */
   String thisNode();
 
+  enum ApiPrefix {
+    V1("solr"),
+    V2("api");
+    final String prefix;
+
+    ApiPrefix(String prefix) {
+      this.prefix = prefix;
+    }
+  }
 }
