@@ -24,6 +24,10 @@ import java.io.InputStream;
 
 /**A binary resource. The impl is agnostic of the content type */
 public interface Resource {
+    /**
+     * This is a full path. e.g schema.xml , solrconfig.xml , lang/stopwords.txt etc
+     */
+    String name();
     /** read a file/resource.
      * The caller should consume the stream completely and should not hold a reference to this stream.
      * This method closes the stream soon after the method returns

@@ -79,20 +79,28 @@ public class SimpleZkMap implements SimpleMap<Resource> {
     }
 
     private Resource readZkNode(String path) {
-        return consumer -> {
-            try {
-                byte[] data = zkStateReader.getZkClient().getData(basePath+"/"+  path, null, null, true);
-                if (data != null && data.length > 0) {
-                    consumer.read(new ByteArrayInputStream(data));
-                } else {
-                    consumer.read(new ByteArrayInputStream(EMPTY_BYTES));
-                }
-            } catch (KeeperException | InterruptedException e) {
-                throwZkExp(e);
-            } catch (IOException e) {
-                throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Can;t read stream" , e);
+        return new Resource() {
+            @Override
+            public String name() {
+                return path;
             }
 
+            @Override
+            public void get(Consumer consumer) throws SolrException {
+                try {
+                    byte[] data = zkStateReader.getZkClient().getData(basePath+"/"+  path, null, null, true);
+                    if (data != null && data.length > 0) {
+                        consumer.read(new ByteArrayInputStream(data));
+                    } else {
+                        consumer.read(new ByteArrayInputStream(EMPTY_BYTES));
+                    }
+                } catch (KeeperException | InterruptedException e) {
+                    throwZkExp(e);
+                } catch (IOException e) {
+                    throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Can;t read stream" , e);
+                }
+
+            }
         };
     }
 
