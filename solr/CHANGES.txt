@@ -193,6 +193,8 @@ Other Changes
 
 * SOLR-11868: Deprecate CloudSolrClient.setIdField, use information from Zookeeper (Erick Erickson)
 
+* SOLR-14641: PeerSync, remove canHandleVersionRanges check (Cao Manh Dat)
+
 ==================  8.6.1 ==================
 
 Bug Fixes
