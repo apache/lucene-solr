@@ -4473,7 +4473,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
         final int delCount = numDeletedDocs(info);
         assert delCount <= info.info.maxDoc();
         final double delRatio = ((double) delCount)/info.info.maxDoc();
-        merge.estimatedMergeBytes += info.sizeInBytes() * (1.0 - delRatio);
+        merge.estimatedMergeBytes += (long) (info.sizeInBytes() * (1.0 - delRatio));
         merge.totalMergeBytes += info.sizeInBytes();
       }
     }

@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -317,7 +318,7 @@ class GeoExactCircle extends GeoBaseCircle {
     @Override
     public String toString() {
       return "{circle plane = " + circlePlane + " plane 1 = "+plane1 +
-          " plane 2 = " + plane2 + " notable edge points = " + notableEdgePoints  + "}";
+          " plane 2 = " + plane2 + " notable edge points = " + Arrays.toString(notableEdgePoints) + "}";
     }
   }
 }

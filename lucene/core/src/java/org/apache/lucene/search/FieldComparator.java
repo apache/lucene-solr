@@ -145,7 +145,7 @@ public abstract class FieldComparator<T> {
     protected final String field;
     protected NumericDocValues currentReaderValues;
     
-    public NumericComparator(String field, T missingValue) {
+    protected NumericComparator(String field, T missingValue) {
       this.field = field;
       this.missingValue = missingValue;
     }
