@@ -570,10 +570,6 @@ public class UpdateRequest extends AbstractUpdateRequest {
     isLastDocInBatch = true;
   }
 
-  //private Map<SolrInputDocument,Map<String,Object>> documents = null;
-  //private Iterator<SolrInputDocument> docIterator = null;
-  //private Map<String,Map<String,Object>> deleteById = null;
-  //private List<String> deleteQuery = null;
   @Override
   public int hashCode() {
 
