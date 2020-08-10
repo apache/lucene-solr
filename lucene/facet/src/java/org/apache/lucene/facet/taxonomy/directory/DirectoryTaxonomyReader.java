@@ -32,6 +32,7 @@ import org.apache.lucene.facet.taxonomy.ParallelTaxonomyArrays;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.CorruptIndexException; // javadocs
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
@@ -42,7 +43,6 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 
@@ -326,6 +326,7 @@ public class DirectoryTaxonomyReader extends TaxonomyReader implements Accountab
     boolean found = MultiDocValues.getBinaryValues(indexReader, Consts.FULL).advanceExact(catIDInteger);
     assert found;
     FacetLabel ret = new FacetLabel(FacetsConfig.stringToPath(MultiDocValues.getBinaryValues(indexReader, Consts.FULL).binaryValue().utf8ToString()));
+
     synchronized (categoryCache) {
       categoryCache.put(catIDInteger, ret);
     }
