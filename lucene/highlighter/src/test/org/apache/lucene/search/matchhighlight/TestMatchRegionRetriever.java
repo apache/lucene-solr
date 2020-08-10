@@ -75,7 +75,7 @@ import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class MatchRegionRetrieverTest extends LuceneTestCase {
+public class TestMatchRegionRetriever extends LuceneTestCase {
   private static final String FLD_ID = "field_id";
 
   private static final String FLD_TEXT_POS_OFFS1 = "field_text_offs1";
@@ -109,17 +109,23 @@ public class MatchRegionRetrieverTest extends LuceneTestCase {
     Analyzer whitespaceAnalyzer =
         new Analyzer() {
           int offsetGap = RandomizedTest.randomIntBetween(0, 2);
+          int positionGap = RandomizedTest.randomFrom(new int [] {0, 1, 100});
 
           @Override
           protected TokenStreamComponents createComponents(String fieldName) {
-            int maxTokenLength = Integer.MAX_VALUE;
-            return new TokenStreamComponents(
-                new WhitespaceTokenizer(CharTokenizer.DEFAULT_MAX_WORD_LEN));
+            WhitespaceTokenizer tokenizer =
+                new WhitespaceTokenizer(CharTokenizer.DEFAULT_MAX_WORD_LEN);
+            return new TokenStreamComponents(tokenizer);
           }
 
           @Override
           public int getOffsetGap(String fieldName) {
             return offsetGap;
+          }
+
+          @Override
+          public int getPositionIncrementGap(String fieldName) {
+            return positionGap;
           }
         };
 
@@ -624,7 +630,6 @@ public class MatchRegionRetrieverTest extends LuceneTestCase {
           StringBuilder sb = new StringBuilder();
 
           Document document = leafReader.document(docId);
-          sb.append(document.get(FLD_ID)).append(": ");
           formatter
               .apply(document, new TreeMap<>(fieldHighlights))
               .forEach(
@@ -634,7 +639,10 @@ public class MatchRegionRetrieverTest extends LuceneTestCase {
                             Locale.ROOT, "(%s: '%s')", field, String.join(" | ", snippets)));
                   });
 
+          if (sb.length() > 0) {
+            sb.insert(0, document.get(FLD_ID) + ": ");
           highlights.add(sb.toString());
+          }
         };
 
     MatchRegionRetriever highlighter = new MatchRegionRetriever(searcher, rewrittenQuery, analyzer);

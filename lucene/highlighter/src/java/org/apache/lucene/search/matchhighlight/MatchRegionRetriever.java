@@ -81,8 +81,7 @@ public class MatchRegionRetriever {
         });
 
     // Compute value offset retrieval strategy for all affected fields.
-    offsetStrategies =
-        computeOffsetStrategies(affectedFields, searcher.getIndexReader(), analyzer);
+    offsetStrategies = computeOffsetStrategies(affectedFields, searcher.getIndexReader(), analyzer);
 
     // Ask offset strategies if they'll need field values.
     preloadFields = new HashSet<>();
@@ -100,7 +99,7 @@ public class MatchRegionRetriever {
 
   public void highlightDocuments(PrimitiveIterator.OfInt docIds, HitRegionConsumer consumer)
       throws IOException {
-    if (leaves.isEmpty() || affectedFields.isEmpty()) {
+    if (leaves.isEmpty()) {
       return;
     }
 
@@ -131,11 +130,10 @@ public class MatchRegionRetriever {
         documentSupplier = new DocumentFieldValueProvider(doc);
       }
 
+      highlights.clear();
       highlightDocument(
           currentContext, contextRelativeDocId, documentSupplier, highlights, (field) -> true);
-
       consumer.accept(currentContext.reader(), contextRelativeDocId, highlights);
-      highlights.clear();
     }
   }
 
@@ -186,6 +184,7 @@ public class MatchRegionRetriever {
   private static Map<String, OffsetsFromMatchesStrategy> computeOffsetStrategies(
       Set<String> affectedFields, IndexReader reader, Analyzer analyzer) {
     Map<String, OffsetsFromMatchesStrategy> offsetStrategies = new HashMap<>();
+
     FieldInfos fieldInfos = FieldInfos.getMergedFieldInfos(reader);
     for (String field : affectedFields) {
       FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
@@ -200,7 +199,6 @@ public class MatchRegionRetriever {
           case DOCS_AND_FREQS_AND_POSITIONS:
             offsetStrategy = new OffsetsFromPositions(field, analyzer);
             break;
-
 
           case DOCS_AND_FREQS:
           case DOCS:
@@ -439,6 +437,11 @@ public class MatchRegionRetriever {
       class LeftRight {
         int left = Integer.MAX_VALUE;
         int right = Integer.MIN_VALUE;
+
+        @Override
+        public String toString() {
+          return "[" + "L: " + left + ", R: " + right + ']';
+        }
       }
 
       Map<Integer, LeftRight> requiredPositionSpans = new HashMap<>();
@@ -483,6 +486,7 @@ public class MatchRegionRetriever {
           }
         }
         ts.end();
+        position += posAttr.getPositionIncrement() + analyzer.getPositionIncrementGap(fieldName);
         valueOffset += offsetAttr.endOffset() + analyzer.getOffsetGap(fieldName);
         ts.close();
       }
