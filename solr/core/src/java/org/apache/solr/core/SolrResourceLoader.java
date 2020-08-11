@@ -786,8 +786,8 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
             try {
               aware.inform(core);
             } catch (Exception e) {
-              ParWork.propegateInterrupt(e);
-              log.error("Exception informing SolrCore", e);
+              ParWork.propegateInterrupt("Exception informing for SolrCore", e);
+              throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Exception informing for SolrCore", e);
             }
             waitingForCore.remove(aware);
           });
@@ -812,8 +812,8 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
             try {
               r.inform(loader);
             } catch (Exception e) {
-              ParWork.propegateInterrupt(e);
-              log.error("Exception informing ResourceLoader", e);
+              ParWork.propegateInterrupt("Exception informing for ResourceLoader", e);
+              throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Exception informing for ResourceLoader", e);
             }
             waitingForResources.remove(r);
           });
@@ -848,7 +848,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
           });
         });
 
-        worker.addCollect("informResourceLoader");
+        worker.addCollect("informInfoRegistry");
       }
     }
   }
