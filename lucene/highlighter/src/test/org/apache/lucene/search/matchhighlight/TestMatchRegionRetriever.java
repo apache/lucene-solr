@@ -112,8 +112,8 @@ public class TestMatchRegionRetriever extends LuceneTestCase {
 
     Analyzer whitespaceAnalyzer =
         new Analyzer() {
-          int offsetGap = RandomizedTest.randomIntBetween(0, 2);
-          int positionGap = RandomizedTest.randomFrom(new int[]{0, 1, 100});
+          final int offsetGap = RandomizedTest.randomIntBetween(0, 2);
+          final int positionGap = RandomizedTest.randomFrom(new int[]{0, 1, 100});
 
           @Override
           protected TokenStreamComponents createComponents(String fieldName) {
@@ -361,6 +361,17 @@ public class TestMatchRegionRetriever extends LuceneTestCase {
                       Intervals.unordered(
                           Intervals.term("foo"),
                           Intervals.term("bar"))))),
+              containsInAnyOrder(
+                  fmt("2: (field_text_offs: '>bar baz foo< xyz')", field)
+              ));
+
+          assertThat(
+              highlights(reader, new IntervalQuery(field,
+                  Intervals.overlapping(
+                      Intervals.unordered(
+                          Intervals.term("foo"),
+                          Intervals.term("bar")),
+                      Intervals.term("foo")))),
               containsInAnyOrder(
                   fmt("2: (field_text_offs: '>bar baz foo< xyz')", field)
               ));
