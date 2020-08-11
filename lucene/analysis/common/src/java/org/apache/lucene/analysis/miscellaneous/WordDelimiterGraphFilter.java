@@ -466,7 +466,15 @@ public final class WordDelimiterGraphFilter extends TokenFilter {
       // smaller start offset
       int iOff = bufferedParts[4*i + 2];
       int jOff = bufferedParts[4*j + 2];
-      return Integer.compare(iOff, jOff);
+      cmp =  Integer.compare(iOff, jOff);
+      if (cmp != 0) {
+        return cmp;
+      }
+
+      // longer end offset
+      iOff = bufferedParts[4*i + 3];
+      jOff = bufferedParts[4*j + 3];
+      return Integer.compare(jOff, iOff);
     }
 
     @Override

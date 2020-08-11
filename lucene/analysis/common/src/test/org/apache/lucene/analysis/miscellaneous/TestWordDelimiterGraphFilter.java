@@ -401,6 +401,8 @@ public class TestWordDelimiterGraphFilter extends BaseTokenStreamTestCase {
   public void testCatenateAllEmittedBeforeParts() throws Exception {
     // no number parts
     final int flags = PRESERVE_ORIGINAL | GENERATE_WORD_PARTS | CATENATE_ALL;
+    final boolean useCharFilter = true;
+    final boolean graphOffsetsAreCorrect = false; // note: could solve via always incrementing wordPos on first word ('8')
 
     //not using getAnalyzer because we want adjustInternalOffsets=true
     Analyzer a = new Analyzer() {
@@ -415,12 +417,20 @@ public class TestWordDelimiterGraphFilter extends BaseTokenStreamTestCase {
     //   Nonetheless preserve-original and concatenate-all show up first.
     assertTokenStreamContents(a.tokenStream("dummy", "8-other"),
         new String[] { "8-other", "8other", "other" }, new int[]{0, 0, 2}, new int[]{7, 7, 7});
-
-    boolean useCharFilter = true;
-    boolean graphOffsetsAreCorrect = false; // note: could solve via always incrementing wordPos on first word ('8')
     checkAnalysisConsistency(random(), a, useCharFilter, "8-other", graphOffsetsAreCorrect);
-
     verify("8-other", flags); // uses getAnalyzer which uses adjustInternalOffsets=false which works
+
+//    // input ends with a number, but we don't generate numbers
+//    assertTokenStreamContents(a.tokenStream("dummy", "other-9"),
+//        new String[] { "other-9", "other9", "other" }, new int[]{0, 0, 0}, new int[]{7, 7, 5});
+//    checkAnalysisConsistency(random(), a, useCharFilter, "other-9", graphOffsetsAreCorrect);
+//    verify("9-other", flags); // uses getAnalyzer which uses adjustInternalOffsets=false which works
+
+    // input ends with a number, but we don't generate numbers
+    assertTokenStreamContents(a.tokenStream("dummy", "other-9"),
+        new String[] { "other-9", "other", "other9" }, new int[]{0, 0, 0}, new int[]{7, 5, 7});
+    checkAnalysisConsistency(random(), a, useCharFilter, "other-9", graphOffsetsAreCorrect);
+    verify("9-other", flags); // uses getAnalyzer which uses adjustInternalOffsets=false which works
 
     a.close();
   }
