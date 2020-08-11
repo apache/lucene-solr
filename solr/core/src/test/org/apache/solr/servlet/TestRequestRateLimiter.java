@@ -34,6 +34,7 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 import static org.apache.solr.servlet.RateLimitManager.DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -47,7 +48,7 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
     configureCluster(1).addConfig(FIRST_COLLECTION, configset("cloud-minimal")).configure();
   }
 
-  @Nightly
+  @Test
   public void testConcurrentQueries() throws Exception {
     CloudSolrClient client = cluster.getSolrClient();
     client.setDefaultCollection(FIRST_COLLECTION);
@@ -80,7 +81,7 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
         mockQueryRateLimiter.acceptedNewRequestCount.get() + mockQueryRateLimiter.rejectedRequestCount.get());
   }
 
-  @Nightly
+  @Test
   public void testSlotBorrowing() throws Exception {
     CloudSolrClient client = cluster.getSolrClient();
     client.setDefaultCollection(SECOND_COLLECTION);
