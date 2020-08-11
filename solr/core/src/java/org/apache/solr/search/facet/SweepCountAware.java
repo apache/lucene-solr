@@ -217,33 +217,37 @@ interface SweepCountAware {
      * @param maxSegOrd - the max per-seg term ord for the most recently accumulated segment
      */
     public void register(CountSlotAcc[] countAccs, LongValues toGlobal, int segMissingIdx, int globalMissingIdx) {
+      // NOTE: this method is optimized, with demonstrable benefits for the common "single count" use case.
+      // Be careful of performance if modifying.
       int segOrd;
-      int slot;
+      final int maxIdx = activeSegCounts.length - 1; // based on actual size -- countAccs may be oversized nocommit: until better idea of why this?
       if (segMissingIdx < 0) {
         // not tracking "missing"; segMissingIdx represents (-maxSegOrd - 1)
         segOrd = ~segMissingIdx;
-        slot = toGlobal == null ? (segOrd) : (int)toGlobal.get(segOrd);
       } else {
-        segOrd = segMissingIdx;
-        slot = globalMissingIdx;
+        // only one of these, so potential JIT hit of checking seen[segMissingIdx] is not worth it.
+        int i = maxIdx;
+        do {
+          countAccs[i].incrementCount(globalMissingIdx, allSegCounts[i][segMissingIdx]);
+        } while (i-- > 0);
+        if (segMissingIdx > 0) {
+          segOrd = segMissingIdx - 1;
+        } else {
+          // only "missing"
+          return;
+        }
       }
-      final int maxIdx = activeSegCounts.length - 1; // based on actual size -- countAccs may be oversized nocommit: until better idea of why this?
-      for (;;) {
+      do {
         if (seen[segOrd]) {
           int i = maxIdx;
           do {
             final int inc = allSegCounts[i][segOrd];
             if (inc > 0) {
-              countAccs[i].incrementCount(slot, inc);
+              countAccs[i].incrementCount(toGlobal == null ? (segOrd) : (int)toGlobal.get(segOrd), inc);
             }
           } while (i-- > 0);
         }
-        if (segOrd-- > 0) {
-          slot = toGlobal == null ? (segOrd) : (int)toGlobal.get(segOrd);
-        } else {
-          break;
-        }
-      }
+      } while (segOrd-- > 0);
     }
   }
 
