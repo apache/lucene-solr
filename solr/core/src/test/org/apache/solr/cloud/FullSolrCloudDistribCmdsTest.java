@@ -63,6 +63,7 @@ import org.slf4j.LoggerFactory;
  * Super basic testing, no shard restarting or anything.
  */
 @Slow
+@Ignore
 public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final AtomicInteger NAME_COUNTER = new AtomicInteger(1);
@@ -114,7 +115,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
   public static String createAndSetNewDefaultCollection() throws Exception {
     final CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
     final String name = "test_collection_" + NAME_COUNTER.getAndIncrement();
-    CollectionAdminRequest.createCollection(name, "_default", 2, 2).setMaxShardsPerNode(10)
+    CollectionAdminRequest.createCollection(name, "_default", 3, 4).setMaxShardsPerNode(10)
                  .process(cloudClient);
     cloudClient.setDefaultCollection(name);
     return name;
@@ -465,7 +466,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     final CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
     final String collectionName = createAndSetNewDefaultCollection();
 
-    final int numDocs = TEST_NIGHTLY ? atLeast(150) : 55;
+    final int numDocs = 5000;//TEST_NIGHTLY ? atLeast(500) : 5000;
     final JettySolrRunner nodeToUpdate = cluster.getRandomJetty(random());
     try (ConcurrentUpdateSolrClient indexClient
          = getConcurrentUpdateSolrClient(nodeToUpdate.getBaseUrl() + "/" + collectionName, 10, 2)) {
@@ -475,10 +476,13 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
         indexClient.add(sdoc("id", i, "text_t",
                              TestUtil.randomRealisticUnicodeString(random(), 200)));
       }
-      indexClient.blockUntilFinished();
+     // indexClient.blockUntilFinished();
       assertEquals(0, indexClient.commit().getStatus());
       indexClient.blockUntilFinished();
     }
+
+    cluster.waitForActiveCollection(collectionName, 3, 12);
+
     assertEquals(numDocs, cloudClient.query(params("q","*:*")).getResults().getNumFound());
 
     checkShardConsistency(params("q","*:*", "rows", ""+(1 + numDocs),"_trace","addAll"));

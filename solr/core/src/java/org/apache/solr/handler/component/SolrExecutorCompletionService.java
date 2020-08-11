@@ -61,7 +61,7 @@ public class SolrExecutorCompletionService<V> implements CompletionService<V> {
       throw new NullPointerException();
     } else {
       RunnableFuture<V> f = this.newTaskFor(task, result);
-      this.executor.execute(new SolrExecutorCompletionService.QueueingFuture(f, this.completionQueue), true);
+      this.executor.doSubmit(new SolrExecutorCompletionService.QueueingFuture(f, this.completionQueue), true);
       return f;
     }
   }

@@ -242,9 +242,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
 
     SolrInputDocument clonedDoc = shouldCloneCmdDoc() ? cmd.solrDoc.deepCopy(): null;
-
+    AddUpdateCommand cloneCmd = null;
     if (clonedDoc != null) {
-      cmd.solrDoc = clonedDoc;
+      cloneCmd = (AddUpdateCommand) cmd.clone();
+      cloneCmd.solrDoc = clonedDoc;
     }
     try (ParWork worker = new ParWork(this)) {
       if (!forwardToLeader) {
@@ -253,7 +254,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           try {
 
             // TODO: possibly set checkDeleteByQueries as a flag on the command?
-            log.info("Local add cmd");
+            if (log.isDebugEnabled()) log.debug("Local add cmd");
             doLocalAdd(cmd);
 
             // if the update updates a doc that is part of a nested structure,
@@ -274,15 +275,16 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         });
       }
       boolean zkAware = req.getCore().getCoreContainer().isZooKeeperAware();
-      log.info("Is zk aware {}", zkAware);
+      if (log.isDebugEnabled()) log.debug("Is zk aware {}", zkAware);
       if (zkAware && hasNodes()) {
 
-        log.info("Collect distrib add");
+        if (log.isDebugEnabled()) log.debug("Collect distrib add");
+        AddUpdateCommand finalCloneCmd = cloneCmd == null ? cmd : cloneCmd;
         worker.collect(() -> {
-          log.info("Run distrib add collection");
+          if (log.isDebugEnabled()) log.debug("Run distrib add collection");
           try {
-            doDistribAdd(cmd);
-            log.info("after distrib add collection");
+            doDistribAdd(finalCloneCmd);
+            if (log.isDebugEnabled()) log.debug("after distrib add collection");
           } catch (Throwable e) {
             ParWork.propegateInterrupt(e);
             throw new SolrException(ErrorCode.SERVER_ERROR, e);

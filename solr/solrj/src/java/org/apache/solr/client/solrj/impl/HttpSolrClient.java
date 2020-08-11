@@ -50,6 +50,7 @@ import org.apache.solr.client.solrj.V2RequestSupport;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.common.ParWork;
+import org.apache.solr.common.ParWorkExecService;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -314,13 +315,11 @@ public class HttpSolrClient extends BaseHttpSolrClient {
   public HttpUriRequestResponse httpUriRequest(final SolrRequest request, final ResponseParser processor) throws SolrServerException, IOException {
     HttpUriRequestResponse mrr = new HttpUriRequestResponse();
     final HttpRequestBase method = createMethod(request, null);
-    ExecutorService pool = ExecutorUtil.newMDCAwareFixedThreadPool(1, new SolrNamedThreadFactory("httpUriRequest"));
     try {
       MDC.put("HttpSolrClient.url", baseUrl);
-      mrr.future = pool.submit(() -> executeMethod(method, request.getUserPrincipal(), processor, isV2ApiRequest(request)));
+      mrr.future = ((ParWorkExecService) ParWork.getExecutor()).doSubmit(() -> executeMethod(method, request.getUserPrincipal(), processor, isV2ApiRequest(request)), true);
  
     } finally {
-      pool.shutdown();
       MDC.remove("HttpSolrClient.url");
     }
     assert method != null;

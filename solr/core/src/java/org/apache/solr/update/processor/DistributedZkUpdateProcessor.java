@@ -177,15 +177,13 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       Replica leaderReplica = null;
       zkCheck();
 
-      nodes = getCollectionUrls(collection, EnumSet.of(Replica.Type.TLOG,Replica.Type.NRT), true);
-
       if (req.getParams().get(COMMIT_END_POINT, "").equals("terminal")) {
         log.info("Do a local commit on single replica directly");
         doLocalCommit(cmd);
         return;
       }
 
-
+      nodes = getCollectionUrls(collection, EnumSet.of(Replica.Type.TLOG,Replica.Type.NRT), true);
 
       if (nodes != null) {
         nodes.removeIf((node) -> node.getNodeProps().getCoreNodeName().equals(
@@ -230,8 +228,28 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
             log.info("send commit to leaders nodes={}", useNodes);
             params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
                     zkController.getBaseUrl(), req.getCore().getName()));
+            try (ParWork worker = new ParWork(this, false, true)) {
+              List<SolrCmdDistributor.Node> finalUseNodes1 = useNodes;
+              worker.collect(() -> {
+                cmdDistrib.distribCommit(cmd, finalUseNodes1, params);
+              });
 
-            cmdDistrib.distribCommit(cmd, useNodes, params);
+              if (isLeader) {
+
+                log.info("Do a local commit on NRT endpoint for leader");
+                worker.collect(() -> {
+                  try {
+                    doLocalCommit(cmd);
+                  } catch (IOException e) {
+                    log.error("Error on local commit");
+                    throw new SolrException(ErrorCode.SERVER_ERROR, e);
+                  }
+                });
+
+              }
+              worker.addCollect("commitToLeaders");
+            }
+            return;
           }
         }
         if (isLeader) {
@@ -241,7 +259,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
               log.info("Do a local commit on NRT endpoint for leader");
               try {
                 doLocalCommit(cmd);
-              } catch (Exception e) {
+              } catch (IOException e) {
                 log.error("Error on local commit");
                 throw new SolrException(ErrorCode.SERVER_ERROR, e);
               }
@@ -302,7 +320,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
   @Override
   protected void doDistribAdd(AddUpdateCommand cmd) throws IOException {
-    log.info("in zk dist add");
     log.info("Distribute add cmd {} to {} {}", cmd, nodes, isLeader);
     if (isLeader && !isSubShardLeader)  {
       DocCollection coll = clusterState.getCollection(collection);

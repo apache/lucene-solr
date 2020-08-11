@@ -171,26 +171,11 @@ public class SolrZkClient implements Closeable {
       connManager.start();
       connManager.waitForConnected(this.zkClientConnectTimeout);
     } catch (TimeoutException e) {
-      try (ParWork worker = new ParWork(this, true)) {
-        worker.add("zkCallbackExecutor", zkCallbackExecutor);
-        worker.add("connectionManager", connManager);
-        worker.add("zkCallbackExecutor", zkConnManagerCallbackExecutor);
-      }
       throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, e);
     } catch (InterruptedException e) {
       ParWork.propegateInterrupt(e);
-      try (ParWork worker = new ParWork(this, true)) {
-        worker.add("zkCallbackExecutor", zkCallbackExecutor);
-        worker.add("connectionManager", connManager);
-        worker.add("zkCallbackExecutor", zkConnManagerCallbackExecutor);
-      }
       throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, e);
     } catch (IOException e) {
-      try (ParWork worker = new ParWork(this, true)) {
-        worker.add("zkCallbackExecutor", zkCallbackExecutor);
-        worker.add("connectionManager", connManager);
-        worker.add("zkCallbackExecutor", zkConnManagerCallbackExecutor);
-      }
       throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, e);
     }
     return this;

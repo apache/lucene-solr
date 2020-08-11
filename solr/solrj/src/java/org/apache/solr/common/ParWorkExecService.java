@@ -225,7 +225,7 @@ public class ParWorkExecService implements ExecutorService {
             throws InterruptedException, ExecutionException, TimeoutException {
           Object ret;
           try {
-            ret = future.get();
+            ret = future.get(l, timeUnit);
           } finally {
             available.release();
           }
@@ -326,11 +326,12 @@ public class ParWorkExecService implements ExecutorService {
     }
 
     double ourLoad = ParWork.getSysStats().getAvarageUsagePerCPU();
-    if (ourLoad > 1) {
+
+    if (ourLoad > 99.0D) {
       return false;
     } else {
       double sLoad = load / (double) ParWork.PROC_COUNT;
-      if (sLoad > 1.0D) {
+      if (sLoad > ParWork.PROC_COUNT) {
         return false;
       }
       if (log.isDebugEnabled()) log.debug("ParWork, load:" + sLoad);

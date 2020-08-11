@@ -192,7 +192,7 @@ public class SolrCmdDistributor implements Closeable {
     Set<CountDownLatch> latches = new HashSet<>(nodes.size());
 
     // we need to do any retries before commit...
-  //  blockAndDoRetries();
+    blockAndDoRetries();
     if (log.isDebugEnabled()) log.debug("Distrib commit to: {} params: {}", nodes, params);
 
     for (Node node : nodes) {

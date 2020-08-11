@@ -260,7 +260,6 @@ public class Http2SolrClient extends SolrClient {
           }
         });
       }
-      closer.collect(httpClientExecutor);
       closer.collect(() -> {
 
         try {

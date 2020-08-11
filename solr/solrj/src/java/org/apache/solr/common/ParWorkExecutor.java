@@ -50,7 +50,7 @@ public class ParWorkExecutor extends ExecutorUtil.MDCAwareThreadPoolExecutor {
                 Thread t = new Thread(group, r, name + threadNumber.getAndIncrement(), 0) {
                     public void run() {
                         try {
-                            super.run();
+                            r.run();
                         } finally {
                             ParWork.closeExecutor();
                         }

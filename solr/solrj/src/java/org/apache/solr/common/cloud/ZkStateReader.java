@@ -762,8 +762,8 @@ public class ZkStateReader implements SolrCloseable {
 
   private class LazyCollectionRef extends ClusterState.CollectionRef {
     private final String collName;
-    private long lastUpdateTime;
-    private DocCollection cachedDocCollection;
+    private volatile long lastUpdateTime;
+    private volatile DocCollection cachedDocCollection;
 
     public LazyCollectionRef(String collName) {
       super(null);
@@ -772,7 +772,7 @@ public class ZkStateReader implements SolrCloseable {
     }
 
     @Override
-    public synchronized DocCollection get(boolean allowCached) {
+    public DocCollection get(boolean allowCached) {
       gets.incrementAndGet();
       if (!allowCached || lastUpdateTime < 0 || System.nanoTime() - lastUpdateTime > LAZY_CACHE_TIME) {
         boolean shouldFetch = true;
