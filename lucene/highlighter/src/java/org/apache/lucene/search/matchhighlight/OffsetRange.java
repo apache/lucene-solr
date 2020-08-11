@@ -18,6 +18,9 @@ package org.apache.lucene.search.matchhighlight;
 
 import java.util.Objects;
 
+/**
+ * A non-empty range of offset positions.
+ */
 public class OffsetRange {
   /** Start index, inclusive. */
   public final int from;
