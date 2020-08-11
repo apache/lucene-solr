@@ -34,7 +34,6 @@ import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.bkd.BKDReader;
@@ -43,10 +42,8 @@ import org.apache.lucene.util.bkd.BKDWriter;
 /** Writes dimensional values */
 public class Lucene86PointsWriter extends PointsWriter implements Closeable {
 
-  /** Output to the metadata. */
-  protected IndexOutput tempMetaOut;
   /** Outputs used to write the BKD tree data files. */
-  protected final IndexOutput indexOut, dataOut;
+  protected final IndexOutput metaOut, indexOut, dataOut;
 
   final SegmentWriteState writeState;
   final int maxPointsInLeafNode;
@@ -71,14 +68,11 @@ public class Lucene86PointsWriter extends PointsWriter implements Closeable {
                                  writeState.segmentInfo.getId(),
                                  writeState.segmentSuffix);
 
-      // We have a chicken/egg problem with the meta file since we need to write the lengths of the index/data files
-      // before any offsets into these files in order to detect truncation properly. But the lengths of these files
-      // are not known until we finish building KD trees for all fields, so we write into a temp file first, and only
-      // create the final metadata file in finish() by writing the lengths of the index/data files first, and then
-      // copying the content of this temporary meta file.
-      tempMetaOut = writeState.directory.createTempOutput(
-          writeState.segmentInfo.name, Lucene86PointsFormat.META_CODEC_NAME, writeState.context);
-      CodecUtil.writeIndexHeader(tempMetaOut,
+      String metaFileName = IndexFileNames.segmentFileName(writeState.segmentInfo.name,
+          writeState.segmentSuffix,
+          Lucene86PointsFormat.META_EXTENSION);
+      metaOut = writeState.directory.createOutput(metaFileName, writeState.context);
+      CodecUtil.writeIndexHeader(metaOut,
           Lucene86PointsFormat.META_CODEC_NAME,
           Lucene86PointsFormat.VERSION_CURRENT,
           writeState.segmentInfo.getId(),
@@ -123,9 +117,9 @@ public class Lucene86PointsWriter extends PointsWriter implements Closeable {
                                           values.size())) {
 
       if (values instanceof MutablePointValues) {
-        Runnable finalizer = writer.writeField(tempMetaOut, indexOut, dataOut, fieldInfo.name, (MutablePointValues) values);
+        Runnable finalizer = writer.writeField(metaOut, indexOut, dataOut, fieldInfo.name, (MutablePointValues) values);
         if (finalizer != null) {
-          tempMetaOut.writeInt(fieldInfo.number);
+          metaOut.writeInt(fieldInfo.number);
           finalizer.run();
         }
         return;
@@ -148,9 +142,9 @@ public class Lucene86PointsWriter extends PointsWriter implements Closeable {
         });
 
       // We could have 0 points on merge since all docs with dimensional fields may be deleted:
-      Runnable finalizer = writer.finish(tempMetaOut, indexOut, dataOut);
+      Runnable finalizer = writer.finish(metaOut, indexOut, dataOut);
       if (finalizer != null) {
-        tempMetaOut.writeInt(fieldInfo.number);
+        metaOut.writeInt(fieldInfo.number);
         finalizer.run();
       }
     }
@@ -235,9 +229,9 @@ public class Lucene86PointsWriter extends PointsWriter implements Closeable {
               }
             }
 
-            Runnable finalizer = writer.merge(tempMetaOut, indexOut, dataOut, docMaps, bkdReaders);
+            Runnable finalizer = writer.merge(metaOut, indexOut, dataOut, docMaps, bkdReaders);
             if (finalizer != null) {
-              tempMetaOut.writeInt(fieldInfo.number);
+              metaOut.writeInt(fieldInfo.number);
               finalizer.run();
             }
           }
@@ -256,51 +250,16 @@ public class Lucene86PointsWriter extends PointsWriter implements Closeable {
       throw new IllegalStateException("already finished");
     }
     finished = true;
-
-    CodecUtil.writeFooter(tempMetaOut);
-    tempMetaOut.close();
-
-    String metaFileName = IndexFileNames.segmentFileName(writeState.segmentInfo.name,
-        writeState.segmentSuffix,
-        Lucene86PointsFormat.META_EXTENSION);
-    try (IndexOutput metaOut = writeState.directory.createOutput(metaFileName, writeState.context);
-        ChecksumIndexInput tempMetaIn = writeState.directory.openChecksumInput(tempMetaOut.getName(), writeState.context)) {
-
-      CodecUtil.checkIndexHeader(tempMetaIn,
-          Lucene86PointsFormat.META_CODEC_NAME,
-          Lucene86PointsFormat.VERSION_CURRENT,
-          Lucene86PointsFormat.VERSION_CURRENT,
-          writeState.segmentInfo.getId(),
-          writeState.segmentSuffix);
-
-      CodecUtil.writeIndexHeader(metaOut,
-          Lucene86PointsFormat.META_CODEC_NAME,
-          Lucene86PointsFormat.VERSION_CURRENT,
-          writeState.segmentInfo.getId(),
-          writeState.segmentSuffix);
-
-      CodecUtil.writeFooter(indexOut);
-      CodecUtil.writeFooter(dataOut);
-      metaOut.writeLong(indexOut.getFilePointer());
-      metaOut.writeLong(dataOut.getFilePointer());
-
-      metaOut.copyBytes(tempMetaIn, tempMetaIn.length() - tempMetaIn.getFilePointer() - CodecUtil.footerLength());
-      metaOut.writeInt(-1);
-
-      CodecUtil.writeFooter(metaOut);
-      CodecUtil.checkFooter(tempMetaIn);
-    }
+    metaOut.writeInt(-1);
+    CodecUtil.writeFooter(indexOut);
+    CodecUtil.writeFooter(dataOut);
+    metaOut.writeLong(indexOut.getFilePointer());
+    metaOut.writeLong(dataOut.getFilePointer());
+    CodecUtil.writeFooter(metaOut);
   }
 
   @Override
   public void close() throws IOException {
-    try {
-      IOUtils.close(tempMetaOut, indexOut, dataOut);
-    } finally {
-      if (tempMetaOut != null) {
-        writeState.directory.deleteFile(tempMetaOut.getName());
-        tempMetaOut = null;
-      }
-    }
+    IOUtils.close(metaOut, indexOut, dataOut);
   }
 }

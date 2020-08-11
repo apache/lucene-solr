@@ -106,12 +106,12 @@ public class TestAllFilesDetectTruncation extends LuceneTestCase {
       }
 
       // NOTE: we .close so that if the test fails (truncation not detected) we don't also get all these confusing errors about open files:
-      expectThrowsAnyOf(Arrays.asList(CorruptIndexException.class, EOFException.class),
+      expectThrowsAnyOf(Arrays.asList(CorruptIndexException.class, EOFException.class, IndexOutOfBoundsException.class),
           () -> DirectoryReader.open(dirCopy).close()
       );
 
       // CheckIndex should also fail:
-      expectThrowsAnyOf(Arrays.asList(CorruptIndexException.class, EOFException.class),
+      expectThrowsAnyOf(Arrays.asList(CorruptIndexException.class, EOFException.class, IndexOutOfBoundsException.class),
           () -> TestUtil.checkIndex(dirCopy, true, true, null)
       );
     }
