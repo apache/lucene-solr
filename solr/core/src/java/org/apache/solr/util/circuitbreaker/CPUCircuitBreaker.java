@@ -49,8 +49,8 @@ public class CPUCircuitBreaker extends CircuitBreaker {
   private final double cpuUsageThreshold;
 
   // Assumption -- the value of these parameters will be set correctly before invoking getDebugInfo()
-  private final ThreadLocal<Double> seenCPUUsage = new ThreadLocal<>();
-  private final ThreadLocal<Double> allowedCPUUsage = new ThreadLocal<>();
+  private static final ThreadLocal<Double> seenCPUUsage = new ThreadLocal<>();
+  private static final ThreadLocal<Double> allowedCPUUsage = new ThreadLocal<>();
 
   public CPUCircuitBreaker(SolrConfig solrConfig) {
     super(solrConfig);
@@ -78,8 +78,9 @@ public class CPUCircuitBreaker extends CircuitBreaker {
 
         log.warn(msg);
 
-        return false;
       }
+
+      return false;
     }
 
     allowedCPUUsage.set(localAllowedCPUUsage);
