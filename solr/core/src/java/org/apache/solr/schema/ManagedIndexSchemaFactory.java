@@ -61,17 +61,17 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
   private volatile String coreName;
 
   public String getManagedSchemaResourceName() { return managedSchemaResourceName; }
-  private SolrConfig config;
-  private ResourceLoader loader;
+  private volatile SolrConfig config;
+  private volatile ResourceLoader loader;
   public ResourceLoader getResourceLoader() { return loader; }
-  private String resourceName;
-  private ManagedIndexSchema schema;
+  private volatile String resourceName;
+  private volatile ManagedIndexSchema schema;
 // / private SolrCore core;
-  private ZkIndexSchemaReader zkIndexSchemaReader;
+  private volatile ZkIndexSchemaReader zkIndexSchemaReader;
 
 
-  private String loadedResource;
-  private boolean shouldUpgrade = false;
+  private volatile String loadedResource;
+  private volatile boolean shouldUpgrade = false;
 
   @Override
   public void init(NamedList args) {
@@ -143,6 +143,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
         warnIfNonManagedSchemaExists();
       } catch (InterruptedException e) {
         ParWork.propegateInterrupt(e);
+        throw new SolrException(ErrorCode.SERVER_ERROR, e);
       } catch (KeeperException.NoNodeException e) {
         log.info("The schema is configured as managed, but managed schema resource {} not found - loading non-managed schema {} instead"
             , managedSchemaResourceName, resourceName);
@@ -157,7 +158,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
           schemaInputStream = loader.openResource(resourceName);
           loadedResource = resourceName;
           shouldUpgrade = true;
-        } catch (Exception e) {
+        } catch (IOException e) {
           try {
             // Retry to load the managed schema, in case it was created since the first attempt
             byte[] data = zkClient.getData(managedSchemaPath, null, stat);
@@ -168,6 +169,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
           } catch (Exception e1) {
             if (e1 instanceof InterruptedException) {
               Thread.currentThread().interrupt(); // Restore the interrupted status
+              throw new SolrException(ErrorCode.SERVER_ERROR, e);
             }
             final String msg = "Error loading both non-managed schema '" + resourceName + "' and managed schema '"
                              + managedSchemaResourceName + "'";

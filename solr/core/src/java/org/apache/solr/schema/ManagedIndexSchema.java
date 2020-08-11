@@ -87,9 +87,9 @@ public final class ManagedIndexSchema extends IndexSchema {
 
   @Override public boolean isMutable() { return isMutable; }
 
-  final String managedSchemaResourceName;
-  
-  int schemaZkVersion;
+  volatile String managedSchemaResourceName;
+
+  volatile int schemaZkVersion;
   
   final Object schemaUpdateLock;
 
@@ -115,7 +115,7 @@ public final class ManagedIndexSchema extends IndexSchema {
    * Persist the schema to local storage or to ZooKeeper
    * @param createOnly set to false to allow update of existing schema
    */
-  public boolean persistManagedSchema(boolean createOnly) {
+  public synchronized boolean persistManagedSchema(boolean createOnly) {
     if (loader instanceof ZkSolrResourceLoader) {
       return persistManagedSchemaToZooKeeper(createOnly);
     }
@@ -239,12 +239,9 @@ public final class ManagedIndexSchema extends IndexSchema {
     }
 
     // use an executor service to invoke schema zk version requests in parallel with a max wait time
-    int poolSize = Math.min(concurrentTasks.size(), 10);
-    ExecutorService parallelExecutor =
-        ExecutorUtil.newMDCAwareFixedThreadPool(poolSize, new SolrNamedThreadFactory("managedSchemaExecutor"));
     try {
       List<Future<Integer>> results =
-          parallelExecutor.invokeAll(concurrentTasks, maxWaitSecs, TimeUnit.SECONDS);
+          ParWork.getExecutor().invokeAll(concurrentTasks, maxWaitSecs, TimeUnit.SECONDS);
 
       // determine whether all replicas have the update
       List<String> failedList = null; // lazily init'd
@@ -278,9 +275,6 @@ public final class ManagedIndexSchema extends IndexSchema {
       log.warn("Core {} was interrupted waiting for schema version {} to propagate to {} replicas for collection {}"
           , localCoreNodeName, schemaZkVersion, concurrentTasks.size(), collection);
       ParWork.propegateInterrupt(ie);
-    } finally {
-      if (!parallelExecutor.isShutdown())
-        parallelExecutor.shutdown();
     }
 
     if (log.isInfoEnabled()) {
@@ -349,13 +343,16 @@ public final class ManagedIndexSchema extends IndexSchema {
             if (remoteVersion < expectedZkVersion) {
               // rather than waiting and re-polling, let's be proactive and tell the replica
               // to refresh its schema from ZooKeeper, if that fails, then the
-              //Thread.sleep(1000); // slight delay before requesting version again
+              Thread.sleep(250); // slight delay before requesting version again
               log.error("Replica {} returned schema version {} and has not applied schema version {}"
                   , coreUrl, remoteVersion, expectedZkVersion);
             }
 
           } catch (Exception e) {
             if (e instanceof InterruptedException) {
+              ParWork.propegateInterrupt(e);
+              break; // stop looping
+            } else if (e instanceof  KeeperException.SessionExpiredException) {
               break; // stop looping
             } else {
               log.warn("Failed to get /schema/zkversion from {} due to: ", coreUrl, e);
