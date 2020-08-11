@@ -26,6 +26,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
@@ -132,8 +133,13 @@ public class PackageLoader implements Closeable {
     Package p = packageClassLoaders.get(pkg);
     if (p != null) {
       List<Package> l = Collections.singletonList(p);
-      for (SolrCore core : coreContainer.getCores()) {
-        core.getPackageListeners().packagesUpdated(l);
+      try (ParWork work = new ParWork(this)) {
+        for (SolrCore core : coreContainer.getCores()) {
+          work.collect(() -> {
+            core.getPackageListeners().packagesUpdated(l);
+          });
+        }
+        work.collect("packageListeners");
       }
     }
   }

@@ -27,19 +27,23 @@ public class ParWorkExecService implements ExecutorService {
   private static final int MAX_AVAILABLE = Math.max(ParWork.PROC_COUNT / 2, 3);
   private final Semaphore available = new Semaphore(MAX_AVAILABLE, true);
 
-  private final Phaser phaser = new Phaser(1) {
-    @Override
-    protected boolean onAdvance(int phase, int parties) {
-      return false;
-    }
-  };
-
   private final ExecutorService service;
+  private final int maxSize;
   private volatile boolean terminated;
   private volatile boolean shutdown;
 
   public ParWorkExecService(ExecutorService service) {
+    this(service, -1);
+  }
+
+
+  public ParWorkExecService(ExecutorService service, int maxSize) {
     assert service != null;
+    if (maxSize == -1) {
+      this.maxSize = MAX_AVAILABLE;
+    } else {
+      this.maxSize = maxSize;
+    }
     this.service = service;
   }
 
@@ -69,17 +73,10 @@ public class ParWorkExecService implements ExecutorService {
   public boolean awaitTermination(long l, TimeUnit timeUnit)
       throws InterruptedException {
     while (available.hasQueuedThreads()) {
-      Thread.sleep(50);
+      Thread.sleep(100);
     }
     terminated = true;
     return true;
-  }
-
-  public void awaitOutstanding(long l, TimeUnit timeUnit)
-      throws InterruptedException {
-    while (available.hasQueuedThreads()) {
-      Thread.sleep(50);
-    }
   }
 
   @Override
@@ -102,7 +99,7 @@ public class ParWorkExecService implements ExecutorService {
           return CompletableFuture.completedFuture(callable.call());
         }
       } else {
-      //  available.acquireUninterruptibly();
+        available.acquireUninterruptibly();
       }
       Future<T> future = service.submit(callable);
       return new Future<T>() {
@@ -153,9 +150,6 @@ public class ParWorkExecService implements ExecutorService {
 
   @Override
   public <T> Future<T> submit(Runnable runnable, T t) {
-    if (shutdown || terminated) {
-      throw new RejectedExecutionException();
-    }
     boolean success = checkLoad();
     if (success) {
       success = available.tryAcquire();
@@ -183,9 +177,6 @@ public class ParWorkExecService implements ExecutorService {
   }
 
   public Future<?> doSubmit(Runnable runnable, boolean requiresAnotherThread) {
-//    if (shutdown || terminated) {
-//      throw new RejectedExecutionException();
-//    }
     if (!requiresAnotherThread) {
       boolean success = checkLoad();
       if (success) {
@@ -196,7 +187,7 @@ public class ParWorkExecService implements ExecutorService {
         return CompletableFuture.completedFuture(null);
       }
     } else {
-     // available.acquireUninterruptibly();
+      available.acquireUninterruptibly();
     }
     Future<?> future = service.submit(runnable);
 
@@ -248,9 +239,7 @@ public class ParWorkExecService implements ExecutorService {
   public <T> List<Future<T>> invokeAll(
       Collection<? extends Callable<T>> collection)
       throws InterruptedException {
-//    if (shutdown || terminated) {
-//      throw new RejectedExecutionException();
-//    }
+
     List<Future<T>> futures = new ArrayList<>(collection.size());
     for (Callable c : collection) {
       futures.add(submit(c));
@@ -295,11 +284,7 @@ public class ParWorkExecService implements ExecutorService {
       success = available.tryAcquire();
     }
     if (!success) {
-      try {
-        runnable.run();
-      } finally {
-        available.release();
-      }
+      runnable.run();
       return;
     }
     service.execute(new Runnable() {
@@ -316,7 +301,7 @@ public class ParWorkExecService implements ExecutorService {
   }
 
   public Integer getMaximumPoolSize() {
-    return MAX_AVAILABLE;
+    return maxSize;
   }
 
   public boolean checkLoad() {

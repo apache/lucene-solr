@@ -64,16 +64,19 @@ public class ParWork implements Closeable {
   protected final static ThreadLocal<ExecutorService> THREAD_LOCAL_EXECUTOR = new ThreadLocal<>();
   private final boolean requireAnotherThread;
 
-  private Set<Object> collectSet = null;
+  private volatile Set<Object> collectSet = null;
 
   private static volatile ThreadPoolExecutor EXEC;
 
-  private synchronized static ThreadPoolExecutor getEXEC() {
+  private static ThreadPoolExecutor getEXEC() {
     if (EXEC == null) {
-      EXEC = (ThreadPoolExecutor) getParExecutorService(0,
-          Math.max(Integer.getInteger("solr.per_thread_exec.min_threads", 3), Integer.getInteger("solr.per_thread_exec.max_threads",  Runtime.getRuntime().availableProcessors() / 3)), 15000);
+      synchronized (ParWork.class) {
+        if (EXEC == null) {
+          EXEC = (ThreadPoolExecutor) getParExecutorService(5, 15000);
+        }
+      }
     }
-    return  EXEC;
+    return EXEC;
   }
 
 
@@ -243,8 +246,11 @@ public class ParWork implements Closeable {
   }
 
   public void collect(Object object) {
+    if (object == null) {
+      return;
+    }
     if (collectSet == null) {
-      collectSet = new HashSet<>(64);
+      collectSet = ConcurrentHashMap.newKeySet(32);
     }
 
     collectSet.add(object);
@@ -255,8 +261,9 @@ public class ParWork implements Closeable {
    *                 used to identify it.
    */
   public void collect(Callable<?> callable) {
+
     if (collectSet == null) {
-      collectSet = new HashSet<>();
+      collectSet = ConcurrentHashMap.newKeySet(32);
     }
     collectSet.add(callable);
   }
@@ -266,8 +273,11 @@ public class ParWork implements Closeable {
    *                 used to identify it.
    */
   public void collect(Runnable runnable) {
+    if (runnable == null) {
+      return;
+    }
     if (collectSet == null) {
-      collectSet = new HashSet<>();
+      collectSet = ConcurrentHashMap.newKeySet(32);
     }
     collectSet.add(runnable);
   }
@@ -616,7 +626,7 @@ public class ParWork implements Closeable {
       Integer maxThreads;
       minThreads = Integer.getInteger("solr.per_thread_exec.min_threads", 3);
       maxThreads = Integer.getInteger("solr.per_thread_exec.max_threads",  Runtime.getRuntime().availableProcessors() / 3);
-      exec = getExecutorService(0, Math.max(minThreads, maxThreads), 1); // keep alive directly affects how long a worker might
+      exec = getExecutorService(Math.max(minThreads, maxThreads)); // keep alive directly affects how long a worker might
       // be stuck in poll without an enqueue on shutdown
       THREAD_LOCAL_EXECUTOR.set(exec);
     }
@@ -624,20 +634,15 @@ public class ParWork implements Closeable {
     return exec;
   }
 
-  public static ExecutorService getParExecutorService(int corePoolSize, int maximumPoolSize, int keepAliveTime) {
+  public static ExecutorService getParExecutorService(int corePoolSize, int keepAliveTime) {
     ThreadPoolExecutor exec;
     exec = new ParWorkExecutor("ParWork-" + Thread.currentThread().getName(),
             corePoolSize, Integer.MAX_VALUE, keepAliveTime);
     return exec;
   }
 
-  public static ExecutorService getExecutorService(int corePoolSize, int maximumPoolSize, int keepAliveTime) {
-    return new ParWorkExecService(getEXEC());
-  }
-
-  private static Integer getMaxPoolSize() {
-    return Integer.getInteger("solr.maxThreadExecPoolSize",
-            (int) Math.max(4, Math.round(Runtime.getRuntime().availableProcessors() / 3)));
+  public static ExecutorService getExecutorService(int maximumPoolSize) {
+    return new ParWorkExecService(getEXEC(), maximumPoolSize);
   }
 
   private void handleObject(String label, AtomicReference<Throwable> exception, final TimeTracker workUnitTracker, Object object) {

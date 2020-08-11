@@ -34,7 +34,7 @@ public class PackageListeners {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String PACKAGE_VERSIONS = "PKG_VERSIONS";
-  private SolrCore core;
+  private final SolrCore core;
 
   public PackageListeners(SolrCore core) {
     this.core = core;
@@ -44,12 +44,11 @@ public class PackageListeners {
   // cause a memory leak if the listener forgets to unregister itself
   private List<Reference<Listener>> listeners = new CopyOnWriteArrayList<>();
 
-  public synchronized void addListener(Listener listener) {
+  public void addListener(Listener listener) {
     listeners.add(new SoftReference<>(listener));
-
   }
 
-  public synchronized void removeListener(Listener listener) {
+  public void removeListener(Listener listener) {
     Iterator<Reference<Listener>> it = listeners.iterator();
     while (it.hasNext()) {
       Reference<Listener> ref = it.next();
@@ -59,10 +58,9 @@ public class PackageListeners {
       }
 
     }
-
   }
 
-  synchronized void packagesUpdated(List<PackageLoader.Package> pkgs) {
+  void packagesUpdated(List<PackageLoader.Package> pkgs) {
     MDCLoggingContext.setCore(core);
     try {
       for (PackageLoader.Package pkgInfo : pkgs) {
@@ -73,7 +71,7 @@ public class PackageListeners {
     }
   }
 
-  private synchronized void invokeListeners(PackageLoader.Package pkg) {
+  private void invokeListeners(PackageLoader.Package pkg) {
     for (Reference<Listener> ref : listeners) {
       Listener listener = ref.get();
       if(listener == null) continue;
@@ -84,7 +82,7 @@ public class PackageListeners {
   }
 
   public List<Listener> getListeners() {
-    List<Listener> result = new ArrayList<>();
+    List<Listener> result = new ArrayList<>(listeners.size());
     for (Reference<Listener> ref : listeners) {
       Listener l = ref.get();
       if (l != null) {

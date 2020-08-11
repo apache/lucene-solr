@@ -263,7 +263,7 @@ public class SimCloudManager implements SolrCloudManager {
     this.nodeStateProvider = new SimNodeStateProvider(liveNodesSet, this.stateManager, this.clusterStateProvider, null);
     this.queueFactory = new GenericDistributedQueueFactory(stateManager);
     //this.simCloudManagerPool = ExecutorUtil.newMDCAwareFixedThreadPool(200, new SolrNamedThreadFactory("simCloudManagerPool"));
-    this.simCloudManagerPool = ParWork.getExecutorService(3, 10, 3);
+    this.simCloudManagerPool = ParWork.getExecutorService(10);
     this.autoScalingHandler = new AutoScalingHandler(this, loader);
 
 
@@ -607,14 +607,14 @@ public class SimCloudManager implements SolrCloudManager {
       simRemoveNode(killNodeId, false);
     }
     objectCache.clear();
-   // nocommit, oh god...
+
     try {
       simCloudManagerPool.shutdownNow();
     } catch (Exception e) {
       ParWork.propegateInterrupt(e);
       // ignore
     }
-    simCloudManagerPool = ParWork.getExecutorService(3, 10, 3);
+    simCloudManagerPool = ParWork.getExecutorService( 10);
 
     OverseerTriggerThread trigger = new OverseerTriggerThread(loader, this);
     triggerThread = new Overseer.OverseerThread(triggerThreadGroup, trigger, "Simulated OverseerAutoScalingTriggerThread");

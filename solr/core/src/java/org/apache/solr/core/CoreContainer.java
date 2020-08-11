@@ -346,7 +346,7 @@ public class CoreContainer implements Closeable {
     this.asyncSolrCoreLoad = asyncSolrCoreLoad;
 
     this.replayUpdatesExecutor = new OrderedExecutor( cfg.getReplayUpdatesThreads(),
-            ParWork.getExecutorService( cfg.getReplayUpdatesThreads(), cfg.getReplayUpdatesThreads(), 250));
+            ParWork.getExecutorService(cfg.getReplayUpdatesThreads()));
 
     metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig());
     String registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.node);

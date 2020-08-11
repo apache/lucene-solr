@@ -19,6 +19,7 @@ package org.apache.solr.common.cloud;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.ParWork;
+import org.apache.solr.common.ParWorkExecService;
 import org.apache.solr.common.ParWorkExecutor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
@@ -96,9 +97,9 @@ public class SolrZkClient implements Closeable {
 
   private final ConnectionManager connManager;
 
-  private final ExecutorService zkCallbackExecutor = new ParWorkExecutor("ZkCallback", 1);
+  private final ExecutorService zkCallbackExecutor = ParWork.getExecutorService( 1);
 
-  private final ExecutorService zkConnManagerCallbackExecutor =  new ParWorkExecutor("zkConnectionManagerCallback", 1);
+  private final ExecutorService zkConnManagerCallbackExecutor = ParWork.getExecutorService( 1);
 
   private volatile boolean isClosed = false;
 
