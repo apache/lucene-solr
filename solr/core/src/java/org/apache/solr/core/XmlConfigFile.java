@@ -23,6 +23,8 @@ import com.fasterxml.aalto.WFCException;
 import com.fasterxml.aalto.dom.DOMWriterImpl;
 import com.fasterxml.aalto.stax.InputFactoryImpl;
 import com.fasterxml.aalto.util.IllegalCharHandler;
+import net.sf.saxon.BasicTransformerFactory;
+import net.sf.saxon.TransformerFactoryImpl;
 import net.sf.saxon.dom.DocumentBuilderImpl;
 import net.sf.saxon.jaxp.SaxonTransformerFactory;
 import net.sf.saxon.xpath.XPathFactoryImpl;
@@ -87,10 +89,11 @@ public class XmlConfigFile { // formerly simply "Config"
   public static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
   public static final DOMConverter convertor = new DOMConverter();
   public static final XPathFactory xpathFactory = new XPathFactoryImpl();
-  public static final SaxonTransformerFactory tfactory = new SaxonTransformerFactory();
+  public static final SaxonTransformerFactory tfactory = new BasicTransformerFactory();
   static  {
    // tfactory.getConfiguration().setBooleanProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, Boolean.TRUE);
   }
+  public static final Transformer tx = tfactory.newTransformer();
 
   private final Document doc;
   //private final Document origDoc; // with unsubstituted properties
@@ -281,9 +284,7 @@ public class XmlConfigFile { // formerly simply "Config"
     } catch (XMLStreamException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
-
-
-
+    
     this.substituteProperties = substituteProps;
     if (substituteProps != null) {
       DOMUtil.substituteProperties(doc, substituteProperties);
@@ -291,7 +292,6 @@ public class XmlConfigFile { // formerly simply "Config"
   }
 
   private static Document copyDoc(Document doc) throws TransformerException {
-    Transformer tx = tfactory.newTransformer();
     DOMSource source = new DOMSource(doc);
     DOMResult result = new DOMResult();
     tx.transform(source, result);
