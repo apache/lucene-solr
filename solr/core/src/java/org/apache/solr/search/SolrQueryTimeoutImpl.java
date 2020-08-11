@@ -33,10 +33,11 @@ public class SolrQueryTimeoutImpl implements QueryTimeout {
   /**
    * The ThreadLocal variable to store the time beyond which, the processing should exit.
    */
-  public static ThreadLocal<Long> timeoutAt = new ThreadLocal<Long>();
+  private static final ThreadLocal<Long> timeoutAt = new ThreadLocal<>();
+
+  private static final SolrQueryTimeoutImpl instance = new SolrQueryTimeoutImpl();
 
   private SolrQueryTimeoutImpl() { }
-  private static SolrQueryTimeoutImpl instance = new SolrQueryTimeoutImpl();
 
   /** Return singleton instance */
   public static SolrQueryTimeoutImpl getInstance() { 
@@ -85,7 +86,7 @@ public class SolrQueryTimeoutImpl implements QueryTimeout {
    * Sets the time allowed (milliseconds), assuming we start a timer immediately.
    * You should probably invoke {@link #set(SolrQueryRequest)} instead.
    */
-  public static void set(Long timeAllowed) {
+  public static void set(long timeAllowed) {
     long time = nanoTime() + TimeUnit.NANOSECONDS.convert(timeAllowed, TimeUnit.MILLISECONDS);
     timeoutAt.set(time);
   }
