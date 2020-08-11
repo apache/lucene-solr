@@ -47,4 +47,11 @@ public interface ShardReplica {
    * The exact size may vary from replica to replica
    */
   long indexSize();
+
+  /**Is this replica the leader */
+  boolean isLeader();
+
+  /**Baseurl for this replica
+   */
+  String url(ApiType type);
 }

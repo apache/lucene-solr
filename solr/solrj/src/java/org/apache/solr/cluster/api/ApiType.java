@@ -17,20 +17,15 @@
 
 package org.apache.solr.cluster.api;
 
-/** A read only view of a Solr node */
-public interface SolrNode {
+/**
+ * Types of API calls
+ */
+public enum ApiType {
+    V1("solr"),
+    V2("api");
+    final String prefix;
 
-  /** The node name */
-  String name();
-
-  /**Base http url for this node
-   *
-   */
-  String baseUrl(ApiType type);
-
-  /**
-   * Get all the cores in a given node.
-   * This usually involves a network call. So, it's likely to be expensive
-   */
-  SimpleMap<ShardReplica> cores();
+    ApiType(String prefix) {
+        this.prefix = prefix;
+    }
 }
