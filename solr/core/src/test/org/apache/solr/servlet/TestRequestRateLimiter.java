@@ -66,15 +66,11 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
 
     solrDispatchFilter.replaceRateLimitManager(rateLimitManager);
 
-    processTest(client);
+    processTest(client, 10000 /* number of documents */, 350 /* number of queries */);
 
     MockRequestRateLimiter mockQueryRateLimiter = (MockRequestRateLimiter) rateLimitManager.getRequestRateLimiter(SolrRequest.SolrRequestType.QUERY);
 
-    assertEquals(25, mockQueryRateLimiter.incomingRequestCount.get());
-    assertTrue("Incoming accepted new request count did not match. Expected 5 incoming " + mockQueryRateLimiter.acceptedNewRequestCount.get(),
-        mockQueryRateLimiter.acceptedNewRequestCount.get() < 25);
-    assertTrue("Incoming rejected new request count did not match. Expected 20 incoming " + mockQueryRateLimiter.rejectedRequestCount.get(),
-        mockQueryRateLimiter.rejectedRequestCount.get() > 0);
+    assertEquals(350, mockQueryRateLimiter.incomingRequestCount.get());
     assertEquals(mockQueryRateLimiter.incomingRequestCount.get(),
         mockQueryRateLimiter.acceptedNewRequestCount.get() + mockQueryRateLimiter.rejectedRequestCount.get());
   }
@@ -99,7 +95,7 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
 
     solrDispatchFilter.replaceRateLimitManager(rateLimitManager);
 
-    processTest(client);
+    processTest(client, 10000 /* Number of documents */, 400 /* Number of queries */);
 
     MockRequestRateLimiter mockIndexRateLimiter = (MockRequestRateLimiter) rateLimitManager.getRequestRateLimiter(SolrRequest.SolrRequestType.UPDATE);
 
@@ -107,9 +103,9 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
         mockIndexRateLimiter.borrowedSlotCount.get() > 0);
   }
 
-  private void processTest(CloudSolrClient client) throws Exception {
+  private void processTest(CloudSolrClient client, int numDocuments, int numQueries) throws Exception {
 
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < numDocuments; i++) {
       SolrInputDocument doc = new SolrInputDocument();
 
       doc.setField("id", i);
@@ -124,12 +120,12 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
     List<Future<Boolean>> futures;
 
     try {
-      for (int i = 0; i < 25; i++) {
+      for (int i = 0; i < numQueries; i++) {
         callableList.add(() -> {
           try {
             QueryResponse response = client.query(new SolrQuery("*:*"));
 
-            assertEquals(100, response.getResults().getNumFound());
+            assertEquals(10000, response.getResults().getNumFound());
           } catch (Exception e) {
             throw new RuntimeException(e.getMessage());
           }
