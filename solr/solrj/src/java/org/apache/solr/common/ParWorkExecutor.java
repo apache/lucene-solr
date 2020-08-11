@@ -68,7 +68,6 @@ public class ParWorkExecutor extends ExecutorUtil.MDCAwareThreadPoolExecutor {
 
     public void shutdown() {
         allowCoreThreadTimeOut(true);
-        setKeepAliveTime(1, TimeUnit.NANOSECONDS);
         super.shutdown();
     }
 }

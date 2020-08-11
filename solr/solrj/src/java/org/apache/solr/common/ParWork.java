@@ -64,7 +64,7 @@ public class ParWork implements Closeable {
   protected final static ThreadLocal<ExecutorService> THREAD_LOCAL_EXECUTOR = new ThreadLocal<>();
   private final boolean requireAnotherThread;
 
-  private volatile Set<Object> collectSet = null;
+  private volatile Set<Object> collectSet = ConcurrentHashMap.newKeySet(32);
 
   private static volatile ThreadPoolExecutor EXEC;
 
@@ -249,10 +249,6 @@ public class ParWork implements Closeable {
     if (object == null) {
       return;
     }
-    if (collectSet == null) {
-      collectSet = ConcurrentHashMap.newKeySet(32);
-    }
-
     collectSet.add(object);
   }
 
@@ -261,10 +257,6 @@ public class ParWork implements Closeable {
    *                 used to identify it.
    */
   public void collect(Callable<?> callable) {
-
-    if (collectSet == null) {
-      collectSet = ConcurrentHashMap.newKeySet(32);
-    }
     collectSet.add(callable);
   }
 
@@ -276,14 +268,11 @@ public class ParWork implements Closeable {
     if (runnable == null) {
       return;
     }
-    if (collectSet == null) {
-      collectSet = ConcurrentHashMap.newKeySet(32);
-    }
     collectSet.add(runnable);
   }
 
   public void addCollect(String label) {
-    if (collectSet == null) {
+    if (collectSet.isEmpty()) {
       log.info("No work collected to submit");
       return;
     }

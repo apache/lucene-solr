@@ -63,7 +63,6 @@ import org.slf4j.LoggerFactory;
  * Super basic testing, no shard restarting or anything.
  */
 @Slow
-
 public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final AtomicInteger NAME_COUNTER = new AtomicInteger(1);
@@ -401,7 +400,6 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     checkShardConsistency(params("q","*:*", "rows", ""+(1 + numDocs),"_trace","addAll"));
   }
 
- // @Ignore // nocommit debug
   public void testIndexingBatchPerRequestWithHttpSolrClient() throws Exception {
     final CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
     final String collectionName = createAndSetNewDefaultCollection();
@@ -458,6 +456,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     
     cloudClient.commit(collectionName);
     assertEquals(expectedDocCount.get(), cloudClient.query(params("q","*:*")).getResults().getNumFound());
+    cluster.waitForActiveCollection(collectionName, 2, 4);
     checkShardConsistency(params("q","*:*", "rows", ""+totalDocsExpected, "_trace","batches_done"));
   }
 

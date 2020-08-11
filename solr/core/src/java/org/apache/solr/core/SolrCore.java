@@ -1039,10 +1039,10 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       // cause the executor to stall so firstSearcher events won't fire
       // until after inform() has been called for all components.
       // searchExecutor must be single-threaded for this to work
-      searcherExecutor.doSubmit(() -> {
+      searcherExecutor.submit(() -> {
         boolean success = latch.await(10000, TimeUnit.MILLISECONDS);
         return null;
-      }, true);
+      });
 
       this.updateHandler = initUpdateHandler(updateHandler);
 
@@ -1879,7 +1879,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private final LinkedList<RefCounted<SolrIndexSearcher>> _searchers = new LinkedList<>();
   private final LinkedList<RefCounted<SolrIndexSearcher>> _realtimeSearchers = new LinkedList<>();
 
-  final ParWorkExecService searcherExecutor = (ParWorkExecService) ParWork.getExecutorService(1);
+  final ExecutorService searcherExecutor = ExecutorUtil.newMDCAwareSingleThreadExecutor(
+      new SolrNamedThreadFactory("searcherExecutor"));
   private AtomicInteger onDeckSearchers = new AtomicInteger();  // number of searchers preparing
   // Lock ordering: one can acquire the openSearcherLock and then the searcherLock, but not vice-versa.
   private final Object searcherLock = new Object();  // the sync object for the searcher
