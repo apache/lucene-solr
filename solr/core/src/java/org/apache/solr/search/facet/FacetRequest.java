@@ -166,10 +166,10 @@ public abstract class FacetRequest {
 
     /** Are we doing a query time join across other documents */
     public static class JoinField {
-      public static final String FROM_PARAM = "from";
-      public static final String TO_PARAM = "to";
-      public static final String METHOD_PARAM = "method";
-      public static final Set<String> SUPPORTED_JOIN_PROPERTIES = Sets.newHashSet(FROM_PARAM, TO_PARAM, METHOD_PARAM);
+      private static final String FROM_PARAM = "from";
+      private static final String TO_PARAM = "to";
+      private static final String METHOD_PARAM = "method";
+      private static final Set<String> SUPPORTED_JOIN_PROPERTIES = Sets.newHashSet(FROM_PARAM, TO_PARAM, METHOD_PARAM);
 
       public final String from;
       public final String to;
