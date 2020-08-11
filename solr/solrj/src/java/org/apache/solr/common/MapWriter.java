@@ -40,6 +40,7 @@ public interface MapWriter extends MapSerializable , NavigableObject {
   }
 
   @Override
+  @SuppressWarnings({"unchecked", "rawtypes"})
   default Map toMap(Map<String, Object> map) {
     try {
       writeMap(new EntryWriter() {

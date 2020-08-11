@@ -54,6 +54,7 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
       // deprecate this for 7.0?
       this.cacheSize = cfg.getTransientCacheSize();
     } else {
+      @SuppressWarnings({"rawtypes"})
       NamedList args = cfg.getTransientCachePluginInfo().initArgs;
       Object obj = args.get("transientCacheSize");
       if (obj != null) {
@@ -69,6 +70,7 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
       // Still handle just having transientCacheSize defined in the body of solr.xml not in a transient handler clause.
       this.cacheSize = cfg.getTransientCacheSize();
     } else {
+      @SuppressWarnings({"rawtypes"})
       NamedList args = cfg.getTransientCachePluginInfo().initArgs;
       Object obj = args.get("transientCacheSize");
       if (obj != null) {
@@ -105,6 +107,8 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
   @Override
   public Collection<SolrCore> prepareForShutdown() {
     // Return a copy of the values
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
     List<SolrCore> ret = new ArrayList(transientCores.values());
     transientCores.clear();
     return ret;
@@ -129,7 +133,7 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
   }
 
   // Remove a core from the internal structures, presumably it 
-  // being closed. If the core is re-opened, it will be readded by CoreContainer.
+  // being closed. If the core is re-opened, it will be re-added by CoreContainer.
   @Override
   public SolrCore removeCore(String name) {
     return transientCores.remove(name);
@@ -165,17 +169,6 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
   @Override
   public CoreDescriptor removeTransientDescriptor(String name) {
     return transientDescriptors.remove(name);
-  }
-
-  @Override
-  public List<String> getNamesForCore(SolrCore core) {
-    List<String> ret = new ArrayList<>();
-    for (Map.Entry<String, SolrCore> entry : transientCores.entrySet()) {
-      if (core == entry.getValue()) {
-        ret.add(entry.getKey());
-      }
-    }
-    return ret;
   }
 
   // For custom implementations to communicate arbitrary information as necessary.

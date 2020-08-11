@@ -54,7 +54,7 @@ public class STUniformSplitPostingsFormat extends UniformSplitPostingsFormat {
    */
   public static final String TERMS_BLOCKS_EXTENSION = "stustb";
 
-  public static final int VERSION_CURRENT = 0;
+  public static final int VERSION_CURRENT = UniformSplitPostingsFormat.VERSION_CURRENT;
 
   public static final String NAME = "SharedTermsUniformSplit";
 

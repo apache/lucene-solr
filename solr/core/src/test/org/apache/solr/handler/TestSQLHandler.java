@@ -1872,13 +1872,14 @@ public class TestSQLHandler extends SolrCloudTestCase {
     return true;
   }
 
-  protected boolean assertMaps(List<Map> maps, int... ids) throws Exception {
+  protected boolean assertMaps(@SuppressWarnings({"rawtypes"})List<Map> maps, int... ids) throws Exception {
     if(maps.size() != ids.length) {
       throw new Exception("Expected id count != actual map count:"+ids.length+":"+maps.size());
     }
 
     int i=0;
     for(int val : ids) {
+      @SuppressWarnings({"rawtypes"})
       Map t = maps.get(i);
       String tip = (String)t.get("id");
       if(!tip.equals(Integer.toString(val))) {

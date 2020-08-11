@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.component;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -28,8 +27,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CompletionService;
-import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
@@ -37,13 +34,8 @@ import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.client.HttpClient;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.LBHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.routing.AffinityReplicaListTransformerFactory;
@@ -96,7 +88,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
 
   protected volatile Http2SolrClient defaultClient;
   protected InstrumentedHttpListenerFactory httpListenerFactory;
-  private LBHttp2SolrClient loadbalancer;
+  protected LBHttp2SolrClient loadbalancer;
 
   int corePoolSize = 0;
   int maximumPoolSize = Integer.MAX_VALUE;
@@ -151,27 +143,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
    */
   @Override
   public ShardHandler getShardHandler() {
-    return getShardHandler(defaultClient);
-  }
-
-  /**
-   * Get {@link ShardHandler} that uses custom http client.
-   */
-  public ShardHandler getShardHandler(final Http2SolrClient httpClient){
-    return new HttpShardHandler(this, httpClient);
-  }
-
-  @Deprecated
-  public ShardHandler getShardHandler(final HttpClient httpClient) {
-    // a little hack for backward-compatibility when we are moving from apache http client to jetty client
-    return new HttpShardHandler(this, null) {
-      @Override
-      protected NamedList<Object> request(String url, SolrRequest req) throws IOException, SolrServerException {
-        try (SolrClient client = new HttpSolrClient.Builder(url).withHttpClient(httpClient).build()) {
-          return client.request(req);
-        }
-      }
-    };
+    return new HttpShardHandler(this);
   }
 
   /**
@@ -212,7 +184,8 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     }
   }
 
-  private void initReplicaListTransformers(NamedList routingConfig) {
+  @SuppressWarnings({"unchecked"})
+  private void initReplicaListTransformers(@SuppressWarnings({"rawtypes"})NamedList routingConfig) {
     String defaultRouting = null;
     ReplicaListTransformerFactory stableRltFactory = null;
     ReplicaListTransformerFactory defaultRltFactory;
@@ -253,6 +226,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   @Override
   public void init(PluginInfo info) {
     StringBuilder sb = new StringBuilder();
+    @SuppressWarnings({"rawtypes"})
     NamedList args = info.initArgs;
     this.scheme = getParameter(args, INIT_URL_SCHEME, null,sb);
     if(StringUtils.endsWith(this.scheme, "://")) {
@@ -316,6 +290,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     this.defaultClient = new Http2SolrClient.Builder()
         .connectionTimeout(connectionTimeout)
         .idleTimeout(soTimeout)
+        .withExecutor(commExecutor)
         .maxConnectionsPerHost(maxConnectionsPerHost).build();
     this.defaultClient.addListenerFactory(this.httpListenerFactory);
     this.loadbalancer = new LBHttp2SolrClient(defaultClient);
@@ -330,9 +305,10 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     clientBuilderPlugin.setup(defaultClient);
   }
 
-  protected <T> T getParameter(NamedList initArgs, String configKey, T defaultValue, StringBuilder sb) {
+  protected <T> T getParameter(@SuppressWarnings({"rawtypes"})NamedList initArgs, String configKey, T defaultValue, StringBuilder sb) {
     T toReturn = defaultValue;
     if (initArgs != null) {
+      @SuppressWarnings({"unchecked"})
       T temp = (T) initArgs.get(configKey);
       toReturn = (temp != null) ? temp : defaultValue;
     }
@@ -344,16 +320,16 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   @Override
   public void close() {
     try {
-      ExecutorUtil.shutdownAndAwaitTermination(commExecutor);
+      if (loadbalancer != null) {
+        loadbalancer.close();
+      }
     } finally {
       try {
-        if (loadbalancer != null) {
-          loadbalancer.close();
-        }
-      } finally {
         if (defaultClient != null) {
           IOUtils.closeQuietly(defaultClient);
         }
+      } finally {
+        ExecutorUtil.shutdownAndAwaitTermination(commExecutor);
       }
     }
     try {
@@ -366,18 +342,6 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   @Override
   public SolrMetricsContext getSolrMetricsContext() {
     return solrMetricsContext;
-  }
-
-  /**
-   * Makes a request to one or more of the given urls, using the configured load balancer.
-   *
-   * @param req The solr search request that should be sent through the load balancer
-   * @param urls The list of solr server urls to load balance across
-   * @return The response from the request
-   */
-  public LBSolrClient.Rsp makeLoadBalancedRequest(final QueryRequest req, List<String> urls)
-    throws SolrServerException, IOException {
-    return loadbalancer.request(newLBHttpSolrClientReq(req, urls));
   }
 
   protected LBSolrClient.Req newLBHttpSolrClientReq(final QueryRequest req, List<String> urls) {
@@ -408,6 +372,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   protected ReplicaListTransformer getReplicaListTransformer(final SolrQueryRequest req) {
     final SolrParams params = req.getParams();
     final SolrCore core = req.getCore(); // explicit check for null core (temporary?, for tests)
+    @SuppressWarnings("resource")
     ZkController zkController = core == null ? null : core.getCoreContainer().getZkController();
     if (zkController != null) {
       return requestReplicaListTransformerGenerator.getReplicaListTransformer(
@@ -422,13 +387,6 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     } else {
       return requestReplicaListTransformerGenerator.getReplicaListTransformer(params);
     }
-  }
-
-  /**
-   * Creates a new completion service for use by a single set of distributed requests.
-   */
-  public CompletionService<ShardResponse> newCompletionService() {
-    return new ExecutorCompletionService<>(commExecutor);
   }
 
   /**

@@ -419,6 +419,8 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
 
     ReturnFields returnFields = rb.rsp.getReturnFields();
     LongObjectMap<Collector> groups = ((GroupCollector) groupExpandCollector).getGroups();
+
+    @SuppressWarnings({"rawtypes"})
     NamedList outMap = new SimpleOrderedMap();
     CharsRefBuilder charsRef = new CharsRefBuilder();
     for (LongObjectCursor<Collector> cursor : groups) {
@@ -454,7 +456,10 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     rb.rsp.add("expanded", outMap);
   }
 
-  private void addGroupSliceToOutputMap(FieldType fieldType, IntObjectHashMap<BytesRef> ordBytes, NamedList outMap, CharsRefBuilder charsRef, long groupValue, DocSlice slice) {
+
+  @SuppressWarnings({"unchecked"})
+  private void addGroupSliceToOutputMap(FieldType fieldType, IntObjectHashMap<BytesRef> ordBytes,
+                                        @SuppressWarnings({"rawtypes"})NamedList outMap, CharsRefBuilder charsRef, long groupValue, DocSlice slice) {
     if(fieldType instanceof StrField) {
       final BytesRef bytesRef = ordBytes.get((int)groupValue);
       fieldType.indexedToReadable(bytesRef, charsRef);
@@ -484,8 +489,9 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     }
   }
 
-  @SuppressWarnings("unchecked")
+
   @Override
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void handleResponses(ResponseBuilder rb, ShardRequest sreq) {
 
     if (!rb.doExpand) {
@@ -511,6 +517,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     }
   }
 
+  @SuppressWarnings("rawtypes")
   @Override
   public void finishStage(ResponseBuilder rb) {
 

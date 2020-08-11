@@ -310,7 +310,7 @@ public abstract class BaseGroupSelectorTestCase<T> extends AbstractGroupingTestC
 
     // TODO why does SearchGroup.merge() take a list but TopGroups.merge() take an array?
     @SuppressWarnings("unchecked")
-    TopGroups<T>[] shardTopGroups = new TopGroups[shards.length];
+    TopGroups<T>[] shardTopGroups = (TopGroups<T>[]) new TopGroups<?>[shards.length];
     int j = 0;
     for (Shard shard : shards) {
       TopGroupsCollector<T> sc = new TopGroupsCollector<>(getGroupSelector(), mergedGroups, sort, Sort.RELEVANCE, 5, true);

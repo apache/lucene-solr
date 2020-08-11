@@ -15,11 +15,13 @@ lucene/**/*.iml
 parent.iml
 *.ipr
 *.iws
-/.project
-/.classpath
-/.settings
+/*.iml
+.project
+.classpath
+.settings
 /.caches
 /prj.el
+bin
 /bin
 /bin.*
 pom.xml

@@ -47,8 +47,6 @@ Solr autoscaling is a new suite of features in Solr to make managing a SolrCloud
 
 At its core, Solr autoscaling provides users with a rule syntax to define preferences and policies for how to distribute nodes and shards in a cluster, with the goal of maintaining a balance in the cluster. As of Solr 7, Solr will take any policy or preference rules into account when determining where to place new shards and replicas created or moved with various Collections API commands.
 
-See the section <<solrcloud-autoscaling.adoc#solrcloud-autoscaling,SolrCloud Autoscaling>> for details on the options available in 7.0. Expect more features to be released in subsequent 7.x releases in this area.
-
 === Other Features & Enhancements
 
 // TODO 7.1 - update link to docs when complete

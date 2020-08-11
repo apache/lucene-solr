@@ -43,6 +43,7 @@ public class TimeDifferencingEvaluator extends RecursiveObjectEvaluator implemen
       throw new IOException(String.format(Locale.ROOT, "%s(...) only works with 1 or 2 values but %d were provided", constructingFactory.getFunctionName(getClass()), values.length));
     }
     if (values[0] instanceof List) {
+      @SuppressWarnings({"unchecked"})
       List<Number> timeseriesValues = (List<Number>) values[0];
       Number lagValue = 1;
 
@@ -87,7 +88,7 @@ public class TimeDifferencingEvaluator extends RecursiveObjectEvaluator implemen
 
       for(int i=0; i<data.length; i++) {
         double[] row = data[i];
-        List<Double> timeseriesValues = new ArrayList(row.length);
+        List<Double> timeseriesValues = new ArrayList<>(row.length);
         for(double d : row) {
           timeseriesValues.add(d);
         }
@@ -106,7 +107,7 @@ public class TimeDifferencingEvaluator extends RecursiveObjectEvaluator implemen
       diffedMatrix.setRowLabels(matrix.getRowLabels());
       List<String> columns = matrix.getColumnLabels();
       if(columns != null) {
-        List<String> newColumns = new ArrayList(columns.size() - lag);
+        List<String> newColumns = new ArrayList<>(columns.size() - lag);
 
         for (int i = lag; i < columns.size(); i++) {
           newColumns.add(columns.get(i));

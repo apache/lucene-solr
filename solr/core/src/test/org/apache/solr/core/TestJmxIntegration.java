@@ -173,6 +173,7 @@ public class TestJmxIntegration extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings({"try"})
   public void testJmxOnCoreReload() throws Exception {
     // make sure searcher beans are registered
     assertQ(req("q", "*:*"), "//result[@numFound='0']");

@@ -43,7 +43,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.update.SolrIndexSplitter;
@@ -74,7 +73,7 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
 
 
   @Override
-  public void call(ClusterState clusterState, ZkNodeProps message, NamedList results) throws Exception {
+  public void call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     String extSourceCollectionName = message.getStr("collection");
     String splitKey = message.getStr("split.key");
     String extTargetCollectionName = message.getStr("target.collection");
@@ -136,10 +135,11 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   private void migrateKey(ClusterState clusterState, DocCollection sourceCollection, Slice sourceSlice,
                           DocCollection targetCollection, Slice targetSlice,
                           String splitKey, int timeout,
-                          NamedList results, String asyncId, ZkNodeProps message) throws Exception {
+                          @SuppressWarnings({"rawtypes"})NamedList results, String asyncId, ZkNodeProps message) throws Exception {
     String tempSourceCollectionName = "split_" + sourceSlice.getName() + "_temp_" + targetSlice.getName();
     ZkStateReader zkStateReader = ocmh.zkStateReader;
     if (clusterState.hasCollection(tempSourceCollectionName)) {
@@ -160,7 +160,7 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
     DocRouter.Range keyHashRange = sourceRouter.keyHashRange(splitKey);
 
     ShardHandlerFactory shardHandlerFactory = ocmh.shardHandlerFactory;
-    ShardHandler shardHandler = ((HttpShardHandlerFactory)shardHandlerFactory).getShardHandler(ocmh.overseer.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient());
+    ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
 
     log.info("Hash range for split.key: {} is: {}", splitKey, keyHashRange);
     // intersect source range, keyHashRange and target range

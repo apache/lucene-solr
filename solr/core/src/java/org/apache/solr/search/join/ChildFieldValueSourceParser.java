@@ -180,8 +180,8 @@ public class ChildFieldValueSourceParser extends ValueSourceParser {
       }
       bjQ = (AllParentsAware) query;
       
-      parentFilter = BlockJoinParentQParser.getCachedFilter(fp.getReq(), bjQ.getParentQuery()).getFilter();
-      childFilter = BlockJoinParentQParser.getCachedFilter(fp.getReq(), bjQ.getChildQuery()).getFilter();
+      parentFilter = BlockJoinParentQParser.getCachedBitSetProducer(fp.getReq(), bjQ.getParentQuery());
+      childFilter = BlockJoinParentQParser.getCachedBitSetProducer(fp.getReq(), bjQ.getChildQuery());
 
       if (sortFieldName==null || sortFieldName.equals("")) {
         throw new SyntaxError ("field is omitted in "+fp.getString());

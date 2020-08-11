@@ -117,6 +117,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
   }
   
   @Test
+  @SuppressWarnings({"unchecked"})
   public void test() throws Exception {
     
     assertEquals(clients.size(), jettys.size());
@@ -599,7 +600,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
           if (shardReq.params.getBool(StatsParams.STATS, false)) {
             numStatsShardRequests++;
             for (ShardResponse shardRsp : shardReq.sreq.responses) {
-              NamedList<Object> shardStats = 
+              NamedList<Object> shardStats =
                 ((NamedList<NamedList<NamedList<Object>>>)
                  shardRsp.getSolrResponse().getResponse().get("stats")).get("stats_fields").get(i1);
 
@@ -629,7 +630,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
       //
       assertEquals("wrong min", -987.0D, (Double)s.getMin(), 0.0001D );
       assertEquals("wrong mean", 377.153846D, (Double)s.getMean(), 0.0001D );
-      assertEquals("wrong stddev", 1271.76215D, (Double)s.getStddev(), 0.0001D );
+      assertEquals("wrong stddev", 1271.76215D, s.getStddev(), 0.0001D );
       //
       assertNull("expected null for count", s.getCount());
       assertNull("expected null for calcDistinct", s.getCountDistinct());
@@ -683,7 +684,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
 
         // ignore the FieldStatsInfo convinience class, and look directly at the NamedList
         // so we don't need any sort of crazy reflection
-        NamedList<Object> svals = 
+        NamedList<Object> svals =
           ((NamedList<NamedList<NamedList<Object>>>)
            rsp.getResponse().get("stats")).get("stats_fields").get(i1);
 
@@ -806,7 +807,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
       // NOTE: min is expected to be null even though requested because of no values
       assertEquals("wrong min", null, s.getMin()); 
       assertTrue("mean should be NaN", ((Double)s.getMean()).isNaN());
-      assertEquals("wrong stddev", 0.0D, (Double)s.getStddev(), 0.0D );
+      assertEquals("wrong stddev", 0.0D, s.getStddev(), 0.0D );
 
       // things that we didn't ask for, so they better be null
       assertNull("expected null for count", s.getCount());
@@ -1154,6 +1155,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     }
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   protected void queryPartialResults(final List<String> upShards,
                                      final List<SolrClient> upClients,
                                      Object... q) throws Exception {

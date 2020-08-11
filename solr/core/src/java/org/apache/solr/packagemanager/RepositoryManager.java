@@ -52,7 +52,7 @@ import org.apache.solr.filestore.PackageStoreAPI;
 import org.apache.solr.packagemanager.SolrPackage.Artifact;
 import org.apache.solr.packagemanager.SolrPackage.SolrPackageRelease;
 import org.apache.solr.pkg.PackageAPI;
-import org.apache.solr.pkg.PackagePluginHolder;
+import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.util.SolrCLI;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -122,6 +122,7 @@ public class RepositoryManager {
     String existingRepositoriesJson = getRepositoriesJson(packageManager.zkClient);
     log.info(existingRepositoriesJson);
 
+    @SuppressWarnings({"unchecked"})
     List<PackageRepository> repos = getMapper().readValue(existingRepositoriesJson, List.class);
     repos.add(new DefaultPackageRepository(repoName, uri));
     if (packageManager.zkClient.exists(PackageUtils.REPOSITORIES_ZK_PATH, true) == false) {
@@ -299,16 +300,21 @@ public class RepositoryManager {
 
   /**
    * Install a version of the package. Also, run verify commands in case some
-   * collection was using {@link PackagePluginHolder#LATEST} version of this package and got auto-updated.
+   * collection was using {@link PackageLoader#LATEST} version of this package and got auto-updated.
    */
-  public void install(String packageName, String version) throws SolrException {
-    String latestVersion = getLastPackageRelease(packageName).version;
+  public boolean install(String packageName, String version) throws SolrException {
+    SolrPackageRelease pkg = getLastPackageRelease(packageName);
+    if (pkg == null) {
+      PackageUtils.printRed("Package " + packageName + " not found in any repository. Check list of available packages via \"solr package list-available\".");
+      return false;
+    }
+    String latestVersion = pkg.version;
 
     Map<String, String> collectionsDeployedIn = packageManager.getDeployedCollections(packageName);
-    List<String> peggedToLatest = collectionsDeployedIn.keySet().stream().
-        filter(collection -> collectionsDeployedIn.get(collection).equals(PackagePluginHolder.LATEST)).collect(Collectors.toList());
-    if (!peggedToLatest.isEmpty()) {
-      PackageUtils.printGreen("Collections that will be affected (since they are configured to use $LATEST): "+peggedToLatest);
+    List<String> collectionsPeggedToLatest = collectionsDeployedIn.keySet().stream().
+        filter(collection -> collectionsDeployedIn.get(collection).equals(PackageLoader.LATEST)).collect(Collectors.toList());
+    if (!collectionsPeggedToLatest.isEmpty()) {
+      PackageUtils.printGreen("Collections that will be affected (since they are configured to use $LATEST): "+collectionsPeggedToLatest);
     }
 
     if (version == null || version.equals(PackageUtils.LATEST)) {
@@ -317,12 +323,16 @@ public class RepositoryManager {
       installPackage(packageName, version);
     }
 
-    if (peggedToLatest.isEmpty() == false) {
+    if (collectionsPeggedToLatest.isEmpty() == false) {
       SolrPackageInstance updatedPackage = packageManager.getPackageInstance(packageName, PackageUtils.LATEST);
-      boolean res = packageManager.verify(updatedPackage, peggedToLatest);
+      boolean res = packageManager.verify(updatedPackage, collectionsPeggedToLatest, false, new String[] {}); // Cluster level plugins don't work with peggedToLatest functionality
       PackageUtils.printGreen("Verifying version " + updatedPackage.version + 
-          " on " + peggedToLatest + ", result: " + res);
-      if (!res) throw new SolrException(ErrorCode.BAD_REQUEST, "Failed verification after deployment");
+          " on " + collectionsPeggedToLatest + ", result: " + res);
+      if (!res) {
+        PackageUtils.printRed("Failed verification after deployment");
+        return false;
+      }
     }
+    return true;
   }
 }

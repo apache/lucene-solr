@@ -54,7 +54,7 @@ public final class TruncateFieldUpdateProcessorFactory
 
   @SuppressWarnings("unchecked")
   @Override
-  public void init(NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
 
     Object lengthParam = args.remove(MAX_LENGTH_PARAM);
     if (null == lengthParam) {

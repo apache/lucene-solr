@@ -120,7 +120,7 @@ public class EdgeNGramTokenizerTest extends BaseTokenStreamTestCase {
   }
 
   private static void testNGrams(int minGram, int maxGram, int length, final String nonTokenChars) throws IOException {
-    final String s = RandomStrings.randomAsciiOfLength(random(), length);
+    final String s = RandomStrings.randomAsciiLettersOfLengthBetween(random(), length, length);
     testNGrams(minGram, maxGram, s, nonTokenChars);
   }
 

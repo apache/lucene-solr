@@ -189,6 +189,7 @@ public class JdbcDataSource extends
             // the class loader of the class which is trying to make the connection.
             // This is a workaround for cases where the user puts the driver jar in the
             // solr.home/lib or solr.home/core/lib directories.
+            @SuppressWarnings({"unchecked"})
             Driver d = (Driver) DocBuilder.loadClass(driver, context.getSolrCore()).getConstructor().newInstance();
             c = d.connect(url, initProps);
           }

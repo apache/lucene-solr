@@ -43,7 +43,7 @@ public class SplitEvaluator extends RecursiveObjectEvaluator implements TwoValue
     String s = value1.toString();
     String p = value2.toString();
     String[] tokens = s.split(p, -1);
-    List<String> strings = new ArrayList(tokens.length);
+    List<String> strings = new ArrayList<>(tokens.length);
     for(String tok : tokens) {
       strings.add(tok);
     }

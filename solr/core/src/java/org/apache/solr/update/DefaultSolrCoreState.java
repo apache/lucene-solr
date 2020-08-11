@@ -84,6 +84,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
 
   private volatile Future<Boolean> cdcrBootstrapFuture;
 
+  @SuppressWarnings({"rawtypes"})
   private volatile Callable cdcrBootstrapCallable;
 
   @Deprecated
@@ -448,12 +449,13 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   }
 
   @Override
+  @SuppressWarnings({"rawtypes"})
   public Callable getCdcrBootstrapCallable() {
     return cdcrBootstrapCallable;
   }
 
   @Override
-  public void setCdcrBootstrapCallable(Callable cdcrBootstrapCallable) {
+  public void setCdcrBootstrapCallable(@SuppressWarnings({"rawtypes"})Callable cdcrBootstrapCallable) {
     this.cdcrBootstrapCallable = cdcrBootstrapCallable;
   }
 }

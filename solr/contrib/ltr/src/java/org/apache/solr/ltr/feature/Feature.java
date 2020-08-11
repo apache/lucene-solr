@@ -69,6 +69,7 @@ public abstract class Feature extends Query implements Accountable {
 
   final private Map<String,Object> params;
 
+  @SuppressWarnings({"rawtypes"})
   public static Feature getInstance(SolrResourceLoader solrResourceLoader,
       String className, String name, Map<String,Object> params) {
     final Feature f = solrResourceLoader.newInstance(

@@ -61,15 +61,19 @@ public class TestCharArraySet extends LuceneTestCase {
   public void testObjectContains() {
     CharArraySet set = new CharArraySet(10, true);
     Integer val = Integer.valueOf(1);
+    @SuppressWarnings("deprecation")
+    Integer val1 = new Integer(1);
+    // Verify explicitly the case of different Integer instances
+    assertNotSame(val, val1);
     set.add(val);
     assertTrue(set.contains(val));
-    assertTrue(set.contains(new Integer(1))); // another integer
+    assertTrue(set.contains(val1)); // another integer
     assertTrue(set.contains("1"));
     assertTrue(set.contains(new char[]{'1'}));
     // test unmodifiable
     set = CharArraySet.unmodifiableSet(set);
     assertTrue(set.contains(val));
-    assertTrue(set.contains(new Integer(1))); // another integer
+    assertTrue(set.contains(val1)); // another integer
     assertTrue(set.contains("1"));
     assertTrue(set.contains(new char[]{'1'}));
   }

@@ -48,7 +48,7 @@ public class TestUpdate extends SolrTestCaseJ4 {
 
   }
 
-  public void doUpdateTest(Callable afterUpdate) throws Exception {
+  public void doUpdateTest(@SuppressWarnings({"rawtypes"})Callable afterUpdate) throws Exception {
     clearIndex();
     afterUpdate.call();
 

@@ -93,12 +93,14 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
     assertEquals(JSONWriter.JSON_NL_STYLE_COUNT, namedListStyles.length);
   }
 
+  @SuppressWarnings({"unchecked"})
   private void implTestJSON(final String namedListStyle) throws IOException {
     SolrQueryRequest req = req("wt","json","json.nl",namedListStyle, "indent", "off");
     SolrQueryResponse rsp = new SolrQueryResponse();
     JSONResponseWriter w = new JSONResponseWriter();
 
     StringWriter buf = new StringWriter();
+    @SuppressWarnings({"rawtypes"})
     NamedList nl = new NamedList();
     nl.add("data1", "he\u2028llo\u2029!");       // make sure that 2028 and 2029 are both escaped (they are illegal in javascript)
     nl.add(null, 42);

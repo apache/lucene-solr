@@ -129,6 +129,38 @@ public class MockRandomMergePolicy extends MergePolicy {
   }
 
   @Override
+  public MergeSpecification findFullFlushMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext) throws IOException {
+    MergeSpecification mergeSpecification = findMerges(null, segmentInfos, mergeContext);
+    if (mergeSpecification == null) {
+      return null;
+    }
+    // Do not return any merges involving already-merging segments.
+    MergeSpecification filteredMergeSpecification = new MergeSpecification();
+    for (OneMerge oneMerge : mergeSpecification.merges) {
+      boolean filtered = false;
+      List<SegmentCommitInfo> nonMergingSegments = new ArrayList<>();
+      for (SegmentCommitInfo sci : oneMerge.segments) {
+        if (mergeContext.getMergingSegments().contains(sci) == false) {
+          nonMergingSegments.add(sci);
+        } else {
+          filtered = true;
+        }
+      }
+      if (filtered == true) {
+        if (nonMergingSegments.size() > 0) {
+          filteredMergeSpecification.add(new OneMerge(nonMergingSegments));
+        }
+      } else {
+        filteredMergeSpecification.add(oneMerge);
+      }
+    }
+    if (filteredMergeSpecification.merges.size() > 0) {
+      return filteredMergeSpecification;
+    }
+    return null;
+  }
+
+  @Override
   public boolean useCompoundFile(SegmentInfos infos, SegmentCommitInfo mergedInfo, MergeContext mergeContext) throws IOException {
     // 80% of the time we create CFS:
     return random.nextInt(5) != 1;

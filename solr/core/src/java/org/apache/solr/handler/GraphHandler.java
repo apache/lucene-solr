@@ -20,7 +20,6 @@ package org.apache.solr.handler;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -40,6 +39,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.StreamParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
@@ -91,6 +91,7 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
     return PermissionNameProvider.Name.READ_PERM;
   }
 
+  @SuppressWarnings({"unchecked"})
   public void inform(SolrCore core) {
     String defaultCollection;
     String defaultZkhost;
@@ -122,7 +123,8 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
               Expressible.class);
           streamFactory.withFunctionName(key, clazz);
         } else {
-          StreamHandler.ExpressibleHolder holder = new StreamHandler.ExpressibleHolder(pluginInfo, core, SolrConfig.classVsSolrPluginInfo.get(Expressible.class));
+          @SuppressWarnings("resource")
+          StreamHandler.ExpressibleHolder holder = new StreamHandler.ExpressibleHolder(pluginInfo, core, SolrConfig.classVsSolrPluginInfo.get(Expressible.class.getName()));
           streamFactory.withFunctionName(key, () -> holder.getClazz());
         }
 
@@ -131,6 +133,7 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     SolrParams params = req.getParams();
     params = adjustParams(params);
@@ -144,6 +147,7 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
     } catch (Exception e) {
       //Catch exceptions that occur while the stream is being created. This will include streaming expression parse rules.
       SolrException.log(log, e);
+      @SuppressWarnings({"rawtypes"})
       Map requestContext = req.getContext();
       requestContext.put("stream", new DummyErrorStream(e));
       return;
@@ -155,6 +159,7 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
     Traversal traversal = new Traversal();
     context.put("traversal", traversal);
     tupleStream.setStreamContext(context);
+    @SuppressWarnings({"rawtypes"})
     Map requestContext = req.getContext();
     requestContext.put("stream", new TimerStream(new ExceptionStream(tupleStream)));
     requestContext.put("traversal", traversal);
@@ -202,11 +207,7 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
     }
 
     public Tuple read() {
-      String msg = e.getMessage();
-      Map m = new HashMap();
-      m.put("EOF", true);
-      m.put("EXCEPTION", msg);
-      return new Tuple(m);
+      return Tuple.EXCEPTION(e.getMessage(), true);
     }
   }
 
@@ -253,11 +254,12 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
       return null;
     }
 
+    @SuppressWarnings({"unchecked"})
     public Tuple read() throws IOException {
       Tuple tuple = this.tupleStream.read();
       if(tuple.EOF) {
         long totalTime = (System.nanoTime() - begin) / 1000000;
-        tuple.fields.put("RESPONSE_TIME", totalTime);
+        tuple.put(StreamParams.RESPONSE_TIME, totalTime);
       }
       return tuple;
     }

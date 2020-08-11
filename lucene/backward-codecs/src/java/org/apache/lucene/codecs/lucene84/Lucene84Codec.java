@@ -117,7 +117,7 @@ public class Lucene84Codec extends Codec {
   }
 
   @Override
-  public final SegmentInfoFormat segmentInfoFormat() {
+  public SegmentInfoFormat segmentInfoFormat() {
     return segmentInfosFormat;
   }
 
@@ -132,7 +132,7 @@ public class Lucene84Codec extends Codec {
   }
 
   @Override
-  public final PointsFormat pointsFormat() {
+  public PointsFormat pointsFormat() {
     return new Lucene60PointsFormat();
   }
 

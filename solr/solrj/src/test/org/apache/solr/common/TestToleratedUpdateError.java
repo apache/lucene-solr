@@ -67,8 +67,10 @@ public class TestToleratedUpdateError extends SolrTestCase {
     assertTrue(e.toString(), e.getMessage().contains("Invalid type"));
   }
   
+  @SuppressWarnings({"unchecked"})
   public void testParseMap() {
     // trivial
+    @SuppressWarnings({"rawtypes"})
     SimpleOrderedMap valid = new SimpleOrderedMap<String>();
     valid.add("type", CmdType.ADD.toString());
     valid.add("id", "some id");

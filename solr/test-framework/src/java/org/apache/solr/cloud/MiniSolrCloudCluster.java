@@ -91,6 +91,7 @@ public class MiniSolrCloudCluster {
   public static final String DEFAULT_CLOUD_SOLR_XML = "<solr>\n" +
       "\n" +
       "  <str name=\"shareSchema\">${shareSchema:false}</str>\n" +
+      "  <str name=\"allowPaths\">${solr.allowPaths:}</str>\n" +
       "  <str name=\"configSetBaseDir\">${configSetBaseDir:configsets}</str>\n" +
       "  <str name=\"coreRootDirectory\">${coreRootDirectory:.}</str>\n" +
       "  <str name=\"collectionsHandler\">${collectionsHandler:solr.CollectionsHandler}</str>\n" +

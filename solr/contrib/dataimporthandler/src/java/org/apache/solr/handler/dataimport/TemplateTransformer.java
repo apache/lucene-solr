@@ -94,6 +94,7 @@ public class TemplateTransformer extends Transformer {
     return row;
   }
 
+  @SuppressWarnings({"unchecked"})
   private void addToRow(String key, Map<String, Object> row, Object value) {
     Object prevVal = row.get(key);
     if (prevVal != null) {

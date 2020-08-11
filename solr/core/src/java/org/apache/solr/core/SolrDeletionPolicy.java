@@ -48,7 +48,7 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
   private int maxOptimizedCommitsToKeep = 0;
 
   @Override
-  public void init(NamedList args) {
+  public void init(@SuppressWarnings("rawtypes") NamedList args) {
     String keepOptimizedOnlyString = (String) args.get("keepOptimizedOnly");
     String maxCommitsToKeepString = (String) args.get("maxCommitsToKeep");
     String maxOptimizedCommitsToKeepString = (String) args.get("maxOptimizedCommitsToKeep");

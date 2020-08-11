@@ -26,6 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
@@ -407,26 +408,26 @@ public final class FST<T> implements Accountable {
   private static final int DEFAULT_MAX_BLOCK_BITS = Constants.JRE_IS_64BIT ? 30 : 28;
 
   /** Load a previously saved FST. */
-  public FST(DataInput in, Outputs<T> outputs) throws IOException {
-    this(in, outputs, new OnHeapFSTStore(DEFAULT_MAX_BLOCK_BITS));
+  public FST(DataInput metaIn, DataInput in, Outputs<T> outputs) throws IOException {
+    this(metaIn, in, outputs, new OnHeapFSTStore(DEFAULT_MAX_BLOCK_BITS));
   }
 
   /** Load a previously saved FST; maxBlockBits allows you to
    *  control the size of the byte[] pages used to hold the FST bytes. */
-  public FST(DataInput in, Outputs<T> outputs, FSTStore fstStore) throws IOException {
+  public FST(DataInput metaIn, DataInput in, Outputs<T> outputs, FSTStore fstStore) throws IOException {
     bytes = null;
     this.fstStore = fstStore;
     this.outputs = outputs;
 
     // NOTE: only reads formats VERSION_START up to VERSION_CURRENT; we don't have
     // back-compat promise for FSTs (they are experimental), but we are sometimes able to offer it
-    CodecUtil.checkHeader(in, FILE_FORMAT_NAME, VERSION_START, VERSION_CURRENT);
-    if (in.readByte() == 1) {
+    CodecUtil.checkHeader(metaIn, FILE_FORMAT_NAME, VERSION_START, VERSION_CURRENT);
+    if (metaIn.readByte() == 1) {
       // accepts empty string
       // 1 KB blocks:
       BytesStore emptyBytes = new BytesStore(10);
-      int numBytes = in.readVInt();
-      emptyBytes.copyBytes(in, numBytes);
+      int numBytes = metaIn.readVInt();
+      emptyBytes.copyBytes(metaIn, numBytes);
 
       // De-serialize empty-string output:
       BytesReader reader = emptyBytes.getReverseReader();
@@ -440,7 +441,7 @@ public final class FST<T> implements Accountable {
     } else {
       emptyOutput = null;
     }
-    final byte t = in.readByte();
+    final byte t = metaIn.readByte();
     switch(t) {
       case 0:
         inputType = INPUT_TYPE.BYTE1;
@@ -452,11 +453,11 @@ public final class FST<T> implements Accountable {
         inputType = INPUT_TYPE.BYTE4;
         break;
     default:
-      throw new IllegalStateException("invalid input type " + t);
+      throw new CorruptIndexException("invalid input type " + t, in);
     }
-    startNode = in.readVLong();
+    startNode = metaIn.readVLong();
 
-    long numBytes = in.readVLong();
+    long numBytes = metaIn.readVLong();
     this.fstStore.init(in, numBytes);
   }
 
@@ -501,16 +502,16 @@ public final class FST<T> implements Accountable {
     }
   }
 
-  public void save(DataOutput out) throws IOException {
+  public void save(DataOutput metaOut, DataOutput out) throws IOException {
     if (startNode == -1) {
       throw new IllegalStateException("call finish first");
     }
-    CodecUtil.writeHeader(out, FILE_FORMAT_NAME, VERSION_CURRENT);
+    CodecUtil.writeHeader(metaOut, FILE_FORMAT_NAME, VERSION_CURRENT);
     // TODO: really we should encode this as an arc, arriving
     // to the root node, instead of special casing here:
     if (emptyOutput != null) {
       // Accepts empty string
-      out.writeByte((byte) 1);
+      metaOut.writeByte((byte) 1);
 
       // Serialize empty-string output:
       ByteBuffersDataOutput ros = new ByteBuffersDataOutput();
@@ -527,10 +528,10 @@ public final class FST<T> implements Accountable {
         emptyOutputBytes[emptyLen - upto - 1] = b;
         upto++;
       }
-      out.writeVInt(emptyLen);
-      out.writeBytes(emptyOutputBytes, 0, emptyLen);
+      metaOut.writeVInt(emptyLen);
+      metaOut.writeBytes(emptyOutputBytes, 0, emptyLen);
     } else {
-      out.writeByte((byte) 0);
+      metaOut.writeByte((byte) 0);
     }
     final byte t;
     if (inputType == INPUT_TYPE.BYTE1) {
@@ -540,11 +541,11 @@ public final class FST<T> implements Accountable {
     } else {
       t = 2;
     }
-    out.writeByte(t);
-    out.writeVLong(startNode);
+    metaOut.writeByte(t);
+    metaOut.writeVLong(startNode);
     if (bytes != null) {
       long numBytes = bytes.getPosition();
-      out.writeVLong(numBytes);
+      metaOut.writeVLong(numBytes);
       bytes.writeTo(out);
     } else {
       assert fstStore != null;
@@ -557,7 +558,8 @@ public final class FST<T> implements Accountable {
    */
   public void save(final Path path) throws IOException {
     try (OutputStream os = new BufferedOutputStream(Files.newOutputStream(path))) {
-      save(new OutputStreamDataOutput(os));
+      DataOutput out = new OutputStreamDataOutput(os);
+      save(out, out);
     }
   }
 
@@ -566,7 +568,8 @@ public final class FST<T> implements Accountable {
    */
   public static <T> FST<T> read(Path path, Outputs<T> outputs) throws IOException {
     try (InputStream is = Files.newInputStream(path)) {
-      return new FST<>(new InputStreamDataInput(new BufferedInputStream(is)), outputs);
+      DataInput in = new InputStreamDataInput(new BufferedInputStream(is));
+      return new FST<>(in, in, outputs);
     }
   }
 

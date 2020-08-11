@@ -171,7 +171,7 @@ public class SolrRequestParsers {
     ArrayList<ContentStream> streams = new ArrayList<>(1);
     SolrParams params = parser.parseParamsAndFillStreams( req, streams );
     if (GlobalTracer.get().tracing()) {
-      GlobalTracer.get().getTracer().activeSpan().setTag("params", params.toString());
+      GlobalTracer.getTracer().activeSpan().setTag("params", params.toString());
     }
     SolrQueryRequest sreq = buildRequestFrom(core, params, streams, getRequestTimer(req), req);
 

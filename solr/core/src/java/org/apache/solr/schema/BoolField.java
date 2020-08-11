@@ -169,7 +169,7 @@ public class BoolField extends PrimitiveFieldType {
 
   @Override
   public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
-    writer.writeBool(name, f.stringValue().charAt(0) == 'T');
+    writer.writeBool(name, toObject(f));
   }
 
   @Override
@@ -231,7 +231,7 @@ public class BoolField extends PrimitiveFieldType {
 
 
     @Override
-    public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+    public FunctionValues getValues(@SuppressWarnings({"rawtypes"})Map context, LeafReaderContext readerContext) throws IOException {
       final SortedDocValues sindex = DocValues.getSorted(readerContext.reader(), field);
 
       // figure out what ord maps to true

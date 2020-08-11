@@ -130,7 +130,7 @@ final class DocumentsWriterFlushControl implements Accountable, Closeable {
          * several DWPT in flight indexing large documents (compared to the ram
          * buffer). This means that those DWPT and their threads will not hit
          * the stall control before asserting the memory which would in turn
-         * fail. To prevent this we only assert if the the largest document seen
+         * fail. To prevent this we only assert if the largest document seen
          * is smaller than the 1/2 of the maxRamBufferMB
          */
         assert ram <= expected : "actual mem: " + ram + " byte, expected mem: " + expected
@@ -324,12 +324,16 @@ final class DocumentsWriterFlushControl implements Accountable, Closeable {
     }
   }
 
+  /**
+   * To be called only by the owner of this object's monitor lock
+   */
   private void checkoutAndBlock(DocumentsWriterPerThread perThread) {
+    assert Thread.holdsLock(this);
     assert perThreadPool.isRegistered(perThread);
     assert perThread.isHeldByCurrentThread();
     assert perThread.isFlushPending() : "can not block non-pending threadstate";
     assert fullFlush : "can not block if fullFlush == false";
-    numPending--;
+    numPending--; // write access synced
     blockedFlushes.add(perThread);
     boolean checkedOut = perThreadPool.checkout(perThread);
     assert checkedOut;

@@ -426,6 +426,7 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
     return false;
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private Collection<CollectionSnapshotMetaData> listCollectionSnapshots(String collectionName)
       throws SolrServerException, IOException {
     CollectionAdminRequest.ListSnapshots listSnapshots = new CollectionAdminRequest.ListSnapshots(collectionName);

@@ -131,7 +131,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     while (nextInChain != null)  {
       Class<? extends UpdateRequestProcessor> klass = nextInChain.getClass();
       if (klass != LogUpdateProcessorFactory.LogUpdateProcessor.class
-          && klass != RunUpdateProcessor.class
+          && klass != RunUpdateProcessorFactory.RunUpdateProcessor.class
           && klass != TolerantUpdateProcessor.class)  {
         shouldClone = true;
         break;

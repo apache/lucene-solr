@@ -169,6 +169,7 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
     assertEquals("Did not receive expected status code", expectedStatusCode, lastStatusCode);
   }
 
+  @SuppressWarnings({"rawtypes"})
   private SolrRequest getAdminRequest(final SolrParams params) {
     return new CollectionAdminRequest.List() {
       @Override
@@ -179,6 +180,7 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
       }
     };
   }
+  @SuppressWarnings({"rawtypes"})
   private SolrRequest getUpdateRequest(boolean commit) {
     UpdateRequest request = new UpdateRequest();
     if (commit) {
@@ -190,6 +192,7 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
     return request;
   }
 
+  @SuppressWarnings({"unchecked"})
   private int getStatusCode(String token, final String user, final String op, HttpSolrClient client)
   throws Exception {
     SolrClient delegationTokenClient;
@@ -210,6 +213,7 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
       ModifiableSolrParams p = new ModifiableSolrParams();
       if (user != null) p.set(USER_PARAM, user);
       if (op != null) p.set("op", op);
+      @SuppressWarnings({"rawtypes"})
       SolrRequest req = getAdminRequest(p);
       if (user != null || op != null) {
         Set<String> queryParams = new HashSet<>();
@@ -228,7 +232,8 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
     }
   }
 
-  private void doSolrRequest(HttpSolrClient client, SolrRequest request,
+  private void doSolrRequest(HttpSolrClient client,
+                             @SuppressWarnings({"rawtypes"})SolrRequest request,
       int expectedStatusCode) throws Exception {
     try {
       client.request(request);
@@ -238,7 +243,8 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
     }
   }
 
-  private void doSolrRequest(HttpSolrClient client, SolrRequest request, String collectionName,
+  private void doSolrRequest(HttpSolrClient client,
+                             @SuppressWarnings({"rawtypes"})SolrRequest request, String collectionName,
       int expectedStatusCode) throws Exception {
     try {
       client.request(request, collectionName);
@@ -408,6 +414,7 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
     String token = getDelegationToken(null, "bar", solrClientPrimary);
     assertNotNull(token);
 
+    @SuppressWarnings({"rawtypes"})
     SolrRequest request = getAdminRequest(new ModifiableSolrParams());
 
     // test without token
@@ -465,6 +472,7 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
 
     try {
       // test update request with token via property and commit=true
+      @SuppressWarnings({"rawtypes"})
       SolrRequest request = getUpdateRequest(true);
       doSolrRequest(scUpdateWToken, request, collectionName, HttpStatus.SC_OK);
 

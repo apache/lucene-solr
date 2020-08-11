@@ -245,9 +245,11 @@ public class TestLazyCores extends SolrTestCaseJ4 {
 
         SolrQueryResponse resp = new SolrQueryResponse();
         handler.handleRequest(makeReq(core1, CommonParams.QT, "/admin/metrics"), resp);
+        @SuppressWarnings({"rawtypes"})
         NamedList values = resp.getValues();
         assertNotNull(values.get("metrics"));
         values = (NamedList) values.get("metrics");
+        @SuppressWarnings({"rawtypes"})
         NamedList nl = (NamedList) values.get("solr.core.collection2");
         assertNotNull(nl);
         Object o = nl.get("REPLICATION./replication.indexPath");
@@ -644,6 +646,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
               resp);
     }
 
+    @SuppressWarnings({"unchecked"})
     Map<String, Exception> failures =
         (Map<String, Exception>) resp.getValues().get("initFailures");
 
@@ -720,6 +723,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     updater.addDoc(cmd);
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private LocalSolrQueryRequest makeReq(SolrCore core, String... q) {
     if (q.length == 1) {
       return new LocalSolrQueryRequest(core,

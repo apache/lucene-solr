@@ -237,6 +237,7 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
     assertEquals(60, SolrMetricManager.DEFAULT_CLOUD_REPORTER_PERIOD);
   }
 
+  @SuppressWarnings({"unchecked"})
   private PluginInfo createPluginInfo(String name, String group, String registry) {
     Map<String,String> attrs = new HashMap<>();
     attrs.put("name", name);
@@ -247,6 +248,7 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
     if (registry != null) {
       attrs.put("registry", registry);
     }
+    @SuppressWarnings({"rawtypes"})
     NamedList initArgs = new NamedList();
     initArgs.add("configurable", "true");
     return new PluginInfo("SolrMetricReporter", attrs, initArgs, null);

@@ -19,11 +19,9 @@ package org.apache.solr.client.solrj.io.eval;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 import org.apache.commons.math3.stat.Frequency;
 
@@ -67,17 +65,18 @@ public class FrequencyTableEvaluator extends RecursiveNumericEvaluator implement
 
     List<Tuple> histogramBins = new ArrayList<>();
 
+    @SuppressWarnings({"rawtypes"})
     Iterator iterator = frequency.valuesIterator();
 
     while(iterator.hasNext()){
       Long value = (Long)iterator.next();
-      Map<String,Number> map = new HashMap<>();
-      map.put("value", value.longValue());
-      map.put("count", frequency.getCount(value));
-      map.put("cumFreq", frequency.getCumFreq(value));
-      map.put("cumPct", frequency.getCumPct(value));
-      map.put("pct", frequency.getPct(value));
-      histogramBins.add(new Tuple(map));
+      Tuple tuple = new Tuple();
+      tuple.put("value", value.longValue());
+      tuple.put("count", frequency.getCount(value));
+      tuple.put("cumFreq", frequency.getCumFreq(value));
+      tuple.put("cumPct", frequency.getCumPct(value));
+      tuple.put("pct", frequency.getPct(value));
+      histogramBins.add(tuple);
     }
     return histogramBins;
   }

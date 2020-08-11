@@ -34,9 +34,9 @@ The split is performed by dividing the original shard's hash range into two equa
 
 The newly created shards will have as many replicas as the parent shard, of the same replica types.
 
-When using `splitMethod=rewrite` (default) you must ensure that the node running the leader of the parent shard has enough free disk space i.e., more than twice the index size, for the split to succeed. The API uses the Autoscaling framework to find nodes that can satisfy the disk requirements for the new replicas but only when an Autoscaling policy is configured. Refer to <<solrcloud-autoscaling-policy-preferences.adoc#solrcloud-autoscaling-policy-preferences,Autoscaling Policy and Preferences>> section for more details.
+When using `splitMethod=rewrite` (default) you must ensure that the node running the leader of the parent shard has enough free disk space i.e., more than twice the index size, for the split to succeed.
 
-Also, the first replicas of resulting sub-shards will always be placed on the shard leader node, which may cause Autoscaling policy violations that need to be resolved either automatically (when appropriate triggers are in use) or manually.
+Also, the first replicas of resulting sub-shards will always be placed on the shard leader node.
 
 Shard splitting can be a long running process. In order to avoid timeouts, you should run this as an <<collections-api.adoc#asynchronous-calls,asynchronous call>>.
 
@@ -209,8 +209,6 @@ Use SPLITSHARD for collections created with the 'compositeId' router (`router.ke
 
 The default values for `replicationFactor` or `nrtReplicas`, `tlogReplicas`, `pullReplicas` from the collection is used to determine the number of replicas to be created for the new shard. This can be customized by explicitly passing the corresponding parameters to the request.
 
-The API uses the Autoscaling framework to find the best possible nodes in the cluster when an Autoscaling preferences or policy is configured. Refer to <<solrcloud-autoscaling-policy-preferences.adoc#solrcloud-autoscaling-policy-preferences,Autoscaling Policy and Preferences>> section for more details.
-
 === CREATESHARD Parameters
 
 `collection`::
@@ -272,7 +270,7 @@ http://localhost:8983/solr/admin/collections?action=CREATESHARD&collection=anImp
 [[deleteshard]]
 == DELETESHARD: Delete a Shard
 
-Deleting a shard will unload all replicas of the shard, remove them from `clusterstate.json`, and (by default) delete the instanceDir and dataDir for each replica. It will only remove shards that are inactive, or which have no range given for custom sharding.
+Deleting a shard will unload all replicas of the shard, remove them from the collection's `state.json`, and (by default) delete the instanceDir and dataDir for each replica. It will only remove shards that are inactive, or which have no range given for custom sharding.
 
 `/admin/collections?action=DELETESHARD&shard=_shardID_&collection=_name_`
 

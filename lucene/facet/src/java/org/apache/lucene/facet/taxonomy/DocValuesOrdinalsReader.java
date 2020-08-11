@@ -78,8 +78,19 @@ public class DocValuesOrdinalsReader extends OrdinalsReader {
     return field;
   }
 
-  /** Subclass and override if you change the encoding. */
-  protected void decode(BytesRef buf, IntsRef ordinals) {
+ /** 
+   * Subclass and override if you change the encoding. 
+   * The method is marked 'public' to allow decoding of binary payload containing ordinals
+   * without instantiating an {@link org.apache.lucene.facet.taxonomy.OrdinalsReader.OrdinalsSegmentReader}.
+   *  
+   * This takes care of use cases where an application instantiates {@link org.apache.lucene.index.BinaryDocValues} 
+   * reader for a facet field outside this class, reads the binary payload for a document and decodes the ordinals
+   * in the payload.
+   *
+   * @param buf binary payload containing encoded ordinals
+   * @param ordinals buffer for decoded ordinals
+   */
+  public void decode(BytesRef buf, IntsRef ordinals) {
 
     // grow the buffer up front, even if by a large number of values (buf.length)
     // that saves the need to check inside the loop for every decoded value if

@@ -209,7 +209,7 @@ public class FSTTermsWriter extends FieldsConsumer {
           }
           out.writeVLong(field.sumDocFreq);
           out.writeVInt(field.docCount);
-          field.dict.save(out);
+          field.dict.save(out, out);
         }
         writeTrailer(out, dirStart);
         CodecUtil.writeFooter(out);

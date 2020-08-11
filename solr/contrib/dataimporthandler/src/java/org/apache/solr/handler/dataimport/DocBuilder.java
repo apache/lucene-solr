@@ -66,7 +66,7 @@ public class DocBuilder {
 
   private EntityProcessorWrapper currentEntityProcessorWrapper;
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private Map statusMessages = Collections.synchronizedMap(new LinkedHashMap());
 
   public Statistics importStatistics = new Statistics();
@@ -157,6 +157,7 @@ public class DocBuilder {
 
   private void invokeEventListener(String className, Exception lastException) {
     try {
+      @SuppressWarnings({"unchecked"})
       EventListener listener = (EventListener) loadClass(className, dataImporter.getCore()).getConstructor().newInstance();
       notifyListener(listener, lastException);
     } catch (Exception e) {
@@ -315,6 +316,7 @@ public class DocBuilder {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   void handleError(String message, Exception e) {
     if (!dataImporter.getCore().getCoreContainer().isZooKeeperAware()) {
       writer.rollback();
@@ -595,6 +597,7 @@ public class DocBuilder {
     Object value = arow.get(DELETE_DOC_BY_ID);
     if (value != null) {
       if (value instanceof Collection) {
+        @SuppressWarnings({"rawtypes"})
         Collection collection = (Collection) value;
         for (Object o : collection) {
           writer.deleteDoc(o.toString());
@@ -608,6 +611,7 @@ public class DocBuilder {
     value = arow.get(DELETE_DOC_BY_QUERY);
     if (value != null) {
       if (value instanceof Collection) {
+        @SuppressWarnings({"rawtypes"})
         Collection collection = (Collection) value;
         for (Object o : collection) {
           writer.deleteByQuery(o.toString());
@@ -691,6 +695,7 @@ public class DocBuilder {
 
   private void addFieldToDoc(Object value, String name, boolean multiValued, DocWrapper doc) {
     if (value instanceof Collection) {
+      @SuppressWarnings({"rawtypes"})
       Collection collection = (Collection) value;
       if (multiValued) {
         for (Object o : collection) {
@@ -716,6 +721,7 @@ public class DocBuilder {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   public EntityProcessorWrapper getEntityProcessorWrapper(Entity entity) {
     EntityProcessor entityProcessor = null;
     if (entity.getProcessorName() == null) {
@@ -776,7 +782,7 @@ public class DocBuilder {
    *
    * @return an iterator to the list of keys for which Solr documents should be updated.
    */
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public Set<Map<String, Object>> collectDelta(EntityProcessorWrapper epw, VariableResolver resolver,
                                                Set<Map<String, Object>> deletedRows) {
     //someone called abort
@@ -929,7 +935,7 @@ public class DocBuilder {
     return reqParams;
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "rawtypes"})
   static Class loadClass(String name, SolrCore core) throws ClassNotFoundException {
     try {
       return core != null ?

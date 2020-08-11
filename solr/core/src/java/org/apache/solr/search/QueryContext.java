@@ -48,6 +48,7 @@ public class QueryContext extends IdentityHashMap implements Closeable {
     return context;
   }
 
+  @SuppressWarnings({"unchecked"})
   public QueryContext(IndexSearcher searcher) {
     this.searcher = searcher instanceof SolrIndexSearcher ? (SolrIndexSearcher)searcher : null;
     indexSearcher = searcher;

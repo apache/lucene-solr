@@ -35,7 +35,7 @@ public class JaspellLookupFactory extends LookupFactory {
   private static final String FILENAME = "jaspell.dat";
 
   @Override
-  public Lookup create(NamedList params, SolrCore core) {
+  public Lookup create(@SuppressWarnings({"rawtypes"})NamedList params, SolrCore core) {
     log.info("init: {}", params);
     return new JaspellLookup();
   }

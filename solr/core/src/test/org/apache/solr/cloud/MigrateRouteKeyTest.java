@@ -50,11 +50,6 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
     configureCluster(2)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
-
-    if (usually()) {
-      CollectionAdminRequest.setClusterProperty("legacyCloud", "false").process(cluster.getSolrClient());
-      log.info("Using legacyCloud=false for cluster");
-    }
   }
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

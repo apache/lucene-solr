@@ -119,14 +119,14 @@ public class MemsetEvaluator extends RecursiveEvaluator {
     try {
       in.setStreamContext(streamContext);
       in.open();
-      Map<String, List<Number>> arrays = new HashMap();
+      Map<String, List<Number>> arrays = new HashMap<>();
 
       //Initialize the variables
       for(String var : vars) {
         if(size > -1) {
-          arrays.put(var, new ArrayList(size));
+          arrays.put(var, new ArrayList<>(size));
         } else {
-          arrays.put(var, new ArrayList());
+          arrays.put(var, new ArrayList<>());
         }
       }
 

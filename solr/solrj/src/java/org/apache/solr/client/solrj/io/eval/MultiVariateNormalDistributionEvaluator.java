@@ -41,6 +41,7 @@ public class MultiVariateNormalDistributionEvaluator extends RecursiveObjectEval
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - null found for the second value",toExpression(constructingFactory)));
     }
 
+    @SuppressWarnings({"unchecked"})
     List<Number> means = (List<Number>)first;
     Matrix covar = (Matrix)second;
 

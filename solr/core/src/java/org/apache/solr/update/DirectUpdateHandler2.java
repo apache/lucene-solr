@@ -609,6 +609,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   }
 
   @Override
+  @SuppressWarnings({"rawtypes"})
   public void commit(CommitUpdateCommand cmd) throws IOException {
     TestInjection.injectDirectUpdateLatch();
     if (cmd.prepareCommit) {

@@ -30,10 +30,7 @@ import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.store.IndexInput;
 
-import static org.apache.lucene.codecs.uniformsplit.sharedterms.STUniformSplitPostingsFormat.NAME;
-import static org.apache.lucene.codecs.uniformsplit.sharedterms.STUniformSplitPostingsFormat.TERMS_BLOCKS_EXTENSION;
-import static org.apache.lucene.codecs.uniformsplit.sharedterms.STUniformSplitPostingsFormat.TERMS_DICTIONARY_EXTENSION;
-import static org.apache.lucene.codecs.uniformsplit.sharedterms.STUniformSplitPostingsFormat.VERSION_CURRENT;
+import static org.apache.lucene.codecs.uniformsplit.sharedterms.STUniformSplitPostingsFormat.*;
 
 /**
  * A block-based terms index and dictionary based on the Uniform Split technique,

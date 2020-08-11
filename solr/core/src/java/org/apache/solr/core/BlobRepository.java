@@ -79,9 +79,11 @@ public class BlobRepository {
   }
 
   private final CoreContainer coreContainer;
+  @SuppressWarnings({"rawtypes"})
   private Map<String, BlobContent> blobs = createMap();
 
   // for unit tests to override
+  @SuppressWarnings({"rawtypes"})
   ConcurrentHashMap<String, BlobContent> createMap() {
     return new ConcurrentHashMap<>();
   }
@@ -118,8 +120,9 @@ public class BlobRepository {
     return getBlobIncRef(key.concat(decoder.getName()), () -> addBlob(key, decoder));
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   BlobContentRef getBlobIncRef(String key, Decoder decoder, String url, String sha512) {
-    StringBuffer keyBuilder = new StringBuffer(key);
+    StringBuilder keyBuilder = new StringBuilder(key);
     if (decoder != null) keyBuilder.append(decoder.getName());
     keyBuilder.append("/").append(sha512);
 
@@ -127,6 +130,7 @@ public class BlobRepository {
   }
 
   // do the actual work returning the appropriate type...
+  @SuppressWarnings({"unchecked"})
   private <T> BlobContentRef<T> getBlobIncRef(String key, Callable<BlobContent<T>> blobCreator) {
     BlobContent<T> aBlob;
     if (this.coreContainer.isZooKeeperAware()) {
@@ -273,7 +277,7 @@ public class BlobRepository {
    *
    * @param ref The reference that is already there. Doing multiple calls with same ref will not matter
    */
-  public void decrementBlobRefCount(BlobContentRef ref) {
+  public void decrementBlobRefCount(@SuppressWarnings({"rawtypes"})BlobContentRef ref) {
     if (ref == null) return;
     synchronized (ref.blob.references) {
       if (!ref.blob.references.remove(ref)) {
@@ -285,6 +289,7 @@ public class BlobRepository {
     }
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public static class BlobContent<T> {
     public final String key;
     private final T content; // holds byte buffer or cached object, holding both is a waste of memory

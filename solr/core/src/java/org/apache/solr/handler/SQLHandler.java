@@ -159,7 +159,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware, Per
       // Return a metadata tuple as the first tuple and then pass through to the JDBCStream.
       if(firstTuple) {
         try {
-          Map<String, Object> fields = new HashMap<>();
+          Tuple tuple = new Tuple();
 
           firstTuple = false;
 
@@ -173,10 +173,10 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware, Per
           }
 
           if(includeMetadata) {
-            fields.put("isMetadata", true);
-            fields.put("fields", metadataFields);
-            fields.put("aliases", metadataAliases);
-            return new Tuple(fields);
+            tuple.put("isMetadata", true);
+            tuple.put("fields", metadataFields);
+            tuple.put("aliases", metadataAliases);
+            return tuple;
           }
         } catch (SQLException e) {
           throw new IOException(e);

@@ -128,6 +128,7 @@ public class StatsValuesFactory {
      * Context to use when retrieving FunctionValues, will be null until/unless
      * {@link #setNextReader} is called at least once
      */
+    @SuppressWarnings({"rawtypes"})
     private Map vsContext;
     /**
      * Values to collect, will be null until/unless {@link #setNextReader} is
@@ -181,7 +182,7 @@ public class StatsValuesFactory {
       // "NumericValueSourceStatsValues" which would have diff parent classes
       //
       // part of the complexity here being that the StatsValues API serves two
-      // masters: collecting concrete Values from things like DocValuesStats and
+      // leaders: collecting concrete Values from things like DocValuesStats and
       // the distributed aggregation logic, but also collecting docIds which it
       // then
       // uses to go out and pull concreate values from the ValueSource
@@ -199,7 +200,8 @@ public class StatsValuesFactory {
     }
 
     @Override
-    public void accumulate(NamedList stv) {
+    @SuppressWarnings({"unchecked"})
+    public void accumulate(@SuppressWarnings({"rawtypes"})NamedList stv) {
       if (computeCount) {
         count += (Long) stv.get("count");
       }
@@ -232,6 +234,7 @@ public class StatsValuesFactory {
 
       updateTypeSpecificStats(stv);
 
+      @SuppressWarnings({"rawtypes"})
       NamedList f = (NamedList) stv.get(FACETS);
       if (f == null) {
         return;
@@ -239,6 +242,7 @@ public class StatsValuesFactory {
 
       for (int i = 0; i < f.size(); i++) {
         String field = f.getName(i);
+        @SuppressWarnings({"rawtypes"})
         NamedList vals = (NamedList) f.getVal(i);
         Map<String, StatsValues> addTo = facets.get(field);
         if (addTo == null) {
@@ -258,6 +262,7 @@ public class StatsValuesFactory {
     }
 
     @Override
+    @SuppressWarnings({"unchecked"})
     public void accumulate(BytesRef value, int count) {
       if (null == ft) {
         throw new IllegalStateException(
@@ -359,6 +364,7 @@ public class StatsValuesFactory {
       return res;
     }
 
+    @SuppressWarnings({"unchecked"})
     public void setNextReader(LeafReaderContext ctx) throws IOException {
       if (valueSource == null) {
         // first time we've collected local values, get the right ValueSource
@@ -409,7 +415,7 @@ public class StatsValuesFactory {
      *          List containing values the current statistics should be updated
      *          against
      */
-    protected abstract void updateTypeSpecificStats(NamedList stv);
+    protected abstract void updateTypeSpecificStats(@SuppressWarnings({"rawtypes"})NamedList stv);
 
     /**
      * Add any type specific statistics to the given NamedList
@@ -483,7 +489,7 @@ public class StatsValuesFactory {
     }
 
     @Override
-    public void updateTypeSpecificStats(NamedList stv) {
+    public void updateTypeSpecificStats(@SuppressWarnings({"rawtypes"})NamedList stv) {
       if (computeSum) {
         sum += ((Number) stv.get("sum")).doubleValue();
       }
@@ -645,7 +651,7 @@ public class StatsValuesFactory {
     }
 
     @Override
-    protected void updateTypeSpecificStats(NamedList stv) {
+    protected void updateTypeSpecificStats(@SuppressWarnings({"rawtypes"})NamedList stv) {
       // No type specific stats
     }
 
@@ -696,7 +702,7 @@ public class StatsValuesFactory {
     }
 
     @Override
-    protected void updateTypeSpecificStats(NamedList stv) {
+    protected void updateTypeSpecificStats(@SuppressWarnings({"rawtypes"})NamedList stv) {
       if (computeSum) {
         sum += ((Number) stv.get("sum")).doubleValue();
       }
@@ -796,7 +802,7 @@ public class StatsValuesFactory {
     }
 
     @Override
-    protected void updateTypeSpecificStats(NamedList stv) {
+    protected void updateTypeSpecificStats(@SuppressWarnings({"rawtypes"})NamedList stv) {
       // No type specific stats
     }
 

@@ -66,11 +66,11 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
+  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     moveReplica(ocmh.zkStateReader.getClusterState(), message, results);
   }
 
-  private void moveReplica(ClusterState clusterState, ZkNodeProps message, NamedList results) throws Exception {
+  private void moveReplica(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     if (log.isDebugEnabled()) {
       log.debug("moveReplica() : {}", Utils.toJSONString(message));
     }
@@ -166,7 +166,8 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     }
   }
 
-  private void moveHdfsReplica(ClusterState clusterState, NamedList results, String dataDir, String targetNode, String async,
+  @SuppressWarnings({"unchecked"})
+  private void moveHdfsReplica(ClusterState clusterState, @SuppressWarnings({"rawtypes"})NamedList results, String dataDir, String targetNode, String async,
                                  DocCollection coll, Replica replica, Slice slice, int timeout, boolean waitForFinalState) throws Exception {
     String skipCreateReplicaInClusterState = "true";
     if (clusterState.getLiveNodes().contains(replica.getNodeName())) {
@@ -179,6 +180,7 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       removeReplicasProps.getProperties().put(CoreAdminParams.DELETE_DATA_DIR, false);
       removeReplicasProps.getProperties().put(CoreAdminParams.DELETE_INDEX, false);
       if (async != null) removeReplicasProps.getProperties().put(ASYNC, async);
+      @SuppressWarnings({"rawtypes"})
       NamedList deleteResult = new NamedList();
       try {
         ocmh.deleteReplica(clusterState, removeReplicasProps, deleteResult, null);
@@ -224,6 +226,7 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
         ZkStateReader.REPLICA_TYPE, replica.getType().name());
 
     if(async!=null) addReplicasProps.getProperties().put(ASYNC, async);
+    @SuppressWarnings({"rawtypes"})
     NamedList addResult = new NamedList();
     try {
       ocmh.addReplica(ocmh.zkStateReader.getClusterState(), addReplicasProps, addResult, null);
@@ -234,6 +237,7 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       results.add("failure", errorString);
       log.warn("Error adding replica {} - trying to roll back...",  addReplicasProps, e);
       addReplicasProps = addReplicasProps.plus(CoreAdminParams.NODE, replica.getNodeName());
+      @SuppressWarnings({"rawtypes"})
       NamedList rollback = new NamedList();
       ocmh.addReplica(ocmh.zkStateReader.getClusterState(), addReplicasProps, rollback, null);
       if (rollback.get("failure") != null) {
@@ -250,6 +254,7 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       log.debug("--- trying to roll back...");
       // try to roll back
       addReplicasProps = addReplicasProps.plus(CoreAdminParams.NODE, replica.getNodeName());
+      @SuppressWarnings({"rawtypes"})
       NamedList rollback = new NamedList();
       try {
         ocmh.addReplica(ocmh.zkStateReader.getClusterState(), addReplicasProps, rollback, null);
@@ -269,7 +274,8 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     }
   }
 
-  private void moveNormalReplica(ClusterState clusterState, NamedList results, String targetNode, String async,
+  @SuppressWarnings({"unchecked"})
+  private void moveNormalReplica(ClusterState clusterState, @SuppressWarnings({"rawtypes"})NamedList results, String targetNode, String async,
                                  DocCollection coll, Replica replica, Slice slice, int timeout, boolean waitForFinalState) throws Exception {
     String newCoreName = Assign.buildSolrCoreName(ocmh.overseer.getSolrCloudManager().getDistribStateManager(), coll, slice.getName(), replica.getType());
     ZkNodeProps addReplicasProps = new ZkNodeProps(
@@ -280,6 +286,7 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
         ZkStateReader.REPLICA_TYPE, replica.getType().name());
 
     if (async != null) addReplicasProps.getProperties().put(ASYNC, async);
+    @SuppressWarnings({"rawtypes"})
     NamedList addResult = new NamedList();
     SolrCloseableLatch countDownLatch = new SolrCloseableLatch(1, ocmh);
     ActiveReplicaWatcher watcher = null;
@@ -325,6 +332,7 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
         SHARD_ID_PROP, slice.getName(),
         REPLICA_PROP, replica.getName());
     if (async != null) removeReplicasProps.getProperties().put(ASYNC, async);
+    @SuppressWarnings({"rawtypes"})
     NamedList deleteResult = new NamedList();
     try {
       ocmh.deleteReplica(clusterState, removeReplicasProps, deleteResult, null);

@@ -413,7 +413,6 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     // all its cores on the same node.
     // Hence the below configuration for our collection
     CollectionAdminRequest.createCollection(collectionName, "conf", liveNodes, liveNodes)
-        .setMaxShardsPerNode(liveNodes * liveNodes)
         .processAndWait(cluster.getSolrClient(), TIMEOUT);
     cluster.waitForActiveCollection(collectionName, liveNodes, liveNodes * liveNodes);
     // Add some new documents
@@ -456,6 +455,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
     // Iterate over shards-info and check what cores responded
     SimpleOrderedMap<?> shardsInfoMap = (SimpleOrderedMap<?>)shardsInfo;
+    @SuppressWarnings({"unchecked"})
     Iterator<Map.Entry<String, ?>> itr = shardsInfoMap.asMap(100).entrySet().iterator();
     List<String> shardAddresses = new ArrayList<String>();
     while (itr.hasNext()) {
@@ -492,7 +492,6 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
     // For testing replica.type, we want to have all replica types available for the collection
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, liveNodes/3, liveNodes/3, liveNodes/3)
-        .setMaxShardsPerNode(liveNodes)
         .processAndWait(cluster.getSolrClient(), TIMEOUT);
     cluster.waitForActiveCollection(collectionName, 1, liveNodes);
 
@@ -530,6 +529,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
     // Iterate over shards-info and check what cores responded
     SimpleOrderedMap<?> shardsInfoMap = (SimpleOrderedMap<?>)shardsInfo;
+    @SuppressWarnings({"unchecked"})
     Iterator<Map.Entry<String, ?>> itr = shardsInfoMap.asMap(100).entrySet().iterator();
     List<String> shardAddresses = new ArrayList<String>();
     while (itr.hasNext()) {
@@ -572,6 +572,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     } else {
       name = category + "." + (scope != null ? scope : key) + ".requests";
     }
+    @SuppressWarnings({"unchecked"})
     Map<String,Object> map = (Map<String,Object>)resp.findRecursive("solr-mbeans", category, key, "stats");
     if (map == null) {
       return null;
@@ -706,6 +707,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       q.setParam(CloudSolrClient.STATE_VERSION, COLLECTION + ":" + (coll.getZNodeVersion() - 1)); //an older version expect error
 
       QueryResponse rsp = solrClient.query(q);
+      @SuppressWarnings({"rawtypes"})
       Map m = (Map) rsp.getResponse().get(CloudSolrClient.STATE_VERSION, rsp.getResponse().size()-1);
       assertNotNull("Expected an extra information from server with the list of invalid collection states", m);
       assertNotNull(m.get(COLLECTION));
@@ -825,6 +827,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     response = deleteRequest.commit(getRandomClient(), "versions_collection").getResponse();
     Object deletesObject = response.get("deletes");
     assertNotNull("There must be a deletes parameter", deletesObject);
+    @SuppressWarnings({"rawtypes"})
     NamedList deletes = (NamedList) deletesObject;
     assertEquals("There must be 1 version", 1, deletes.size());
   }
@@ -938,7 +941,6 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     // Hence the below configuration for our collection
     int pullReplicas = Math.max(1, liveNodes - 2);
     CollectionAdminRequest.createCollection(collectionName, "conf", liveNodes, 1, 1, pullReplicas)
-        .setMaxShardsPerNode(liveNodes)
         .processAndWait(cluster.getSolrClient(), TIMEOUT);
     cluster.waitForActiveCollection(collectionName, liveNodes, liveNodes * (2 + pullReplicas));
     
@@ -1022,6 +1024,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
     // Iterate over shards-info and check that replicas of correct type responded
     SimpleOrderedMap<?> shardsInfoMap = (SimpleOrderedMap<?>)shardsInfo;
+    @SuppressWarnings({"unchecked"})
     Iterator<Map.Entry<String, ?>> itr = shardsInfoMap.asMap(100).entrySet().iterator();
     List<String> shardAddresses = new ArrayList<String>();
     while (itr.hasNext()) {

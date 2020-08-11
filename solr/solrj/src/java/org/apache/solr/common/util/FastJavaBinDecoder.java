@@ -472,9 +472,11 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
       }
 
       @Override
+      @SuppressWarnings({"unchecked"})
       public Object readObject(StreamCodec codec, EntryImpl entry) throws IOException {
         SolrDocumentList solrDocs = new SolrDocumentList();
         if(entry.metadata != null){
+          @SuppressWarnings({"rawtypes"})
           List list = (List) entry.metadata;
           solrDocs.setNumFound((Long) list.get(0));
           solrDocs.setStart((Long) list.get(1));
@@ -779,6 +781,7 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
     }
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private static void addObj(DataEntry e) {
     if (e.type().isContainer) {
       Object ctx = e.type() == DataEntry.Type.KEYVAL_ITER ?

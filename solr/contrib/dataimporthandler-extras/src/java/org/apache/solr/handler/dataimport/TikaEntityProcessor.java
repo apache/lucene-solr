@@ -132,6 +132,7 @@ public class TikaEntityProcessor extends EntityProcessorBase {
   public Map<String, Object> nextRow() {
     if(done) return null;
     Map<String, Object> row = new HashMap<>();
+    @SuppressWarnings({"unchecked"})
     DataSource<InputStream> dataSource = context.getDataSource();
     InputStream is = dataSource.getData(context.getResolvedEntityAttribute(URL));
     ContentHandler contentHandler = null;

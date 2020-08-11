@@ -207,11 +207,6 @@ public class CollectionApiMapping {
         POST,
         null,
         "set-obj-property", null),
-    UTILIZE_NODE(CLUSTER_CMD,
-        POST,
-        UTILIZENODE,
-        "utilize-node",null),
-
     BACKUP_COLLECTION(COLLECTIONS_COMMANDS,
         POST,
         BACKUP,
@@ -249,14 +244,17 @@ public class CollectionApiMapping {
     }
 
     Meta(EndPoint endPoint, SolrRequest.METHOD method, CollectionAction action,
-         String commandName, Map paramsToAttrs) {
+         String commandName,
+         @SuppressWarnings({"rawtypes"})Map paramsToAttrs) {
       this(endPoint, method, action, commandName, paramsToAttrs, Collections.emptyMap());
     }
 
     // lame... the Maps aren't typed simply because callers want to use Utils.makeMap which yields object vals
     @SuppressWarnings("unchecked")
     Meta(EndPoint endPoint, SolrRequest.METHOD method, CollectionAction action,
-         String commandName, Map paramsToAttrs, Map prefixParamsToAttrs) {
+         String commandName,
+         @SuppressWarnings({"rawtypes"})Map paramsToAttrs,
+         @SuppressWarnings({"rawtypes"})Map prefixParamsToAttrs) {
       this.action = action;
       this.commandName = commandName;
       this.endPoint = endPoint;
@@ -431,6 +429,7 @@ public class CollectionApiMapping {
 
 
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private static Collection<String> getParamNames_(CommandOperation op, CommandMeta command) {
     Object o = op.getCommandData();
     if (o instanceof Map) {
@@ -443,6 +442,7 @@ public class CollectionApiMapping {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   public static void collectKeyNames(Map<String, Object> map, List<String> result, String prefix) {
     for (Map.Entry<String, Object> e : map.entrySet()) {
       if (e.getValue() instanceof Map) {

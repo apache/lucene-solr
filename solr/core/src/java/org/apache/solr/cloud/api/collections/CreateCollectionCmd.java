@@ -31,15 +31,13 @@ import java.util.NoSuchElementException;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
-import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
-import org.apache.solr.client.solrj.cloud.autoscaling.NotEmptyException;
-import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
-import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
+import org.apache.solr.client.solrj.cloud.AlreadyExistsException;
+import org.apache.solr.client.solrj.cloud.BadVersionException;
+import org.apache.solr.client.solrj.cloud.NotEmptyException;
+import org.apache.solr.client.solrj.cloud.VersionedData;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
@@ -75,7 +73,6 @@ import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
@@ -103,7 +100,8 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
   }
 
   @Override
-  public void call(ClusterState clusterState, ZkNodeProps message, NamedList results) throws Exception {
+  @SuppressWarnings({"unchecked"})
+  public void call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     if (ocmh.zkStateReader.aliasesManager != null) { // not a mock ZkStateReader
       ocmh.zkStateReader.aliasesManager.update();
     }
@@ -147,16 +145,15 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     List<String> shardNames = populateShardNames(message, router);
     checkReplicaTypes(message);
 
-    AtomicReference<PolicyHelper.SessionWrapper> sessionWrapper = new AtomicReference<>();
+
 
     try {
 
       final String async = message.getStr(ASYNC);
 
       ZkStateReader zkStateReader = ocmh.zkStateReader;
-      boolean isLegacyCloud = Overseer.isLegacy(zkStateReader);
 
-      OverseerCollectionMessageHandler.createConfNode(stateManager, configName, collectionName, isLegacyCloud);
+      OverseerCollectionMessageHandler.createConfNode(stateManager, configName, collectionName);
 
       Map<String,String> collectionParams = new HashMap<>();
       Map<String,Object> collectionProps = message.getProperties();
@@ -188,7 +185,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
       List<ReplicaPosition> replicaPositions = null;
       try {
-        replicaPositions = buildReplicaPositions(ocmh.cloudManager, clusterState, clusterState.getCollection(collectionName), message, shardNames, sessionWrapper);
+        replicaPositions = buildReplicaPositions(ocmh.cloudManager, clusterState, clusterState.getCollection(collectionName), message, shardNames);
       } catch (Assign.AssignmentException e) {
         ZkNodeProps deleteMessage = new ZkNodeProps("name", collectionName);
         new DeleteCollectionCmd(ocmh).call(clusterState, deleteMessage, results);
@@ -207,7 +204,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
             collectionName, shardNames, message));
       }
       Map<String,ShardRequest> coresToCreate = new LinkedHashMap<>();
-      ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseer.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient());
+      ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler();
       for (ReplicaPosition replicaPosition : replicaPositions) {
         String nodeName = replicaPosition.node;
 
@@ -236,21 +233,19 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         }
 
         String baseUrl = zkStateReader.getBaseUrlForNodeName(nodeName);
-        //in the new mode, create the replica in clusterstate prior to creating the core.
+        // create the replica in the collection's state.json in ZK prior to creating the core.
         // Otherwise the core creation fails
-        if (!isLegacyCloud) {
-          ZkNodeProps props = new ZkNodeProps(
-              Overseer.QUEUE_OPERATION, ADDREPLICA.toString(),
-              ZkStateReader.COLLECTION_PROP, collectionName,
-              ZkStateReader.SHARD_ID_PROP, replicaPosition.shard,
-              ZkStateReader.CORE_NAME_PROP, coreName,
-              ZkStateReader.STATE_PROP, Replica.State.DOWN.toString(),
-              ZkStateReader.BASE_URL_PROP, baseUrl,
-              ZkStateReader.NODE_NAME_PROP, nodeName,
-              ZkStateReader.REPLICA_TYPE, replicaPosition.type.name(),
-              CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.toString(waitForFinalState));
-          ocmh.overseer.offerStateUpdate(Utils.toJSON(props));
-        }
+        ZkNodeProps props = new ZkNodeProps(
+            Overseer.QUEUE_OPERATION, ADDREPLICA.toString(),
+            ZkStateReader.COLLECTION_PROP, collectionName,
+            ZkStateReader.SHARD_ID_PROP, replicaPosition.shard,
+            ZkStateReader.CORE_NAME_PROP, coreName,
+            ZkStateReader.STATE_PROP, Replica.State.DOWN.toString(),
+            ZkStateReader.BASE_URL_PROP, baseUrl,
+            ZkStateReader.NODE_NAME_PROP, nodeName,
+            ZkStateReader.REPLICA_TYPE, replicaPosition.type.name(),
+            CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.toString(waitForFinalState));
+        ocmh.overseer.offerStateUpdate(Utils.toJSON(props));
 
         // Need to create new params for each request
         ModifiableSolrParams params = new ModifiableSolrParams();
@@ -279,24 +274,19 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         sreq.actualShards = sreq.shards;
         sreq.params = params;
 
-        if (isLegacyCloud) {
-          shardHandler.submit(sreq, sreq.shards[0], sreq.params);
-        } else {
-          coresToCreate.put(coreName, sreq);
-        }
+        coresToCreate.put(coreName, sreq);
       }
 
-      if(!isLegacyCloud) {
-        // wait for all replica entries to be created
-        Map<String, Replica> replicas = ocmh.waitToSeeReplicasInState(collectionName, coresToCreate.keySet());
-        for (Map.Entry<String, ShardRequest> e : coresToCreate.entrySet()) {
-          ShardRequest sreq = e.getValue();
-          sreq.params.set(CoreAdminParams.CORE_NODE_NAME, replicas.get(e.getKey()).getName());
-          shardHandler.submit(sreq, sreq.shards[0], sreq.params);
-        }
+      // wait for all replica entries to be created
+      Map<String, Replica> replicas = ocmh.waitToSeeReplicasInState(collectionName, coresToCreate.keySet());
+      for (Map.Entry<String, ShardRequest> e : coresToCreate.entrySet()) {
+        ShardRequest sreq = e.getValue();
+        sreq.params.set(CoreAdminParams.CORE_NODE_NAME, replicas.get(e.getKey()).getName());
+        shardHandler.submit(sreq, sreq.shards[0], sreq.params);
       }
 
       shardRequestTracker.processResponses(results, shardHandler, false, null, Collections.emptySet());
+      @SuppressWarnings({"rawtypes"})
       boolean failure = results.get("failure") != null && ((SimpleOrderedMap)results.get("failure")).size() > 0;
       if (failure) {
         // Let's cleanup as we hit an exception
@@ -343,16 +333,13 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       throw ex;
     } catch (Exception ex) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, null, ex);
-    } finally {
-      if (sessionWrapper.get() != null) sessionWrapper.get().release();
     }
   }
 
   public static List<ReplicaPosition> buildReplicaPositions(SolrCloudManager cloudManager, ClusterState clusterState,
                                                             DocCollection docCollection,
                                                             ZkNodeProps message,
-                                                            List<String> shardNames,
-                                                            AtomicReference<PolicyHelper.SessionWrapper> sessionWrapper) throws IOException, InterruptedException, Assign.AssignmentException {
+                                                            List<String> shardNames) throws IOException, InterruptedException, Assign.AssignmentException {
     final String collectionName = message.getStr(NAME);
     // look at the replication factor and see if it matches reality
     // if it does not, find best nodes to create more cores
@@ -361,8 +348,6 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     int numPullReplicas = message.getInt(PULL_REPLICAS, 0);
 
     int numSlices = shardNames.size();
-    int maxShardsPerNode = message.getInt(MAX_SHARDS_PER_NODE, 1);
-    if (maxShardsPerNode == -1) maxShardsPerNode = Integer.MAX_VALUE;
 
     // we need to look at every node and see how many cores it serves
     // add our new cores to existing nodes serving the least number of cores
@@ -385,22 +370,6 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
             , "It's unusual to run two replica of the same slice on the same Solr-instance.");
       }
 
-      int maxShardsAllowedToCreate = maxShardsPerNode == Integer.MAX_VALUE ?
-          Integer.MAX_VALUE :
-          maxShardsPerNode * nodeList.size();
-      int requestedShardsToCreate = numSlices * totalNumReplicas;
-      if (maxShardsAllowedToCreate < requestedShardsToCreate) {
-        throw new Assign.AssignmentException("Cannot create collection " + collectionName + ". Value of "
-            + MAX_SHARDS_PER_NODE + " is " + maxShardsPerNode
-            + ", and the number of nodes currently live or live and part of your "+OverseerCollectionMessageHandler.CREATE_NODE_SET+" is " + nodeList.size()
-            + ". This allows a maximum of " + maxShardsAllowedToCreate
-            + " to be created. Value of " + OverseerCollectionMessageHandler.NUM_SLICES + " is " + numSlices
-            + ", value of " + NRT_REPLICAS + " is " + numNrtReplicas
-            + ", value of " + TLOG_REPLICAS + " is " + numTlogReplicas
-            + " and value of " + PULL_REPLICAS + " is " + numPullReplicas
-            + ". This requires " + requestedShardsToCreate
-            + " shards to be created (higher than the allowed number)");
-      }
       Assign.AssignRequest assignRequest = new Assign.AssignRequestBuilder()
           .forCollection(collectionName)
           .forShard(shardNames)
@@ -412,7 +381,6 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       Assign.AssignStrategyFactory assignStrategyFactory = new Assign.AssignStrategyFactory(cloudManager);
       Assign.AssignStrategy assignStrategy = assignStrategyFactory.create(clusterState, docCollection);
       replicaPositions = assignStrategy.assign(cloudManager, assignRequest);
-      sessionWrapper.set(PolicyHelper.getLastSessionWrapper(true));
     }
     return replicaPositions;
   }

@@ -73,7 +73,8 @@ public class TestIntervalQuery extends LuceneTestCase {
       "coordinate genome mapping research",
       "coordinate genome research",
       "greater new york",
-      "x x x x x intend x x x message x x x message x x x addressed x x"
+      "x x x x x intend x x x message x x x message x x x addressed x x",
+      "issue with intervals queries from search engine. So it's a big issue for us as we need to do ordered searches. Thank you to help us concerning that issue"
   };
 
   private void checkHits(Query query, int[] results) throws IOException {
@@ -260,6 +261,13 @@ public class TestIntervalQuery extends LuceneTestCase {
             Intervals.term("research"))
     ));
     checkHits(q, new int[]{ 6, 7 });
+  }
+
+  public void testOrderedWithGaps() throws IOException {
+    Query q = new IntervalQuery(field, Intervals.maxgaps(1, Intervals.ordered(
+            Intervals.term("issue"), Intervals.term("search"), Intervals.term("ordered")
+    )));
+    checkHits(q, new int[]{});
   }
 
   public void testNestedOrInContainedBy() throws IOException {

@@ -39,7 +39,7 @@ public class ComplexPhraseQParserPlugin extends QParserPlugin {
   private boolean inOrder = true;
 
   @Override
-  public void init(NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     super.init(args);
     if (args != null) {
       Object val = args.get("inOrder");

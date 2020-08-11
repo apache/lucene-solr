@@ -644,7 +644,7 @@ public class UnifiedHighlighter {
 
       batchDocIdx += fieldValsByDoc.size();
     }
-    IOUtils.close(indexReaderWithTermVecCache);
+    IOUtils.close(indexReaderWithTermVecCache); // FYI won't close underlying reader
     assert docIdIter.docID() == DocIdSetIterator.NO_MORE_DOCS
         || docIdIter.nextDoc() == DocIdSetIterator.NO_MORE_DOCS;
 
@@ -1087,8 +1087,7 @@ public class UnifiedHighlighter {
           .toArray(LeafReader[]::new);
       return new BaseCompositeReader<IndexReader>(leafReaders) {
         @Override
-        protected void doClose() throws IOException {
-          reader.close();
+        protected void doClose() { // don't close the underlying reader
         }
 
         @Override

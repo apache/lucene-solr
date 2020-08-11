@@ -140,6 +140,7 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
 
   @SuppressWarnings("unchecked")
   protected TestTag[] pullTagsFromResponse(SolrQueryRequest req, SolrQueryResponse rsp ) throws IOException {
+    @SuppressWarnings({"rawtypes"})
     NamedList rspValues = rsp.getValues();
     Map<String, String> matchingNames = new HashMap<>();
     SolrIndexSearcher searcher = req.getSearcher();
@@ -155,9 +156,10 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
     }
 
     //build TestTag[] aTags from response ('a' is actual)
+    @SuppressWarnings({"rawtypes"})
     List<NamedList> mTagsList = (List<NamedList>) rspValues.get("tags");
     List<TestTag> aTags = new ArrayList<>();
-    for (NamedList map : mTagsList) {
+    for (@SuppressWarnings({"rawtypes"})NamedList map : mTagsList) {
       List<String> foundIds = (List<String>) map.get("ids");
       for (String id  : foundIds) {
         aTags.add(new TestTag(
@@ -204,6 +206,7 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
     fail(message+": didn't expect "+actualsRemaining.first()+" (of "+actualsRemaining.size()+"); "+ error);
   }
 
+  @SuppressWarnings({"rawtypes"})
   class TestTag implements Comparable {
     final int startOffset, endOffset;
     final String substring;

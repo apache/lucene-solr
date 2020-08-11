@@ -22,6 +22,7 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Objects;
+import java.lang.invoke.MethodHandles;
 
 import com.google.common.base.Preconditions;
 import org.apache.hadoop.conf.Configuration;
@@ -40,8 +41,16 @@ import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.HdfsDirectoryFactory;
 import org.apache.solr.store.hdfs.HdfsDirectory;
 import org.apache.solr.store.hdfs.HdfsDirectory.HdfsIndexInput;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+/**
+ * @deprecated since 8.6
+ */
+@Deprecated
 public class HdfsBackupRepository implements BackupRepository {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   private static final String HDFS_UMASK_MODE_PARAM = "solr.hdfs.permissions.umask-mode";
   private static final String HDFS_COPY_BUFFER_SIZE_PARAM = "solr.hdfs.buffer.size";
 
@@ -49,6 +58,7 @@ public class HdfsBackupRepository implements BackupRepository {
   private Configuration hdfsConfig = null;
   private FileSystem fileSystem = null;
   private Path baseHdfsPath = null;
+  @SuppressWarnings("rawtypes")
   private NamedList config = null;
   protected int copyBufferSize = HdfsDirectory.DEFAULT_BUFFER_SIZE;
 
@@ -56,6 +66,8 @@ public class HdfsBackupRepository implements BackupRepository {
   @Override
   public void init(NamedList args) {
     this.config = args;
+
+    log.warn("HDFS support in Solr has been deprecated as of 8.6. See SOLR-14021 for details.");
 
     // Configure the size of the buffer used for copying index files to/from HDFS, if specified.
     if (args.get(HDFS_COPY_BUFFER_SIZE_PARAM) != null) {
@@ -86,7 +98,7 @@ public class HdfsBackupRepository implements BackupRepository {
     }
 
     try {
-      this.fileSystem = FileSystem.get(this.baseHdfsPath.toUri(), this.hdfsConfig);
+      this.fileSystem = FileSystem.newInstance(this.baseHdfsPath.toUri(), this.hdfsConfig);
     } catch (IOException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }

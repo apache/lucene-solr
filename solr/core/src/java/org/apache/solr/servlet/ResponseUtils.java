@@ -38,7 +38,8 @@ public class ResponseUtils {
    * <p>
    * Status codes less than 100 are adjusted to be 500.
    */
-  public static int getErrorInfo(Throwable ex, NamedList info, Logger log) {
+  @SuppressWarnings({"unchecked"})
+  public static int getErrorInfo(Throwable ex, @SuppressWarnings({"rawtypes"})NamedList info, Logger log) {
     int code = 500;
     if (ex instanceof SolrException) {
       SolrException solrExc = (SolrException)ex;

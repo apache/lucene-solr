@@ -34,6 +34,7 @@ public class OverseerStatusTest extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void test() throws Exception {
 
     // find existing command counts because collection may be created by base test class too

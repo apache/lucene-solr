@@ -132,6 +132,7 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
         .setTarget(targetCollection);
     CollectionAdminResponse rsp = req.process(solrClient);
     assertNotNull(rsp.toString(), rsp.getResponse().get(ReindexCollectionCmd.REINDEX_STATUS));
+    @SuppressWarnings({"unchecked"})
     Map<String, Object> status = (Map<String, Object>)rsp.getResponse().get(ReindexCollectionCmd.REINDEX_STATUS);
     assertEquals(status.toString(), (long)NUM_DOCS, ((Number)status.get("inputDocs")).longValue());
     assertEquals(status.toString(), (long)NUM_DOCS, ((Number)status.get("processedDocs")).longValue());
@@ -334,6 +335,7 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testAbort() throws Exception {
     final String sourceCollection = "abortReindexing";
     final String targetCollection = "abortReindexingTarget";
@@ -378,7 +380,6 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
 
   private void createCollection(String name, String config, int numShards, int numReplicas) throws Exception {
     CollectionAdminRequest.createCollection(name, config, numShards, numReplicas)
-        .setMaxShardsPerNode(-1)
         .process(solrClient);
 
     cluster.waitForActiveCollection(name, numShards, numShards * numReplicas);

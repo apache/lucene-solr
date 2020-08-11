@@ -84,6 +84,7 @@ public class SolrConstantScoreQuery extends Query implements ExtendedQuery {
   }
 
   protected class ConstantWeight extends ConstantScoreWeight {
+    @SuppressWarnings({"rawtypes"})
     private Map context;
     private ScoreMode scoreMode;
 

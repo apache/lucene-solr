@@ -36,7 +36,7 @@ public class MockQuerySenderListenerReqHandler extends RequestHandlerBase {
   AtomicInteger initCounter = new AtomicInteger(0);
 
   @Override
-  public void init(NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     initCounter.incrementAndGet();
     super.init(args);
   }

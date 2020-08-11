@@ -750,6 +750,7 @@ public class LukeRequestHandler extends RequestHandlerBase
   /**
    * Private internal class that counts up frequent terms
    */
+  @SuppressWarnings("rawtypes")
   private static class TopTermQueue extends PriorityQueue
   {
     static class TermInfo {

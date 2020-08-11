@@ -46,8 +46,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.TestUtil;
 
-import static com.carrotsearch.randomizedtesting.RandomizedTest.randomBoolean;
-
 public class TestBKD extends LuceneTestCase {
 
   public void testBasicInts1D() throws Exception {
@@ -61,12 +59,14 @@ public class TestBKD extends LuceneTestCase {
 
       long indexFP;
       try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT)) {
-        indexFP = w.finish(out);
+        Runnable finalizer = w.finish(out, out, out);
+        indexFP = out.getFilePointer();
+        finalizer.run();
       }
 
       try (IndexInput in = dir.openInput("bkd", IOContext.DEFAULT)) {
         in.seek(indexFP);
-        BKDReader r = new BKDReader(in, randomBoolean());
+        BKDReader r = new BKDReader(in, in, in);
 
         // Simple 1D range query:
         final int queryMin = 42;
@@ -163,12 +163,14 @@ public class TestBKD extends LuceneTestCase {
 
       long indexFP;
       try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT)) {
-        indexFP = w.finish(out);
+        Runnable finalizer = w.finish(out, out, out);
+        indexFP = out.getFilePointer();
+        finalizer.run();
       }
 
       try (IndexInput in = dir.openInput("bkd", IOContext.DEFAULT)) {
         in.seek(indexFP);
-        BKDReader r = new BKDReader(in, randomBoolean());
+        BKDReader r = new BKDReader(in, in, in);
 
         byte[] minPackedValue = r.getMinPackedValue();
         byte[] maxPackedValue = r.getMaxPackedValue();
@@ -290,13 +292,15 @@ public class TestBKD extends LuceneTestCase {
       }
 
       long indexFP;
-      try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT)) {
-        indexFP = w.finish(out);
+      try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT)) {        
+        Runnable finalizer = w.finish(out, out, out);
+        indexFP = out.getFilePointer();
+        finalizer.run();
       }
 
       try (IndexInput in = dir.openInput("bkd", IOContext.DEFAULT)) {
         in.seek(indexFP);
-        BKDReader r = new BKDReader(in, randomBoolean());
+        BKDReader r = new BKDReader(in, in, in);
 
         int iters = atLeast(100);
         for(int iter=0;iter<iters;iter++) {
@@ -756,7 +760,9 @@ public class TestBKD extends LuceneTestCase {
                 return curDocIDBase + docID;
               }
             });
-          toMerge.add(w.finish(out));
+          Runnable finalizer = w.finish(out, out, out);
+          toMerge.add(out.getFilePointer());
+          finalizer.run();
           valuesInThisSeg = TestUtil.nextInt(random(), numValues/10, numValues/2);
           segCount = 0;
 
@@ -772,7 +778,9 @@ public class TestBKD extends LuceneTestCase {
 
       if (toMerge != null) {
         if (segCount > 0) {
-          toMerge.add(w.finish(out));
+          Runnable finalizer = w.finish(out, out, out);
+          toMerge.add(out.getFilePointer());
+          finalizer.run();
           final int curDocIDBase = lastDocIDBase;
           docMaps.add(new MergeState.DocMap() {
               @Override
@@ -788,21 +796,25 @@ public class TestBKD extends LuceneTestCase {
         List<BKDReader> readers = new ArrayList<>();
         for(long fp : toMerge) {
           in.seek(fp);
-          readers.add(new BKDReader(in, randomBoolean()));
+          readers.add(new BKDReader(in, in, in));
         }
         out = dir.createOutput("bkd2", IOContext.DEFAULT);
-        indexFP = w.merge(out, docMaps, readers);
+        Runnable finalizer = w.merge(out, out, out, docMaps, readers);
+        indexFP = out.getFilePointer();
+        finalizer.run();
         out.close();
         in.close();
         in = dir.openInput("bkd2", IOContext.DEFAULT);
       } else {
-        indexFP = w.finish(out);
+        Runnable finalizer = w.finish(out, out, out);
+        indexFP = out.getFilePointer();
+        finalizer.run();
         out.close();
         in = dir.openInput("bkd", IOContext.DEFAULT);
       }
 
       in.seek(indexFP);
-      BKDReader r = new BKDReader(in, randomBoolean());
+      BKDReader r = new BKDReader(in, in, in);
 
       int iters = atLeast(100);
       for(int iter=0;iter<iters;iter++) {
@@ -1071,12 +1083,14 @@ public class TestBKD extends LuceneTestCase {
       }
 
       IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT);
-      long fp = w.finish(out);
+      Runnable finalizer = w.finish(out, out, out);
+      long fp = out.getFilePointer();
+      finalizer.run();
       out.close();
 
       IndexInput in = dir.openInput("bkd", IOContext.DEFAULT);
       in.seek(fp);
-      BKDReader r = new BKDReader(in, randomBoolean());
+      BKDReader r = new BKDReader(in, in, in);
       r.intersect(new IntersectVisitor() {
           int lastDocID = -1;
 
@@ -1127,13 +1141,15 @@ public class TestBKD extends LuceneTestCase {
     }
     final long indexFP;
     try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT)) {
-      indexFP = w.finish(out);
+      Runnable finalizer = w.finish(out, out, out);
+      indexFP = out.getFilePointer();
+      finalizer.run();
       w.close();
     }
 
     IndexInput pointsIn = dir.openInput("bkd", IOContext.DEFAULT);
     pointsIn.seek(indexFP);
-    BKDReader points = new BKDReader(pointsIn);
+    BKDReader points = new BKDReader(pointsIn, pointsIn, pointsIn);
 
     points.intersect(new IntersectVisitor() {
 
@@ -1185,12 +1201,14 @@ public class TestBKD extends LuceneTestCase {
       }
 
       IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT);
-      long fp = w.finish(out);
+      Runnable finalizer = w.finish(out, out, out);
+      long fp = out.getFilePointer();
+      finalizer.run();
       out.close();
 
       IndexInput in = dir.openInput("bkd", IOContext.DEFAULT);
       in.seek(fp);
-      BKDReader r = new BKDReader(in, randomBoolean());
+      BKDReader r = new BKDReader(in, in, in);
       int[] count = new int[1];
       r.intersect(new IntersectVisitor() {
 
@@ -1241,12 +1259,14 @@ public class TestBKD extends LuceneTestCase {
     }
     
     IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT);
-    long fp = w.finish(out);
+    Runnable finalizer = w.finish(out, out, out);
+    long fp = out.getFilePointer();
+    finalizer.run();
     out.close();
 
     IndexInput in = dir.openInput("bkd", IOContext.DEFAULT);
     in.seek(fp);
-    BKDReader r = new BKDReader(in, randomBoolean());
+    BKDReader r = new BKDReader(in, in, in);
     int[] count = new int[1];
     r.intersect(new IntersectVisitor() {
 
@@ -1300,13 +1320,15 @@ public class TestBKD extends LuceneTestCase {
     }
     final long indexFP;
     try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT)) {
-      indexFP = w.finish(out);
+      Runnable finalizer = w.finish(out, out, out);
+      indexFP = out.getFilePointer();
+      finalizer.run();
       w.close();
     }
     
     IndexInput pointsIn = dir.openInput("bkd", IOContext.DEFAULT);
     pointsIn.seek(indexFP);
-    BKDReader points = new BKDReader(pointsIn);
+    BKDReader points = new BKDReader(pointsIn, pointsIn, pointsIn);
 
     // If all points match, then the point count is numLeaves * maxPointsInLeafNode
     int numLeaves = numValues / maxPointsInLeafNode;
@@ -1450,7 +1472,7 @@ public class TestBKD extends LuceneTestCase {
         BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP, numValues);
     expectThrows(IllegalStateException.class, () -> {
       try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT)) {
-        w.writeField(out, "test_field_name", reader);
+        w.writeField(out, out, out, "test_field_name", reader);
       } finally {
         w.close();
         dir.close();
@@ -1561,7 +1583,7 @@ public class TestBKD extends LuceneTestCase {
       }
     };
     try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT)) {
-      IllegalStateException ex = expectThrows(IllegalStateException.class, () -> { w.writeField(out, "", val);});
+      IllegalStateException ex = expectThrows(IllegalStateException.class, () -> { w.writeField(out, out, out, "", val);});
       assertEquals("totalPointCount=10 was passed when we were created, but we just hit 11 values", ex.getMessage());
       w.close();
     }

@@ -80,7 +80,7 @@ public interface QueryResponseWriter extends NamedListInitializedPlugin {
    * solrconfig.xml
    */
   @Override
-  public void init(NamedList args);
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args);
 }
 
 

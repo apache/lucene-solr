@@ -21,7 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -57,7 +57,6 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.CoreDescriptor;
-import org.apache.solr.core.SolrPaths;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -99,7 +98,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     // Create a collection for use by the filestream() expression, and place some files there for it to read.
     CollectionAdminRequest.createCollection(FILESTREAM_COLLECTION, "conf", 1, 1).process(cluster.getSolrClient());
     cluster.waitForActiveCollection(FILESTREAM_COLLECTION, 1, 1);
-    final String dataDir = findUserFilesDataDir();
+    final Path dataDir = findUserFilesDataDir();
     populateFileStreamData(dataDir);
   }
 
@@ -195,7 +194,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
       List<String> shardUrls = TupleStream.getShards(cluster.getZkServer().getZkAddress(), COLLECTIONORALIAS, streamContext);
 
-      Map<String, List<String>> shardsMap = new HashMap();
+      Map<String, List<String>> shardsMap = new HashMap<>();
       shardsMap.put("myCollection", shardUrls);
       StreamContext context = new StreamContext();
       context.put("shards", shardsMap);
@@ -674,7 +673,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
       tuples4 = getTuples(solrStream);
       assert(tuples4.size() == 500);
-      Map fields = tuples4.get(0).fields;
+      @SuppressWarnings({"rawtypes"})
+      Map fields = tuples4.get(0).getFields();
       assert(fields.containsKey("id"));
       assert(fields.containsKey("a_f"));
       assert(fields.containsKey("a_i"));
@@ -863,7 +863,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       //Test with shards parameter
       List<String> shardUrls = TupleStream.getShards(cluster.getZkServer().getZkAddress(), COLLECTIONORALIAS, streamContext);
       expr = "stats(myCollection, q=*:*, sum(a_i), sum(a_f), min(a_i), min(a_f), max(a_i), max(a_f), avg(a_i), avg(a_f), std(a_i), std(a_f), per(a_i, 50), per(a_f, 50), count(*))";
-      Map<String, List<String>> shardsMap = new HashMap();
+      Map<String, List<String>> shardsMap = new HashMap<>();
       shardsMap.put("myCollection", shardUrls);
       StreamContext context = new StreamContext();
       context.put("shards", shardsMap);
@@ -1137,6 +1137,75 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
 
   @Test
+  public void testDrillStream() throws Exception {
+
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1")
+        .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2")
+        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
+        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
+        .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
+        .add(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6")
+        .add(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7")
+        .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8")
+        .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
+        .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    List<Tuple> tuples;
+
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    String expr = "rollup(select(drill("
+        + "                            collection1, "
+        + "                            q=\"*:*\", "
+        + "                            fl=\"a_s, a_f\", "
+        + "                            sort=\"a_s desc\", "
+        + "                            rollup(input(), over=\"a_s\", count(*), sum(a_f)))," +
+        "                        a_s, count(*) as cnt, sum(a_f) as saf)," +
+        "                  over=\"a_s\"," +
+        "                  sum(cnt), sum(saf)"
+        + ")";
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+
+    Tuple tuple = tuples.get(0);
+    String bucket = tuple.getString("a_s");
+
+    Double count = tuple.getDouble("sum(cnt)");
+    Double saf = tuple.getDouble("sum(saf)");
+
+    assertTrue(bucket.equals("hello4"));
+    assertEquals(count.doubleValue(), 2, 0);
+    assertEquals(saf.doubleValue(), 11, 0);
+
+    tuple = tuples.get(1);
+    bucket = tuple.getString("a_s");
+    count = tuple.getDouble("sum(cnt)");
+    saf = tuple.getDouble("sum(saf)");
+
+    assertTrue(bucket.equals("hello3"));
+    assertEquals(count.doubleValue(), 4, 0);
+    assertEquals(saf.doubleValue(), 26, 0);
+
+    tuple = tuples.get(2);
+    bucket = tuple.getString("a_s");
+    count = tuple.getDouble("sum(cnt)");
+    saf = tuple.getDouble("sum(saf)");
+
+    assertTrue(bucket.equals("hello0"));
+    assertTrue(count.doubleValue() == 4);
+    assertEquals(saf.doubleValue(), 18, 0);
+
+  }
+
+    @Test
   public void testFacetStream() throws Exception {
 
     new UpdateRequest()
@@ -1275,9 +1344,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     perf = tuple.getDouble("per(a_f,50)");
 
 
-    System.out.println("STD and Per:"+stdi+":"+stdf+":"+peri+":"+perf);
-//STD and Per:4.509249752822894:2.6457513110645907:11.0:7.0
-    //assert(false);
+
 
     assertTrue(bucket.equals("hello3"));
     assertTrue(sumi.doubleValue() == 38.0D);
@@ -2897,6 +2964,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
+    @SuppressWarnings({"unchecked", "rawtypes"})
     List<Map> results  = (List<Map>)tuples.get(0).get("results");
     assertTrue(results.get(0).get("id").equals("hello1"));
     assertTrue(results.get(0).get("test_t").equals("l b c d c"));
@@ -3028,7 +3096,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       tuples = getTuples(stream);
       assertEquals(100, tuples.size());
       Tuple lastModel = tuples.get(0);
-      ClassificationEvaluation evaluation = ClassificationEvaluation.create(lastModel.fields);
+      ClassificationEvaluation evaluation = ClassificationEvaluation.create(lastModel.getFields());
       assertTrue(evaluation.getF1() >= 1.0);
       assertEquals(Math.log(5000.0 / (2500 + 1)), lastModel.getDoubles("idfs_ds").get(0), 0.0001);
       // make sure the tuples is retrieved in correct order
@@ -3275,7 +3343,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       //Test with shards parameter
       List<String> shardUrls = TupleStream.getShards(cluster.getZkServer().getZkAddress(), COLLECTIONORALIAS, streamContext);
 
-      Map<String, List<String>> shardsMap = new HashMap();
+      Map<String, List<String>> shardsMap = new HashMap<>();
       shardsMap.put("myCollection", shardUrls);
       StreamContext context = new StreamContext();
       context.put("shards", shardsMap);
@@ -3548,12 +3616,12 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
 
-  private static String findUserFilesDataDir() {
+  private static Path findUserFilesDataDir() {
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       final String baseDir = cluster.getBaseDir().toAbsolutePath().toString();
       for (CoreDescriptor coreDescriptor : jetty.getCoreContainer().getCoreDescriptors()) {
         if (coreDescriptor.getCollectionName().equals(FILESTREAM_COLLECTION)) {
-          return Paths.get(jetty.getSolrHome(), SolrPaths.USER_FILES_DIRECTORY).toAbsolutePath().toString();
+          return jetty.getCoreContainer().getUserFilesPath();
         }
       }
     }
@@ -3576,29 +3644,22 @@ public class StreamExpressionTest extends SolrCloudTestCase {
    *
    * Each file contains 4 lines.  Each line looks like: "<filename> line <linenumber>"
    */
-  private static void populateFileStreamData(String dataDir) throws Exception {
-    final File baseDataDir = new File(dataDir);
-    if (! baseDataDir.exists()) baseDataDir.mkdir();
-    final File directory1 = new File(Paths.get(dataDir, "directory1").toString());
-    directory1.mkdir();
+  private static void populateFileStreamData(Path dataDir) throws Exception {
+    Files.createDirectories(dataDir);
+    Files.createDirectories(dataDir.resolve("directory1"));
 
-    final File topLevel1 = new File(Paths.get(dataDir, "topLevel1.txt").toString());
-    final File topLevel2 = new File(Paths.get(dataDir, "topLevel2.txt").toString());
-    final File topLevelEmpty = new File(Paths.get(dataDir, "topLevel-empty.txt").toString());
-    final File secondLevel1 = new File(Paths.get(dataDir, "directory1", "secondLevel1.txt").toString());
-    final File secondLevel2 = new File(Paths.get(dataDir, "directory1", "secondLevel2.txt").toString());
-    populateFileWithData(topLevel1);
-    populateFileWithData(topLevel2);
-    topLevelEmpty.createNewFile();
-    populateFileWithData(secondLevel1);
-    populateFileWithData(secondLevel2);
+    populateFileWithData(dataDir.resolve("topLevel1.txt"));
+    populateFileWithData(dataDir.resolve("topLevel2.txt"));
+    Files.createFile(dataDir.resolve("topLevel-empty.txt"));
+    populateFileWithData(dataDir.resolve("directory1").resolve("secondLevel1.txt"));
+    populateFileWithData(dataDir.resolve("directory1").resolve("secondLevel2.txt"));
   }
 
-  private static void populateFileWithData(File dataFile) throws Exception {
-    dataFile.createNewFile();
-    try (final BufferedWriter writer = Files.newBufferedWriter(Paths.get(dataFile.toURI()), StandardCharsets.UTF_8)) {
+  private static void populateFileWithData(Path dataFile) throws Exception {
+    Files.createFile(dataFile);
+    try (final BufferedWriter writer = Files.newBufferedWriter(dataFile, StandardCharsets.UTF_8)) {
       for (int i = 1; i <=4; i++) {
-        writer.write(dataFile.getName() + " line " + String.valueOf(i));
+        writer.write(dataFile.getFileName() + " line " + i);
         writer.newLine();
       }
     }
@@ -3663,13 +3724,14 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     return true;
   }
 
-  protected boolean assertMaps(List<Map> maps, int... ids) throws Exception {
+  protected boolean assertMaps(@SuppressWarnings({"rawtypes"})List<Map> maps, int... ids) throws Exception {
     if(maps.size() != ids.length) {
       throw new Exception("Expected id count != actual map count:"+ids.length+":"+maps.size());
     }
 
     int i=0;
     for(int val : ids) {
+      @SuppressWarnings({"rawtypes"})
       Map t = maps.get(i);
       String tip = (String)t.get("id");
       if(!tip.equals(Integer.toString(val))) {
@@ -3683,7 +3745,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   private void assertTopicRun(TupleStream stream, String... idArray) throws Exception {
     long version = -1;
     int count = 0;
-    List<String> ids = new ArrayList();
+    List<String> ids = new ArrayList<>();
     for(String id : idArray) {
       ids.add(id);
     }
@@ -3719,7 +3781,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   private void assertTopicSubject(TupleStream stream, String... textArray) throws Exception {
     long version = -1;
     int count = 0;
-    List<String> texts = new ArrayList();
+    List<String> texts = new ArrayList<>();
     for(String text : textArray) {
       texts.add(text);
     }

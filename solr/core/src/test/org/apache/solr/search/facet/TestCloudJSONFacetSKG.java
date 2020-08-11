@@ -21,6 +21,8 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -287,6 +289,17 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
         assertTrue("Didn't check a single bucket???", maxBuckets.get() < UNIQUE_FIELD_VALS);
       }
     }
+    { // allBuckets should have no impact...
+      for (Boolean allBuckets : Arrays.asList( null, false, true )) {
+        Map<String,TermFacet> facets = new LinkedHashMap<>();
+        facets.put("allb__" + allBuckets, new TermFacet(multiStrField(9),
+                                                        map("allBuckets", allBuckets,
+                                                            "sort", "skg desc"))); 
+        final AtomicInteger maxBuckets = new AtomicInteger(UNIQUE_FIELD_VALS);
+        assertFacetSKGsAreCorrect(maxBuckets, facets, multiStrField(7)+":11", multiStrField(5)+":9", "*:*");
+        assertTrue("Didn't check a single bucket???", maxBuckets.get() < UNIQUE_FIELD_VALS);
+      }
+    }
   }
   
   public void testRandom() throws Exception {
@@ -358,6 +371,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
 
     QueryResponse rsp = null;
     // JSON Facets not (currently) available from QueryResponse...
+    @SuppressWarnings({"rawtypes"})
     NamedList topNamedList = null;
     try {
       rsp = (new QueryRequest(initParams)).process(getRandClient(random()));
@@ -369,6 +383,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
                                  e.getMessage(), e);
     }
     try {
+      @SuppressWarnings({"rawtypes"})
       final NamedList facetResponse = (NamedList) topNamedList.get("facets");
       assertNotNull("null facet results?", facetResponse);
       assertEquals("numFound mismatch with top count?",
@@ -391,17 +406,29 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
    * Recursive helper method that walks the actual facet response, comparing the SKG results to 
    * the expected output based on the equivalent filters generated from the original TermFacet.
    */
+  @SuppressWarnings({"unchecked"})
   private void assertFacetSKGsAreCorrect(final AtomicInteger maxBucketsToCheck,
                                          final Map<String,TermFacet> expected,
                                          final SolrParams baseParams,
-                                         final NamedList actualFacetResponse) throws SolrServerException, IOException {
+                                         @SuppressWarnings({"rawtypes"})final NamedList actualFacetResponse) throws SolrServerException, IOException {
 
     for (Map.Entry<String,TermFacet> entry : expected.entrySet()) {
       final String facetKey = entry.getKey();
       final TermFacet facet = entry.getValue();
       
+      @SuppressWarnings({"rawtypes"})
       final NamedList results = (NamedList) actualFacetResponse.get(facetKey);
       assertNotNull(facetKey + " key missing from: " + actualFacetResponse, results);
+
+      if (null != results.get("allBuckets")) {
+        // if the response includes an allBuckets bucket, then there must not be an skg value
+        
+        // 'skg' key must not exist in th allBuckets bucket
+        assertEquals(facetKey + " has skg in allBuckets: " + results.get("allBuckets"),
+                     Collections.emptyList(),
+                     ((NamedList)results.get("allBuckets")).getAll("skg"));
+      }
+      @SuppressWarnings({"rawtypes"})
       final List<NamedList> buckets = (List<NamedList>) results.get("buckets");
       assertNotNull(facetKey + " has null buckets: " + actualFacetResponse, buckets);
 
@@ -419,7 +446,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
       // NOTE: it's important that we do this depth first -- not just because it's the easiest way to do it,
       // but because it means that our maxBucketsToCheck will ensure we do a lot of deep sub-bucket checking,
       // not just all the buckets of the top level(s) facet(s)
-      for (NamedList bucket : buckets) {
+      for (@SuppressWarnings({"rawtypes"})NamedList bucket : buckets) {
         final String fieldVal = bucket.get("val").toString(); // int or stringified int
 
         verifySKGResults(facetKey, facet, baseParams, fieldVal, bucket);
@@ -439,6 +466,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
     
     { // make sure we don't have any facet keys we don't expect
       // a little hackish because subfacets have extra keys...
+      @SuppressWarnings({"rawtypes"})
       final LinkedHashSet expectedKeys = new LinkedHashSet(expected.keySet());
       expectedKeys.add("count");
       if (0 <= actualFacetResponse.indexOf("val",0)) {
@@ -462,6 +490,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
     throws SolrServerException, IOException {
 
     final String bucketQ = facet.field+":"+fieldVal;
+    @SuppressWarnings({"unchecked"})
     final NamedList<Object> skgBucket = (NamedList<Object>) bucket.get("skg");
     assertNotNull(facetKey + "/bucket:" + bucket.toString(), skgBucket);
 
@@ -658,6 +687,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
      *
      * @return a sort string (w/direction), or null to specify nothing (trigger default behavior)
      * @see #randomLimitParam
+     * @see #randomAllBucketsParam
      * @see #randomPrelimSortParam
      */
     public static String randomSortParam(Random r) {
@@ -726,6 +756,35 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
       // else.... either leave param unspecified (or redundently specify the -1 default)
       return r.nextBoolean() ? null : -1;
     }
+    
+    /**
+     * picks a random value for the "allBuckets" param, biased in favor of interesting test cases.  
+     * This bucket should be ignored by relatedness, but inclusion should not cause any problems 
+     * (or change the results)
+     *
+     * <p>
+     * <b>NOTE:</b> allBuckets is meaningless in conjunction with the <code>STREAM</code> processor, so
+     * this method always returns null if sort is <code>index asc</code>.
+     * </p>
+     *
+     *
+     * @return a Boolean, may be null
+     * @see <a href="https://issues.apache.org/jira/browse/SOLR-14514">SOLR-14514: allBuckets ignored by method:stream</a>
+     */
+    public static Boolean randomAllBucketsParam(final Random r, final String sort) {
+
+      if ("index asc".equals(sort)) {
+        return null;
+      }
+      
+      switch(r.nextInt(4)) {
+        case 0: return true;
+        case 1: return false;
+        case 2: 
+        case 3: return null;
+        default: throw new RuntimeException("Broken case statement");
+      }
+    }
 
     /** 
      * recursive helper method for building random facets
@@ -747,6 +806,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
                                                      "limit", randomLimitParam(random(), sort),
                                                      "overrequest", randomOverrequestParam(random()),
                                                      "prefix", randomPrefixParam(random(), facetField),
+                                                     "allBuckets", randomAllBucketsParam(random(), sort),
                                                      "perSeg", randomPerSegParam(random())));
                                                      
 

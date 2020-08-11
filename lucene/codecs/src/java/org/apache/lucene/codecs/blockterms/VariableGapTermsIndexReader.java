@@ -148,7 +148,7 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
     public FieldIndexData(IndexInput in, FieldInfo fieldInfo, long indexStart) throws IOException {
       IndexInput clone = in.clone();
       clone.seek(indexStart);
-      fst = new FST<>(clone, fstOutputs);
+      fst = new FST<>(clone, clone, fstOutputs);
       clone.close();
 
       /*

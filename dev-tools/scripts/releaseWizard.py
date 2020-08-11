@@ -181,7 +181,7 @@ def check_prerequisites(todo=None):
     if not check_ant().startswith('1.8'):
         print("WARNING: This script will work best with ant 1.8. The script buildAndPushRelease.py may have problems with PGP password input under ant 1.10")
     if not 'GPG_TTY' in os.environ:
-        print("WARNING: GPG_TTY environment variable is not set, GPG signing may not work correctly (try 'export GPG_TTY=$(TTY)'")
+        print("WARNING: GPG_TTY environment variable is not set, GPG signing may not work correctly (try 'export GPG_TTY=$(tty)'")
     if not 'JAVA8_HOME' in os.environ or not 'JAVA11_HOME' in os.environ:
         sys.exit("Please set environment variables JAVA8_HOME and JAVA11_HOME")
     try:

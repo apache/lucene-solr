@@ -114,7 +114,7 @@ public class GraphTest extends SolrCloudTestCase {
 
 
     stream.setStreamContext(context);
-    paths = new HashSet();
+    paths = new HashSet<>();
     tuples = getTuples(stream);
 
     assertTrue(tuples.size() == 2);
@@ -142,7 +142,7 @@ public class GraphTest extends SolrCloudTestCase {
         6);
 
     stream.setStreamContext(context);
-    paths = new HashSet();
+    paths = new HashSet<>();
     tuples = getTuples(stream);
 
     assertTrue(tuples.size() == 2);
@@ -170,7 +170,6 @@ public class GraphTest extends SolrCloudTestCase {
         6);
 
     stream.setStreamContext(context);
-    paths = new HashSet();
     tuples = getTuples(stream);
 
     assertTrue(tuples.size() == 0);
@@ -191,7 +190,6 @@ public class GraphTest extends SolrCloudTestCase {
         2);
 
     stream.setStreamContext(context);
-    paths = new HashSet();
     tuples = getTuples(stream);
 
     assertTrue(tuples.size() == 0);
@@ -213,7 +211,7 @@ public class GraphTest extends SolrCloudTestCase {
         6);
 
     stream.setStreamContext(context);
-    paths = new HashSet();
+    paths = new HashSet<>();
     tuples = getTuples(stream);
     assertTrue(tuples.size() == 1);
 
@@ -228,7 +226,7 @@ public class GraphTest extends SolrCloudTestCase {
 
   protected List<Tuple> getTuples(TupleStream tupleStream) throws IOException {
     tupleStream.open();
-    List<Tuple> tuples = new ArrayList();
+    List<Tuple> tuples = new ArrayList<>();
     for(;;) {
       Tuple t = tupleStream.read();
       if(t.EOF) {

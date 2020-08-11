@@ -159,17 +159,13 @@ public class FuzzyQuery extends MultiTermQuery {
   @Override
   public void visit(QueryVisitor visitor) {
     if (visitor.acceptField(field)) {
-      if (maxEdits == 0 || prefixLength >= term.text().length()) {
-        visitor.consumeTerms(this, term);
-      } else {
-        visitor.consumeTermsMatching(this, term.field(), () -> getAutomata().runAutomaton);
-      }
+      visitor.consumeTermsMatching(this, term.field(), () -> getAutomata().runAutomaton);
     }
   }
 
   @Override
   protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
-    if (maxEdits == 0 || prefixLength >= term.text().length()) {  // can only match if it's exact
+    if (maxEdits == 0) { // can only match if it's exact
       return new SingleTermsEnum(terms.iterator(), term.bytes());
     }
     return new FuzzyTermsEnum(terms, atts, getTerm(), maxEdits, prefixLength, transpositions);

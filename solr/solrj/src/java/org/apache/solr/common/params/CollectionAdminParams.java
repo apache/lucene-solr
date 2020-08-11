@@ -105,12 +105,6 @@ public interface CollectionAdminParams {
   String CLUSTER = "cluster";
 
   /**
-   * This cluster property decides whether Solr should use the legacy round-robin replica placement strategy
-   * or the autoscaling policy based strategy to assign replicas to nodes. The default is false.
-   */
-  String USE_LEGACY_REPLICA_ASSIGNMENT = "useLegacyReplicaAssignment";
-
-  /**
    * When creating a collection create also a specified alias.
    */
   String ALIAS = "alias";
@@ -127,4 +121,9 @@ public interface CollectionAdminParams {
 
   /** Option to follow aliases when deciding the target of a collection admin command. */
   String FOLLOW_ALIASES = "followAliases";
+  /**
+   * When AddReplica is called with this set to true, then we do not try to find node assignments
+   * for the add replica API. If set to true, a valid "node" should be specified.
+   */
+  String SKIP_NODE_ASSIGNMENT = "skipNodeAssignment";
 }

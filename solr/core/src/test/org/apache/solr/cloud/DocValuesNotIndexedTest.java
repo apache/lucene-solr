@@ -86,7 +86,6 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
 
     // Need enough shards that we have some shards that don't have any docs on them.
     CollectionAdminRequest.createCollection(COLLECTION, "conf1", 4, 1)
-        .setMaxShardsPerNode(2)
         .process(cluster.getSolrClient());
     
     cluster.waitForActiveCollection(COLLECTION, 4, 4);

@@ -18,6 +18,7 @@ package org.apache.solr.core;
 
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
@@ -29,6 +30,7 @@ import org.apache.solr.update.UpdateShardHandlerConfig;
 
 
 public class NodeConfig {
+  // all Path fields here are absolute and normalized.
 
   private final String nodeName;
 
@@ -39,6 +41,8 @@ public class NodeConfig {
   private final Integer booleanQueryMaxClauseCount;
   
   private final Path configSetBaseDirectory;
+
+  private final Set<Path> allowPaths;
 
   private final String sharedLibDirectory;
 
@@ -94,7 +98,8 @@ public class NodeConfig {
                      Path solrHome, SolrResourceLoader loader,
                      Properties solrProperties, PluginInfo[] backupRepositoryPlugins,
                      MetricsConfig metricsConfig, PluginInfo transientCacheConfig, PluginInfo tracerConfig,
-                     boolean fromZookeeper) {
+                     boolean fromZookeeper, Set<Path> allowPaths) {
+    // all Path params here are absolute and normalized.
     this.nodeName = nodeName;
     this.coreRootDirectory = coreRootDirectory;
     this.solrDataHome = solrDataHome;
@@ -123,6 +128,7 @@ public class NodeConfig {
     this.transientCacheConfig = transientCacheConfig;
     this.tracerConfig = tracerConfig;
     this.fromZookeeper = fromZookeeper;
+    this.allowPaths = allowPaths;
 
     if (this.cloudConfig != null && this.getCoreLoadThreadCount(false) < 2) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -134,10 +140,12 @@ public class NodeConfig {
     return nodeName;
   }
 
+  /** Absolute. */
   public Path getCoreRootDirectory() {
     return coreRootDirectory;
   }
 
+  /** Absolute. */
   public Path getSolrDataHome() {
     return solrDataHome;
   }
@@ -208,6 +216,7 @@ public class NodeConfig {
     return managementPath;
   }
 
+  /** Absolute. */
   public Path getConfigSetBaseDirectory() {
     return configSetBaseDirectory;
   }
@@ -258,8 +267,14 @@ public class NodeConfig {
     return fromZookeeper;
   }
 
-  public static class NodeConfigBuilder {
+  /**
+   * Extra file paths that will be allowed for core creation, in addition to
+   * SOLR_HOME, SOLR_DATA_HOME and coreRootDir
+   */
+  public Set<Path> getAllowPaths() { return allowPaths; }
 
+  public static class NodeConfigBuilder {
+    // all Path fields here are absolute and normalized.
     private SolrResourceLoader loader;
     private Path coreRootDirectory;
     private Path solrDataHome;
@@ -288,6 +303,7 @@ public class NodeConfig {
     private PluginInfo transientCacheConfig;
     private PluginInfo tracerConfig;
     private boolean fromZookeeper = false;
+    private Set<Path> allowPaths = Collections.emptySet();
 
     private final Path solrHome;
     private final String nodeName;
@@ -314,26 +330,23 @@ public class NodeConfig {
 
     public NodeConfigBuilder(String nodeName, Path solrHome) {
       this.nodeName = nodeName;
-      this.solrHome = solrHome;
+      this.solrHome = solrHome.toAbsolutePath();
       this.coreRootDirectory = solrHome;
       // always init from sysprop because <solrDataHome> config element may be missing
-      String dataHomeProperty = System.getProperty(SolrXmlConfig.SOLR_DATA_HOME);
-      if (dataHomeProperty != null && !dataHomeProperty.isEmpty()) {
-        solrDataHome = solrHome.resolve(dataHomeProperty);
-      }
-      this.configSetBaseDirectory = solrHome.resolve("configsets");
+      setSolrDataHome(System.getProperty(SolrXmlConfig.SOLR_DATA_HOME));
+      setConfigSetBaseDirectory("configsets");
       this.metricsConfig = new MetricsConfig.MetricsConfigBuilder().build();
     }
 
     public NodeConfigBuilder setCoreRootDirectory(String coreRootDirectory) {
-      this.coreRootDirectory = solrHome.resolve(coreRootDirectory);
+      this.coreRootDirectory = solrHome.resolve(coreRootDirectory).normalize();
       return this;
     }
 
     public NodeConfigBuilder setSolrDataHome(String solrDataHomeString) {
       // keep it null unless explicitly set to non-empty value
       if (solrDataHomeString != null && !solrDataHomeString.isEmpty()) {
-        this.solrDataHome = solrHome.resolve(solrDataHomeString);
+        this.solrDataHome = solrHome.resolve(solrDataHomeString).normalize();
       }
       return this;
     }
@@ -455,6 +468,11 @@ public class NodeConfig {
       return this;
     }
 
+    public NodeConfigBuilder setAllowPaths(Set<Path> paths) {
+      this.allowPaths = paths;
+      return this;
+    }
+
     public NodeConfig build() {
       // if some things weren't set then set them now.  Simple primitives are set on the field declaration
       if (loader == null) {
@@ -465,7 +483,7 @@ public class NodeConfig {
                             updateShardHandlerConfig, coreAdminHandlerClass, collectionsAdminHandlerClass, healthCheckHandlerClass, infoHandlerClass, configSetsHandlerClass,
                             logWatcherConfig, cloudConfig, coreLoadThreads, replayUpdatesThreads, transientCacheSize, useSchemaCache, managementPath,
                             solrHome, loader, solrProperties,
-                            backupRepositoryPlugins, metricsConfig, transientCacheConfig, tracerConfig, fromZookeeper);
+                            backupRepositoryPlugins, metricsConfig, transientCacheConfig, tracerConfig, fromZookeeper, allowPaths);
     }
 
     public NodeConfigBuilder setSolrResourceLoader(SolrResourceLoader resourceLoader) {

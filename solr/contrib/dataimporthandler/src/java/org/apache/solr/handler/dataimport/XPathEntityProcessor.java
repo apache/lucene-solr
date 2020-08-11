@@ -184,7 +184,7 @@ public class XPathEntityProcessor extends EntityProcessorBase {
       }
     }
     String url = context.getEntityAttribute(URL);
-    List<String> l = url == null ? Collections.EMPTY_LIST : resolver.getVariables(url);
+    List<String> l = url == null ? Collections.emptyList() : resolver.getVariables(url);
     for (String s : l) {
       if (s.startsWith(entityName + ".")) {
         if (placeHolderVariables == null)
@@ -268,7 +268,7 @@ public class XPathEntityProcessor extends EntityProcessorBase {
       Object val = context.getSessionAttribute(name, Context.SCOPE_ENTITY);
       if (val != null) namespace.put(name, val);
     }
-    ((VariableResolver)context.getVariableResolver()).addNamespace(entityName, namespace);
+    context.getVariableResolver().addNamespace(entityName, namespace);
   }
 
   private void addCommonFields(Map<String, Object> r) {
@@ -284,6 +284,7 @@ public class XPathEntityProcessor extends EntityProcessorBase {
 
   }
 
+  @SuppressWarnings({"unchecked"})
   private void initQuery(String s) {
     Reader data = null;
     try {
@@ -358,6 +359,7 @@ public class XPathEntityProcessor extends EntityProcessorBase {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   protected Map<String, Object> readRow(Map<String, Object> record, String xpath) {
     if (useSolrAddXml) {
       List<String> names = (List<String>) record.get("name");
@@ -367,9 +369,11 @@ public class XPathEntityProcessor extends EntityProcessorBase {
         if (row.containsKey(names.get(i))) {
           Object existing = row.get(names.get(i));
           if (existing instanceof List) {
+            @SuppressWarnings({"rawtypes"})
             List list = (List) existing;
             list.add(values.get(i));
           } else {
+            @SuppressWarnings({"rawtypes"})
             List list = new ArrayList();
             list.add(existing);
             list.add(values.get(i));

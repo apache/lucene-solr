@@ -93,6 +93,7 @@ import java.util.Set;
 public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
 
   @Override
+  @SuppressWarnings({"rawtypes"})
   protected NamedList doAnalysis(SolrQueryRequest req) throws Exception {
     FieldAnalysisRequest analysisRequest = resolveAnalysisRequest(req);
     IndexSchema indexSchema = req.getSchema();
@@ -174,6 +175,7 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
    *
    * @return The analysis breakdown as a named list.
    */
+  @SuppressWarnings({"rawtypes"})
   protected NamedList<NamedList> handleAnalysisRequest(FieldAnalysisRequest request, IndexSchema schema) {
     NamedList<NamedList> analysisResults = new SimpleOrderedMap<>();
 
@@ -210,6 +212,7 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
    * @return NamedList containing the tokens produced by the analyzers of the given field, separated into an index and
    *         a query group
    */ // package access for testing
+  @SuppressWarnings({"rawtypes"})
   NamedList<NamedList> analyzeValues(FieldAnalysisRequest analysisRequest, FieldType fieldType, String fieldName) {
 
     final String queryValue = analysisRequest.getQuery();

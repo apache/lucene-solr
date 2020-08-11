@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
+import org.apache.solr.client.solrj.cloud.VersionedData;
 import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.api.collections.Assign;
@@ -72,7 +72,7 @@ public class ReplicaMutator {
 
     Map<String, Object> replicaProps = new LinkedHashMap<>(replica.getProperties());
     replicaProps.put(key, value);
-    return new Replica(replica.getName(), replicaProps, replica.getCollection(), replica.getSlice());
+    return new Replica(replica.getName(), replicaProps, replica.getCollection(), replica.getShard());
   }
 
   protected Replica unsetProperty(Replica replica, String key) {
@@ -81,7 +81,7 @@ public class ReplicaMutator {
     if (!replica.containsKey(key)) return replica;
     Map<String, Object> replicaProps = new LinkedHashMap<>(replica.getProperties());
     replicaProps.remove(key);
-    return new Replica(replica.getName(), replicaProps, replica.getCollection(), replica.getSlice());
+    return new Replica(replica.getName(), replicaProps, replica.getCollection(), replica.getShard());
   }
 
   protected Replica setLeader(Replica replica) {
@@ -203,12 +203,26 @@ public class ReplicaMutator {
     return new ZkWriteCommand(collectionName, newCollection);
   }
 
+  /**
+   * Handles state updates
+   */
   public ZkWriteCommand setState(ClusterState clusterState, ZkNodeProps message) {
-    if (Overseer.isLegacy(cloudManager.getClusterStateProvider())) {
-      return updateState(clusterState, message);
-    } else {
-      return updateStateNew(clusterState, message);
+    String collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
+    if (!checkCollectionKeyExistence(message)) return ZkStateWriter.NO_OP;
+    String sliceName = message.getStr(ZkStateReader.SHARD_ID_PROP);
+
+    if (collectionName == null || sliceName == null) {
+      log.error("Invalid collection and slice {}", message);
+      return ZkStateWriter.NO_OP;
     }
+    DocCollection collection = clusterState.getCollectionOrNull(collectionName);
+    Slice slice = collection != null ? collection.getSlice(sliceName) : null;
+    if (slice == null) {
+      log.error("No such slice exists {}", message);
+      return ZkStateWriter.NO_OP;
+    }
+
+    return updateState(clusterState, message);
   }
 
   protected ZkWriteCommand updateState(final ClusterState prevState, ZkNodeProps message) {
@@ -353,28 +367,6 @@ public class ReplicaMutator {
     DocCollection newCollection = CollectionMutator.updateSlice(collectionName, collection, slice);
     log.debug("Collection is now: {}", newCollection);
     return new ZkWriteCommand(collectionName, newCollection);
-  }
-
-  /**
-   * Handles non-legacy state updates
-   */
-  protected ZkWriteCommand updateStateNew(ClusterState clusterState, final ZkNodeProps message) {
-    String collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
-    if (!checkCollectionKeyExistence(message)) return ZkStateWriter.NO_OP;
-    String sliceName = message.getStr(ZkStateReader.SHARD_ID_PROP);
-
-    if (collectionName == null || sliceName == null) {
-      log.error("Invalid collection and slice {}", message);
-      return ZkStateWriter.NO_OP;
-    }
-    DocCollection collection = clusterState.getCollectionOrNull(collectionName);
-    Slice slice = collection != null ? collection.getSlice(sliceName) : null;
-    if (slice == null) {
-      log.error("No such slice exists {}", message);
-      return ZkStateWriter.NO_OP;
-    }
-
-    return updateState(clusterState, message);
   }
 
   private DocCollection checkAndCompleteShardSplit(ClusterState prevState, DocCollection collection, String coreNodeName, String sliceName, Replica replica) {

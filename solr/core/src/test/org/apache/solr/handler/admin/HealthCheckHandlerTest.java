@@ -60,6 +60,7 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
 
   @Test
   public void testHealthCheckHandler() throws Exception {
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = new GenericSolrRequest(SolrRequest.METHOD.GET, HEALTH_CHECK_HANDLER_PATH, new ModifiableSolrParams());
 
     // positive check that our only existing "healthy" node works with cloud client
@@ -195,7 +196,7 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
     //  node2: collection1 -> shard1: [ replica2 (active), replica4 (down) ]
     //         collection2 -> shard1: [ replica1 (active) ]
     try (ZkStateReader reader = ClusterStateMockUtil.buildClusterState(
-        "csrr2rDr2Dcsr2FrR", 1, 1, "node1", "node2")) {
+        "csrr2rDr2Dcsr2FrR", 1, "node1", "node2")) {
       ClusterState clusterState = reader.getClusterState();
 
       // Node 1

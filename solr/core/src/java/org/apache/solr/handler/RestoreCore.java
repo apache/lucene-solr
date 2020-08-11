@@ -153,6 +153,7 @@ public class RestoreCore implements Callable<Boolean> {
   }
 
   private void openNewSearcher() throws Exception {
+    @SuppressWarnings({"rawtypes"})
     Future[] waitSearcher = new Future[1];
     core.getSearcher(true, false, waitSearcher, true);
     if (waitSearcher[0] != null) {

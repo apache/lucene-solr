@@ -46,10 +46,11 @@ import com.google.common.base.Preconditions;
  * interface e.g. NFS).
  */
 public class LocalFileSystemRepository implements BackupRepository {
+  @SuppressWarnings("rawtypes")
   private NamedList config = null;
 
   @Override
-  public void init(NamedList args) {
+  public void init(@SuppressWarnings("rawtypes") NamedList args) {
     this.config = args;
   }
 

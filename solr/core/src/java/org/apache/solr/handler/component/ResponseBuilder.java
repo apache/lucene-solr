@@ -215,6 +215,7 @@ public class ResponseBuilder
     NamedList<Object> target = debugInfo;
     for (int i=0; i<path.length-1; i++) {
       String elem = path[i];
+      @SuppressWarnings({"unchecked"})
       NamedList<Object> newTarget = (NamedList<Object>)debugInfo.get(elem);
       if (newTarget == null) {
         newTarget = new SimpleOrderedMap<>();
@@ -250,7 +251,7 @@ public class ResponseBuilder
 
   public void addMergeStrategy(MergeStrategy mergeStrategy) {
     if(mergeStrategies == null) {
-      mergeStrategies = new ArrayList();
+      mergeStrategies = new ArrayList<>();
     }
 
     mergeStrategies.add(mergeStrategy);

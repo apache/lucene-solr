@@ -48,7 +48,14 @@ allprojects {
                     // awkward on import and resolves provider properties even though task dependencies
                     // have not been run yet?
                     def gitRev = rootProject.hasProperty("gitRev") ? rootProject.gitRev : ""
-                    "${project.version} ${gitRev} - ${System.properties['user.name']} - ${buildDate} ${buildTime}"
+
+                    // For snapshot builds just include the project version and gitRev so that
+                    // JARs don't need to be recompiled just because the manifest has changed.
+                    if (snapshotBuild) {
+                      return "${project.version} ${gitRev} [snapshot build, details omitted]"
+                    } else {
+                      return "${project.version} ${gitRev} - ${System.properties['user.name']} - ${buildDate} ${buildTime}"
+                    }
                 }
 
                 manifest {

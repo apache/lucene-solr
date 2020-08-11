@@ -105,8 +105,6 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     // random create tlog or pull type replicas with nrt
     boolean isTlog = random().nextBoolean();
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(coll, "conf1", 2, 1, isTlog ? 1 : 0, !isTlog ? 1 : 0);
-    create.setMaxShardsPerNode(2);
-    create.setAutoAddReplicas(false);
     cloudClient.request(create);
 
     addDocs(coll, 100);
@@ -250,7 +248,6 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     // random create tlog or pull type replicas with nrt
     boolean isTlog = random().nextBoolean();
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(coll, "conf1", 2, 1, isTlog ? 1 : 0, !isTlog ? 1 : 0);
-    create.setAutoAddReplicas(false);
     cloudClient.request(create);
 
     addDocs(coll, 100);

@@ -656,4 +656,14 @@ public final class IOUtils {
      */
     void accept(T input) throws IOException;
   }
+
+  /**
+   * A Function that may throw an IOException
+   * @see java.util.function.Function
+   */
+  @FunctionalInterface
+  public interface IOFunction<T, R> {
+    R apply(T t) throws IOException;
+  }
+
 }

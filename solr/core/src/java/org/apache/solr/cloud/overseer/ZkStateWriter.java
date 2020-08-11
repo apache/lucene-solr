@@ -38,9 +38,8 @@ import org.slf4j.LoggerFactory;
 import static java.util.Collections.singletonMap;
 
 /**
- * ZkStateWriter is responsible for writing updates to the cluster state stored in ZooKeeper for
- * both stateFormat=1 collection (stored in shared /clusterstate.json in ZK) and stateFormat=2 collections
- * each of which get their own individual state.json in ZK.
+ * ZkStateWriter is responsible for writing updates to the cluster state stored in ZooKeeper for collections
+ * each of which gets their own individual state.json in ZK.
  *
  * Updates to the cluster state are specified using the
  * {@link #enqueueUpdate(ClusterState, List, ZkWriteCallback)} method. The class buffers updates
@@ -67,7 +66,6 @@ public class ZkStateWriter {
   protected Map<String, DocCollection> updates = new HashMap<>();
   private int numUpdates = 0;
   protected ClusterState clusterState = null;
-  protected boolean isClusterStateModified = false;
   protected long lastUpdatedTime = 0;
 
   /**
@@ -115,14 +113,9 @@ public class ZkStateWriter {
 
     for (ZkWriteCommand cmd : cmds) {
       if (cmd == NO_OP) continue;
-      if (!isClusterStateModified && clusterStateGetModifiedWith(cmd, prevState)) {
-        isClusterStateModified = true;
-      }
       prevState = prevState.copyWith(cmd.name, cmd.collection);
-      if (cmd.collection == null || cmd.collection.getStateFormat() != 1) {
-        updates.put(cmd.name, cmd.collection);
-        numUpdates++;
-      }
+      updates.put(cmd.name, cmd.collection);
+      numUpdates++;
     }
     clusterState = prevState;
 
@@ -145,15 +138,6 @@ public class ZkStateWriter {
   }
 
   /**
-   * Check whether {@value ZkStateReader#CLUSTER_STATE} (for stateFormat = 1) get changed given command
-   */
-  private boolean clusterStateGetModifiedWith(ZkWriteCommand command, ClusterState state) {
-    DocCollection previousCollection = state.getCollectionOrNull(command.name);
-    boolean wasPreviouslyStateFormat1 = previousCollection != null && previousCollection.getStateFormat() == 1;
-    boolean isCurrentlyStateFormat1 = command.collection != null && command.collection.getStateFormat() == 1;
-    return wasPreviouslyStateFormat1 || isCurrentlyStateFormat1;
-  }
-  /**
    * Logic to decide a flush after processing a list of ZkWriteCommand
    *
    * @return true if a flush to ZK is required, false otherwise
@@ -163,7 +147,7 @@ public class ZkStateWriter {
   }
 
   public boolean hasPendingUpdates() {
-    return numUpdates != 0 || isClusterStateModified;
+    return numUpdates != 0;
   }
 
   /**
@@ -192,23 +176,21 @@ public class ZkStateWriter {
             // let's clean up the state.json of this collection only, the rest should be clean by delete collection cmd
             log.debug("going to delete state.json {}", path);
             reader.getZkClient().clean(path);
-          } else if (c.getStateFormat() > 1) {
+          } else {
             byte[] data = Utils.toJSON(singletonMap(c.getName(), c));
             if (reader.getZkClient().exists(path, true)) {
               if (log.isDebugEnabled()) {
                 log.debug("going to update_collection {} version: {}", path, c.getZNodeVersion());
               }
               Stat stat = reader.getZkClient().setData(path, data, c.getZNodeVersion(), true);
-              DocCollection newCollection = new DocCollection(name, c.getSlicesMap(), c.getProperties(), c.getRouter(), stat.getVersion(), path);
+              DocCollection newCollection = new DocCollection(name, c.getSlicesMap(), c.getProperties(), c.getRouter(), stat.getVersion());
               clusterState = clusterState.copyWith(name, newCollection);
             } else {
               log.debug("going to create_collection {}", path);
               reader.getZkClient().create(path, data, CreateMode.PERSISTENT, true);
-              DocCollection newCollection = new DocCollection(name, c.getSlicesMap(), c.getProperties(), c.getRouter(), 0, path);
+              DocCollection newCollection = new DocCollection(name, c.getSlicesMap(), c.getProperties(), c.getRouter(), 0);
               clusterState = clusterState.copyWith(name, newCollection);
             }
-          } else if (c.getStateFormat() == 1) {
-            isClusterStateModified = true;
           }
         }
 
@@ -216,15 +198,6 @@ public class ZkStateWriter {
         numUpdates = 0;
       }
 
-      if (isClusterStateModified) {
-        assert clusterState.getZkClusterStateVersion() >= 0;
-        byte[] data = Utils.toJSON(clusterState);
-        Stat stat = reader.getZkClient().setData(ZkStateReader.CLUSTER_STATE, data, clusterState.getZkClusterStateVersion(), true);
-        Map<String, DocCollection> collections = clusterState.getCollectionsMap();
-        // use the reader's live nodes because our cluster state's live nodes may be stale
-        clusterState = new ClusterState(stat.getVersion(), reader.getClusterState().getLiveNodes(), collections);
-        isClusterStateModified = false;
-      }
       lastUpdatedTime = System.nanoTime();
       success = true;
     } catch (KeeperException.BadVersionException bve) {

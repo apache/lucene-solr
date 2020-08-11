@@ -262,7 +262,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
     }
 
     /**
-     * Create a merged view of all collections (internal from /clusterstate.json and external from /collections/?/state.json
+     * Create a merged view of all collections from /collections/?/state.json
      */
     private synchronized List<String> getCollections(SolrZkClient zkClient) throws KeeperException, InterruptedException {
       if (cachedCollections == null) {
@@ -283,7 +283,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
     /**
      * Gets the requested page of collections after applying filters and offsets.
      */
-    public PageOfCollections fetchPage(PageOfCollections page, SolrZkClient zkClient)
+    public void fetchPage(PageOfCollections page, SolrZkClient zkClient)
         throws KeeperException, InterruptedException {
 
 
@@ -305,8 +305,6 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
       // status until reading all status objects from ZK
       if (page.filterType != FilterType.status)
         page.selectPage(children);
-
-      return page;
     }
 
     @Override
@@ -353,6 +351,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
   private PagedCollectionSupport pagingSupport;
 
   @Override
+  @SuppressWarnings({"unchecked"})
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     final SolrParams params = req.getParams();
     Map<String, String> map = new HashMap<>(1);
@@ -382,7 +381,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
     String dumpS = params.get("dump");
     boolean dump = dumpS != null && dumpS.equals("true");
 
-    int start = params.getInt("start", 0);
+    int start = params.getInt("start", 0); // Note start ignored if rows not specified
     int rows = params.getInt("rows", -1);
 
     String filterType = params.get("filterType");
@@ -404,12 +403,19 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
     printer.detail = detail;
     printer.dump = dump;
     boolean isGraphView = "graph".equals(params.get("view"));
-    printer.page = (isGraphView && "/clusterstate.json".equals(path))
-        ? new PageOfCollections(start, rows, type, filter) : null;
+    // There is no znode /clusterstate.json (removed in Solr 9), but we do as if there's one and return collection listing
+    // Need to change services.js if cleaning up here, collection list is used from Admin UI Cloud - Graph
+    boolean paginateCollections = (isGraphView && "/clusterstate.json".equals(path));
+    printer.page = paginateCollections ? new PageOfCollections(start, rows, type, filter) : null;
     printer.pagingSupport = pagingSupport;
 
     try {
-      printer.print(path);
+      if (paginateCollections) {
+        // List collections and allow pagination, but no specific znode info like when looking at a normal ZK path
+        printer.printPaginatedCollections();
+      } else {
+        printer.print(path);
+      }
     } finally {
       printer.close();
     }
@@ -431,7 +437,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
     String keeperAddr; // the address we're connected to
 
     final BAOS baos = new BAOS();
-    final Writer out = new OutputStreamWriter(baos,  StandardCharsets.UTF_8);
+    final Writer out = new OutputStreamWriter(baos, StandardCharsets.UTF_8);
     SolrZkClient zkClient;
 
     PageOfCollections page;
@@ -452,7 +458,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
       }
     }
 
-    // main entry point
+    // main entry point for printing from path
     void print(String path) throws IOException {
       if (zkClient == null) {
         return;
@@ -500,6 +506,90 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
       out.write(chars.toString());
     }
 
+    // main entry point for printing collections
+    @SuppressWarnings("unchecked")
+    void printPaginatedCollections() throws IOException {
+      SortedMap<String, Object> collectionStates;
+      try {
+        // support paging of the collections graph view (in case there are many collections)
+        // fetch the requested page of collections and then retrieve the state for each
+        pagingSupport.fetchPage(page, zkClient);
+        // keep track of how many collections match the filter
+        boolean applyStatusFilter = (page.filterType == FilterType.status && page.filter != null);
+        List<String> matchesStatusFilter = applyStatusFilter ? new ArrayList<String>() : null;
+        Set<String> liveNodes = applyStatusFilter ?
+            zkController.getZkStateReader().getClusterState().getLiveNodes() : null;
+
+        collectionStates = new TreeMap<>(pagingSupport);
+        for (String collection : page.selected) {
+          // Get collection state from ZK
+          String collStatePath = String.format(Locale.ROOT, "/collections/%s/state.json", collection);
+          String childDataStr = null;
+          try {
+            byte[] childData = zkClient.getData(collStatePath, null, null, true);
+            if (childData != null)
+              childDataStr = (new BytesRef(childData)).utf8ToString();
+          } catch (KeeperException.NoNodeException nne) {
+            log.warn("State for collection {} not found.", collection);
+          } catch (Exception childErr) {
+            log.error("Failed to get {} due to", collStatePath, childErr);
+          }
+
+          if (childDataStr != null) {
+            Map<String, Object> extColl = (Map<String, Object>) Utils.fromJSONString(childDataStr);
+            Object collectionState = extColl.get(collection);
+
+            if (applyStatusFilter) {
+              // verify this collection matches the filtered state
+              if (page.matchesStatusFilter((Map<String, Object>) collectionState, liveNodes)) {
+                matchesStatusFilter.add(collection);
+                collectionStates.put(collection, collectionState);
+              }
+            } else {
+              collectionStates.put(collection, collectionState);
+            }
+          }
+        }
+
+        if (applyStatusFilter) {
+          // update the paged navigation info after applying the status filter
+          page.selectPage(matchesStatusFilter);
+
+          // rebuild the Map of state data
+          SortedMap<String, Object> map = new TreeMap<String, Object>(pagingSupport);
+          for (String next : page.selected)
+            map.put(next, collectionStates.get(next));
+          collectionStates = map;
+        }
+      } catch (KeeperException | InterruptedException e) {
+        writeError(500, e.toString());
+        return;
+      }
+
+      CharArr chars = new CharArr();
+      JSONWriter json = new JSONWriter(chars, 2);
+      json.startObject();
+
+      json.writeString("znode");
+      json.writeNameSeparator();
+      json.startObject();
+
+      // For some reason, without this the Json is badly formed
+      writeKeyValue(json, PATH, "Undefined", true);
+
+      if (collectionStates != null) {
+        CharArr collectionOut = new CharArr();
+        new JSONWriter(collectionOut, 2).write(collectionStates);
+        writeKeyValue(json, "data", collectionOut.toString(), false);
+      }
+
+      writeKeyValue(json, "paging", page.getPagingHeader(), false);
+
+      json.endObject();
+      json.endObject();
+      out.write(chars.toString());
+    }
+
     void writeError(int code, String msg) throws IOException {
       throw new SolrException(ErrorCode.getErrorCode(code), msg);
       /*response.setStatus(code);
@@ -520,7 +610,6 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
 
       out.write(chars.toString());*/
     }
-
 
     boolean printTree(JSONWriter json, String path) throws IOException {
       String label = path;
@@ -623,7 +712,6 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
       json.write(v);
     }
 
-    @SuppressWarnings("unchecked")
     boolean printZnode(JSONWriter json, String path) throws IOException {
       try {
         String dataStr = null;
@@ -636,95 +724,6 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
             dataStr = (new BytesRef(data)).utf8ToString();
           } catch (Exception e) {
             dataStrErr = "data is not parsable as a utf8 String: " + e.toString();
-          }
-        }
-        // support paging of the collections graph view (in case there are many collections)
-        if (page != null) {
-          // we've already pulled the data for /clusterstate.json from ZooKeeper above,
-          // but it needs to be parsed into a map so we can lookup collection states before
-          // trying to find them in the /collections/?/state.json znode
-          Map<String, Object> clusterstateJsonMap = null;
-          if (dataStr != null) {
-            try {
-              clusterstateJsonMap = (Map<String, Object>) Utils.fromJSONString(dataStr);
-            } catch (Exception e) {
-              throw new SolrException(ErrorCode.SERVER_ERROR,
-                  "Failed to parse /clusterstate.json from ZooKeeper due to: " + e, e);
-            }
-          } else {
-            clusterstateJsonMap = Utils.makeMap();
-          }
-
-          // fetch the requested page of collections and then retrieve the state for each 
-          page = pagingSupport.fetchPage(page, zkClient);
-          // keep track of how many collections match the filter
-          boolean applyStatusFilter =
-              (page.filterType == FilterType.status && page.filter != null);
-          List<String> matchesStatusFilter = applyStatusFilter ? new ArrayList<String>() : null;
-          Set<String> liveNodes = applyStatusFilter ?
-              zkController.getZkStateReader().getClusterState().getLiveNodes() : null;
-
-          SortedMap<String, Object> collectionStates = new TreeMap<String, Object>(pagingSupport);
-          for (String collection : page.selected) {
-            Object collectionState = clusterstateJsonMap.get(collection);
-            if (collectionState != null) {
-              // collection state was in /clusterstate.json
-              if (applyStatusFilter) {
-                // verify this collection matches the status filter
-                if (page.matchesStatusFilter((Map<String, Object>) collectionState, liveNodes)) {
-                  matchesStatusFilter.add(collection);
-                  collectionStates.put(collection, collectionState);
-                }
-              } else {
-                collectionStates.put(collection, collectionState);
-              }
-            } else {
-              // looks like an external collection ...
-              String collStatePath = String.format(Locale.ROOT, "/collections/%s/state.json", collection);
-              String childDataStr = null;
-              try {
-                byte[] childData = zkClient.getData(collStatePath, null, null, true);
-                if (childData != null)
-                  childDataStr = (new BytesRef(childData)).utf8ToString();
-              } catch (KeeperException.NoNodeException nne) {
-                log.warn("State for collection {} not found in /clusterstate.json or /collections/{}/state.json!"
-                    , collection, collection);
-              } catch (Exception childErr) {
-                log.error("Failed to get {} due to", collStatePath, childErr);
-              }
-
-              if (childDataStr != null) {
-                Map<String, Object> extColl = (Map<String, Object>) Utils.fromJSONString(childDataStr);
-                collectionState = extColl.get(collection);
-
-                if (applyStatusFilter) {
-                  // verify this collection matches the filtered state
-                  if (page.matchesStatusFilter((Map<String, Object>) collectionState, liveNodes)) {
-                    matchesStatusFilter.add(collection);
-                    collectionStates.put(collection, collectionState);
-                  }
-                } else {
-                  collectionStates.put(collection, collectionState);
-                }
-              }
-            }
-          }
-
-          if (applyStatusFilter) {
-            // update the paged navigation info after applying the status filter
-            page.selectPage(matchesStatusFilter);
-
-            // rebuild the Map of state data
-            SortedMap<String, Object> map = new TreeMap<String, Object>(pagingSupport);
-            for (String next : page.selected)
-              map.put(next, collectionStates.get(next));
-            collectionStates = map;
-          }
-
-          if (collectionStates != null) {
-            CharArr out = new CharArr();
-            new JSONWriter(out, 2).write(collectionStates);
-            dataStr = out.toString();
           }
         }
 

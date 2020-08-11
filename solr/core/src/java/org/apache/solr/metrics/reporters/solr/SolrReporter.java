@@ -94,6 +94,7 @@ public class SolrReporter extends ScheduledReporter {
       }
     }
 
+    @SuppressWarnings({"unchecked"})
     public static Report fromMap(Map<?, ?> map) {
       String groupPattern = (String)map.get("group");
       String labelPattern = (String)map.get("label");
@@ -259,6 +260,7 @@ public class SolrReporter extends ScheduledReporter {
      * @return configured instance of reporter
      * @deprecated use {@link #build(SolrClientCache, Supplier)} instead.
      */
+    @Deprecated
     public SolrReporter build(HttpClient client, Supplier<String> urlProvider) {
       return new SolrReporter(client, urlProvider, metricManager, reports, handler, reporterId, rateUnit, durationUnit,
           params, skipHistograms, skipAggregateValues, cloudClient, compact);
@@ -478,6 +480,7 @@ public class SolrReporter extends ScheduledReporter {
   }
 
   @Override
+  @SuppressWarnings({"rawtypes"})
   public void report(SortedMap<String, Gauge> gauges, SortedMap<String, Counter> counters, SortedMap<String, Histogram> histograms, SortedMap<String, Meter> meters, SortedMap<String, Timer> timers) {
     // no-op - we do all the work in report()
   }

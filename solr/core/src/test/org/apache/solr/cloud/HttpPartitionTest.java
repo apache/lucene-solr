@@ -159,7 +159,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
 
       TestInjection.prepRecoveryOpPauseForever = "true:100";
       
-      createCollection(testCollectionName, "conf1", 1, 2, 1);
+      createCollection(testCollectionName, "conf1", 1, 2);
       cloudClient.setDefaultCollection(testCollectionName);
 
       sendDoc(1, 2);
@@ -211,7 +211,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   protected void testRf2() throws Exception {
     // create a collection that has 1 shard but 2 replicas
     String testCollectionName = "c8n_1x2";
-    createCollectionRetry(testCollectionName, "conf1", 1, 2, 1);
+    createCollectionRetry(testCollectionName, "conf1", 1, 2);
     cloudClient.setDefaultCollection(testCollectionName);
     
     sendDoc(1);
@@ -330,7 +330,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   protected void testRf3() throws Exception {
     // create a collection that has 1 shard but 2 replicas
     String testCollectionName = "c8n_1x3";
-    createCollectionRetry(testCollectionName, "conf1", 1, 3, 1);
+    createCollectionRetry(testCollectionName, "conf1", 1, 3);
     
     cloudClient.setDefaultCollection(testCollectionName);
     
@@ -381,10 +381,11 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   }
 
   // test inspired by SOLR-6511
+  @SuppressWarnings({"try"})
   protected void testLeaderZkSessionLoss() throws Exception {
 
     String testCollectionName = "c8n_1x2_leader_session_loss";
-    createCollectionRetry(testCollectionName, "conf1", 1, 2, 1);
+    createCollectionRetry(testCollectionName, "conf1", 1, 2);
     cloudClient.setDefaultCollection(testCollectionName);
 
     sendDoc(1);
@@ -567,19 +568,21 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   }
 
   protected void assertDocNotExists(HttpSolrClient solr, String coll, String docId) throws Exception {
+    @SuppressWarnings({"rawtypes"})
     NamedList rsp = realTimeGetDocId(solr, docId);
     String match = JSONTestUtil.matchObj("/id", rsp.get("doc"), Integer.valueOf(docId));
     assertTrue("Doc with id=" + docId + " is found in " + solr.getBaseURL()
         + " due to: " + match + "; rsp="+rsp, match != null);
   }
 
+  @SuppressWarnings({"rawtypes"})
   private NamedList realTimeGetDocId(HttpSolrClient solr, String docId) throws SolrServerException, IOException {
     QueryRequest qr = new QueryRequest(params("qt", "/get", "id", docId, "distrib", "false"));
     return solr.request(qr);
   }
 
   protected int getReplicaPort(Replica replica) {
-    String replicaNode = replica.getNodeName();    
+    String replicaNode = replica.getNodeName();
     String tmp = replicaNode.substring(replicaNode.indexOf(':')+1);
     if (tmp.indexOf('_') != -1)
       tmp = tmp.substring(0,tmp.indexOf('_'));

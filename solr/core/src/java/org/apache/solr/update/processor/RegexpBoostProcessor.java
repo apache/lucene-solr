@@ -88,6 +88,7 @@ public class RegexpBoostProcessor extends UpdateRequestProcessor {
 
     try {
       synchronized (sharedObjectCache) {
+        @SuppressWarnings({"unchecked"})
         List<BoostEntry> cachedBoostEntries =
             (List<BoostEntry>) sharedObjectCache.get(BOOST_ENTRIES_CACHE_KEY);
 

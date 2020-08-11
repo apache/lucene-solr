@@ -670,4 +670,4 @@ http://localhost:8983/solr/admin/metrics?regex=.*\.requests&group=core
 Request only "user.name" property of "system.properties" metric from registry "solr.jvm":
 
 [source,text]
-http://localhost:8983/solr/admin/metrics?wt=xml?key=solr.jvm:system.properties:user.name
+http://localhost:8983/solr/admin/metrics?wt=xml&key=solr.jvm:system.properties:user.name

@@ -19,6 +19,20 @@
 
 Cross Data Center Replication (CDCR) allows you to create multiple SolrCloud data centers and keep them in sync.
 
+[WARNING]
+.CDCR is deprecated
+====
+This feature (in its current form) is deprecated and will likely be removed in 9.0.
+
+Anyone currently using CDCR should consider migrating away from it.
+There are several open issues which make CDCR complex to maintain and generally unstable.
+
+The simplest alternative to CDCR is to manually maintain two Solr implementations in separate data centers and manage them as completely separate installations.
+While this may require more initial setup, it will be more stable in the long run.
+
+There are other alternatives, and the Solr community is working to identify the best recommended replacement in time for 9.0.
+====
+
 == What is CDCR?
 
 The <<solrcloud.adoc#solrcloud,SolrCloud>> architecture is designed to support <<near-real-time-searching.adoc#near-real-time-searching,Near Real Time (NRT)>> searches on a Solr collection that usual consists of multiple nodes in a single data center. CDCR augments this model by forwarding updates from a Solr collection in one data center to a parallel Solr collection in another data center where the network latencies are greater than the SolrCloud model was designed to accommodate.

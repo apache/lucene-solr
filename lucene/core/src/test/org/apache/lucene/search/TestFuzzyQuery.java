@@ -224,7 +224,46 @@ public class TestFuzzyQuery extends LuceneTestCase {
     reader.close();
     directory.close();
   }
-  
+
+  public void testPrefixLengthEqualStringLength() throws Exception {
+    Directory directory = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
+    addDoc("b*a", writer);
+    addDoc("b*ab", writer);
+    addDoc("b*abc", writer);
+    addDoc("b*abcd", writer);
+    String multibyte = "아프리카코끼리속";
+    addDoc(multibyte, writer);
+    IndexReader reader = writer.getReader();
+    IndexSearcher searcher = newSearcher(reader);
+    writer.close();
+
+    int maxEdits = 0;
+    int prefixLength = 3;
+    FuzzyQuery query = new FuzzyQuery(new Term("field", "b*a"), maxEdits, prefixLength);
+    ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
+    assertEquals(1, hits.length);
+
+    maxEdits = 1;
+    query = new FuzzyQuery(new Term("field", "b*a"), maxEdits, prefixLength);
+    hits = searcher.search(query, 1000).scoreDocs;
+    assertEquals(2, hits.length);
+
+    maxEdits = 2;
+    query = new FuzzyQuery(new Term("field", "b*a"), maxEdits, prefixLength);
+    hits = searcher.search(query, 1000).scoreDocs;
+    assertEquals(3, hits.length);
+
+    maxEdits = 1;
+    prefixLength = multibyte.length() - 1;
+    query = new FuzzyQuery(new Term("field", multibyte.substring(0, prefixLength)), maxEdits, prefixLength);
+    hits = searcher.search(query, 1000).scoreDocs;
+    assertEquals(1, hits.length);
+
+    reader.close();
+    directory.close();
+  }
+
   public void test2() throws Exception {
     Directory directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory, new MockAnalyzer(random(), MockTokenizer.KEYWORD, false));

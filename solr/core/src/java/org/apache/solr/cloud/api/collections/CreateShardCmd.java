@@ -51,6 +51,7 @@ public class CreateShardCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   @Override
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void call(ClusterState clusterState, ZkNodeProps message, NamedList results) throws Exception {
     String extCollectionName = message.getStr(COLLECTION_PROP);
     String sliceName = message.getStr(SHARD_ID_PROP);

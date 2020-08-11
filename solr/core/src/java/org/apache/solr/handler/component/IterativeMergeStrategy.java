@@ -112,6 +112,7 @@ public abstract class IterativeMergeStrategy implements MergeStrategy  {
   }
 
   public List<Future<CallBack>> callBack(List<ShardResponse> responses, QueryRequest req) {
+    @SuppressWarnings({"unchecked", "rawtypes"})
     List<Future<CallBack>> futures = new ArrayList();
     for(ShardResponse response : responses) {
       futures.add(this.executorService.submit(new CallBack(response, req)));

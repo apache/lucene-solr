@@ -32,7 +32,6 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.MapWriter;
@@ -89,7 +88,7 @@ public class PackageStoreAPI {
    */
   public ArrayList<String> shuffledNodes() {
     Set<String> liveNodes = coreContainer.getZkController().getZkStateReader().getClusterState().getLiveNodes();
-    ArrayList<String> l = new ArrayList(liveNodes);
+    ArrayList<String> l = new ArrayList<>(liveNodes);
     l.remove(coreContainer.getZkController().getNodeName());
     Collections.shuffle(l, BlobRepository.RANDOM);
     return l;
@@ -128,15 +127,61 @@ public class PackageStoreAPI {
 
   }
 
-  @EndPoint(
-      path = "/cluster/files/*",
-      method = SolrRequest.METHOD.PUT,
-      permission = PermissionNameProvider.Name.FILESTORE_WRITE_PERM)
   public class FSWrite {
 
     static final String TMP_ZK_NODE = "/packageStoreWriteInProgress";
 
-    @Command
+    @EndPoint(
+            path = "/cluster/files/*",
+            method = SolrRequest.METHOD.DELETE,
+            permission = PermissionNameProvider.Name.FILESTORE_WRITE_PERM)
+    public void delete(SolrQueryRequest req, SolrQueryResponse rsp) {
+      if (!coreContainer.getPackageLoader().getPackageAPI().isEnabled()) {
+        throw new RuntimeException(PackageAPI.ERR_MSG);
+      }
+
+      try {
+        coreContainer.getZkController().getZkClient().create(TMP_ZK_NODE, "true".getBytes(UTF_8),
+                CreateMode.EPHEMERAL, true);
+        String path = req.getPathTemplateValues().get("*");
+        validateName(path, true);
+        if(coreContainer.getPackageLoader().getPackageAPI().isJarInuse(path)) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "jar in use, can't delete");
+        }
+        PackageStore.FileType type = packageStore.getType(path, true);
+        if(type == PackageStore.FileType.NOFILE) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,  "Path does not exist: " + path);
+        }
+        packageStore.delete(path);
+      } catch (SolrException e){
+        throw e;
+      } catch (Exception e) {
+        log.error("Unknown error",e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      }  finally {
+        try {
+          coreContainer.getZkController().getZkClient().delete(TMP_ZK_NODE, -1, true);
+        } catch (Exception e) {
+          log.error("Unexpected error  ", e);
+        }
+
+      }
+    }
+
+    @EndPoint(
+            path = "/node/files/*",
+            method = SolrRequest.METHOD.DELETE,
+            permission = PermissionNameProvider.Name.FILESTORE_WRITE_PERM)
+    public void deleteLocal(SolrQueryRequest req, SolrQueryResponse rsp) {
+      String path = req.getPathTemplateValues().get("*");
+      validateName(path, true);
+      packageStore.deleteLocal(path);
+    }
+
+    @EndPoint(
+        path = "/cluster/files/*",
+        method = SolrRequest.METHOD.PUT,
+        permission = PermissionNameProvider.Name.FILESTORE_WRITE_PERM)
     public void upload(SolrQueryRequest req, SolrQueryResponse rsp) {
       if (!coreContainer.getPackageLoader().getPackageAPI().isEnabled()) {
         throw new RuntimeException(PackageAPI.ERR_MSG);
@@ -230,12 +275,11 @@ public class PackageStoreAPI {
     return new MetaData(vals);
   }
 
-  @EndPoint(
-      path = "/node/files/*",
-      method = SolrRequest.METHOD.GET,
-      permission = PermissionNameProvider.Name.FILESTORE_READ_PERM)
   public class FSRead {
-    @Command
+    @EndPoint(
+        path = "/node/files/*",
+        method = SolrRequest.METHOD.GET,
+        permission = PermissionNameProvider.Name.FILESTORE_READ_PERM)
     public void read(SolrQueryRequest req, SolrQueryResponse rsp) {
       String path = req.getPathTemplateValues().get("*");
       String pathCopy = path;
@@ -279,6 +323,7 @@ public class PackageStoreAPI {
           int idx = path.lastIndexOf('/');
           String fileName = path.substring(idx + 1);
           String parentPath = path.substring(0, path.lastIndexOf('/'));
+          @SuppressWarnings({"rawtypes"})
           List l = packageStore.list(parentPath, s -> s.equals(fileName));
           rsp.add("files", Collections.singletonMap(path, l.isEmpty() ? null : l.get(0)));
           return;
@@ -312,7 +357,8 @@ public class PackageStoreAPI {
     List<String> signatures;
     Map<String, Object> otherAttribs;
 
-    public MetaData(Map m) {
+    @SuppressWarnings({"unchecked"})
+    public MetaData(@SuppressWarnings({"rawtypes"})Map m) {
       m = Utils.getDeepCopy(m, 3);
       this.sha512 = (String) m.remove(SHA512);
       this.signatures = (List<String>) m.remove("sig");

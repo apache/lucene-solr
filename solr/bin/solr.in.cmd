@@ -35,6 +35,7 @@ REM set GC_LOG_OPTS=-verbose:gc -XX:+PrintHeapAtGC -XX:+PrintGCDetails -XX:+Prin
 
 REM Various GC settings have shown to work well for a number of common Solr workloads.
 REM See solr.cmd GC_TUNE for the default list.
+REM set GC_TUNE=-XX:+ExplicitGCInvokesConcurrent
 REM set GC_TUNE=-XX:SurvivorRatio=4
 REM set GC_TUNE=%GC_TUNE% -XX:TargetSurvivorRatio=90
 REM set GC_TUNE=%GC_TUNE% -XX:MaxTenuringThreshold=8
@@ -131,9 +132,9 @@ REM to enable https module with custom jetty configuration.
 REM set SOLR_SSL_ENABLED=true
 REM Uncomment to set SSL-related system properties
 REM Be sure to update the paths to the correct keystore for your environment
-REM set SOLR_SSL_KEY_STORE=etc/solr-ssl.keystore.jks
+REM set SOLR_SSL_KEY_STORE=etc/solr-ssl.keystore.p12
 REM set SOLR_SSL_KEY_STORE_PASSWORD=secret
-REM set SOLR_SSL_TRUST_STORE=etc/solr-ssl.keystore.jks
+REM set SOLR_SSL_TRUST_STORE=etc/solr-ssl.keystore.p12
 REM set SOLR_SSL_TRUST_STORE_PASSWORD=secret
 REM Require clients to authenticate
 REM set SOLR_SSL_NEED_CLIENT_AUTH=false
@@ -208,3 +209,7 @@ REM change the value to true. The option is configured as a system property as d
 REM scripts.
 REM set SOLR_ADMIN_UI_DISABLED=false
 
+REM Solr is by default allowed to read and write data from/to SOLR_HOME and a few other well defined locations
+REM Sometimes it may be necessary to place a core or a backup on a different location or a different disk
+REM This parameter lets you specify file system path(s) to explicitly allow. The special value of '*' will allow any path
+REM SOLR_OPTS="%SOLR_OPTS% -Dsolr.allowPaths=D:\,E:\other\path"

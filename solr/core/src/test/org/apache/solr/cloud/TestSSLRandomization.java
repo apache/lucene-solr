@@ -139,7 +139,7 @@ public class TestSSLRandomization extends SolrCloudTestCase {
     // for some cases, we know exactly what the config should be regardless of randomization factors
     SSLTestConfig conf;
 
-    for (Class c : Arrays.asList(FullyAnnotated.class, InheritedFullyAnnotated.class,
+    for (@SuppressWarnings({"rawtypes"})Class c : Arrays.asList(FullyAnnotated.class, InheritedFullyAnnotated.class,
                                  GrandchildInheritedEmptyAnnotatationWithOverride.class )) {
       r = SSLRandomizer.getSSLRandomizerForClass(c);
       assertEquals(c.toString(), 0.42D, r.ssl, 0.0D);
@@ -147,7 +147,7 @@ public class TestSSLRandomization extends SolrCloudTestCase {
       assertTrue(c.toString(), r.debug.contains("foo"));
     }
 
-    for (Class c : Arrays.asList(NotAnnotated.class, InheritedNotAnnotated.class)) { 
+    for (@SuppressWarnings({"rawtypes"})Class c : Arrays.asList(NotAnnotated.class, InheritedNotAnnotated.class)) {
       r = SSLRandomizer.getSSLRandomizerForClass(c);
       assertEquals(c.toString(), 0.0D, r.ssl, 0.0D);
       assertEquals(c.toString(), 0.0D, r.clientAuth, 0.0D);
@@ -157,7 +157,7 @@ public class TestSSLRandomization extends SolrCloudTestCase {
       assertEquals(c.toString(), false, conf.isClientAuthMode());
     }
 
-    for (Class c : Arrays.asList(Suppressed.class,
+    for (@SuppressWarnings({"rawtypes"})Class c : Arrays.asList(Suppressed.class,
                                  InheritedSuppressed.class,
                                  InheritedAnnotationButSuppressed.class,
                                  InheritedSuppressedWithIgnoredAnnotation.class)) {
@@ -171,13 +171,13 @@ public class TestSSLRandomization extends SolrCloudTestCase {
       assertEquals(c.toString(), false, conf.isClientAuthMode());
     }
 
-    for (Class c : Arrays.asList(EmptyAnnotated.class, InheritedEmptyAnnotated.class)) {
+    for (@SuppressWarnings({"rawtypes"})Class c : Arrays.asList(EmptyAnnotated.class, InheritedEmptyAnnotated.class)) {
       r = SSLRandomizer.getSSLRandomizerForClass(c);
       assertEquals(c.toString(), RandomizeSSL.DEFAULT_ODDS, r.ssl, 0.0D);
       assertEquals(c.toString(), RandomizeSSL.DEFAULT_ODDS, r.clientAuth, 0.0D);
     }
 
-    for (Class c : Arrays.asList(SimplyAnnotated.class, InheritedEmptyAnnotatationWithOverride.class)) {
+    for (@SuppressWarnings({"rawtypes"})Class c : Arrays.asList(SimplyAnnotated.class, InheritedEmptyAnnotatationWithOverride.class)) {
       r = SSLRandomizer.getSSLRandomizerForClass(c);
       assertEquals(c.toString(), 0.5D, r.ssl, 0.0D);
       assertEquals(c.toString(), 0.5D, r.clientAuth, 0.0D);
@@ -205,7 +205,7 @@ public class TestSSLRandomization extends SolrCloudTestCase {
     assertEquals(RandomizeSSL.DEFAULT_ODDS, r.ssl, 0.0D);
     assertEquals(0.42D, r.clientAuth, 0.0D);
 
-    for (Class c : Arrays.asList(SSLOutOfRangeAnnotated.class,
+    for (@SuppressWarnings({"rawtypes"})Class c : Arrays.asList(SSLOutOfRangeAnnotated.class,
                                  ClientAuthOutOfRangeAnnotated.class,
                                  InheritedOutOfRangeAnnotated.class)) {
       expectThrows(IllegalArgumentException.class, () -> {
