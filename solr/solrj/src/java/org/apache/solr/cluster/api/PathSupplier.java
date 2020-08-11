@@ -16,11 +16,13 @@
  */
 package org.apache.solr.cluster.api;
 
+import java.util.Iterator;
+
 /**For a given route, we may have multiple url prefix.
  * This implementation would give one after the other. If one fails, try next
  *
  */
 public interface PathSupplier {
 
-    String nextPath(ApiType apiType);
+    Iterator<String> getPaths(ApiType apiType);
 }
