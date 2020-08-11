@@ -99,7 +99,11 @@ public class ParWorkExecService implements ExecutorService {
           return CompletableFuture.completedFuture(callable.call());
         }
       } else {
-        available.acquireUninterruptibly();
+        try {
+          available.acquire();
+        } catch (InterruptedException e) {
+          available.acquire();
+        }
       }
       Future<T> future = service.submit(callable);
       return new Future<T>() {
@@ -177,62 +181,70 @@ public class ParWorkExecService implements ExecutorService {
   }
 
   public Future<?> doSubmit(Runnable runnable, boolean requiresAnotherThread) {
-    if (!requiresAnotherThread) {
-      boolean success = checkLoad();
-      if (success) {
-        success = available.tryAcquire();
+    try {
+      if (!requiresAnotherThread) {
+        boolean success = checkLoad();
+        if (success) {
+          success = available.tryAcquire();
+        }
+        if (!success) {
+          runnable.run();
+          return CompletableFuture.completedFuture(null);
+        }
+      } else {
+        try {
+          available.acquire();
+        } catch (InterruptedException e) {
+          available.acquire();
+        }
       }
-      if (!success) {
-        runnable.run();
-        return CompletableFuture.completedFuture(null);
-      }
-    } else {
-      available.acquireUninterruptibly();
+      Future<?> future = service.submit(runnable);
+
+      return new Future<>() {
+        @Override
+        public boolean cancel(boolean b) {
+          return future.cancel(b);
+        }
+
+        @Override
+        public boolean isCancelled() {
+          return future.isCancelled();
+        }
+
+        @Override
+        public boolean isDone() {
+          return future.isDone();
+        }
+
+        @Override
+        public Object get() throws InterruptedException, ExecutionException {
+          Object ret;
+          try {
+            ret = future.get();
+          } finally {
+            available.release();
+          }
+
+          return ret;
+        }
+
+        @Override
+        public Object get(long l, TimeUnit timeUnit)
+            throws InterruptedException, ExecutionException, TimeoutException {
+          Object ret;
+          try {
+            ret = future.get();
+          } finally {
+            available.release();
+          }
+          return ret;
+        }
+
+      };
+    } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
-    Future<?> future = service.submit(runnable);
-
-    return new Future<>() {
-      @Override
-      public boolean cancel(boolean b) {
-        return future.cancel(b);
-      }
-
-      @Override
-      public boolean isCancelled() {
-        return future.isCancelled();
-      }
-
-      @Override
-      public boolean isDone() {
-        return future.isDone();
-      }
-
-      @Override
-      public Object get() throws InterruptedException, ExecutionException {
-        Object ret;
-        try {
-          ret = future.get();
-        } finally {
-          available.release();
-        }
-
-        return ret;
-      }
-
-      @Override
-      public Object get(long l, TimeUnit timeUnit)
-          throws InterruptedException, ExecutionException, TimeoutException {
-        Object ret;
-        try {
-          ret = future.get();
-        } finally {
-          available.release();
-        }
-        return ret;
-      }
-
-    };
-
   }
 
   @Override

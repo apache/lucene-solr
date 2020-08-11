@@ -751,7 +751,7 @@ public class JettySolrRunner implements Closeable {
             if (config.qtp == null) {
               qtp.waitForStopping();
             }
-          } catch (InterruptedException e) {
+          } catch (Exception e) {
             ParWork.propegateInterrupt(e);
           }
         });
