@@ -65,12 +65,15 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
 
     solrDispatchFilter.replaceRateLimitManager(rateLimitManager);
 
-    processTest(client, 10000 /* number of documents */, 350 /* number of queries */);
+    int numDocs = TEST_NIGHTLY ? 10000 : 100;
+
+    processTest(client, numDocs, 350 /* number of queries */);
 
     MockRequestRateLimiter mockQueryRateLimiter = (MockRequestRateLimiter) rateLimitManager.getRequestRateLimiter(SolrRequest.SolrRequestType.QUERY);
 
     assertEquals(350, mockQueryRateLimiter.incomingRequestCount.get());
 
+    assertTrue(mockQueryRateLimiter.acceptedNewRequestCount.get() > 0);
     assertTrue((mockQueryRateLimiter.acceptedNewRequestCount.get() == mockQueryRateLimiter.incomingRequestCount.get()
         || mockQueryRateLimiter.rejectedRequestCount.get() > 0));
     assertEquals(mockQueryRateLimiter.incomingRequestCount.get(),
@@ -97,7 +100,9 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
 
     solrDispatchFilter.replaceRateLimitManager(rateLimitManager);
 
-    processTest(client, 10000 /* Number of documents */, 400 /* Number of queries */);
+    int numDocs = TEST_NIGHTLY ? 10000 : 100;
+
+    processTest(client, numDocs, 400 /* Number of queries */);
 
     MockRequestRateLimiter mockIndexRateLimiter = (MockRequestRateLimiter) rateLimitManager.getRequestRateLimiter(SolrRequest.SolrRequestType.UPDATE);
 
