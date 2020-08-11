@@ -324,7 +324,11 @@ final class DocumentsWriterFlushControl implements Accountable, Closeable {
     }
   }
 
-  private synchronized void checkoutAndBlock(DocumentsWriterPerThread perThread) {
+  /**
+   * To be called only by the owner of this object's monitor lock
+   */
+  private void checkoutAndBlock(DocumentsWriterPerThread perThread) {
+    assert Thread.holdsLock(this);
     assert perThreadPool.isRegistered(perThread);
     assert perThread.isHeldByCurrentThread();
     assert perThread.isFlushPending() : "can not block non-pending threadstate";
