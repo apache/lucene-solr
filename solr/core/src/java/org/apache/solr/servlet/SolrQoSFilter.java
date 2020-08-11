@@ -62,7 +62,7 @@ public class SolrQoSFilter extends QoSFilter {
     String source = req.getHeader(QoSParams.REQUEST_SOURCE);
     if (source == null || !source.equals(QoSParams.INTERNAL)) {
 
-
+      // TODO - we don't need to call this *every* request
       double ourLoad = sysStats.getAvarageUsagePerCPU();
       if (ourLoad > OUR_LOAD_HIGH) {
         log.info("Our individual load is {}", ourLoad);
