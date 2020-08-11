@@ -17,8 +17,6 @@
 
 package org.apache.solr.cluster.api;
 
-import org.apache.solr.cluster.api.SolrCluster.ApiPrefix;
-
 /** A read only view of a Solr node */
 public interface SolrNode {
 
@@ -28,7 +26,7 @@ public interface SolrNode {
   /**Base http url for this node
    *
    */
-  String baseUrl(ApiPrefix  type);
+  String baseUrl(ApiType type);
 
   /**
    * Get all the cores in a given node.

@@ -17,32 +17,15 @@
 
 package org.apache.solr.cluster.api;
 
-import org.apache.solr.common.SolrException;
+/**
+ * Types of API calls
+ */
+public enum ApiType {
+    V1("solr"),
+    V2("api");
+    final String prefix;
 
-/** Represents a Solr cluster */
-
-public interface SolrCluster {
-
-  /** collections in the cluster */
-  SimpleMap<SolrCollection> collections() throws SolrException;
-
-  /** collections in the cluster and aliases */
-  SimpleMap<SolrCollection> collections(boolean includeAlias) throws SolrException;
-
-  /** nodes in the cluster */
-  SimpleMap<SolrNode> nodes() throws SolrException;
-
-
-  /** Config sets in the cluster*/
-  SimpleMap<CollectionConfig> configs() throws SolrException;
-
-  /** Name of the node in which the overseer is running */
-  String overseerNode() throws SolrException;
-
-  /**
-   * The name of the node in which this method is invoked from. returns null, if this is not invoked from a
-   * Solr node
-   */
-  String thisNode();
-
+    ApiType(String prefix) {
+        this.prefix = prefix;
+    }
 }
