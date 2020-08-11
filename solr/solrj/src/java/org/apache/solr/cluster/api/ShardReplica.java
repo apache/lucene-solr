@@ -50,4 +50,8 @@ public interface ShardReplica {
 
   /**Is this replica the leader */
   boolean isLeader();
+
+  /**Baseurl for this replica
+   */
+  String baseUrl(ApiType type);
 }
