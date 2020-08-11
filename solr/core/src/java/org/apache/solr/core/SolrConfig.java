@@ -538,8 +538,6 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
   public final boolean isMemoryCircuitBreakerEnabled;
   public final boolean isCpuCircuitBreakerEnabled;
   public final int cpuCircuitBreakerThresholdPct;
-  
-  public final boolean useRangeVersionsForPeerSync;
 
   // IndexConfig settings
   public final SolrIndexConfig indexConfig;
