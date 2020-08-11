@@ -168,16 +168,6 @@ public class ZkStateReader implements SolrCloseable {
   public static final String ELECTION_NODE = "election";
 
   /**
-   * Collections tracked in the legacy (shared) state format, reflects the contents of clusterstate.json.
-   */
-  private volatile Map<String, ClusterState.CollectionRef> legacyCollectionStates = emptyMap();
-
-  /**
-   * Last seen ZK version of clusterstate.json.
-   */
-  private volatile int legacyClusterStateVersion = 0;
-
-  /**
    * Collections with format2 state.json, "interesting" and actively watched.
    */
   private final ConcurrentHashMap<String, DocCollection> watchedCollectionStates = new ConcurrentHashMap<>();
@@ -463,7 +453,6 @@ public class ZkStateReader implements SolrCloseable {
       // on reconnect of SolrZkClient force refresh and re-add watches.
       loadClusterProperties();
       refreshLiveNodes(new LiveNodeWatcher());
-      refreshLegacyClusterState(new LegacyClusterStateWatcher());
       refreshStateFormat2Collections();
       refreshCollectionList(new CollectionsChildWatcher());
 
@@ -555,7 +544,7 @@ public class ZkStateReader implements SolrCloseable {
 
     // Legacy clusterstate is authoritative, for backwards compatibility.
     // To move a collection's state to format2, first create the new state2 format node, then remove legacy entry.
-    Map<String, ClusterState.CollectionRef> result = new LinkedHashMap<>(legacyCollectionStates);
+    Map<String, ClusterState.CollectionRef> result = new LinkedHashMap<>();
 
     // Add state format2 collections, but don't override legacy collection states.
     for (Map.Entry<String, DocCollection> entry : watchedCollectionStates.entrySet()) {
@@ -567,11 +556,10 @@ public class ZkStateReader implements SolrCloseable {
       result.putIfAbsent(entry.getKey(), entry.getValue());
     }
 
-    this.clusterState = new ClusterState(liveNodes, result, legacyClusterStateVersion);
+    this.clusterState = new ClusterState(liveNodes, result, -1);
 
     if (log.isDebugEnabled()) {
-      log.debug("clusterStateSet: legacy [{}] interesting [{}] watched [{}] lazy [{}] total [{}]",
-          legacyCollectionStates.keySet().size(),
+      log.debug("clusterStateSet: interesting [{}] watched [{}] lazy [{}] total [{}]",
           collectionWatches.keySet().size(),
           watchedCollectionStates.keySet().size(),
           lazyCollectionStates.keySet().size(),
@@ -579,8 +567,7 @@ public class ZkStateReader implements SolrCloseable {
     }
 
     if (log.isTraceEnabled()) {
-      log.trace("clusterStateSet: legacy [{}] interesting [{}] watched [{}] lazy [{}] total [{}]",
-          legacyCollectionStates.keySet(),
+      log.trace("clusterStateSet: interesting [{}] watched [{}] lazy [{}] total [{}]",
           collectionWatches.keySet(),
           watchedCollectionStates.keySet(),
           lazyCollectionStates.keySet(),
@@ -593,48 +580,6 @@ public class ZkStateReader implements SolrCloseable {
       notifyStateWatchers(collection, clusterState.getCollectionOrNull(collection));
     }
 
-  }
-
-  /**
-   * Refresh legacy (shared) clusterstate.json
-   */
-  private void refreshLegacyClusterState(Watcher watcher) throws KeeperException, InterruptedException {
-    try {
-      final Stat stat = new Stat();
-      final byte[] data = zkClient.getData(CLUSTER_STATE, watcher, stat);
-      final ClusterState loadedData = ClusterState.load(stat.getVersion(), data, emptySet(), CLUSTER_STATE);
-      synchronized (getUpdateLock()) {
-        if (this.legacyClusterStateVersion >= stat.getVersion()) {
-          // Nothing to do, someone else updated same or newer.
-          return;
-        }
-        Set<String> updatedCollections = new HashSet<>();
-        for (String coll : this.collectionWatches.keySet()) {
-          ClusterState.CollectionRef ref = this.legacyCollectionStates.get(coll);
-          // legacy collections are always in-memory
-          DocCollection oldState = ref == null ? null : ref.get();
-          ClusterState.CollectionRef newRef = loadedData.getCollectionStates().get(coll);
-          DocCollection newState = newRef == null ? null : newRef.get();
-          if (newState == null) {
-            // check that we haven't just migrated
-            newState = watchedCollectionStates.get(coll);
-          }
-          if (!Objects.equals(oldState, newState)) {
-            updatedCollections.add(coll);
-          }
-        }
-        this.legacyCollectionStates = loadedData.getCollectionStates();
-        this.legacyClusterStateVersion = stat.getVersion();
-        constructState(updatedCollections);
-      }
-    } catch (KeeperException.NoNodeException e) {
-      // Ignore missing legacy clusterstate.json.
-      synchronized (getUpdateLock()) {
-        this.legacyCollectionStates = emptyMap();
-        this.legacyClusterStateVersion = 0;
-        constructState(Collections.emptySet());
-      }
-    }
   }
 
   /**
@@ -754,7 +699,6 @@ public class ZkStateReader implements SolrCloseable {
 
   private Set<String> getCurrentCollections() {
     Set<String> collections = new HashSet<>();
-    collections.addAll(legacyCollectionStates.keySet());
     collections.addAll(watchedCollectionStates.keySet());
     collections.addAll(lazyCollectionStates.keySet());
     return collections;
@@ -1360,41 +1304,6 @@ public class ZkStateReader implements SolrCloseable {
     }
   }
 
-  /**
-   * Watches the legacy clusterstate.json.
-   */
-  class LegacyClusterStateWatcher implements Watcher {
-
-    @Override
-    public void process(WatchedEvent event) {
-      // session events are not change events, and do not remove the watcher
-      if (EventType.None.equals(event.getType())) {
-        return;
-      }
-      int liveNodesSize = ZkStateReader.this.clusterState == null ? 0 : ZkStateReader.this.clusterState.getLiveNodes().size();
-      log.debug("A cluster state change: [{}], has occurred - updating... (live nodes size: [{}])", event, liveNodesSize);
-      refreshAndWatch();
-    }
-
-    /**
-     * Must hold {@link #getUpdateLock()} before calling this method.
-     */
-    public void refreshAndWatch() {
-      try {
-        refreshLegacyClusterState(this);
-      } catch (KeeperException.NoNodeException e) {
-        throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
-            "Cannot connect to cluster at " + zkClient.getZkServerAddress() + ": cluster not found/not ready");
-      } catch (KeeperException e) {
-        log.error("A ZK error has occurred", e);
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "A ZK error has occurred", e);
-      } catch (InterruptedException e) {
-        // Restore the interrupted status
-        Thread.currentThread().interrupt();
-        log.warn("Interrupted", e);
-      }
-    }
-  }
 
   /**
    * Watches collection properties
@@ -1447,7 +1356,7 @@ public class ZkStateReader implements SolrCloseable {
           ParWork.propegateInterrupt(e);
         }
       }
-          
+
     }
 
     /**

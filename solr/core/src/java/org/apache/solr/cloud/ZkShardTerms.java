@@ -77,6 +77,10 @@ public class ZkShardTerms implements AutoCloseable{
 
   private final AtomicReference<ShardTerms> terms = new AtomicReference<>();
 
+  public void addAll(ZkShardTerms old) {
+    this.terms.get().getTerms().putAll(old.getTerms());
+  }
+
   /**
    * Listener of a core for shard's term change events
    */

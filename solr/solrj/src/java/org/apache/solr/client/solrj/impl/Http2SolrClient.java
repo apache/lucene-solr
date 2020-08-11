@@ -225,8 +225,7 @@ public class Http2SolrClient extends SolrClient {
       httpClient.setMaxConnectionsPerDestination(300);
     }
     httpClientExecutor = new SolrQueuedThreadPool("httpClient");
-    //httpClientExecutor.setMaxThreads(-1);
-   // httpClientExecutor.setMinThreads(3);
+
     httpClient.setIdleTimeout(idleTimeout);
     try {
       httpClient.setExecutor(httpClientExecutor);
@@ -248,30 +247,39 @@ public class Http2SolrClient extends SolrClient {
 
   public void close() {
     closeTracker.close();
-    try (ParWork closer = new ParWork(this, true, true)) {
-      if (closeClient) {
-        closer.collect(() -> {
-          try {
-            httpClient.stop();
-          } catch (InterruptedException e) {
-            ParWork.propegateInterrupt(e);
-          } catch (Exception e) {
-            log.error("Exception closing httpClient", e);
-          }
-        });
-      }
-      closer.collect(() -> {
+    asyncTracker.waitForComplete();
+    if (closeClient) {
+      try {
+        try (ParWork closer = new ParWork(this, false, true)) {
+          closer.collect(() -> {
+                try {
+                  httpClient.stop();
+                  //httpClientExecutor.close();
+                } catch (InterruptedException e) {
+                  ParWork.propegateInterrupt(e);
+                } catch (Exception e) {
+                  log.error("Exception closing httpClient", e);
+                }
+              });
 
-        try {
-          // will fill queue with NOOPS and wake sleeping threads
-          httpClientExecutor.waitForStopping();
-        } catch (InterruptedException e) {
-          ParWork.propegateInterrupt(e);
+          closer.collect(() -> {
+
+            try {
+              // will fill queue with NOOPS and wake sleeping threads
+              httpClientExecutor.waitForStopping();
+            } catch (InterruptedException e) {
+              ParWork.propegateInterrupt(e);
+            }
+
+          });
+          closer.addCollect("httpClientExecutor");
         }
-
-      });
-      closer.addCollect("httpClientExecutor");
+      } catch (Exception e) {
+        log.error("Exception closing httpClient", e);
+      }
     }
+
+
     assert ObjectReleaseTracker.release(this);
   }
 
@@ -907,9 +915,9 @@ public class Http2SolrClient extends SolrClient {
       return MAX_OUTSTANDING_REQUESTS * 3;
     }
 
-    public synchronized void waitForComplete() {
+    public void waitForComplete() {
       if (log.isDebugEnabled()) log.debug("Before wait for outstanding requests registered: {} arrived: {}", phaser.getRegisteredParties(), phaser.getArrivedParties());
-      if (phaser.getUnarrivedParties() == 0) {
+      if (phaser.getUnarrivedParties() <= 1) {
         return;
       }
       int arrival = phaser.arriveAndAwaitAdvance();

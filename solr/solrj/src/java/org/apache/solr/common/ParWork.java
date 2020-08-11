@@ -72,7 +72,7 @@ public class ParWork implements Closeable {
     if (EXEC == null) {
       synchronized (ParWork.class) {
         if (EXEC == null) {
-          EXEC = (ThreadPoolExecutor) getParExecutorService(5, 15000);
+          EXEC = (ThreadPoolExecutor) getParExecutorService(2, 15000);
         }
       }
     }
@@ -80,13 +80,15 @@ public class ParWork implements Closeable {
   }
 
 
-  public synchronized static void shutdownExec() {
-    if (EXEC != null) {
-      EXEC.shutdown();
-      EXEC.setKeepAliveTime(1, TimeUnit.MILLISECONDS);
-      EXEC.allowCoreThreadTimeOut(true);
-      ExecutorUtil.shutdownAndAwaitTermination(EXEC);
-      EXEC = null;
+  public static void shutdownExec() {
+    synchronized (ParWork.class) {
+      if (EXEC != null) {
+        EXEC.shutdownNow();
+        EXEC.setKeepAliveTime(1, TimeUnit.NANOSECONDS);
+        EXEC.allowCoreThreadTimeOut(true);
+        ExecutorUtil.shutdownAndAwaitTermination(EXEC);
+        EXEC = null;
+      }
     }
   }
 
@@ -123,6 +125,7 @@ public class ParWork implements Closeable {
           }
         }
         if (!ok) {
+          log.error(" -> I do not know how to close: " + object.getClass().getName());
           throw new IllegalArgumentException(" -> I do not know how to close: " + object.getClass().getName());
         }
       }

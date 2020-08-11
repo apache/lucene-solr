@@ -1020,6 +1020,16 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
 
     }
 
+    public void fillWithNoops() {
+        int threads = _counts.getAndSetHi(Integer.MIN_VALUE);
+        BlockingQueue<Runnable> jobs = getQueue();
+        // Fill the job queue with noop jobs to wakeup idle threads.
+        for (int i = 0; i < threads; ++i)
+        {
+            jobs.offer(NOOP);
+        }
+    }
+
 
     public void close() {
         try {

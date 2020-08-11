@@ -46,7 +46,6 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
-import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.params.CommonParams;
@@ -387,7 +386,6 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
                 }
               }
             } catch (Exception exc) {
-              ParWork.propegateInterrupt(exc);
               // don't want to fail to report error if parsing the response fails
               log.warn("Failed to parse error response from {} due to: ", client.getBaseURL(), exc);
             } finally {
@@ -408,7 +406,6 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
               Utils.consumeFully(response.getEntity());
             }
           } catch (Exception e) {
-            ParWork.propegateInterrupt(e);
             log.error("Error consuming and closing http response stream.", e);
           }
           notifyQueueAndRunnersIfEmptyQueue();
@@ -651,9 +648,9 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
           // without bad spin
           int timeout;
           if (loopCount < 3) {
-            timeout = 10;
+            timeout = 50;
           } else if (loopCount < 10) {
-            timeout = 25;
+            timeout = 100;
           } else {
             timeout = 250;
           }
@@ -661,7 +658,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
           try {
             runners.wait(timeout);
           } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+            //Thread.currentThread().interrupt();
           }
         }
       }

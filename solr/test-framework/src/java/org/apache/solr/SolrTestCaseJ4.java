@@ -2924,12 +2924,13 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
     SolrQueuedThreadPool qtp = new SolrQueuedThreadPool("solr-test-qtp");;
           qtp.setName("solr-test-qtp");
-          qtp.setMaxThreads(Integer.getInteger("solr.maxContainerThreads", 50));
-          qtp.setLowThreadsThreshold(Integer.getInteger("solr.lowContainerThreadsThreshold", -1)); // we don't use this or connections will get cut
-          qtp.setMinThreads(Integer.getInteger("solr.minContainerThreads", 1));
+          //qtp.setMaxThreads(Integer.getInteger("solr.maxContainerThreads", 50));
+         // qtp.setLowThreadsThreshold(Integer.getInteger("solr.lowContainerThreadsThreshold", -1)); // we don't use this or connections will get cut
+          qtp.setMinThreads(Integer.getInteger("solr.minContainerThreads", 2));
           qtp.setIdleTimeout(Integer.getInteger("solr.containerThreadsIdle", 30000));
 
-          qtp.setStopTimeout((int) TimeUnit.SECONDS.toMillis(30));
+          qtp.setStopTimeout((int) TimeUnit.SECONDS.toMillis(60));
+          qtp.setDaemon(true);
           qtp.setReservedThreads(-1); // -1 auto sizes, important to keep
           // qtp.setStopTimeout((int) TimeUnit.MINUTES.toMillis(1));
     return qtp;

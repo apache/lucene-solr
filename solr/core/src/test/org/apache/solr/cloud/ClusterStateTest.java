@@ -28,8 +28,10 @@ import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.util.Utils;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore // counts on stateFormat=1 collections
 public class ClusterStateTest extends SolrTestCaseJ4 {
 
   @Test

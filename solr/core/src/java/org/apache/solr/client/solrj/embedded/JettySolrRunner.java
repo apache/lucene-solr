@@ -738,24 +738,11 @@ public class JettySolrRunner implements Closeable {
     Map<String,String> prevContext = MDC.getCopyOfContextMap();
     MDC.clear();
     try {
-      try (ParWork closer = new ParWork(this, true, true)) {
-        closer.collect(() -> {
-          try {
-            server.stop();
-          } catch (Exception e) {
-            log.error("Error stopping jetty server", e);
-          }
-        });
-        closer.collect(() -> {
-          try {
-            if (config.qtp == null) {
-              qtp.waitForStopping();
-            }
-          } catch (Exception e) {
-            ParWork.propegateInterrupt(e);
-          }
-        });
-        closer.addCollect("stopServer");
+
+      try {
+        server.stop();
+      } catch (Exception e) {
+        log.error("Error stopping jetty server", e);
       }
 
       try {
@@ -763,6 +750,14 @@ public class JettySolrRunner implements Closeable {
       } catch (InterruptedException e) {
         SolrZkClient.checkInterrupted(e);
         throw new RuntimeException(e);
+      }
+
+      try {
+        if (config.qtp == null) {
+          qtp.close();
+        }
+      } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
       }
 
     } catch (Exception e) {
@@ -774,7 +769,8 @@ public class JettySolrRunner implements Closeable {
       if (enableProxy) {
         proxy.close();
       }
-      if (wait && getCoreContainer() != null && getCoreContainer().isZooKeeperAware()) {
+      if (wait && getCoreContainer() != null && getCoreContainer()
+          .isZooKeeperAware()) {
         log.info("waitForJettyToStop: {}", getLocalPort());
         String nodeName = getNodeName();
         if (nodeName == null) {
@@ -784,14 +780,16 @@ public class JettySolrRunner implements Closeable {
 
         log.info("waitForNode: {}", getNodeName());
 
-
-        ZkStateReader reader = getCoreContainer().getZkController().getZkStateReader();
+        ZkStateReader reader = getCoreContainer().getZkController()
+            .getZkStateReader();
 
         try {
-          reader.waitForLiveNodes(10, TimeUnit.SECONDS, (o, n) -> !n.contains(nodeName));
+          reader.waitForLiveNodes(10, TimeUnit.SECONDS,
+              (o, n) -> !n.contains(nodeName));
         } catch (InterruptedException e) {
           ParWork.propegateInterrupt(e);
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "interrupted", e);
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+              "interrupted", e);
         } catch (TimeoutException e) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
         }

@@ -247,7 +247,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   }
 
   public int getStateFormat() {
-    return ZkStateReader.CLUSTER_STATE.equals(znode) ? 1 : 2;
+    return 2;
   }
   /**
    * @return replication factor for this collection or null if no

@@ -25,7 +25,7 @@ public class ParWorkExecService implements ExecutorService {
       .getLogger(MethodHandles.lookup().lookupClass());
 
   private static final int MAX_AVAILABLE = Math.max(ParWork.PROC_COUNT / 2, 3);
-  private final Semaphore available = new Semaphore(MAX_AVAILABLE, true);
+  private final Semaphore available = new Semaphore(MAX_AVAILABLE, false);
 
   private final ExecutorService service;
   private final int maxSize;
@@ -50,7 +50,6 @@ public class ParWorkExecService implements ExecutorService {
   @Override
   public void shutdown() {
     this.shutdown = true;
-
   }
 
   @Override
@@ -86,9 +85,6 @@ public class ParWorkExecService implements ExecutorService {
 
 
   public <T> Future<T> doSubmit(Callable<T> callable, boolean requiresAnotherThread) {
-//    if (shutdown || terminated) {
-//      throw new RejectedExecutionException();
-//    }
     try {
       if (!requiresAnotherThread) {
         boolean success = checkLoad();

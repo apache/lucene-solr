@@ -88,7 +88,7 @@ public class TimeTracker {
     doneTime = System.nanoTime();
     
     //this.label.append(label);
-    StringBuilder spacer = new StringBuilder();
+    StringBuilder spacer = new StringBuilder(depth);
     for (int i =0; i < depth; i++) {
       spacer.append(' ');
     }

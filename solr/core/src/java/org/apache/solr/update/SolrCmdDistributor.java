@@ -200,14 +200,16 @@ public class SolrCmdDistributor implements Closeable {
       uReq.setParams(params);
 
       addCommit(uReq, cmd);
-      submit(new Req(cmd, node, uReq, false));
+      submit(new Req(cmd, node, uReq, true));
     }
 
   }
 
   public void blockAndDoRetries() {
+    if (phaser.getUnarrivedParties() <= 1) {
+      return;
+    }
     phaser.arriveAndAwaitAdvance();
-    //solrClient.waitForOutstandingRequests();
   }
   
   void addCommit(UpdateRequest ureq, CommitUpdateCommand cmd) {
@@ -246,8 +248,8 @@ public class SolrCmdDistributor implements Closeable {
         return;
       }
 
-      if (req.cmd instanceof  CommitUpdateCommand) {
-        // commit or delete by query
+      if (req.cmd instanceof CommitUpdateCommand) {
+        // commit
       } else {
         phaser.register();
       }

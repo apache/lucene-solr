@@ -1606,6 +1606,7 @@ public class ZkController implements Closeable {
       }
 
       // the watcher is added to a set so multiple calls of this method will left only one watcher
+      zkStateReader.registerCore(cloudDesc.getCollectionName());
       zkStateReader.registerDocCollectionWatcher(cloudDesc.getCollectionName(),
           new UnloadCoreOnDeletedWatcher(coreZkNodeName, shardId, desc.getName()));
       return shardId;
@@ -1933,15 +1934,15 @@ public class ZkController implements Closeable {
   private ZkCollectionTerms getCollectionTerms(String collection) {
     synchronized (collectionToTerms) {
       if (!collectionToTerms.containsKey(collection)) collectionToTerms.put(collection, new ZkCollectionTerms(collection, zkClient));
+      return collectionToTerms.get(collection);
     }
-    return collectionToTerms.get(collection);
   }
 
   public void clearZkCollectionTerms() {
-      try (ParWork closer = new ParWork(this)) {
-        closer.add("zkCollectionTerms", collectionToTerms.values());
-      }
+    synchronized (collectionToTerms) {
+      collectionToTerms.values().forEach(ZkCollectionTerms::close);
       collectionToTerms.clear();
+    }
   }
 
   public void unregister(String coreName, CoreDescriptor cd) throws Exception {
