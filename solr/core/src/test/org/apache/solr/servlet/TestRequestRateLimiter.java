@@ -34,7 +34,6 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.junit.BeforeClass;
-import org.junit.Test;
 
 import static org.apache.solr.servlet.RateLimitManager.DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS;
 import static org.hamcrest.CoreMatchers.containsString;
