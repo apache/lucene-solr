@@ -48,7 +48,7 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
     configureCluster(1).addConfig(FIRST_COLLECTION, configset("cloud-minimal")).configure();
   }
 
-  @Test
+  @Nightly
   public void testConcurrentQueries() throws Exception {
     CloudSolrClient client = cluster.getSolrClient();
     client.setDefaultCollection(FIRST_COLLECTION);
@@ -71,11 +71,14 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
     MockRequestRateLimiter mockQueryRateLimiter = (MockRequestRateLimiter) rateLimitManager.getRequestRateLimiter(SolrRequest.SolrRequestType.QUERY);
 
     assertEquals(350, mockQueryRateLimiter.incomingRequestCount.get());
+
+    assertTrue((mockQueryRateLimiter.acceptedNewRequestCount.get() == mockQueryRateLimiter.incomingRequestCount.get()
+        || mockQueryRateLimiter.rejectedRequestCount.get() > 0));g
     assertEquals(mockQueryRateLimiter.incomingRequestCount.get(),
         mockQueryRateLimiter.acceptedNewRequestCount.get() + mockQueryRateLimiter.rejectedRequestCount.get());
   }
 
-  @Test
+  @Nightly
   public void testSlotBorrowing() throws Exception {
     CloudSolrClient client = cluster.getSolrClient();
     client.setDefaultCollection(SECOND_COLLECTION);
@@ -125,7 +128,7 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
           try {
             QueryResponse response = client.query(new SolrQuery("*:*"));
 
-            assertEquals(10000, response.getResults().getNumFound());
+            assertEquals(numDocuments, response.getResults().getNumFound());
           } catch (Exception e) {
             throw new RuntimeException(e.getMessage());
           }
