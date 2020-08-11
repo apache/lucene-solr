@@ -215,7 +215,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
     TestReplicationHandlerBackup.runBackupCommand(masterJetty, ReplicationHandler.CMD_RESTORE, params);
 
     expectThrows(AssertionError.class, () -> {
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 20; i++) {
           // this will throw an assertion once we get what we expect
           fetchRestoreStatus(baseUrl, DEFAULT_TEST_CORENAME);
           Thread.sleep(50);

@@ -134,7 +134,6 @@ public class RestoreCore implements Callable<Boolean> {
         throw new SolrException(SolrException.ErrorCode.UNKNOWN, "Exception while restoring the backup index", e);
       }
       if (success) {
-        core.getDirectoryFactory().doneWithDirectory(indexDir);
         // Cleanup all index files not associated with any *named* snapshot.
         core.deleteNonSnapshotIndexFiles(indexDirPath);
       }
@@ -142,6 +141,7 @@ public class RestoreCore implements Callable<Boolean> {
       return true;
     } finally {
       if (restoreIndexDir != null) {
+        core.getDirectoryFactory().doneWithDirectory(restoreIndexDir);
         core.getDirectoryFactory().release(restoreIndexDir);
       }
       if (indexDir != null) {

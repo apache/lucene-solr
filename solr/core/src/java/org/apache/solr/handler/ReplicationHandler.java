@@ -176,7 +176,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   private ReentrantLock indexFetchLock = new ReentrantLock();
 
-  private ExecutorService restoreExecutor = ExecutorUtil.newMDCAwareSingleThreadExecutor(
+  private final ExecutorService restoreExecutor = ExecutorUtil.newMDCAwareSingleThreadExecutor(
       new SolrNamedThreadFactory("restoreExecutor"));
 
   private volatile Future<Boolean> restoreFuture;
@@ -1415,10 +1415,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     core.addCloseHook(new CloseHook() {
       @Override
       public void preClose(SolrCore core) {
-        ExecutorUtil.shutdownAndAwaitTermination(restoreExecutor);
-        if (restoreFuture != null) {
-          restoreFuture.cancel(false);
-        }
+        restoreExecutor.shutdown();
+        restoreFuture.cancel(false);
+        ParWork.close(restoreExecutor);
       }
 
       @Override
