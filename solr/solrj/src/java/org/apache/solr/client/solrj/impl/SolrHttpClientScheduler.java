@@ -22,14 +22,6 @@ public class SolrHttpClientScheduler extends AbstractLifeCycle implements Schedu
   private volatile Thread thread;
   private int coreThreads;
 
-  public SolrHttpClientScheduler() {
-    this(null, false);
-  }
-
-  public SolrHttpClientScheduler(String name, boolean daemon) {
-    this(name, daemon, Thread.currentThread().getContextClassLoader());
-  }
-
   public SolrHttpClientScheduler(String name, boolean daemon, ClassLoader threadFactoryClassLoader) {
     this(name, daemon, threadFactoryClassLoader, null, 1);
   }

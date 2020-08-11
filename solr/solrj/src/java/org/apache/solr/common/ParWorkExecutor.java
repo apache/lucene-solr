@@ -9,11 +9,10 @@ import java.lang.invoke.MethodHandles;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class ParWorkExecutor extends ThreadPoolExecutor {
+public class ParWorkExecutor extends ExecutorUtil.MDCAwareThreadPoolExecutor {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     public static final int KEEP_ALIVE_TIME = 1;
 

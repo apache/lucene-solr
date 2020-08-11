@@ -17,20 +17,20 @@
 package org.apache.solr.util;
 
 import org.apache.lucene.analysis.util.ResourceLoader;
-
-import org.xml.sax.InputSource;
 import org.xml.sax.EntityResolver;
+import org.xml.sax.InputSource;
 import org.xml.sax.ext.EntityResolver2;
-import java.io.File;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
+
+import javax.xml.stream.XMLResolver;
+import javax.xml.stream.XMLStreamException;
 import javax.xml.transform.Source;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.URIResolver;
 import javax.xml.transform.sax.SAXSource;
-import javax.xml.stream.XMLResolver;
-import javax.xml.stream.XMLStreamException;
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 
 /**
  * This is a helper class to support resolving of XIncludes or other hrefs

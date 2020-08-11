@@ -16,27 +16,25 @@
  */
 package org.apache.solr.util;
 
-import java.io.FilterReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.Reader;
-import java.io.StringReader;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.ParserConfigurationException;
-
 import org.apache.commons.io.input.CloseShieldInputStream;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.common.EmptyEntityResolver;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.XMLErrorLogger;
-import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.rest.schema.FieldTypeXmlAdapter;
 import org.slf4j.Logger;
 import org.w3c.dom.Document;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.ParserConfigurationException;
+import java.io.FilterReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
+import java.io.StringReader;
 
 /**
  * Some utility methods for parsing XML in a safe way. This class can be used to parse XML

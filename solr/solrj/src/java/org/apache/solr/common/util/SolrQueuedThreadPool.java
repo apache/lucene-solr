@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -756,9 +757,9 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
                     public void dump(Appendable out, String indent) throws IOException
                     {
                         if (StringUtil.isBlank(known))
-                            Dumpable.dumpObjects(out, indent, String.format("%s %s %s %d", thread.getId(), thread.getName(), thread.getState(), thread.getPriority()), (Object[])trace);
+                            Dumpable.dumpObjects(out, indent, String.format(Locale.ROOT,"%s %s %s %d", thread.getId(), thread.getName(), thread.getState(), thread.getPriority()), (Object[])trace);
                         else
-                            Dumpable.dumpObjects(out, indent, String.format("%s %s %s %s %d", thread.getId(), thread.getName(), known, thread.getState(), thread.getPriority()));
+                            Dumpable.dumpObjects(out, indent, String.format(Locale.ROOT,"%s %s %s %s %d", thread.getId(), thread.getName(), known, thread.getState(), thread.getPriority()));
                     }
 
                     @Override
@@ -794,7 +795,7 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
         int idle = Math.max(0, AtomicBiInteger.getLo(count));
         int queue = getQueueSize();
 
-        return String.format("%s[%s]@%x{%s,%d<=%d<=%d,i=%d,r=%d,q=%d}[%s]",
+        return String.format(Locale.ROOT, "%s[%s]@%x{%s,%d<=%d<=%d,i=%d,r=%d,q=%d}[%s]",
                 getClass().getSimpleName(),
                 _name,
                 hashCode(),

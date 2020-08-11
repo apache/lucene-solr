@@ -16,28 +16,17 @@
  */
 package org.apache.solr.schema;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.StringWriter;
-import java.lang.invoke.MethodHandles;
-import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.rest.BaseSolrResource;
-import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -53,6 +42,16 @@ import static org.apache.solr.schema.IndexSchema.MAX_CHARS;
 import static org.apache.solr.schema.IndexSchema.NAME;
 import static org.apache.solr.schema.IndexSchema.SOURCE;
 import static org.apache.solr.schema.IndexSchema.TYPE;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringWriter;
+import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * A utility class to manipulate schema using the bulk mode.

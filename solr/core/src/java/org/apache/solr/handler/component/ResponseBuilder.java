@@ -16,14 +16,6 @@
  */
 package org.apache.solr.handler.component;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.grouping.SearchGroup;
@@ -47,6 +39,13 @@ import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.grouping.GroupingSpecification;
 import org.apache.solr.search.grouping.distributed.command.QueryCommandResult;
 import org.apache.solr.util.RTimer;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * This class is experimental and will be changing in the future.

@@ -19,13 +19,6 @@ package org.apache.solr.handler.component;
 import io.opentracing.Span;
 import io.opentracing.Tracer;
 import io.opentracing.propagation.Format;
-import java.net.ConnectException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
@@ -38,6 +31,12 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.util.tracing.GlobalTracer;
 import org.apache.solr.util.tracing.SolrRequestCarrier;
 import org.slf4j.MDC;
+
+import java.net.ConnectException;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
 class ShardRequestor implements Callable<ShardResponse> {
   private final ShardRequest sreq;

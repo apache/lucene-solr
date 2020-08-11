@@ -16,23 +16,9 @@
  */
 package org.apache.solr.update;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
 import org.apache.http.NoHttpResponseException;
-import org.apache.http.client.HttpClient;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -63,6 +49,18 @@ import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import static org.apache.solr.common.params.CommonParams.ID;
 import static org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase.FROMLEADER;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * This class is useful for performing peer to peer synchronization of recently indexed update commands during

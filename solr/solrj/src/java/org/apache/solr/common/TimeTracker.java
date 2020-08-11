@@ -16,6 +16,10 @@
  */
 package org.apache.solr.common;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -24,9 +28,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class TimeTracker {
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -34,6 +35,7 @@ public class TimeTracker {
   public static final Map<String,TimeTracker> CLOSE_TIMES = new ConcurrentHashMap<>(2048, 0.75f, 6);
   
   private final long startTime;
+  private final PrintStream out;
 
   private volatile long doneTime;
 
@@ -48,16 +50,16 @@ public class TimeTracker {
   private final int depth;
   
   public TimeTracker(Object object, String label) {
-    this(object, label, 1);
+    this(object, label, 1, System.out);
   }
 
-  private TimeTracker(Object object, String label, int i) {
+  private TimeTracker(Object object, String label, int i, PrintStream out) {
     this.trackedObject = object;
     this.clazz = object == null ? null : object.getClass();
     this.startTime = System.nanoTime();
     this.label.append(label);
     this.depth = i;
-    
+    this.out = out;
     if (depth <= 1) {
       CLOSE_TIMES.put((object != null ? object.hashCode() : 0) + "_" + label.hashCode(), this);
     }
@@ -69,7 +71,7 @@ public class TimeTracker {
     }
 
     doneTime = System.nanoTime();
-    //System.out.println("done close: " + trackedObject + " "  + label + " " + getElapsedNS());
+    //out.println("done close: " + trackedObject + " "  + label + " " + getElapsedNS());
 
     if (log.isDebugEnabled()) {
       log.debug("doneClose() - end");
@@ -120,7 +122,7 @@ public class TimeTracker {
       log.debug("startSubClose(String label={}) - start", label);
     }
 
-    TimeTracker subTracker = new TimeTracker(null, label, depth+1);
+    TimeTracker subTracker = new TimeTracker(null, label, depth+1, out);
     children.add(subTracker);
 
     if (log.isDebugEnabled()) {
@@ -134,7 +136,7 @@ public class TimeTracker {
       log.debug("startSubClose(Object object={}) - start", object);
     }
 
-    TimeTracker subTracker = new TimeTracker(object, object.getClass().getName(), depth+1);
+    TimeTracker subTracker = new TimeTracker(object, object.getClass().getName(), depth+1, out);
     children.add(subTracker);
 
     if (log.isDebugEnabled()) {
@@ -150,7 +152,7 @@ public class TimeTracker {
 
     String times = getCloseTimes();
     if (times.trim().length()>0) {
-      System.out.println("\n------" +  times + "------\n");
+      out.println("\n------" +  times + "------\n");
     }
 
     if (log.isDebugEnabled()) {
@@ -203,7 +205,7 @@ public class TimeTracker {
     // for (String label : startTimes.keySet()) {
     // long startTime = startTimes.get(label);
     // long endTime = endTimes.get(label);
-    // System.out.println(" -" + label + ": " + getElapsedMS(startTime, endTime) + "ms");
+    // out.println(" -" + label + ": " + getElapsedMS(startTime, endTime) + "ms");
     // }
     // }
     // }

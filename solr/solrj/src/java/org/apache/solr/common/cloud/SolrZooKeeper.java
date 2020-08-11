@@ -17,7 +17,6 @@
 package org.apache.solr.common.cloud;
 
 import org.apache.solr.common.ParWork;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.CloseTracker;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.zookeeper.ClientCnxn;
@@ -49,37 +48,40 @@ public class SolrZooKeeper extends ZooKeeper {
     closeTracker = new CloseTracker();
     //clients.put(this, new RuntimeException());
   }
-  
+
   public ClientCnxn getConnection() {
     return cnxn;
   }
-  
+
   public SocketAddress getSocketAddress() {
     return testableLocalSocketAddress();
   }
-  
+
   public void closeCnxn() {
     final Thread t = new Thread() {
       @Override
       public void run() {
         try {
-          AccessController.doPrivileged((PrivilegedAction<Void>) this::closeZookeeperChannel);
+          AccessController.doPrivileged(
+              (PrivilegedAction<Void>) this::closeZookeeperChannel);
         } finally {
           spawnedThreads.remove(this);
         }
       }
-      
+
       @SuppressForbidden(reason = "Hack for Zookeper needs access to private methods.")
       private Void closeZookeeperChannel() {
         final ClientCnxn cnxn = getConnection();
 
         synchronized (cnxn) {
           try {
-            final Field sendThreadFld = cnxn.getClass().getDeclaredField("sendThread");
+            final Field sendThreadFld = cnxn.getClass()
+                .getDeclaredField("sendThread");
             sendThreadFld.setAccessible(true);
             Object sendThread = sendThreadFld.get(cnxn);
             if (sendThread != null) {
-              Method method = sendThread.getClass().getDeclaredMethod("testableCloseSocket");
+              Method method = sendThread.getClass()
+                  .getDeclaredMethod("testableCloseSocket");
               method.setAccessible(true);
               try {
                 method.invoke(sendThread);
@@ -89,7 +91,8 @@ public class SolrZooKeeper extends ZooKeeper {
             }
           } catch (Exception e) {
             ParWork.propegateInterrupt(e);
-            throw new RuntimeException("Closing Zookeeper send channel failed.", e);
+            throw new RuntimeException("Closing Zookeeper send channel failed.",
+                e);
           }
         }
         return null; // Void
@@ -98,7 +101,7 @@ public class SolrZooKeeper extends ZooKeeper {
     spawnedThreads.add(t);
     t.start();
   }
-  
+
   @Override
   public void close() {
     if (closeTracker.isClosed()) {
@@ -110,106 +113,6 @@ public class SolrZooKeeper extends ZooKeeper {
     } catch (InterruptedException e) {
       ParWork.propegateInterrupt(e);
     }
-
-     //exposed.intteruptSendThread();
-  //  exposed.interruptEventThread();
-   // exposed.interruptSendThread();
-//    try (ParWork worker = new ParWork(this, true)) {
-//      worker.collect(() -> {
-//        try {
-//          ZooKeeperExposed exposed = new ZooKeeperExposed(this, cnxn);
-//          //exposed.intteruptSendThread();
-//
-//          SolrZooKeeper.super.close(5000);
-//          exposed.interruptEventThread();
-//        } catch (InterruptedException e) {
-//          ParWork.propegateInterrupt(e);
-//        }
-//      });
-//        RequestHeader h = new RequestHeader();
-//        h.setType(ZooDefs.OpCode.closeSession);
-//
-//        try {
-//          cnxn.submitRequest(h, null, null, null);
-//        } catch (InterruptedException e) {
-//          ParWork.propegateInterrupt(e);
-//        }
-//
-//        ZooKeeperExposed exposed = new ZooKeeperExposed(this, cnxn);
-//        exposed.setSendThreadState( ZooKeeper.States.CLOSED);
-////     /   zkcall(cnxn, "sendThread", "close", null);
-//        // zkcall(cnxn, "sendThread", "close", null);
-//      }); // we don't wait for close because we wait below
-//      worker.collect( () -> {
-//        ZooKeeperExposed exposed = new ZooKeeperExposed(this, cnxn);
-//        exposed.intteruptSendThread();
-//        exposed.intteruptSendThread();
-//      });
-//      worker.collect( () -> {
-//        ZooKeeperExposed exposed = new ZooKeeperExposed(this, cnxn);
-//        exposed.intteruptSendThread();
-//        exposed.intteruptSendThread();
-//      });// we don't wait for close because we wait below
-     // worker.addCollect("zkClientClose");
-
-//      worker.collect(() -> {
-//        for (Thread t : spawnedThreads) {
-//          t.interrupt();
-//        }
-//      });
-
-//      worker.collect(() -> {
-//        zkcall(cnxn, "sendThread", "interrupt", null);
-//        zkcall(cnxn, "eventThread", "interrupt", null);
-////
-////      //  zkcall(cnxn, "sendThread", "join", 10l);
-////      //  zkcall(cnxn, "eventThread", "join", 10l);
-////
-////        zkcall(cnxn, "sendThread", "interrupt", null);
-////        zkcall(cnxn, "eventThread", "interrupt", null);
-////
-////        zkcall(cnxn, "sendThread", "join", 10l);
-////        zkcall(cnxn, "eventThread", "join", 10l);
-//      });
-//      worker.addCollect("zkClientClose");
   }
 
-  private void zkcall(final ClientCnxn cnxn, String field, String meth, Object arg) {
-    try {
-      final Field sendThreadFld = cnxn.getClass().getDeclaredField(field);
-      sendThreadFld.setAccessible(true);
-      Object sendThread = sendThreadFld.get(cnxn);
-      if (sendThread != null) {
-        Method method;
-        if (arg != null) {
-          method = sendThread.getClass().getMethod(meth, long.class);
-        } else {
-          method = sendThread.getClass().getMethod(meth);
-        }
-        method.setAccessible(true);
-        try {
-          if (arg != null) {
-            method.invoke(sendThread, arg);
-          } else {
-            method.invoke(sendThread);
-          }
-        } catch (InvocationTargetException e) {
-          // is fine
-        }
-      }
-    } catch (Exception e) {
-      SolrZkClient.checkInterrupted(e);
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-    }
-  }
-  
-//  public static void assertCloses() {
-//    if (clients.size() > 0) {
-//      Iterator<Exception> stacktraces = clients.values().iterator();
-//      Exception cause = null;
-//      cause = stacktraces.next();
-//      throw new RuntimeException("Found a bad one!", cause);
-//    }
-//  }
-  
 }

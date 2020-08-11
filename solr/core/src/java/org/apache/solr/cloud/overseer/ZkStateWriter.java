@@ -16,17 +16,7 @@
  */
 package org.apache.solr.cloud.overseer;
 
-import static java.util.Collections.singletonMap;
-
-import java.lang.invoke.MethodHandles;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
+import com.codahale.metrics.Timer;
 import org.apache.solr.cloud.Stats;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
@@ -43,7 +33,14 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.codahale.metrics.Timer;
+import static java.util.Collections.singletonMap;
+import java.lang.invoke.MethodHandles;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 
 // nocommit - need to allow for a configurable flush interval again

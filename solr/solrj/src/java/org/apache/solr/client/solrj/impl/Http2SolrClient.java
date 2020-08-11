@@ -592,7 +592,7 @@ public class Http2SolrClient extends SolrClient {
       if (streams != null || contentWriter != null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "GET can't send streams!");
       }
-     System.out.println("url:" + basePath + path + wparams.toQueryString());
+
       Request req = httpClient.newRequest(basePath + path + wparams.toQueryString()).method(HttpMethod.GET);
       for (Map.Entry<String,String> entry : headers.entrySet()) {
         req.header(entry.getKey(), entry.getValue());

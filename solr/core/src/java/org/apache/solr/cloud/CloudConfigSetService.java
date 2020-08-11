@@ -16,13 +16,9 @@
  */
 package org.apache.solr.cloud;
 
-import java.lang.invoke.MethodHandles;
-
-import org.apache.solr.cloud.api.collections.CreateCollectionCmd;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkConfigManager;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.ConfigSetProperties;
@@ -34,6 +30,8 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.lang.invoke.MethodHandles;
 
 /**
  * SolrCloud ConfigSetService impl.
