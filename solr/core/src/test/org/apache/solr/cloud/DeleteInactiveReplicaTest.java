@@ -69,10 +69,7 @@ public class DeleteInactiveReplicaTest extends SolrCloudTestCase {
     Slice shard = getRandomShard(collectionState);
     Replica replica = getRandomReplica(shard);
     JettySolrRunner jetty = cluster.getReplicaJetty(replica);
-    CoreDescriptor replicaCd;
-    try (SolrCore core = jetty.getCoreContainer().getCore(replica.getCoreName())) {
-      replicaCd = core.getCoreDescriptor();
-    }
+
     cluster.stopJettySolrRunner(jetty);
 
     waitForState("Expected replica " + replica.getName() + " on down node to be removed from cluster state", collectionName, (n, c) -> {
@@ -80,13 +77,26 @@ public class DeleteInactiveReplicaTest extends SolrCloudTestCase {
       return r == null || r.getState() != Replica.State.ACTIVE;
     });
 
+    cluster.getSolrClient().getZkStateReader().waitForState(collectionName, 10, TimeUnit.SECONDS, (n,c)->{
+      if (c == null) return false;
+      Replica rep = c.getReplica(replica.getName());
+      if (rep == null) return true;
+      if (rep.getState() != Replica.State.ACTIVE) {
+        return true;
+      }
+      return false;
+    });
+
     if (log.isInfoEnabled()) {
       log.info("Removing replica {}/{} ", shard.getName(), replica.getName());
     }
     CollectionAdminRequest.deleteReplica(collectionName, shard.getName(), replica.getName())
         .process(cluster.getSolrClient());
-    waitForState("Expected deleted replica " + replica.getName() + " to be removed from cluster state", collectionName, (n, c) -> {
-      return c.getReplica(replica.getCoreName()) == null;
+
+    cluster.getSolrClient().getZkStateReader().waitForState(collectionName, 10, TimeUnit.SECONDS, (n,c)->{
+      if (c == null) return false;
+      if (c.getReplica(replica.getName()) == null) return true;
+      return false;
     });
 
 //    cluster.startJettySolrRunner(jetty);

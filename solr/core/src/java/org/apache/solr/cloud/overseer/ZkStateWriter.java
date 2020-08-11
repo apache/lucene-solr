@@ -232,22 +232,12 @@ public class ZkStateWriter {
 
             DocCollection finalC = c;
             prevState.getCollection(c.getName()).getSlicesMap().forEach((sliceId, slice) -> {
-              Collection<Replica> replicas = slice.getReplicas();
 
               Map<String, Replica> newReplicas = new HashMap<>();
 
               Map<String, Object> newProps = new HashMap<>();
 
               newProps.putAll(slice.getProperties());
-
-              Slice existingSlice = newSliceMap.get(sliceId);
-              if (existingSlice != null) {
-                existingSlice.getReplicas().forEach((replica) -> {
-                  newReplicas.put(replica.getName(), replica);
-                });
-              }
-
-              replicas.forEach((replica) -> newReplicas.put(replica.getName(), replica));
 
               finalC.getSlice(sliceId).getReplicas().forEach((replica) -> {
                 newReplicas.put(replica.getName(), replica);
