@@ -78,7 +78,6 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
     }
 
     if (!isMemoryCircuitBreakerEnabled) {
-      System.out.println("Memory circuit breaker is disabled");
       return false;
     }
 

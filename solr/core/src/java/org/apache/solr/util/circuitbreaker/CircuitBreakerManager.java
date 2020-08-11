@@ -69,8 +69,6 @@ public class CircuitBreakerManager {
             triggeredCircuitBreakers = new ArrayList<>();
           }
 
-          //TODO: atri
-          System.out.println("Blocked for " + circuitBreaker.getDebugInfo());
           triggeredCircuitBreakers.add(circuitBreaker);
         }
       }
