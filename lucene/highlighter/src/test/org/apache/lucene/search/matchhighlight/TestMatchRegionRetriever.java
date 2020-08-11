@@ -64,7 +64,6 @@ import org.junit.Test;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -604,24 +603,32 @@ public class TestMatchRegionRetriever extends LuceneTestCase {
 
   /**
    * This test runs a term query against a field with no stored
-   * positions or offsets. Ideally, the highlighter should return the field
-   * that caused the document to be included - perhaps with the full
-   * range of the field's value.
-   * <p>
-   * Such field structure is often useful for multivalued "keyword-like"
-   * fields.
+   * positions or offsets. This test checks the {@link OffsetsFromValues}
+   * strategy that returns highlights over entire indexed values.
    */
   @Test
-  public void testTextFieldNoPositions() throws Exception {
+  public void testTextFieldNoPositionsOffsetFromValues() throws Exception {
     String field = FLD_TEXT_NOPOS;
+
     withReader(
         List.of(
             Map.of(FLD_TEXT_NOPOS, values("foo bar")),
             Map.of(FLD_TEXT_NOPOS, values("foo bar", "baz baz"))
         ),
         reader -> {
+          OffsetsRetrievalStrategySupplier defaults = MatchRegionRetriever
+              .computeOffsetRetrievalStrategies(reader, analyzer);
+          OffsetsRetrievalStrategySupplier customSuppliers = (fld) -> {
+            if (fld.equals(field)) {
+              return new OffsetsFromValues(field, analyzer);
+            } else {
+              return defaults.apply(field);
+            }
+          };
+
           assertThat(
               highlights(
+                  customSuppliers,
                   reader,
                   new TermQuery(new Term(field, "bar"))),
               containsInAnyOrder(
@@ -630,7 +637,41 @@ public class TestMatchRegionRetriever extends LuceneTestCase {
         });
   }
 
+  /**
+   * This test runs a term query against a field with no stored
+   * positions or offsets.
+   * <p>
+   * Such field structure is often useful for multivalued "keyword-like"
+   * fields.
+   */
+  @Test
+  public void testTextFieldNoPositionsOffsetsFromTokens() throws Exception {
+    String field = FLD_TEXT_NOPOS;
+
+    withReader(
+        List.of(
+            Map.of(FLD_TEXT_NOPOS, values("foo bar"),
+                   FLD_TEXT_POS, values("bar bar")),
+            Map.of(FLD_TEXT_NOPOS, values("foo bar", "baz bar"))
+        ),
+        reader -> {
+          assertThat(
+              highlights(
+                  reader,
+                  new TermQuery(new Term(field, "bar"))),
+              containsInAnyOrder(
+                  fmt("0: (%s: 'foo >bar<')", field),
+                  fmt("1: (%s: 'foo >bar< | baz >bar<')", field)));
+        });
+  }
+
   private List<String> highlights(IndexReader reader, Query query) throws IOException {
+    return highlights(MatchRegionRetriever.computeOffsetRetrievalStrategies(reader, analyzer),
+        reader, query);
+  }
+
+  private List<String> highlights(OffsetsRetrievalStrategySupplier offsetsStrategySupplier,
+                                  IndexReader reader, Query query) throws IOException {
     IndexSearcher searcher = new IndexSearcher(reader);
     int maxDocs = 1000;
 
@@ -641,11 +682,11 @@ public class TestMatchRegionRetriever extends LuceneTestCase {
 
     AsciiMatchRangeHighlighter formatter = new AsciiMatchRangeHighlighter(analyzer);
 
-    MatchRegionRetriever.HitRegionConsumer highlightCollector =
-        (leafReader, docId, fieldHighlights) -> {
+    MatchRegionRetriever.MatchOffsetsConsumer highlightCollector =
+        (docId, leafReader, leafDocId, fieldHighlights) -> {
           StringBuilder sb = new StringBuilder();
 
-          Document document = leafReader.document(docId);
+          Document document = leafReader.document(leafDocId);
           formatter
               .apply(document, new TreeMap<>(fieldHighlights))
               .forEach(
@@ -661,10 +702,9 @@ public class TestMatchRegionRetriever extends LuceneTestCase {
           }
         };
 
-    MatchRegionRetriever highlighter = new MatchRegionRetriever(searcher, rewrittenQuery, analyzer);
-    highlighter.highlightDocuments(
-        Arrays.stream(topDocs.scoreDocs).mapToInt(scoreDoc -> scoreDoc.doc).sorted().iterator(),
-        highlightCollector);
+    MatchRegionRetriever highlighter = new MatchRegionRetriever(searcher, rewrittenQuery, analyzer,
+        offsetsStrategySupplier);
+    highlighter.highlightDocuments(topDocs, highlightCollector);
 
     return highlights;
   }
