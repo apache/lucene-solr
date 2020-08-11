@@ -41,7 +41,7 @@ import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
+import org.apache.solr.client.solrj.cloud.VersionedData;
 import org.apache.solr.client.solrj.request.beans.ResourcePoolConfig;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;

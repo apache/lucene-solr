@@ -61,7 +61,6 @@ public class TestResourceManagerIntegration extends SolrCloudTestCase {
         .configure();
     cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 2)
-        .setMaxShardsPerNode(5)
         .process(cluster.getSolrClient());
     CloudUtil.waitForState(cloudManager, "failed to create collection", COLLECTION, CloudUtil.clusterShape(2, 2));
     resourceManager = cluster.getJettySolrRunner(0).getCoreContainer().getResourceManagerApi().getResourceManager();

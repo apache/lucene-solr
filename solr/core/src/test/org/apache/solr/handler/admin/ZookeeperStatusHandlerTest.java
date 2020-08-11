@@ -163,7 +163,7 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
     try (ZookeeperStatusHandler zsh = new ZookeeperStatusHandler(null)) {
      zsh.validateZkRawResponse(Collections.singletonList("mntr is not executed because it is not in the whitelist."),
           "zoo1:2181", "mntr");
-    }  catch (IOException e) {
+    }  catch (Exception e) {
       fail("Error closing ZookeeperStatusHandler");
     }
   }
@@ -172,7 +172,7 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
   public void validateEmptyResponse() {
     try (ZookeeperStatusHandler zsh = new ZookeeperStatusHandler(null)) {
       zsh.validateZkRawResponse(Collections.emptyList(), "zoo1:2181", "mntr");
-    } catch (IOException e) {
+    } catch (Exception e) {
       fail("Error closing ZookeeperStatusHandler");
     }
   }
