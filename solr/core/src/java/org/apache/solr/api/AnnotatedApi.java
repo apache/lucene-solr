@@ -64,7 +64,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider {
 
   public static final String ERR = "Error executing commands :";
   private EndPoint endPoint;
-  private final Map<String, Cmd> commands ;
+  private final Map<String, Cmd> commands;
   private final Cmd singletonCommand;
   private final Api fallback;
 
@@ -93,8 +93,9 @@ public class AnnotatedApi extends Api implements PermissionNameProvider {
       SpecProvider specProvider = readSpec(endPoint, methods);
       return Collections.singletonList(new AnnotatedApi(specProvider, endPoint, commands, null));
     } else {
-      List<Api> apis = new ArrayList<>();
-      for (Method m : klas.getDeclaredMethods()) {
+      Method[] methods = klas.getDeclaredMethods();
+      List<Api> apis = new ArrayList<>(methods.length);
+      for (Method m : methods) {
         EndPoint endPoint = m.getAnnotation(EndPoint.class);
         if (endPoint == null) continue;
         if (!Modifier.isPublic(m.getModifiers())) {
@@ -127,14 +128,14 @@ public class AnnotatedApi extends Api implements PermissionNameProvider {
 
   private static SpecProvider readSpec(EndPoint endPoint, List<Method> m) {
     return () -> {
-      Map map = new LinkedHashMap();
-      List<String> methods = new ArrayList<>();
+      Map map = new LinkedHashMap(3);
+      List<String> methods = new ArrayList<>(endPoint.method().length);
       for (SolrRequest.METHOD method : endPoint.method()) {
         methods.add(method.name());
       }
       map.put("methods", methods);
       map.put("url", new ValidatingJsonMap(Collections.singletonMap("paths", Arrays.asList(endPoint.path()))));
-      Map<String, Object> cmds = new HashMap<>();
+      Map<String, Object> cmds = new HashMap<>(m.size());
 
       for (Method method : m) {
         Command command = method.getAnnotation(Command.class);

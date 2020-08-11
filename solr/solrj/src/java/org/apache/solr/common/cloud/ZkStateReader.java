@@ -200,15 +200,15 @@ public class ZkStateReader implements SolrCloseable {
   private ConcurrentHashMap<String, CollectionWatch<DocCollectionWatcher>> collectionWatches = new ConcurrentHashMap<>(16, 0.75f, 5);
 
   // named this observers so there's less confusion between CollectionPropsWatcher map and the PropsWatcher map.
-  private ConcurrentHashMap<String, CollectionPropsWatcher> collectionPropsObservers = new ConcurrentHashMap<>(16, 0.75f, 5);
+  private final ConcurrentHashMap<String, CollectionPropsWatcher> collectionPropsObservers = new ConcurrentHashMap<>(16, 0.75f, 5);
 
   private Set<CloudCollectionsListener> cloudCollectionsListeners = ConcurrentHashMap.newKeySet();
 
   private final ExecutorService notifications = ParWork.getExecutor();
 
-  private Set<LiveNodesListener> liveNodesListeners = ConcurrentHashMap.newKeySet();
+  private final Set<LiveNodesListener> liveNodesListeners = ConcurrentHashMap.newKeySet();
 
-  private Set<ClusterPropertiesListener> clusterPropertiesListeners = ConcurrentHashMap.newKeySet();
+  private final Set<ClusterPropertiesListener> clusterPropertiesListeners = ConcurrentHashMap.newKeySet();
 
   private static final long LAZY_CACHE_TIME = TimeUnit.NANOSECONDS.convert(STATE_UPDATE_DELAY, TimeUnit.MILLISECONDS);
 
@@ -312,7 +312,7 @@ public class ZkStateReader implements SolrCloseable {
 
   private volatile boolean closed = false;
 
-  private Set<CountDownLatch> waitLatches = ConcurrentHashMap.newKeySet(64);
+  private final Set<CountDownLatch> waitLatches = ConcurrentHashMap.newKeySet(64);
 
   public ZkStateReader(SolrZkClient zkClient) {
     this(zkClient, null);
@@ -842,14 +842,11 @@ public class ZkStateReader implements SolrCloseable {
   }
 
   public void close() {
+    log.info("Closing ZkStateReader");
     closeTracker.close();
     this.closed = true;
     try {
-      try (ParWork closer = new ParWork(this, true)) {
-//        closer.add("waitLatchesReader", () -> {
-//          waitLatches.forEach((w) -> w.countDown());
-//          return null;
-//        });
+      try (ParWork closer = new ParWork(this, false)) {
 
         closer
             .add("notifications", notifications, () -> {

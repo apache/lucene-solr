@@ -545,7 +545,7 @@ public class ParWork implements Closeable {
 
             }
             if (closeCalls.size() > 0) {
-              try {
+
                 List<Future<Object>> results = new ArrayList<>(closeCalls.size());
                 for (Callable<Object> call : closeCalls) {
                     Future<Object> future = executor.doSubmit(call, requireAnotherThread);
@@ -555,18 +555,24 @@ public class ParWork implements Closeable {
 //                List<Future<Object>> results = executor.invokeAll(closeCalls, 8, TimeUnit.SECONDS);
 
                 for (Future<Object> future : results) {
-                  future.get(Integer.getInteger("solr.parwork.task_timeout", 60000), TimeUnit.MILLISECONDS); // nocommit
-                  if (!future.isDone() || future.isCancelled()) {
-                    log.warn("A task did not finish isDone={} isCanceled={}", future.isDone(), future.isCancelled());
-                  //  throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "A task did nor finish" +future.isDone()  + " " + future.isCancelled());
+                  try {
+                    future.get(
+                        Integer.getInteger("solr.parwork.task_timeout", 60000),
+                        TimeUnit.MILLISECONDS); // nocommit
+                    if (!future.isDone() || future.isCancelled()) {
+                      log.warn("A task did not finish isDone={} isCanceled={}",
+                          future.isDone(), future.isCancelled());
+                      //  throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "A task did nor finish" +future.isDone()  + " " + future.isCancelled());
+                    }
+                  } catch (InterruptedException e1) {
+                    log.warn(WORK_WAS_INTERRUPTED);
+                    // TODO: save interrupted status and reset it at end?
                   }
+
                 }
 
-              } catch (InterruptedException e1) {
-                log.warn(WORK_WAS_INTERRUPTED);
-                Thread.currentThread().interrupt();
-                return;
-              }
+
+
             }
           }
         } finally {
