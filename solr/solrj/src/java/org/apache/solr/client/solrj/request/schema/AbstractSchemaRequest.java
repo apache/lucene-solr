@@ -37,4 +37,8 @@ public abstract class AbstractSchemaRequest<T extends SolrResponse> extends Solr
     return params;
   }
 
+  @Override
+  public String getRequestType() {
+    return SolrRequestType.ADMIN.toString();
+  }
 }

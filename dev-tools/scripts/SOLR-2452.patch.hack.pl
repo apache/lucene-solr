@@ -167,8 +167,8 @@ my @copies = (
     'solr/core/src/test-files/solr/conf/schema-replication1.xml'
  => 'solr/solrj/src/test-files/solrj/solr/conf/schema-replication1.xml',
 
-    'solr/core/src/test-files/solr/conf/solrconfig-slave1.xml'
- => 'solr/solrj/src/test-files/solrj/solr/conf/solrconfig-slave1.xml',
+    'solr/core/src/test-files/solr/conf/solrconfig-follower1.xml'
+ => 'solr/solrj/src/test-files/solrj/solr/conf/solrconfig-follower1.xml',
 );
 
 my $diff;

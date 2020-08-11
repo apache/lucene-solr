@@ -23,7 +23,7 @@ Apache Solr includes the ability to set up a cluster of Solr servers that combin
 * Automatic load balancing and fail-over for queries
 * ZooKeeper integration for cluster coordination and configuration.
 
-SolrCloud is flexible distributed search and indexing, without a master node to allocate nodes, shards and replicas. Instead, Solr uses ZooKeeper to manage these locations, depending on configuration files and schemas. Queries and updates can be sent to any server. Solr will use the information in the ZooKeeper database to figure out which servers need to handle the request.
+SolrCloud is flexible distributed search and indexing, without a leader node to allocate nodes, shards and replicas. Instead, Solr uses ZooKeeper to manage these locations, depending on configuration files and schemas. Queries and updates can be sent to any server. Solr will use the information in the ZooKeeper database to figure out which servers need to handle the request.
 
 In this section, we'll cover everything you need to know about using Solr in SolrCloud mode. We've split up the details into the following topics:
 

@@ -176,6 +176,16 @@ public class PackageTool extends SolrCLI.ToolBase {
                 }
                 break;
               }
+              case "uninstall": {
+                Pair<String, String> parsedVersion = parsePackageVersion(cli.getArgList().get(1).toString());
+                if (parsedVersion.second() == null) {
+                  throw new SolrException(ErrorCode.BAD_REQUEST, "Package name and version are both required. Actual: " + cli.getArgList().get(1));
+                }
+                String packageName = parsedVersion.first();
+                String version = parsedVersion.second();
+                packageManager.uninstall(packageName, version);
+                break;
+              }
               case "help":
               case "usage":
                 print("Package Manager\n---------------");

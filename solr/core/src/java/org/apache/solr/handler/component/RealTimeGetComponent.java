@@ -136,15 +136,17 @@ public class RealTimeGetComponent extends SearchComponent
     if (!params.getBool(COMPONENT_NAME, true)) {
       return;
     }
-    
-    // This seems rather kludgey, may there is better way to indicate
-    // that replica can support handling version ranges
+
+    //TODO remove this at Solr 10
+    //After SOLR-14641 other nodes won't call RTG with this param.
+    //Just keeping here for backward-compatibility, if we remove this, nodes with older versions will
+    //assume that this node can't handle version ranges.
     String val = params.get("checkCanHandleVersionRanges");
     if(val != null) {
       rb.rsp.add("canHandleVersionRanges", true);
       return;
     }
-    
+
     val = params.get("getFingerprint");
     if(val != null) {
       processGetFingeprint(rb);
