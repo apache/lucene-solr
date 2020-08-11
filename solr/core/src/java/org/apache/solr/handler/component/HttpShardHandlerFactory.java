@@ -33,6 +33,7 @@ import org.apache.solr.client.solrj.routing.ReplicaListTransformerFactory;
 import org.apache.solr.client.solrj.routing.RequestReplicaListTransformerGenerator;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.ParWork;
+import org.apache.solr.common.ParWorkExecService;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -470,7 +471,8 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
    * Creates a new completion service for use by a single set of distributed requests.
    */
   public CompletionService newCompletionService() {
-    return new ExecutorCompletionService<ShardResponse>(ParWork.getExecutor());
+    return new SolrExecutorCompletionService<ShardResponse>(
+        (ParWorkExecService) ParWork.getExecutor());
   } // ### expert usage
 
 

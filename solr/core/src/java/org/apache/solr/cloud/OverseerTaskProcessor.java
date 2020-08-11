@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableSet;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
+import org.apache.solr.common.ParWorkExecService;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -198,7 +199,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
           while (runningTasksSize() > MAX_PARALLEL_TASKS) {
             synchronized (waitLock) {
-              waitLock.wait(1000);//wait for 100 ms or till a task is complete
+              waitLock.wait(1000);//wait for 1000 ms or till a task is complete
             }
             waited = true;
           }
@@ -289,7 +290,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
                     .getId() + " message:" + message.toString());
             Runner runner = new Runner(messageHandler, message, operation, head,
                 lock);
-            ParWork.getExecutor().submit(runner);
+            ParWork.getExecutor().submit(runner, true);
           }
 
         } catch (InterruptedException | AlreadyClosedException e) {

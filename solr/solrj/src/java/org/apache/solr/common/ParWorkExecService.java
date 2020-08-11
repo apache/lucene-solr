@@ -283,6 +283,16 @@ public class ParWorkExecService implements ExecutorService {
 
   @Override
   public void execute(Runnable runnable) {
+    execute(runnable, false);
+  }
+
+
+  public void execute(Runnable runnable, boolean requiresAnotherThread) {
+    if (requiresAnotherThread) {
+       service.submit(runnable);
+       return;
+    }
+
     boolean success = checkLoad();
     if (success) {
       success = available.tryAcquire();

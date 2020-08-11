@@ -26,8 +26,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -140,7 +143,7 @@ public class ZkConfigManager {
     }
   }
 
-  private void copyConfigDirFromZk(String fromZkPath, String toZkPath, Set<String> copiedToZkPaths) throws IOException {
+  private void copyConfigDirFromZk(String fromZkPath, String toZkPath, Set<String> copiedToZkPaths,  Map<String,byte[]> dataMap ) throws IOException {
     try {
       List<String> files = zkClient.getChildren(root + fromZkPath, null, true);
       for (String file : files) {
@@ -149,10 +152,10 @@ public class ZkConfigManager {
           final String toZkFilePath = toZkPath + "/" + file;
           log.info("Copying zk node {}/{} to {}", fromZkPath, file, toZkFilePath);
           byte[] data = zkClient.getData(root + fromZkPath + "/" + file, null, null);
-          zkClient.makePath(toZkFilePath, data, true);
+          dataMap.put(toZkFilePath, data);
           if (copiedToZkPaths != null) copiedToZkPaths.add(toZkFilePath);
         } else {
-          copyConfigDirFromZk(root + fromZkPath + "/" + file, toZkPath + "/" + file, copiedToZkPaths);
+          copyConfigDirFromZk(root + fromZkPath + "/" + file, toZkPath + "/" + file, copiedToZkPaths, dataMap);
         }
       }
     } catch (KeeperException | InterruptedException e) {
@@ -182,7 +185,13 @@ public class ZkConfigManager {
    * @throws IOException if an I/O error occurs
    */
   public void copyConfigDir(String fromConfig, String toConfig, Set<String> copiedToZkPaths) throws IOException {
-    copyConfigDirFromZk(CONFIGS_ZKNODE + "/" + fromConfig, CONFIGS_ZKNODE + "/" + toConfig, copiedToZkPaths);
+    Map<String,byte[]> dataMap = new HashMap();
+    copyConfigDirFromZk(CONFIGS_ZKNODE + "/" + fromConfig, CONFIGS_ZKNODE + "/" + toConfig, copiedToZkPaths, dataMap);
+    try {
+      zkClient.mkdirs(dataMap, 1);
+    } catch (KeeperException e) {
+      throw new IOException("Error copying nodes from zookeeper path " + fromConfig + " to " + toConfig, e);
+    }
   }
 
   // This method is used by configSetUploadTool and CreateTool to resolve the configset directory.

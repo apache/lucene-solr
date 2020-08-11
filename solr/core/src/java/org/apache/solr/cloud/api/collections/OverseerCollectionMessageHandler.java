@@ -380,8 +380,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   private void processReplicaAddPropertyCommand(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
       throws Exception {
     checkRequired(message, COLLECTION_PROP, SHARD_ID_PROP, ZkStateReader.NUM_SHARDS_PROP, "shards", REPLICA_PROP, PROPERTY_PROP, PROPERTY_VALUE_PROP);
-    SolrZkClient zkClient = zkStateReader.getZkClient();
-    Map<String, Object> propMap = new HashMap<>();
+    Map<String, Object> propMap = new HashMap<>(message.getProperties().size() + 1);
     propMap.put(Overseer.QUEUE_OPERATION, ADDREPLICAPROP.toLower());
     propMap.putAll(message.getProperties());
     ZkNodeProps m = new ZkNodeProps(propMap);
@@ -391,8 +390,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   private void processReplicaDeletePropertyCommand(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
       throws Exception {
     checkRequired(message, COLLECTION_PROP, SHARD_ID_PROP, REPLICA_PROP, PROPERTY_PROP);
-    SolrZkClient zkClient = zkStateReader.getZkClient();
-    Map<String, Object> propMap = new HashMap<>();
+    Map<String, Object> propMap = new HashMap<>(message.getProperties().size() + 1);
     propMap.put(Overseer.QUEUE_OPERATION, DELETEREPLICAPROP.toLower());
     propMap.putAll(message.getProperties());
     ZkNodeProps m = new ZkNodeProps(propMap);
@@ -406,7 +404,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
               "' parameters are required for the BALANCESHARDUNIQUE operation, no action taken");
     }
     SolrZkClient zkClient = zkStateReader.getZkClient();
-    Map<String, Object> m = new HashMap<>();
+    Map<String, Object> m = new HashMap<>(message.getProperties().size() + 1);
     m.put(Overseer.QUEUE_OPERATION, BALANCESHARDUNIQUE.toLower());
     m.putAll(message.getProperties());
     overseer.offerStateUpdate(Utils.toJSON(m));
@@ -432,7 +430,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       return collection;
     } else {
       Map<String, Object> shards = (Map<String, Object>) collection.get("shards");
-      Map<String, Object>  selected = new HashMap<>();
+      Map<String, Object>  selected = new HashMap<>(1);
       for (String selectedShard : requestedShards) {
         if (!shards.containsKey(selectedShard)) {
           throw new SolrException(ErrorCode.BAD_REQUEST, "Collection: " + name + " shard: " + selectedShard + " not found");

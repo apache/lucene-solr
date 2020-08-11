@@ -236,7 +236,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         }
         if (isLeader) {
 
-          try (ParWork worker = new ParWork(this)) {
+          try (ParWork worker = new ParWork(this, false, true)) {
             worker.collect(() -> {
               log.info("Do a local commit on NRT endpoint for leader");
               try {
