@@ -43,9 +43,9 @@ When upgrading to 8.6.x users should be aware of the following major changes fro
 
 *Autoscaling*
 
-* If upgrading from **8.6.0**, please see the 8.6.1 Upgrade notes for information on performance degredations caused by the autoscaling framework.
+* If upgrading from **8.6.0**, please see the <<#solr-8-6-1,8.6.1 Upgrade notes>> for information on performance degredations caused by the autoscaling framework.
 
-=== Solr 8.6.1 (Upgrading from 8.6.0 only)
+=== Solr 8.6.1
 
 See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote861[8.6.1 Release Notes^]
 for an overview of the fixes included in Solr 8.6.1.
