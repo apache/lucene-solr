@@ -11,6 +11,7 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class ParWorkExecutor extends ExecutorUtil.MDCAwareThreadPoolExecutor {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -63,7 +64,11 @@ public class ParWorkExecutor extends ExecutorUtil.MDCAwareThreadPoolExecutor {
         });
 
         setRejectedExecutionHandler(new CallerRunsPolicy());
+    }
 
+    public void shutdown() {
         allowCoreThreadTimeOut(true);
+        setKeepAliveTime(1, TimeUnit.NANOSECONDS);
+        super.shutdown();
     }
 }
