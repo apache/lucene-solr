@@ -404,9 +404,9 @@ public class ZkTestServer implements Closeable {
 
             return zooKeeperServer;
           }, () -> {
+            zkServer.zooKeeperServer.getSessionTracker().shutdown();
             cnxnFactory.shutdown();
             cnxnFactory.join();
-            zkServer.zooKeeperServer.getSessionTracker().shutdown();
          //   ((Thread)zkServer.zooKeeperServer.getSessionTracker()).interrupt();
             ((Thread)zkServer.zooKeeperServer.getSessionTracker()).join();
             return cnxnFactory;
