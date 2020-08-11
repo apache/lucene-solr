@@ -48,8 +48,7 @@ public interface ShardReplica {
    */
   long indexSize();
 
-  /**Is this replica the leader
-   */
+  /**Is this replica the leader */
   boolean isLeader();
 
   /**Baseurl for this replica

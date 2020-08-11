@@ -721,6 +721,11 @@ public class TestPackages extends SolrCloudTestCase {
         public SolrResponse createResponse(SolrClient client) {
           return new SolrResponseBase();
         }
+
+        @Override
+        public String getRequestType() {
+          return SolrRequestType.UNSPECIFIED.toString();
+        }
       });
       verifySchemaComponent(cluster.getSolrClient(), COLLECTION_NAME, "/schema/fieldtypes/myNewTextFieldWithAnalyzerClass",
               Utils.makeMap(":fieldType:analyzer:charFilters[0]:_packageinfo_:version" ,"1.0",

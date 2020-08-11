@@ -1,8 +1,6 @@
 = Solr Plugins
 :page-children: libs, \
-    package-manager, \
-    adding-custom-plugins-in-solrcloud-mode
-
+    package-manager
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
