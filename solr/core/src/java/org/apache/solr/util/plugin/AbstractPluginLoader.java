@@ -25,6 +25,7 @@ import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.DOMUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +33,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
+import javax.xml.xpath.XPath;
 
 /**
  * An abstract super class that manages standard solr-style plugin configuration.
@@ -87,7 +89,7 @@ public abstract class AbstractPluginLoader<T>
    * @param node - the XML node defining this plugin
    */
   @SuppressWarnings("unchecked")
-  protected T create( SolrResourceLoader loader, String name, String className, Node node ) throws Exception
+  protected T create( SolrResourceLoader loader, String name, String className, Node node, XPath xpath) throws Exception
   {
     return loader.newInstance(className, pluginClassType, getDefaultPackages());
   }
@@ -140,7 +142,7 @@ public abstract class AbstractPluginLoader<T>
   {
     List<PluginInitInfo> info = new ArrayList<>();
     T defaultPlugin = null;
-    
+    XPath xpath = IndexSchema.getXpath();
     if (nodes !=null ) {
       for (int i=0; i<nodes.getLength(); i++) {
         Node node = nodes.item(i);
@@ -155,7 +157,7 @@ public abstract class AbstractPluginLoader<T>
             throw new RuntimeException(type + ": missing mandatory attribute 'class' or 'name'");
           }
 
-          T plugin = create(loader, name, className, node);
+          T plugin = create(loader, name, className, node, xpath);
           if (log.isDebugEnabled()) {
             log.debug("created {}: {}", ((name != null) ? name : ""), plugin.getClass().getName());
           }
@@ -234,7 +236,7 @@ public abstract class AbstractPluginLoader<T>
     try {
       String name = DOMUtil.getAttr(node, NAME, requireName ? type : null);
       String className = DOMUtil.getAttr(node, "class", type);
-      plugin = create(loader, name, className, node);
+      plugin = create(loader, name, className, node, IndexSchema.getXpath());
       if (log.isDebugEnabled()) {
         log.debug("created {}: {}", name, plugin.getClass().getName());
       }

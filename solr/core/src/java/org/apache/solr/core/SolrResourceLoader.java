@@ -87,8 +87,8 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   private final SystemIdResolver sysIdResolver;
 
   private String name = "";
-  protected URLClassLoader classLoader;
-  protected URLClassLoader resourceClassLoader;
+  protected volatile URLClassLoader classLoader;
+  protected volatile URLClassLoader resourceClassLoader;
   private final Path instanceDir;
 
   private final Set<SolrCoreAware> waitingForCore = ConcurrentHashMap.newKeySet(5000);
@@ -104,7 +104,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   private RestManager.Registry managedResourceRegistry;
 
   /** @see #reloadLuceneSPI() */
-  private boolean needToReloadLuceneSPI = false; // requires synchronization
+  private volatile boolean needToReloadLuceneSPI = false; // requires synchronization
 
   public synchronized RestManager.Registry getManagedResourceRegistry() {
     if (managedResourceRegistry == null) {
@@ -177,7 +177,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
    *
    * @param urls    the URLs of files to add
    */
-  synchronized void addToClassLoader(List<URL> urls) {
+  void addToClassLoader(List<URL> urls) {
     URLClassLoader newLoader = addURLsToClassLoader(classLoader, urls);
     URLClassLoader newResourceClassLoader = addURLsToClassLoader(resourceClassLoader, urls);
     if (newLoader == classLoader) {
@@ -334,24 +334,18 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   public InputStream openResource(String resource) throws IOException {
 
     Path inConfigDir = getInstancePath().resolve("conf").resolve(resource);
-    if (Files.exists(inConfigDir) && Files.isReadable(inConfigDir)) {
+    if (Files.exists(inConfigDir)) {
       return Files.newInputStream(checkPathIsSafe(inConfigDir));
     }
 
     Path inInstanceDir = getInstancePath().resolve(resource);
-    if (Files.exists(inInstanceDir) && Files.isReadable(inInstanceDir)) {
+    if (Files.exists(inInstanceDir)) {
       return Files.newInputStream(checkPathIsSafe(inInstanceDir));
     }
 
     // Delegate to the class loader (looking into $INSTANCE_DIR/lib jars).
     // We need a ClassLoader-compatible (forward-slashes) path here!
     InputStream is = resourceClassLoader.getResourceAsStream(resource.replace(File.separatorChar, '/'));
-
-    // This is a hack just for tests (it is not done in ZKResourceLoader)!
-    // TODO can we nuke this?
-    if (is == null && System.getProperty("jetty.testMode") != null) {
-      is = resourceClassLoader.getResourceAsStream(("conf/" + resource).replace(File.separatorChar, '/'));
-    }
 
     if (is == null) {
       throw new SolrResourceNotFoundException("Can't find resource '" + resource + "' in classpath or '" + instanceDir + "'");
@@ -364,11 +358,11 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
    */
   public String resourceLocation(String resource) {
     Path inConfigDir = getInstancePath().resolve("conf").resolve(resource);
-    if (Files.exists(inConfigDir) && Files.isReadable(inConfigDir))
+    if (Files.exists(inConfigDir))
       return inConfigDir.toAbsolutePath().normalize().toString();
 
     Path inInstanceDir = getInstancePath().resolve(resource);
-    if (Files.exists(inInstanceDir) && Files.isReadable(inInstanceDir))
+    if (Files.exists(inInstanceDir))
       return inInstanceDir.toAbsolutePath().normalize().toString();
 
     try (InputStream is = resourceClassLoader.getResourceAsStream(resource.replace(File.separatorChar, '/'))) {

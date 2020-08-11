@@ -136,11 +136,11 @@ public class IndexSchema {
   protected final SolrResourceLoader loader;
   protected final Properties substitutableProperties;
 
-  protected Map<String,SchemaField> fields = new HashMap<>();
-  protected Map<String,FieldType> fieldTypes = new HashMap<>();
+  protected Map<String,SchemaField> fields = new HashMap<>(128);
+  protected Map<String,FieldType> fieldTypes = new HashMap<>(64);
 
-  protected List<SchemaField> fieldsWithDefaultValue = new ArrayList<>();
-  protected Collection<SchemaField> requiredFields = new HashSet<>();
+  protected List<SchemaField> fieldsWithDefaultValue = new ArrayList<>(64);
+  protected Collection<SchemaField> requiredFields = new HashSet<>(32);
   protected DynamicField[] dynamicFields = new DynamicField[] {};
 
   public DynamicField[] getDynamicFields() { return dynamicFields; }
@@ -150,9 +150,9 @@ public class IndexSchema {
   private Analyzer indexAnalyzer;
   private Analyzer queryAnalyzer;
 
-  protected List<SchemaAware> schemaAware = new ArrayList<>();
+  protected List<SchemaAware> schemaAware = new ArrayList<>(64);
 
-  protected Map<String, List<CopyField>> copyFieldsMap = new HashMap<>();
+  protected Map<String, List<CopyField>> copyFieldsMap = new HashMap<>(64);
   public Map<String,List<CopyField>> getCopyFieldsMap() { return Collections.unmodifiableMap(copyFieldsMap); }
 
   protected DynamicCopy[] dynamicCopyFields = new DynamicCopy[] {};
@@ -194,8 +194,7 @@ public class IndexSchema {
     this.substitutableProperties = substitutableProperties;
   }
 
-  public static synchronized XPath getXpath() {
-    XmlConfigFile.xpathFactory.newXPath();
+  public static XPath getXpath() {
     XPath xPath = THREAD_LOCAL_XPATH.get();
     if (xPath == null) {
       xPath = XmlConfigFile.xpathFactory.newXPath();

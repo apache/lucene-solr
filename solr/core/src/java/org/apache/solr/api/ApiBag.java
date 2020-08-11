@@ -144,7 +144,8 @@ public class ApiBag {
   }
 
   static void registerIntrospect(List<String> l, PathTrie<Api> registry, Map<String, String> substitutes, Api introspect) {
-    ArrayList<String> copy = new ArrayList<>(l);
+    ArrayList<String> copy = new ArrayList<>(l.size() + 1);
+    copy.addAll(l);
     copy.add("_introspect");
     registry.insert(copy, substitutes, introspect);
   }

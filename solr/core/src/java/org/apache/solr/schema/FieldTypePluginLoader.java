@@ -79,8 +79,7 @@ public final class FieldTypePluginLoader
   protected FieldType create( SolrResourceLoader loader, 
                               String name, 
                               String className,
-                              Node node ) throws Exception {
-    XPath xpath = IndexSchema.getXpath();
+                              Node node, XPath xpath) throws Exception {
 
     FieldType ft = loader.newInstance(className, FieldType.class, "schema.");
     ft.setTypeName(name);
@@ -254,7 +253,7 @@ public final class FieldTypePluginLoader
       ("[schema.xml] analyzer/charFilter", CharFilterFactory.class, false, false) {
 
       @Override
-      protected CharFilterFactory create(SolrResourceLoader loader, String name, String className, Node node) throws Exception {
+      protected CharFilterFactory create(SolrResourceLoader loader, String name, String className, Node node, XPath xpath) throws Exception {
         final Map<String,String> params = DOMUtil.toMap(node.getAttributes());
         String configuredVersion = params.remove(LUCENE_MATCH_VERSION_PARAM);
         params.put(LUCENE_MATCH_VERSION_PARAM, parseConfiguredVersion(configuredVersion, CharFilterFactory.class.getSimpleName()).toString());
@@ -304,7 +303,7 @@ public final class FieldTypePluginLoader
       ("[schema.xml] analyzer/tokenizer", TokenizerFactory.class, false, false) {
       
       @Override
-      protected TokenizerFactory create(SolrResourceLoader loader, String name, String className, Node node) throws Exception {
+      protected TokenizerFactory create(SolrResourceLoader loader, String name, String className, Node node, XPath xpath) throws Exception {
         final Map<String,String> params = DOMUtil.toMap(node.getAttributes());
         String configuredVersion = params.remove(LUCENE_MATCH_VERSION_PARAM);
         params.put(LUCENE_MATCH_VERSION_PARAM, parseConfiguredVersion(configuredVersion, TokenizerFactory.class.getSimpleName()).toString());
@@ -352,13 +351,13 @@ public final class FieldTypePluginLoader
     // Load the Filters
 
     final ArrayList<TokenFilterFactory> filters 
-      = new ArrayList<>();
+      = new ArrayList<>(64);
 
     AbstractPluginLoader<TokenFilterFactory> filterLoader = 
       new AbstractPluginLoader<TokenFilterFactory>("[schema.xml] analyzer/filter", TokenFilterFactory.class, false, false)
     {
       @Override
-      protected TokenFilterFactory create(SolrResourceLoader loader, String name, String className, Node node) throws Exception {
+      protected TokenFilterFactory create(SolrResourceLoader loader, String name, String className, Node node, XPath xpath) throws Exception {
         final Map<String,String> params = DOMUtil.toMap(node.getAttributes());
         String configuredVersion = params.remove(LUCENE_MATCH_VERSION_PARAM);
         params.put(LUCENE_MATCH_VERSION_PARAM, parseConfiguredVersion(configuredVersion, TokenFilterFactory.class.getSimpleName()).toString());

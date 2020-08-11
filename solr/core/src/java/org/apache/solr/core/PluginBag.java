@@ -307,8 +307,8 @@ public class PluginBag<T> implements AutoCloseable {
    */
   void init(Map<String, T> defaults, SolrCore solrCore, List<PluginInfo> infos) {
     core = solrCore;
-    List<Runnable> otherPlugins = new ArrayList<>();
-    List<Runnable> reqHandlerPlugins = new ArrayList<>();
+    List<Runnable> otherPlugins = new ArrayList<>(32);
+    List<Runnable> reqHandlerPlugins = new ArrayList<>(32);
 
     for (PluginInfo info : infos) {
       List<Runnable> list;
@@ -331,9 +331,8 @@ public class PluginBag<T> implements AutoCloseable {
     }
     try (ParWork worker = new ParWork(this)) {
       worker.collect(otherPlugins);
-      worker.addCollect("initOtherPlugins");
       worker.collect(reqHandlerPlugins);
-      worker.addCollect("initReqHandlerPlugins");
+      worker.addCollect("plugins");
     }
     if (infos.size() > 0) { // Aggregate logging
       if (log.isDebugEnabled()) {
