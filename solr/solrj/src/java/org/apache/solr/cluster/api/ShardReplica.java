@@ -53,5 +53,5 @@ public interface ShardReplica {
 
   /**Baseurl for this replica
    */
-  String baseUrl(ApiType type);
+  String url(ApiType type);
 }
