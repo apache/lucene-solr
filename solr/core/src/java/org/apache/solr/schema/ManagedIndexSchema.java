@@ -1171,8 +1171,13 @@ public final class ManagedIndexSchema extends IndexSchema {
   @Override
   protected void postReadInform() {
     super.postReadInform();
-    for (FieldType fieldType : fieldTypes.values()) {
-      informResourceLoaderAwareObjectsForFieldType(fieldType);
+    try (ParWork worker = new ParWork(this)) {
+      for (FieldType fieldType : fieldTypes.values()) {
+        worker.collect(() -> {
+          informResourceLoaderAwareObjectsForFieldType(fieldType);
+        });
+      }
+      worker.addCollect("informFields");
     }
   }
 
