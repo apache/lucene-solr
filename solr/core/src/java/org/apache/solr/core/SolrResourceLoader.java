@@ -106,9 +106,13 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   /** @see #reloadLuceneSPI() */
   private volatile boolean needToReloadLuceneSPI = false; // requires synchronization
 
-  public synchronized RestManager.Registry getManagedResourceRegistry() {
+  public RestManager.Registry getManagedResourceRegistry() {
     if (managedResourceRegistry == null) {
-      managedResourceRegistry = new RestManager.Registry();
+      synchronized (this) {
+        if (managedResourceRegistry == null) {
+          managedResourceRegistry = new RestManager.Registry();
+        }
+      }
     }
     return managedResourceRegistry;
   }
@@ -775,15 +779,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
    * Tell all {@link SolrCoreAware} instances about the SolrCore
    */
   public void inform(SolrCore core) {
-
-    // make a copy to avoid potential deadlock of a callback calling newInstance and trying to
-    // add something to waitingForCore.
-
     while (waitingForCore.size() > 0) {
-      for (SolrCoreAware aware : waitingForCore) {
-        waitingForCore.remove(aware);
-        aware.inform(core);
-      }
       try (ParWork worker = new ParWork(this)) {
         waitingForCore.forEach(aware -> {
           worker.collect(()-> {
@@ -799,7 +795,6 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
 
         worker.addCollect("informResourceLoader");
       }
-
     }
 
     // this is the last method to be called in SolrCore before the latch is released.
@@ -810,9 +805,6 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
    * Tell all {@link ResourceLoaderAware} instances about the loader
    */
   public void inform(ResourceLoader loader) throws IOException {
-
-    // make a copy to avoid potential deadlock of a callback adding to the list
-
     while (waitingForResources.size() > 0) {
       try (ParWork worker = new ParWork(this)) {
         waitingForResources.forEach(r -> {
@@ -829,14 +821,6 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
 
         worker.addCollect("informResourceLoader");
       }
-//      if (waitingForResources.size() == 0) {
-//        try {
-//          Thread.sleep(50); // lttle throttle
-//        } catch (Exception e) {
-//          SolrZkClient.checkInterrupted(e);
-//          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-//        }
-//      }
     }
   }
 
@@ -847,40 +831,25 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
    */
   public void inform(Map<String, SolrInfoBean> infoRegistry) {
     // this can currently happen concurrently with requests starting and lazy components
-    // loading. Make sure infoMBeans doesn't change.
+    // loading
 
     while (infoMBeans.size() > 0) {
 
       try (ParWork worker = new ParWork(this)) {
         infoMBeans.forEach(imb -> {
           worker.collect(()-> {
-            try {
               try {
                 infoRegistry.put(imb.getName(), imb);
+                infoMBeans.remove(imb);
               } catch (Exception e) {
                 ParWork.propegateInterrupt(e);
-                SolrZkClient.checkInterrupted(e);
                 log.warn("could not register MBean '" + imb.getName() + "'.", e);
               }
-            } catch (Exception e) {
-              ParWork.propegateInterrupt(e);
-              log.error("Exception informing info registry", e);
-            }
-            infoMBeans.remove(imb);
           });
         });
 
         worker.addCollect("informResourceLoader");
       }
-
-//      if (infoMBeans.size() == 0) {
-//        try {
-//          Thread.sleep(50); // lttle throttle
-//        } catch (InterruptedException e) {
-//          SolrZkClient.checkInterrupted(e);
-//          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-//        }
-//      }
     }
   }
 
@@ -1000,4 +969,5 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
       }
     }
   }
+
 }
