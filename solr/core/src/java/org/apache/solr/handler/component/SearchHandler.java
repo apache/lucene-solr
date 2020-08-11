@@ -73,9 +73,9 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected volatile List<SearchComponent> components;
-  private ShardHandlerFactory shardHandlerFactory;
-  private PluginInfo shfInfo;
-  private SolrCore core;
+  private volatile ShardHandlerFactory shardHandlerFactory;
+  private volatile PluginInfo shfInfo;
+  private volatile SolrCore core;
 
   protected List<String> getDefaultComponents() {
     ArrayList<String> names = new ArrayList<>(8);
@@ -174,6 +174,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
 
   @SuppressWarnings({"unchecked"})
   private void initComponents() {
+    assert core != null;
     Object declaredComponents = initArgs.get(INIT_COMPONENTS);
     List<String> first = (List<String>) initArgs.get(INIT_FIRST_COMPONENTS);
     List<String> last  = (List<String>) initArgs.get(INIT_LAST_COMPONENTS);
