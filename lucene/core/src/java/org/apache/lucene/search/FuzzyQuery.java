@@ -159,11 +159,7 @@ public class FuzzyQuery extends MultiTermQuery {
   @Override
   public void visit(QueryVisitor visitor) {
     if (visitor.acceptField(field)) {
-      if (maxEdits == 0 || prefixLength >= term.text().length()) {
-        visitor.consumeTerms(this, term);
-      } else {
-        visitor.consumeTermsMatching(this, term.field(), () -> getAutomata().runAutomaton);
-      }
+      visitor.consumeTermsMatching(this, term.field(), () -> getAutomata().runAutomaton);
     }
   }
 
