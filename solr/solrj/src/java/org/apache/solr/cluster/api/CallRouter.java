@@ -17,13 +17,23 @@
 package org.apache.solr.cluster.api;
 
 
+
+import org.apache.solr.common.cloud.Replica;
+
 import java.util.List;
+import java.util.function.Predicate;
 
 /**
  * Provide information to route a call to an appropriate node/core
  * One and only one method should be invoked on this
  */
-public interface CallRouter {
+public interface CallRouter  {
+
+
+    /** if a request is made to replicas of a collection/shard
+     * use this to filter out some replicas
+     */
+    CallRouter withReplicaFilter(Predicate<ShardReplica> predicate);
     /**
      * Any node in the cluster
      */
@@ -70,9 +80,44 @@ public interface CallRouter {
 
 
 
-    HttpRpc createHttpRpc();
+    HttpRemoteCall createHttpRpc();
 
     enum ReplicaType {
-        LEADER, NRT, TLOG, PULL, NON_LEADER, ANY
+        LEADER{
+            @Override
+            public boolean test(ShardReplica r) {
+                return r.isLeader();
+            }
+        }, NRT{
+            @Override
+            public boolean test(ShardReplica r) {
+                return r.type() == Replica.Type.NRT;
+            }
+        }, TLOG {
+            @Override
+            public boolean test(ShardReplica r) {
+                return r.type() == Replica.Type.TLOG ;
+            }
+        }
+        , PULL {
+            @Override
+            public boolean test(ShardReplica r) {
+                return r.type() == Replica.Type.PULL;
+            }
+        }, NON_LEADER {
+            @Override
+            public boolean test(ShardReplica r) {
+                return !r.isLeader();
+            }
+        }, ANY {
+            @Override
+            public boolean test(ShardReplica r) {
+                return true;
+            }
+        };
+
+        public boolean test(ShardReplica r) {
+            return false;
+        }
     }
 }

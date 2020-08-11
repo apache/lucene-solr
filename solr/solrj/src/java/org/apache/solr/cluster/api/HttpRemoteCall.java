@@ -16,58 +16,49 @@
  */
 package org.apache.solr.cluster.api;
 
-import org.apache.solr.client.solrj.SolrRequest;
-
-import java.util.function.BiConsumer;
-
 /**
  * Abstract out HTTP aspects of a Solr request
  */
-public interface HttpRpc {
-    HttpRpc withCallRouter(CallRouter callRouter);
+public interface HttpRemoteCall {
+    HttpRemoteCall withPathSupplier(PathSupplier pathSupplier);
 
     /**
      * Add a request param
      */
-    HttpRpc addParam(String key, String val);
+    HttpRemoteCall addParam(String key, String val);
 
-    HttpRpc addParam(String key, int val);
+    HttpRemoteCall addParam(String key, int val);
 
-    HttpRpc addParam(String key, boolean val);
+    HttpRemoteCall addParam(String key, boolean val);
 
-    HttpRpc addParam(String key, float val);
+    HttpRemoteCall addParam(String key, float val);
 
-    HttpRpc addParam(String key, double val);
-
-    /**
-     * Add multiple request params
-     */
-    HttpRpc addParams(BiConsumer<String, String> params);
+    HttpRemoteCall addParam(String key, double val);
 
     /**
      * Add a request header
      */
-    HttpRpc addHeader(String key, String val);
+    HttpRemoteCall addHeader(String key, String val);
 
     /**
      * Consumer for the response data
      */
-    HttpRpc withResponseConsumer(RpcFactory.ResponseConsumer sink);
+    HttpRemoteCall withResponseConsumer(RemoteCallFactory.ResponseConsumer sink);
 
     /**
      * Handle request headers if required
      */
-    HttpRpc withHeaderConsumer(RpcFactory.HeaderConsumer headerConsumer);
+    HttpRemoteCall withHeaderConsumer(RemoteCallFactory.HeaderConsumer headerConsumer);
 
     /**
      * Use Send a payload
      */
-    HttpRpc withPayload(RpcFactory.InputSupplier payload);
+    HttpRemoteCall withPayload(RemoteCallFactory.InputSupplier payload);
 
     /**
      * Http method
      */
-    HttpRpc withMethod(SolrRequest.METHOD method);
+    HttpRemoteCall withMethod(Method method);
 
     /**
      * The uri. The semantics depends on
@@ -75,21 +66,16 @@ public interface HttpRpc {
      * if it is a shard/replica the uri is the name of the handler (e.g /select , /update/json etc)
      * if it is node it is a full path (e.g: /admin/collections)
      */
-    HttpRpc withV1Path(String uri);
-
-    /**
-     * The uri. The semantics depends on
-     * whether it is made to a node or replica
-     * if it is a shard/replica the uri is the name of the handler
-     * if it is node it is a full path
-     */
-    HttpRpc withV2Path(String uri);
-
+    HttpRemoteCall withPath(String handler, ApiType type);
 
     /**
      * Invoke a synchronous request. The return object depends on the output of the
-     * {@link RpcFactory.ResponseConsumer}
+     * {@link RemoteCallFactory.ResponseConsumer}
      */
-    Object invoke() throws RpcFactory.RPCException;
+    Object invoke() throws RemoteCallFactory.RemoteCallException;
+
+    enum Method {
+        GET, POST, DELETE,PUT
+    }
 
 }

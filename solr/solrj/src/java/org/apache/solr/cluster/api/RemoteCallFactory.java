@@ -34,7 +34,7 @@ import java.util.function.Function;
  * c) serialization/deserialization is the responsibility of the code that is making a request
  *
  */
-public interface RpcFactory {
+public interface RemoteCallFactory {
 
     /**
      * Create a new router instance
@@ -43,19 +43,19 @@ public interface RpcFactory {
     CallRouter createCallRouter();
 
     /**
-     * Create a new {@link HttpRpc}
+     * Create a new {@link HttpRemoteCall}
      * This instance can be reused.
      */
-    HttpRpc createHttpRpc();
+    HttpRemoteCall createHttpRemoteCall();
 
 
     interface ResponseConsumer {
         /**
          * Allows this impl to add request params/http headers before the request is fired.
          * All values must be set before this method returns. Do not hold a reference to this
-         *  {@link HttpRpc} and set values later
+         *  {@link HttpRemoteCall} and set values later
          */
-        default void setRpc(HttpRpc rpc){}
+        default void setRemoteCall(HttpRemoteCall rpc){}
 
         /**Process the response.
          * Ensure that the whole stream is eaten up before this method returns
@@ -70,13 +70,18 @@ public interface RpcFactory {
     interface InputSupplier {
         void write(OutputStream os) throws IOException;
 
-        String contentType();
+        /**
+         * Allows this impl to add request params/http headers before the request is fired.
+         * All values must be set before this method returns. Do not hold a reference to this
+         *  {@link HttpRemoteCall} and set values later
+         */
+        default void setRemoteCall(HttpRemoteCall rpc){}
     }
 
 
-    class RPCException extends SolrException {
+    class RemoteCallException extends SolrException {
 
-        public RPCException(ErrorCode code, String msg) {
+        public RemoteCallException(ErrorCode code, String msg) {
             super(code, msg);
         }
     }
@@ -85,9 +90,9 @@ public interface RpcFactory {
     interface HeaderConsumer {
         /**Allows this impl to add request params/http headers before the request is fired
          * All values must be set before this method returns. Do not hold a reference to this
-         *  {@link HttpRpc} and set values later
+         *  {@link HttpRemoteCall} and set values later
          */
-        default void setRpc(HttpRpc rpc){}
+        default void setRemoteCall(HttpRemoteCall rpc){}
         /**
          * read all required values from the header
          * @param status the HTTP status code
@@ -98,7 +103,7 @@ public interface RpcFactory {
 
     ResponseConsumer JAVABIN_CONSUMER = new ResponseConsumer() {
         @Override
-        public void setRpc(HttpRpc rpc) {
+        public void setRemoteCall(HttpRemoteCall rpc) {
             rpc.addParam(CommonParams.WT , CommonParams.JAVABIN);
         }
 
@@ -109,7 +114,7 @@ public interface RpcFactory {
     };
     ResponseConsumer JSON_CONSUMER = new ResponseConsumer() {
         @Override
-        public void setRpc(HttpRpc rpc) {
+        public void setRemoteCall(HttpRemoteCall rpc) {
             rpc.addParam(CommonParams.WT , CommonParams.JSON);
         }
 
