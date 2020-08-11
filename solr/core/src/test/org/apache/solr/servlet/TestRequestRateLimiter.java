@@ -73,7 +73,7 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
     assertEquals(350, mockQueryRateLimiter.incomingRequestCount.get());
 
     assertTrue((mockQueryRateLimiter.acceptedNewRequestCount.get() == mockQueryRateLimiter.incomingRequestCount.get()
-        || mockQueryRateLimiter.rejectedRequestCount.get() > 0));g
+        || mockQueryRateLimiter.rejectedRequestCount.get() > 0));
     assertEquals(mockQueryRateLimiter.incomingRequestCount.get(),
         mockQueryRateLimiter.acceptedNewRequestCount.get() + mockQueryRateLimiter.rejectedRequestCount.get());
   }
