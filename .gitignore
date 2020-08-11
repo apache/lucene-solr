@@ -32,3 +32,6 @@ __pycache__
 .gradle
 buildSrc
 gradle.properties
+gradle/
+gradlew
+gradlew.bat
