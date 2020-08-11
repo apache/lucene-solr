@@ -200,7 +200,7 @@ public class SolrCmdDistributor implements Closeable {
       uReq.setParams(params);
 
       addCommit(uReq, cmd);
-      submit(new Req(cmd, node, uReq, true));
+      submit(new Req(cmd, node, uReq, false));
     }
 
   }
