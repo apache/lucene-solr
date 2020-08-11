@@ -2155,7 +2155,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         // (caches take a little while to instantiate)
         final boolean useCaches = !realtime;
         final String newName = realtime ? "realtime" : "main";
-        if (isClosed() || (getCoreContainer() != null && getCoreContainer().isShutDown())) { // if we start new searchers after close we won't close them
+        if (isClosed()) { // if we start new searchers after close we won't close them
           throw new SolrCoreState.CoreIsClosedException();
         }
         tmp = new SolrIndexSearcher(this, newIndexDir, getLatestSchema(), newName,
