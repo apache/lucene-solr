@@ -19,7 +19,7 @@ package org.apache.solr.util.circuitbreaker;
 
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
-import com.sun.management.OperatingSystemMXBean;
+import java.lang.management.OperatingSystemMXBean;
 
 import org.apache.solr.core.SolrConfig;
 import org.slf4j.Logger;
@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
  */
 public class CPUCircuitBreaker extends CircuitBreaker {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static final OperatingSystemMXBean operatingSystemMXBean = ManagementFactory.getPlatformMXBean(OperatingSystemMXBean.class);
+  private static final OperatingSystemMXBean operatingSystemMXBean = ManagementFactory.getOperatingSystemMXBean();
 
   private final boolean isCpuCircuitBreakerEnabled;
   private final double cpuUsageThreshold;
