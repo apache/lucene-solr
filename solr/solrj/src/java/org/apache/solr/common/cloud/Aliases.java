@@ -80,7 +80,7 @@ public class Aliases {
    * @param zNodeVersion the version of the data in zookeeper that this instance corresponds to
    * @return A new immutable Aliases object
    */
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public static Aliases fromJSON(byte[] bytes, int zNodeVersion) {
     Map<String, Map> aliasMap;
     if (bytes == null || bytes.length == 0) {
@@ -89,6 +89,7 @@ public class Aliases {
       aliasMap = (Map<String, Map>) Utils.fromJSON(bytes);
     }
 
+    @SuppressWarnings({"rawtypes"})
     Map colAliases = aliasMap.getOrDefault(COLLECTION, Collections.emptyMap());
     colAliases = convertMapOfCommaDelimitedToMapOfList(colAliases); // also unmodifiable
 
@@ -106,6 +107,7 @@ public class Aliases {
       assert collectionAliasProperties.isEmpty();
       return null;
     } else {
+      @SuppressWarnings({"rawtypes"})
       Map<String,Map> tmp = new LinkedHashMap<>();
       tmp.put(COLLECTION, convertMapOfListToMapOfCommaDelimited(collectionAliases));
       if (!collectionAliasProperties.isEmpty()) {

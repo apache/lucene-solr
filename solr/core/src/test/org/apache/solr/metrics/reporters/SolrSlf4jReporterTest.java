@@ -69,6 +69,7 @@ public class SolrSlf4jReporterTest extends SolrTestCaseJ4 {
     assertTrue(reporter2 instanceof SolrSlf4jReporter);
 
     LogWatcherConfig watcherCfg = new LogWatcherConfig(true, null, null, 100);
+    @SuppressWarnings({"rawtypes"})
     LogWatcher watcher = LogWatcher.newRegisteredLogWatcher(watcherCfg, null);
     watcher.setThreshold("INFO");
 

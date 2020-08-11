@@ -36,6 +36,7 @@ import org.apache.solr.common.annotation.JsonProperty;
  */
 
 public class JsonSchemaCreator {
+  @SuppressWarnings({"rawtypes"})
   public static final Map<Class, String> natives = new HashMap<>();
 
   static {
@@ -67,7 +68,7 @@ public class JsonSchemaCreator {
     return map;
   }
 
-  private static void createObjectSchema(Class klas, Map<String, Object> map) {
+  private static void createObjectSchema(@SuppressWarnings({"rawtypes"})Class klas, Map<String, Object> map) {
     map.put("type", "object");
     Map<String, Object> props = new HashMap<>();
     map.put("properties", props);

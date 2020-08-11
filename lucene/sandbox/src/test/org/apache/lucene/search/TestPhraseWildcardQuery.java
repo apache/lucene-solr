@@ -27,6 +27,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
@@ -66,12 +67,16 @@ public class TestPhraseWildcardQuery extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     directory = newDirectory();
-    RandomIndexWriter iw = new RandomIndexWriter(random(), directory);
+    RandomIndexWriter iw = new RandomIndexWriter(random(), directory,
+                                                 newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE)); // do not accidentally merge
+                                                                                                                 // the two segments we create
+                                                                                                                 // here
     iw.setDoRandomForceMerge(false); // Keep the segments separated.
     addSegments(iw);
     reader = iw.getReader();
     iw.close();
     searcher = newSearcher(reader);
+    assertEquals("test test relies on 2 segments", 2, searcher.getIndexReader().leaves().size());
   }
 
   @Override
@@ -230,7 +235,8 @@ public class TestPhraseWildcardQuery extends LuceneTestCase {
     for (ScoreDoc scoreDoc : searcher.search(testQuery, MAX_DOCS).scoreDocs) {
       Explanation explanation = searcher.explain(testQuery, scoreDoc.doc);
       assertTrue(explanation.getValue().doubleValue() > 0);
-      assertEquals("weight(phraseWildcard(title:\"t?e b* b*\") in 1) [AssertingSimilarity], result of:", explanation.getDescription());
+      assertTrue("Unexpected explanation \"" + explanation.getDescription() + "\"",
+          explanation.getDescription().startsWith("weight(phraseWildcard(title:\"t?e b* b*\")"));
     }
 
     // Verify that if we call PhraseWildcardQuery.PhraseWildcardWeight.scorer() twice,

@@ -36,6 +36,7 @@ import org.apache.lucene.index.IndexReader.CacheKey;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -49,7 +50,11 @@ import org.apache.solr.search.DocSet;
 import org.apache.solr.search.Filter;
 import org.apache.solr.search.QueryResultKey;
 import org.apache.solr.search.SolrCache;
+import org.apache.solr.search.facet.SlotAcc.CountSlotAcc;
+import org.apache.solr.search.facet.SlotAcc.CountSlotArrAcc;
 import org.apache.solr.search.facet.SlotAcc.SlotContext;
+import org.apache.solr.search.facet.SlotAcc.SweepableSlotAcc;
+import org.apache.solr.search.facet.SlotAcc.SweepingCountSlotAcc;
 
 import static org.apache.solr.search.facet.FacetContext.SKIP_FACET;
 
@@ -292,23 +297,16 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     return getSweepCountAcc(baseQKey, fcontext.base, true, slotCount, null);
   }
 
-  /**
-   * A marker interface for SlotAcc instances that are populated as a derivative of the main CountSlotAcc, and thus do
-   * not need to be separately/independently collected.
-   */
-  interface SweepAcc {}
-
   /** This is used to create accs for second phase (or to create accs for all aggs) */
   @Override
-  protected void createAccs(int docCount, int slotCount) throws IOException {
+  protected void createAccs(long docCount, int slotCount) throws IOException {
     if (accMap == null) {
       accMap = new LinkedHashMap<>();
     }
 
     // allow a custom count acc to be used
     if (countAcc == null) {
-      countAcc = createBaseCountAcc(slotCount);
-      countAcc.key = "count";
+      countAcc = new SlotAcc.CountSlotArrAcc(fcontext, slotCount);
     }
 
     if (accs != null) {
@@ -354,7 +352,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       if (indexOrderAcc == null) {
         // This sorting accumulator just goes by the slot number, so does not need to be collected
         // and hence does not need to find it's way into the accMap or accs array.
-        indexOrderAcc = new SortSlotAcc(fcontext);
+        indexOrderAcc = new SlotAcc.SortSlotAcc(fcontext);
       }
       return indexOrderAcc;
     }
@@ -370,7 +368,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     // we always count...
     // allow a subclass to set a custom counter.
     if (countAcc == null) {
-      countAcc = createBaseCountAcc(numSlots);
+      countAcc = new SlotAcc.CountSlotArrAcc(fcontext, numSlots);
     }
 
     sortAcc = getTrivialSortingSlotAcc(this.sort);
@@ -484,10 +482,10 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
 
   /** Processes the collected data to finds the top slots, and composes it in the response NamedList. */
   SimpleOrderedMap<Object> findTopSlots(final int numSlots, final int slotCardinality, final int missingSlot,
-                                        IntFunction<Comparable> bucketValFromSlotNumFunc,
-                                        Function<Comparable, String> fieldQueryValFunc) throws IOException {
+                                        @SuppressWarnings("rawtypes") IntFunction<Comparable> bucketValFromSlotNumFunc,
+                                        @SuppressWarnings("rawtypes") Function<Comparable, String> fieldQueryValFunc) throws IOException {
     assert this.sortAcc != null;
-    int numBuckets = 0;
+    long numBuckets = 0;
 
     final int off = fcontext.isShard() ? 0 : (int) freq.offset;
 
@@ -539,7 +537,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
 
       // screen out buckets not matching mincount
       if (effectiveMincount > 0) {
-        int count = countAcc.getCount(slotNum);
+        long count = countAcc.getCount(slotNum);
         if (count  < effectiveMincount) {
           if (count > 0)
             numBuckets++;  // Still increment numBuckets as long as we have some count.  This is for consistency between distrib and non-distrib mode.
@@ -579,7 +577,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     }
 
     FacetDebugInfo fdebug = fcontext.getDebugInfo();
-    if (fdebug != null) fdebug.putInfoItem("numBuckets", (long) numBuckets);
+    if (fdebug != null) fdebug.putInfoItem("numBuckets", numBuckets);
 
     if (freq.allBuckets) {
       SimpleOrderedMap<Object> allBuckets = new SimpleOrderedMap<>();
@@ -629,6 +627,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
         sortedSlots = Arrays.copyOfRange(sortedSlots, off, endOffset);
       }
     }
+    @SuppressWarnings({"rawtypes"})
     List<SimpleOrderedMap> bucketList = new ArrayList<>(sortedSlots.length);
 
     for (Slot slot : sortedSlots) {
@@ -694,6 +693,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     int slot;
 
     /** filled in only once we know the bucket will either be involved in resorting, or returned */
+    @SuppressWarnings({"rawtypes"})
     Comparable bucketVal;
 
     /** Filled in if and only if needed for resorting, deferred stats, or subfacets */
@@ -709,12 +709,12 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
   /** Helper method used solely when looping over buckets to be returned in findTopSlots */
   private void fillBucketFromSlot(SimpleOrderedMap<Object> target, Slot slot,
                                   SlotAcc resortAcc) throws IOException {
-    final int count = countAcc.getCount(slot.slot);
-    target.add("count", count);
-    if (count <= 0 && !freq.processEmpty) return;
+    final int slotOrd = slot.slot;
+    countAcc.setValues(target, slotOrd);
+    if (countAcc.getCount(slotOrd) <= 0 && !freq.processEmpty) return;
 
-    if (collectAcc != null && slot.slot >= 0) {
-      collectAcc.setValues(target, slot.slot);
+    if (slotOrd >= 0 && collectAcc != null) {
+      collectAcc.setValues(target, slotOrd);
     }
 
     if (otherAccs == null && freq.subFacets.isEmpty()) return;
@@ -847,14 +847,14 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
   }
   
   @Override
-  protected void processStats(SimpleOrderedMap<Object> bucket, Query bucketQ, DocSet docs, int docCount) throws IOException {
+  protected void processStats(SimpleOrderedMap<Object> bucket, Query bucketQ, DocSet docs, long docCount) throws IOException {
     if (docCount == 0 && !freq.processEmpty || freq.getFacetStats().size() == 0) {
       bucket.add("count", docCount);
       return;
     }
     createAccs(docCount, 1);
     assert null != bucketQ;
-    int collected = collect(docs, 0, slotNum -> { return new SlotContext(bucketQ); });
+    long collected = collect(docs, 0, slotNum -> { return new SlotContext(bucketQ); });
 
     // countAcc.incrementCount(0, collected);  // should we set the counton the acc instead of just passing it?
 
@@ -863,7 +863,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
   }
 
   // overrides but with different signature!
-  private void addStats(SimpleOrderedMap<Object> target, int count, int slotNum) throws IOException {
+  private void addStats(SimpleOrderedMap<Object> target, long count, int slotNum) throws IOException {
     target.add("count", count);
     if (count > 0 || freq.processEmpty) {
       for (SlotAcc acc : accs) {
@@ -889,7 +889,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     }
   }
 
-  static class MultiAcc extends SlotAcc {
+  static class MultiAcc extends SlotAcc implements SweepableSlotAcc<SlotAcc> {
     final SlotAcc[] subAccs;
 
     MultiAcc(FacetContext fcontext, SlotAcc[] subAccs) {
@@ -941,8 +941,83 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
         acc.setValues(bucket, slotNum);
       }
     }
+
+    @Override
+    public SlotAcc registerSweepingAccs(SweepingCountSlotAcc baseSweepingAcc) {
+      final FacetFieldProcessor p = (FacetFieldProcessor) fcontext.processor;
+      int j = 0;
+      for (int i = 0; i < subAccs.length; i++) {
+        final SlotAcc acc = subAccs[i];
+        if (acc instanceof SweepableSlotAcc) {
+          SlotAcc replacement = ((SweepableSlotAcc<?>)acc).registerSweepingAccs(baseSweepingAcc);
+          if (replacement == null) {
+            // drop acc, do not increment j
+            continue;
+          } else if (replacement != acc || j < i) {
+            subAccs[j] = replacement;
+          }
+        } else if (j < i) {
+          subAccs[j] = acc;
+        }
+        j++;
+      }
+      switch (j) {
+        case 0:
+          return null;
+        case 1:
+          return subAccs[0];
+        default:
+          if (j == subAccs.length) {
+            return this;
+          } else {
+            // must resize final field subAccs
+            return new MultiAcc(fcontext, ArrayUtil.copyOfSubArray(subAccs, 0, j));
+          }
+      }
+    }
   }
 
+  /**
+   * Helper method that subclasses can use to indicate they with to use sweeping.
+   * If {@link #countAcc} and {@link #collectAcc} support sweeping, then this method will: 
+   * <ul>
+   * <li>replace {@link #collectAcc} with it's sweeping equivalent</li>
+   * <li>update {@link #allBucketsAcc}'s reference to {@link #collectAcc} (if it exists)</li>
+   * </ul>
+   *
+   * @return true if the above actions were taken
+   * @see SweepableSlotAcc
+   * @see SweepingCountSlotAcc
+   */
+  protected boolean registerSweepingAccIfSupportedByCollectAcc() {
+    if (countAcc instanceof SweepingCountSlotAcc && collectAcc instanceof SweepableSlotAcc) {
+      final SweepingCountSlotAcc sweepingCountAcc = (SweepingCountSlotAcc)countAcc;
+      collectAcc = ((SweepableSlotAcc<?>)collectAcc).registerSweepingAccs(sweepingCountAcc);
+      if (allBucketsAcc != null) {
+        allBucketsAcc.collectAcc = collectAcc;
+        allBucketsAcc.sweepingCountAcc = sweepingCountAcc;
+      }
+      return true;
+    }
+    return false;
+  }
+
+  private static final SlotContext ALL_BUCKETS_SLOT_CONTEXT = new SlotContext(null) {
+    @Override
+    public Query getSlotQuery() {
+      throw new IllegalStateException("getSlotQuery() is mutually exclusive with isAllBuckets==true");
+    }
+    @Override
+    public boolean isAllBuckets() {
+      return true;
+    }
+  };
+  private static final IntFunction<SlotContext> ALL_BUCKETS_SLOT_FUNCTION = new IntFunction<SlotContext>() {
+    @Override
+    public SlotContext apply(int value) {
+      return ALL_BUCKETS_SLOT_CONTEXT;
+    }
+  };
 
   static class SpecialSlotAcc extends SlotAcc {
     SlotAcc collectAcc;
@@ -950,6 +1025,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     int collectAccSlot;
     int otherAccsSlot;
     long count;
+    SweepingCountSlotAcc sweepingCountAcc; // null unless/until sweeping is initialized
 
     SpecialSlotAcc(FacetContext fcontext, SlotAcc collectAcc, int collectAccSlot, SlotAcc[] otherAccs, int otherAccsSlot) {
       super(fcontext);
@@ -971,11 +1047,11 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       assert slot != collectAccSlot || slot < 0;
       count++;
       if (collectAcc != null) {
-        collectAcc.collect(doc, collectAccSlot, slotContext);
+        collectAcc.collect(doc, collectAccSlot, ALL_BUCKETS_SLOT_FUNCTION);
       }
       if (otherAccs != null) {
         for (SlotAcc otherAcc : otherAccs) {
-          otherAcc.collect(doc, otherAccsSlot, slotContext);
+          otherAcc.collect(doc, otherAccsSlot, ALL_BUCKETS_SLOT_FUNCTION);
         }
       }
     }
@@ -1006,6 +1082,9 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
 
     @Override
     public void setValues(SimpleOrderedMap<Object> bucket, int slotNum) throws IOException {
+      if (sweepingCountAcc != null) {
+        sweepingCountAcc.setSweepValues(bucket, collectAccSlot);
+      }
       if (collectAcc != null) {
         collectAcc.setValues(bucket, collectAccSlot);
       }
@@ -1041,10 +1120,12 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
    "cat1":{"_l":["A"]}}}
    */
 
+  @SuppressWarnings({"unchecked"})
   static <T> List<T> asList(Object list) {
-    return list != null ? (List<T>)list : Collections.EMPTY_LIST;
+    return list != null ? (List<T>)list : Collections.emptyList();
   }
 
+  @SuppressWarnings({"rawtypes", "unchecked"})
   protected SimpleOrderedMap<Object> refineFacets() throws IOException {
     boolean skipThisFacet = (fcontext.flags & SKIP_FACET) != 0;
 
@@ -1076,6 +1157,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     }
 
     // The only difference between skip and missing is the value of "skip" passed to refineBucket
+
     for (List bucketAndFacetInfo : partial) {
       assert bucketAndFacetInfo.size() == 2;
       Object bucketVal = bucketAndFacetInfo.get(0);

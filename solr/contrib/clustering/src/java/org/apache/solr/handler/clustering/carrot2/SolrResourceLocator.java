@@ -60,7 +60,7 @@ class SolrResourceLocator implements IResourceLocator {
   @Override
   public IResource[] getAll(final String resource) {
     final String resourceName = carrot2ResourcesDir + "/" + resource;
-    log.debug("Looking for Solr resource: " + resourceName);
+    log.debug("Looking for Solr resource: {}", resourceName);
 
     InputStream resourceStream = null;
     final byte [] asBytes;
@@ -68,8 +68,8 @@ class SolrResourceLocator implements IResourceLocator {
       resourceStream = resourceLoader.openResource(resourceName);
       asBytes = IOUtils.toByteArray(resourceStream);
     } catch (IOException e) {
-      log.debug("Resource not found in Solr's config: " + resourceName
-          + ". Using the default " + resource + " from Carrot JAR.");          
+      log.debug("Resource not found in Solr's config: {}. Using the default {} from Carrot JAR."
+          , resourceName,  resource);
       return new IResource[] {};
     } finally {
       if (resourceStream != null) {
@@ -81,7 +81,7 @@ class SolrResourceLocator implements IResourceLocator {
       }
     }
 
-    log.info("Loaded Solr resource: " + resourceName);
+    log.info("Loaded Solr resource: {}", resourceName);
 
     final IResource foundResource = new IResource() {
       @Override

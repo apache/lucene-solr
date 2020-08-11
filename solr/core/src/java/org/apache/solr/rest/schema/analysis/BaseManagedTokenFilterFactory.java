@@ -47,6 +47,11 @@ public abstract class BaseManagedTokenFilterFactory extends TokenFilterFactory
     }    
   }
   
+  /** Default ctor for compatibility with SPI */
+  public BaseManagedTokenFilterFactory() {
+    throw defaultCtorException();
+  }
+
   /**
    * Registers an endpoint with the RestManager so that this component can be
    * managed using the REST API. This method can be invoked before all the

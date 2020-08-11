@@ -20,6 +20,7 @@ import java.io.Closeable;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.LongSupplier;
 
 import org.apache.lucene.index.DocValuesUpdate.BinaryDocValuesUpdate;
 import org.apache.lucene.index.DocValuesUpdate.NumericDocValuesUpdate;
@@ -91,23 +92,26 @@ final class DocumentsWriterDeleteQueue implements Accountable, Closeable {
 
   private final InfoStream infoStream;
 
-  // for asserts
-  long maxSeqNo = Long.MAX_VALUE;
+  private volatile long maxSeqNo = Long.MAX_VALUE;
+
+  private final long startSeqNo;
+  private final LongSupplier previousMaxSeqId;
+  private boolean advanced;
   
   DocumentsWriterDeleteQueue(InfoStream infoStream) {
     // seqNo must start at 1 because some APIs negate this to also return a boolean
-    this(infoStream, 0, 1);
-  }
-  
-  DocumentsWriterDeleteQueue(InfoStream infoStream, long generation, long startSeqNo) {
-    this(infoStream, new BufferedUpdates("global"), generation, startSeqNo);
+    this(infoStream, 0, 1, () -> 0);
   }
 
-  DocumentsWriterDeleteQueue(InfoStream infoStream, BufferedUpdates globalBufferedUpdates, long generation, long startSeqNo) {
+  private DocumentsWriterDeleteQueue(InfoStream infoStream, long generation, long startSeqNo, LongSupplier previousMaxSeqId) {
     this.infoStream = infoStream;
-    this.globalBufferedUpdates = globalBufferedUpdates;
+    this.globalBufferedUpdates = new BufferedUpdates("global");
     this.generation = generation;
     this.nextSeqNo = new AtomicLong(startSeqNo);
+    this.startSeqNo = startSeqNo;
+    this.previousMaxSeqId = previousMaxSeqId;
+    long value = previousMaxSeqId.getAsLong();
+    assert value <= startSeqNo : "illegal max sequence ID: " + value + " start was: " + startSeqNo;
     /*
      * we use a sentinel instance as our initial tail. No slice will ever try to
      * apply this tail since the head is always omitted.
@@ -311,6 +315,9 @@ final class DocumentsWriterDeleteQueue implements Accountable, Closeable {
         throw new IllegalStateException("Can't close queue unless all changes are applied");
       }
       this.closed = true;
+      long seqNo = nextSeqNo.get();
+      assert seqNo <= maxSeqNo : "maxSeqNo must be greater or equal to " + seqNo + " but was " + maxSeqNo;
+      nextSeqNo.set(maxSeqNo+1);
     } finally {
       globalBufferLock.unlock();
     }
@@ -357,7 +364,7 @@ final class DocumentsWriterDeleteQueue implements Accountable, Closeable {
     }
 
     /**
-     * Returns <code>true</code> iff the given node is identical to the the slices tail,
+     * Returns <code>true</code> iff the given node is identical to the slices tail,
      * otherwise <code>false</code>.
      */
     boolean isTail(Node<?> node) {
@@ -538,17 +545,69 @@ final class DocumentsWriterDeleteQueue implements Accountable, Closeable {
 
   public long getNextSequenceNumber() {
     long seqNo = nextSeqNo.getAndIncrement();
-    assert seqNo < maxSeqNo: "seqNo=" + seqNo + " vs maxSeqNo=" + maxSeqNo;
+    assert seqNo <= maxSeqNo: "seqNo=" + seqNo + " vs maxSeqNo=" + maxSeqNo;
     return seqNo;
   }  
 
-  public long getLastSequenceNumber() {
+  long getLastSequenceNumber() {
     return nextSeqNo.get()-1;
   }  
 
   /** Inserts a gap in the sequence numbers.  This is used by IW during flush or commit to ensure any in-flight threads get sequence numbers
    *  inside the gap */
-  public void skipSequenceNumbers(long jump) {
+  void skipSequenceNumbers(long jump) {
     nextSeqNo.addAndGet(jump);
-  }  
+  }
+
+  /**
+   * Returns the maximum completed seq no for this queue.
+   */
+  long getMaxCompletedSeqNo() {
+    if (startSeqNo < nextSeqNo.get()) {
+      return getLastSequenceNumber();
+    } else {
+      // if we haven't advanced the seqNo make sure we fall back to the previous queue
+      long value = previousMaxSeqId.getAsLong();
+      assert value < startSeqNo : "illegal max sequence ID: " + value + " start was: " + startSeqNo;
+      return value;
+    }
+  }
+
+  /**
+   * Advances the queue to the next queue on flush. This carries over the the generation to the next queue and
+   * set the {@link #getMaxSeqNo()} based on the given maxNumPendingOps. This method can only be called once, subsequently
+   * the returned queue should be used.
+   * @param maxNumPendingOps the max number of possible concurrent operations that will execute on this queue after
+   *                         it was advanced. This corresponds the the number of DWPTs that own the current queue at the
+   *                         moment when this queue is advanced since each these DWPTs can increment the seqId after we
+   *                         advanced it.
+   * @return a new queue as a successor of this queue.
+   */
+  synchronized DocumentsWriterDeleteQueue advanceQueue(int maxNumPendingOps) {
+    if (advanced) {
+      throw new IllegalStateException("queue was already advanced");
+    }
+    advanced = true;
+    long seqNo = getLastSequenceNumber() + maxNumPendingOps + 1;
+    maxSeqNo = seqNo;
+    return new DocumentsWriterDeleteQueue(infoStream, generation + 1, seqNo + 1,
+        // don't pass ::getMaxCompletedSeqNo here b/c otherwise we keep an reference to this queue
+        // and this will be a memory leak since the queues can't be GCed
+        () -> nextSeqNo.get() - 1);
+
+  }
+
+  /**
+   * Returns the maximum sequence number for this queue. This value will change once this queue is advanced.
+   */
+  long getMaxSeqNo() {
+    return maxSeqNo;
+  }
+
+  /**
+   * Returns <code>true</code> if it was advanced.
+   */
+  boolean isAdvanced() {
+    return advanced;
+  }
 }

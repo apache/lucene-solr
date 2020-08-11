@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.component;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.regex.Pattern;
 
@@ -154,10 +155,14 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.add(TermsParams.TERMS_REGEXP_FLAG, "case_insensitive", "literal", "comments", "multiline", "unix_lines",
               "unicode_case", "dotall", "canon_eq");
-      int flags = new TermsComponent().resolveRegexpFlags(params);
-      int expected = Pattern.CASE_INSENSITIVE | Pattern.LITERAL | Pattern.COMMENTS | Pattern.MULTILINE | Pattern.UNIX_LINES
-              | Pattern.UNICODE_CASE | Pattern.DOTALL | Pattern.CANON_EQ;
-      assertEquals(expected, flags);
+      try (TermsComponent termsComponent = new TermsComponent()) {
+        int flags = termsComponent.resolveRegexpFlags(params);
+        int expected = Pattern.CASE_INSENSITIVE | Pattern.LITERAL | Pattern.COMMENTS | Pattern.MULTILINE | Pattern.UNIX_LINES
+            | Pattern.UNICODE_CASE | Pattern.DOTALL | Pattern.CANON_EQ;
+        assertEquals(expected, flags);
+      } catch (IOException e) {
+        fail("Error closing TermsComponent");
+      }
   }
 
   @Test

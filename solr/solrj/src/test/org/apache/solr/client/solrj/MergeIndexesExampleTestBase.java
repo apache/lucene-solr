@@ -74,8 +74,11 @@ public abstract class MergeIndexesExampleTestBase extends SolrTestCaseJ4 {
     System.setProperty( "solr.core1.data.dir", this.dataDir2.getCanonicalPath() );
 
     setupCoreContainer();
-    log.info("CORES=" + cores + " : " + cores.getLoadedCoreNames());
-
+    if (log.isInfoEnabled()) {
+      log.info("CORES={} : {}", cores, cores.getLoadedCoreNames());
+    }
+    cores.getAllowPaths().add(dataDir1.toPath());
+    cores.getAllowPaths().add(dataDir2.toPath());
   }
 
   @Override

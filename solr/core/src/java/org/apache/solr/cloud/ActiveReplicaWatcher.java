@@ -115,11 +115,16 @@ public class ActiveReplicaWatcher implements CollectionStateWatcher {
   // synchronized due to SOLR-11535
   @Override
   public synchronized boolean onStateChanged(Set<String> liveNodes, DocCollection collectionState) {
-    log.debug("-- onStateChanged@" + Long.toHexString(hashCode()) + ": replicaIds=" + replicaIds + ", solrCoreNames=" + solrCoreNames +
-        (latch != null ? "\nlatch count=" + latch.getCount() : "") +
-        "\ncollectionState=" + collectionState);
+    if (log.isDebugEnabled()) {
+      log.debug("-- onStateChanged@{}: replicaIds={}, solrCoreNames={} {}\ncollectionState {}"
+          , Long.toHexString(hashCode()), replicaIds, solrCoreNames
+          , (latch != null ? "\nlatch count=" + latch.getCount() : "")
+          , collectionState); // logOk
+    }
     if (collectionState == null) { // collection has been deleted - don't wait
-      log.debug("-- collection deleted, decrementing latch by " + replicaIds.size() + solrCoreNames.size());
+      if (log.isDebugEnabled()) {
+        log.debug("-- collection deleted, decrementing latch by {} ", replicaIds.size() + solrCoreNames.size()); // logOk
+      }
       if (latch != null) {
         for (int i = 0; i < replicaIds.size() + solrCoreNames.size(); i++) {
           latch.countDown();
@@ -134,7 +139,7 @@ public class ActiveReplicaWatcher implements CollectionStateWatcher {
       return true;
     }
     if (collectionState.getZNodeVersion() == lastZkVersion) {
-      log.debug("-- spurious call with already seen zkVersion=" + lastZkVersion + ", ignoring...");
+      log.debug("-- spurious call with already seen zkVersion= {}, ignoring...", lastZkVersion);
       return false;
     }
     lastZkVersion = collectionState.getZNodeVersion();
@@ -160,7 +165,9 @@ public class ActiveReplicaWatcher implements CollectionStateWatcher {
         }
       }
     }
-    log.debug("-- " + Long.toHexString(hashCode()) + " now latch count=" + latch.getCount());
+    if (log.isDebugEnabled()) {
+      log.debug("-- {} now latchcount={}", Long.toHexString(hashCode()), latch.getCount());
+    }
     if (replicaIds.isEmpty() && solrCoreNames.isEmpty()) {
       return true;
     } else {

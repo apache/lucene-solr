@@ -87,7 +87,9 @@ public class AnalyticsTestQParserPlugin extends QParserPlugin {
       leafDelegate.collect(doc);
     }
 
+    @SuppressWarnings({"unchecked"})
     public void finish() throws IOException {
+      @SuppressWarnings({"rawtypes"})
       NamedList analytics = new NamedList();
       rb.rsp.add("analytics", analytics);
       analytics.add("mycount", count+base);
@@ -114,12 +116,16 @@ public class AnalyticsTestQParserPlugin extends QParserPlugin {
     public void  handleMergeFields(ResponseBuilder rb, SolrIndexSearcher searcher) {
     }
 
+    @SuppressWarnings({"unchecked"})
     public void merge(ResponseBuilder rb, ShardRequest shardRequest) {
       int count = 0;
+      @SuppressWarnings({"rawtypes"})
       NamedList merged = new NamedList();
 
       for(ShardResponse shardResponse : shardRequest.responses) {
+        @SuppressWarnings({"rawtypes"})
         NamedList response = shardResponse.getSolrResponse().getResponse();
+        @SuppressWarnings({"rawtypes"})
         NamedList analytics = (NamedList)response.get("analytics");
         Integer c = (Integer)analytics.get("mycount");
         count += c.intValue();
@@ -132,10 +138,13 @@ public class AnalyticsTestQParserPlugin extends QParserPlugin {
 
   static class TestIterative extends IterativeMergeStrategy  {
 
+    @SuppressWarnings({"unchecked"})
     public void process(ResponseBuilder rb, ShardRequest sreq) throws Exception {
       int count = 0;
       for(ShardResponse shardResponse : sreq.responses) {
+        @SuppressWarnings({"rawtypes"})
         NamedList response = shardResponse.getSolrResponse().getResponse();
+        @SuppressWarnings({"rawtypes"})
         NamedList analytics = (NamedList)response.get("analytics");
         Integer c = (Integer)analytics.get("mycount");
         count += c.intValue();
@@ -158,11 +167,13 @@ public class AnalyticsTestQParserPlugin extends QParserPlugin {
 
       for(Future<CallBack> future : futures) {
         QueryResponse response = future.get().getResponse();
+        @SuppressWarnings({"rawtypes"})
         NamedList analytics = (NamedList)response.getResponse().get("analytics");
         Integer c = (Integer)analytics.get("mycount");
         nextCount += c.intValue();
       }
 
+      @SuppressWarnings({"rawtypes"})
       NamedList merged = new NamedList();
       merged.add("mycount", nextCount);
       rb.rsp.add("analytics", merged);

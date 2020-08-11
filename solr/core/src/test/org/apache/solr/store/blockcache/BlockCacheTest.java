@@ -21,23 +21,11 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
-
 import com.github.benmanes.caffeine.cache.*;
-
-import org.apache.lucene.util.QuickPatchThreadsFilter;
-
-import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCase;
 
 import org.junit.Test;
 
-@ThreadLeakFilters(defaultFilters = true, filters = {
-    SolrIgnoredThreadsFilter.class,
-    QuickPatchThreadsFilter.class
-})
-@ThreadLeakLingering(linger = 10000)
 public class BlockCacheTest extends SolrTestCase {
 
   @Test
@@ -269,7 +257,7 @@ public class BlockCacheTest extends SolrTestCase {
           return;
         }
       }
-      assertEquals("cache key differs from value's key", (Long) k, (Long) v.key);
+      assertEquals("cache key differs from value's key", k, (Long) v.key);
       if (!v.live.compareAndSet(true, false)) {
         throw new RuntimeException("listener called more than once! k=" + k + " v=" + v + " removalCause=" + removalCause);
         // return;  // use this variant if listeners may be called more than once
@@ -339,7 +327,7 @@ public class BlockCacheTest extends SolrTestCase {
           Val v = cache.getIfPresent(k);
           if (v != null) {
             hits.incrementAndGet();
-            assertEquals("cache key differs from value's key", (Long) k, (Long) v.key);
+            assertEquals("cache key differs from value's key", k, (Long) v.key);
           }
 
           if (v == null || odds(updateAnywayOdds)) {

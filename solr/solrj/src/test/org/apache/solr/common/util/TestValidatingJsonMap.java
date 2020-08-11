@@ -42,6 +42,7 @@ public class TestValidatingJsonMap extends SolrTestCaseJ4 {
 
     expectThrows(RuntimeException.class, () -> m.getList("l", ENUM_OF, ImmutableSet.of("X", "Z")));
 
+    @SuppressWarnings({"rawtypes"})
     List l = m.getList("l", ENUM_OF, ImmutableSet.of("X", "Y", "Z"));
     assertEquals(2,l.size());
     m.getList("l", NOT_NULL);

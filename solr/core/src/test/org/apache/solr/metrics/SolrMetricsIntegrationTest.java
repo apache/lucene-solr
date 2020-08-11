@@ -132,7 +132,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
 
     String metricName = SolrMetricManager.mkName(METRIC_NAME, HANDLER_CATEGORY.toString(), HANDLER_NAME);
     SolrCoreMetricManager coreMetricManager = h.getCore().getCoreMetricManager();
-    Timer timer = (Timer) metricManager.timer(null, coreMetricManager.getRegistryName(), metricName);
+    Timer timer = metricManager.timer(null, coreMetricManager.getRegistryName(), metricName);
 
     long initialCount = timer.getCount();
 

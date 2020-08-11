@@ -61,11 +61,12 @@ public class TestTrackingShardHandlerFactory extends AbstractFullDistribZkTestBa
       CoreContainer container = runner.getCoreContainer();
       ShardHandlerFactory factory = container.getShardHandlerFactory();
       assert factory instanceof TrackingShardHandlerFactory;
+      @SuppressWarnings("resource")
       TrackingShardHandlerFactory trackingShardHandlerFactory = (TrackingShardHandlerFactory) factory;
       assertSame(trackingQueue, trackingShardHandlerFactory.getTrackingQueue());
     }
 
-    createCollection(collectionName, "conf1", 2, 1, 1);
+    createCollection(collectionName, "conf1", 2, 1);
 
     waitForRecoveriesToFinish(collectionName, true);
 
@@ -116,6 +117,7 @@ public class TestTrackingShardHandlerFactory extends AbstractFullDistribZkTestBa
       CoreContainer container = runner.getCoreContainer();
       ShardHandlerFactory factory = container.getShardHandlerFactory();
       assert factory instanceof TrackingShardHandlerFactory;
+      @SuppressWarnings("resource")
       TrackingShardHandlerFactory trackingShardHandlerFactory = (TrackingShardHandlerFactory) factory;
       assertFalse(trackingShardHandlerFactory.isTracking());
     }

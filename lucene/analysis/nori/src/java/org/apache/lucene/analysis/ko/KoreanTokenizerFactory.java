@@ -97,6 +97,11 @@ public class KoreanTokenizerFactory extends TokenizerFactory implements Resource
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public KoreanTokenizerFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public void inform(ResourceLoader loader) throws IOException {
     if (userDictionaryPath != null) {

@@ -50,8 +50,9 @@ public class PercentileEvaluator extends RecursiveNumericEvaluator implements Tw
     } else if(second instanceof List){
       Percentile percentile = new Percentile();
       percentile.setData(((List<?>) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray());
+      @SuppressWarnings({"unchecked"})
       List<Number> values = (List<Number>) second;
-      List<Number> percentiles = new ArrayList();
+      List<Number> percentiles = new ArrayList<>();
       for(Number value : values) {
         percentiles.add(percentile.evaluate(value.doubleValue()));
       }

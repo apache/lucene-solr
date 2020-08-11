@@ -50,7 +50,6 @@ import java.util.zip.GZIPOutputStream;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
-import org.apache.commons.cli.OptionBuilder;
 import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -73,6 +72,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
@@ -213,36 +213,36 @@ public class ExportTool extends SolrCLI.ToolBase {
   }
 
   private static final Option[] OPTIONS = {
-      OptionBuilder
+      Option.builder("url")
           .hasArg()
-          .isRequired(true)
-          .withDescription("Address of the collection, example http://localhost:8983/solr/gettingstarted")
-          .create("url"),
-      OptionBuilder
+          .required()
+          .desc("Address of the collection, example http://localhost:8983/solr/gettingstarted")
+          .build(),
+      Option.builder("out")
           .hasArg()
-          .isRequired(false)
-          .withDescription("file name . defaults to collection-name.<format>")
-          .create("out"),
-      OptionBuilder
+          .required(false)
+          .desc("file name . defaults to collection-name.<format>")
+          .build(),
+      Option.builder("format")
           .hasArg()
-          .isRequired(false)
-          .withDescription("format  json/javabin, default to json. file extension would be .json")
-          .create("format"),
-      OptionBuilder
+          .required(false)
+          .desc("format  json/javabin, default to json. file extension would be .json")
+          .build(),
+      Option.builder("limit")
           .hasArg()
-          .isRequired(false)
-          .withDescription("Max number of docs to download. default = 100, use -1 for all docs")
-          .create("limit"),
-      OptionBuilder
+          .required(false)
+          .desc("Max number of docs to download. default = 100, use -1 for all docs")
+          .build(),
+      Option.builder("query")
           .hasArg()
-          .isRequired(false)
-          .withDescription("A custom query, default is *:*")
-          .create("query"),
-      OptionBuilder
+          .required(false)
+          .desc("A custom query, default is *:*")
+          .build(),
+      Option.builder("fields")
           .hasArg()
-          .isRequired(false)
-          .withDescription("Comma separated fields. By default all fields are fetched")
-          .create("fields")
+          .required(false)
+          .desc("Comma separated fields. By default all fields are fetched")
+          .build()
   };
 
   static class JsonSink extends DocsSink {
@@ -273,6 +273,7 @@ public class ExportTool extends SolrCLI.ToolBase {
     }
 
     @Override
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public synchronized void accept(SolrDocument doc) throws IOException {
       charArr.reset();
       Map m = new LinkedHashMap(doc.size());
@@ -300,7 +301,7 @@ public class ExportTool extends SolrCLI.ToolBase {
       super.accept(doc);
     }
 
-    private boolean hasdate(List list) {
+    private boolean hasdate(@SuppressWarnings({"rawtypes"})List list) {
       boolean hasDate = false;
       for (Object o : list) {
         if(o instanceof Date){
@@ -377,10 +378,10 @@ public class ExportTool extends SolrCLI.ToolBase {
 
   static class MultiThreadedRunner extends Info {
     ExecutorService producerThreadpool, consumerThreadpool;
-    ArrayBlockingQueue<SolrDocument> queue = new ArrayBlockingQueue(1000);
+    ArrayBlockingQueue<SolrDocument> queue = new ArrayBlockingQueue<>(1000);
     SolrDocument EOFDOC = new SolrDocument();
     volatile boolean failed = false;
-    Map<String, CoreHandler> corehandlers = new HashMap();
+    Map<String, CoreHandler> corehandlers = new HashMap<>();
     private long startTime ;
 
     @SuppressForbidden(reason = "Need to print out time")
@@ -399,9 +400,9 @@ public class ExportTool extends SolrCLI.ToolBase {
       DocCollection coll = stateProvider.getCollection(this.coll);
       Map<String, Slice> m = coll.getSlicesMap();
       producerThreadpool = ExecutorUtil.newMDCAwareFixedThreadPool(m.size(),
-          new DefaultSolrThreadFactory("solrcli-exporter-producers"));
+          new SolrNamedThreadFactory("solrcli-exporter-producers"));
       consumerThreadpool = ExecutorUtil.newMDCAwareFixedThreadPool(1,
-          new DefaultSolrThreadFactory("solrcli-exporter-consumer"));
+          new SolrNamedThreadFactory("solrcli-exporter-consumer"));
       sink.start();
       CountDownLatch consumerlatch = new CountDownLatch(1);
       try {

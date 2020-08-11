@@ -47,6 +47,11 @@ public class DecimalDigitFilterFactory extends TokenFilterFactory {
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public DecimalDigitFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public TokenStream create(TokenStream input) {
     return new DecimalDigitFilter(input);

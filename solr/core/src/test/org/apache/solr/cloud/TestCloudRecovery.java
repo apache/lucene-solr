@@ -74,7 +74,6 @@ public class TestCloudRecovery extends SolrCloudTestCase {
                           // TestInjection#waitForInSyncWithLeader is broken
     CollectionAdminRequest
         .createCollection(COLLECTION, "config", 2, nrtReplicas, tlogReplicas, 0)
-        .setMaxShardsPerNode(2)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION, 2, 2 * (nrtReplicas + tlogReplicas));
 

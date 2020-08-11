@@ -23,15 +23,16 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
 
-import junit.framework.Assert;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.LuceneTestCase;
 
-import static junit.framework.Assert.assertNotNull;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.fail;
 
 /**
  * Utility class for asserting expected hits in tests.
@@ -60,7 +61,7 @@ public class CheckHits {
       Explanation exp = searcher.explain(q, doc);
       assertNotNull("Explanation of [["+d+"]] for #"+doc+" is null",
                              exp);
-      Assert.assertFalse("Explanation of [["+d+"]] for #"+doc+
+      assertFalse("Explanation of [["+d+"]] for #"+doc+
                          " doesn't indicate non-match: " + exp.toString(),
                          exp.isMatch());
     }
@@ -95,7 +96,7 @@ public class CheckHits {
     final Collector c = new SetCollector(actual);
 
     searcher.search(query, c);
-    Assert.assertEquals("Simple: " + query.toString(defaultFieldName), 
+    assertEquals("Simple: " + query.toString(defaultFieldName),
                         correct, actual);
 
     for (int i = -1; i < 2; i++) {
@@ -103,7 +104,7 @@ public class CheckHits {
       IndexSearcher s = QueryUtils.wrapUnderlyingReader
         (random, searcher, i);
       s.search(query, c);
-      Assert.assertEquals("Wrap Reader " + i + ": " +
+      assertEquals("Wrap Reader " + i + ": " +
                           query.toString(defaultFieldName),
                           correct, actual);
     }
@@ -168,16 +169,16 @@ public class CheckHits {
       actual.add(Integer.valueOf(hits[i].doc));
     }
 
-    Assert.assertEquals(query.toString(defaultFieldName), correct, actual);
+    assertEquals(query.toString(defaultFieldName), correct, actual);
 
     QueryUtils.check(random, query,searcher, LuceneTestCase.rarely(random));
   }
 
   /** Tests that a Hits has an expected order of documents */
   public static void checkDocIds(String mes, int[] results, ScoreDoc[] hits) {
-    Assert.assertEquals(mes + " nr of hits", hits.length, results.length);
+    assertEquals(mes + " nr of hits", hits.length, results.length);
     for (int i = 0; i < results.length; i++) {
-      Assert.assertEquals(mes + " doc nrs for hit " + i, results[i], hits[i].doc);
+      assertEquals(mes + " doc nrs for hit " + i, results[i], hits[i].doc);
     }
   }
 
@@ -198,11 +199,11 @@ public class CheckHits {
   public static void checkEqual(Query query, ScoreDoc[] hits1, ScoreDoc[] hits2) {
      final float scoreTolerance = 1.0e-6f;
      if (hits1.length != hits2.length) {
-       Assert.fail("Unequal lengths: hits1="+hits1.length+",hits2="+hits2.length);
+       fail("Unequal lengths: hits1="+hits1.length+",hits2="+hits2.length);
      }
     for (int i = 0; i < hits1.length; i++) {
       if (hits1[i].doc != hits2[i].doc) {
-        Assert.fail("Hit " + i + " docnumbers don't match\n"
+        fail("Hit " + i + " docnumbers don't match\n"
                 + hits2str(hits1, hits2,0,0)
                 + "for query:" + query.toString());
       }
@@ -210,7 +211,7 @@ public class CheckHits {
       if ((hits1[i].doc != hits2[i].doc)
           || Math.abs(hits1[i].score -  hits2[i].score) > scoreTolerance)
       {
-        Assert.fail("Hit " + i + ", doc nrs " + hits1[i].doc + " and " + hits2[i].doc
+        fail("Hit " + i + ", doc nrs " + hits1[i].doc + " and " + hits2[i].doc
                       + "\nunequal       : " + hits1[i].score
                       + "\n           and: " + hits2[i].score
                       + "\nfor query:" + query.toString());
@@ -335,9 +336,9 @@ public class CheckHits {
     float value = expl.getValue().floatValue();
     // TODO: clean this up if we use junit 5 (the assert message is costly)
     try {
-      Assert.assertEquals(score, value, 0d);
+      assertEquals(score, value, 0d);
     } catch (Exception e) {
-      Assert.fail(q+": score(doc="+doc+")="+score+" != explanationScore="+value+" Explanation: "+expl);
+      fail(q+": score(doc="+doc+")="+score+" != explanationScore="+value+" Explanation: "+expl);
     }
 
     if (!deep) return;
@@ -349,7 +350,7 @@ public class CheckHits {
     }
     String descr = expl.getDescription().toLowerCase(Locale.ROOT);
     if (descr.startsWith("score based on ") && descr.contains("child docs in range")) {
-      Assert.assertTrue("Child doc explanations are missing", detail.length > 0);
+      assertTrue("Child doc explanations are missing", detail.length > 0);
     }
     if (detail.length > 0) {
       if (detail.length==1 && COMPUTED_FROM_PATTERN.matcher(descr).matches() == false) {
@@ -388,7 +389,7 @@ public class CheckHits {
         }
         // TODO: this is a TERRIBLE assertion!!!!
         if (false == (productOf || sumOf || maxOf || computedOf || maxTimesOthers)) {
-          Assert.fail(
+          fail(
               q+": multi valued explanation description=\""+descr
               +"\" must be 'max of plus x times others', 'computed as x from:' or end with 'product of'"
               +" or 'sum of:' or 'max of:' - "+expl);
@@ -423,14 +424,14 @@ public class CheckHits {
         } else if (maxTimesOthers) {
           combined = (float) (max + x * (sum - max));
         } else {
-          Assert.assertTrue("should never get here!", computedOf);
+          assertTrue("should never get here!", computedOf);
           combined = value;
         }
         // TODO: clean this up if we use junit 5 (the assert message is costly)
         try {
-          Assert.assertEquals(combined, value, maxError);
+          assertEquals(combined, value, maxError);
         } catch (Exception e) {
-          Assert.fail(q+": actual subDetails combined=="+combined+
+          fail(q+": actual subDetails combined=="+combined+
               " != value="+value+" Explanation: "+expl);
         }
       }
@@ -444,14 +445,17 @@ public class CheckHits {
    * @see ExplanationAsserter
    */
   public static class ExplanationAssertingSearcher extends IndexSearcher {
+
     public ExplanationAssertingSearcher(IndexReader r) {
       super(r);
     }
+
     protected void checkExplanations(Query q) throws IOException {
       super.search(q,
                    new ExplanationAsserter
                    (q, null, this));
     }
+
     @Override
     public TopFieldDocs search(Query query,
                                int n,
@@ -460,17 +464,20 @@ public class CheckHits {
       checkExplanations(query);
       return super.search(query,n,sort);
     }
+
     @Override
     public void search(Query query, Collector results) throws IOException {
       checkExplanations(query);
       super.search(query, results);
     }
+
     @Override
     public TopDocs search(Query query, int n) throws IOException {
 
       checkExplanations(query);
       return super.search(query, n);
     }
+
   }
     
   /**
@@ -521,9 +528,9 @@ public class CheckHits {
       
       assertNotNull("Explanation of [["+d+"]] for #"+doc+" is null", exp);
       verifyExplanation(d,doc,scorer.score(),deep,exp);
-      Assert.assertTrue("Explanation of [["+d+"]] for #"+ doc + 
-                        " does not indicate match: " + exp.toString(), 
-                        exp.isMatch());
+      assertTrue("Explanation of [["+d+"]] for #"+ doc +
+                      " does not indicate match: " + exp.toString(),
+              exp.isMatch());
     }
     @Override
     protected void doSetNextReader(LeafReaderContext context) throws IOException {
@@ -602,7 +609,7 @@ public class CheckHits {
       Scorer s1 = w1.scorer(ctx);
       Scorer s2 = w2.scorer(ctx);
       if (s1 == null) {
-        Assert.assertTrue(s2 == null || s2.iterator().nextDoc() == DocIdSetIterator.NO_MORE_DOCS);
+        assertTrue(s2 == null || s2.iterator().nextDoc() == DocIdSetIterator.NO_MORE_DOCS);
         continue;
       }
       TwoPhaseIterator twoPhase1 = s1.twoPhaseIterator();
@@ -616,25 +623,25 @@ public class CheckHits {
         int doc1;
         for (doc1 = approx1.nextDoc(); doc1 < doc2; doc1 = approx1.nextDoc()) {
           if (twoPhase1 == null || twoPhase1.matches()) {
-            Assert.assertTrue(s1.score() < minScore);
+            assertTrue(s1.score() < minScore);
           }
         }
-        Assert.assertEquals(doc1, doc2);
+        assertEquals(doc1, doc2);
         if (doc2 == DocIdSetIterator.NO_MORE_DOCS) {
           break;
         }
 
         if (doc2 > upTo) {
           upTo = s2.advanceShallow(doc2);
-          Assert.assertTrue(upTo >= doc2);
+          assertTrue(upTo >= doc2);
           maxScore = s2.getMaxScore(upTo);
         }
 
         if (twoPhase2 == null || twoPhase2.matches()) {
-          Assert.assertTrue(twoPhase1 == null || twoPhase1.matches());
+          assertTrue(twoPhase1 == null || twoPhase1.matches());
           float score = s2.score();
-          Assert.assertEquals(s1.score(), score);
-          Assert.assertTrue(score + " > " + maxScore + " up to " + upTo, score <= maxScore);
+          assertEquals(s1.score(), score, 0);
+          assertTrue(score + " > " + maxScore + " up to " + upTo, score <= maxScore);
 
           if (score >= minScore && random.nextInt(10) == 0) {
             // On some scorers, changing the min score changes the way that docs are iterated
@@ -650,7 +657,7 @@ public class CheckHits {
       Scorer s1 = w1.scorer(ctx);
       Scorer s2 = w2.scorer(ctx);
       if (s1 == null) {
-        Assert.assertTrue(s2 == null || s2.iterator().nextDoc() == DocIdSetIterator.NO_MORE_DOCS);
+        assertTrue(s2 == null || s2.iterator().nextDoc() == DocIdSetIterator.NO_MORE_DOCS);
         continue;
       }
       TwoPhaseIterator twoPhase1 = s1.twoPhaseIterator();
@@ -691,7 +698,7 @@ public class CheckHits {
         int doc1;
         for (doc1 = approx1.advance(target); doc1 < doc2; doc1 = approx1.nextDoc()) {
           if (twoPhase1 == null || twoPhase1.matches()) {
-            Assert.assertTrue(s1.score() < minScore);
+            assertTrue(s1.score() < minScore);
           }
         }
         assertEquals(doc1, doc2);
@@ -701,17 +708,17 @@ public class CheckHits {
         }
 
         if (twoPhase2 == null || twoPhase2.matches()) {
-          Assert.assertTrue(twoPhase1 == null || twoPhase1.matches());
+          assertTrue(twoPhase1 == null || twoPhase1.matches());
           float score = s2.score();
-          Assert.assertEquals(s1.score(), score);
+          assertEquals(s1.score(), score, 0);
 
           if (doc2 > upTo) {
             upTo = s2.advanceShallow(doc2);
-            Assert.assertTrue(upTo >= doc2);
+            assertTrue(upTo >= doc2);
             maxScore = s2.getMaxScore(upTo);
           }
 
-          Assert.assertTrue(score <= maxScore);
+          assertTrue(score <= maxScore);
 
           if (score >= minScore && random.nextInt(10) == 0) {
             // On some scorers, changing the min score changes the way that docs are iterated

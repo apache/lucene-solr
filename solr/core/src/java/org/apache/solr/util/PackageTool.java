@@ -26,7 +26,6 @@ import java.util.Map;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
-import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.io.FileUtils;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.logging.log4j.Level;
@@ -75,10 +74,10 @@ public class PackageTool extends SolrCLI.ToolBase {
     try {
       solrUrl = cli.getOptionValues("solrUrl")[cli.getOptionValues("solrUrl").length-1];
       solrBaseUrl = solrUrl.replaceAll("\\/solr$", ""); // strip out ending "/solr"
-      log.info("Solr url: "+solrUrl+", solr base url: "+solrBaseUrl);
+      log.info("Solr url:{}, solr base url: {}", solrUrl, solrBaseUrl);
       String zkHost = getZkHost(cli);
 
-      log.info("ZK: "+zkHost);
+      log.info("ZK: {}", zkHost);
       String cmd = cli.getArgList().size() == 0? "help": cli.getArgs()[0];
 
       try (HttpSolrClient solrClient = new HttpSolrClient.Builder(solrBaseUrl).build()) {
@@ -139,28 +138,42 @@ public class PackageTool extends SolrCLI.ToolBase {
                 Pair<String, String> parsedVersion = parsePackageVersion(cli.getArgList().get(1).toString());
                 String packageName = parsedVersion.first();
                 String version = parsedVersion.second();
-                repositoryManager.install(packageName, version);
-                PackageUtils.printGreen(packageName + " installed.");
+                boolean success = repositoryManager.install(packageName, version);
+                if (success) {
+                  PackageUtils.printGreen(packageName + " installed.");
+                } else {
+                  PackageUtils.printRed(packageName + " installation failed.");
+                }
                 break;
               }
               case "deploy":
               {
-                Pair<String, String> parsedVersion = parsePackageVersion(cli.getArgList().get(1).toString());
-                String packageName = parsedVersion.first();
-                String version = parsedVersion.second();
-                boolean noprompt = cli.hasOption('y');
-                boolean isUpdate = cli.hasOption("update") || cli.hasOption('u');
-                packageManager.deploy(packageName, version, PackageUtils.validateCollections(cli.getOptionValue("collections").split(",")), cli.getOptionValues("param"), isUpdate, noprompt);
+                if (cli.hasOption("cluster") || cli.hasOption("collections")) {
+                  Pair<String, String> parsedVersion = parsePackageVersion(cli.getArgList().get(1).toString());
+                  String packageName = parsedVersion.first();
+                  String version = parsedVersion.second();
+                  boolean noprompt = cli.hasOption('y');
+                  boolean isUpdate = cli.hasOption("update") || cli.hasOption('u');
+                  String collections[] = cli.hasOption("collections")? PackageUtils.validateCollections(cli.getOptionValue("collections").split(",")): new String[] {};
+                  packageManager.deploy(packageName, version, collections, cli.hasOption("cluster"), cli.getOptionValues("param"), isUpdate, noprompt);
+                } else {
+                  PackageUtils.printRed("Either specify -cluster to deploy cluster level plugins or -collections <list-of-collections> to deploy collection level plugins");
+                }
                 break;
               }
               case "undeploy":
               {
-                Pair<String, String> parsedVersion = parsePackageVersion(cli.getArgList().get(1).toString());
-                if (parsedVersion.second() != null) {
-                  throw new SolrException(ErrorCode.BAD_REQUEST, "Only package name expected, without a version. Actual: " + cli.getArgList().get(1));
+                if (cli.hasOption("cluster") || cli.hasOption("collections")) {
+                  Pair<String, String> parsedVersion = parsePackageVersion(cli.getArgList().get(1).toString());
+                  if (parsedVersion.second() != null) {
+                    throw new SolrException(ErrorCode.BAD_REQUEST, "Only package name expected, without a version. Actual: " + cli.getArgList().get(1));
+                  }
+                  String packageName = parsedVersion.first();
+                  String collections[] = cli.hasOption("collections")? PackageUtils.validateCollections(cli.getOptionValue("collections").split(",")): new String[] {};
+                  packageManager.undeploy(packageName, collections, cli.hasOption("cluster"));
+                } else {
+                  PackageUtils.printRed("Either specify -cluster to undeploy cluster level plugins or -collections <list-of-collections> to undeploy collection level plugins");
                 }
-                String packageName = parsedVersion.first();
-                packageManager.undeploy(packageName, cli.getOptionValue("collections").split(","));
                 break;
               }
               case "help":
@@ -202,7 +215,7 @@ public class PackageTool extends SolrCLI.ToolBase {
           }
         }
       }
-      log.info("Finished: "+cmd);
+      log.info("Finished: {}", cmd);
 
     } catch (Exception ex) {
       ex.printStackTrace(); // We need to print this since SolrCLI drops the stack trace in favour of brevity. Package tool should surely print full stacktraces!
@@ -215,7 +228,7 @@ public class PackageTool extends SolrCLI.ToolBase {
    * @return A pair of package name (first) and version (second)
    */
   private Pair<String, String> parsePackageVersion(String arg) {
-    String splits[] = arg.split(":");
+    String[] splits = arg.split(":");
     if (splits.length > 2) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid package name: " + arg +
           ". Didn't match the pattern: <packagename>:<version> or <packagename>");
@@ -223,51 +236,55 @@ public class PackageTool extends SolrCLI.ToolBase {
 
     String packageName = splits[0];
     String version = splits.length == 2? splits[1]: null;
-    return new Pair(packageName, version);
+    return new Pair<>(packageName, version);
   }
 
-  @SuppressWarnings("static-access")
   public Option[] getOptions() {
     return new Option[] {
-        OptionBuilder
-        .withArgName("URL")
+        Option.builder("solrUrl")
+        .argName("URL")
         .hasArg()
-        .isRequired(true)
-        .withDescription("Address of the Solr Web application, defaults to: " + SolrCLI.DEFAULT_SOLR_URL)
-        .create("solrUrl"),
+        .required(true)
+        .desc("Address of the Solr Web application, defaults to: " + SolrCLI.DEFAULT_SOLR_URL)
+        .build(),
 
-        OptionBuilder
-        .withArgName("COLLECTIONS")
+        Option.builder("collections")
+        .argName("COLLECTIONS")
         .hasArg()
-        .isRequired(false)
-        .withDescription("List of collections. Run './solr package help' for more details.")
-        .create("collections"),
+        .required(false)
+        .desc("List of collections. Run './solr package help' for more details.")
+        .build(),
 
-        OptionBuilder
-        .withArgName("PARAMS")
+        Option.builder("cluster")
+        .required(false)
+        .desc("Needed to install cluster level plugins in a package. Run './solr package help' for more details.")
+        .build(),
+
+        Option.builder("p")
+        .argName("PARAMS")
         .hasArgs()
-        .isRequired(false)
-        .withDescription("List of parameters to be used with deploy command. Run './solr package help' for more details.")
-        .withLongOpt("param")
-        .create("p"),
+        .required(false)
+        .desc("List of parameters to be used with deploy command. Run './solr package help' for more details.")
+        .longOpt("param")
+        .build(),
 
-        OptionBuilder
-        .isRequired(false)
-        .withDescription("If a deployment is an update over a previous deployment. Run './solr package help' for more details.")
-        .withLongOpt("update")
-        .create("u"),
+        Option.builder("u")
+        .required(false)
+        .desc("If a deployment is an update over a previous deployment. Run './solr package help' for more details.")
+        .longOpt("update")
+        .build(),
 
-        OptionBuilder
-        .isRequired(false)
-        .withDescription("Run './solr package help' for more details.")
-        .withLongOpt("collection")
-        .create("c"),
+        Option.builder("c")
+        .required(false)
+        .desc("Run './solr package help' for more details.")
+        .longOpt("collection")
+        .build(),
 
-        OptionBuilder
-        .isRequired(false)
-        .withDescription("Run './solr package help' for more details.")
-        .withLongOpt("noprompt")
-        .create("y")
+        Option.builder("y")
+        .required(false)
+        .desc("Run './solr package help' for more details.")
+        .longOpt("noprompt")
+        .build()
     };
   }
 
@@ -285,6 +302,7 @@ public class PackageTool extends SolrCLI.ToolBase {
       // convert raw JSON into user-friendly output
       StatusTool statusTool = new StatusTool();
       Map<String,Object> status = statusTool.reportStatus(solrUrl+"/", systemInfo, httpClient);
+      @SuppressWarnings({"unchecked"})
       Map<String,Object> cloud = (Map<String, Object>)status.get("cloud");
       if (cloud != null) {
         String zookeeper = (String) cloud.get("ZooKeeper");

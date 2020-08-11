@@ -45,6 +45,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
@@ -99,6 +100,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     System.setProperty("createCollectionWaitTimeTillActive", "5");
     TestInjection.randomDelayInCoreCreation = "true:5";
     System.setProperty("validateAfterInactivity", "200");
+    System.setProperty("solr.allowPaths", "*");
 
     configureCluster(4)
         .addConfig("conf", configset(getConfigSet()))
@@ -113,6 +115,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
       shutdownCluster();
     } finally {
       System.clearProperty("createCollectionWaitTimeTillActive");
+      System.clearProperty("solr.allowPaths");
       super.tearDown();
     }
   }
@@ -212,20 +215,12 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     params.set("action", CollectionAction.CREATE.toString());
     params.set("numShards", 2);
     // missing required collection parameter
+    @SuppressWarnings({"rawtypes"})
     final SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
     expectThrows(Exception.class, () -> {
       cluster.getSolrClient().request(request);
-    });
-  }
-
-  @Test
-  public void testTooManyReplicas() {
-    CollectionAdminRequest req = CollectionAdminRequest.createCollection("collection", "conf", 2, 10);
-
-    expectThrows(Exception.class, () -> {
-      cluster.getSolrClient().request(req);
     });
   }
 
@@ -238,6 +233,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     params.set(REPLICATION_FACTOR, 10);
     params.set("collection.configName", "conf");
 
+    @SuppressWarnings({"rawtypes"})
     final SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
@@ -255,6 +251,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     params.set("numShards", 0);
     params.set("collection.configName", "conf");
 
+    @SuppressWarnings({"rawtypes"})
     final SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
     expectThrows(Exception.class, () -> {
@@ -283,7 +280,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     String nn1 = cluster.getJettySolrRunner(0).getNodeName();
     String nn2 = cluster.getJettySolrRunner(1).getNodeName();
 
-    expectThrows(HttpSolrClient.RemoteSolrException.class, () -> {
+    expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> {
       CollectionAdminResponse resp = CollectionAdminRequest.createCollection("halfcollection", "conf", 2, 1)
           .setCreateNodeSet(nn1 + "," + nn2)
           .process(cluster.getSolrClient());
@@ -347,18 +344,6 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testMaxNodesPerShard() {
-    int numLiveNodes = cluster.getJettySolrRunners().size();
-    int numShards = (numLiveNodes/2) + 1;
-    int replicationFactor = 2;
-
-    expectThrows(SolrException.class, () -> {
-      CollectionAdminRequest.createCollection("oversharded", "conf", numShards, replicationFactor)
-          .process(cluster.getSolrClient());
-    });
-  }
-
-  @Test
   public void testCreateNodeSet() throws Exception {
     JettySolrRunner jetty1 = cluster.getRandomJetty(random());
     JettySolrRunner jetty2 = cluster.getRandomJetty(random());
@@ -406,11 +391,9 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
 
       int numShards = TestUtil.nextInt(random(), 0, cluster.getJettySolrRunners().size()) + 1;
       int replicationFactor = TestUtil.nextInt(random(), 0, 3) + 1;
-      int maxShardsPerNode = (((numShards * replicationFactor) / cluster.getJettySolrRunners().size())) + 1;
 
       createRequests[i]
-          = CollectionAdminRequest.createCollection("awhollynewcollection_" + i, "conf2", numShards, replicationFactor)
-          .setMaxShardsPerNode(maxShardsPerNode);
+          = CollectionAdminRequest.createCollection("awhollynewcollection_" + i, "conf2", numShards, replicationFactor);
       createRequests[i].processAsync(cluster.getSolrClient());
       
       Coll coll = new Coll();
@@ -606,7 +589,6 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     String collectionName = "addReplicaColl";
 
     CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2)
-        .setMaxShardsPerNode(4)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(collectionName, 2, 4);
 

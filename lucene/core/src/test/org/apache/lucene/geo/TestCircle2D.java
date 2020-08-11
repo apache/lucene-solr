@@ -37,7 +37,10 @@ public class TestCircle2D extends LuceneTestCase {
     double by = 5;
     double cx = 5;
     double cy = 4;
-    assertEquals(PointValues.Relation.CELL_OUTSIDE_QUERY, circle2D.relateTriangle(ax, ay, bx, by , cx, cy));
+    assertFalse(circle2D.intersectsTriangle(ax, ay, bx, by , cx, cy));
+    assertFalse(circle2D.intersectsLine(ax, ay, bx, by));
+    assertFalse(circle2D.containsTriangle(ax, ay, bx, by , cx, cy));
+    assertFalse(circle2D.containsLine(ax, ay, bx, by));
     assertEquals(Component2D.WithinRelation.DISJOINT, circle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
   }
 
@@ -56,7 +59,10 @@ public class TestCircle2D extends LuceneTestCase {
     double by = 1;
     double cx = 0;
     double cy = 90;
-    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, circle2D.relateTriangle(ax, ay, bx, by , cx, cy));
+    assertTrue(circle2D.intersectsTriangle(ax, ay, bx, by, cx, cy));
+    assertTrue(circle2D.intersectsLine(ax, ay, bx, by));
+    assertFalse(circle2D.containsTriangle(ax, ay, bx, by , cx, cy));
+    assertFalse(circle2D.containsLine(ax, ay, bx, by));
     assertEquals(Component2D.WithinRelation.NOTWITHIN, circle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
   }
 
@@ -69,7 +75,10 @@ public class TestCircle2D extends LuceneTestCase {
     double cx = -178;
     double cy = 0;
     // we just touch the edge from the dateline
-    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, circle2D.relateTriangle(ax, ay, bx, by , cx, cy));
+    assertTrue(circle2D.intersectsTriangle(ax, ay, bx, by, cx, cy));
+    assertTrue(circle2D.intersectsLine(ax, ay, bx, by));
+    assertFalse(circle2D.containsTriangle(ax, ay, bx, by , cx, cy));
+    assertFalse(circle2D.containsLine(ax, ay, bx, by));
     assertEquals(Component2D.WithinRelation.NOTWITHIN, circle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
   }
 
@@ -88,7 +97,10 @@ public class TestCircle2D extends LuceneTestCase {
     double by = 0.5;
     double cx = 0.5;
     double cy = 0.25;
-    assertEquals(PointValues.Relation.CELL_INSIDE_QUERY, circle2D.relateTriangle(ax, ay, bx, by , cx, cy));
+    assertTrue(circle2D.intersectsTriangle(ax, ay, bx, by, cx, cy));
+    assertTrue(circle2D.intersectsLine(ax, ay, bx, by));
+    assertTrue(circle2D.containsTriangle(ax, ay, bx, by , cx, cy));
+    assertTrue(circle2D.containsLine(ax, ay, bx, by));
     assertEquals(Component2D.WithinRelation.NOTWITHIN, circle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
   }
 
@@ -108,7 +120,10 @@ public class TestCircle2D extends LuceneTestCase {
     double by = -20;
     double cx = 0;
     double cy = 20;
-    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, circle2D.relateTriangle(ax, ay, bx, by , cx, cy));
+    assertTrue(circle2D.intersectsTriangle(ax, ay, bx, by, cx, cy));
+    assertFalse(circle2D.intersectsLine(bx, by, cx, cy));
+    assertFalse(circle2D.containsTriangle(ax, ay, bx, by , cx, cy));
+    assertFalse(circle2D.containsLine(bx, by, cx, cy));
     assertEquals(Component2D.WithinRelation.CANDIDATE, circle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
   }
 
@@ -136,10 +151,16 @@ public class TestCircle2D extends LuceneTestCase {
 
       PointValues.Relation r = circle2D.relate(tMinX, tMaxX, tMinY, tMaxY);
       if (r == PointValues.Relation.CELL_OUTSIDE_QUERY) {
-        assertEquals(PointValues.Relation.CELL_OUTSIDE_QUERY, circle2D.relateTriangle(ax, ay, bx, by , cx, cy));
+        assertFalse(circle2D.intersectsTriangle(ax, ay, bx, by, cx, cy));
+        assertFalse(circle2D.intersectsLine(ax, ay, bx, by));
+        assertFalse(circle2D.containsTriangle(ax, ay, bx, by , cx, cy));
+        assertFalse(circle2D.containsLine(ax, ay, bx, by));
         assertEquals(Component2D.WithinRelation.DISJOINT, circle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
       } else if (r == PointValues.Relation.CELL_INSIDE_QUERY) {
-        assertEquals(PointValues.Relation.CELL_INSIDE_QUERY, circle2D.relateTriangle(ax, ay, bx, by , cx, cy));
+        assertTrue(circle2D.intersectsTriangle(ax, ay, bx, by, cx, cy));
+        assertTrue(circle2D.intersectsLine(ax, ay, bx, by));
+        assertTrue(circle2D.containsTriangle(ax, ay, bx, by , cx, cy));
+        assertTrue(circle2D.containsLine(ax, ay, bx, by));
         assertNotEquals(Component2D.WithinRelation.CANDIDATE, circle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
       }
     }

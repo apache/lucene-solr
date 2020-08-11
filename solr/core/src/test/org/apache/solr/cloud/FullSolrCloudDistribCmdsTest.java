@@ -418,7 +418,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     final int totalDocsExpected = numThreads * numBatchesPerThread * numDocsPerBatch;
     ExecutorUtil.shutdownAndAwaitTermination(executor);
 
-    for (Future result : futures) {
+    for (@SuppressWarnings({"rawtypes"})Future result : futures) {
       assertFalse(result.isCancelled());
       assertTrue(result.isDone());
       // all we care about is propogating any possibile execution exception...
@@ -480,7 +480,9 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
         for (Replica replica : slice) {
           try (HttpSolrClient replicaClient = getHttpSolrClient(replica.getCoreUrl())) {
             final SolrDocumentList replicaResults = replicaClient.query(perReplicaParams).getResults();
-            log.debug("Shard {}: Replica ({}) results: {}", shardName, replica.getCoreName(), replicaResults);
+            if (log.isDebugEnabled()) {
+              log.debug("Shard {}: Replica ({}) results: {}", shardName, replica.getCoreName(), replicaResults);
+            }
             assertEquals("inconsistency w/leader: shard=" + shardName + "core=" + replica.getCoreName(),
                          Collections.emptySet(),
                          CloudInspectUtil.showDiff(leaderResults, replicaResults,

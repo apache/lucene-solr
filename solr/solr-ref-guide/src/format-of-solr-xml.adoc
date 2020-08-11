@@ -30,6 +30,7 @@ You can find `solr.xml` in your `$SOLR_HOME` directory (usually `server/solr` or
 
   <int name="maxBooleanClauses">${solr.max.booleanClauses:1024}</int>
   <str name="sharedLib">${solr.sharedLib:}</str>
+  <str name="allowPaths">${solr.allowPaths:}</str>
 
   <solrcloud>
     <str name="host">${host:}</str>
@@ -90,6 +91,9 @@ Currently non-operational.
 
 `sharedLib`::
 Specifies the path to a common library directory that will be shared across all cores. Any JAR files in this directory will be added to the search path for Solr plugins. If the specified path is not absolute, it will be relative to `$SOLR_HOME`. Custom handlers may be placed in this directory. Note that specifying `sharedLib` will not remove `$SOLR_HOME/lib` from Solr's class path.
+
+`allowPaths`::
+Solr will normally only access folders relative to `$SOLR_HOME`, `$SOLR_DATA_HOME` or `coreRootDir`. If you need to e.g., create a core outside of these paths, you can explicitly allow the path with `allowPaths`. It is a comma separated string of file system paths to allow. The special value of `*` will allow any path on the system.
 
 `shareSchema`::
 This attribute, when set to `true`, ensures that the multiple cores pointing to the same Schema resource file will be referring to the same IndexSchema Object. Sharing the IndexSchema Object makes loading the core faster. If you use this feature, make sure that no core-specific property is used in your Schema file.

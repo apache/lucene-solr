@@ -100,7 +100,7 @@ public class EvalStream extends TupleStream implements Expressible {
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l =  new ArrayList();
+    List<TupleStream> l =  new ArrayList<>();
     l.add(stream);
     return l;
   }

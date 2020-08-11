@@ -215,94 +215,95 @@ public class BoolField extends PrimitiveFieldType {
     }
     return super.toNativeType(val);
   }
-}
 
-// TODO - this can be much more efficient - use FixedBitSet or Bits
-class BoolFieldSource extends ValueSource {
-  protected String field;
+  // TODO - this can be much more efficient - use FixedBitSet or Bits
+  private static class BoolFieldSource extends ValueSource {
+    protected String field;
 
-  public BoolFieldSource(String field) {
-    this.field = field;
-  }
-
-  @Override
-  public String description() {
-    return "bool(" + field + ')';
-  }
-
-
-  @Override
-  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
-    final SortedDocValues sindex = DocValues.getSorted(readerContext.reader(), field);
-
-    // figure out what ord maps to true
-    int nord = sindex.getValueCount();
-    // if no values in the segment, default trueOrd to something other then -1 (missing)
-    int tord = -2;
-    for (int i=0; i<nord; i++) {
-      final BytesRef br = sindex.lookupOrd(i);
-      if (br.length==1 && br.bytes[br.offset]=='T') {
-        tord = i;
-        break;
-      }
+    public BoolFieldSource(String field) {
+      this.field = field;
     }
 
-    final int trueOrd = tord;
+    @Override
+    public String description() {
+      return "bool(" + field + ')';
+    }
 
-    return new BoolDocValues(this) {
 
-      private int getOrdForDoc(int doc) throws IOException {
-        if (doc > sindex.docID()) {
-          sindex.advance(doc);
+    @Override
+    public FunctionValues getValues(@SuppressWarnings({"rawtypes"})Map context, LeafReaderContext readerContext) throws IOException {
+      final SortedDocValues sindex = DocValues.getSorted(readerContext.reader(), field);
+
+      // figure out what ord maps to true
+      int nord = sindex.getValueCount();
+      // if no values in the segment, default trueOrd to something other then -1 (missing)
+      int tord = -2;
+      for (int i=0; i<nord; i++) {
+        final BytesRef br = sindex.lookupOrd(i);
+        if (br.length==1 && br.bytes[br.offset]=='T') {
+          tord = i;
+          break;
         }
-        if (doc == sindex.docID()) {
-          return sindex.ordValue();
-        } else {
-          return -1;
+      }
+
+      final int trueOrd = tord;
+
+      return new BoolDocValues(this) {
+
+        private int getOrdForDoc(int doc) throws IOException {
+          if (doc > sindex.docID()) {
+            sindex.advance(doc);
+          }
+          if (doc == sindex.docID()) {
+            return sindex.ordValue();
+          } else {
+            return -1;
+          }
         }
-      }
 
-      @Override
-      public boolean boolVal(int doc) throws IOException {
-        return getOrdForDoc(doc) == trueOrd;
-      }
+        @Override
+        public boolean boolVal(int doc) throws IOException {
+          return getOrdForDoc(doc) == trueOrd;
+        }
 
-      @Override
-      public boolean exists(int doc) throws IOException {
-        return getOrdForDoc(doc) != -1;
-      }
+        @Override
+        public boolean exists(int doc) throws IOException {
+          return getOrdForDoc(doc) != -1;
+        }
 
-      @Override
-      public ValueFiller getValueFiller() {
-        return new ValueFiller() {
-          private final MutableValueBool mval = new MutableValueBool();
+        @Override
+        public ValueFiller getValueFiller() {
+          return new ValueFiller() {
+            private final MutableValueBool mval = new MutableValueBool();
 
-          @Override
-          public MutableValue getValue() {
-            return mval;
-          }
+            @Override
+            public MutableValue getValue() {
+              return mval;
+            }
 
-          @Override
-          public void fillValue(int doc) throws IOException {
-            int ord = getOrdForDoc(doc);
-            mval.value = (ord == trueOrd);
-            mval.exists = (ord != -1);
-          }
-        };
-      }
-    };
+            @Override
+            public void fillValue(int doc) throws IOException {
+              int ord = getOrdForDoc(doc);
+              mval.value = (ord == trueOrd);
+              mval.exists = (ord != -1);
+            }
+          };
+        }
+      };
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      return o.getClass() == BoolFieldSource.class && this.field.equals(((BoolFieldSource)o).field);
+    }
+
+    private static final int hcode = OrdFieldSource.class.hashCode();
+
+    @Override
+    public int hashCode() {
+      return hcode + field.hashCode();
+    }
+
   }
-
-  @Override
-  public boolean equals(Object o) {
-    return o.getClass() == BoolFieldSource.class && this.field.equals(((BoolFieldSource)o).field);
-  }
-
-  private static final int hcode = OrdFieldSource.class.hashCode();
-
-  @Override
-  public int hashCode() {
-    return hcode + field.hashCode();
-  }
-
 }
+

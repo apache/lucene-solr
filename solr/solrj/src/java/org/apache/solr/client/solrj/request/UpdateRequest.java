@@ -241,7 +241,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
   }
 
   private interface ReqSupplier<T extends LBSolrClient.Req> {
-    T get(SolrRequest solrRequest, List<String> servers);
+    T get(@SuppressWarnings({"rawtypes"})SolrRequest solrRequest, List<String> servers);
   }
 
   private <T extends LBSolrClient.Req> Map<String, T> getRoutes(DocRouter router,

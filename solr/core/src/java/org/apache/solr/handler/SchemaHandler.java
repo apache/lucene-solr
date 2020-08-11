@@ -18,23 +18,21 @@ package org.apache.solr.handler;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.function.BiConsumer;
 
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -56,6 +54,7 @@ import static org.apache.solr.schema.IndexSchema.SchemaProps.Handler.DYNAMIC_FIE
 import static org.apache.solr.schema.IndexSchema.SchemaProps.Handler.FIELDS;
 import static org.apache.solr.schema.IndexSchema.SchemaProps.Handler.FIELD_TYPES;
 
+@SuppressWarnings({"unchecked"})
 public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, PermissionNameProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private boolean isImmutableConfigSet = false;
@@ -63,6 +62,7 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
   private static final Map<String, String> level2;
 
   static {
+    @SuppressWarnings({"rawtypes"})
     Map s = Utils.makeMap(
         FIELD_TYPES.nameLower, null,
         FIELDS.nameLower, "fl",
@@ -87,6 +87,7 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
       }
 
       try {
+        @SuppressWarnings({"rawtypes"})
         List errs = new SchemaManager(req).performOperations();
         if (!errs.isEmpty())
           throw new ApiBag.ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST,"error processing commands", errs);
@@ -136,19 +137,15 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
           break;
         }
         case "/schema/zkversion": {
-          int refreshIfBelowVersion = -1;
-          Object refreshParam = req.getParams().get("refreshIfBelowVersion");
-          if (refreshParam != null)
-            refreshIfBelowVersion = (refreshParam instanceof Number) ? ((Number) refreshParam).intValue()
-                : Integer.parseInt(refreshParam.toString());
+          int refreshIfBelowVersion = req.getParams().getInt("refreshIfBelowVersion");
           int zkVersion = -1;
           IndexSchema schema = req.getSchema();
           if (schema instanceof ManagedIndexSchema) {
             ManagedIndexSchema managed = (ManagedIndexSchema) schema;
             zkVersion = managed.getSchemaZkVersion();
             if (refreshIfBelowVersion != -1 && zkVersion < refreshIfBelowVersion) {
-              log.info("REFRESHING SCHEMA (refreshIfBelowVersion=" + refreshIfBelowVersion +
-                  ", currentVersion=" + zkVersion + ") before returning version!");
+              log.info("REFRESHING SCHEMA (refreshIfBelowVersion={}, currentVersion={}) before returning version!"
+                  , refreshIfBelowVersion, zkVersion);
               ZkSolrResourceLoader zkSolrResourceLoader = (ZkSolrResourceLoader) req.getCore().getResourceLoader();
               ZkIndexSchemaReader zkIndexSchemaReader = zkSolrResourceLoader.getZkIndexSchemaReader();
               managed = zkIndexSchemaReader.refreshSchemaFromZk(refreshIfBelowVersion);
@@ -168,17 +165,21 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
             if (parts.size() > 2) {
               req.setParams(SolrParams.wrapDefaults(new MapSolrParams(singletonMap(pathParam, parts.get(2))), req.getParams()));
             }
+            @SuppressWarnings({"rawtypes"})
             Map propertyValues = req.getSchema().getNamedPropertyValues(realName, req.getParams());
             Object o = propertyValues.get(fieldName);
             if(parts.size()> 2) {
               String name = parts.get(2);
               if (o instanceof List) {
+                @SuppressWarnings({"rawtypes"})
                 List list = (List) o;
                 for (Object obj : list) {
                   if (obj instanceof SimpleOrderedMap) {
+                    @SuppressWarnings({"rawtypes"})
                     SimpleOrderedMap simpleOrderedMap = (SimpleOrderedMap) obj;
                     if(name.equals(simpleOrderedMap.get("name"))) {
                       rsp.add(fieldName.substring(0, realName.length() - 1), simpleOrderedMap);
+                      insertPackageInfo(rsp.getValues(), req);
                       return;
                     }
                   }
@@ -188,6 +189,7 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
             } else {
               rsp.add(fieldName, o);
             }
+            insertPackageInfo(rsp.getValues(), req);
             return;
           }
 
@@ -198,6 +200,38 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
     } catch (Exception e) {
       rsp.setException(e);
     }
+  }
+
+  /**
+   * If a plugin is loaded from a package, the version of the package being used should be added
+   * to the response
+   */
+  @SuppressWarnings("rawtypes")
+  private void insertPackageInfo(Object o, SolrQueryRequest req) {
+    if (!req.getParams().getBool("meta", false)) return;
+    if (o instanceof List) {
+      List l = (List) o;
+      for (Object o1 : l) {
+        if (o1 instanceof NamedList || o1 instanceof List) insertPackageInfo(o1, req);
+      }
+
+    } else if (o instanceof NamedList) {
+      NamedList nl = (NamedList) o;
+      nl.forEach((BiConsumer) (n, v) -> {
+        if (v instanceof NamedList || v instanceof List) insertPackageInfo(v, req);
+      });
+      Object v = nl.get("class");
+      if (v instanceof String) {
+        String klas = (String) v;
+        PluginInfo.ClassName parsedClassName = new PluginInfo.ClassName(klas);
+        if (parsedClassName.pkg != null) {
+          MapWriter mw = req.getCore().getSchemaPluginsLoader().getPackageVersion(parsedClassName);
+          if (mw != null) nl.add("_packageinfo_", mw);
+        }
+      }
+
+    }
+
   }
 
   private static Set<String> subPaths = new HashSet<>(Arrays.asList(

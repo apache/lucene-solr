@@ -85,6 +85,7 @@ public class SolrSlf4jReporter extends FilteringSolrMetricReporter {
     }
 
     @Override
+    @SuppressWarnings({"rawtypes"})
     public void report(SortedMap<String, Gauge> gauges, SortedMap<String, Counter> counters, SortedMap<String, Histogram> histograms, SortedMap<String, Meter> meters, SortedMap<String, Timer> timers) {
       throw new UnsupportedOperationException("this method should never be called here!");
     }

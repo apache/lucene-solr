@@ -80,10 +80,6 @@ public class LiveIndexWriterConfig {
   /** {@link MergePolicy} for selecting merges. */
   protected volatile MergePolicy mergePolicy;
 
-  /** {@code DocumentsWriterPerThreadPool} to control how
-   *  threads are allocated to {@code DocumentsWriterPerThread}. */
-  protected volatile DocumentsWriterPerThreadPool indexerThreadPool;
-
   /** True if readers should be pooled. */
   protected volatile boolean readerPooling;
 
@@ -113,6 +109,8 @@ public class LiveIndexWriterConfig {
   /** soft deletes field */
   protected String softDeletesField = null;
 
+  /** Amount of time to wait for merges returned by MergePolicy.findFullFlushMerges(...) */
+  protected volatile long maxCommitMergeWaitMillis;
 
   // used by IndexWriterConfig
   LiveIndexWriterConfig(Analyzer analyzer) {
@@ -135,8 +133,8 @@ public class LiveIndexWriterConfig {
     mergePolicy = new TieredMergePolicy();
     flushPolicy = new FlushByRamOrCountsPolicy();
     readerPooling = IndexWriterConfig.DEFAULT_READER_POOLING;
-    indexerThreadPool = new DocumentsWriterPerThreadPool();
     perThreadHardLimitMB = IndexWriterConfig.DEFAULT_RAM_PER_THREAD_HARD_LIMIT_MB;
+    maxCommitMergeWaitMillis = IndexWriterConfig.DEFAULT_MAX_COMMIT_MERGE_WAIT_MILLIS;
   }
   
   /** Returns the default analyzer to use for indexing documents. */
@@ -348,16 +346,6 @@ public class LiveIndexWriterConfig {
   }
   
   /**
-   * Returns the configured {@link DocumentsWriterPerThreadPool} instance.
-   * 
-   * @see IndexWriterConfig#setIndexerThreadPool(DocumentsWriterPerThreadPool)
-   * @return the configured {@link DocumentsWriterPerThreadPool} instance.
-   */
-  DocumentsWriterPerThreadPool getIndexerThreadPool() {
-    return indexerThreadPool;
-  }
-
-  /**
    * Returns {@code true} if {@link IndexWriter} should pool readers even if
    * {@link DirectoryReader#open(IndexWriter)} has not been called.
    */
@@ -476,6 +464,15 @@ public class LiveIndexWriterConfig {
     return softDeletesField;
   }
 
+  /**
+   * Expert: return the amount of time to wait for merges returned by by MergePolicy.findFullFlushMerges(...).
+   * If this time is reached, we proceed with the commit based on segments merged up to that point.
+   * The merges are not cancelled, and may still run to completion independent of the commit.
+   */
+  public long getMaxCommitMergeWaitMillis() {
+    return maxCommitMergeWaitMillis;
+  }
+
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
@@ -492,7 +489,6 @@ public class LiveIndexWriterConfig {
     sb.append("codec=").append(getCodec()).append("\n");
     sb.append("infoStream=").append(getInfoStream().getClass().getName()).append("\n");
     sb.append("mergePolicy=").append(getMergePolicy()).append("\n");
-    sb.append("indexerThreadPool=").append(getIndexerThreadPool()).append("\n");
     sb.append("readerPooling=").append(getReaderPooling()).append("\n");
     sb.append("perThreadHardLimitMB=").append(getRAMPerThreadHardLimitMB()).append("\n");
     sb.append("useCompoundFile=").append(getUseCompoundFile()).append("\n");
@@ -500,6 +496,7 @@ public class LiveIndexWriterConfig {
     sb.append("indexSort=").append(getIndexSort()).append("\n");
     sb.append("checkPendingFlushOnUpdate=").append(isCheckPendingFlushOnUpdate()).append("\n");
     sb.append("softDeletesField=").append(getSoftDeletesField()).append("\n");
+    sb.append("maxCommitMergeWaitMillis=").append(getMaxCommitMergeWaitMillis()).append("\n");
     return sb.toString();
   }
 }

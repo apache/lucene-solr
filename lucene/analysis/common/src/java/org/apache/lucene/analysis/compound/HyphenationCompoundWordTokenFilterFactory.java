@@ -90,6 +90,11 @@ public class HyphenationCompoundWordTokenFilterFactory extends TokenFilterFactor
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public HyphenationCompoundWordTokenFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public void inform(ResourceLoader loader) throws IOException {
     InputStream stream = null;

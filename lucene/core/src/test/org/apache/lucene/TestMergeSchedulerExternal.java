@@ -57,22 +57,22 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
   private class MyMergeScheduler extends ConcurrentMergeScheduler {
 
     private class MyMergeThread extends ConcurrentMergeScheduler.MergeThread {
-      public MyMergeThread(IndexWriter writer, MergePolicy.OneMerge merge) {
-        super(writer, merge);
+      public MyMergeThread(MergeSource mergeSource, MergePolicy.OneMerge merge) {
+        super(mergeSource, merge);
         mergeThreadCreated = true;
       }
     }
 
     @Override
-    protected MergeThread getMergeThread(IndexWriter writer, MergePolicy.OneMerge merge) throws IOException {
-      MergeThread thread = new MyMergeThread(writer, merge);
+    protected MergeThread getMergeThread(MergeSource mergeSource, MergePolicy.OneMerge merge) throws IOException {
+      MergeThread thread = new MyMergeThread(mergeSource, merge);
       thread.setDaemon(true);
       thread.setName("MyMergeThread");
       return thread;
     }
 
     @Override
-    protected void handleMergeException(Directory dir, Throwable t) {
+    protected void handleMergeException(Throwable t) {
       excCalled = true;
       if (infoStream.isEnabled("IW")) {
         infoStream.message("IW", "TEST: now handleMergeException");
@@ -80,9 +80,9 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
     }
 
     @Override
-    protected void doMerge(IndexWriter writer, MergePolicy.OneMerge merge) throws IOException {
+    protected void doMerge(MergeSource mergeSource, MergePolicy.OneMerge merge) throws IOException {
       mergeCalled = true;
-      super.doMerge(writer, merge);
+      super.doMerge(mergeSource, merge);
     }
   }
 
@@ -153,13 +153,13 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
   private static class ReportingMergeScheduler extends MergeScheduler {
 
     @Override
-    public void merge(IndexWriter writer, MergeTrigger trigger, boolean newMergesFound) throws IOException {
+    public void merge(MergeSource mergeSource, MergeTrigger trigger) throws IOException {
       OneMerge merge = null;
-      while ((merge = writer.getNextMerge()) != null) {
+      while ((merge = mergeSource.getNextMerge()) != null) {
         if (VERBOSE) {
           System.out.println("executing merge " + merge.segString());
         }
-        writer.merge(merge);
+        mergeSource.merge(merge);
       }
     }
 

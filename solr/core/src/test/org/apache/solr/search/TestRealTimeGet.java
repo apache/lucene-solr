@@ -71,7 +71,7 @@ public class TestRealTimeGet extends TestRTGBase {
     );
     assertJQ(req("qt","/get","ids","1", "fl","id")
         ,"=={" +
-        "  'response':{'numFound':1,'start':0,'docs':[" +
+        "  'response':{'numFound':1,'start':0,'numFoundExact':true,'docs':[" +
         "      {" +
         "        'id':'1'}]" +
         "  }}}"
@@ -98,7 +98,7 @@ public class TestRealTimeGet extends TestRTGBase {
     );
     assertJQ(req("qt","/get","ids","1", "fl","id")
         ,"=={" +
-        "  'response':{'numFound':1,'start':0,'docs':[" +
+        "  'response':{'numFound':1,'start':0,'numFoundExact':true,'docs':[" +
         "      {" +
         "        'id':'1'}]" +
         "  }}}"
@@ -113,7 +113,7 @@ public class TestRealTimeGet extends TestRTGBase {
         ,"=={'doc':null}"
     );
     assertJQ(req("qt","/get","ids","1")
-        ,"=={'response':{'numFound':0,'start':0,'docs':[]}}"
+        ,"=={'response':{'numFound':0,'start':0,'numFoundExact':true,'docs':[]}}"
     );
 
 
@@ -715,7 +715,9 @@ public class TestRealTimeGet extends TestRTGBase {
               }
 
               String response = h.query(sreq);
+              @SuppressWarnings({"rawtypes"})
               Map rsp = (Map) Utils.fromJSONString(response);
+              @SuppressWarnings({"rawtypes"})
               List doclist = (List)(((Map)rsp.get("response")).get("docs"));
               if (doclist.size() == 0) {
                 // there's no info we can get back with a delete, so not much we can check without further synchronization

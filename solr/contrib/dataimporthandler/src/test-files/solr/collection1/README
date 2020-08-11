@@ -1,0 +1,1 @@
+The collection1 directory is needed because it is used as a marker in SolrTestCaseJ4.TEST_PATH() to find the configsets

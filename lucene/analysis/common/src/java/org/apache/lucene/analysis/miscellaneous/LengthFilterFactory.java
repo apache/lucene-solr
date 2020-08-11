@@ -55,6 +55,11 @@ public class LengthFilterFactory extends TokenFilterFactory {
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public LengthFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public LengthFilter create(TokenStream input) {
     final LengthFilter filter = new LengthFilter(input,min,max);

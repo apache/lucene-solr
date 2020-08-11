@@ -36,7 +36,7 @@ public class StrFieldSource extends FieldCacheSource {
   }
 
   @Override
-  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(@SuppressWarnings({"rawtypes"})Map context, LeafReaderContext readerContext) throws IOException {
     return new DocTermsIndexDocValues(this, readerContext, field) {
 
       @Override

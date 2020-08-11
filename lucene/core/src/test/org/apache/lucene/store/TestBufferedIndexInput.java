@@ -18,23 +18,9 @@ package org.apache.lucene.store;
 
 
 import java.io.IOException;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
+import java.nio.ByteBuffer;
 import java.util.Random;
 
-import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -60,14 +46,6 @@ public class TestBufferedIndexInput extends LuceneTestCase {
   public void testReadBytes() throws Exception {
     MyBufferedIndexInput input = new MyBufferedIndexInput();
     runReadBytes(input, BufferedIndexInput.BUFFER_SIZE, random());
-  }
-
-  private void runReadBytesAndClose(IndexInput input, int bufferSize, Random r) throws IOException {
-    try {
-      runReadBytes(input, bufferSize, r);
-    } finally {
-      input.close();
-    }
   }
   
   private void runReadBytes(IndexInput input, int bufferSize, Random r)
@@ -180,9 +158,10 @@ public class TestBufferedIndexInput extends LuceneTestCase {
         this(Long.MAX_VALUE);
       }
       @Override
-      protected void readInternal(byte[] b, int offset, int length) throws IOException {
-        for(int i=offset; i<offset+length; i++)
-          b[i] = byten(pos++);
+      protected void readInternal(ByteBuffer b) throws IOException {
+        while (b.hasRemaining()) {
+          b.put(byten(pos++));
+        }
       }
 
       @Override
@@ -205,87 +184,4 @@ public class TestBufferedIndexInput extends LuceneTestCase {
       }
     }
 
-    public void testSetBufferSize() throws IOException {
-      Path indexDir = createTempDir("testSetBufferSize");
-      MockFSDirectory dir = new MockFSDirectory(indexDir, random());
-      IndexWriter writer = new IndexWriter(
-                                           dir,
-                                           new IndexWriterConfig(new MockAnalyzer(random())).
-                                           setOpenMode(OpenMode.CREATE).
-                                           setMergePolicy(newLogMergePolicy(false))
-                                           );
-      for(int i=0;i<37;i++) {
-        Document doc = new Document();
-        doc.add(newTextField("content", "aaa bbb ccc ddd" + i, Field.Store.YES));
-        doc.add(newTextField("id", "" + i, Field.Store.YES));
-        writer.addDocument(doc);
-      }
-
-      dir.allIndexInputs.clear();
-
-      IndexReader reader = DirectoryReader.open(writer);
-      Term aaa = new Term("content", "aaa");
-      Term bbb = new Term("content", "bbb");
-        
-      reader.close();
-        
-      dir.tweakBufferSizes();
-      writer.deleteDocuments(new Term("id", "0"));
-      reader = DirectoryReader.open(writer);
-      IndexSearcher searcher = newSearcher(reader);
-      ScoreDoc[] hits = searcher.search(new TermQuery(bbb), 1000).scoreDocs;
-      dir.tweakBufferSizes();
-      assertEquals(36, hits.length);
-        
-      reader.close();
-        
-      dir.tweakBufferSizes();
-      writer.deleteDocuments(new Term("id", "4"));
-      reader = DirectoryReader.open(writer);
-      searcher = newSearcher(reader);
-
-      hits = searcher.search(new TermQuery(bbb), 1000).scoreDocs;
-      dir.tweakBufferSizes();
-      assertEquals(35, hits.length);
-      dir.tweakBufferSizes();
-      hits = searcher.search(new TermQuery(new Term("id", "33")), 1000).scoreDocs;
-      dir.tweakBufferSizes();
-      assertEquals(1, hits.length);
-      hits = searcher.search(new TermQuery(aaa), 1000).scoreDocs;
-      dir.tweakBufferSizes();
-      assertEquals(35, hits.length);
-      writer.close();
-      reader.close();
-    }
-
-    private static class MockFSDirectory extends FilterDirectory {
-
-      final List<IndexInput> allIndexInputs = new ArrayList<>();
-      final Random rand;
-
-      public MockFSDirectory(Path path, Random rand) throws IOException {
-        super(new NIOFSDirectory(path));
-        this.rand = rand;
-      }
-
-      public void tweakBufferSizes() {
-        //int count = 0;
-        for (final IndexInput ip : allIndexInputs) {
-          BufferedIndexInput bii = (BufferedIndexInput) ip;
-          int bufferSize = 1024 + rand.nextInt(32768);
-          bii.setBufferSize(bufferSize);
-          //count++;
-        }
-        //System.out.println("tweak'd " + count + " buffer sizes");
-      }
-      
-      @Override
-      public IndexInput openInput(String name, IOContext context) throws IOException {
-        // Make random changes to buffer size
-        //bufferSize = 1+Math.abs(rand.nextInt() % 10);
-        IndexInput f = super.openInput(name, context);
-        allIndexInputs.add(f);
-        return f;
-      }
-    }
 }

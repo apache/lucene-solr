@@ -28,11 +28,9 @@
  * <p>Grouping requires a number of inputs:</p>
  * 
  * <ul>
- *   <li><code>groupField</code>: this is the field used for grouping.
- *       For example, if you use the <code>author</code> field then each
- *       group has all books by the same author.  Documents that don't
- *       have this field are grouped under a single group with
- *       a <code>null</code> group value.
+ *   <li><code>groupSelector</code>: this defines how groups are created
+ *       from values per-document.  The grouping module ships with
+ *       selectors for grouping by term, and by long and double ranges.
  * 
  *   <li><code>groupSort</code>: how the groups are sorted.  For sorting
  *       purposes, each group is "represented" by the highest-sorted
@@ -80,6 +78,10 @@
  *     the value of a {@link org.apache.lucene.index.SortedDocValues} field</li>
  *     <li>{@link org.apache.lucene.search.grouping.ValueSourceGroupSelector} groups based on
  *     the value of a {@link org.apache.lucene.queries.function.ValueSource}</li>
+ *     <li>{@link org.apache.lucene.search.grouping.DoubleRangeGroupSelector} groups based on
+ *     the value of a {@link org.apache.lucene.search.DoubleValuesSource}</li>
+ *     <li>{@link org.apache.lucene.search.grouping.LongRangeGroupSelector} groups based on
+ *     the value of a {@link org.apache.lucene.search.LongValuesSource}</li>
  *   </ul>
  * 
  * <p>Known limitations:</p>
@@ -137,17 +139,10 @@
  *   writer.addDocuments(oneGroup);
  * </pre>
  * 
- * Then, at search time, do this up front:
+ * Then, at search time:
  * 
  * <pre class="prettyprint">
- *   // Set this once in your app &amp; save away for reusing across all queries:
- *   Filter groupEndDocs = new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("groupEnd", "x"))));
- * </pre>
- * 
- * Finally, do this per search:
- * 
- * <pre class="prettyprint">
- *   // Per search:
+ *   Query groupEndDocs = new TermQuery(new Term("groupEnd", "x"));
  *   BlockGroupingCollector c = new BlockGroupingCollector(groupSort, groupOffset+topNGroups, needsScores, groupEndDocs);
  *   s.search(new TermQuery(new Term("content", searchTerm)), c);
  *   TopGroups groupsResult = c.getTopGroups(withinGroupSort, groupOffset, docOffset, docOffset+docsPerGroup, fillFields);

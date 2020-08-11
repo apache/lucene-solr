@@ -48,7 +48,7 @@ public class TestJdbcDataSourceConvertType extends AbstractDataImportHandlerTest
     convertTypeTest("true", Long.class);
   }
 
-  private void convertTypeTest(String convertType, Class resultClass) throws Throwable {
+  private void convertTypeTest(String convertType, @SuppressWarnings({"rawtypes"})Class resultClass) throws Throwable {
     JdbcDataSource dataSource = new JdbcDataSource();
     Properties p = new Properties();
     p.put("driver", "org.apache.derby.jdbc.EmbeddedDriver");

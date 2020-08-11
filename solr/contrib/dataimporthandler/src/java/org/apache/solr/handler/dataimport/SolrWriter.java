@@ -79,7 +79,7 @@ public class SolrWriter extends DIHWriterBase implements DIHWriter {
       command.commitWithin = commitWithin;
       processor.processAdd(command);
     } catch (Exception e) {
-      log.warn("Error creating document : " + d, e);
+      log.warn("Error creating document : {}", d, e);
       return false;
     }
 
@@ -89,24 +89,24 @@ public class SolrWriter extends DIHWriterBase implements DIHWriter {
   @Override
   public void deleteDoc(Object id) {
     try {
-      log.info("Deleting document: " + id);
+      log.info("Deleting document: {}", id);
       DeleteUpdateCommand delCmd = new DeleteUpdateCommand(req);
       delCmd.setId(id.toString());
       processor.processDelete(delCmd);
     } catch (IOException e) {
-      log.error("Exception while deleteing: " + id, e);
+      log.error("Exception while deleteing: {}", id, e);
     }
   }
 
   @Override
   public void deleteByQuery(String query) {
     try {
-      log.info("Deleting documents from Solr with query: " + query);
+      log.info("Deleting documents from Solr with query: {}", query);
       DeleteUpdateCommand delCmd = new DeleteUpdateCommand(req);
       delCmd.query = query;
       processor.processDelete(delCmd);
     } catch (IOException e) {
-      log.error("Exception while deleting by query: " + query, e);
+      log.error("Exception while deleting by query: {}", query, e);
     }
   }
 

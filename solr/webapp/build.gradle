@@ -20,6 +20,8 @@ plugins {
   id 'war'
 }
 
+description = 'Solr webapp'
+
 configurations {
   war {}
 }

@@ -53,7 +53,7 @@ public class SignatureUpdateProcessorFactory
   private SolrParams params;
 
   @Override
-  public void init(final NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"})final NamedList args) {
     if (args != null) {
       SolrParams params = args.toSolrParams();
       boolean enabled = params.getBool("enabled", true);

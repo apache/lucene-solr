@@ -496,8 +496,15 @@ public class FacetsConfig {
     }
   }
 
-  // Joins the path components together:
-  private static final char DELIM_CHAR = '\u001F';
+  /**
+   * Character used to join the category path components together into a single
+   * drill down term for indexing.  Applications and unit-tests can reference this for
+   * creating their own drill-down terms, or use existing APIs (for example,
+   * {@link #pathToString}).
+   *
+   * @lucene.internal
+   */
+  public static final char DELIM_CHAR = '\u001F';
 
   // Escapes any occurrence of the path component inside the label:
   private static final char ESCAPE_CHAR = '\u001E';

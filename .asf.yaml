@@ -17,3 +17,9 @@ github:
     squash: true
     merge:  false
     rebase: false
+
+notifications:
+  commits:      commits@lucene.apache.org
+  issues:       issues@lucene.apache.org
+  pullrequests: issues@lucene.apache.org
+  jira_options: link label worklog

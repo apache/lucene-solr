@@ -98,7 +98,7 @@ public class OpenExchangeRatesOrgProviderTest extends SolrTestCaseJ4 {
     assertEquals(HARDCODED_TEST_TIMESTAMP, oerp.rates.getTimestamp());
 
     // modify the timestamp to be "current" then fetch a rate and ensure no reload
-    final long currentTimestamp = (long) (System.currentTimeMillis() / 1000);
+    final long currentTimestamp = System.currentTimeMillis() / 1000;
     oerp.rates.setTimestamp(currentTimestamp);
     assertEquals(81.29D, oerp.getExchangeRate("USD", "JPY"), 0.0D);    
     assertEquals(currentTimestamp, oerp.rates.getTimestamp());

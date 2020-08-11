@@ -20,13 +20,11 @@ import java.io.IOException;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.solr.search.DocIterator;
 import org.apache.lucene.util.PriorityQueue;
-import org.apache.solr.search.facet.FacetFieldProcessorByArrayDV.SegCountGlobal;
-import org.apache.solr.search.facet.FacetFieldProcessorByArrayDV.SegCountPerSeg;
 
 final class UnionDocIterator extends SweepDocIterator {
 
   private final int maxIdx;
-  private final boolean hasBase;
+  private final SubIterStruct baseSub;
   private boolean collectBase;
   private final PriorityQueue<SubIterStruct> queue;
   private SubIterStruct top;
@@ -45,9 +43,8 @@ final class UnionDocIterator extends SweepDocIterator {
       docId = sub.hasNext() ? sub.nextDoc() : DocIdSetIterator.NO_MORE_DOCS;
     }
   }
-  UnionDocIterator(DocIterator[] subIterators, boolean hasBase) throws IOException {
+  UnionDocIterator(DocIterator[] subIterators, int baseIdx) throws IOException {
     super(subIterators.length);
-    this.hasBase = hasBase;
     this.maxIdx = size - 1;
     queue = new PriorityQueue<SubIterStruct>(size) {
       @Override
@@ -55,10 +52,16 @@ final class UnionDocIterator extends SweepDocIterator {
         return a.docId < b.docId;
       }
     };
+    SubIterStruct tmpBase = null;
     int i = maxIdx;
     do {
-      queue.add(new SubIterStruct(subIterators[i], i));
+      SubIterStruct subIterStruct = new SubIterStruct(subIterators[i], i);
+      queue.add(subIterStruct);
+      if (i == baseIdx) {
+        tmpBase = subIterStruct;
+      }
     } while (i-- > 0);
+    this.baseSub = tmpBase;
     top = queue.top();
   }
 
@@ -69,9 +72,7 @@ final class UnionDocIterator extends SweepDocIterator {
         top.nextDoc();
       } while ((top = queue.updateTop()).docId == docId);
     }
-    if (hasBase) {
-      collectBase = false;
-    }
+    collectBase = false;
     return docId = top.docId;
   }
 
@@ -88,18 +89,14 @@ final class UnionDocIterator extends SweepDocIterator {
   @Override
   public boolean collectBase() {
     assert top.docId != docId : "must call registerCounts() before collectBase()";
-    if (!hasBase) {
-      return false;
-    } else {
-      return collectBase;
-    }
+    return collectBase;
   }
 
   @Override
-  public int registerCounts(SegCountGlobal segCounts) {
+  public int registerCounts(SegCounter segCounts) {
     int i = -1;
     do {
-      if (hasBase && !collectBase && top.index == maxIdx) {
+      if (!collectBase && top == baseSub) {
         collectBase = true;
       }
       segCounts.map(top.index, ++i);
@@ -107,18 +104,4 @@ final class UnionDocIterator extends SweepDocIterator {
     } while ((top = queue.updateTop()).docId == docId);
     return i;
   }
-
-  @Override
-  public int registerCounts(SegCountPerSeg segCounts) {
-    int i = -1;
-    do {
-      if (hasBase && !collectBase && top.index == maxIdx) {
-        collectBase = true;
-      }
-      segCounts.map(top.index, ++i);
-      top.nextDoc();
-    } while ((top = queue.updateTop()).docId == docId);
-    return i;
-  }
-
 }

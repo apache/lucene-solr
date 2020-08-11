@@ -21,7 +21,6 @@ import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.Line;
-import org.apache.lucene.index.PointValues.Relation;
 
 /** random bounding box, line, and polygon query tests for random generated {@code latitude, longitude} points */
 public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
@@ -94,19 +93,10 @@ public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
     @Override
     public boolean testComponentQuery(Component2D query, Object shape) {
       Point p = (Point) shape;
-      double lat = encoder.quantizeY(p.lat);
-      double lon = encoder.quantizeX(p.lon);
       if (queryRelation == QueryRelation.CONTAINS) {
-        return query.withinTriangle(lon, lat, true, lon, lat, true, lon, lat, true) == Component2D.WithinRelation.CANDIDATE;
+        return testWithinQuery(query, LatLonShape.createIndexableFields("dummy", p.lat, p.lon)) == Component2D.WithinRelation.CANDIDATE;
       }
-      // for consistency w/ the query we test the point as a triangle
-      Relation r = query.relateTriangle(lon, lat, lon, lat, lon, lat);
-      if (queryRelation == QueryRelation.WITHIN) {
-        return r == Relation.CELL_INSIDE_QUERY;
-      } else if (queryRelation == QueryRelation.DISJOINT) {
-        return r == Relation.CELL_OUTSIDE_QUERY;
-      }
-      return r != Relation.CELL_OUTSIDE_QUERY;
+      return testComponentQuery(query, LatLonShape.createIndexableFields("dummy", p.lat, p.lon));
     }
   }
 }

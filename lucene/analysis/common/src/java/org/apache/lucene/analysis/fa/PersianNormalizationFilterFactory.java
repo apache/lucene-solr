@@ -49,6 +49,11 @@ public class PersianNormalizationFilterFactory extends TokenFilterFactory {
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public PersianNormalizationFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public TokenStream create(TokenStream input) {
     return new PersianNormalizationFilter(input);

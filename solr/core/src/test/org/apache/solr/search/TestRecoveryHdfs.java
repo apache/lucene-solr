@@ -39,6 +39,8 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
+import org.apache.lucene.util.QuickPatchThreadsFilter;
+import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.common.util.IOUtils;
@@ -61,6 +63,8 @@ import org.junit.Test;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
 @ThreadLeakFilters(defaultFilters = true, filters = {
+    SolrIgnoredThreadsFilter.class,
+    QuickPatchThreadsFilter.class,
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
 // TODO: longer term this should be combined with TestRecovery somehow ??
@@ -1001,17 +1005,22 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
 
   private static Long getVer(SolrQueryRequest req) throws Exception {
     String response = JQ(req);
+    @SuppressWarnings({"rawtypes"})
     Map rsp = (Map) Utils.fromJSONString(response);
+    @SuppressWarnings({"rawtypes"})
     Map doc = null;
     if (rsp.containsKey("doc")) {
       doc = (Map)rsp.get("doc");
     } else if (rsp.containsKey("docs")) {
+      @SuppressWarnings({"rawtypes"})
       List lst = (List)rsp.get("docs");
       if (lst.size() > 0) {
         doc = (Map)lst.get(0);
       }
     } else if (rsp.containsKey("response")) {
+      @SuppressWarnings({"rawtypes"})
       Map responseMap = (Map)rsp.get("response");
+      @SuppressWarnings({"rawtypes"})
       List lst = (List)responseMap.get("docs");
       if (lst.size() > 0) {
         doc = (Map)lst.get(0);

@@ -33,7 +33,6 @@
     <bool name="genericCoreNodeNames">${genericCoreNodeNames:true}</bool>
     <int name="distribUpdateConnTimeout">${distribUpdateConnTimeout:45000}</int>
     <int name="distribUpdateSoTimeout">${distribUpdateSoTimeout:340000}</int>
-    <int name="autoReplicaFailoverWaitAfterExpiration">${autoReplicaFailoverWaitAfterExpiration:10000}</int>
   </solrcloud>
 
   <shardHandlerFactory name="shardHandlerFactory"

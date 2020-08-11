@@ -37,6 +37,20 @@ File:: Returns content of files in `${solr.home}/conf/`. This handler must have 
 |`solr/<collection>/admin/file` |{solr-javadocs}/solr-core/org/apache/solr/handler/admin/ShowFileRequestHandler.html[ShowFileRequestHandler] |`_ADMIN_FILE`
 |===
 
+Health:: Reporting the health of the node (_available only in SolrCloud mode_)
++
+[cols="3*.",frame=none,grid=cols,options="header"]
+|===
+|API Endpoints |Class & Javadocs |Paramset
+|v1: `solr/admin/info/health`
+
+v2: `api/node/health` |{solr-javadocs}/solr-core/org/apache/solr/handler/admin/HealthCheckHandler.html[HealthCheckHandler] |`_ADMIN_HEALTH`
+|===
++
+This endpoint can also take the collection or core name in the path (`solr/<collection>/admin/health` or `solr/<core>/admin/health`).
++
+This endpoint also accepts additional request parameters. Please see {solr-javadocs}/solr-core/org/apache/solr/handler/admin/HealthCheckHandler.html[Javadocs] for details.
+
 Logging:: Retrieve and modify registered loggers.
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
@@ -125,18 +139,6 @@ Threads:: Return info on all JVM threads.
 
 v2: `api/node/threads` |{solr-javadocs}/solr-core/org/apache/solr/handler/admin/ThreadDumpHandler.html[ThreadDumpHandler] |`_ADMIN_THREADS`
 |===
-
-Health:: Reporting the health of the node (_available only in SolrCloud mode_)
-+
-[cols="3*.",frame=none,grid=cols,options="header"]
-|===
-|API Endpoints |Class & Javadocs |Paramset
-|v1: `solr/admin/info/health`
-
-v2: `api/node/health` |{solr-javadocs}/solr-core/org/apache/solr/handler/admin/HealthCheckHandler.html[HealthCheckHandler] |`_ADMIN_HEALTH`
-|===
-
-This endpoint can also take the collection or core name in the path (`solr/<collection>/admin/health` or `solr/<core>/admin/health`).
 
 === Analysis Handlers
 

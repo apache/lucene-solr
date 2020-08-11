@@ -25,7 +25,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BitSet;
 
-import static org.apache.solr.search.join.BlockJoinParentQParser.getCachedFilter;
+import static org.apache.solr.search.join.BlockJoinParentQParser.getCachedBitSetProducer;
 
 public class UniqueBlockQueryAgg extends UniqueBlockAgg {
 
@@ -42,7 +42,7 @@ public class UniqueBlockQueryAgg extends UniqueBlockAgg {
 
     @Override
     public void setNextReader(LeafReaderContext readerContext) throws IOException {
-      this.parentBitSet = getCachedFilter(fcontext.req, query).getFilter().getBitSet(readerContext);
+      this.parentBitSet = getCachedBitSetProducer(fcontext.req, query).getBitSet(readerContext);
     }
 
     @Override
@@ -65,7 +65,7 @@ public class UniqueBlockQueryAgg extends UniqueBlockAgg {
   }
 
   @Override
-  public SlotAcc createSlotAcc(FacetContext fcontext, int numDocs, int numSlots) throws IOException {
+  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots) throws IOException {
     return new UniqueBlockQuerySlotAcc(fcontext, query, numSlots);
   }
 }

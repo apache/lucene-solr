@@ -50,6 +50,7 @@ requireExp           ; Fails requests that lacks an `exp` (expiry time) claim   
 algWhitelist         ; JSON array with algorithms to accept: `HS256`, `HS384`, `HS512`, `RS256`, `RS384`, `RS512`, `ES256`, `ES384`, `ES512`, `PS256`, `PS384`, `PS512`, `none  ; Default is to allow all algorithms
 jwkCacheDur          ; Duration of JWK cache in seconds                        ; `3600` (1 hour)
 principalClaim       ; What claim id to pull principal from                    ; `sub`
+rolesClaim           ; What claim id to pull user roles from. The claim must then either contain a space separated list of roles or a JSON array. The roles can then be used to define fine-grained access in an Authorization plugin       ; By default the scopes from `scope` claim are passed on as user roles
 claimsMatch          ; JSON object of claims (key) that must match a regular expression (value). Example: `{ "foo" : "A|B" }` will require the `foo` claim to be either "A" or "B". ;
 adminUiScope         ; Define what scope is requested when logging in from Admin UI ; If not defined, the first scope from `scope` parameter is used
 redirectUris         ; Valid location(s) for redirect after external authentication. Takes a string or array of strings. Must be the base URL of Solr, e.g., https://solr1.example.com:8983/solr/ and must match the list of redirect URIs registered with the Identity Provider beforehand. ; Defaults to empty list, i.e., any node is assumed to be a valid redirect target.
@@ -101,7 +102,7 @@ The next example shows configuring using https://openid.net/specs/openid-connect
     "class": "solr.JWTAuthPlugin",
     "wellKnownUrl": "https://idp.example.com/.well-known/openid-configuration",
     "clientId": "xyz",
-    "redirectUri": "https://my.solr.server:8983/solr/"
+    "redirectUris": "https://my.solr.server:8983/solr/"
   }
 }
 ----

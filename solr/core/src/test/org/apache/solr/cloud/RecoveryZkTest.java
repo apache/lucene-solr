@@ -68,7 +68,6 @@ public class RecoveryZkTest extends SolrCloudTestCase {
     final String collection = "recoverytest";
 
     CollectionAdminRequest.createCollection(collection, "conf", 1, 2)
-        .setMaxShardsPerNode(1)
         .process(cluster.getSolrClient());
     waitForState("Expected a collection with one shard and two replicas", collection, clusterShape(1, 2));
     cluster.getSolrClient().setDefaultCollection(collection);

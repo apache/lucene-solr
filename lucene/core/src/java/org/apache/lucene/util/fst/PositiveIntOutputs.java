@@ -33,6 +33,7 @@ import org.apache.lucene.util.SuppressForbidden;
 @SuppressForbidden(reason = "Uses a Long instance as a marker")
 public final class PositiveIntOutputs extends Outputs<Long> {
   
+  @SuppressWarnings("deprecation")
   private final static Long NO_OUTPUT = new Long(0);
 
   private final static PositiveIntOutputs singleton = new PositiveIntOutputs();

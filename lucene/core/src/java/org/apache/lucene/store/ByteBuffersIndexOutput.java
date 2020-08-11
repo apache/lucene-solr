@@ -81,24 +81,10 @@ public final class ByteBuffersIndexOutput extends IndexOutput {
     if (lastChecksumPosition != delegate.size()) {
       lastChecksumPosition = delegate.size();
       checksum.reset();
-      byte [] buffer = null;
       for (ByteBuffer bb : delegate.toBufferList()) {
-        if (bb.hasArray()) {
-          checksum.update(bb.array(), bb.arrayOffset() + bb.position(), bb.remaining());
-        } else {
-          if (buffer == null) buffer = new byte [1024 * 4];
-
-          bb = bb.asReadOnlyBuffer();
-          int remaining = bb.remaining();
-          while (remaining > 0) {
-            int len = Math.min(remaining, buffer.length);
-            bb.get(buffer, 0, len);
-            checksum.update(buffer, 0, len);
-            remaining -= len;
-          }
-        }
+        checksum.update(bb);
       }
-      lastChecksum = checksum.getValue(); 
+      lastChecksum = checksum.getValue();
     }
     return lastChecksum;
   }

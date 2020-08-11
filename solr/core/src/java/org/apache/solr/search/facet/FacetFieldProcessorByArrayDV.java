@@ -27,7 +27,6 @@ import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LongValues;
@@ -35,6 +34,11 @@ import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.request.TermFacetCache.CacheUpdater;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.facet.SlotAcc.CountSlotAcc;
+import org.apache.solr.search.facet.SlotAcc.SweepCountAccStruct;
+import org.apache.solr.search.facet.SlotAcc.SweepingCountSlotAcc;
+import org.apache.solr.search.facet.SweepCountAware.SegCountGlobal;
+import org.apache.solr.search.facet.SweepCountAware.SegCountPerSeg;
 import org.apache.solr.search.facet.SlotAcc.SlotContext;
 import org.apache.solr.uninverting.FieldCacheImpl;
 
@@ -97,8 +101,12 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
       return;
     }
 
+    final SweepCountAccStruct base = SweepingCountSlotAcc.baseStructOf(this);
+    final List<SweepCountAccStruct> others = SweepingCountSlotAcc.otherStructsOf(this);
+    assert null != base;
+    
     // TODO: refactor some of this logic into a base class
-    boolean countOnly = (collectAcc==null || collectAcc instanceof SweepAcc) && allBucketsAcc==null;
+    boolean countOnly = collectAcc==null && allBucketsAcc==null;
     boolean fullRange = startTermIndex == 0 && endTermIndex == si.getValueCount();
 
     // Are we expecting many hits per bucket?
@@ -126,10 +134,11 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
     if (filters == null) {
       return;
     }
+    final int maxSize = others.size() + 1; // others + base
     final List<LeafReaderContext> leaves = fcontext.searcher.getIndexReader().leaves();
-    final DocIdSetIterator[] subIterators = new DocIdSetIterator[filters.length];
-    final CountSlotAcc[] activeCountAccs = new CountSlotAcc[filters.length];
-    final CacheUpdater[] cacheUpdaters = new CacheUpdater[filters.length];
+    final DocIdSetIterator[] subIterators = new DocIdSetIterator[maxSize];
+    final CountSlotAcc[] activeCountAccs = new CountSlotAcc[maxSize];
+    final CacheUpdater[] cacheUpdaters = new CacheUpdater[maxSize];
     boolean updateTopLevelCache = false;
 
     for (int subIdx = 0; subIdx < leaves.size(); subIdx++) {
@@ -137,41 +146,11 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
 
       setNextReaderFirstPhase(subCtx);
 
-      final SweepDISI disi;
-      int activeCt = 0;
-      final boolean hasBase;
-      boolean hasCacheUpdater = false;
+      final SweepDISI disi = SweepDISI.newInstance(base, others, subIterators, activeCountAccs, cacheUpdaters, subCtx);
+      if (disi == null) {
+        continue;
+      }
       LongValues toGlobal = ordinalMap == null ? null : ordinalMap.getGlobalOrds(subIdx);
-      for (int i = 0; ; ) {
-        FilterCtStruct filterEntry = filters[i];
-        final CacheUpdater cacheUpdater = filterEntry.cacheUpdater;
-        if (cacheUpdater != null && cacheUpdater.incrementFromCachedSegment(toGlobal) && (maySkipBaseSetCollection || !filterEntry.isBase)) {
-          if (++i == filters.length) {
-            hasBase = false;
-            break;
-          }
-        } else {
-          DocIdSet docIdSet = filterEntry.filter.getDocIdSet(subCtx, null);
-          subIterators[activeCt] = docIdSet.iterator();
-          activeCountAccs[activeCt] = filterEntry.countAcc;
-          hasCacheUpdater |= (cacheUpdaters[activeCt++] = cacheUpdater) != null;
-          if (++i == filters.length) {
-            hasBase = filterEntry.isBase;
-            break;
-          }
-        }
-      }
-      updateTopLevelCache |= hasCacheUpdater;
-      switch (activeCt) {
-        case 0:
-          continue;
-        case 1:
-          disi = new SingletonDISI(subIterators[0], activeCountAccs, hasCacheUpdater ? cacheUpdaters : null, hasBase); // solr docsets already exclude any deleted docs
-          break;
-        default:
-          disi = new UnionDISI(subIterators, activeCountAccs, hasCacheUpdater ? cacheUpdaters : null, activeCt, hasBase);
-          break;
-      }
 
       SortedDocValues singleDv = null;
       SortedSetDocValues multiDv = null;
@@ -307,10 +286,11 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
   }
 
   private SegCountPerSeg getSegCountPerSeg(SweepDISI disi, int segMax) {
+    final int size = disi.size;
     if (disi.cacheUpdaters == null) {
-      return new SegCountPerSeg(this, segMax, disi.size);
+      return new SegCountPerSeg(getSegmentCountArrays(segMax, size), getBoolArr(segMax), segMax, size);
     } else {
-      return new SegCountPerSegCache(this, segMax, disi.size, disi.cacheUpdaters);
+      return new SegCountPerSegCache(getSegmentCountArrays(segMax, size), getBoolArr(segMax), segMax, size, disi.cacheUpdaters);
     }
   }
 
@@ -643,7 +623,7 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
       if (multiDv.advanceExact(doc)) {
         final int maxIdx = disi.registerCounts(segCounter);
         final boolean collectBase = disi.collectBase();
-        for (;;) {
+        for(;;) {
           int segOrd = (int)multiDv.nextOrd();
           if (segOrd < 0) break;
           collect(doc, segOrd, toGlobal, segCounter, maxIdx, collectBase);
@@ -679,7 +659,7 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
 
   private void collect(int doc, int segOrd, LongValues toGlobal, SegCountGlobal segCounter, int maxIdx, boolean collectBase) throws IOException {
     final int arrIdx;
-    final IntFunction<SlotContext> callback;
+    final IntFunction<SlotContext> callback; // nocommit: why is this declaration still here?
     if (segOrd < 0) {
       // missing
       segCounter.incrementCount(~segOrd, missingSlot, 1, maxIdx);

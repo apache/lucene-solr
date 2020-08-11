@@ -18,6 +18,14 @@
 
 The Source and Target configurations differ in the case of the data centers being in separate clusters. "Cluster" here means separate ZooKeeper ensembles controlling disjoint Solr instances. Whether these data centers are physically separated or not is immaterial for this discussion.
 
+[WARNING]
+.CDCR is deprecated
+====
+This feature (in its current form) is deprecated and will likely be removed in 9.0.
+
+See <<cross-data-center-replication-cdcr.adoc#cross-data-center-replication-cdcr,Cross Data Center Replication>> for more details.
+====
+
 As described in the section <<cdcr-architecture.adoc#cdcr-architecture,CDCR Architecture>>, two approaches are supported: uni-directional updates and bi-directional updates.
 
 All CDCR configuration is done in the `solrconfig.xml` file. Because this is a per-collection configuration file, all CDCR configuration is done for each collection.
@@ -146,6 +154,7 @@ Here is a sample of a Cluster 1 configuration file, a section in `solrconfig.xml
 
   <lst name="updateLogSynchronizer">
     <str name="schedule">1000</str>
+  </lst>
 
 </requestHandler>
 

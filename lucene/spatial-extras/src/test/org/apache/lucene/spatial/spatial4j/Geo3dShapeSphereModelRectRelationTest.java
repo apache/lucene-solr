@@ -71,7 +71,7 @@ public class Geo3dShapeSphereModelRectRelationTest extends ShapeRectRelationTest
     GeoCircle geo3dCircle = GeoCircleFactory.makeGeoCircle(planetModel, 1.6282053147165243E-4 * RADIANS_PER_DEGREE,
         -70.1600629789353 * RADIANS_PER_DEGREE, 86 * RADIANS_PER_DEGREE);
     Geo3dShape<GeoCircle> geo3dShape = new Geo3dShape<>(geo3dCircle, ctx);
-    Rectangle rect = ctx.makeRectangle(-118, -114, -2.0, 32.0);
+    Rectangle rect = ctx.getShapeFactory().rect(-118, -114, -2.0, 32.0);
     assertTrue(geo3dShape.relate(rect).intersects());
     // thus the bounding box must intersect too
     assertTrue(geo3dShape.getBoundingBox().relate(rect).intersects());

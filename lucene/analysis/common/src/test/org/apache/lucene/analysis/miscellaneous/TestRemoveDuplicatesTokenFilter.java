@@ -23,7 +23,7 @@ import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
-import org.apache.lucene.analysis.synonym.SynonymFilter;
+import org.apache.lucene.analysis.synonym.SynonymGraphFilter;
 import org.apache.lucene.analysis.synonym.SynonymMap;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
@@ -156,7 +156,7 @@ public class TestRemoveDuplicatesTokenFilter extends BaseTokenStreamTestCase {
         @Override
         protected TokenStreamComponents createComponents(String fieldName) {
           Tokenizer tokenizer = new MockTokenizer(MockTokenizer.SIMPLE, true);
-          TokenStream stream = new SynonymFilter(tokenizer, map, ignoreCase);
+          TokenStream stream = new SynonymGraphFilter(tokenizer, map, ignoreCase);
           return new TokenStreamComponents(tokenizer, new RemoveDuplicatesTokenFilter(stream));
         }
       };

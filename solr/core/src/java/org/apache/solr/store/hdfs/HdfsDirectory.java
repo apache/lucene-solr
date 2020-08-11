@@ -44,6 +44,11 @@ import org.apache.solr.store.blockcache.CustomBufferedIndexInput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * @deprecated since 8.6
+ */
+
+@Deprecated
 public class HdfsDirectory extends BaseDirectory {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final int DEFAULT_BUFFER_SIZE = 4096;
@@ -97,6 +102,7 @@ public class HdfsDirectory extends BaseDirectory {
       org.apache.solr.common.util.IOUtils.closeQuietly(fileSystem);
       throw new RuntimeException("Problem creating directory: " + hdfsDirPath, e);
     }
+    log.warn("HDFS support in Solr has been deprecated as of 8.6. See SOLR-14021 for details.");
   }
   
   @Override
@@ -273,7 +279,9 @@ public class HdfsDirectory extends BaseDirectory {
   
   @Override
   public void sync(Collection<String> names) throws IOException {
-    log.debug("Sync called on {}", Arrays.toString(names.toArray()));
+    if (log.isDebugEnabled()) {
+      log.debug("Sync called on {}", Arrays.toString(names.toArray()));
+    }
   }
   
   @Override

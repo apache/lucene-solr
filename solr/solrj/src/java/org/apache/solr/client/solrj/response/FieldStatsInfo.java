@@ -51,6 +51,7 @@ public class FieldStatsInfo implements Serializable {
   
   Map<Double, Double> percentiles;
   
+  @SuppressWarnings({"unchecked"})
   public FieldStatsInfo( NamedList<Object> nl, String fname )
   {
     name = fname;

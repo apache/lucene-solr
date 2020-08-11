@@ -20,21 +20,15 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Map;
 import java.util.function.IntFunction;
-import org.apache.lucene.index.LeafReader;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.util.BytesRef;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ShardParams;
@@ -43,10 +37,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.QueryResultKey;
-import org.apache.solr.search.WrappedQuery;
-import org.apache.solr.search.facet.FacetFieldProcessor.SweepAcc;
-
+import org.apache.solr.search.facet.SlotAcc.SweepableSlotAcc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,7 +57,7 @@ public class RelatednessAgg extends AggValueSource {
   private static final String RELATEDNESS = "relatedness";
   private static final String FG_POP = "foreground_popularity";
   private static final String BG_POP = "background_popularity";
-  private static final String DISABLE_SWEEP_COLLECTION = "disable_sweep_collection";
+  public static final String SWEEP_COLLECTION = "sweep_collection";
 
   // needed for distrib calculation
   private static final String FG_SIZE = "foreground_size";
@@ -77,9 +68,11 @@ public class RelatednessAgg extends AggValueSource {
   final protected Query fgQ;
   final protected Query bgQ;
   protected double min_pop = 0.0D;
-  private boolean disableSweepCollection = false;
+  private Boolean useSweep;
   
   public static final String NAME = RELATEDNESS;
+  private static final boolean DEFAULT_SWEEP_COLLECTION = true;
+
   public RelatednessAgg(Query fgQ, Query bgQ) {
     super(NAME); 
     // NOTE: ideally we don't want to assume any defaults *yet* if fgQ/bgQ are null
@@ -99,8 +92,10 @@ public class RelatednessAgg extends AggValueSource {
   public void setOpts(QParser parser) {
     final boolean isShard = parser.getReq().getParams().getBool(ShardParams.IS_SHARD, false);
     SolrParams opts = parser.getLocalParams();
-    if (null != opts) {
-      this.disableSweepCollection = opts.getBool(DISABLE_SWEEP_COLLECTION, false);
+    if (null == opts) {
+      this.useSweep = DEFAULT_SWEEP_COLLECTION;
+    } else {
+      this.useSweep = opts.getBool(SWEEP_COLLECTION, DEFAULT_SWEEP_COLLECTION);
       if (!isShard) { // ignore min_pop if this is a shard request
         this.min_pop = opts.getDouble("min_popularity", 0.0D);
       }
@@ -110,7 +105,7 @@ public class RelatednessAgg extends AggValueSource {
   @Override
   public String description() {
     // TODO: need better output processing when we start supporting null fgQ/bgQ in constructor
-    return name +"(fgQ=" + fgQ + ",bgQ=" + bgQ + ",min_pop="+min_pop+")";
+    return name +"(fgQ=" + fgQ + ",bgQ=" + bgQ + ",min_pop="+min_pop + ",useSweep="+useSweep+")";
   }
   
   @Override
@@ -130,12 +125,12 @@ public class RelatednessAgg extends AggValueSource {
   }
 
   @Override
-  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(@SuppressWarnings("rawtypes") Map context, LeafReaderContext readerContext) throws IOException {
     throw new UnsupportedOperationException("NOT IMPLEMENTED " + name + " " + this);
   }
 
 
-  public SlotAcc createSlotAcc(FacetContext fcontext, int numDocs, int numSlots) throws IOException {
+  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots) throws IOException {
     // TODO: Ideally this is where we should check fgQ/bgQ for 'null' and apply defaults...
     //
     // we want to walk up the fcontext and inherit the queries from any ancestor SKGAgg
@@ -168,29 +163,7 @@ public class RelatednessAgg extends AggValueSource {
     
     DocSet fgSet = fcontext.searcher.getDocSet(fgFilters);
     DocSet bgSet = fcontext.searcher.getDocSet(bgQ);
-    if (numSlots > 1 && fcontext.processor instanceof FacetFieldProcessorByArray && !disableSweepCollection) {
-      // Sweep counts are only relevant where relatedness is required for primary sort, and thus must be calculated
-      // for *all* buckets (numSlots > 1).
-      //
-      // Of the four concrete implementations of FacetFieldProcessor (FacetFieldProcessorByArrayDV,
-      // FacetFieldProcessorByArrayUIF, FacetFieldProcessorByEnumTermsStream, and FacetFieldProcessorByHashDV)
-      // only the first two (each a subclass of FacetFieldProcessorByArray) are supported.
-      //
-      // Because FacetFieldProcessorByEnumTermsStream is sorted strictly in "index" order, numSlots here would
-      // never be >1, so combination with SweepSKGSlotAcc would be meaningless, and is not supported.
-      //
-      // FacetFieldProcessorByHashDV *is* used in high-cardinality field contexts; however, it is only beneficial
-      // when *domain* cardinality is low. Because sweep collection effectively induces a composite domain that is
-      // a union with the background set (which is normally high-cardinality), combination with SweepSKGSlotAcc
-      // would in most cases be an antipattern, and is not currently supported.
-
-      final FacetFieldProcessor ffp = (FacetFieldProcessor) fcontext.processor;
-      return new SweepSKGSlotAcc(min_pop, fcontext, numSlots, fgSet.size(), bgSet.size(),
-          ffp.getSweepCountAcc(new QueryResultKey(null, fgFilters, null, 0), fgSet, numSlots),
-          ffp.getSweepCountAcc(new QueryResultKey(null, Collections.singletonList(bgQ), null, 0), bgSet, numSlots));
-    } else {
-      return new SKGSlotAcc(this, fcontext, numSlots, fgSet, bgSet);
-    }
+    return new SKGSlotAcc(this, fcontext, numSlots, fgSet, bgSet);
   }
 
   @Override
@@ -198,16 +171,26 @@ public class RelatednessAgg extends AggValueSource {
     return new Merger(this);
   }
   
-  private static final class SweepSKGSlotAcc extends SlotAcc implements SweepAcc {
+  private static final class SweepSKGSlotAcc extends SlotAcc {
 
     private final int minCount; // pre-calculate for a given min_popularity
-    private final int fgSize;
-    private final int bgSize;
-    private final CountSlotAcc fgCount;
-    private final CountSlotAcc bgCount;
+    private final long fgSize;
+    private final long bgSize;
+    private final ReadOnlyCountSlotAcc fgCount;
+    private final ReadOnlyCountSlotAcc bgCount;
     private double[] relatedness;
 
-    public SweepSKGSlotAcc(double minPopularity, FacetContext fcontext, int numSlots, int fgSize, int bgSize, CountSlotAcc fgCount, CountSlotAcc bgCount) {
+    private static final int NO_ALL_BUCKETS = -2;
+    private static final int ALL_BUCKETS_UNINITIALIZED = -1;
+
+    // we can't get the allBuckets info from the slotContext in collect(), b/c the whole point of
+    // sweep collection is that the "collect" methods aren't called.
+    // So this is the compromise: note in construction either that we're using a processor w/NO_ALL_BUCKETS
+    // or that we don't know the bucket yet (ALL_BUCKETS_UNINITIALIZED) and fill it in in getValues
+    // where we can check against the processor
+    private int allBucketsSlot;
+
+    public SweepSKGSlotAcc(double minPopularity, FacetContext fcontext, int numSlots, long fgSize, long bgSize, ReadOnlyCountSlotAcc fgCount, ReadOnlyCountSlotAcc bgCount) {
       super(fcontext);
       this.minCount = (int) Math.ceil(minPopularity * bgSize);
       this.fgSize = fgSize;
@@ -216,23 +199,32 @@ public class RelatednessAgg extends AggValueSource {
       this.bgCount = bgCount;
       relatedness = new double[numSlots];
       Arrays.fill(relatedness, 0, numSlots, Double.NaN);
+      
+      // any processor that can (currently) result in the use of SweepSKGSlotAcc *should* be a 
+      // FacetFieldProcessor -- but don't assume that will always be true...
+      this.allBucketsSlot = NO_ALL_BUCKETS;
+      if (fcontext.processor instanceof FacetFieldProcessor
+          // NOTE: if this instanceof/cast changes, getValues needs updated as well
+          && ((FacetFieldProcessor)fcontext.processor).freq.allBuckets) {
+        this.allBucketsSlot = ALL_BUCKETS_UNINITIALIZED;
+      }
     }
 
     @Override
     public void collect(int perSegDocId, int slot, IntFunction<SlotContext> slotContext) throws IOException {
-      //No-op
+      throw new UnsupportedOperationException("collect() not supported, this SlotAcc impl only usable for sweeping");
     }
 
     @Override
     public int collect(DocSet docs, int slot, IntFunction<SlotContext> slotContext) throws IOException {
-      return docs.size();
+      throw new UnsupportedOperationException("collect() not supported, this SlotAcc impl only usable for sweeping");
     }
 
     private double getRelatedness(int slot) {
       final double cachedRelatedness = relatedness[slot];
       if (Double.isNaN(cachedRelatedness)) {
-        final int fg_count = fgCount.getCount(slot);
-        final int bg_count = bgCount.getCount(slot);
+        final long fg_count = fgCount.getCount(slot);
+        final long bg_count = bgCount.getCount(slot);
         if (minCount > 0) {
           // if min_pop is configured, and either (fg|bg) popularity is lower then that value
           // then "this.relatedness=-Infinity" so it sorts below any "valid" relatedness scores
@@ -259,14 +251,31 @@ public class RelatednessAgg extends AggValueSource {
 
     @Override
     public Object getValue(int slotNum) {
-      BucketData slotVal = new BucketData(fgCount.getCount(slotNum), fgSize, bgCount.getCount(slotNum), bgSize, getRelatedness(slotNum));
-      SimpleOrderedMap res = slotVal.externalize(fcontext.isShard());
-      return res;
+      final BucketData slotVal;
+      if (NO_ALL_BUCKETS != allBucketsSlot) {
+          // there's no reason why a processor should be resizing SlotAccs in the middle of getValue,
+          // but we're going to be vigilent against that possibility just in case...
+        if (ALL_BUCKETS_UNINITIALIZED == allBucketsSlot
+            || allBucketsSlot == slotNum) {
+          assert fcontext.processor instanceof FacetFieldProcessor
+            : "code changed, non FacetFieldProcessor sweeping w/allBuckets?!?";
+          allBucketsSlot = ((FacetFieldProcessor)fcontext.processor).allBucketsAcc.collectAccSlot;
+        }
+      }
+      if (slotNum == allBucketsSlot) {
+        slotVal = new BucketData(null);
+      } else {
+        slotVal = new BucketData(fgCount.getCount(slotNum), fgSize, bgCount.getCount(slotNum), bgSize, getRelatedness(slotNum));
+      }
+      return slotVal.externalize(fcontext.isShard());
     }
 
     @Override
     public void reset() throws IOException {
       Arrays.fill(relatedness, Double.NaN);
+      if (allBucketsSlot != NO_ALL_BUCKETS) {
+        allBucketsSlot = ALL_BUCKETS_UNINITIALIZED;
+      }
     }
 
     @Override
@@ -280,7 +289,9 @@ public class RelatednessAgg extends AggValueSource {
     }
   }
 
-  private static final class SKGSlotAcc extends SlotAcc {
+  private static final String IMPLIED_KEY = "implied";
+
+  private static final class SKGSlotAcc extends SlotAcc implements SweepableSlotAcc<SlotAcc> {
     private final RelatednessAgg agg;
     private BucketData[] slotvalues;
     private final DocSet fgSet;
@@ -296,83 +307,27 @@ public class RelatednessAgg extends AggValueSource {
       // cache the set sizes for frequent re-use on every slot
       this.fgSize = fgSet.size();
       this.bgSize = bgSet.size();
-      this.slotvalues = new BucketData[numSlots];
+      this.slotvalues = new BucketData[numSlots]; //TODO: avoid initializing array until we know we're not doing sweep collection?
       reset();
     }
 
-    // XXXXXX temporary!
-    // The following (LEAF_BY_MAX_DOC, shouldCache(), and initializeForMinDf are for comparison with extant
-    // implementation with SOLR-13108 patch applied (use filterCache, but respect minDf)
-    // All these methods can/should be removed if/when sweep facet count collection is adopted (recommended)
-    private int minDfFilterCache = Integer.MIN_VALUE;
-    private WrappedQuery noCacheQ;
-    private static final Comparator<LeafReaderContext> LEAF_BY_MAX_DOC = new Comparator<LeafReaderContext>() {
-
-      @Override
-      public int compare(LeafReaderContext o1, LeafReaderContext o2) {
-        return Integer.compare(o2.reader().maxDoc(), o1.reader().maxDoc());
-      }
-    };
-    private static final int ALWAYS_CACHE = Integer.MIN_VALUE + 1;
-    private static final float SHORTCIRCUIT_THRESHOLD_ACCEPT_FACTOR = 0.5f;
-    private static final float SHORTCIRCUIT_THRESHOLD_REJECT_FACTOR = 2.0f;
-    private TermsEnum[] tes;
-    private int[] shortcircuitThresholdsAccept;
-    private int[] shortcircuitThresholdsReject;
-    private boolean shouldCache(BytesRef term) throws IOException {
-      int docFreq = 0;
-      for (int i = 0; i < tes.length; i++) {
-        TermsEnum te = tes[i];
-        if (te.seekExact(term) && ((docFreq += te.docFreq()) >= minDfFilterCache || docFreq >= shortcircuitThresholdsAccept[i])) {
-          return true;
-        } else if (docFreq < shortcircuitThresholdsReject[i]) {
-          return false;
-        }
-      }
-      return false;
-    }
-
     /**
-     * Initialize for checking minDf, including shortcircuit thresholds. Set shortcircuit thresholds such that an
-     * assumption that a given term will occur at a frequency in unexamined segments at 
-     * <code>SHORTCIRCUIT_THRESHOLD_[ACCEPT|REJECT]_FACTOR</code> * the frequency in already-examined segments would
-     * result in the minDf threshold ultimately being met.
-     * @param field the field for which to initialize
-     * @throws IOException from underlying LeafReaders used to determine df for caching determination
+     * If called, may register SweepingAccs for fg and bg set based on whether
+     * user indicated sweeping should be used (default)
+     *
+     * @returns null if any SweepingAccs were registered since no other collection is needed for relatedness
      */
-    private void initializeForMinDf(String field) throws IOException {
-      List<LeafReaderContext> leaves = fcontext.searcher.getIndexReader().leaves();
-      final int leafCount = leaves.size();
-      LeafReaderContext[] sortedLeaves = leaves.toArray(new LeafReaderContext[leafCount]);
-      Arrays.sort(sortedLeaves, LEAF_BY_MAX_DOC);
-      tes = new TermsEnum[leafCount];
-      shortcircuitThresholdsAccept = new int[leafCount];
-      shortcircuitThresholdsReject = new int[leafCount];
-      int i = 0;
-      int totalMaxDoc = 0;
-      for (LeafReaderContext ctx : sortedLeaves) {
-        LeafReader reader = ctx.reader();
-        Terms terms = reader.terms(field);
-        if (terms != null) {
-          int maxDoc = reader.maxDoc();
-          totalMaxDoc += maxDoc;
-          shortcircuitThresholdsAccept[i] = maxDoc;
-          tes[i++] = terms.iterator();
-        }
-      }
-      final int limit = i;
-      int maxDocToHere = 0;
-      for (i = 0; i < limit; i++) {
-        final int maxDoc = shortcircuitThresholdsAccept[i];
-        maxDocToHere += maxDoc;
-        final int maxDocRemaining = totalMaxDoc - maxDocToHere;
-        shortcircuitThresholdsAccept[i] = (int)((minDfFilterCache / (1 + ((maxDocRemaining * SHORTCIRCUIT_THRESHOLD_ACCEPT_FACTOR) / maxDocToHere))) + 1);
-        shortcircuitThresholdsReject[i] = (int)((minDfFilterCache / (1 + ((maxDocRemaining * SHORTCIRCUIT_THRESHOLD_REJECT_FACTOR) / maxDocToHere))) + 1);
-      }
-      if (i < leafCount) {
-        tes = Arrays.copyOf(tes, i);
-        shortcircuitThresholdsAccept = Arrays.copyOf(shortcircuitThresholdsAccept, i);
-        shortcircuitThresholdsReject = Arrays.copyOf(shortcircuitThresholdsReject, i);
+    @Override
+    public SKGSlotAcc registerSweepingAccs(SweepingCountSlotAcc baseSweepingAcc) {
+      if (!this.agg.useSweep) {
+        return this;
+      } else {
+        final ReadOnlyCountSlotAcc fgCount = baseSweepingAcc.add(key + "!fg", fgSet, slotvalues.length);
+        final ReadOnlyCountSlotAcc bgCount = baseSweepingAcc.add(key + "!bg", bgSet, slotvalues.length);
+        SweepSKGSlotAcc readOnlyReplacement = new SweepSKGSlotAcc(agg.min_pop, fcontext, slotvalues.length, fgSize, bgSize, fgCount, bgCount);
+        readOnlyReplacement.key = key;
+        baseSweepingAcc.registerMapping(this, readOnlyReplacement);
+        return null;
       }
     }
 
@@ -380,7 +335,22 @@ public class RelatednessAgg extends AggValueSource {
       
       assert null != slotContext;
       
-      Query slotQ = slotContext.apply(slot).getSlotQuery();
+      final BucketData slotVal = new BucketData(agg);
+      slotvalues[slot] = slotVal;
+      
+      final SlotContext ctx = slotContext.apply(slot);
+      if (ctx.isAllBuckets()) {
+        // relatedness is meaningless for allBuckets (see SOLR-14467)
+        // our current (implied & empty) BucketData is all we need
+        //
+        // NOTE: it might be temping to use 'slotvalues[slot] = null' in this case
+        // since getValue() will also ultimately generate an implied bucket in that case,
+        // but by using a non-null bucket we let collect(int,...) know it doesn't need to keep calling
+        // processSlot over and over.
+        return;
+      }
+      
+      Query slotQ = ctx.getSlotQuery();
       if (null == slotQ) {
         // extremeley special edge case...
         // the only way this should be possible is if our relatedness() function is used as a "top level"
@@ -394,46 +364,12 @@ public class RelatednessAgg extends AggValueSource {
       if (null == slotQ) {
         slotSet = fcontext.base;
       } else {
-        switch (minDfFilterCache) {
-          case ALWAYS_CACHE:
-            break;
-          case Integer.MIN_VALUE:
-            if (fcontext.processor.freq instanceof FacetField) {
-              FacetField ffield = (FacetField)fcontext.processor.freq;
-              noCacheQ = new WrappedQuery(null);
-              noCacheQ.setCache(false);
-              // Minimum term docFreq in order to use the filterCache for that term.
-              if (ffield.cacheDf == -1) { // -1 means never cache
-                minDfFilterCache = Integer.MAX_VALUE;
-                noCacheQ.setWrappedQuery(slotQ);
-                slotQ = noCacheQ;
-                break;
-              } else if (ffield.cacheDf == 0) { // default; compute as fraction of maxDoc
-                minDfFilterCache = Math.max(fcontext.searcher.maxDoc() >> 4, 3);  // (minimum of 3 is for test coverage purposes)
-              } else {
-                minDfFilterCache = ffield.cacheDf;
-              }
-              initializeForMinDf(ffield.field);
-            } else {
-              minDfFilterCache = ALWAYS_CACHE;
-              break;
-            }
-          default:
-            if (!(slotQ instanceof TermQuery) || shouldCache(((TermQuery)slotQ).getTerm().bytes())) {
-              break;
-            }
-          case Integer.MAX_VALUE:
-            noCacheQ.setWrappedQuery(slotQ);
-            slotQ = noCacheQ;
-        }
         slotSet = fcontext.searcher.getDocSet(slotQ);
       }
 
-      final BucketData slotVal = new BucketData(agg);
       slotVal.incSizes(fgSize, bgSize);
       slotVal.incCounts(fgSet.intersectionSize(slotSet),
                         bgSet.intersectionSize(slotSet));
-      slotvalues[slot] = slotVal;
     }
 
     @Override
@@ -478,12 +414,13 @@ public class RelatednessAgg extends AggValueSource {
     public Object getValue(int slotNum) {
       BucketData slotVal = slotvalues[slotNum];
       if (null == slotVal) {
-        // since we haven't been told about any docs for this slot, use a slot w/no counts,
+        // since we haven't collected any docs for this slot, use am (implied) slot w/no counts,
         // just the known fg/bg sizes. (this is most likely a refinement request for a bucket we dont have)
         slotVal = new BucketData(agg);
         slotVal.incSizes(fgSize, bgSize);
       }
 
+      @SuppressWarnings({"rawtypes"})
       SimpleOrderedMap res = slotVal.externalize(fcontext.isShard());
       return res;
     }
@@ -510,12 +447,22 @@ public class RelatednessAgg extends AggValueSource {
    * @see SKGSlotAcc
    * @see Merger
    */
-  private static final class BucketData implements Comparable<BucketData> {
+  private static class BucketData implements Comparable<BucketData> {
     private RelatednessAgg agg;
     private long fg_size = 0;
     private long bg_size = 0;
     private long fg_count = 0;
     private long bg_count = 0;
+
+    /**
+     * Buckets are implied until/unless counts are explicitly incremented (even if those counts are 0)
+     * An implied bucket means we have no real data for it -- it may be useful for a per-Shard request
+     * to return "size" info of a bucket that doesn't exist on the current shard, or it may represent
+     * the <code>allBuckets</code> bucket.
+     *
+     * @see #incCounts
+     */
+    private boolean implied;
     
     /** 
      * NaN indicates that <b>all</a> derived values need (re)-computed
@@ -536,6 +483,7 @@ public class RelatednessAgg extends AggValueSource {
     
     public BucketData(final RelatednessAgg agg) {
       this.agg = agg;
+      this.implied = true;
     }
 
     public BucketData(long fg_count, long fg_size, long bg_count, long bg_size, double relatedness) {
@@ -553,9 +501,10 @@ public class RelatednessAgg extends AggValueSource {
      * derived values that may be cached
      */
     public void incCounts(final long fgInc, final long bgInc) {
-        this.relatedness = Double.NaN;
-        fg_count += fgInc;
-        bg_count += bgInc;
+      this.implied = false;
+      this.relatedness = Double.NaN;
+      fg_count += fgInc;
+      bg_count += bgInc;
     }
     /** 
      * Increment both the foreground &amp; background <em>sizes</em> for the current bucket, reseting any
@@ -569,7 +518,7 @@ public class RelatednessAgg extends AggValueSource {
     
     @Override
     public int hashCode() {
-      return Objects.hash(this.getClass(), fg_count, bg_count, fg_size, bg_size, agg);
+      return Objects.hash(this.getClass(), implied, fg_count, bg_count, fg_size, bg_size, agg);
     }
     
     @Override
@@ -579,7 +528,8 @@ public class RelatednessAgg extends AggValueSource {
       }
       BucketData that = (BucketData)other;
       // we will most certainly be compared to other buckets of the same Agg instance, so compare counts first
-      return Objects.equals(this.fg_count, that.fg_count)
+      return Objects.equals(this.implied, that.implied)
+        && Objects.equals(this.fg_count, that.fg_count)
         && Objects.equals(this.bg_count, that.bg_count)
         && Objects.equals(this.fg_size, that.fg_size)
         && Objects.equals(this.bg_size, that.bg_size)
@@ -644,18 +594,40 @@ public class RelatednessAgg extends AggValueSource {
      * @see SlotAcc#getValue
      * @see Merger#getMergedResult
      */
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public SimpleOrderedMap externalize(final boolean isShardRequest) {
       SimpleOrderedMap result = new SimpleOrderedMap<Number>();
+
+      // if counts are non-zero, then this bucket must not be implied
+      assert 0 == fg_count || ! implied : "Implied bucket has non-zero fg_count";
+      assert 0 == bg_count || ! implied : "Implied bucket has non-zero bg_count";
       
       if (isShardRequest) {
-        result.add(FG_COUNT, fg_count);
-        result.add(BG_COUNT, bg_count);
+        // shard responses must include size info, but don't need the derived stats
+        //
         // NOTE: sizes will be the same for every slot...
         // TODO: it would be nice to put them directly in the parent facet, instead of every bucket,
         // in order to reduce the size of the response.
         result.add(FG_SIZE, fg_size); 
         result.add(BG_SIZE, bg_size);
+        
+        if (implied) {
+          // for an implied bucket on this shard, we don't need to bother returning the (empty)
+          // counts, just the flag explaining that this bucket is (locally) implied...
+          result.add(IMPLIED_KEY, Boolean.TRUE);
+        } else {
+          result.add(FG_COUNT, fg_count); 
+          result.add(BG_COUNT, bg_count);
+        }
       } else {
+        if (implied) {
+          // When returning results to an external client, any bucket still 'implied' shouldn't return
+          // any results at all.
+          // (practically speaking this should only happen for the 'allBuckets' bucket
+          return null;
+        }
+
         // there's no need to bother computing these when returning results *to* a shard coordinator
         // only useful to external clients 
         result.add(RELATEDNESS, this.getRelatedness());
@@ -670,7 +642,7 @@ public class RelatednessAgg extends AggValueSource {
   /**
    * Merges in the per shard {@link BucketData} output into a unified {@link BucketData}
    */
-  private static final class Merger extends FacetSortableMerger {
+  private static final class Merger extends FacetModule.FacetSortableMerger {
     private final BucketData mergedData;
     public Merger(final RelatednessAgg agg) {
       this.mergedData = new BucketData(agg);
@@ -678,13 +650,27 @@ public class RelatednessAgg extends AggValueSource {
     
     @Override
     public void merge(Object facetResult, Context mcontext) {
-      NamedList<Object> shardData = (NamedList<Object>)facetResult;
+      @SuppressWarnings({"unchecked"})
+      final NamedList<Object> shardData = (NamedList<Object>)facetResult;
+      
+      final boolean shardImplied = Optional.ofNullable((Boolean)shardData.remove(IMPLIED_KEY)).orElse(false);
+      
+      // regardless of wether this shard is implied, we want to know it's size info...
       mergedData.incSizes((Long)shardData.remove(FG_SIZE), (Long)shardData.remove(BG_SIZE));
-      mergedData.incCounts((Long)shardData.remove(FG_COUNT), (Long)shardData.remove(BG_COUNT));
+
+      if (! shardImplied) {
+        // only merge in counts from non-implied shard buckets...
+        mergedData.incCounts((Long)shardData.remove(FG_COUNT), (Long)shardData.remove(BG_COUNT));
+      } else {
+        // if this shard is implied, we shouldn't have even gotten counts...
+        assert shardImplied;
+        assert null == shardData.remove(FG_COUNT);
+        assert null == shardData.remove(BG_COUNT);
+      }
     }
 
     @Override
-    public int compareTo(FacetSortableMerger other, FacetRequest.SortDirection direction) {
+    public int compareTo(FacetModule.FacetSortableMerger other, FacetRequest.SortDirection direction) {
       // NOTE: regardless of the SortDirection hint, we want normal comparison of the BucketData
       
       assert other instanceof Merger;

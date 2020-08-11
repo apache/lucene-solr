@@ -46,7 +46,9 @@ public class ExactSharedStatsCache extends ExactStatsCache {
 
   @Override
   protected StatsSource doGet(SolrQueryRequest req) {
-    log.debug("total={}, cache {}", currentGlobalColStats, currentGlobalTermStats.size());
+    if (log.isDebugEnabled()) {
+      log.debug("total={}, cache {}", currentGlobalColStats, currentGlobalTermStats.size());
+    }
     return new ExactStatsSource(statsCacheMetrics, currentGlobalTermStats, currentGlobalColStats);
   }
 

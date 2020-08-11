@@ -36,6 +36,7 @@ public class PolyFitDerivativeEvaluator extends RecursiveNumericEvaluator implem
   }
 
   @Override
+  @SuppressWarnings({"unchecked"})
   public Object doWork(Object... objects) throws IOException{
 
     if(objects.length > 3) {
@@ -92,6 +93,7 @@ public class PolyFitDerivativeEvaluator extends RecursiveNumericEvaluator implem
     PolynomialFunction pf = new PolynomialFunction(coef);
     UnivariateFunction univariateFunction = pf.derivative();
 
+    @SuppressWarnings({"rawtypes"})
     List list = new ArrayList();
     for(double xvalue : x) {
       double yvalue= univariateFunction.value(xvalue);

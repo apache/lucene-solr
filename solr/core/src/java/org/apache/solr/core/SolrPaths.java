@@ -28,6 +28,8 @@ import java.nio.file.Paths;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 
+import org.apache.commons.exec.OS;
+import org.apache.solr.common.SolrException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,13 +39,6 @@ import org.slf4j.LoggerFactory;
 public final class SolrPaths {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  /**
-   * Solr allows users to store arbitrary files in a special directory located directly under SOLR_HOME.
-   * <p>
-   * This directory is generally created by each node on startup.  Files located in this directory can then be
-   * manipulated using select Solr features (e.g. streaming expressions).
-   */
-  public static final String USER_FILES_DIRECTORY = "userfiles";
   private static final Set<String> loggedOnce = new ConcurrentSkipListSet<>();
 
   private SolrPaths() {} // don't create this
@@ -56,10 +51,8 @@ public final class SolrPaths {
    * <li>Look in the current working directory for a solr/ directory</li>
    * </ol>
    * <p>
-   * The return value is normalized.  Normalization essentially means it ends in a trailing slash.
    *
-   * @return A normalized solrhome
-   * @see #normalizeDir(String)
+   * @return the Solr home, absolute and normalized.
    */
   public static Path locateSolrHome() {
 
@@ -74,7 +67,7 @@ public final class SolrPaths {
     } catch (NamingException e) {
       log.debug("No /solr/home in JNDI");
     } catch (RuntimeException ex) {
-      log.warn("Odd RuntimeException while testing for JNDI: " + ex.getMessage());
+      log.warn("Odd RuntimeException while testing for JNDI: ", ex);
     }
 
     // Now try system property
@@ -91,26 +84,7 @@ public final class SolrPaths {
       home = "solr/";
       logOnceInfo("home_default", "solr home defaulted to '" + home + "' (could not find system property or JNDI)");
     }
-    return Paths.get(home);
-  }
-
-  public static void ensureUserFilesDataDir(Path solrHome) {
-    final Path userFilesPath = getUserFilesPath(solrHome);
-    final File userFilesDirectory = new File(userFilesPath.toString());
-    if (!userFilesDirectory.exists()) {
-      try {
-        final boolean created = userFilesDirectory.mkdir();
-        if (!created) {
-          log.warn("Unable to create [{}] directory in SOLR_HOME [{}].  Features requiring this directory may fail.", USER_FILES_DIRECTORY, solrHome);
-        }
-      } catch (Exception e) {
-        log.warn("Unable to create [" + USER_FILES_DIRECTORY + "] directory in SOLR_HOME [" + solrHome + "].  Features requiring this directory may fail.", e);
-      }
-    }
-  }
-
-  public static Path getUserFilesPath(Path solrHome) {
-    return Paths.get(solrHome.toAbsolutePath().toString(), USER_FILES_DIRECTORY).toAbsolutePath();
+    return Paths.get(home).toAbsolutePath().normalize();
   }
 
   /**
@@ -125,6 +99,40 @@ public final class SolrPaths {
     if (!loggedOnce.contains(key)) {
       loggedOnce.add(key);
       log.info(msg);
+    }
+  }
+
+  /**
+   * Checks that the given path is relative to one of the allowPaths supplied. Typically this will be
+   * called from {@link CoreContainer#assertPathAllowed(Path)} and allowPaths pre-filled with the node's
+   * SOLR_HOME, SOLR_DATA_HOME and coreRootDirectory folders, as well as any paths specified in
+   * solr.xml's allowPaths element. The following paths will always fail validation:
+   * <ul>
+   *   <li>Relative paths starting with <code>..</code></li>
+   *   <li>Windows UNC paths (such as <code>\\host\share\path</code>)</li>
+   *   <li>Paths which are not relative to any of allowPaths</li>
+   * </ul>
+   * @param pathToAssert path to check
+   * @param allowPaths list of paths that should be allowed prefixes for pathToAssert
+   * @throws SolrException if path is outside allowed paths
+   */
+  public static void assertPathAllowed(Path pathToAssert, Set<Path> allowPaths) throws SolrException {
+    if (pathToAssert == null) return;
+    if (OS.isFamilyWindows() && pathToAssert.toString().startsWith("\\\\")) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Path " + pathToAssert + " disallowed. UNC paths not supported. Please use drive letter instead.");
+    }
+    // Conversion Path -> String -> Path is to be able to compare against org.apache.lucene.mockfile.FilterPath instances
+    final Path path = Path.of(pathToAssert.toString()).normalize();
+    if (path.startsWith("..")) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Path " + pathToAssert + " disallowed due to path traversal..");
+    }
+    if (!path.isAbsolute()) return; // All relative paths are accepted
+    if (allowPaths.contains(Paths.get("_ALL_"))) return; // Catch-all path "*"/"_ALL_" will allow all other paths
+    if (allowPaths.stream().noneMatch(p -> path.startsWith(Path.of(p.toString())))) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Path " + path + " must be relative to SOLR_HOME, SOLR_DATA_HOME coreRootDirectory. Set system property 'solr.allowPaths' to add other allowed paths.");
     }
   }
 }

@@ -702,8 +702,8 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       }
       dir.close();
 
-      // Try again with 10 more bytes of free space:
-      diskFree += 10;
+      // Try again with more bytes of free space:
+      diskFree += Math.max(10, diskFree >>> 3);
     }
     startDir.close();
   }
@@ -923,7 +923,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
         break;
       }
     }
-    assertTrue(modifier.deleter.isClosed());
+    assertTrue(modifier.isDeleterClosed());
 
     TestIndexWriter.assertNoUnreferencedFiles(dir, "docsWriter.abort() failed to delete unreferenced files");
     dir.close();
@@ -1285,7 +1285,9 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     }
 
     // First one triggers, but does not reflect, the merge:
-    System.out.println("TEST: now get reader");
+    if (VERBOSE) {
+      System.out.println("TEST: now get reader");
+    }
     DirectoryReader.open(w).close();
     IndexReader r = DirectoryReader.open(w);
     assertEquals(1, r.leaves().size());

@@ -35,6 +35,7 @@ public class DocumentAnalysisResponseTest extends SolrTestCase {
    * Tests the {@link DocumentAnalysisResponse#setResponse(org.apache.solr.common.util.NamedList)} method
    */
   @Test
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void testSetResponse() throws Exception {
 
     // the parsing of the analysis phases is already tested in the AnalysisResponseBaseTest. So we can just fake
@@ -96,6 +97,7 @@ public class DocumentAnalysisResponseTest extends SolrTestCase {
 
   //================================================ Helper Methods ==================================================
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private NamedList buildResponse() {
 
     NamedList response = new NamedList();

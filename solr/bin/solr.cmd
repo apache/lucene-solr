@@ -224,7 +224,6 @@ IF "%1"=="version" goto get_version
 IF "%1"=="-v" goto get_version
 IF "%1"=="-version" goto get_version
 IF "%1"=="assert" goto run_assert
-IF "%1"=="autoscaling" goto run_autoscaling
 IF "%1"=="export" goto run_export
 IF "%1"=="package" goto run_package
 
@@ -303,7 +302,7 @@ goto done
 :script_usage
 @echo.
 @echo Usage: solr COMMAND OPTIONS
-@echo        where COMMAND is one of: start, stop, restart, healthcheck, create, create_core, create_collection, delete, version, zk, auth, assert, config, autoscaling, export
+@echo        where COMMAND is one of: start, stop, restart, healthcheck, create, create_core, create_collection, delete, version, zk, auth, assert, config, export
 @echo.
 @echo   Standalone server example (start Solr running in the background on port 8984):
 @echo.
@@ -1042,13 +1041,10 @@ IF "%SCRIPT_CMD%"=="stop" (
                 del "%SOLR_TIP%"\bin\solr-!SOME_SOLR_PORT!.port
                 timeout /T 5
                 REM Kill it if it is still running after the graceful shutdown
-                For /f "tokens=2,5" %%M in ('netstat -nao ^| find "TCP " ^| find ":0 " ^| find ":!SOME_SOLR_PORT! "') do (
-                  IF "%%N"=="%%k" (
-                    IF "%%M"=="%SOLR_JETTY_HOST%:!SOME_SOLR_PORT!" (
-                      @echo Forcefully killing process %%N
-                      taskkill /f /PID %%N
-                    )
-                  )
+                IF EXIST "%JAVA_HOME%\bin\jstack.exe" (
+                  qprocess "%%k" >nul 2>nul && "%JAVA_HOME%\bin\jstack.exe" %%k && taskkill /f /PID %%k
+                ) else (
+                  qprocess "%%k" >nul 2>nul && taskkill /f /PID %%k
                 )
               )
             )
@@ -1072,13 +1068,10 @@ IF "%SCRIPT_CMD%"=="stop" (
           del "%SOLR_TIP%"\bin\solr-%SOLR_PORT%.port
           timeout /T 5
           REM Kill it if it is still running after the graceful shutdown
-          For /f "tokens=2,5" %%j in ('netstat -nao ^| find "TCP " ^| find ":0 " ^| find ":%SOLR_PORT% "') do (
-            IF "%%N"=="%%k" (
-              IF "%%j"=="%SOLR_JETTY_HOST%:%SOLR_PORT%" (
-                @echo Forcefully killing process %%N
-                taskkill /f /PID %%N
-              )
-            )
+          IF EXIST "%JAVA_HOME%\bin\jstack.exe" (
+            qprocess "%%N" >nul 2>nul && "%JAVA_HOME%\bin\jstack.exe" %%N && taskkill /f /PID %%N
+          ) else (
+            qprocess "%%N" >nul 2>nul && taskkill /f /PID %%N
           )
         )
       )
@@ -1199,6 +1192,13 @@ IF "%SOLR_SECURITY_MANAGER_ENABLED%"=="true" (
 -Dsolr.internal.network.permission=*
 )
 
+REM Enable ADMIN UI by default, and give the option for users to disable it
+IF "%SOLR_ADMIN_UI_DISABLED%"=="true" (
+  set DISABLE_ADMIN_UI="true"
+) else (
+  set DISABLE_ADMIN_UI="false"
+)
+
 IF NOT "%SOLR_HEAP%"=="" set SOLR_JAVA_MEM=-Xms%SOLR_HEAP% -Xmx%SOLR_HEAP%
 IF "%SOLR_JAVA_MEM%"=="" set SOLR_JAVA_MEM=-Xms512m -Xmx512m
 IF "%SOLR_JAVA_STACK_SIZE%"=="" set SOLR_JAVA_STACK_SIZE=-Xss256k
@@ -1211,7 +1211,8 @@ IF "%GC_TUNE%"=="" (
     -XX:+ParallelRefProcEnabled ^
     -XX:MaxGCPauseMillis=250 ^
     -XX:+UseLargePages ^
-    -XX:+AlwaysPreTouch
+    -XX:+AlwaysPreTouch ^
+    -XX:+ExplicitGCInvokesConcurrent
 )
 
 if !JAVA_MAJOR_VERSION! GEQ 9  (
@@ -1284,7 +1285,11 @@ IF "%verbose%"=="1" (
 )
 
 set START_OPTS=-Duser.timezone=%SOLR_TIMEZONE%
+REM '-OmitStackTraceInFastThrow' ensures stack traces in errors,
+REM users who don't care about useful error msgs can override in SOLR_OPTS with +OmitStackTraceInFastThrow
+set "START_OPTS=%START_OPTS% -XX:-OmitStackTraceInFastThrow"
 set START_OPTS=%START_OPTS% !GC_TUNE! %GC_LOG_OPTS%
+set START_OPTS=%START_OPTS% -DdisableAdminUI=%DISABLE_ADMIN_UI%
 IF NOT "!CLOUD_MODE_OPTS!"=="" set "START_OPTS=%START_OPTS% !CLOUD_MODE_OPTS!"
 IF NOT "!IP_ACL_OPTS!"=="" set "START_OPTS=%START_OPTS% !IP_ACL_OPTS!"
 IF NOT "%REMOTE_JMX_OPTS%"=="" set "START_OPTS=%START_OPTS% %REMOTE_JMX_OPTS%"
@@ -1447,13 +1452,6 @@ if errorlevel 1 (
    exit /b 1
 )
 goto done
-
-:run_autoscaling
-"%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
-  -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
-  -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.util.SolrCLI %* 
-goto done:
 
 :run_export
 "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^

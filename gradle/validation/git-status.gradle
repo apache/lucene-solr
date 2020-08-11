@@ -31,30 +31,37 @@ buildscript {
   }
 }
 
-def gitStatus(dir) {
-  try {
-    def repository = new FileRepositoryBuilder()
-        .setWorkTree(dir)
-        .setMustExist(true)
-        .build()
-
-    def status = new Git(repository).status().call()
-    return status
-  } catch (RepositoryNotFoundException | NoWorkTreeException e) {
-    logger.warn("WARNING: Directory is not a valid GIT checkout (won't check dirty files): ${dir}")
-    return null
-  } catch (NotSupportedException e) {
-    throw new GradleException("jgit does not support git repository version at this location: ${dir}", e)
-  }
-}
-
 configure(rootProject) {
+  task gitStatus() {
+    doFirst {
+      try {
+        def repository = new FileRepositoryBuilder()
+                .setWorkTree(rootProject.projectDir)
+                .setMustExist(true)
+                .build()
+
+        def ref = repository.findRef("HEAD").getObjectId()
+        project.ext.gitRev = ref.name()
+        project.ext.gitRevShort = ref.abbreviate(8).name()
+        project.ext.gitStatus = new Git(repository).status().call()
+      } catch (RepositoryNotFoundException | NoWorkTreeException e) {
+        project.ext.gitRev = "(not a git checkout)"
+        project.ext.gitRevShort = "(not a git checkout)"
+        project.ext.gitStatus = null
+      } catch (NotSupportedException e) {
+        throw new GradleException("jgit does not support git repository version at this location: ${dir}", e)
+      }
+    }
+  }
+
   // Verify git working copy does not have any unstaged modified files.
   task checkWorkingCopyClean() {
+    dependsOn gitStatus
     doFirst {
-      def status = gitStatus(rootProject.projectDir)
+      def status = rootProject.ext.gitStatus
       if (status == null) {
         // Ignore the check. This isn't a git checkout.
+        logger.warn("WARNING: Directory is not a valid GIT checkout (won't check dirty files): ${rootProject.projectDir}")
       } else {
         def offenders = [
             // Exclude staged changes. These are fine in precommit.

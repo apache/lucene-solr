@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import java.util.Arrays;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.automaton.ByteRunAutomaton;
@@ -43,11 +44,11 @@ public abstract class QueryVisitor {
    *
    * @param query     the leaf query
    * @param field     the field queried against
-   * @param automaton an automaton defining which terms match
+   * @param automaton a supplier for an automaton defining which terms match
    *
    * @lucene.experimental
    */
-  public void consumeTermsMatching(Query query, String field, ByteRunAutomaton automaton) {
+  public void consumeTermsMatching(Query query, String field, Supplier<ByteRunAutomaton> automaton) {
     visitLeaf(query); // default impl for backward compatibility
   }
 

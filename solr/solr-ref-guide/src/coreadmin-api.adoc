@@ -1,5 +1,5 @@
 = CoreAdmin API
-:page-toclevels: 1
+:toclevels: 1
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -77,7 +77,7 @@ The `core.properties` file is built as part of the CREATE command. If you create
 The name of the new core. Same as `name` on the `<core>` element. This parameter is required.
 
 `instanceDir`::
-The directory where files for this core should be stored. Same as `instanceDir` on the `<core>` element. The default is the value specified for the `name` parameter if not supplied.
+The directory where files for this core should be stored. Same as `instanceDir` on the `<core>` element. The default is the value specified for the `name` parameter if not supplied. This directory must be inside `SOLR_HOME`, `SOLR_DATA_HOME` or one of the paths specified by system property `solr.allowPaths`.
 
 `config`::
 Name of the config file (i.e., `solrconfig.xml`) relative to `instanceDir`.
@@ -86,7 +86,7 @@ Name of the config file (i.e., `solrconfig.xml`) relative to `instanceDir`.
 Name of the schema file to use for the core. Please note that if you are using a "managed schema" (the default behavior) then any value for this property which does not match the effective `managedSchemaResourceName` will be read once, backed up, and converted for managed schema use. See <<schema-factory-definition-in-solrconfig.adoc#schema-factory-definition-in-solrconfig,Schema Factory Definition in SolrConfig>> for details.
 
 `dataDir`::
-Name of the data directory relative to `instanceDir`.
+Name of the data directory relative to `instanceDir`. If absolute value is used, it must be inside `SOLR_HOME`, `SOLR_DATA_HOME` or one of the paths specified by system property `solr.allowPaths`.
 
 `configSet`::
 Name of the configset to use for this core. For more information, see the section <<config-sets.adoc#config-sets,Configsets>>.

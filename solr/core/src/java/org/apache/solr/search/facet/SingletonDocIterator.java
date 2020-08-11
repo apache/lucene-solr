@@ -17,8 +17,6 @@
 package org.apache.solr.search.facet;
 
 import org.apache.solr.search.DocIterator;
-import org.apache.solr.search.facet.FacetFieldProcessorByArrayDV.SegCountGlobal;
-import org.apache.solr.search.facet.FacetFieldProcessorByArrayDV.SegCountPerSeg;
 
 final class SingletonDocIterator extends SweepDocIterator {
 
@@ -47,12 +45,7 @@ final class SingletonDocIterator extends SweepDocIterator {
   }
 
   @Override
-  public int registerCounts(SegCountGlobal segCounts) {
-    return 0;
-  }
-
-  @Override
-  public int registerCounts(SegCountPerSeg segCounts) {
+  public int registerCounts(SegCounter segCounts) {
     return 0;
   }
 

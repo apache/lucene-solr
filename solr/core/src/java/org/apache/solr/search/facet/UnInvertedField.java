@@ -42,13 +42,15 @@ import org.apache.solr.request.TermFacetCache.CacheUpdater;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.BitDocSet;
-import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.search.facet.FacetFieldProcessor.SweepCountAccStruct;
-import org.apache.solr.search.facet.FacetFieldProcessorByArrayDV.SegCountGlobal;
+import org.apache.solr.search.facet.SweepCountAware.SegCountGlobal;
+import org.apache.solr.search.facet.SlotAcc.CountSlotAcc;
 import org.apache.solr.search.facet.SlotAcc.SlotContext;
+import org.apache.solr.search.facet.SlotAcc.SweepCountAccStruct;
+import org.apache.solr.search.facet.SlotAcc.SweepingCountSlotAcc;
+import org.apache.solr.search.facet.SweepDocIterator.SweepIteratorAndCounts;
 import org.apache.solr.uninverting.DocTermOrds;
 import org.apache.solr.util.TestInjection;
 import org.slf4j.Logger;
@@ -208,7 +210,7 @@ public class UnInvertedField extends DocTermOrds {
     if (tnums != null) {
       for(byte[] target : tnums) {
         if (target != null && target.length > (1<<24)*.9) {
-          log.warn("Approaching too many values for UnInvertedField faceting on field '"+field+"' : bucket size=" + target.length);
+          log.warn("Approaching too many values for UnInvertedField faceting on field '{}' : bucket size={}", field, target.length);
         }
       }
     }
@@ -220,7 +222,7 @@ public class UnInvertedField extends DocTermOrds {
       maxTermCounts = newMaxTermCounts;
     }
 
-    log.info("UnInverted multi-valued field " + toString());
+    log.info("UnInverted multi-valued field {}", this);
     //System.out.println("CREATED: " + toString() + " ti.index=" + ti.index);
   }
 
@@ -328,31 +330,14 @@ public class UnInvertedField extends DocTermOrds {
       return;
     }
 
-    final SweepCountAccStruct[] sweepCountAccs = processor.getSweepDocSets(true);
-    if (sweepCountAccs == null) {
-      return;
-    }
-    int baseIdx = -1;
-    boolean hasCacheUpdater = false;
-    final CountSlotAcc[] countAccs = new CountSlotAcc[sweepCountAccs.length];
-    final CacheUpdater[] cacheUpdaters = new CacheUpdater[sweepCountAccs.length];
-    for (int i = sweepCountAccs.length - 1; i >= 0; i--) {
-      SweepCountAccStruct sweepCountAcc = sweepCountAccs[i];
-      if (sweepCountAcc.isBase) {
-        baseIdx = i;
-      }
-      countAccs[i] = sweepCountAcc.countAccEntry.countAcc;
-      final CacheUpdater cacheUpdater = sweepCountAcc.cacheUpdater;
-      if (cacheUpdater != null) {
-        cacheUpdaters[i] = cacheUpdater;
-        hasCacheUpdater = true;
-      }
-    }
-
+    SweepCountAccStruct baseCountAccStruct = SweepingCountSlotAcc.baseStructOf(processor);
+    final List<SweepCountAccStruct> others = SweepingCountSlotAcc.otherStructsOf(processor);
+    boolean hasCacheUpdater;
+    final CacheUpdater[] cacheUpdaters;
 
     final int[] index = this.index;
 
-    boolean doNegative = baseSize > maxDoc >> 1 && termInstances > 0 && docs instanceof BitDocSet && baseIdx >= 0;
+    boolean doNegative = baseSize > maxDoc >> 1 && termInstances > 0 && docs instanceof BitDocSet && baseCountAccStruct != null;
 
     if (doNegative) {
       FixedBitSet bs = ((BitDocSet) docs).getBits().clone();
@@ -362,19 +347,21 @@ public class UnInvertedField extends DocTermOrds {
       docs = new BitDocSet(bs, maxDoc - baseSize);
       // simply negating will mean that we have deleted docs in the set.
       // that should be OK, as their entries in our table should be empty.
-      SweepCountAccStruct sweepCountAcc = sweepCountAccs[baseIdx];
-      sweepCountAcc = new SweepCountAccStruct(sweepCountAcc, docs);
-      sweepCountAccs[baseIdx] = sweepCountAcc;
+      baseCountAccStruct = new SweepCountAccStruct(baseCountAccStruct, docs);
     }
 
     // For the biggest terms, do straight set intersections
     for (TopTerm tt : bigTerms.values()) {
       // TODO: counts could be deferred if sorting by index order
       final int termOrd = tt.termNum;
-      int i = sweepCountAccs.length;
-      while (i-- > 0) {
-        final SweepCountAccStruct entry = sweepCountAccs[i];
-        entry.countAccEntry.countAcc.incrementCount(termOrd, searcher.numDocs(tt.termQuery, entry.docSet));
+      Iterator<SweepCountAccStruct> othersIter = others.iterator();
+      SweepCountAccStruct entry = baseCountAccStruct != null ? baseCountAccStruct : othersIter.next();
+      for (;;) {
+        entry.countAcc.incrementCount(termOrd, searcher.numDocs(tt.termQuery, entry.docSet));
+        if (!othersIter.hasNext()) {
+          break;
+        }
+        entry = othersIter.next();
       }
     }
 
@@ -382,22 +369,9 @@ public class UnInvertedField extends DocTermOrds {
     // where we already have enough terms from the bigTerms
 
     if (termInstances > 0) {
-      final SweepDocIterator iter;
-      final int activeCt = sweepCountAccs.length;
-      if (activeCt == 1) {
-        SweepCountAccStruct entry = sweepCountAccs[0];
-        iter = new SingletonDocIterator(entry.docSet.iterator(), entry.isBase);
-      } else {
-        DocIterator[] subIterators = new DocIterator[activeCt];
-        SweepCountAccStruct entry;
-        int i = 0;
-        do {
-          entry = sweepCountAccs[i];
-          subIterators[i] = entry.docSet.iterator();
-        } while (++i < activeCt);
-        iter = new UnionDocIterator(subIterators, entry.isBase);
-      }
-      final SegCountGlobal counts = new SegCountGlobal(countAccs);
+      final SweepIteratorAndCounts iterAndCounts = SweepDocIterator.newInstance(baseCountAccStruct, others);
+      final SweepDocIterator iter = iterAndCounts.iter;
+      final SegCountGlobal counts = new SegCountGlobal(iterAndCounts.countAccs);
       while (iter.hasNext()) {
         int doc = iter.nextDoc();
         int maxIdx = iter.registerCounts(counts);
@@ -417,7 +391,7 @@ public class UnInvertedField extends DocTermOrds {
             }
             if (delta == 0) break;
             tnum += delta - TNUM_OFFSET;
-            counts.incrementCount(-1, tnum, 1, maxIdx);
+            counts.incrementCount(tnum, 1, maxIdx);
           }
         } else {
           int tnum = 0;
@@ -427,7 +401,7 @@ public class UnInvertedField extends DocTermOrds {
             if ((code & 0x80) == 0) {
               if (delta == 0) break;
               tnum += delta - TNUM_OFFSET;
-              counts.incrementCount(-1, tnum, 1, maxIdx);
+              counts.incrementCount(tnum, 1, maxIdx);
               delta = 0;
             }
             code >>>= 8;
@@ -440,7 +414,7 @@ public class UnInvertedField extends DocTermOrds {
       final CountSlotAcc baseCounts = processor.countAcc;
       for (int i=0; i<numTermsInField; i++) {
  //       counts[i] = maxTermCounts[i] - counts[i];
-        baseCounts.incrementCount(i, maxTermCounts[i] - baseCounts.getCount(i)*2);
+        baseCounts.incrementCount(i, maxTermCounts[i] - (int) baseCounts.getCount(i)*2);
       }
     }
 
@@ -486,19 +460,10 @@ public class UnInvertedField extends DocTermOrds {
 
     int uniqueTerms = 0;
     final CountSlotAcc countAcc = processor.countAcc;
-    final SweepCountAccStruct[] sweepCountAccs = processor.getSweepDocSets(processor.collectAcc == null && processor.allBucketsAcc == null);
-    if (sweepCountAccs == null) {
-      return;
-    }
-    boolean hasCacheUpdater = false;
-    final CacheUpdater[] cacheUpdaters = new CacheUpdater[sweepCountAccs.length];
-    for (int i = sweepCountAccs.length - 1; i >= 0; i--) {
-      final CacheUpdater cacheUpdater = sweepCountAccs[i].cacheUpdater;
-      if (cacheUpdater != null) {
-        cacheUpdaters[i] = cacheUpdater;
-        hasCacheUpdater = true;
-      }
-    }
+    final SweepCountAccStruct baseCountAccStruct = SweepingCountSlotAcc.baseStructOf(processor);
+    final List<SweepCountAccStruct> others = SweepingCountSlotAcc.otherStructsOf(processor);
+    boolean hasCacheUpdater;
+    final CacheUpdater[] cacheUpdaters;
 
     for (TopTerm tt : bigTerms.values()) {
       if (tt.termNum >= startTermIndex && tt.termNum < endTermIndex) {
@@ -509,14 +474,8 @@ public class UnInvertedField extends DocTermOrds {
                                                     slotNum -> { return new SlotContext(tt.termQuery); });
         final int termOrd = tt.termNum - startTermIndex;
         countAcc.incrementCount(termOrd, collected);
-        int i = sweepCountAccs.length - 1;
-        SweepCountAccStruct entry = sweepCountAccs[i];
-        if (!entry.isBase) { // don't double-collect the base entry
-          entry.countAccEntry.countAcc.incrementCount(termOrd, termSet.intersectionSize(entry.docSet));
-        }
-        while (i-- > 0) {
-          entry = sweepCountAccs[i];
-          entry.countAccEntry.countAcc.incrementCount(termOrd, termSet.intersectionSize(entry.docSet));
+        for (SweepCountAccStruct entry : others) {
+          entry.countAcc.incrementCount(termOrd, termSet.intersectionSize(entry.docSet));
         }
         if (collected > 0) {
           uniqueTerms++;
@@ -537,25 +496,9 @@ public class UnInvertedField extends DocTermOrds {
 
       // TODO: handle facet.prefix here!!!
 
-      final SweepDocIterator iter;
-      final CountSlotAcc[] countAccs;
-      final int activeCt = sweepCountAccs.length;
-      if (activeCt == 1) {
-        SweepCountAccStruct entry = sweepCountAccs[0];
-        countAccs = new CountSlotAcc[] {entry.countAccEntry.countAcc};
-        iter = new SingletonDocIterator(entry.docSet.iterator(), entry.isBase);
-      } else {
-        DocIterator[] subIterators = new DocIterator[activeCt];
-        countAccs = new CountSlotAcc[activeCt];
-        SweepCountAccStruct entry;
-        int i = 0;
-        do {
-          entry = sweepCountAccs[i];
-          subIterators[i] = entry.docSet.iterator();
-          countAccs[i] = entry.countAccEntry.countAcc;
-        } while (++i < activeCt);
-        iter = new UnionDocIterator(subIterators, entry.isBase);
-      }
+      SweepIteratorAndCounts sweepIterAndCounts = SweepDocIterator.newInstance(baseCountAccStruct, others);
+      final SweepDocIterator iter = sweepIterAndCounts.iter;
+      final CountSlotAcc[] countAccs = sweepIterAndCounts.countAccs;
       final SegCountGlobal counts = new SegCountGlobal(countAccs);
       while (iter.hasNext()) {
         int doc = iter.nextDoc();
@@ -598,7 +541,7 @@ public class UnInvertedField extends DocTermOrds {
             int arrIdx = tnum - startTermIndex;
             if (arrIdx < 0) continue;
             if (arrIdx >= nTerms) break;
-            counts.incrementCount(-1, arrIdx, 1, maxIdx);
+            counts.incrementCount(arrIdx, 1, maxIdx);
             if (collectBase) {
               processor.collectFirstPhase(segDoc, arrIdx, processor.slotContext);
             }
@@ -614,7 +557,7 @@ public class UnInvertedField extends DocTermOrds {
               int arrIdx = tnum - startTermIndex;
               if (arrIdx >= 0) {
                 if (arrIdx >= nTerms) break;
-                counts.incrementCount(-1, arrIdx, 1, maxIdx);
+                counts.incrementCount(arrIdx, 1, maxIdx);
                 if (collectBase) {
                   processor.collectFirstPhase(segDoc, arrIdx, processor.slotContext);
                 }

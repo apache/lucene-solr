@@ -48,7 +48,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.handler.AnalyticsHandler;
 import org.apache.solr.handler.component.AnalyticsComponent;
 import org.apache.solr.response.AnalyticsShardResponseWriter;
@@ -142,7 +142,7 @@ public class AnalyticsShardRequestManager {
    * @throws IOException if an exception occurs while sending requests.
    */
   private void streamFromShards() throws IOException {
-    ExecutorService service = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("SolrAnalyticsStream"));
+    ExecutorService service = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("SolrAnalyticsStream"));
     List<Future<SolrException>> futures = new ArrayList<>();
     List<AnalyticsShardRequester> openers = new ArrayList<>();
     for (String replicaUrl : replicaUrls) {

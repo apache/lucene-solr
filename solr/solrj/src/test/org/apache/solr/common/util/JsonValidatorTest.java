@@ -46,6 +46,7 @@ public class JsonValidatorTest extends SolrTestCaseJ4  {
 
   public void testSchemaValidation() {
     ValidatingJsonMap spec = Utils.getSpec("collections.Commands").getSpec();
+    @SuppressWarnings({"rawtypes"})
     Map createSchema = spec.getMap("commands", NOT_NULL).getMap("create-alias", NOT_NULL);
     JsonSchemaValidator validator = new JsonSchemaValidator(createSchema);
     List<String> errs = validator.validateJson(Utils.fromJSONString("{name : x, collections: [ c1 , c2]}"));
@@ -181,8 +182,10 @@ public class JsonValidatorTest extends SolrTestCaseJ4  {
 
   private void checkSchema(String name) {
     ValidatingJsonMap spec = Utils.getSpec(name).getSpec();
+    @SuppressWarnings({"rawtypes"})
     Map commands = (Map) spec.get("commands");
     for (Object o : commands.entrySet()) {
+      @SuppressWarnings({"rawtypes"})
       Map.Entry cmd = (Map.Entry) o;
       try {
         JsonSchemaValidator validator = new JsonSchemaValidator((Map) cmd.getValue());

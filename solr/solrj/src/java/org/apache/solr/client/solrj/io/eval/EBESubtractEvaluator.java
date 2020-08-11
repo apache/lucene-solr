@@ -34,6 +34,7 @@ public class EBESubtractEvaluator extends RecursiveObjectEvaluator implements Tw
   }
 
   @Override
+  @SuppressWarnings({"unchecked"})
   public Object doWork(Object first, Object second) throws IOException{
     if(null == first){
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - null found for the first value",toExpression(constructingFactory)));
@@ -47,7 +48,7 @@ public class EBESubtractEvaluator extends RecursiveObjectEvaluator implements Tw
           ((List) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
       );
 
-      List<Number> numbers = new ArrayList();
+      List<Number> numbers = new ArrayList<>();
       for (double d : result) {
         numbers.add(d);
       }

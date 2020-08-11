@@ -19,14 +19,13 @@ package org.apache.solr.search.facet;
 import java.io.IOException;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.PriorityQueue;
+import org.apache.solr.search.facet.SlotAcc.CountSlotAcc;
 import org.apache.solr.request.TermFacetCache.CacheUpdater;
-import org.apache.solr.search.facet.FacetFieldProcessorByArrayDV.SegCountGlobal;
-import org.apache.solr.search.facet.FacetFieldProcessorByArrayDV.SegCountPerSeg;
 
 final class UnionDISI extends SweepDISI {
 
   final int maxIdx;
-  private final boolean hasBase;
+  private final SubIterStruct baseSub;
   private boolean collectBase;
   private final PriorityQueue<SubIterStruct> queue;
   private SubIterStruct top;
@@ -45,9 +44,8 @@ final class UnionDISI extends SweepDISI {
       docId = sub.nextDoc();
     }
   }
-  UnionDISI(DocIdSetIterator[] subIterators, CountSlotAcc[] countAccs, CacheUpdater[] cacheUpdaters, int size, boolean hasBase) throws IOException {
+  UnionDISI(DocIdSetIterator[] subIterators, CountSlotAcc[] countAccs, CacheUpdater[] cacheUpdaters, int size, int baseIdx) throws IOException {
     super(size, countAccs, cacheUpdaters);
-    this.hasBase = hasBase;
     this.maxIdx = size - 1;
     queue = new PriorityQueue<SubIterStruct>(size) {
       @Override
@@ -56,9 +54,15 @@ final class UnionDISI extends SweepDISI {
       }
     };
     int i = maxIdx;
+    SubIterStruct tmpBaseSub = null;
     do {
-      queue.add(new SubIterStruct(subIterators[i], i));
+      final SubIterStruct subIterStruct = new SubIterStruct(subIterators[i], i);
+      queue.add(subIterStruct);
+      if (i == baseIdx) {
+        tmpBaseSub = subIterStruct;
+      }
     } while (i-- > 0);
+    baseSub = tmpBaseSub;
     top = queue.top();
   }
 
@@ -69,7 +73,7 @@ final class UnionDISI extends SweepDISI {
         top.nextDoc();
       } while ((top = queue.updateTop()).docId == docId);
     }
-    if (hasBase) {
+    if (baseSub != null) {
       collectBase = false;
     }
     return docId = top.docId;
@@ -78,31 +82,14 @@ final class UnionDISI extends SweepDISI {
   @Override
   public boolean collectBase() {
     assert top.docId != docId : "must call registerCounts() before collectBase()";
-    if (!hasBase) {
-      return false;
-    } else {
-      return collectBase;
-    }
+    return collectBase;
   }
 
   @Override
-  public int registerCounts(SegCountGlobal segCounter) throws IOException {
+  public int registerCounts(SegCounter segCounter) throws IOException {
     int i = -1;
     do {
-      if (hasBase && !collectBase && top.index == maxIdx) {
-        collectBase = true;
-      }
-      segCounter.map(top.index, ++i);
-      top.nextDoc();
-    } while ((top = queue.updateTop()).docId == docId);
-    return i;
-  }
-
-  @Override
-  public int registerCounts(SegCountPerSeg segCounter) throws IOException {
-    int i = -1;
-    do {
-      if (hasBase && !collectBase && top.index == maxIdx) {
+      if (!collectBase && top == baseSub) {
         collectBase = true;
       }
       segCounter.map(top.index, ++i);

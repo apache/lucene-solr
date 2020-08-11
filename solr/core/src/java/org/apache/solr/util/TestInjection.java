@@ -71,9 +71,11 @@ public class TestInjection {
    * If non-null, then this class should be used for accessing random entropy
    * @see #random
    */
+  @SuppressWarnings({"rawtypes"})
   private static final Class LUCENE_TEST_CASE;
   
   static {
+    @SuppressWarnings({"rawtypes"})
     Class nonFinalTemp = null;
     try {
       ClassLoader classLoader = MethodHandles.lookup().lookupClass().getClassLoader();
@@ -94,6 +96,7 @@ public class TestInjection {
       return null;
     } else {
       try {
+        @SuppressWarnings({"unchecked"})
         Method randomMethod = LUCENE_TEST_CASE.getMethod("random");
         return (Random) randomMethod.invoke(null);
       } catch (Exception e) {
@@ -436,7 +439,7 @@ public class TestInjection {
       boolean enabled = pair.first();
       int chanceIn100 = pair.second();
       if (enabled && rand.nextInt(100) >= (100 - chanceIn100)) {
-        log.info("Injecting failure: " + label);
+        log.info("Injecting failure: {}", label);
         throw new SolrException(ErrorCode.SERVER_ERROR, "Error: " + label);
       }
     }

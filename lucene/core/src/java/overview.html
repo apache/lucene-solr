@@ -31,7 +31,7 @@ to check if the results are what we expect):</p>
     Analyzer analyzer = new StandardAnalyzer();
 
     Path indexPath = Files.createTempDirectory("tempIndex");
-    Directory directory = FSDirectory.open(indexPath)
+    Directory directory = FSDirectory.open(indexPath);
     IndexWriterConfig config = new IndexWriterConfig(analyzer);
     IndexWriter iwriter = new IndexWriter(directory, config);
     Document doc = new Document();

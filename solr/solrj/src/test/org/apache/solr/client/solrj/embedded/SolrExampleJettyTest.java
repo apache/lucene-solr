@@ -91,6 +91,7 @@ public class SolrExampleJettyTest extends SolrExampleTests {
 
     SolrDocument doc = rsp.getResults().get(0);
     String src = (String) doc.getFieldValue("_src_");
+    @SuppressWarnings({"rawtypes"})
     Map m = (Map) fromJSONString(src);
     assertEquals("abc1",m.get("id"));
     assertEquals("name1",m.get("name"));

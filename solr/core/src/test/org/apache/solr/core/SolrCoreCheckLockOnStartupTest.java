@@ -77,7 +77,9 @@ public class SolrCoreCheckLockOnStartupTest extends SolrTestCaseJ4 {
   public void testNativeLockErrorOnStartup() throws Exception {
 
     File indexDir = new File(initAndGetDataDir(), "index");
-    log.info("Acquiring lock on {}", indexDir.getAbsolutePath());
+    if (log.isInfoEnabled()) {
+      log.info("Acquiring lock on {}", indexDir.getAbsolutePath());
+    }
     Directory directory = newFSDirectory(indexDir.toPath(), NativeFSLockFactory.INSTANCE);
     //creates a new IndexWriter without releasing the lock yet
     IndexWriter indexWriter = new IndexWriter(directory, new IndexWriterConfig(null));

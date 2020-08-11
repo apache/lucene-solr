@@ -52,6 +52,11 @@ public class NumericPayloadTokenFilterFactory extends TokenFilterFactory {
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public NumericPayloadTokenFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public NumericPayloadTokenFilter create(TokenStream input) {
     return new NumericPayloadTokenFilter(input,payload,typeMatch);

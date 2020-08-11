@@ -313,7 +313,8 @@ public abstract class ContentStreamBase implements ContentStream
   public void setSourceInfo(String sourceInfo) {
     this.sourceInfo = sourceInfo;
   }
-  public static ContentStream create(RequestWriter requestWriter, SolrRequest req) throws IOException {
+  public static ContentStream create(RequestWriter requestWriter,
+                                     @SuppressWarnings({"rawtypes"})SolrRequest req) throws IOException {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     RequestWriter.ContentWriter contentWriter = requestWriter.getContentWriter(req);
     contentWriter.write(baos);

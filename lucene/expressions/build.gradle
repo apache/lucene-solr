@@ -17,6 +17,8 @@
 
 apply plugin: 'java-library'
 
+description = 'Dynamically computed values to sort/facet/search on based on a pluggable grammar'
+
 dependencies {
   api project(':lucene:core')
 

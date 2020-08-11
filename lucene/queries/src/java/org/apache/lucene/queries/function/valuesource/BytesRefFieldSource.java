@@ -41,7 +41,7 @@ public class BytesRefFieldSource extends FieldCacheSource {
   }
 
   @Override
-  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
     final FieldInfo fieldInfo = readerContext.reader().getFieldInfos().fieldInfo(field);
 
     // To be sorted or not to be sorted, that is the question

@@ -328,7 +328,30 @@ This command is useful for making periodic backups. There are several supported 
 +
 * `numberToKeep:`: This can be used with the backup command unless the `maxNumberOfBackups` initialization parameter has been specified on the handler – in which case `maxNumberOfBackups` is always used and attempts to use the `numberToKeep` request parameter will cause an error.
 * `name`: (optional) Backup name. The snapshot will be created in a directory called `snapshot.<name>` within the data directory of the core. By default the name is generated using date in `yyyyMMddHHmmssSSS` format. If `location` parameter is passed, that would be used instead of the data directory
-* `location`: Backup location.
+* `repository`: The name of the backup repository to use. When not specified, it defaults to local file system.
+* `location`: Backup location. Value depends on the repository in use. For file system repository, location defaults to core's dataDir, and if specified, it needs to be within `SOLR_HOME`, `SOLR_DATA_HOME` or the paths specified by solr.xml `allowPaths`.
+
+`restore`::
+Restore a backup from a backup repository.
++
+[source,bash]
+http://_master_host:port_/solr/_core_name_/replication?command=restore
++
+This command is used to restore a backup. There are several supported request parameters:
++
+* `name`: (optional) Backup name. The name of the backed up index snapshot to be restored. If the name is not provided, it looks for backups with snapshot.<timestamp> format in the location directory. It picks the latest timestamp backup in that case.
+* `repository`: The name of the backup repository where the backup resides. When not specified, it defaults to local file system.
+* `location`: Backup location. Value depends on the repository in use. For file system repository, location defaults to core's dataDir, and if specified, it needs to be within `SOLR_HOME`, `SOLR_DATA_HOME` or the paths specified by solr.xml `allowPaths`.
+
+`restorestatus`::
+Check the status of a running restore operation.
++
+[source,bash]
+http://_master_host:port_/solr/_core_name_/replication?command=restorestatus
++
+This command is used to check the status of a restore operation. This command takes no parameters.
++
+The status value can be "In Progress" , "success" or "failed". If it failed then an "exception" will also be sent in the response.
 
 `deletebackup`::
 Delete any backup created using the `backup` command.

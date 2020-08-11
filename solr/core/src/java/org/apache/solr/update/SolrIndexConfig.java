@@ -105,7 +105,7 @@ public class SolrIndexConfig implements MapSerializable {
   public SolrIndexConfig(SolrConfig solrConfig, String prefix, SolrIndexConfig def)  {
     if (prefix == null) {
       prefix = "indexConfig";
-      log.debug("Defaulting to prefix \""+prefix+"\" for index configuration");
+      log.debug("Defaulting to prefix '{}' for index configuration", prefix);
     }
     
     if (def == null) {
@@ -247,6 +247,7 @@ public class SolrIndexConfig implements MapSerializable {
 
     if (mergedSegmentWarmerInfo != null) {
       // TODO: add infostream -> normal logging system (there is an issue somewhere)
+      @SuppressWarnings({"rawtypes"})
       IndexReaderWarmer warmer = core.getResourceLoader().newInstance(mergedSegmentWarmerInfo.className,
                                                                         IndexReaderWarmer.class,
                                                                         null,
@@ -262,7 +263,7 @@ public class SolrIndexConfig implements MapSerializable {
    * Builds a MergePolicy using the configured MergePolicyFactory
    * or if no factory is configured uses the configured mergePolicy PluginInfo.
    */
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private MergePolicy buildMergePolicy(SolrResourceLoader resourceLoader, IndexSchema schema) {
 
     final String mpfClassName;
@@ -285,6 +286,7 @@ public class SolrIndexConfig implements MapSerializable {
     return mpf.getMergePolicy();
   }
 
+  @SuppressWarnings({"unchecked"})
   private MergeScheduler buildMergeScheduler(SolrResourceLoader resourceLoader) {
     String msClassName = mergeSchedulerInfo == null ? SolrIndexConfig.DEFAULT_MERGE_SCHEDULER_CLASSNAME : mergeSchedulerInfo.className;
     MergeScheduler scheduler = resourceLoader.newInstance(msClassName, MergeScheduler.class);
@@ -293,6 +295,7 @@ public class SolrIndexConfig implements MapSerializable {
       // LUCENE-5080: these two setters are removed, so we have to invoke setMaxMergesAndThreads
       // if someone has them configured.
       if (scheduler instanceof ConcurrentMergeScheduler) {
+        @SuppressWarnings({"rawtypes"})
         NamedList args = mergeSchedulerInfo.initArgs.clone();
         Integer maxMergeCount = (Integer) args.remove("maxMergeCount");
         if (maxMergeCount == null) {

@@ -127,6 +127,7 @@ public class NeuralNetworkModel extends LTRScoringModel {
     }
 
     public void setMatrix(Object matrixObj) {
+      @SuppressWarnings({"unchecked"})
       final List<List<Double>> matrix = (List<List<Double>>) matrixObj;
       this.matrixRows = matrix.size();
       this.matrixCols = matrix.get(0).size();
@@ -140,6 +141,7 @@ public class NeuralNetworkModel extends LTRScoringModel {
     }
 
     public void setBias(Object biasObj) {
+      @SuppressWarnings({"unchecked"})
       final List<Double> vector = (List<Double>) biasObj;
       this.numUnits = vector.size();
       this.biasVector = new float[numUnits];
@@ -246,6 +248,7 @@ public class NeuralNetworkModel extends LTRScoringModel {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   protected Layer createLayer(Object o) {
     final DefaultLayer layer = new DefaultLayer();
     if (o != null) {
@@ -254,6 +257,7 @@ public class NeuralNetworkModel extends LTRScoringModel {
     return layer;
   }
 
+  @SuppressWarnings({"unchecked"})
   public void setLayers(Object layers) {
     this.layers = new ArrayList<Layer>();
     for (final Object o : (List<Object>) layers) {

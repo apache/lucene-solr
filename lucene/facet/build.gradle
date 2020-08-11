@@ -18,6 +18,7 @@
 
 apply plugin: 'java-library'
 
+description = 'Faceted indexing and search capabilities'
 
 dependencies { 
   api project(':lucene:core')
