@@ -54,13 +54,13 @@ public class TestNumericTerms32 extends SolrTestCase {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
-    noDocs = atLeast(4096);
+    noDocs = TEST_NIGHTLY ? atLeast(4096) : 406;
     distance = (1 << 30) / noDocs;
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
         newIndexWriterConfig(new MockAnalyzer(random()))
-        .setMaxBufferedDocs(TestUtil.nextInt(random(), 100, 1000))
-        .setMergePolicy(newLogMergePolicy()));
+            .setMaxBufferedDocs(TEST_NIGHTLY ? TestUtil.nextInt(random(), 100, 1000) : 1000)
+            .setMergePolicy(newLogMergePolicy()));
     
     final LegacyFieldType storedInt = new LegacyFieldType(LegacyIntField.TYPE_NOT_STORED);
     storedInt.setStored(true);

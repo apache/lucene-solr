@@ -22,11 +22,15 @@ import java.io.StringWriter;
 import java.util.Random;
 
 import junit.framework.TestCase;
+import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
+
+import static org.apache.lucene.util.LuceneTestCase.TEST_NIGHTLY;
 
 /**
  * CSVPrinterTest
  */
-public class CSVPrinterTest extends TestCase {
+public class CSVPrinterTest extends SolrTestCase {
   
   String lineSeparator = "\n";
 
@@ -73,7 +77,7 @@ public class CSVPrinterTest extends TestCase {
 
   
   public void testRandom() throws Exception {
-    int iter=10000;
+    int iter= TEST_NIGHTLY ? 10000 : 27;
     strategy = CSVStrategy.DEFAULT_STRATEGY;
     doRandom(iter);
     strategy = CSVStrategy.EXCEL_STRATEGY;
@@ -84,8 +88,6 @@ public class CSVPrinterTest extends TestCase {
         ('\t', CSVStrategy.ENCAPSULATOR_DISABLED, CSVStrategy.COMMENTS_DISABLED,'\\',false, false, false, false, "\n");
     doRandom(iter);
   }
-
-  Random r = new Random();
   CSVStrategy strategy;
 
   public void doRandom(int iter) throws Exception {
@@ -95,8 +97,8 @@ public class CSVPrinterTest extends TestCase {
   }
 
   public void doOneRandom() throws Exception {
-    int nLines = r.nextInt(4)+1;
-    int nCol = r.nextInt(3)+1;
+    int nLines = random().nextInt(4)+1;
+    int nCol = random().nextInt(3)+1;
     // nLines=1;nCol=2;
     String[][] lines = new String[nLines][];
     for (int i=0; i<nLines; i++) {
@@ -107,7 +109,7 @@ public class CSVPrinterTest extends TestCase {
       }
     }
 
-    StringWriter sw = new StringWriter();
+    StringWriter sw = new StringWriter(128);
     CSVPrinter printer = new CSVPrinter(sw, strategy);
 
     for (int i=0; i<nLines; i++) {
@@ -167,13 +169,13 @@ public class CSVPrinterTest extends TestCase {
   }
 
   public String randStr() {
-    int sz = r.nextInt(20);
+    int sz = random().nextInt(20);
     // sz = r.nextInt(3);
     char[] buf = new char[sz];
     for (int i=0; i<sz; i++) {
       // stick in special chars with greater frequency
       char ch;
-      int what = r.nextInt(20);
+      int what = random().nextInt(20);
       switch (what) {
         case 0: ch = '\r'; break;
         case 1: ch = '\n'; break;
@@ -184,7 +186,7 @@ public class CSVPrinterTest extends TestCase {
         case 6: ch = '"';  break;
         case 7: ch = '\''; break;
         case 8: ch = '\\'; break;
-        default: ch = (char)r.nextInt(300); break;
+        default: ch = (char)random().nextInt(300); break;
         // default: ch = 'a'; break;
       }
       buf[i] = ch;

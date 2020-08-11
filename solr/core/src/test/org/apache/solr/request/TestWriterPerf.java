@@ -110,7 +110,6 @@ public class TestWriterPerf extends SolrTestCaseJ4 {
 
     ByteArrayOutputStream out=null;
 
-    System.gc();
     RTimer timer = new RTimer();
     for (int i=0; i<encIter; i++) {
     if (w instanceof BinaryQueryResponseWriter) {

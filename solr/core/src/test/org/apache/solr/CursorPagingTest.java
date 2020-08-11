@@ -559,8 +559,8 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
   public void testRandomSortsOnLargeIndex() throws Exception {
     final Collection<String> allFieldNames = getAllSortFieldNames();
 
-    final int initialDocs = TestUtil.nextInt(random(), 100, TEST_NIGHTLY ? 200 : 115);
-    final int totalDocs = TEST_NIGHTLY ? atLeast(500) : 120;
+    final int initialDocs = TestUtil.nextInt(random(), 100, TEST_NIGHTLY ? 200 : 102);
+    final int totalDocs = TEST_NIGHTLY ? atLeast(500) : 105;
 
     // start with a smallish number of documents, and test that we can do a full walk using a 
     // sort on *every* field in the schema...
@@ -639,7 +639,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
    */
   public static List<String> pruneAndDeterministicallySort(Collection<String> raw) {
 
-    ArrayList<String> names = new ArrayList<>(37);
+    ArrayList<String> names = new ArrayList<>(raw.size());
     for (String f : raw) {
       if (f.equals("_version_")) {
         continue;

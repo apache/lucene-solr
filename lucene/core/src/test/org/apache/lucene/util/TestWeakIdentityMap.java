@@ -119,7 +119,6 @@ public class TestWeakIdentityMap extends LuceneTestCase {
     int size = map.size();
     for (int i = 0; size > 0 && i < 10; i++) try {
       System.runFinalization();
-      System.gc();
       int newSize = map.size();
       assertTrue("previousSize("+size+")>=newSize("+newSize+")", size >= newSize);
       size = newSize;

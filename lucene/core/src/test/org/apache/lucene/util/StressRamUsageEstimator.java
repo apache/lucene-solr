@@ -40,13 +40,11 @@ public class StressRamUsageEstimator extends LuceneTestCase {
   @Nightly
   public void testLargeSetOfByteArrays() {
 
-    System.gc();
     long before = Runtime.getRuntime().totalMemory();
     Object [] all = new Object [1000000]; 
     for (int i = 0; i < all.length; i++) {
       all[i] = new byte[random().nextInt(3)];
     }
-    System.gc();
     long after = Runtime.getRuntime().totalMemory();
     System.out.println("mx:  " + RamUsageEstimator.humanReadableUnits(after - before));
     System.out.println("rue: " + RamUsageEstimator.humanReadableUnits(shallowSizeOf(all)));
@@ -79,7 +77,6 @@ public class StressRamUsageEstimator extends LuceneTestCase {
     try {
       while (true) {
         // Check the current memory consumption and provide the estimate.
-        System.gc();
         long estimated = shallowSizeOf(all);
         if (estimated > 50 * RamUsageEstimator.ONE_MB) {
           break;

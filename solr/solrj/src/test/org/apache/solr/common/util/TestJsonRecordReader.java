@@ -362,6 +362,7 @@ public class TestJsonRecordReader extends SolrTestCaseJ4 {
     }
   }
 
+  @Nightly // calls System.gc
   public void testArrayOfRootObjects() throws Exception {
     String json = "[{'fieldA':'A1'}, {'fieldB':'B2'}]";
     JsonRecordReader streamer;
