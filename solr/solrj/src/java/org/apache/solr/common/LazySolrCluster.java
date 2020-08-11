@@ -377,6 +377,21 @@ public class LazySolrCluster implements SolrCluster {
             //todo implement later
             throw new UnsupportedOperationException("Not yet implemented");
         }
+
+        @Override
+        public boolean isLeader() {
+            return Objects.equals(shard.leader() , name());
+        }
+
+        @Override
+        public String url(ApiType type) {
+            String base = nodes.get(node()).baseUrl(type);
+            if (type == ApiType.V2) {
+                return base + "/cores/" + core();
+            } else {
+                return base + "/" + core();
+            }
+        }
     }
 
     private class Node implements SolrNode {
@@ -392,8 +407,8 @@ public class LazySolrCluster implements SolrCluster {
         }
 
         @Override
-        public String baseUrl(boolean isV2) {
-            return Utils.getBaseUrlForNodeName(name, zkStateReader.getClusterProperty(URL_SCHEME, "http"), isV2);
+        public String baseUrl(ApiType apiType) {
+            return Utils.getBaseUrlForNodeName(name, zkStateReader.getClusterProperty(URL_SCHEME, "http"), apiType == ApiType.V2);
         }
 
         @Override
