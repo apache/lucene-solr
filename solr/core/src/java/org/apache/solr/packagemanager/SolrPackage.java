@@ -87,6 +87,10 @@ public class SolrPackage implements Comparable<SolrPackage>, ReflectMapWriter {
 
   public static class Plugin implements ReflectMapWriter {
     public String name;
+    
+    @JsonProperty("type")
+    public String type = "collection"; // if not specified, assume collection level plugin (backward compatability)
+    
     @JsonProperty("setup-command")
     public Command setupCommand;
 

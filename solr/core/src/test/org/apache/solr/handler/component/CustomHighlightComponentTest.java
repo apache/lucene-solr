@@ -117,8 +117,7 @@ public class CustomHighlightComponentTest extends SolrCloudTestCase {
     // ... and shard/replica/node numbers
     final int numShards = 3;
     final int numReplicas = 2;
-    final int maxShardsPerNode = 2;
-    final int nodeCount = (numShards*numReplicas + (maxShardsPerNode-1))/maxShardsPerNode;
+    final int nodeCount = numShards*numReplicas;
 
     // create and configure cluster
     configureCluster(nodeCount)
@@ -128,7 +127,6 @@ public class CustomHighlightComponentTest extends SolrCloudTestCase {
     // create an empty collection
     CollectionAdminRequest
     .createCollection(COLLECTION, "conf", numShards, numReplicas)
-    .setMaxShardsPerNode(maxShardsPerNode)
     .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(), false, true, DEFAULT_TIMEOUT);
   }

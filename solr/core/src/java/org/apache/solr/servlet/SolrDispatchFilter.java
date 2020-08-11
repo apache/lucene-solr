@@ -53,6 +53,7 @@ import com.codahale.metrics.jvm.ClassLoadingGaugeSet;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
+import com.google.common.annotations.VisibleForTesting;
 import io.opentracing.Scope;
 import io.opentracing.Span;
 import io.opentracing.SpanContext;
@@ -71,8 +72,8 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
-import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.core.SolrPaths;
+import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.metrics.AltBufferPoolMetricSet;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.OperatingSystemMetricSet;
@@ -83,9 +84,9 @@ import org.apache.solr.security.AuditEvent;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.PublicKeyHandler;
-import org.apache.solr.util.tracing.GlobalTracer;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
+import org.apache.solr.util.tracing.GlobalTracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -113,6 +114,8 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   private SolrMetricManager metricManager;
   private String registryName;
   private volatile boolean closeOnDestroy = true;
+
+  private RateLimitManager rateLimitManager;
 
   /**
    * Enum to define action that needs to be processed.
@@ -182,9 +185,11 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       String solrHome = (String) config.getServletContext().getAttribute(SOLRHOME_ATTRIBUTE);
       final Path solrHomePath = solrHome == null ? SolrPaths.locateSolrHome() : Paths.get(solrHome);
       coresInit = createCoreContainer(solrHomePath, extraProperties);
-      SolrPaths.ensureUserFilesDataDir(solrHomePath);
       this.httpClient = coresInit.getUpdateShardHandler().getDefaultHttpClient();
       setupJvmMetrics(coresInit);
+      RateLimitManager.Builder builder = new RateLimitManager.Builder(config);
+
+      this.rateLimitManager = builder.build();
       if (log.isDebugEnabled()) {
         log.debug("user.dir={}", System.getProperty("user.dir"));
       }
@@ -352,6 +357,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     HttpServletResponse response = closeShield((HttpServletResponse)_response, retry);
     Scope scope = null;
     Span span = null;
+    boolean accepted = false;
     try {
 
       if (cores == null || cores.isShutDown()) {
@@ -378,6 +384,20 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         }
       }
 
+      try {
+        accepted = rateLimitManager.handleRequest(request);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new SolrException(ErrorCode.SERVER_ERROR, e.getMessage());
+      }
+
+      if (!accepted) {
+        String errorMessage = "Too many requests for this request type." +
+            "Please try after some time or increase the quota for this request type";
+
+        response.sendError(429, errorMessage);
+      }
+
       SpanContext parentSpan = GlobalTracer.get().extract(request);
       Tracer tracer = GlobalTracer.getTracer();
 
@@ -400,6 +420,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       if (!authenticateRequest(request, response, wrappedRequest)) { // the response and status code have already been sent
         return;
       }
+
       if (wrappedRequest.get() != null) {
         request = wrappedRequest.get();
       }
@@ -442,6 +463,10 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       consumeInputFully(request, response);
       SolrRequestInfo.reset();
       SolrRequestParsers.cleanupMultipartFiles(request);
+
+      if (accepted) {
+        rateLimitManager.decrementActiveRequests(request);
+      }
     }
   }
   
@@ -665,8 +690,13 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       return response;
     }
   }
-  
+
   public void closeOnDestroy(boolean closeOnDestroy) {
     this.closeOnDestroy = closeOnDestroy;
+  }
+
+  @VisibleForTesting
+  void replaceRateLimitManager(RateLimitManager rateLimitManager) {
+    this.rateLimitManager = rateLimitManager;
   }
 }

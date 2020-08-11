@@ -4181,7 +4181,8 @@ public class TestIndexWriter extends LuceneTestCase {
             SetOnce<Boolean> onlyFinishOnce = new SetOnce<>();
             return new MergePolicy.OneMerge(merge.segments) {
               @Override
-              public void mergeFinished(boolean success) {
+              public void mergeFinished(boolean success, boolean segmentDropped) throws IOException {
+                super.mergeFinished(success, segmentDropped);
                 onlyFinishOnce.set(true);
               }
             };
@@ -4205,7 +4206,7 @@ public class TestIndexWriter extends LuceneTestCase {
   public void testMergeOnCommitKeepFullyDeletedSegments() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig();
-    iwc.setMaxCommitMergeWaitSeconds(30);
+    iwc.setMaxCommitMergeWaitMillis(30 * 1000);
     iwc.mergePolicy = new FilterMergePolicy(newMergePolicy()) {
       @Override
       public boolean keepFullyDeletedSegment(IOSupplier<CodecReader> readerIOSupplier) {

@@ -120,6 +120,7 @@ public class TestUnifiedHighlighterTermVec extends LuceneTestCase {
       assertArrayEquals(expectedSnippetsByDoc, fieldToSnippets.get(field));
     }
 
+    ir.document(0); // ensure this works because the ir hasn't been closed
     ir.close();
   }
 

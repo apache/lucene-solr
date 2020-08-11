@@ -35,6 +35,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
 import org.apache.lucene.analysis.WordlistLoader;
 import org.apache.lucene.analysis.util.*;
 import org.apache.lucene.codecs.Codec;
@@ -59,15 +60,14 @@ import org.slf4j.LoggerFactory;
 /**
  * @since solr 1.3
  */
-public class SolrResourceLoader implements ResourceLoader, Closeable {
+public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassLoader {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String base = "org.apache.solr";
   private static final String[] packages = {
       "", "analysis.", "schema.", "handler.", "handler.tagger.", "search.", "update.", "core.", "response.", "request.",
       "update.processor.", "util.", "spelling.", "handler.component.", "handler.dataimport.",
-      "spelling.suggest.", "spelling.suggest.fst.", "rest.schema.analysis.", "security.", "handler.admin.",
-      "cloud.autoscaling."
+      "spelling.suggest.", "spelling.suggest.fst.", "rest.schema.analysis.", "security.", "handler.admin."
   };
   private static final Charset UTF_8 = StandardCharsets.UTF_8;
 
@@ -75,6 +75,12 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   private String name = "";
   protected URLClassLoader classLoader;
   private final Path instanceDir;
+
+  /**
+   * this is set  by the {@link SolrCore}
+   * This could be null if the core is not yet initialized
+   */
+  SolrCore core;
 
   private final List<SolrCoreAware> waitingForCore = Collections.synchronizedList(new ArrayList<SolrCoreAware>());
   private final List<SolrInfoBean> infoMBeans = Collections.synchronizedList(new ArrayList<SolrInfoBean>());
@@ -135,10 +141,10 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
    */
   public SolrResourceLoader(Path instanceDir, ClassLoader parent) {
     if (instanceDir == null) {
-      this.instanceDir = SolrPaths.locateSolrHome().toAbsolutePath().normalize();
+      this.instanceDir = SolrPaths.locateSolrHome();
       log.debug("new SolrResourceLoader for deduced Solr Home: '{}'", this.instanceDir);
     } else {
-      this.instanceDir = instanceDir.toAbsolutePath().normalize();
+      this.instanceDir = instanceDir;
       log.debug("new SolrResourceLoader for directory: '{}'", this.instanceDir);
     }
 
@@ -197,6 +203,11 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
     TokenFilterFactory.reloadTokenFilters(this.classLoader);
     TokenizerFactory.reloadTokenizers(this.classLoader);
   }
+
+  public SolrCore getCore(){
+    return core;
+  }
+
 
   private static URLClassLoader addURLsToClassLoader(final URLClassLoader oldLoader, List<URL> urls) {
     if (urls.size() == 0) {
@@ -338,11 +349,11 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   public String resourceLocation(String resource) {
     Path inConfigDir = getInstancePath().resolve("conf").resolve(resource);
     if (Files.exists(inConfigDir) && Files.isReadable(inConfigDir))
-      return inConfigDir.toAbsolutePath().normalize().toString();
+      return inConfigDir.normalize().toString();
 
     Path inInstanceDir = getInstancePath().resolve(resource);
     if (Files.exists(inInstanceDir) && Files.isReadable(inInstanceDir))
-      return inInstanceDir.toAbsolutePath().normalize().toString();
+      return inInstanceDir.normalize().toString();
 
     try (InputStream is = classLoader.getResourceAsStream(resource.replace(File.separatorChar, '/'))) {
       if (is != null)
@@ -673,14 +684,8 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   }
 
   /**
-   * Determines the solrhome from the environment.
-   * Tries JNDI (java:comp/env/solr/home) then system property (solr.solr.home);
-   * if both fail, defaults to solr/
-   * @return the instance directory name
-   */
-
-  /**
-   * @return the instance path for this resource loader
+   * The instance path for this resource loader, as passed in from the constructor.
+   * It's absolute when this is for Solr Home or a Solr Core instance dir.
    */
   public Path getInstancePath() {
     return instanceDir;

@@ -86,6 +86,9 @@ public class SnapShooter {
     this.backupRepo = Objects.requireNonNull(backupRepo);
     this.baseSnapDirPath = location;
     this.snapshotName = snapshotName;
+    if ("file".equals(location.getScheme())) {
+      solrCore.getCoreContainer().assertPathAllowed(Paths.get(location));
+    }
     if (snapshotName != null) {
       directoryName = "snapshot." + snapshotName;
     } else {

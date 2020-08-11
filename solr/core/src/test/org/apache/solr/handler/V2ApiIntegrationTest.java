@@ -17,20 +17,10 @@
 
 package org.apache.solr.handler;
 
-
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.NoOpResponseParser;
-import org.apache.solr.client.solrj.impl.XMLResponseParser;
+import org.apache.solr.client.solrj.impl.*;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.DelegationTokenResponse;
@@ -41,6 +31,12 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class V2ApiIntegrationTest extends SolrCloudTestCase {
   private static String COLL_NAME = "collection1";
@@ -154,10 +150,10 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
   public void testSetPropertyValidationOfCluster() throws IOException, SolrServerException {
     @SuppressWarnings({"rawtypes"})
     NamedList resp = cluster.getSolrClient().request(
-      new V2Request.Builder("/cluster").withMethod(SolrRequest.METHOD.POST).withPayload("{set-property: {name: autoAddReplicas, val:false}}").build());
+      new V2Request.Builder("/cluster").withMethod(SolrRequest.METHOD.POST).withPayload("{set-property: {name: maxCoresPerNode, val:42}}").build());
     assertTrue(resp.toString().contains("status=0"));
     resp = cluster.getSolrClient().request(
-        new V2Request.Builder("/cluster").withMethod(SolrRequest.METHOD.POST).withPayload("{set-property: {name: autoAddReplicas, val:null}}").build());
+        new V2Request.Builder("/cluster").withMethod(SolrRequest.METHOD.POST).withPayload("{set-property: {name: maxCoresPerNode, val:null}}").build());
     assertTrue(resp.toString().contains("status=0"));
   }
 
@@ -176,6 +172,7 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
     backupParams.put("name", "backup_test");
     backupParams.put("collection", COLL_NAME);
     backupParams.put("location", tempDir);
+    cluster.getJettySolrRunners().forEach(j -> j.getCoreContainer().getAllowPaths().add(Paths.get(tempDir)));
     client.request(new V2Request.Builder("/c")
         .withMethod(SolrRequest.METHOD.POST)
         .withPayload(Utils.toJSONString(backupPayload))

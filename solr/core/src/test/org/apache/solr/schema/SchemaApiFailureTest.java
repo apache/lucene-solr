@@ -38,7 +38,6 @@ public class SchemaApiFailureTest extends SolrCloudTestCase {
   public static void setupCluster() throws Exception {
     configureCluster(1).configure();
     CollectionAdminRequest.createCollection(COLLECTION, 2, 1) // _default configset
-        .setMaxShardsPerNode(2)
         .process(cluster.getSolrClient());
     cluster.getSolrClient().waitForState(COLLECTION, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
         (n, c) -> DocCollection.isFullyActive(n, c, 2, 1));

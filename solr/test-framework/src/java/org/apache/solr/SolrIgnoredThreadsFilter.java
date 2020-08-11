@@ -59,6 +59,11 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
     if (threadName.startsWith("Image Fetcher")) {
       return true;
     }
+    
+    if (threadName.startsWith("Log4j2-TF-2-AsyncLoggerConfig")) {
+      return true;
+    }
+    
 
     return false;
   }

@@ -92,7 +92,7 @@ public class CorePropertiesLocator implements CoresLocator {
       }
     }
     catch (IOException e) {
-      log.error("Couldn't persist core properties to {}: {}", propfile, e.getMessage());
+      log.error("Couldn't persist core properties to {}: ", propfile, e);
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           "Couldn't persist core properties to " + propfile.toAbsolutePath().toString() + " : " + e.getMessage());
     }
@@ -109,7 +109,7 @@ public class CorePropertiesLocator implements CoresLocator {
       try {
         Files.deleteIfExists(propfile);
       } catch (IOException e) {
-        log.warn("Couldn't delete core properties file {}: {}", propfile, e.getMessage());
+        log.warn("Couldn't delete core properties file {}: ", propfile, e);
       }
     }
   }

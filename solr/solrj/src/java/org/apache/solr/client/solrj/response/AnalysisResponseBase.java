@@ -190,7 +190,7 @@ public class AnalysisResponseBase extends SolrResponseBase {
      * @param start    The start position of the token in the original text where it was extracted from.
      * @param end      The end position of the token in the original text where it was extracted from.
      * @param position The position of the token within the token stream.
-     * @param match    Indicates whether this token matches one of the the query tokens.
+     * @param match    Indicates whether this token matches one of the query tokens.
      */
     TokenInfo(String text, String rawText, String type, int start, int end, int position, boolean match) {
       this.text = text;

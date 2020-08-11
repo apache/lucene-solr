@@ -20,10 +20,15 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -319,7 +324,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     firstWriter.close(); // When this writer closes, it does not merge on commit.
 
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()))
-        .setMergePolicy(MERGE_ON_COMMIT_POLICY).setMaxCommitMergeWaitSeconds(30);
+        .setMergePolicy(MERGE_ON_COMMIT_POLICY).setMaxCommitMergeWaitMillis(Integer.MAX_VALUE);
 
 
     IndexWriter writerWithMergePolicy = new IndexWriter(dir, iwc);
@@ -362,5 +367,171 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     });
     
     // TODO: Add more checks for other non-double setters!
+  }
+
+  public void testCarryOverNewDeletes() throws IOException, InterruptedException {
+    try (Directory directory = newDirectory()) {
+      boolean useSoftDeletes = random().nextBoolean();
+      CountDownLatch waitForMerge = new CountDownLatch(1);
+      CountDownLatch waitForUpdate = new CountDownLatch(1);
+      try (IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig()
+          .setMergePolicy(MERGE_ON_COMMIT_POLICY).setMaxCommitMergeWaitMillis(30 * 1000)
+          .setSoftDeletesField("soft_delete")
+          .setMaxBufferedDocs(Integer.MAX_VALUE)
+          .setRAMBufferSizeMB(100)
+          .setMergeScheduler(new ConcurrentMergeScheduler())) {
+        @Override
+        protected void merge(MergePolicy.OneMerge merge) throws IOException {
+          waitForMerge.countDown();
+          try {
+            waitForUpdate.await();
+          } catch (InterruptedException e) {
+            throw new AssertionError(e);
+          }
+          super.merge(merge);
+        }
+      }) {
+
+        Document d1 = new Document();
+        d1.add(new StringField("id", "1", Field.Store.NO));
+        Document d2 = new Document();
+        d2.add(new StringField("id", "2", Field.Store.NO));
+        Document d3 = new Document();
+        d3.add(new StringField("id", "3", Field.Store.NO));
+        writer.addDocument(d1);
+        writer.flush();
+        writer.addDocument(d2);
+        boolean addThreeDocs = random().nextBoolean();
+        int expectedNumDocs = 2;
+        if (addThreeDocs) { // sometimes add another doc to ensure we don't have a fully deleted segment
+          expectedNumDocs = 3;
+          writer.addDocument(d3);
+        }
+        Thread t = new Thread(() -> {
+          try {
+            waitForMerge.await();
+            if (useSoftDeletes) {
+              writer.softUpdateDocument(new Term("id", "2"), d2, new NumericDocValuesField("soft_delete", 1));
+            } else {
+              writer.updateDocument(new Term("id", "2"), d2);
+            }
+            writer.flush();
+          } catch (Exception e) {
+            throw new AssertionError(e);
+          } finally {
+            waitForUpdate.countDown();
+          }
+
+        });
+        t.start();
+        writer.commit();
+        t.join();
+        try (DirectoryReader open = new SoftDeletesDirectoryReaderWrapper(DirectoryReader.open(directory), "soft_delete")) {
+          assertEquals(expectedNumDocs, open.numDocs());
+          assertEquals("we should not have any deletes", expectedNumDocs, open.maxDoc());
+        }
+
+        try (DirectoryReader open = DirectoryReader.open(writer)) {
+          assertEquals(expectedNumDocs, open.numDocs());
+          assertEquals("we should not have one delete", expectedNumDocs+1, open.maxDoc());
+        }
+      }
+    }
+  }
+
+  /**
+   * This test makes sure we release the merge readers on abort. MDW will fail if it
+   * can't close all files
+   */
+  public void testAbortCommitMerge() throws IOException, InterruptedException {
+    try (Directory directory = newDirectory()) {
+      CountDownLatch waitForMerge = new CountDownLatch(1);
+      CountDownLatch waitForDeleteAll = new CountDownLatch(1);
+      try (IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig()
+          .setMergePolicy(MERGE_ON_COMMIT_POLICY).setMaxCommitMergeWaitMillis(30 * 1000)
+          .setMergeScheduler(new SerialMergeScheduler() {
+            @Override
+            public synchronized void merge(MergeSource mergeSource, MergeTrigger trigger) throws IOException {
+              waitForMerge.countDown();
+              try {
+                waitForDeleteAll.await();
+              } catch (InterruptedException e) {
+                throw new AssertionError(e);
+              }
+              super.merge(mergeSource, trigger);
+            }
+          }))) {
+
+        Document d1 = new Document();
+        d1.add(new StringField("id", "1", Field.Store.NO));
+        Document d2 = new Document();
+        d2.add(new StringField("id", "2", Field.Store.NO));
+        Document d3 = new Document();
+        d3.add(new StringField("id", "3", Field.Store.NO));
+        writer.addDocument(d1);
+        writer.flush();
+        writer.addDocument(d2);
+        Thread t = new Thread(() -> {
+          try {
+            writer.commit();
+          } catch (IOException e) {
+            throw new AssertionError(e);
+          }
+        });
+        t.start();
+        waitForMerge.await();
+        writer.deleteAll();
+        waitForDeleteAll.countDown();
+        t.join();
+      }
+    }
+  }
+
+  public void testStressUpdateSameDocumentWithMergeOnCommit() throws IOException, InterruptedException {
+    try (Directory directory = newDirectory()) {
+      try (RandomIndexWriter writer = new RandomIndexWriter(random(), directory, newIndexWriterConfig()
+          .setMergePolicy(MERGE_ON_COMMIT_POLICY).setMaxCommitMergeWaitMillis(10 + random().nextInt(2000))
+          .setSoftDeletesField("soft_delete")
+          .setMergeScheduler(new ConcurrentMergeScheduler()))) {
+        Document d1 = new Document();
+        d1.add(new StringField("id", "1", Field.Store.NO));
+        writer.updateDocument(new Term("id", "1"), d1);
+        writer.commit();
+
+        AtomicInteger iters = new AtomicInteger(100 + random().nextInt(TEST_NIGHTLY ? 5000 : 1000));
+        AtomicBoolean done = new AtomicBoolean(false);
+        Thread[] threads = new Thread[1 + random().nextInt(4)];
+        for (int i = 0; i < threads.length; i++) {
+          Thread t = new Thread(() -> {
+            try {
+              while (iters.decrementAndGet() > 0) {
+                writer.updateDocument(new Term("id", "1"), d1);
+              }
+            } catch (Exception e) {
+              throw new AssertionError(e);
+            } finally {
+              done.set(true);
+            }
+
+          });
+          t.start();
+          threads[i] = t;
+        }
+        try {
+          while (done.get() == false) {
+            if (random().nextBoolean()) {
+              writer.commit();
+            }
+            try (DirectoryReader open = new SoftDeletesDirectoryReaderWrapper(DirectoryReader.open(directory), "___soft_deletes")) {
+              assertEquals(1, open.numDocs());
+            }
+          }
+        } finally {
+          for (Thread t : threads) {
+            t.join();
+          }
+        }
+      }
+    }
   }
 }

@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 package org.apache.solr.handler.component;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.regex.Pattern;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
@@ -36,6 +36,9 @@ import org.junit.Test;
  *
  **/
 public class DebugComponentTest extends SolrTestCaseJ4 {
+
+  private static final String ANY_RID = "ANY_RID";
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
@@ -205,6 +208,8 @@ public class DebugComponentTest extends SolrTestCaseJ4 {
       req = req("q", "test query", "distrib", "true");
       rb = new ResponseBuilder(req, new SolrQueryResponse(), components);
       rb.isDistrib = true;
+      addRequestId(rb, ANY_RID);
+
       //expecting the same results with debugQuery=true or debug=track
       if(random().nextBoolean()) {
         rb.setDebug(true);
@@ -217,7 +222,7 @@ public class DebugComponentTest extends SolrTestCaseJ4 {
         rb.setDebugResults(random().nextBoolean());
       }
       component.prepare(rb);
-      ensureRidPresent(rb, null);
+      ensureTrackRecordsRid(rb, ANY_RID);
     }
    
     req = req("q", "test query", "distrib", "true", CommonParams.REQUEST_ID, "123");
@@ -225,24 +230,7 @@ public class DebugComponentTest extends SolrTestCaseJ4 {
     rb.isDistrib = true;
     rb.setDebug(true);
     component.prepare(rb);
-    ensureRidPresent(rb, "123");
-  }
-  
-  @SuppressWarnings("unchecked")
-  private void ensureRidPresent(ResponseBuilder rb, String expectedRid) {
-    SolrQueryRequest req = rb.req;
-    SolrQueryResponse resp = rb.rsp;
-    //a generated request ID should be added to the request
-    String rid = req.getParams().get(CommonParams.REQUEST_ID);
-    if(expectedRid == null) {
-      assertTrue(rid + " Doesn't match expected pattern.", Pattern.matches(".*-collection1-[0-9]*-[0-9]+", rid));
-    } else {
-      assertEquals("Expecting " + expectedRid + " but found " + rid, expectedRid, rid);
-    }
-    //The request ID is added to the debug/track section
-    assertEquals(rid, ((NamedList<Object>) rb.getDebugInfo().get("track")).get(CommonParams.REQUEST_ID));
-    //RID must be added to the toLog, so that it's included in the main request log
-    assertEquals(rid, resp.getToLog().get(CommonParams.REQUEST_ID));
+    ensureTrackRecordsRid(rb, "123");
   }
 
   //
@@ -278,5 +266,17 @@ public class DebugComponentTest extends SolrTestCaseJ4 {
         "//str[@name='parsedquery'][contains(.,'3.0')]"
     );
 
+  }
+
+  @SuppressWarnings("unchecked")
+  private void ensureTrackRecordsRid(ResponseBuilder rb, String expectedRid) {
+    final String rid = (String) ((NamedList<Object>) rb.getDebugInfo().get("track")).get(CommonParams.REQUEST_ID);
+    assertEquals("Expecting " + expectedRid + " but found " + rid, expectedRid, rid);
+  }
+
+  private void addRequestId(ResponseBuilder rb, String requestId) {
+    ModifiableSolrParams params = new ModifiableSolrParams(rb.req.getParams());
+    params.add(CommonParams.REQUEST_ID, requestId);
+    rb.req.setParams(params);
   }
 }

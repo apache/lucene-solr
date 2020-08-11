@@ -97,7 +97,6 @@ import org.apache.solr.util.DateMathParser;
  * acronym UTC was chosen as a compromise."
  * </blockquote>
  *
- * @see TrieDateField
  * @see PointField
  */
 public class DatePointField extends PointField implements DateValueFieldType {

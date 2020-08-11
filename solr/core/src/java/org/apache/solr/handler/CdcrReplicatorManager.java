@@ -56,6 +56,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.handler.admin.CoreAdminHandler.RESPONSE_STATUS;
 
+@Deprecated(since = "8.6")
 class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
 
   private static final int MAX_BOOTSTRAP_ATTEMPTS = 5;
@@ -368,7 +369,7 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
         log.info("Attempting to bootstrap target collection: {} shard: {} leader: {}", targetCollection, shard, leaderCoreUrl);
         try {
           @SuppressWarnings({"rawtypes"})
-          NamedList response = sendCdcrCommand(client, CdcrParams.CdcrAction.BOOTSTRAP, ReplicationHandler.MASTER_URL, myCoreUrl);
+          NamedList response = sendCdcrCommand(client, CdcrParams.CdcrAction.BOOTSTRAP, ReplicationHandler.LEADER_URL, myCoreUrl);
           log.debug("CDCR Bootstrap response: {}", response);
           String status = response.get(RESPONSE_STATUS).toString();
           return BootstrapStatus.valueOf(status.toUpperCase(Locale.ROOT));

@@ -81,7 +81,7 @@ public abstract class ConfigSetService {
               ) ? false: true;
 
       SolrConfig solrConfig = createSolrConfig(dcore, coreLoader, trusted);
-      IndexSchema schema = createIndexSchema(dcore, solrConfig);
+      ConfigSet.SchemaSupplier schema = force -> createIndexSchema(dcore, solrConfig, force);
       return new ConfigSet(configSetName(dcore), solrConfig, schema, properties, trusted);
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -118,7 +118,7 @@ public abstract class ConfigSetService {
    * @param solrConfig the core's SolrConfig
    * @return an IndexSchema
    */
-  protected IndexSchema createIndexSchema(CoreDescriptor cd, SolrConfig solrConfig) {
+  protected IndexSchema createIndexSchema(CoreDescriptor cd, SolrConfig solrConfig, boolean forceFetch) {
     // This is the schema name from the core descriptor.  Sometimes users specify a custom schema file.
     //   Important:  indexSchemaFactory.create wants this!
     String cdSchemaName = cd.getSchemaName();
@@ -135,6 +135,7 @@ public abstract class ConfigSetService {
       if (modVersion != null) {
         // note: luceneMatchVersion influences the schema
         String cacheKey = configSet + "/" + guessSchemaName + "/" + modVersion + "/" + solrConfig.luceneMatchVersion;
+        if(forceFetch) schemaCache.invalidate(cacheKey);
         return schemaCache.get(cacheKey,
             (key) -> indexSchemaFactory.create(cdSchemaName, solrConfig));
       } else {
@@ -207,7 +208,8 @@ public abstract class ConfigSetService {
     @Override
     public SolrResourceLoader createCoreResourceLoader(CoreDescriptor cd) {
       Path instanceDir = locateInstanceDir(cd);
-      return new SolrResourceLoader(instanceDir, parentLoader.getClassLoader());
+      SolrResourceLoader solrResourceLoader = new SolrResourceLoader(instanceDir, parentLoader.getClassLoader());
+      return solrResourceLoader;
     }
 
     @Override

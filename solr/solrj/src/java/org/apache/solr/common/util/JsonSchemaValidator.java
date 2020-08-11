@@ -34,21 +34,18 @@ import java.util.function.Function;
  * It validates most aspects of json schema but it is NOT A FULLY COMPLIANT JSON schema parser or validator.
  * This validator borrow some design's idea from https://github.com/networknt/json-schema-validator
  */
-@SuppressWarnings({"unchecked"})
+@SuppressWarnings({"unchecked", "rawtypes"})
 public class JsonSchemaValidator {
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private List<Validator> validators;
   private static Set<String> KNOWN_FNAMES = new HashSet<>(Arrays.asList(
       "description","documentation","default","additionalProperties"));
 
 
-  @SuppressWarnings({"rawtypes"})
   public JsonSchemaValidator(String jsonString) {
     this((Map) Utils.fromJSONString(jsonString));
   }
 
-  @SuppressWarnings({"rawtypes"})
   public JsonSchemaValidator(Map jsonSchema) {
     this.validators = new LinkedList<>();
     for (Object fname : jsonSchema.keySet()) {
@@ -61,7 +58,6 @@ public class JsonSchemaValidator {
     }
   }
 
-  @SuppressWarnings({"rawtypes"})
   static final Map<String, Function<Pair<Map,Object>, Validator>> VALIDATORS = new HashMap<>();
 
   static {
@@ -79,7 +75,6 @@ public class JsonSchemaValidator {
     return errs.isEmpty() ? null : errs;
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   boolean validate(Object data, List<String> errs) {
     if (data == null) return true;
     for (Validator validator : validators) {
@@ -93,7 +88,6 @@ public class JsonSchemaValidator {
 }
 
 abstract class Validator<T> {
-  @SuppressWarnings("unused")
   Validator(@SuppressWarnings({"rawtypes"})Map schema, T properties) {};
   abstract boolean validate(Object o, List<String> errs);
 }
@@ -182,7 +176,7 @@ class TypeValidator extends Validator<Object> {
 @SuppressWarnings({"rawtypes"})
 class ItemsValidator extends Validator<Map> {
   private JsonSchemaValidator validator;
-  ItemsValidator(@SuppressWarnings({"rawtypes"})Map schema, @SuppressWarnings({"rawtypes"})Map properties) {
+  ItemsValidator(Map schema, Map properties) {
     super(schema, properties);
     validator = new JsonSchemaValidator(properties);
   }
@@ -282,6 +276,7 @@ class PropertiesValidator extends Validator<Map<String, Map>> {
   }
 
   @Override
+  @SuppressWarnings({"rawtypes"})
   boolean validate(Object o, List<String> errs) {
     if (o instanceof Map) {
       @SuppressWarnings({"rawtypes"})

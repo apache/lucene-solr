@@ -368,7 +368,6 @@ You should get a response that looks like this:
                 "core":"mycollection_shard2_replica1",
                 "node_name":"127.0.0.1:7574_solr",
                 "leader":"true"}}}},
-        "maxShardsPerNode":"1",
         "router":{"name":"compositeId"},
         "replicationFactor":"1"}},
     "properties":{"urlScheme":"https"}}}
@@ -405,7 +404,7 @@ System.setProperty("javax.net.ssl.keyStorePassword", "secret");
 System.setProperty("javax.net.ssl.trustStore", "/path/to/solr-ssl.keystore.p12");
 System.setProperty("javax.net.ssl.trustStorePassword", "secret");
 String zkHost = "127.0.0.1:2181";
-CloudSolrClient client = new CloudSolrClient.Builder().withZkHost(zkHost).build();
+CloudSolrClient client = new CloudSolrClient.Builder(Collections.singletonList(zkHost),Optional.empty()).build();
 client.setDefaultCollection("mycollection");
 SolrInputDocument doc = new SolrInputDocument();
 doc.addField("id", "1234");

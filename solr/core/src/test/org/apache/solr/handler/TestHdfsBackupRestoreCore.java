@@ -33,7 +33,9 @@ import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.protocol.HdfsConstants.SafeModeAction;
+import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -57,6 +59,8 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 
 @ThreadLeakFilters(defaultFilters = true, filters = {
+    SolrIgnoredThreadsFilter.class,
+    QuickPatchThreadsFilter.class,
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
 @SolrTestCaseJ4.SuppressSSL     // Currently unknown why SSL does not work with this test
@@ -182,13 +186,13 @@ public class TestHdfsBackupRestoreCore extends SolrCloudTestCase {
     boolean testViaReplicationHandler = random().nextBoolean();
     String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
 
-    try (HttpSolrClient masterClient = getHttpSolrClient(replicaBaseUrl)) {
+    try (HttpSolrClient leaderClient = getHttpSolrClient(replicaBaseUrl)) {
       // Create a backup.
       if (testViaReplicationHandler) {
         log.info("Running Backup via replication handler");
         BackupRestoreUtils.runReplicationHandlerCommand(baseUrl, coreName, ReplicationHandler.CMD_BACKUP, "hdfs", backupName);
         final BackupStatusChecker backupStatus
-          = new BackupStatusChecker(masterClient, "/" + coreName + "/replication");
+          = new BackupStatusChecker(leaderClient, "/" + coreName + "/replication");
         backupStatus.waitForBackupSuccess(backupName, 30);
       } else {
         log.info("Running Backup via core admin api");
@@ -205,9 +209,9 @@ public class TestHdfsBackupRestoreCore extends SolrCloudTestCase {
           //Delete a few docs
           int numDeletes = TestUtil.nextInt(random(), 1, nDocs);
           for(int i=0; i<numDeletes; i++) {
-            masterClient.deleteByQuery(collectionName, "id:" + i);
+            leaderClient.deleteByQuery(collectionName, "id:" + i);
           }
-          masterClient.commit(collectionName);
+          leaderClient.commit(collectionName);
 
           //Add a few more
           int moreAdds = TestUtil.nextInt(random(), 1, 100);
@@ -215,11 +219,11 @@ public class TestHdfsBackupRestoreCore extends SolrCloudTestCase {
             SolrInputDocument doc = new SolrInputDocument();
             doc.addField("id", i + nDocs);
             doc.addField("name", "name = " + (i + nDocs));
-            masterClient.add(collectionName, doc);
+            leaderClient.add(collectionName, doc);
           }
           //Purposely not calling commit once in a while. There can be some docs which are not committed
           if (usually()) {
-            masterClient.commit(collectionName);
+            leaderClient.commit(collectionName);
           }
         }
         // Snapshooter prefixes "snapshot." to the backup name.
@@ -238,7 +242,7 @@ public class TestHdfsBackupRestoreCore extends SolrCloudTestCase {
           BackupRestoreUtils.runCoreAdminCommand(replicaBaseUrl, coreName, CoreAdminAction.RESTORECORE.toString(), params);
         }
         //See if restore was successful by checking if all the docs are present again
-        BackupRestoreUtils.verifyDocs(nDocs, masterClient, coreName);
+        BackupRestoreUtils.verifyDocs(nDocs, leaderClient, coreName);
 
         // Verify the permissions for the backup folder.
         FileStatus status = fs.getFileStatus(new org.apache.hadoop.fs.Path("/backup/snapshot."+backupName));

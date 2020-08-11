@@ -38,14 +38,102 @@ Detailed steps for upgrading a Solr cluster are in the section <<upgrading-a-sol
 
 If you are upgrading from 7.x, see the section <<Upgrading from 7.x Releases>> below.
 
+=== Solr 8.6
+
+See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote86[8.6 Release Notes^]
+for an overview of the main new features of Solr 8.6.
+
+When upgrading to 8.6.x users should be aware of the following major changes from 8.5.
+
+*Support for Block-Max WAND*
+
+Lucene added support for Block-Max WAND in 8.0, and 8.6 makes this available for Solr also.
+
+This can provide significant performance enhancements by not calculating the score for results which are not likely to appear in the top set of results.
+
+It is enabled when using a new query parameter `minExactCount`.
+This parameter tells Solr to accurately count the number of hits accurately until at least this value.
+Once this value is reached, Solr can skip over documents that don't have a score high enough to be in the top set of documents, which has the potential for greatly speeding up searches.
+
+It's important to note that when using this parameter, the hit count of searches may not be accurate.
+It is guaranteed that the hit count is accurate up to the value of `minExactCount`, but any returned hit count higher than that may be an approximation.
+
+A new boolean attribute `numFoundExact` is included in all responses to indicate if the hit count in the response is expected to be exact or not.
+
+More information about this new feature is available in the section <<common-query-parameters.adoc#minexactcount-parameter,minExactCount Parameter>>.
+
+*Autoscaling*
+
+* Solr now includes a default autoscaling policy.
+This policy can be overridden with your custom rules or by specifying an empty policy to replace the default.
+
+* The ComputePlan action now supports a collection selector to identify collections based on collection properties to determine which collections should be operated on.
+
+*Security*
+
+* Prior to Solr 8.6 Solr APIs which take a file system location, such as core creation, backup, restore, and others, did not validate the path and Solr would allow any absolute or relative path.
+Starting in 8.6 only paths that are relative to `SOLR_HOME`, `SOLR_DATA_HOME` and `coreRootDir` are allowed by default.
++
+If you need to create a core or store a backup outside the default paths, you will need to tell Solr which paths to allow.
+A new element in `solr.xml` called `allowPaths` takes a comma-separated list of allowed paths.
++
+When using the `solr.xml` file that ships with 8.6, you can configure the list of paths to allow through the system property `solr.allowPaths`.
+Please see `bin/solr.in.sh` or `bin\solr.in.cmd` for example usage.
+Using the value `*` will allow any path as in earlier versions.
++
+For more on this, see the section <<format-of-solr-xml.adoc#the-solr-element,Solr.xml Parameters>>.
++
+Windows SMB shares on the UNC format, such as `\\myhost\myshare\mypath` are now always disallowed.
+Please use drive letter mounts instead, i.e., `S:\mypath`.
+
+* A new authorization plugin `ExternalRoleRuleBasedAuthorizationPlugin` is now available.
+This plugin allows an authentication plugin (such as JWT) to supply a user's roles instead of maintaining a user-to-role mapping inside Solr.
+
+* When authentication is enabled, the Admin UI Dashboard (main screen) now includes a panel that shows the authentication and authorization plugins in use, the logged in username, and the roles assigned to this user.
+A new link will also appear in the left-hand navigation to allow a user to log out.
+
+*Streaming Expressions*
+
+* The `/export` handler now supports streaming expressions to allow limiting the output of the export to only matching documents.
++
+For more information about how to use this, see the section <<exporting-result-sets.adoc#specifying-the-local-streaming-expression,Specifying the Local Streaming Expression>>.
+
+* The `stats`, `facet`, and `timeseries` expressions now support percentiles and standard deviation aggregations.
+
+*Highlighting*
+
+For the Unified Highlighter: The setting `hl.fragsizeIsMinimum` now defaults to `false` because `true` was found to be a significant performance regression when highlighting lots of text.
+This will yield longer highlights on average compared to Solr 8.5 but relatively unchanged compared to previous releases.
+Furthermore, if your application highlights lots of text, you may want to experiment with lowering `hl.fragAlignRatio` to trade ideal fragment alignment for better performance.
+
+*Deprecations*
+
+A primary focus of the community is improving Solr's stability and supportability.
+With the addition of the package manager system in 8.4, we now have the ability to move some features into plugins maintained by third-parties with the expertise to properly develop and support them.
+Our goal is to make running Solr easier and less prone to outages and other headaches.
+In this spirit, the following features have been deprecated and are slated to be removed in Solr 9.0.
+
+* Cross Data Center Replication (CDCR), in its current form, is deprecated and is scheduled to be removed in 9.0.
+This feature is unlikely to be replaced by an identical plugin.
+However, the community is working on figuring out a replacement feature for disaster recovery and failover.
+
+* The Data Import Handler (DIH) is deprecated and is scheduled to be removed in 9.0.
+Work to replace DIH with a community-supported plugin is underway and may be available soon.
+
+* Support to store indexes and backups in HDFS is deprecated and is scheduled to be removed in 9.0.
+A community-supported version of this may be available as a plugin in the future.
+For more details, please see https://issues.apache.org/jira/browse/SOLR-14021[SOLR-14021^].
+
+Users interested in maintaining a feature as a plugin are encouraged to join the https://lucene.apache.org/solr/community.html#mailing-lists-irc[developer mailing list^] to find out more about how to help.
+
 === Solr 8.5
 
-See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote85[8.5 Release Notes]
+See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote85[8.5 Release Notes^]
 for an overview of the main new features of Solr 8.5.
 
 When upgrading to 8.5.x users should be aware of the following major changes from 8.4.
 
-__Note: an index incompatibility warning was retroactively added below to 8.4 for users choosing a non-default postings format (e.g. "FST50").__
+__Note: an index incompatibility warning was retroactively added below to 8.4 for users choosing a non-default postings format (e.g., "FST50").__
 
 *Considerations for a SolrCloud Upgrade*
 
@@ -116,13 +204,15 @@ By default, the <<other-parsers.adoc#boolean-query-parser,Boolean Query Parser>>
 Solr now includes a command line tool, `bin/postlogs` which will index Solr's log files into a collection.
 This provides an easy way to use Solr or visualization tools (such as Zeppelin) to troubleshoot problems with the system.
 
-This tool is not yet officially documented in the Reference Guide, but draft documentation is available in a branch and can be accessed https://github.com/apache/lucene-solr/blob/visual-guide/solr/solr-ref-guide/src/logs.adoc[via GitHub].
+This tool is not yet officially documented in the Reference Guide, but draft documentation is available in a branch and can be accessed https://github.com/apache/lucene-solr/blob/visual-guide/solr/solr-ref-guide/src/logs.adoc[via GitHub^].
 
 *Highlighting*
 
 Solr's Unified Highlighter now has two parameters to help control passage sizing, `hl.fragAlignRatio` and `hl.fragsizeIsMinimum`.
 See the section <<highlighting.adoc#the-unified-highlighter,The Unified Highlighter>> for details about these new parameters.
 Regardless of the settings, the passages may be sized differently than before.
+_Warning: These default settings were found to be a significant performance regression for apps that highlight lots of text with the default sentence break iterator.
+See the 8.6 upgrade notes for advise you can apply in 8.5._
 
 *Shared Library System Parameter*
 
@@ -132,7 +222,7 @@ This property can now be defined in `solr.in.sh` or `solr.in.cmd` as a system pr
 
 === Solr 8.4
 
-See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote84[8.4 Release Notes]
+See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote84[8.4 Release Notes^]
 for an overview of the main new features of Solr 8.4.
 
 When upgrading to 8.4.x users should be aware of the following major changes from 8.3.
@@ -157,8 +247,6 @@ The system is currently considered experimental, so use with caution. It must
 be enabled with a system parameter passed at start up before it can be used.
 For details, please see the section <<package-manager.adoc#package-manager,Package Management>>.
 
-With this feature Solr's <<adding-custom-plugins-in-solrcloud-mode.adoc#adding-custom-plugins-in-solrcloud-mode,Blob Store>>
-functionality is now deprecated and will likely be removed in 9.0.
 
 *Security*
 
@@ -261,7 +349,7 @@ Users are encouraged to transition their cache configurations to use
 
 === Solr 8.3
 
-See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote83[8.3 Release Notes] for an overview of the main new features of Solr 8.3.
+See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote83[8.3 Release Notes^] for an overview of the main new features of Solr 8.3.
 
 When upgrading to 8.3.x users should be aware of the following major changes from 8.2.
 
@@ -288,7 +376,7 @@ See the section <<query-settings-in-solrconfig.adoc#query-settings-in-solrconfig
 
 === Solr 8.2
 
-See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote82[8.2 Release Notes] for an overview of the main new features of Solr 8.2.
+See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote82[8.2 Release Notes^] for an overview of the main new features of Solr 8.2.
 
 When upgrading to 8.2.x, users should be aware of the following major changes from v8.1.
 
@@ -326,7 +414,7 @@ This release adds support for tracing requests in Solr. Please review the sectio
 
 === Solr 8.1
 
-See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote810[8.1 Release Notes] for an overview of the main new features of Solr 8.1.
+See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote810[8.1 Release Notes^] for an overview of the main new features of Solr 8.1.
 
 When upgrading to 8.1.x, users should be aware of the following major changes from v8.0.
 

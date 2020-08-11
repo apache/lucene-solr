@@ -268,21 +268,12 @@ public abstract class DoubleValuesSource implements SegmentCacheable {
 
   private static class ConstantValuesSource extends DoubleValuesSource {
 
+    private final DoubleValues doubleValues;
     private final double value;
 
     private ConstantValuesSource(double value) {
       this.value = value;
-    }
-
-    @Override
-    public DoubleValuesSource rewrite(IndexSearcher searcher) {
-      return this;
-    }
-
-
-    @Override
-    public DoubleValues getValues(LeafReaderContext ctx, DoubleValues scores) throws IOException {
-      return new DoubleValues() {
+      this.doubleValues = new DoubleValues() {
         @Override
         public double doubleValue() throws IOException {
           return value;
@@ -293,6 +284,17 @@ public abstract class DoubleValuesSource implements SegmentCacheable {
           return true;
         }
       };
+    }
+
+    @Override
+    public DoubleValuesSource rewrite(IndexSearcher searcher) {
+      return this;
+    }
+
+
+    @Override
+    public DoubleValues getValues(LeafReaderContext ctx, DoubleValues scores) throws IOException {
+      return doubleValues;
     }
 
     @Override

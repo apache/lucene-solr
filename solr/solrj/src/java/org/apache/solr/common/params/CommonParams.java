@@ -189,10 +189,6 @@ public interface CommonParams {
   String SYSTEM_INFO_PATH = "/admin/info/system";
   String METRICS_PATH = "/admin/metrics";
   String METRICS_HISTORY_PATH = "/admin/metrics/history";
-  String AUTOSCALING_PATH = "/admin/autoscaling";
-  String AUTOSCALING_HISTORY_PATH = "/admin/autoscaling/history";
-  String AUTOSCALING_DIAGNOSTICS_PATH = "/admin/autoscaling/diagnostics";
-  String AUTOSCALING_SUGGESTIONS_PATH = "/admin/autoscaling/suggestions";
 
   String STATUS = "status";
 
@@ -208,11 +204,7 @@ public interface CommonParams {
       AUTHC_PATH,
       AUTHZ_PATH,
       METRICS_PATH,
-      METRICS_HISTORY_PATH,
-      AUTOSCALING_PATH,
-      AUTOSCALING_HISTORY_PATH,
-      AUTOSCALING_DIAGNOSTICS_PATH,
-      AUTOSCALING_SUGGESTIONS_PATH);
+      METRICS_HISTORY_PATH);
   String APISPEC_LOCATION = "apispec/";
   String INTROSPECT = "/_introspect";
 
@@ -266,9 +258,20 @@ public interface CommonParams {
   String COST = "cost";
 
   /**
-   * Request ID parameter added to the request when using debug=track
+   * Request ID parameter added to all distributed queries (that do not opt out)
+   *
+   * @see #DISABLE_REQUEST_ID
    */
   String REQUEST_ID = "rid";
+
+  /**
+   * An opt-out flag to prevent the addition of {@link #REQUEST_ID} tracing on distributed queries
+   *
+   * Defaults to 'false' if not specified.
+   *
+   * @see #REQUEST_ID
+   */
+  String DISABLE_REQUEST_ID = "disableRequestId";
 
   /**
    * Request Purpose parameter added to each internal shard request when using debug=track
@@ -290,6 +293,10 @@ public interface CommonParams {
 
   String NAME = "name";
   String VALUE_LONG = "val";
+
+  String SOLR_REQUEST_CONTEXT_PARAM = "Solr-Request-Context";
+
+  String SOLR_REQUEST_TYPE_PARAM = "Solr-Request-Type";
 
   String VERSION_FIELD="_version_";
 

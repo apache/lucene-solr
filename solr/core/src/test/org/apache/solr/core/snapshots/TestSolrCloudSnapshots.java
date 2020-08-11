@@ -65,6 +65,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
   @BeforeClass
   public static void setupClass() throws Exception {
     useFactory("solr.StandardDirectoryFactory");
+    System.setProperty("solr.allowPaths", "*");
     configureCluster(NUM_NODES)// nodes
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
@@ -76,6 +77,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
   public static void teardownClass() throws Exception {
     System.clearProperty("test.build.data");
     System.clearProperty("test.cache.data");
+    System.clearProperty("solr.allowPaths");
   }
 
   @Test
@@ -186,11 +188,11 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
     {
       CollectionAdminRequest.Restore restore = CollectionAdminRequest.restoreCollection(restoreCollectionName, backupName)
           .setLocation(backupLocation);
-      if (replicaFailures) {
-        // In this case one of the Solr servers would be down. Hence we need to increase
-        // max_shards_per_node property for restore command to succeed.
-        restore.setMaxShardsPerNode(2);
-      }
+//      if (replicaFailures) {
+//        // In this case one of the Solr servers would be down. Hence we need to increase
+//        // max_shards_per_node property for restore command to succeed.
+//        restore.setMaxShardsPerNode(2);
+//      }
       if (random().nextBoolean()) {
         assertEquals(0, restore.process(solrClient).getStatus());
       } else {

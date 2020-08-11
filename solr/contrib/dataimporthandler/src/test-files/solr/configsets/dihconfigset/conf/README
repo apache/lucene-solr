@@ -1,0 +1,2 @@
+The files here are copies of "dataimport-solrconfig.xml" and "dataimport-schema.xml"
+This config set is used by test org.apache.solr.handler.dataimport.TestZKPropertiesWriter that is starting a SolrCloud mini cluster.

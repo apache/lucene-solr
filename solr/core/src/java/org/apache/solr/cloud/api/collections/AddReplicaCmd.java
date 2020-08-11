@@ -44,12 +44,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.cloud.ActiveReplicaWatcher;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
@@ -62,6 +60,7 @@ import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -75,12 +74,6 @@ import org.slf4j.LoggerFactory;
 
 public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  /**
-   * When AddReplica is called with this set to true, then we do not try to find node assignments
-   * for the add replica API. If set to true, a valid "node" should be specified.
-   */
-  public static final String SKIP_NODE_ASSIGNMENT = "skipNodeAssignment";
 
   private final OverseerCollectionMessageHandler ocmh;
 
@@ -153,18 +146,11 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       }
     }
 
-    AtomicReference<PolicyHelper.SessionWrapper> sessionWrapper = new AtomicReference<>();
-    List<CreateReplica> createReplicas;
-    try {
-      createReplicas = buildReplicaPositions(ocmh.cloudManager, clusterState, collectionName, message, replicaTypesVsCount, sessionWrapper)
+    List<CreateReplica> createReplicas = buildReplicaPositions(ocmh.cloudManager, clusterState, collectionName, message, replicaTypesVsCount)
           .stream()
           .map(replicaPosition -> assignReplicaDetails(ocmh.cloudManager, clusterState, message, replicaPosition))
           .collect(Collectors.toList());
-    } finally {
-      if (sessionWrapper.get() != null) {
-        sessionWrapper.get().release();
-      }
-    }
+
 
     ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler();
     ZkStateReader zkStateReader = ocmh.zkStateReader;
@@ -233,7 +219,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
             ZkStateReader.SHARD_ID_PROP, withCollectionShard,
             "node", createReplica.node,
             // since we already computed node assignments (which include assigning a node for this withCollection replica) we want to skip the assignment step
-            SKIP_NODE_ASSIGNMENT, "true",
+            CollectionAdminParams.SKIP_NODE_ASSIGNMENT, "true",
             CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.TRUE.toString()); // set to true because we want `withCollection` to be ready after this collection is created
         addReplica(clusterState, props, results, null);
       }
@@ -344,10 +330,9 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
 
   public static List<ReplicaPosition> buildReplicaPositions(SolrCloudManager cloudManager, ClusterState clusterState,
                                                             String collectionName, ZkNodeProps message,
-                                                            EnumMap<Replica.Type, Integer> replicaTypeVsCount,
-                                                            AtomicReference< PolicyHelper.SessionWrapper> sessionWrapper) throws IOException, InterruptedException {
+                                                            EnumMap<Replica.Type, Integer> replicaTypeVsCount) throws IOException, InterruptedException {
     boolean skipCreateReplicaInClusterState = message.getBool(SKIP_CREATE_REPLICA_IN_CLUSTER_STATE, false);
-    boolean skipNodeAssignment = message.getBool(SKIP_NODE_ASSIGNMENT, false);
+    boolean skipNodeAssignment = message.getBool(CollectionAdminParams.SKIP_NODE_ASSIGNMENT, false);
     String sliceName = message.getStr(SHARD_ID_PROP);
     DocCollection collection = clusterState.getCollection(collectionName);
 
@@ -370,7 +355,6 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
 
       positions = Assign.getNodesForNewReplicas(clusterState, collection.getName(), sliceName, numNrtReplicas,
                     numTlogReplicas, numPullReplicas, createNodeSetStr, cloudManager);
-      sessionWrapper.set(PolicyHelper.getLastSessionWrapper(true));
     }
 
     if (positions == null)  {
