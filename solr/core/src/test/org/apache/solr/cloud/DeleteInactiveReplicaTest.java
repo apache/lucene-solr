@@ -72,11 +72,6 @@ public class DeleteInactiveReplicaTest extends SolrCloudTestCase {
 
     cluster.stopJettySolrRunner(jetty);
 
-    waitForState("Expected replica " + replica.getName() + " on down node to be removed from cluster state", collectionName, (n, c) -> {
-      Replica r = c.getReplica(replica.getCoreName());
-      return r == null || r.getState() != Replica.State.ACTIVE;
-    });
-
     cluster.getSolrClient().getZkStateReader().waitForState(collectionName, 10, TimeUnit.SECONDS, (n,c)->{
       if (c == null) return false;
       Replica rep = c.getReplica(replica.getName());

@@ -312,7 +312,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
           try {
             qtp.stop();
           } catch (Exception e) {
-            log.error("Error stopping qtp", e);
+            ParWork.propegateInterrupt(e);
           }
         });
         closer.collect(() -> {

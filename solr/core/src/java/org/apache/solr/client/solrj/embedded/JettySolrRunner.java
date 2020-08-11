@@ -758,17 +758,11 @@ public class JettySolrRunner implements Closeable {
         closer.addCollect("stopServer");
       }
 
-
       try {
-
         server.join();
       } catch (InterruptedException e) {
         SolrZkClient.checkInterrupted(e);
         throw new RuntimeException(e);
-      }
-
-      if (config.qtp == null) {
-      //  qtp.stop();
       }
 
     } catch (Exception e) {
@@ -802,14 +796,7 @@ public class JettySolrRunner implements Closeable {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
         }
       }
-//      if (server.getState().equals(Server.FAILED)) {
-//        if (filter != null) filter.destroy();
-//        if (extraFilters != null) {
-//          for (FilterHolder f : extraFilters) {
-//            f.getFilter().destroy();
-//          }
-//        }
-//      }
+
       assert ObjectReleaseTracker.release(this);
       if (prevContext != null) {
         MDC.setContextMap(prevContext);

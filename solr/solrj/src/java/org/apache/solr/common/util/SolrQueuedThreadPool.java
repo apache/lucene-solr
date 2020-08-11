@@ -1015,8 +1015,8 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
             jobs.offer(NOOP);
         }
 
-        // try to let jobs complete naturally for half our stop time
-        joinThreads( TimeUnit.MILLISECONDS.toNanos(10000));
+        // try to let jobs complete naturally our stop time
+        joinThreads( TimeUnit.MILLISECONDS.toNanos(getStopTimeout()));
 
     }
 
@@ -1027,10 +1027,11 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
                 stop();
             }
             while (isStopping()) {
-                Thread.sleep(1);
+                Thread.sleep(10);
             }
         } catch (Exception e) {
             ParWork.propegateInterrupt("Exception closing", e);
+            throw new RuntimeException(e);
         }
 
         assert ObjectReleaseTracker.release(this);
