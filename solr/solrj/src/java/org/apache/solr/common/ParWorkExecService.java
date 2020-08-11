@@ -99,11 +99,7 @@ public class ParWorkExecService implements ExecutorService {
           return CompletableFuture.completedFuture(callable.call());
         }
       } else {
-        try {
-          available.acquire();
-        } catch (InterruptedException e) {
-          available.acquire();
-        }
+        return service.submit(callable);
       }
       Future<T> future = service.submit(callable);
       return new Future<T>() {
@@ -192,11 +188,7 @@ public class ParWorkExecService implements ExecutorService {
           return CompletableFuture.completedFuture(null);
         }
       } else {
-        try {
-          available.acquire();
-        } catch (InterruptedException e) {
-          available.acquire();
-        }
+        return service.submit(runnable);
       }
       Future<?> future = service.submit(runnable);
 
