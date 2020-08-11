@@ -126,7 +126,7 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
               // The replica changed it term, then published itself as RECOVERING.
               // This core already see replica as RECOVERING
               // so it is guarantees that a live-fetch will be enough for this core to see max term published
-              shardTerms.refreshTerms();
+              shardTerms.refreshTerms(null);
             }
 
             boolean onlyIfActiveCheckResult = onlyIfLeaderActive != null && onlyIfLeaderActive
