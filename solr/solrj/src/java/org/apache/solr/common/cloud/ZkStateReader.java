@@ -975,7 +975,7 @@ public class ZkStateReader implements SolrCloseable {
     if (clusterState == null) {
       return null;
     }
-    final DocCollection docCollection = clusterState.getCollectionOrNull(collection);
+    final DocCollection docCollection = clusterState.getCollectionOrNull(collection, true);
     if (docCollection == null || docCollection.getSlicesMap() == null) {
       throw new ZooKeeperException(ErrorCode.BAD_REQUEST,
           "Could not find collection in zk: " + collection);

@@ -91,7 +91,7 @@ public class ClusterStatus {
     if (collection == null) {
       collectionsMap = clusterState.getCollectionsMap();
     } else  {
-      collectionsMap = Collections.singletonMap(collection, clusterState.getCollectionOrNull(collection));
+      collectionsMap = Collections.singletonMap(collection, clusterState.getCollectionOrNull(collection, true));
     }
 
     boolean isAlias = aliasVsCollections.containsKey(collection);

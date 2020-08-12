@@ -117,7 +117,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     cloneRequiredOnLeader = isCloneRequiredOnLeader(next);
     collection = cloudDesc.getCollectionName();
     clusterState = zkController.getClusterState();
-    DocCollection coll = clusterState.getCollectionOrNull(collection);
+    DocCollection coll = clusterState.getCollectionOrNull(collection, true);
     if (coll != null) {
       // check readOnly property in coll state
       readOnlyCollection = coll.isReadOnly();
@@ -838,7 +838,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
 
   private List<SolrCmdDistributor.Node> getCollectionUrls(String collection, EnumSet<Replica.Type> types, boolean onlyLeaders) {
-    final DocCollection docCollection = clusterState.getCollectionOrNull(collection);
+    final DocCollection docCollection = clusterState.getCollectionOrNull(collection, true);
     if (collection == null || docCollection.getSlicesMap() == null) {
       throw new ZooKeeperException(SolrException.ErrorCode.BAD_REQUEST,
           "Could not find collection in zk: " + clusterState);
@@ -994,7 +994,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         if (id == null) {
           for (Map.Entry<String, RoutingRule> entry : routingRules.entrySet()) {
             String targetCollectionName = entry.getValue().getTargetCollectionName();
-            final DocCollection docCollection = cstate.getCollectionOrNull(targetCollectionName);
+            final DocCollection docCollection = cstate.getCollectionOrNull(targetCollectionName, true);
             if (docCollection != null && docCollection.getActiveSlicesArr().length > 0) {
               final Slice[] activeSlices = docCollection.getActiveSlicesArr();
               Slice any = activeSlices[0];

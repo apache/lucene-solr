@@ -391,7 +391,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
    */
   private boolean replicasWithHigherTermParticipated(ZkShardTerms zkShardTerms, String coreNodeName) {
     ClusterState clusterState = zkController.getClusterState();
-    DocCollection docCollection = clusterState.getCollectionOrNull(collection);
+    DocCollection docCollection = clusterState.getCollectionOrNull(collection, true);
     Slice slices = (docCollection == null) ? null : docCollection.getSlice(shardId);
     if (slices == null) return false;
 

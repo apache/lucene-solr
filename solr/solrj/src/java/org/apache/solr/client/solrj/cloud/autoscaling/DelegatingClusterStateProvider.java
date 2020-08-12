@@ -111,7 +111,7 @@ public class DelegatingClusterStateProvider implements ClusterStateProvider {
   @Override
   public DocCollection getCollection(String name) throws IOException {
     ClusterState cs = getClusterState();
-    return cs == null ? null : cs.getCollectionOrNull(name);
+    return cs == null ? null : cs.getCollectionOrNull(name, true);
   }
 
   @Override
