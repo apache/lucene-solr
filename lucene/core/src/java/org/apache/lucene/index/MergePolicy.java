@@ -421,7 +421,7 @@ public abstract class MergePolicy {
     /**
      * Called just before the merge is applied to IndexWriter's SegmentInfos
      */
-    void onMergeComplete() {
+    void onMergeComplete() throws IOException {
     }
 
     /**
