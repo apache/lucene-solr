@@ -22,7 +22,7 @@ that can be active. The default rate limiting is implemented for updates and sea
 If a request exceeds the request quota, further incoming requests are rejected with HTTP error code 429 (Too Many Requests).
 
 Note that rate limiting works at an instance (JVM) level, not at a core or collection level. Consider that when planning capacity.
-There is a future work planned to have finer grained execution here (https://issues.apache.org/jira/browse/SOLR-14710).
+There is future work planned to have finer grained execution here (https://issues.apache.org/jira/browse/SOLR-14710[SOLR-14710]).
 
 == When To Use Rate Limiters
 Rate limiters should be used when the user wishes to allocate a guaranteed capacity of the request threadpool to a specific
@@ -31,16 +31,17 @@ pronounced under high stress in production workloads. The current implementation
 resources for indexing.
 
 == Rate Limiter Configurations
-The default rate limiter is search rate limiter. Accordingly, it can be configured in web.xml under initParams for
-SolrRequestFilter.
+The default rate limiter is search rate limiter. Accordingly, it can be configured in `web.xml` under `initParams` for
+`SolrRequestFilter`.
 
 [source,xml]
 ----
 <filter-name>SolrRequestFilter</filter-name>
 ----
 
-==== Enable Query Rate Limiter
-Controls enabling of query rate limiter. Default value is false.
+=== Enable Query Rate Limiter
+Controls enabling of query rate limiter. Default value is `false`.
+
 [source,xml]
 ----
 <param-name>isQueryRateLimiterEnabled</param-name>
@@ -50,8 +51,9 @@ Controls enabling of query rate limiter. Default value is false.
 <param-value>true</param-value>
 ----
 
-==== Maximum Number Of Concurrent Requests
+=== Maximum Number Of Concurrent Requests
 Allows setting maximum concurrent search requests at a given point in time. Default value is number of cores * 3.
+
 [source,xml]
 ----
 <param-name>maxQueryRequests</param-name>
@@ -61,7 +63,7 @@ Allows setting maximum concurrent search requests at a given point in time. Defa
 <param-value>15</param-value>
 ----
 
-==== Request Slot Allocation Wait Time
+=== Request Slot Allocation Wait Time
 Wait time in ms for which a request will wait for a slot to be available when all slots are full,
 before the request is put into the wait queue. This allows requests to have a chance to proceed if
 the unavailability of the request slots for this rate limiter is a transient phenomenon. Default value
@@ -76,11 +78,12 @@ can lead to larger queue times and can potentially lead to longer wait times for
 <param-value>100</param-value>
 ----
 
-==== Slot Borrowing Enabled
+=== Slot Borrowing Enabled
 If slot borrowing (described below) is enabled or not. Default value is false.
 
 NOTE: This feature is experimental and can cause slots to be blocked if the
 borrowing request is long lived.
+
 [source,xml]
 ----
 <param-name>queryAllowSlotBorrowing</param-name>
@@ -90,7 +93,7 @@ borrowing request is long lived.
 <param-value>true</param-value>
 ----
 
-==== Guaranteed Slots
+=== Guaranteed Slots
 The number of guaranteed slots that the query rate limiter will reserve irrespective
 of the load of query requests. This is used only if slot borrowing is enabled and acts
 as the threshold beyond which query rate limiter will not allow other request types to
@@ -98,6 +101,7 @@ borrow slots from its quota. Default value is allowed number of concurrent reque
 
 NOTE: This feature is experimental and can cause slots to be blocked if the
 borrowing request is long lived.
+
 [source,xml]
 ----
 <param-name>queryGuaranteedSlots</param-name>
@@ -109,7 +113,7 @@ borrowing request is long lived.
 
 == Salient Points
 
-These are some of the things to keep in mind when using rate limiters
+These are some of the things to keep in mind when using rate limiters.
 
 === Over Subscribing
 It is possible to define a size of quota for a request type which exceeds the size
@@ -125,4 +129,3 @@ pending task to make it a priority based model (https://issues.apache.org/jira/b
 
 NOTE: This feature is experimental and gives no guarantee of borrowed slots being
 returned in time.
-

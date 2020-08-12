@@ -14,39 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.search.spell;
 
+
+package org.apache.solr.cluster.api;
 
 /**
- * SuggestWord, used in suggestSimilar method in SpellChecker class.
- * <p>
- * Default sort is first by score, then by frequency.
+ * A range of hash that is stored in a shard
  */
-public final class SuggestWord{
-  
-  /**
-   * Creates a new empty suggestion with null text.
-   */
-  public SuggestWord() {}
-  
-  /**
-   * the score of the word
-   */
-  public float score;
+public interface HashRange {
 
-  /**
-   * The freq of the word
-   */
-  public int freq;
+  /** minimum value (inclusive) */
+  int min();
 
-  /**
-   * the suggested word
-   */
-  public String string;
+  /** maximum value (inclusive) */
+  int max();
 
-  @Override
-  public String toString() {
-    return "SuggestWord(string=" + string + ", score=" + score + ", freq=" + freq + ")";
+  /** Check if a given hash falls in this range */
+  default boolean includes(int hash) {
+    return hash >= min() && hash <= max();
+  }
+
+  /** Check if another range is a subset of this range */
+  default boolean isSubset(HashRange subset) {
+    return min() <= subset.min() && max() >= subset.max();
   }
 
 }

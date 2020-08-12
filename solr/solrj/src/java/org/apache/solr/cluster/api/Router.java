@@ -14,39 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.search.spell;
 
+package org.apache.solr.cluster.api;
 
-/**
- * SuggestWord, used in suggestSimilar method in SpellChecker class.
- * <p>
- * Default sort is first by score, then by frequency.
- */
-public final class SuggestWord{
-  
-  /**
-   * Creates a new empty suggestion with null text.
-   */
-  public SuggestWord() {}
-  
-  /**
-   * the score of the word
-   */
-  public float score;
+/**identify shards for a given routing key or document id */
+public interface Router {
 
-  /**
-   * The freq of the word
-   */
-  public int freq;
-
-  /**
-   * the suggested word
-   */
-  public String string;
-
-  @Override
-  public String toString() {
-    return "SuggestWord(string=" + string + ", score=" + score + ", freq=" + freq + ")";
-  }
-
+    /**shard name for a given routing key */
+    String shard(String routingKey);
 }
