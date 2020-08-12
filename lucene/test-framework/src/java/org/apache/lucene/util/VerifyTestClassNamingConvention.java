@@ -33,6 +33,9 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+/**
+ * Enforce test naming convention.
+ */
 public class VerifyTestClassNamingConvention extends AbstractBeforeAfterRule {
   public static final Pattern ALLOWED_CONVENTION = Pattern.compile("(.+?)\\.Test[^.]+");
 
