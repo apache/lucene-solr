@@ -56,7 +56,7 @@ public class CPUCircuitBreaker extends CircuitBreaker {
     super(solrConfig);
 
     this.isCpuCircuitBreakerEnabled = solrConfig.isCpuCircuitBreakerEnabled;
-    this.cpuUsageThreshold = solrConfig.cpuCircuitBreakerThresholdPct;
+    this.cpuUsageThreshold = solrConfig.cpuCircuitBreakerThreshold;
   }
 
   @Override
@@ -77,7 +77,6 @@ public class CPUCircuitBreaker extends CircuitBreaker {
         String msg = "Unable to get CPU usage";
 
         log.warn(msg);
-
       }
 
       return false;

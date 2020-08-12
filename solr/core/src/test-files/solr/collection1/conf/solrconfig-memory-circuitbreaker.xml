@@ -88,7 +88,7 @@
 
     <memoryCircuitBreakerThresholdPct>75</memoryCircuitBreakerThresholdPct>
 
-    <cpuCircuitBreakerThresholdPct>75</cpuCircuitBreakerThresholdPct>
+    <cpuCircuitBreakerThreshold>75</cpuCircuitBreakerThreshold>
 
   </circuitBreaker>
 

@@ -84,12 +84,12 @@ To enable/disable CPU utilization based circuit breaker, use the following confi
 Note that this configuration will be overridden by the global circuit breaker flag -- if circuit breakers are disabled, this flag
 will not help you.
 
-To set the triggering threshold in CPU utilization percentage, use the following parameter.
+To set the triggering threshold in units of CPU utilization, use the following parameter.
 [source,xml]
 ----
-<cpuCircuitBreakerThresholdPct>75</cpuCircuitBreakerThresholdPct>
+<cpuCircuitBreakerThreshold>75</cpuCircuitBreakerThreshold>
 ----
-The range of valid values for this parameter is [40, 95], both inclusive.
+The range of valid values for this parameter is [40 to infinity].
 
 Note that both these circuit breakers are checked for each incoming search request and consider the current heap usage of the node and average CPU usage over the last minute, respectively.
 The checks does not impact performance, but any performance regressions that are suspected to be caused by this feature should be reported to the dev list.

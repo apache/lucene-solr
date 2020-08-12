@@ -233,7 +233,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     isMemoryCircuitBreakerEnabled = getBool("circuitBreaker/isMemoryCircuitBreakerEnabled", false);
     memoryCircuitBreakerThresholdPct = getInt("circuitBreaker/memoryCircuitBreakerThresholdPct", 95);
 
-    cpuCircuitBreakerThresholdPct = getInt("circuitBreaker/cpuCircuitBreakerThresholdPct", 95);
+    cpuCircuitBreakerThreshold = getInt("circuitBreaker/cpuCircuitBreakerThreshold", 95);
 
     validateCircuitBreakerThresholds();
     
@@ -537,7 +537,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
   public final int memoryCircuitBreakerThresholdPct;
   public final boolean isMemoryCircuitBreakerEnabled;
   public final boolean isCpuCircuitBreakerEnabled;
-  public final int cpuCircuitBreakerThresholdPct;
+  public final int cpuCircuitBreakerThreshold;
 
   // IndexConfig settings
   public final SolrIndexConfig indexConfig;
@@ -825,12 +825,6 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
           throw new IllegalArgumentException("Valid value range of memoryCircuitBreakerThresholdPct is 50 -  95");
         }
       }
-
-      if (isCpuCircuitBreakerEnabled) {
-        if (cpuCircuitBreakerThresholdPct > 95 || cpuCircuitBreakerThresholdPct < 40) {
-          throw new IllegalArgumentException("Valid value range for cpuCircuitBreakerThresholdPct is 40 - 95");
-        }
-      }
     }
   }
 
@@ -907,7 +901,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     m.put("isCpuCircuitBreakerEnabled", isCpuCircuitBreakerEnabled);
     m.put("isMemoryCircuitBreakerEnabled", isMemoryCircuitBreakerEnabled);
     m.put("memoryCircuitBreakerThresholdPct", memoryCircuitBreakerThresholdPct);
-    m.put("cpuCircuitBreakerThresholdPct", cpuCircuitBreakerThresholdPct);
+    m.put("cpuCircuitBreakerThreshold", cpuCircuitBreakerThreshold);
     for (SolrPluginInfo plugin : plugins) {
       List<PluginInfo> infos = getPluginInfos(plugin.clazz.getName());
       if (infos == null || infos.isEmpty()) continue;
