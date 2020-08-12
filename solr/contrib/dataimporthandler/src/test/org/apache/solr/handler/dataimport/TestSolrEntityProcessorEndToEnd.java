@@ -31,6 +31,7 @@ import java.util.Properties;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
@@ -46,6 +47,7 @@ import org.slf4j.LoggerFactory;
 /**
  * End-to-end test of SolrEntityProcessor. "Real" test using embedded Solr
  */
+@LuceneTestCase.Nightly
 public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTestCase {
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
