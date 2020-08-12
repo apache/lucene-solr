@@ -320,7 +320,8 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
       MDCLoggingContext.setCoreDescriptor(cc, cd);
       try {
         if (SKIP_AUTO_RECOVERY) {
-          log.warn("Skipping recovery according to sys prop solrcloud.skip.autorecovery");
+          log.warn(
+              "Skipping recovery according to sys prop solrcloud.skip.autorecovery");
           return;
         }
 
@@ -343,36 +344,33 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
           cancelRecovery();
 
           recoveryLock.lock();
-          try {
-            // don't use recoveryLock.getQueueLength() for this
-            if (recoveryWaiting.decrementAndGet() > 0) {
-              // another recovery waiting behind us, let it run now instead of after we finish
-              return;
-            }
-
-            // to be air tight we must also check after lock
-            if (prepForClose || closed || cc.isShutDown()) {
-              log.info("Skipping recovery due to being closed");
-              return;
-            }
-            log.info("Running recovery");
-
-            recoveryThrottle.minimumWaitBetweenActions();
-            recoveryThrottle.markAttemptingAction();
-            if (recoveryStrat != null) {
-              ParWork.close(recoveryStrat);
-            }
-
-            if (prepForClose || cc.isShutDown() || closed) {
-              return;
-            }
-            recoveryStrat = recoveryStrategyBuilder
-                .create(cc, cd, DefaultSolrCoreState.this);
-            recoveryStrat.setRecoveringAfterStartup(recoveringAfterStartup);
-            recoveryStrat.run();
-          } finally {
-            recoveryLock.unlock();
+          // don't use recoveryLock.getQueueLength() for this
+          if (recoveryWaiting.decrementAndGet() > 0) {
+            // another recovery waiting behind us, let it run now instead of after we finish
+            return;
           }
+
+          // to be air tight we must also check after lock
+          if (prepForClose || closed || cc.isShutDown()) {
+            log.info("Skipping recovery due to being closed");
+            return;
+          }
+          log.info("Running recovery");
+
+          recoveryThrottle.minimumWaitBetweenActions();
+          recoveryThrottle.markAttemptingAction();
+          if (recoveryStrat != null) {
+            ParWork.close(recoveryStrat);
+          }
+
+          if (prepForClose || cc.isShutDown() || closed) {
+            return;
+          }
+          recoveryStrat = recoveryStrategyBuilder
+              .create(cc, cd, DefaultSolrCoreState.this);
+          recoveryStrat.setRecoveringAfterStartup(recoveringAfterStartup);
+          recoveryStrat.run();
+
         } finally {
           if (locked) recoveryLock.unlock();
         }
@@ -386,8 +384,8 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
       // already queued up - the recovery execution itself is run
       // in another thread on another 'recovery' executor.
       //
-      // avoid deadlock: we can't use the recovery executor here!
-      recoveryFuture = cc.getUpdateShardHandler().getRecoveryExecutor().submit(recoveryTask);
+      recoveryFuture = cc.getUpdateShardHandler().getRecoveryExecutor()
+          .submit(recoveryTask);
     } catch (RejectedExecutionException e) {
       // fine, we are shutting down
     }

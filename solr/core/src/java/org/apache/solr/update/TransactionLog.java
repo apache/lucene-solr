@@ -307,7 +307,7 @@ public class TransactionLog implements Closeable {
     assert pos == 0;
 
     @SuppressWarnings({"rawtypes"})
-    Map header = new LinkedHashMap<String, Object>();
+    Map header = new LinkedHashMap<String, Object>(2);
     header.put("SOLR_TLOG", 1); // a magic string + version number
     header.put("strings", globalStringList);
     codec.marshal(header, fos);

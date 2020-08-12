@@ -387,13 +387,13 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
       IndexSchema oldSchema = cmd.getReq().getSchema();
       for (;;) {
         List<SchemaField> newFields = new ArrayList<>();
-        // Group copyField defs per field and then per maxChar, to adapt to IndexSchema API 
-        Map<String,Map<Integer,List<CopyFieldDef>>> newCopyFields = new HashMap<>();
+        // Group copyField defs per field and then per maxChar, to adapt to IndexSchema API
         // build a selector each time through the loop b/c the schema we are
         // processing may have changed
         FieldNameSelector selector = buildSelector(oldSchema);
         Map<String,List<SolrInputField>> unknownFields = new HashMap<>();
         getUnknownFields(selector, doc, unknownFields);
+        Map<String,Map<Integer,List<CopyFieldDef>>> newCopyFields = new HashMap<>(unknownFields.size() + 1);
         for (final Map.Entry<String,List<SolrInputField>> entry : unknownFields.entrySet()) {
           String fieldName = entry.getKey();
           String fieldTypeName = defaultFieldType;
@@ -416,7 +416,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
           throw new SolrException(BAD_REQUEST, message);
         }
         if (log.isDebugEnabled()) {
-          StringBuilder builder = new StringBuilder();
+          StringBuilder builder = new StringBuilder(512);
           builder.append("\nFields to be added to the schema: [");
           boolean isFirst = true;
           for (SchemaField field : newFields) {

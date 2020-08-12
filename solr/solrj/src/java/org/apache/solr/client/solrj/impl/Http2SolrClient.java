@@ -222,7 +222,7 @@ public class Http2SolrClient extends SolrClient {
       HTTP2Client http2client = new HTTP2Client();
       transport = new HttpClientTransportOverHTTP2(http2client);
       httpClient = new HttpClient(transport, sslContextFactory);
-      httpClient.setMaxConnectionsPerDestination(300);
+      if (builder.maxConnectionsPerHost != null) httpClient.setMaxConnectionsPerDestination(builder.maxConnectionsPerHost);
     }
     httpClientExecutor = new SolrQueuedThreadPool("httpClient");
 
@@ -876,7 +876,7 @@ public class Http2SolrClient extends SolrClient {
   private class AsyncTracker {
 
     // nocommit - look at outstanding max again
-    private static final int MAX_OUTSTANDING_REQUESTS = 10;
+    private static final int MAX_OUTSTANDING_REQUESTS = 20;
 
     private final Semaphore available;
 
@@ -912,7 +912,7 @@ public class Http2SolrClient extends SolrClient {
 
     int getMaxRequestsQueuedPerDestination() {
       // comfortably above max outstanding requests
-      return MAX_OUTSTANDING_REQUESTS * 3;
+      return MAX_OUTSTANDING_REQUESTS * 10;
     }
 
     public void waitForComplete() {
