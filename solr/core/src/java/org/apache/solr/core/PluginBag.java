@@ -455,7 +455,7 @@ public class PluginBag<T> implements AutoCloseable {
     private final SolrConfig.SolrPluginInfo pluginMeta;
     protected SolrException solrException;
     private final SolrCore core;
-    protected ResourceLoader resourceLoader;
+    protected final ResourceLoader resourceLoader;
     private final boolean isRuntimeLib;
 
 

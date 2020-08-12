@@ -215,7 +215,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private final PluginBag<UpdateRequestProcessorFactory> updateProcessors = new PluginBag<>(UpdateRequestProcessorFactory.class, this, true);
   private final Map<String, UpdateRequestProcessorChain> updateProcessorChains;
   private final SolrCoreMetricManager coreMetricManager;
-  private final Map<String, SolrInfoBean> infoRegistry = new ConcurrentHashMap<>(256, 0.75f, 12);
+  private final Map<String, SolrInfoBean> infoRegistry = new ConcurrentHashMap<>(64, 0.75f, 6);
   private final IndexDeletionPolicyWrapper solrDelPolicy;
   private final SolrSnapshotMetaDataManager snapshotMgr;
   private final DirectoryFactory directoryFactory;
@@ -236,7 +236,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private volatile Counter newSearcherOtherErrorsCounter;
   private final CoreContainer coreContainer;
 
-  private final Set<String> metricNames = ConcurrentHashMap.newKeySet();
+  private final Set<String> metricNames = ConcurrentHashMap.newKeySet(64);
   private final String metricTag = SolrMetricProducer.getUniqueMetricTag(this, null);
   private final SolrMetricsContext solrMetricsContext;
 
@@ -277,8 +277,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   }
 
   static int boolean_query_max_clause_count = Integer.MIN_VALUE;
-
-  private ExecutorService coreAsyncTaskExecutor = ExecutorUtil.newMDCAwareCachedThreadPool("Core Async Task");
 
   /**
    * The SolrResourceLoader used to load all resources for this core.
@@ -1088,8 +1086,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         solrCoreState.increfSolrCoreState();
       }
 
-      latch.countDown();
       resourceLoader.inform(this); // last call before the latch is released.
+      latch.countDown();
     } catch (Throwable e) {
       // release the latch, otherwise we block trying to do the close. This
       // should be fine, since counting down on a latch of 0 is still fine
@@ -1597,11 +1595,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       synchronized (searcherLock) {
         this.isClosed = true;
         searcherExecutor.shutdown();
-        try {
-          coreAsyncTaskExecutor.shutdown();
-        } catch (Throwable e) {
-          ParWork.propegateInterrupt(e);
-        }
       }
 
       List<Callable<Object>> closeHookCalls = new ArrayList<>();
@@ -1663,11 +1656,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         }
         coreStateClosed.set(closed);
         return solrCoreState;
-      });
-
-      closer.add("coreAsyncTaskExecutor", coreAsyncTaskExecutor, () -> {
-
-        return "Searcher";
       });
 
       closer.add("shutdown", () -> {
@@ -2410,7 +2398,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
         if (currSearcher == null) {
           future = searcherExecutor.submit(() -> {
-            try (ParWork work = new ParWork(this, true)) {
+            try (ParWork work = new ParWork(this, false)) {
               for (SolrEventListener listener : firstSearcherListeners) {
                 work.collect(() -> {
                   listener.newSearcher(newSearcher, null);
@@ -2424,7 +2412,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
         if (currSearcher != null) {
           future = searcherExecutor.submit(() -> {
-            try (ParWork work = new ParWork(this, true)) {
+            try (ParWork work = new ParWork(this, false)) {
               for (SolrEventListener listener : newSearcherListeners) {
                 work.collect(() -> {
                   listener.newSearcher(newSearcher, null);
@@ -3321,6 +3309,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    * @param r the task to run
    */
   public void runAsync(Runnable r) {
-    coreAsyncTaskExecutor.submit(r);
+    ParWork.getExecutor().submit(r);
   }
 }
