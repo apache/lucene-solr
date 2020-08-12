@@ -1095,18 +1095,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       }
     }
 
-    int count = 0;
-    while (((isLeader && !localIsLeader) || (isSubShardLeader && !localIsLeader)) && count < 5) {
-      count++;
-      // re-getting localIsLeader since we published to ZK first before setting localIsLeader value
-      localIsLeader = cloudDesc.isLeader();
-      try {
-        Thread.sleep(500);
-      } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
-      }
-    }
-
     if ((isLeader && !localIsLeader) || (isSubShardLeader && !localIsLeader)) {
       log.error("ClusterState says we are the leader, but locally we don't think so");
       throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE,
