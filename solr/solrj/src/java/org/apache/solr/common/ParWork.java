@@ -102,7 +102,6 @@ public class ParWork implements Closeable {
     public static void closeExecutor() {
       ExecutorService exec = THREAD_LOCAL_EXECUTOR.get();
       if (exec != null) {
-        exec.shutdownNow();
         ParWork.close(exec);
         THREAD_LOCAL_EXECUTOR.set(null);
       }
