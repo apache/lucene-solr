@@ -282,8 +282,9 @@ public class DocBuilder {
           writer.close();
         }
       } catch (RuntimeException e) {
-        log.warn("Exception encountered while closing DIHWriter " + writer +
-                "; temporarily suppressing to ensure other DocBuilder elements are closed", e);
+        if (log.isWarnEnabled()) {
+          log.warn("Exception encountered while closing DIHWriter " + writer + "; temporarily suppressing to ensure other DocBuilder elements are closed", e); // logOk
+        }
         raisedDuringClose = e;
       }
 
