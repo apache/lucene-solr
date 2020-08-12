@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.cloud.DistributedQueue;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -33,6 +34,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
+@LuceneTestCase.Nightly // too many sleeps and waits
 public class DistributedQueueTest extends SolrTestCaseJ4 {
 
   private static final Charset UTF8 = Charset.forName("UTF-8");

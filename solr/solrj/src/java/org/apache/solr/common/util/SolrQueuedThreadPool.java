@@ -90,7 +90,7 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
 
     public SolrQueuedThreadPool(String name) {
         this(10000, 15,
-                30000, -1,
+                60000, -1,
                 null, null,
                 new  SolrNamedThreadFactory(name));
         this.name = name;
@@ -151,7 +151,6 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
         setMinThreads(minThreads);
         setMaxThreads(maxThreads);
         setIdleTimeout(idleTimeout);
-//       / setStopTimeout(5000);
         setReservedThreads(reservedThreads);
         if (queue == null)
         {

@@ -55,10 +55,6 @@ dependencies {
     exclude group: "org.slf4j", module: "slf4j-log4j12"
   })
 
-  api('org.codehaus.woodstox:woodstox-core-asl', {
-    exclude group: "javax.xml.stream", module: "stax-api"
-  })
-
   testImplementation project(':solr:test-framework')
   testImplementation 'org.eclipse.jetty:jetty-webapp'
   testImplementation ('org.eclipse.jetty:jetty-alpn-java-server', {

@@ -224,7 +224,7 @@ public class Http2SolrClient extends SolrClient {
       httpClient = new HttpClient(transport, sslContextFactory);
       if (builder.maxConnectionsPerHost != null) httpClient.setMaxConnectionsPerDestination(builder.maxConnectionsPerHost);
     }
-    httpClientExecutor = new SolrQueuedThreadPool("httpClient", ParWork.PROC_COUNT, 3, idleTimeout);
+    httpClientExecutor = new SolrQueuedThreadPool("httpClient", Math.max(3, ParWork.PROC_COUNT), 3, idleTimeout);
 
     httpClient.setIdleTimeout(idleTimeout);
     try {
