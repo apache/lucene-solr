@@ -24,7 +24,7 @@ import java.io.IOException;
  * This comparator is used when there is sort by _doc asc together with "after" FieldDoc.
  * The comparator provides an iterator that can quickly skip to the desired "after" document.
  */
-public class FilteringDocLeafComparator implements FilteringLeafFieldComparator {
+public class FilteringAfterDocLeafComparator implements FilteringLeafFieldComparator {
     private final FieldComparator.DocComparator in;
     private DocIdSetIterator topValueIterator; // iterator that starts from topValue if possible
     private final int minDoc;
@@ -32,9 +32,9 @@ public class FilteringDocLeafComparator implements FilteringLeafFieldComparator 
     private final int docBase;
     private boolean iteratorUpdated = false;
 
-    public FilteringDocLeafComparator(LeafFieldComparator in, LeafReaderContext context) {
-        this.in = (FieldComparator.DocComparator) in;
-        this.minDoc = this.in.topValue + 1;
+    public FilteringAfterDocLeafComparator(FieldComparator.DocComparator in, LeafReaderContext context) {
+        this.in = in;
+        this.minDoc = this.in.getTopValue() + 1;
         this.maxDoc = context.reader().maxDoc();
         this.docBase = context.docBase;
         this.topValueIterator = DocIdSetIterator.all(maxDoc);

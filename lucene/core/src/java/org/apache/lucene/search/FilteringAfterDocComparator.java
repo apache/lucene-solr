@@ -24,15 +24,15 @@ import java.io.IOException;
  * A wrapper over {@code DocComparator} that has "after" FieldDoc.
  * This comparator can quickly skip to the desired "after" document.
  */
-class FilteringDocComparator<Integer> extends FilteringFieldComparator<Integer> {
-  public FilteringDocComparator(FieldComparator<Integer> in, boolean reverse, boolean singleSort) {
+class FilteringAfterDocComparator<Integer> extends FilteringFieldComparator<Integer> {
+  public FilteringAfterDocComparator(FieldComparator<Integer> in, boolean reverse, boolean singleSort) {
     super(in, reverse, singleSort);
   }
 
   @Override
   public final FilteringLeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
-    LeafFieldComparator inLeafComparator = in.getLeafComparator(context);
-    return new FilteringDocLeafComparator(inLeafComparator, context);
+    DocComparator inLeafComparator = (DocComparator) in.getLeafComparator(context);
+    return new FilteringAfterDocLeafComparator(inLeafComparator, context);
   }
 
 }

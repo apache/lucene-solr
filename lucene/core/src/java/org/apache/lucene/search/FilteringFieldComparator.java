@@ -88,7 +88,7 @@ abstract class FilteringFieldComparator<T> extends FieldComparator<T> {
       return new FilteringNumericComparator<>((FieldComparator.FloatComparator) comparator, reverse, singleSort);
     }
     if (comparatorClass == FieldComparator.DocComparator.class && hasAfter && reverse == false) { // if SortField.DOC with after
-      return new FilteringDocComparator<>((FieldComparator.DocComparator) comparator, reverse, singleSort);
+      return new FilteringAfterDocComparator<>((FieldComparator.DocComparator) comparator, reverse, singleSort);
     }
     return comparator;
   }

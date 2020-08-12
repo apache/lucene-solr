@@ -491,7 +491,7 @@ public abstract class FieldComparator<T> {
     private final int[] docIDs;
     private int docBase;
     private int bottom;
-    int topValue;
+    private int topValue;
 
     /** Creates a new comparator based on document ids for {@code numHits} */
     public DocComparator(int numHits) {
@@ -532,6 +532,10 @@ public abstract class FieldComparator<T> {
     @Override
     public void setTopValue(Integer value) {
       topValue = value;
+    }
+
+    public int getTopValue() {
+      return topValue;
     }
 
     @Override
