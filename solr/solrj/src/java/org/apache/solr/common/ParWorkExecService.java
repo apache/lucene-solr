@@ -95,49 +95,19 @@ public class ParWorkExecService implements ExecutorService {
           return CompletableFuture.completedFuture(callable.call());
         }
       } else {
-        return service.submit(callable);
+        return service.submit(new Callable<T>() {
+          @Override
+          public T call() throws Exception {
+            try {
+              return callable.call();
+            } finally {
+              available.release();
+            }
+          }
+        });
       }
       Future<T> future = service.submit(callable);
-      return new Future<T>() {
-        @Override
-        public boolean cancel(boolean b) {
-          return future.cancel(b);
-        }
-
-        @Override
-        public boolean isCancelled() {
-          return future.isCancelled();
-        }
-
-        @Override
-        public boolean isDone() {
-          return future.isDone();
-        }
-
-        @Override
-        public T get() throws InterruptedException, ExecutionException {
-          T ret;
-          try {
-            ret = future.get();
-          } finally {
-            available.release();
-          }
-
-          return ret;
-        }
-
-        @Override
-        public T get(long l, TimeUnit timeUnit)
-            throws InterruptedException, ExecutionException, TimeoutException {
-          T ret;
-          try {
-            ret = future.get(l, timeUnit);
-          } finally {
-            available.release();
-          }
-          return ret;
-        }
-      };
+      return future;
     } catch (Exception e) {
       ParWork.propegateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -186,49 +156,18 @@ public class ParWorkExecService implements ExecutorService {
       } else {
         return service.submit(runnable);
       }
-      Future<?> future = service.submit(runnable);
-
-      return new Future<>() {
+      Future<?> future = service.submit(new Runnable() {
         @Override
-        public boolean cancel(boolean b) {
-          return future.cancel(b);
-        }
-
-        @Override
-        public boolean isCancelled() {
-          return future.isCancelled();
-        }
-
-        @Override
-        public boolean isDone() {
-          return future.isDone();
-        }
-
-        @Override
-        public Object get() throws InterruptedException, ExecutionException {
-          Object ret;
+        public void run() {
           try {
-            ret = future.get();
+            runnable.run();
           } finally {
             available.release();
           }
-
-          return ret;
         }
+      });
 
-        @Override
-        public Object get(long l, TimeUnit timeUnit)
-            throws InterruptedException, ExecutionException, TimeoutException {
-          Object ret;
-          try {
-            ret = future.get(l, timeUnit);
-          } finally {
-            available.release();
-          }
-          return ret;
-        }
-
-      };
+      return future;
     } catch (Exception e) {
       ParWork.propegateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -244,15 +183,20 @@ public class ParWorkExecService implements ExecutorService {
     for (Callable c : collection) {
       futures.add(submit(c));
     }
-
+    Exception exception = null;
     for (Future<T> future : futures) {
       try {
         future.get();
       } catch (ExecutionException e) {
         log.error("invokeAll execution exception", e);
-        //throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        if (exception == null) {
+          exception = e;
+        } else {
+          exception.addSuppressed(e);
+        }
       }
     }
+    if (exception != null) throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, exception);
     return futures;
   }
 

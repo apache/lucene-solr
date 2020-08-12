@@ -34,9 +34,10 @@ public class TestImplicitCoreProperties extends SolrTestCaseJ4 {
 
   @AfterClass
   public static void teardownContainer() {
-    if (cc != null) {
-      cc.shutdown();
-    }
+  // no, we don't own this
+//    if (cc != null) {
+//      cc.shutdown();
+//    }
     cc = null;
   }
 

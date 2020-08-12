@@ -285,12 +285,18 @@ public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
       map.putAll(includedMap);
     }
     if (maxDepth > 0) {
-      ParWork.getExecutor().submit(() -> {
-        map.entrySet().parallelStream()
-            .filter(e -> e.getValue() instanceof Map)
-            .map(Map.Entry::getValue)
-            .forEach(m -> handleIncludes((ValidatingJsonMap) m, loc, maxDepth - 1));
-      });
+      Set<Entry<String,Object>> entrySet = map.entrySet();
+      try (ParWork work = new ParWork("includes")) {
+        for (Entry<String,Object> entry : entrySet) {
+          Object v = entry.getValue();
+          if (v instanceof  Map) {
+            work.collect(() -> {
+              handleIncludes((ValidatingJsonMap) v, loc, maxDepth - 1);
+            });
+          }
+        }
+        work.addCollect("includes");
+      }
     }
   }
 

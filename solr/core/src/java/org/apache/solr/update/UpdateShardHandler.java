@@ -34,6 +34,7 @@ import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.CloseTracker;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -57,6 +58,8 @@ public class UpdateShardHandler implements SolrInfoBean {
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  private final CloseTracker closeTracker;
+
   private final Http2SolrClient updateOnlyClient;
 
   private final CloseableHttpClient defaultClient;
@@ -77,7 +80,8 @@ public class UpdateShardHandler implements SolrInfoBean {
   private int connectionTimeout = HttpClientUtil.DEFAULT_CONNECT_TIMEOUT;
 
   public UpdateShardHandler(UpdateShardHandlerConfig cfg) {
-    ObjectReleaseTracker.track(this);
+    assert ObjectReleaseTracker.track(this);
+    closeTracker = new CloseTracker();
     defaultConnectionManager = new InstrumentedPoolingHttpClientConnectionManager(HttpClientUtil.getSocketFactoryRegistryProvider().getSocketFactoryRegistry());
     ModifiableSolrParams clientParams = new ModifiableSolrParams();
     if (cfg != null ) {
@@ -208,6 +212,7 @@ public class UpdateShardHandler implements SolrInfoBean {
   }
 
   public void close() {
+    closeTracker.close();
     if (recoveryExecutor != null) {
       recoveryExecutor.shutdownNow();
     }
@@ -220,7 +225,6 @@ public class UpdateShardHandler implements SolrInfoBean {
       });
       closer.addCollect("recoveryExecutor");
 
-
       closer.collect(updateOnlyClient);
       closer.collect(defaultConnectionManager);
       closer.collect(() -> {
@@ -229,7 +233,7 @@ public class UpdateShardHandler implements SolrInfoBean {
       });
       closer.addCollect("updateshardhandlerClients");
     }
-    ObjectReleaseTracker.release(this);
+    assert ObjectReleaseTracker.release(this);
   }
 
   @VisibleForTesting

@@ -79,6 +79,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.CloseTracker;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectCache;
@@ -185,6 +186,8 @@ public class CoreContainer implements Closeable {
   private volatile PKIAuthenticationPlugin pkiAuthenticationPlugin;
 
   protected volatile Properties containerProperties;
+
+  private final CloseTracker closeTracker;
 
   private volatile ConfigSetService coreConfigService;
 
@@ -324,7 +327,8 @@ public class CoreContainer implements Closeable {
     this(null, config, locator, asyncSolrCoreLoad);
   }
   public CoreContainer(SolrZkClient zkClient, NodeConfig config, CoresLocator locator, boolean asyncSolrCoreLoad) {
-    ObjectReleaseTracker.track(this);
+    assert ObjectReleaseTracker.track(this);
+    closeTracker = new CloseTracker();
     this.containerProperties = new Properties(config.getSolrProperties());
     String zkHost = System.getProperty("zkHost");
     if (!StringUtils.isEmpty(zkHost)) {
@@ -596,6 +600,7 @@ public class CoreContainer implements Closeable {
    * @lucene.experimental
    */
   protected CoreContainer(Object testConstructor) {
+    closeTracker = new CloseTracker();
     solrHome = null;
     loader = null;
     coresLocator = null;
@@ -1044,9 +1049,7 @@ public class CoreContainer implements Closeable {
 
   @Override
   public void close() throws IOException {
-//    if (this.isShutDown) {
-//      return;
-//    }
+    closeTracker.close();
     log.info("Closing CoreContainer");
     // must do before isShutDown=true
     if (isZooKeeperAware()) {
@@ -1182,13 +1185,17 @@ public class CoreContainer implements Closeable {
 
     // we must cancel without holding the cores sync
     // make sure we wait for any recoveries to stop
-    for (SolrCore core : cores) {
-      try {
-        core.getSolrCoreState().cancelRecovery(true, true);
-      } catch (Exception e) {
-        SolrZkClient.checkInterrupted(e);
-        SolrException.log(log, "Error canceling recovery for core", e);
+    try (ParWork work = new ParWork(this, true)) {
+      for (SolrCore core : cores) {
+        work.collect(() -> {
+          try {
+            core.getSolrCoreState().cancelRecovery(true, true);
+          } catch (Exception e) {
+            SolrException.log(log, "Error canceling recovery for core", e);
+          }
+        });
       }
+      work.addCollect("cancelCoreRecoveries");
     }
   }
 

@@ -40,6 +40,7 @@ import java.util.Set;
 import java.util.Timer;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -168,7 +169,7 @@ public class ParWork implements Closeable {
 
   }
 
-  private List<WorkUnit> workUnits = new CopyOnWriteArrayList();
+  private List<WorkUnit> workUnits = Collections.synchronizedList(new ArrayList<>());
 
   private final TimeTracker tracker;
 
@@ -278,8 +279,11 @@ public class ParWork implements Closeable {
       log.info("No work collected to submit");
       return;
     }
-    add(label, collectSet);
-    collectSet.clear();
+    try {
+      add(label, collectSet);
+    } finally {
+      collectSet.clear();
+    }
   }
 
   // add a unit of work
