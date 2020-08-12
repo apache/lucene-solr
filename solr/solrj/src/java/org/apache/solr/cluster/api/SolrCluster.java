@@ -14,39 +14,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.search.spell;
+
+package org.apache.solr.cluster.api;
+
+import org.apache.solr.common.SolrException;
+
+/** Represents a Solr cluster */
+
+public interface SolrCluster {
+
+  /** collections in the cluster */
+  SimpleMap<SolrCollection> collections() throws SolrException;
+
+  /** collections in the cluster and aliases */
+  SimpleMap<SolrCollection> collections(boolean includeAlias) throws SolrException;
+
+  /** nodes in the cluster */
+  SimpleMap<SolrNode> nodes() throws SolrException;
 
 
-/**
- * SuggestWord, used in suggestSimilar method in SpellChecker class.
- * <p>
- * Default sort is first by score, then by frequency.
- */
-public final class SuggestWord{
-  
+  /** Config sets in the cluster*/
+  SimpleMap<CollectionConfig> configs() throws SolrException;
+
+  /** Name of the node in which the overseer is running */
+  String overseerNode() throws SolrException;
+
   /**
-   * Creates a new empty suggestion with null text.
+   * The name of the node in which this method is invoked from. returns null, if this is not invoked from a
+   * Solr node
    */
-  public SuggestWord() {}
-  
-  /**
-   * the score of the word
-   */
-  public float score;
-
-  /**
-   * The freq of the word
-   */
-  public int freq;
-
-  /**
-   * the suggested word
-   */
-  public String string;
-
-  @Override
-  public String toString() {
-    return "SuggestWord(string=" + string + ", score=" + score + ", freq=" + freq + ")";
-  }
+  String thisNode();
 
 }

@@ -133,6 +133,8 @@ New Features
 * SOLR-14582: Expose IWC.setMaxCommitMergeWaitMillis in Solr's index config. This is an expert config option that can be
   set when using a custom MergePolicy (doesn't have any effect on the default MP) (Tomás Fernández Löbbe)
 
+* SOLR-13751: Add BooleanSimilarityFactory class. (Andy Webb via Christine Poerschke)
+
 Improvements
 ---------------------
 

@@ -14,39 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.search.spell;
+package org.apache.solr.search.similarities;
 
+import org.apache.lucene.search.similarities.BooleanSimilarity;
+import org.junit.BeforeClass;
 
 /**
- * SuggestWord, used in suggestSimilar method in SpellChecker class.
- * <p>
- * Default sort is first by score, then by frequency.
+ * Tests {@link BooleanSimilarityFactory} when specified on a per-fieldtype basis.
+ * @see SchemaSimilarityFactory
  */
-public final class SuggestWord{
+public class TestBooleanSimilarityFactory extends BaseSimilarityTestCase {
+
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig-basic.xml","schema-booleansimilarity.xml");
+  }
   
-  /**
-   * Creates a new empty suggestion with null text.
-   */
-  public SuggestWord() {}
-  
-  /**
-   * the score of the word
-   */
-  public float score;
-
-  /**
-   * The freq of the word
-   */
-  public int freq;
-
-  /**
-   * the suggested word
-   */
-  public String string;
-
-  @Override
-  public String toString() {
-    return "SuggestWord(string=" + string + ", score=" + score + ", freq=" + freq + ")";
+  /** Boolean w/ default parameters */
+  public void testDefaults() throws Exception {
+    BooleanSimilarity sim = getSimilarity("text", BooleanSimilarity.class);
+    assertEquals(BooleanSimilarity.class, sim.getClass());
   }
 
 }
