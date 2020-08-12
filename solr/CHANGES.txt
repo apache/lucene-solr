@@ -176,6 +176,8 @@ Bug Fixes
 * SOLR-14657: Improve error handling in IndexReader realted metrics that were causing scary ERROR logging
   if metrics were requested while Solr was in the process of closing/re-opening a new IndexReader. (hossman)
 
+* SOLR-14677: Improve DIH termination logic to close all DataSources, EntityProcessors (Jason Gerlowski)
+
 Other Changes
 ---------------------
 
