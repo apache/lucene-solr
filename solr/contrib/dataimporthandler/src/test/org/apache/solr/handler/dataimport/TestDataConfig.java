@@ -44,6 +44,7 @@ public class TestDataConfig extends AbstractDataImportHandlerTestCase {
   @Test
   @SuppressWarnings("unchecked")
   public void testDataConfigWithDataSource() throws Exception {
+    @SuppressWarnings({"rawtypes"})
     List rows = new ArrayList();
     rows.add(createMap("id", "1", "desc", "one"));
     MockDataSource.setIterator("select * from x", rows.iterator());

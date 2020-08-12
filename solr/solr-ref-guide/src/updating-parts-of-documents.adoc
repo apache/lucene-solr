@@ -461,4 +461,4 @@ If `versionField` is specified as a list, then this parameter too must be specif
 `supportMissingVersionOnOldDocs`::
 This boolean parameter defaults to `false`, but if set to `true` allows any documents written *before* this feature is enabled, and which are missing the `versionField`, to be overwritten.
 
-Please consult the {solr-javadocs}/solr-core/org/apache/solr/update/processor/DocBasedVersionConstraintsProcessorFactory.html[DocBasedVersionConstraintsProcessorFactory javadocs] and https://git1-us-west.apache.org/repos/asf?p=lucene-solr.git;a=blob;f=solr/core/src/test-files/solr/collection1/conf/solrconfig-externalversionconstraint.xml;hb=HEAD[test solrconfig.xml file] for additional information and example usages.
+Please consult the {solr-javadocs}/solr-core/org/apache/solr/update/processor/DocBasedVersionConstraintsProcessorFactory.html[DocBasedVersionConstraintsProcessorFactory javadocs] and https://github.com/apache/lucene-solr/blob/master/solr/core/src/test-files/solr/collection1/conf/solrconfig-externalversionconstraint.xml[test solrconfig.xml file] for additional information and example usages.

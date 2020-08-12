@@ -1049,7 +1049,7 @@ public class AssertingLeafReader extends FilterLeafReader {
     @Override
     public void intersect(IntersectVisitor visitor) throws IOException {
       assertThread("Points", creationThread);
-      in.intersect(new AssertingIntersectVisitor(in.getNumDataDimensions(), in.getNumIndexDimensions(), in.getBytesPerDimension(), visitor));
+      in.intersect(new AssertingIntersectVisitor(in.getNumDimensions(), in.getNumIndexDimensions(), in.getBytesPerDimension(), visitor));
     }
 
     @Override
@@ -1073,9 +1073,9 @@ public class AssertingLeafReader extends FilterLeafReader {
     }
 
     @Override
-    public int getNumDataDimensions() throws IOException {
+    public int getNumDimensions() throws IOException {
       assertThread("Points", creationThread);
-      return in.getNumDataDimensions();
+      return in.getNumDimensions();
     }
 
     @Override

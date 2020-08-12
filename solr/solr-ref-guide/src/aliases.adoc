@@ -46,15 +46,18 @@ Alternatively this information is available by checking `/aliases.json` in ZooKe
 Aliases may be deleted via the <<collection-aliasing.adoc#deletealias,DELETEALIAS>> command.
 When deleting an alias, underlying collections are *unaffected*.
 
-TIP: Any alias (standard or routed) that references multiple collections may complicate relevancy.
+[TIP]
+====
+Any alias (standard or routed) that references multiple collections may complicate relevancy.
 By default, SolrCloud scores documents on a per-shard basis.
-+
+
 With multiple collections in an alias this is always a problem, so if you have a use case for which BM25 or
   TF/IDF relevancy is important you will want to turn on one of the
   <<distributed-requests.adoc#distributedidf,ExactStatsCache>> implementations.
-+
+
 However, for analytical use cases where results are sorted on numeric, date, or alphanumeric field values, rather
   than relevancy calculations, this is not a problem.
+====
 
 == Routed Aliases
 

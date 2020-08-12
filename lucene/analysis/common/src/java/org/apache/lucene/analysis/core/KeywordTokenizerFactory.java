@@ -61,6 +61,11 @@ public class KeywordTokenizerFactory extends TokenizerFactory {
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public KeywordTokenizerFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public KeywordTokenizer create(AttributeFactory factory) {
     return new KeywordTokenizer(factory, maxTokenLen);

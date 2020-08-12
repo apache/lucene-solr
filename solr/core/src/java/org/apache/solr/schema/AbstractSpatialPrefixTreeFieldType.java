@@ -109,7 +109,9 @@ public abstract class AbstractSpatialPrefixTreeFieldType<T extends PrefixTreeStr
     if (defaultFieldValuesArrayLen != null)
       strat.setDefaultFieldValuesArrayLen(defaultFieldValuesArrayLen);
 
-    log.info(this.toString()+" strat: "+strat+" maxLevels: "+ grid.getMaxLevels());//TODO output maxDetailKm
+    if (log.isInfoEnabled()) {
+      log.info("{} strat: {} maxLevels: {}", this, strat, grid.getMaxLevels());//TODO output maxDetailKm
+    }
     return strat;
   }
 

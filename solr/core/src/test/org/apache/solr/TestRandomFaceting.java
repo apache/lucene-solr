@@ -66,6 +66,7 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
 
   int indexSize;
   List<FldType> types;
+  @SuppressWarnings({"rawtypes"})
   Map<Comparable, Doc> model = null;
   boolean validateResponses = true;
 
@@ -109,6 +110,7 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
     
     types.add(new FldType("bool_b",ZERO_ONE, new Vals(){
       @Override
+      @SuppressWarnings({"rawtypes"})
       public Comparable get() {
         return random().nextBoolean();
       }
@@ -125,7 +127,7 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
     int percent = rand.nextInt(100);
     if (model == null) return;
     ArrayList<String> ids = new ArrayList<>(model.size());
-    for (Comparable id : model.keySet()) {
+    for (@SuppressWarnings({"rawtypes"})Comparable id : model.keySet()) {
       if (rand.nextInt(100) < percent) {
         ids.add(id.toString());
       }
@@ -316,11 +318,8 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
     
     String err = JSONTestUtil.match("/", actual, expected, 0.0);
     if (err != null) {
-      log.error("ERROR: mismatch facet response: " + err +
-          "\n expected =" + expected +
-          "\n response = " + actual +
-          "\n request = " + params
-      );
+      log.error("ERROR: mismatch facet response: {}\n expected ={}\n response = {}\n request = {}"
+          , err, expected, actual, params);
       fail(err);
     }
   }
@@ -330,6 +329,7 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
    * then all vals with 0 , and then missing count with null label,
    * in the implementation below they are called three stratas 
    * */
+  @SuppressWarnings({"unchecked"})
   private String getExpectationForSortByCount( ModifiableSolrParams params, List<String> methods) throws Exception {
     String indexSortedResponse = getIndexSortedAllFacetValues(params, methods);
     
@@ -345,8 +345,8 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
         }
       };
       
-      for (Iterator iterator = facetSortedByIndex.iterator(); iterator.hasNext();) {
-        Object label = (Object) iterator.next();
+      for (@SuppressWarnings({"rawtypes"})Iterator iterator = facetSortedByIndex.iterator(); iterator.hasNext();) {
+        Object label = iterator.next();
         Long count = (Long) iterator.next();
         final Integer strata;
         if (label==null) { // missing (here "stratas" seems like overengineering )
@@ -363,6 +363,7 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
         facet.add(label);
         facet.add(count);
       }
+      @SuppressWarnings({"rawtypes"})
       List stratified =new ArrayList<>();
       for(Integer s : new Integer[]{1, 0}) { // non-zero capped to one goes first, zeroes go then
         stratified.addAll(stratas.get(s));
@@ -439,17 +440,22 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
     });
   }
   
+  @SuppressWarnings({"unchecked"})
   private String transformFacetFields(String expected, Consumer<Map.Entry<Object,Object>> consumer) throws IOException {
     Object json = Utils.fromJSONString(expected);
+    @SuppressWarnings({"rawtypes"})
     Map facet_fields = getFacetFieldMap(json);
+    @SuppressWarnings({"rawtypes"})
     Set entries = facet_fields.entrySet();
     for (Object facetTuples : entries) { //despite there should be only one field
+      @SuppressWarnings({"rawtypes"})
       Entry entry = (Entry)facetTuples;
       consumer.accept(entry);
     }
     return Utils.toJSONString(json);
   }
 
+  @SuppressWarnings({"rawtypes"})
   private Map getFacetFieldMap(Object json) {
     Object facet_counts = ((Map)json).get("facet_counts");
     Map facet_fields = (Map) ((Map)facet_counts).get("facet_fields");

@@ -55,7 +55,7 @@ public class GeoExactCircleTest extends RandomGeo3dShapeGenerator{
   @Test
   public void testSurfacePointOnBearingScale(){
     PlanetModel p1 = PlanetModel.WGS84;
-    PlanetModel p2 = new PlanetModel(0.5 * PlanetModel.WGS84.ab, 0.5 * PlanetModel.WGS84.c );
+    PlanetModel p2 = new PlanetModel(0.5 * PlanetModel.WGS84.xyScaling, 0.5 * PlanetModel.WGS84.zScaling);
     GeoPoint point1P1 = new GeoPoint(p1, 0, 0);
     GeoPoint point2P1 =  new GeoPoint(p1, 1, 1);
     GeoPoint point1P2 = new GeoPoint(p2, point1P1.getLatitude(), point1P1.getLongitude());
@@ -92,7 +92,7 @@ public class GeoExactCircleTest extends RandomGeo3dShapeGenerator{
   @Repeat(iterations = 100)
   public void RandomPointBearingCardinalTest(){
     //surface distance calculations methods start not converging when
-    //planet flattening > 0.4
+    //planet scaledFlattening > 0.4
     PlanetModel planetModel;
     do {
       double ab = random().nextDouble() * 2;
@@ -102,7 +102,7 @@ public class GeoExactCircleTest extends RandomGeo3dShapeGenerator{
       } else {
         planetModel = new PlanetModel(c, ab);
       }
-    } while (Math.abs(planetModel.flattening) > 0.4);
+    } while (Math.abs(planetModel.scaledFlattening) > 0.4);
     GeoPoint center = randomGeoPoint(planetModel);
     double radius =  random().nextDouble() * 0.9 * planetModel.minimumPoleDistance;
     checkBearingPoint(planetModel, center, radius, 0);

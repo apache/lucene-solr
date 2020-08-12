@@ -152,11 +152,13 @@ public class MockTokenizer extends Tokenizer {
       if (cp < 0) {
         break;
       } else if (isTokenChar(cp)) {
+        char chars[] = new char[2];
         int endOffset;
         do {
-          char chars[] = Character.toChars(normalize(cp));
-          for (int i = 0; i < chars.length; i++)
+          int len = Character.toChars(normalize(cp), chars, 0);
+          for (int i = 0; i < len; i++) {
             termAtt.append(chars[i]);
+          }
           endOffset = off;
           if (termAtt.length() >= maxTokenLength) {
             break;

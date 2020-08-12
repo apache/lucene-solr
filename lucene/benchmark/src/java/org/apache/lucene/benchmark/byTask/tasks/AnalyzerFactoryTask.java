@@ -51,8 +51,8 @@ import java.util.regex.Pattern;
  *   <li>Analyzer args:
  *     <ul>
  *       <li><b>Required</b>: <code>name:<i>analyzer-factory-name</i></code></li>
- *       <li>Optional: <tt>positionIncrementGap:<i>int value</i></tt> (default: 0)</li>
- *       <li>Optional: <tt>offsetGap:<i>int value</i></tt> (default: 1)</li>
+ *       <li>Optional: <code>positionIncrementGap:<i>int value</i></code> (default: 0)</li>
+ *       <li>Optional: <code>offsetGap:<i>int value</i></code> (default: 1)</li>
  *     </ul>
  *   </li>
  *   <li>zero or more CharFilterFactory's, followed by</li>
@@ -60,7 +60,7 @@ import java.util.regex.Pattern;
  *   <li>zero or more TokenFilterFactory's</li>
  * </ol>
  *
- * Each component analysis factory may specify <tt>luceneMatchVersion</tt> (defaults to
+ * Each component analysis factory may specify <code>luceneMatchVersion</code> (defaults to
  * {@link Version#LATEST}) and any of the args understood by the specified
  * *Factory class, in the above-describe param format.
  * <p>

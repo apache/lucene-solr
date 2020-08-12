@@ -97,6 +97,11 @@ public class StopFilterFactory extends TokenFilterFactory implements ResourceLoa
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public StopFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public void inform(ResourceLoader loader) throws IOException {
     if (stopWordFiles != null) {

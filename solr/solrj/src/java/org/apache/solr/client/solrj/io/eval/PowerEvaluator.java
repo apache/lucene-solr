@@ -49,8 +49,9 @@ public class PowerEvaluator extends RecursiveNumericEvaluator implements TwoValu
         Number exponent = (Number) second;
         return Math.pow(value.doubleValue(), exponent.doubleValue());
       } else if(second instanceof List)  {
+        @SuppressWarnings({"unchecked"})
         List<Number> exponents = (List<Number>) second;
-        List<Number> pows = new ArrayList();
+        List<Number> pows = new ArrayList<>();
         for(Number exponent : exponents) {
           pows.add(Math.pow(value.doubleValue(), exponent.doubleValue()));
         }
@@ -59,11 +60,12 @@ public class PowerEvaluator extends RecursiveNumericEvaluator implements TwoValu
         throw new IOException("The second parameter to the pow function must either be a scalar or list of scalars");
       }
     } else if(first instanceof List) {
+      @SuppressWarnings({"unchecked"})
       List<Number> values = (List<Number>) first;
       if(second instanceof Number) {
         Number exponent = (Number) second;
 
-        List<Number> out = new ArrayList(values.size());
+        List<Number> out = new ArrayList<>(values.size());
         for (Number value : values) {
           out.add(Math.pow(value.doubleValue(), exponent.doubleValue()));
         }
@@ -71,7 +73,8 @@ public class PowerEvaluator extends RecursiveNumericEvaluator implements TwoValu
         return out;
       } else if(second instanceof List) {
 
-        List<Number> out = new ArrayList(values.size());
+        List<Number> out = new ArrayList<>(values.size());
+        @SuppressWarnings({"unchecked"})
         List<Number> exponents = (List<Number>)second;
         if(values.size() != exponents.size()) {
           throw new IOException("The pow function requires vectors of equal size if two vectors are provided.");

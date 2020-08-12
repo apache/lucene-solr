@@ -74,6 +74,7 @@ public class TermVectorsEvaluator extends RecursiveObjectEvaluator implements Ma
       if(!(objects[0] instanceof List)) {
         throw new IOException("The termVectors function expects a list of Tuples as a parameter.");
       } else {
+        @SuppressWarnings({"rawtypes"})
         List list = (List)objects[0];
         if(list.size() > 0) {
           Object o = list.get(0);
@@ -85,18 +86,20 @@ public class TermVectorsEvaluator extends RecursiveObjectEvaluator implements Ma
         }
       }
 
+      @SuppressWarnings({"unchecked"})
       List<Tuple> tuples = (List<Tuple>) objects[0];
-      TreeMap<String, Integer> docFreqs = new TreeMap();
-      List<String> rowLabels = new ArrayList();
+      TreeMap<String, Integer> docFreqs = new TreeMap<>();
+      List<String> rowLabels = new ArrayList<>();
 
       for (Tuple tuple : tuples) {
 
-        Set<String> docTerms = new HashSet();
+        Set<String> docTerms = new HashSet<>();
 
         if (tuple.get("terms") == null) {
           throw new IOException("The document tuples must contain a terms field");
         }
 
+        @SuppressWarnings({"unchecked"})
         List<String> terms = (List<String>) tuple.get("terms");
 
         String id = tuple.getString("id");
@@ -147,12 +150,13 @@ public class TermVectorsEvaluator extends RecursiveObjectEvaluator implements Ma
       }
       int totalTerms = docFreqs.size();
       Set<String> keys = docFreqs.keySet();
-      List<String> features = new ArrayList(keys);
+      List<String> features = new ArrayList<>(keys);
       double[][] docVec = new double[tuples.size()][];
       for (int t = 0; t < tuples.size(); t++) {
         Tuple tuple = tuples.get(t);
+        @SuppressWarnings({"unchecked"})
         List<String> terms = (List<String>) tuple.get("terms");
-        Map<String, Integer> termFreq = new HashMap();
+        Map<String, Integer> termFreq = new HashMap<>();
 
         for (String term : terms) {
           if (docFreqs.containsKey(term)) {
@@ -170,7 +174,7 @@ public class TermVectorsEvaluator extends RecursiveObjectEvaluator implements Ma
           String feature = features.get(i);
           int df = docFreqs.get(feature);
           int tf = termFreq.containsKey(feature) ? termFreq.get(feature) : 0;
-          termVec[i] = Math.sqrt(tf) * (double) (Math.log((tuples.size() + 1) / (double) (df + 1)) + 1.0);
+          termVec[i] = Math.sqrt(tf) * (Math.log((tuples.size() + 1) / (double) (df + 1)) + 1.0);
         }
         docVec[t] = termVec;
       }

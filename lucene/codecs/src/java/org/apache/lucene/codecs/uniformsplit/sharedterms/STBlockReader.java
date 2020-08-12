@@ -48,18 +48,15 @@ public class STBlockReader extends BlockReader {
 
   @Override
   public BytesRef next() throws IOException {
-    BytesRef next = super.next();
-    if (next == null) {
-      return null;
-    }
-    // Check if the term occurs for the searched field.
-    while (!termOccursInField()) {
+    BytesRef next;
+    do {
       next = super.next();
       if (next == null) {
-        // No more term for any field.
+        // No more terms.
         return null;
       }
-    }
+      // Check if the term occurs for the searched field.
+    } while (!termOccursInField());
     // The term occurs for the searched field.
     return next;
   }

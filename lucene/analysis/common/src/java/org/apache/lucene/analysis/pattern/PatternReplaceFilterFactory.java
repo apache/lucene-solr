@@ -60,6 +60,11 @@ public class PatternReplaceFilterFactory extends TokenFilterFactory {
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public PatternReplaceFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public PatternReplaceFilter create(TokenStream input) {
     return new PatternReplaceFilter(input, pattern, replacement, replaceAll);

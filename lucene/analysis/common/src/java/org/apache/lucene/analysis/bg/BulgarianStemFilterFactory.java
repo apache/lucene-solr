@@ -48,6 +48,11 @@ public class BulgarianStemFilterFactory extends TokenFilterFactory {
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public BulgarianStemFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public TokenStream create(TokenStream input) {
     return new BulgarianStemFilter(input);

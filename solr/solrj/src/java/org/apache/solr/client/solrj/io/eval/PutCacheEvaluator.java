@@ -37,6 +37,7 @@ public class PutCacheEvaluator extends RecursiveObjectEvaluator implements ManyV
   }
 
   @Override
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public Object doWork(Object... values) throws IOException {
     ConcurrentMap objectCache = this.streamContext.getObjectCache();
     if(values.length == 3) {

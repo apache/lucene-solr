@@ -554,7 +554,7 @@ class MockEventListener implements SolrEventListener {
   public MockEventListener() { /* NOOP */ }
   
   @Override
-  public void init(NamedList args) {}
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {}
   
   @Override
   public void newSearcher(SolrIndexSearcher newSearcher,

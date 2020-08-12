@@ -24,14 +24,14 @@ import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.ArrayUtil;
 
-class CachingMatchesIterator extends FilterMatchesIterator {
+class CachingMatchesIterator extends FilterMatchesIterator implements IntervalMatchesIterator {
 
   private boolean positioned = false;
   private int[] posAndOffsets = new int[4*4];
   private Query[] matchingQueries = new Query[4];
   private int count = 0; 
 
-  CachingMatchesIterator(MatchesIterator in) {
+  CachingMatchesIterator(IntervalMatchesIterator in) {
     super(in);
   }
 
@@ -133,4 +133,13 @@ class CachingMatchesIterator extends FilterMatchesIterator {
     };
   }
 
+  @Override
+  public int gaps() {
+    return ((IntervalMatchesIterator)in).gaps();
+  }
+
+  @Override
+  public int width() {
+    return ((IntervalMatchesIterator)in).width();
+  }
 }

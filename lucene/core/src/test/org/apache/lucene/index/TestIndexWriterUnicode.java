@@ -177,7 +177,7 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
 
     CharsRefBuilder utf16 = new CharsRefBuilder();
 
-    int num = atLeast(100000);
+    int num = atLeast(10000);
     for (int iter = 0; iter < num; iter++) {
       boolean hasIllegal = fillUnicode(buffer, expected, 0, 20);
 

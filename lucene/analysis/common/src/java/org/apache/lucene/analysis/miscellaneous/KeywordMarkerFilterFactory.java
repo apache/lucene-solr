@@ -63,6 +63,11 @@ public class KeywordMarkerFilterFactory extends TokenFilterFactory implements Re
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public KeywordMarkerFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public void inform(ResourceLoader loader) throws IOException {
     if (wordFiles != null) {  

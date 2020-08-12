@@ -56,6 +56,11 @@ public class LimitTokenPositionFilterFactory extends TokenFilterFactory {
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public LimitTokenPositionFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public TokenStream create(TokenStream input) {
     return new LimitTokenPositionFilter(input, maxTokenPosition, consumeAllTokens);

@@ -20,7 +20,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Random;
 
+import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteBuffersDataOutput;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
@@ -29,6 +31,37 @@ import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 public abstract class LZ4TestCase extends LuceneTestCase {
 
   protected abstract LZ4.HashTable newHashTable();
+
+  protected static class AssertingHashTable extends LZ4.HashTable {
+
+    private final LZ4.HashTable in;
+
+    AssertingHashTable(LZ4.HashTable in) {
+      this.in = in;
+    }
+
+    @Override
+    void reset(byte[] b, int off, int len) {
+      in.reset(b, off, len);
+      assertTrue(in.assertReset());
+    }
+
+    @Override
+    int get(int off) {
+      return in.get(off);
+    }
+
+    @Override
+    int previous(int off) {
+      return in.previous(off);
+    }
+
+    @Override
+    boolean assertReset() {
+      throw new UnsupportedOperationException();
+    }
+
+  }
 
   private void doTest(byte[] data, LZ4.HashTable hashTable) throws IOException {
     int offset = random().nextBoolean()
@@ -99,6 +132,11 @@ public abstract class LZ4TestCase extends LuceneTestCase {
     ByteBuffersDataOutput out2 = new ByteBuffersDataOutput();
     LZ4.compress(data, offset, length, out2, hashTable);
     assertArrayEquals(compressed, out2.toArrayCopy());
+
+    // Now restore and compare bytes
+    byte[] restored = new byte[length + random().nextInt(10)];
+    LZ4.decompress(new ByteArrayDataInput(compressed), length, restored);
+    assertArrayEquals(ArrayUtil.copyOfSubArray(data, offset, offset+length), ArrayUtil.copyOfSubArray(restored, 0, length));
   }
 
   public void testEmpty() throws IOException {

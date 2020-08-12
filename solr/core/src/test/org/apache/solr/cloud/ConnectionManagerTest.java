@@ -27,7 +27,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.ConnectionManager;
 import org.apache.solr.common.cloud.DefaultConnectionStrategy;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.EventType;
@@ -113,7 +113,7 @@ public class ConnectionManagerTest extends SolrTestCaseJ4 {
   
   @Test
   public void testReconnectWhenZkDisappeared() throws Exception {
-    ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(new DefaultSolrThreadFactory("connectionManagerTest"));
+    ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(new SolrNamedThreadFactory("connectionManagerTest"));
     
     // setup a SolrZkClient to do some getBaseUrlForNodeName testing
     Path zkDir = createTempDir("zkData");

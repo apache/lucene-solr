@@ -154,6 +154,7 @@ public class SelectWithEvaluatorsTest extends SolrCloudTestCase {
     int i = 0;
     for(int val : ids) {
       Tuple t = tuples.get(i);
+      @SuppressWarnings({"rawtypes"})
       List<Map> tip = t.getMaps("group");
       int id = (int)tip.get(0).get("id");
       if(id != val) {
@@ -167,7 +168,7 @@ public class SelectWithEvaluatorsTest extends SolrCloudTestCase {
   protected boolean assertFields(List<Tuple> tuples, String ... fields) throws Exception{
     for(Tuple tuple : tuples){
       for(String field : fields){
-        if(!tuple.fields.containsKey(field)){
+        if(!tuple.getFields().containsKey(field)){
           throw new Exception(String.format(Locale.ROOT, "Expected field '%s' not found", field));
         }
       }
@@ -177,7 +178,7 @@ public class SelectWithEvaluatorsTest extends SolrCloudTestCase {
   protected boolean assertNotFields(List<Tuple> tuples, String ... fields) throws Exception{
     for(Tuple tuple : tuples){
       for(String field : fields){
-        if(tuple.fields.containsKey(field)){
+        if(tuple.getFields().containsKey(field)){
           throw new Exception(String.format(Locale.ROOT, "Unexpected field '%s' found", field));
         }
       }
@@ -229,13 +230,14 @@ public class SelectWithEvaluatorsTest extends SolrCloudTestCase {
     return true;
   }
   
-  protected boolean assertMaps(List<Map> maps, int... ids) throws Exception {
+  protected boolean assertMaps(@SuppressWarnings({"rawtypes"})List<Map> maps, int... ids) throws Exception {
     if(maps.size() != ids.length) {
       throw new Exception("Expected id count != actual map count:"+ids.length+":"+maps.size());
     }
 
     int i=0;
     for(int val : ids) {
+      @SuppressWarnings({"rawtypes"})
       Map t = maps.get(i);
       String tip = (String)t.get("id");
       if(!tip.equals(Integer.toString(val))) {
@@ -246,7 +248,7 @@ public class SelectWithEvaluatorsTest extends SolrCloudTestCase {
     return true;
   }
 
-  private boolean assertList(List list, Object... vals) throws Exception {
+  private boolean assertList(@SuppressWarnings({"rawtypes"})List list, Object... vals) throws Exception {
 
     if(list.size() != vals.length) {
       throw new Exception("Lists are not the same size:"+list.size() +" : "+vals.length);

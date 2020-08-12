@@ -26,7 +26,7 @@ import java.util.Arrays;
  * <p>This implementation is especially good at sorting partially-sorted
  * arrays and sorts small arrays with binary sort.
  * <p><b>NOTE</b>:There are a few differences with the original implementation:<ul>
- * <li><a name="maxTempSlots"></a>The extra amount of memory to perform merges is
+ * <li><a id="maxTempSlots"></a>The extra amount of memory to perform merges is
  * configurable. This allows small merges to be very fast while large merges
  * will be performed in-place (slightly slower). You can make sure that the
  * fast merge routine will always be used by having <code>maxTempSlots</code>

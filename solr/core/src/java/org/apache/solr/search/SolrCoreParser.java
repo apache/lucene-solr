@@ -52,6 +52,7 @@ public class SolrCoreParser extends CoreParser implements NamedListInitializedPl
   }
 
   @Override
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void init(NamedList initArgs) {
     if (initArgs == null || initArgs.size() == 0) {
       return;

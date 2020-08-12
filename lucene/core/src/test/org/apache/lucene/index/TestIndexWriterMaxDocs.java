@@ -458,7 +458,7 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
     dir2.close();
   }
 
-  public void testTooLargeMaxDocs() throws Exception {
+  public void testTooLargeMaxDocs() {
     expectThrows(IllegalArgumentException.class, () -> {
       IndexWriter.setMaxDocs(Integer.MAX_VALUE);
     });

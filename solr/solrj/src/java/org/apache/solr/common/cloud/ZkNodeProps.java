@@ -17,10 +17,7 @@
 package org.apache.solr.common.cloud;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.Utils;
@@ -91,6 +88,7 @@ public class ZkNodeProps implements JSONWriter.Writable {
   /**
    * Create Replica from json string that is typically stored in zookeeper.
    */
+  @SuppressWarnings({"unchecked"})
   public static ZkNodeProps load(byte[] bytes) {
     Map<String, Object> props = null;
     if (bytes[0] == 2) {
@@ -168,5 +166,10 @@ public class ZkNodeProps implements JSONWriter.Writable {
   @Override
   public boolean equals(Object that) {
     return that instanceof ZkNodeProps && ((ZkNodeProps)that).propMap.equals(this.propMap);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(propMap);
   }
 }

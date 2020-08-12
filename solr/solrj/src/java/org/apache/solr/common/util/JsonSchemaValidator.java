@@ -34,6 +34,7 @@ import java.util.function.Function;
  * It validates most aspects of json schema but it is NOT A FULLY COMPLIANT JSON schema parser or validator.
  * This validator borrow some design's idea from https://github.com/networknt/json-schema-validator
  */
+@SuppressWarnings({"unchecked", "rawtypes"})
 public class JsonSchemaValidator {
 
   private List<Validator> validators;
@@ -87,8 +88,7 @@ public class JsonSchemaValidator {
 }
 
 abstract class Validator<T> {
-  @SuppressWarnings("unused")
-  Validator(Map schema, T properties) {};
+  Validator(@SuppressWarnings({"rawtypes"})Map schema, T properties) {};
   abstract boolean validate(Object o, List<String> errs);
 }
 
@@ -127,9 +127,10 @@ enum Type {
   NULL(null),
   UNKNOWN(Object.class);
 
+  @SuppressWarnings({"rawtypes"})
   Class type;
 
-  Type(Class type) {
+  Type(@SuppressWarnings({"rawtypes"})Class type) {
     this.type = type;
   }
 
@@ -142,7 +143,7 @@ enum Type {
 class TypeValidator extends Validator<Object> {
   private Set<Type> types;
 
-  TypeValidator(Map schema, Object type) {
+  TypeValidator(@SuppressWarnings({"rawtypes"})Map schema, Object type) {
     super(schema, type);
     types = new HashSet<>(1);
     if (type instanceof List) {
@@ -172,6 +173,7 @@ class TypeValidator extends Validator<Object> {
   }
 }
 
+@SuppressWarnings({"rawtypes"})
 class ItemsValidator extends Validator<Map> {
   private JsonSchemaValidator validator;
   ItemsValidator(Map schema, Map properties) {
@@ -198,7 +200,7 @@ class EnumValidator extends Validator<List<String>> {
 
   private Set<String> enumVals;
 
-  EnumValidator(Map schema, List<String> properties) {
+  EnumValidator(@SuppressWarnings({"rawtypes"})Map schema, List<String> properties) {
     super(schema, properties);
     enumVals = new HashSet<>(properties);
 
@@ -221,7 +223,7 @@ class RequiredValidator extends Validator<List<String>> {
 
   private Set<String> requiredProps;
 
-  RequiredValidator(Map schema, List<String> requiredProps) {
+  RequiredValidator(@SuppressWarnings({"rawtypes"})Map schema, List<String> requiredProps) {
     super(schema, requiredProps);
     this.requiredProps = new HashSet<>(requiredProps);
   }
@@ -233,6 +235,7 @@ class RequiredValidator extends Validator<List<String>> {
 
   boolean validate( Object o, List<String> errs, Set<String> requiredProps) {
     if (o instanceof Map) {
+      @SuppressWarnings({"rawtypes"})
       Set fnames = ((Map) o).keySet();
       for (String requiredProp : requiredProps) {
         if (requiredProp.contains(".")) {
@@ -257,10 +260,12 @@ class RequiredValidator extends Validator<List<String>> {
   }
 }
 
+@SuppressWarnings({"rawtypes"})
 class PropertiesValidator extends Validator<Map<String, Map>> {
   private Map<String, JsonSchemaValidator> jsonSchemas;
   private boolean additionalProperties;
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   PropertiesValidator(Map schema, Map<String, Map> properties) {
     super(schema, properties);
     jsonSchemas = new HashMap<>();
@@ -271,8 +276,10 @@ class PropertiesValidator extends Validator<Map<String, Map>> {
   }
 
   @Override
+  @SuppressWarnings({"rawtypes"})
   boolean validate(Object o, List<String> errs) {
     if (o instanceof Map) {
+      @SuppressWarnings({"rawtypes"})
       Map map = (Map) o;
       for (Object key : map.keySet()) {
         JsonSchemaValidator jsonSchema = jsonSchemas.get(key.toString());
@@ -294,7 +301,7 @@ class OneOfValidator extends Validator<List<String>> {
 
   private Set<String> oneOfProps;
 
-  OneOfValidator(Map schema, List<String> oneOfProps) {
+  OneOfValidator(@SuppressWarnings({"rawtypes"})Map schema, List<String> oneOfProps) {
     super(schema, oneOfProps);
     this.oneOfProps = new HashSet<>(oneOfProps);
   }
@@ -302,6 +309,7 @@ class OneOfValidator extends Validator<List<String>> {
   @Override
   boolean validate(Object o, List<String> errs) {
     if (o instanceof Map) {
+      @SuppressWarnings({"rawtypes"})
       Map map = (Map) o;
       for (Object key : map.keySet()) {
         if (oneOfProps.contains(key.toString())) return true;

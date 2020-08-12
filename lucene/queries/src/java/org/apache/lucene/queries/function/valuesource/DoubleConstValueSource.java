@@ -43,7 +43,7 @@ public class DoubleConstValueSource extends ConstNumberSource {
   }
 
   @Override
-  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
     return new DoubleDocValues(this) {
       @Override
       public float floatVal(int doc) {

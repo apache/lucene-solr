@@ -220,7 +220,7 @@ public class Row {
    * Character.
    * 
    * @param way the Character associated with the desired Cell
-   * @return the reference, or -1 if the Cell is <tt>null</tt>
+   * @return the reference, or -1 if the Cell is <code>null</code>
    */
   public int getRef(Character way) {
     Cell c = at(way);
@@ -255,7 +255,7 @@ public class Row {
    * Return the number of identical Cells (containing patch commands) in this
    * Row.
    * 
-   * @param eqSkip when set to <tt>false</tt> the removed patch commands are
+   * @param eqSkip when set to <code>false</code> the removed patch commands are
    *          considered
    * @return the number of identical Cells, or -1 if there are (at least) two
    *         different cells

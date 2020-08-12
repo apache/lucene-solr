@@ -36,7 +36,9 @@ import org.slf4j.LoggerFactory;
  * It takes care of notifying the {@link CdcrReplicatorManager} in case
  * of a leader state change.
  * </p>
+ * @deprecated since 8.6
  */
+@Deprecated(since = "8.6")
 class CdcrLeaderStateManager extends CdcrStateManager {
 
   private boolean amILeader = false;
@@ -150,7 +152,7 @@ class CdcrLeaderStateManager extends CdcrStateManager {
           CdcrLeaderStateManager.this.checkIfIAmLeader();
         }
       } catch (KeeperException | InterruptedException e) {
-        log.warn("Failed updating leader state and setting watch @ " + collectionName + ":" + shard, e);
+        log.warn("Failed updating leader state and setting watch @ {}: {}", collectionName, shard, e);
       }
     }
 

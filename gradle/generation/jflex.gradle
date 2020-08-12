@@ -1,0 +1,169 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+
+// Add a top-level pseudo-task to which we will attach individual regenerate tasks.
+
+configure(rootProject) {
+  configurations {
+    jflex
+  }
+
+  dependencies {
+    jflex "de.jflex:jflex:${scriptDepVersions['jflex']}"
+  }
+
+  task jflex() {
+    description "Regenerate sources for corresponding jflex grammar files."
+    group "generation"
+
+    dependsOn ":lucene:core:jflexStandardTokenizerImpl"
+    dependsOn ":lucene:analysis:common:jflexUAX29URLEmailTokenizerImpl"
+  }
+}
+
+// We always regenerate, no need to declare outputs.
+class JFlexTask extends DefaultTask {
+  @Input
+  File jflexFile
+
+  @Input
+  File skeleton
+
+  @Optional
+  String heapSize
+
+  JFlexTask() {
+    dependsOn(project.rootProject.configurations.jflex)
+  }
+
+  @TaskAction
+  def generate() {
+    if (!jflexFile || !jflexFile.exists()) {
+      throw new RuntimeException("JFlex file does not exist: ${jflexFile}")
+    }
+    def targetDir = jflexFile.parentFile
+    def target = jflexFile.absolutePath.replace(".jflex", ".java")
+
+    logger.lifecycle("Regenerating JFlex:\n  from: ${jflexFile}\n    to: ${target}")
+    project.javaexec {
+      classpath {
+        project.rootProject.configurations.jflex
+      }
+      main = "jflex.Main"
+      args += [
+          "-nobak",
+          "--quiet",
+          "--encoding", "UTF-8",
+      ]
+
+      if (heapSize) {
+        maxHeapSize = heapSize
+      }
+
+      if (skeleton) {
+        args += ["--skel", skeleton.absolutePath]
+      }
+
+      args += [
+        "-d", targetDir.absolutePath,
+        jflexFile
+      ]
+    }
+
+    // Correct line endings for Windows.
+    project.ant.fixcrlf(
+        file: target,
+        encoding: "UTF-8",
+        eol: "lf"
+    )
+  }
+}
+
+configure(project(":lucene:core")) {
+  task jflexStandardTokenizerImpl(type: JFlexTask) {
+    description "Regenerate StandardTokenizerImpl.java"
+    group "generation"
+
+    jflexFile = file('src/java/org/apache/lucene/analysis/standard/StandardTokenizerImpl.jflex')
+    skeleton = file("src/data/jflex/skeleton.disable.buffer.expansion.txt")
+
+    doLast {
+      ant.replace(
+          file: file('src/java/org/apache/lucene/analysis/standard/StandardTokenizerImpl.java'),
+          encoding: "UTF-8",
+          token: "private static final int ZZ_BUFFERSIZE =",
+          value: "private int ZZ_BUFFERSIZE ="
+      )
+    }
+  }
+}
+
+configure(project(":lucene:analysis:common")) {
+
+  task jflexUAX29URLEmailTokenizerImpl(type: JFlexTask) {
+    description "Regenerate UAX29URLEmailTokenizerImpl.java"
+    group "generation"
+
+    jflexFile = file('src/java/org/apache/lucene/analysis/standard/UAX29URLEmailTokenizerImpl.jflex')
+    skeleton = project(":lucene:core").file("src/data/jflex/skeleton.disable.buffer.expansion.txt")
+    heapSize = "12g"
+
+    doFirst {
+      logger.lifecycle("Regenerating UAX29URLEmailTokenizerImpl. This may take a long time (and requires tons of memory).")
+    }
+
+    doLast {
+      ant.replace(
+          file: file('src/java/org/apache/lucene/analysis/standard/UAX29URLEmailTokenizerImpl.java'),
+          encoding: "UTF-8",
+          token: "private static final int ZZ_BUFFERSIZE =",
+          value: "private int ZZ_BUFFERSIZE ="
+      )
+    }
+  }
+
+  task jflexHTMLStripCharFilter(type: JFlexTask) {
+    description "Regenerate HTMLStripCharFilter.java"
+    group "generation"
+
+    jflexFile = file('src/java/org/apache/lucene/analysis/charfilter/HTMLStripCharFilter.jflex')
+    skeleton = project(":lucene:core").file("src/data/jflex/skeleton.default")
+
+    doFirst {
+      // Regenerate HTMLCharacterEntities.jflex first.
+      def target = file('src/java/org/apache/lucene/analysis/charfilter/HTMLCharacterEntities.jflex')
+      target.withOutputStream { output ->
+        project.exec {
+          executable = "python"
+          workingDir = target.parentFile
+          standardOutput = output
+          args += [
+              "-B", // don't write any bytecode cache
+              "htmlentity.py"
+          ]
+        }
+      }
+
+      project.ant.fixcrlf(
+          file: target,
+          encoding: "UTF-8",
+          eol: "lf"
+      )
+    }
+  }
+}

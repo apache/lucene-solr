@@ -33,10 +33,10 @@ public final class Constants {
   public static final String JVM_NAME = System.getProperty("java.vm.name");
   public static final String JVM_SPEC_VERSION = System.getProperty("java.specification.version");
 
-  /** The value of <tt>System.getProperty("java.version")</tt>. **/
+  /** The value of <code>System.getProperty("java.version")</code>. **/
   public static final String JAVA_VERSION = System.getProperty("java.version");
  
-  /** The value of <tt>System.getProperty("os.name")</tt>. **/
+  /** The value of <code>System.getProperty("os.name")</code>. **/
   public static final String OS_NAME = System.getProperty("os.name");
   /** True iff running on Linux. */
   public static final boolean LINUX = OS_NAME.startsWith("Linux");

@@ -46,9 +46,9 @@ public final class CoveringQuery extends Query implements Accountable {
    * @param queries Sub queries to match.
    * @param minimumNumberMatch Per-document long value that records how many queries
    *                           should match. Values that are less than 1 are treated
-   *                           like <tt>1</tt>: only documents that have at least one
+   *                           like <code>1</code>: only documents that have at least one
    *                           matching clause will be considered matches. Documents
-   *                           that do not have a value for <tt>minimumNumberMatch</tt>
+   *                           that do not have a value for <code>minimumNumberMatch</code>
    *                           do not match.
    */
   public CoveringQuery(Collection<Query> queries, LongValuesSource minimumNumberMatch) {

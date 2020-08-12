@@ -50,6 +50,7 @@ public class TestAnalyzerWrapper extends LuceneTestCase {
     };
 
     try (TokenStream ts = wrapped.tokenStream("", "text")) {
+      assert ts != null;
       assertTrue(sourceCalled.get());
     }
 

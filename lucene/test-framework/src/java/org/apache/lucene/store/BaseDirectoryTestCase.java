@@ -467,6 +467,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
           for (int i = 0, max = RandomizedTest.randomIntBetween(500, 1000); i < max; i++) {
             String fileName = "file-" + i;
             try (IndexOutput output = dir.createOutput(fileName, newIOContext(random()))) {
+              assert output != null;
               // Add some lags so that the other thread can read the content of the directory.
               Thread.yield();
             }
@@ -492,6 +493,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
                 String file = RandomPicks.randomFrom(rnd, files);
                 try (IndexInput input = dir.openInput(file, newIOContext(random()))) {
                   // Just open, nothing else.
+                  assert input != null;
                 } catch (AccessDeniedException e) {
                   // Access denied is allowed for files for which the output is still open (MockDirectoryWriter enforces
                   // this, for example). Since we don't synchronize with the writer thread, just ignore it.
@@ -1102,11 +1104,13 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     try (Directory dir = getDirectory(createTempDir())) {
       String name = "file";
       try (IndexOutput out = dir.createOutput(name, IOContext.DEFAULT)) {
+        assert out != null;
       }
 
       // Try to create an existing file should fail.
       expectThrows(FileAlreadyExistsException.class, () -> {
         try (IndexOutput out = dir.createOutput(name, IOContext.DEFAULT)) {
+          assert out != null;
         }
       });
 

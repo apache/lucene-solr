@@ -23,45 +23,39 @@ import static org.apache.lucene.geo.GeoUtils.lineCrossesLineWithBoundary;
 import static org.apache.lucene.geo.GeoUtils.orient;
 
 /**
- * 2D line/polygon geometry implementation represented as a balanced interval tree of edges.
+ * Internal tree node: represents geometry edge from [x1, y1] to [x2, y2].
+ * The sort value is {@code low}, which is the minimum y of the edge.
+ * {@code max} stores the maximum y of this edge or any children.
  * <p>
  * Construction takes {@code O(n log n)} time for sorting and tree construction.
- * {@link #relate relate()} are {@code O(n)}, but for most
+ * Methods are {@code O(n)}, but for most
  * practical lines and polygons are much faster than brute force.
- * @lucene.internal
  */
-/**
- * Internal tree node: represents geometry edge from lat1,lon1 to lat2,lon2.
- * The sort value is {@code low}, which is the minimum latitude of the edge.
- * {@code max} stores the maximum latitude of this edge or any children.
- *
- * @lucene.internal
- */
-public class EdgeTree {
-    // lat-lon pair (in original order) of the two vertices
-    final double y1, y2;
-    final double x1, x2;
-    /** min of this edge */
-    final double low;
-    /** max latitude of this edge or any children */
-    double max;
-    /** left child edge, or null */
-    EdgeTree left;
-    /** right child edge, or null */
-    EdgeTree right;
-    /** helper bytes to signal if a point is on an edge, it is within the edge tree or disjoint */
-    final private static byte FALSE = 0x00;
-    final private static byte TRUE = 0x01;
-    final private static byte ON_EDGE = 0x02;
+final class EdgeTree {
+  // X-Y pair (in original order) of the two vertices
+  final double y1, y2;
+  final double x1, x2;
+  /** min Y of this edge */
+  final double low;
+  /** max Y of this edge or any children */
+  double max;
+  /** left child edge, or null */
+  EdgeTree left;
+  /** right child edge, or null */
+  EdgeTree right;
+  /** helper bytes to signal if a point is on an edge, it is within the edge tree or disjoint */
+  final private static byte FALSE = 0x00;
+  final private static byte TRUE = 0x01;
+  final private static byte ON_EDGE = 0x02;
 
-  EdgeTree(double x1, double y1, double x2, double y2, double low, double max) {
-      this.y1 = y1;
-      this.x1 = x1;
-      this.y2 = y2;
-      this.x2 = x2;
-      this.low = low;
-      this.max = max;
-    }
+  private EdgeTree(double x1, double y1, double x2, double y2, double low, double max) {
+    this.y1 = y1;
+    this.x1 = x1;
+    this.y2 = y2;
+    this.x2 = x2;
+    this.low = low;
+    this.max = max;
+  }
 
   /**
    * Returns true if the point is on an edge or crosses the edge subtree an odd number
@@ -135,7 +129,7 @@ public class EdgeTree {
   }
 
   /** returns true if the provided x, y point lies on the line */
-  protected boolean isPointOnLine(double x, double y) {
+  boolean isPointOnLine(double x, double y) {
     if (y <= max) {
       double a1x = x1;
       double a1y = y1;
@@ -160,7 +154,7 @@ public class EdgeTree {
 
 
   /** Returns true if the triangle crosses any edge in this edge subtree */
-  protected boolean crossesTriangle(double minX, double maxX, double minY, double maxY,
+  boolean crossesTriangle(double minX, double maxX, double minY, double maxY,
                           double ax, double ay, double bx, double by, double cx, double cy, boolean includeBoundary) {
       if (minY <= max) {
         double dy = y1;
@@ -204,7 +198,7 @@ public class EdgeTree {
     }
 
   /** Returns true if the box crosses any edge in this edge subtree */
-  protected boolean crossesBox(double minX, double maxX, double minY, double maxY, boolean includeBoundary) {
+  boolean crossesBox(double minX, double maxX, double minY, double maxY, boolean includeBoundary) {
     // we just have to cross one edge to answer the question, so we descend the tree and return when we do.
     if (minY <= max) {
       // we compute line intersections of every polygon edge with every box line.
@@ -261,7 +255,7 @@ public class EdgeTree {
   }
 
   /** Returns true if the line crosses any edge in this edge subtree */
-  protected boolean crossesLine(double minX, double maxX, double minY, double maxY, double a2x, double a2y, double b2x, double b2y) {
+  boolean crossesLine(double minX, double maxX, double minY, double maxY, double a2x, double a2y, double b2x, double b2y, boolean includeBoundary) {
     if (minY <= max) {
       double a1x = x1;
       double a1y = y1;
@@ -272,14 +266,21 @@ public class EdgeTree {
           (a1y > maxY && b1y > maxY) ||
           (a1x < minX && b1x < minX) ||
           (a1x > maxX && b1x > maxX);
-      if (outside == false && lineCrossesLineWithBoundary(a1x, a1y, b1x, b1y, a2x, a2y, b2x, b2y)) {
+      if (outside == false) {
+        if (includeBoundary) {
+          if (lineCrossesLineWithBoundary(a1x, a1y, b1x, b1y, a2x, a2y, b2x, b2y)) {
+            return true;
+          }
+        } else {
+          if (lineCrossesLine(a1x, a1y, b1x, b1y, a2x, a2y, b2x, b2y)) {
+            return true;
+          }
+        }
+      }
+      if (left != null && left.crossesLine(minX, maxX, minY, maxY, a2x, a2y, b2x, b2y, includeBoundary)) {
         return true;
       }
-
-      if (left != null && left.crossesLine(minX, maxX, minY, maxY, a2x, a2y, b2x, b2y)) {
-        return true;
-      }
-      if (right != null && maxY >= low && right.crossesLine(minX, maxX, minY, maxY, a2x, a2y, b2x, b2y)) {
+      if (right != null && maxY >= low && right.crossesLine(minX, maxX, minY, maxY, a2x, a2y, b2x, b2y, includeBoundary)) {
         return true;
       }
     }
@@ -290,7 +291,7 @@ public class EdgeTree {
    * Creates an edge interval tree from a set of geometry vertices.
    * @return root node of the tree.
    */
-  protected static EdgeTree createTree(double[] x, double[] y) {
+  static EdgeTree createTree(double[] x, double[] y) {
     EdgeTree edges[] = new EdgeTree[x.length - 1];
     for (int i = 1; i < x.length; i++) {
       double x1 = x[i-1];

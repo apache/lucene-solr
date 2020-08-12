@@ -584,7 +584,7 @@ Consider the following example query with faceting:
 
 Because everything is already constrained by the filter `doctype:pdf`, the `facet.field=doctype` facet command is currently redundant and will return 0 counts for everything except `doctype:pdf`.
 
-To implement a multi-select facet for doctype, a GUI may want to still display the other doctype values and their associated counts, as if the http://doctypepdf[`doctype:pdf`] constraint had not yet been applied. For example:
+To implement a multi-select facet for doctype, a GUI may want to still display the other doctype values and their associated counts, as if the `doctype:pdf` constraint had not yet been applied. For example:
 
 [source,text]
 ----

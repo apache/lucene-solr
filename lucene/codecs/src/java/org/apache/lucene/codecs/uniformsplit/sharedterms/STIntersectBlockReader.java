@@ -64,18 +64,15 @@ public class STIntersectBlockReader extends IntersectBlockReader {
 
   @Override
   public BytesRef next() throws IOException {
-    BytesRef next = super.next();
-    if (next == null) {
-      return null;
-    }
-    // Check if the term occurs for the searched field.
-    while (!termOccursInField()) {
+    BytesRef next;
+    do {
       next = super.next();
       if (next == null) {
-        // No more term.
+        // No more terms.
         return null;
       }
-    }
+      // Check if the term occurs for the searched field.
+    } while (!termOccursInField());
     // The term occurs for the searched field.
     return next;
   }
@@ -86,21 +83,13 @@ public class STIntersectBlockReader extends IntersectBlockReader {
   }
 
   @Override
-  protected boolean nextBlockMatchingPrefix() throws IOException {
-    // block header maybe null if we are positioned outside the field block range
-    return super.nextBlockMatchingPrefix() && blockHeader != null;
-  }
-
-  @Override
   protected STBlockLine.Serializer createBlockLineSerializer() {
     return new STBlockLine.Serializer();
   }
 
   /**
-   * Reads the {@link BlockTermState} on the current line for the specific field
-   * corresponding this this reader.
-   * Changes the current {@link BlockTermState} to null if the term does not
-   * occur for the field.
+   * Reads the {@link BlockTermState} on the current line for the specific field corresponding to this reader.
+   * Returns null if the term does not occur for the field.
    */
   @Override
   protected BlockTermState readTermState() throws IOException {

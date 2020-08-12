@@ -42,7 +42,7 @@ import org.apache.lucene.util.SmallFloat;
  * this class at both <a href="#indextime">index-time</a> and 
  * <a href="#querytime">query-time</a>.
  * <p>
- * <a name="indextime">Indexing Time</a>
+ * <a id="indextime">Indexing Time</a>
  * At indexing time, the indexer calls {@link #computeNorm(FieldInvertState)}, allowing
  * the Similarity implementation to set a per-document value for the field that will 
  * be later accessible via {@link org.apache.lucene.index.LeafReader#getNormValues(String)}.
@@ -60,7 +60,7 @@ import org.apache.lucene.util.SmallFloat;
  * Additional scoring factors can be stored in named {@link NumericDocValuesField}s and
  * accessed at query-time with {@link org.apache.lucene.index.LeafReader#getNumericDocValues(String)}.
  * However this should not be done in the {@link Similarity} but externally, for instance
- * by using <tt>FunctionScoreQuery</tt>.
+ * by using <code>FunctionScoreQuery</code>.
  * <p>
  * Finally, using index-time boosts (either via folding into the normalization byte or
  * via DocValues), is an inefficient way to boost the scores of different fields if the
@@ -68,7 +68,7 @@ import org.apache.lucene.util.SmallFloat;
  * boost parameter <i>C</i>, and {@link PerFieldSimilarityWrapper} can return different 
  * instances with different boosts depending upon field name.
  * <p>
- * <a name="querytime">Query time</a>
+ * <a id="querytime">Query time</a>
  * At query-time, Queries interact with the Similarity via these steps:
  * <ol>
  *   <li>The {@link #scorer(float, CollectionStatistics, TermStatistics...)} method is called a single time,
@@ -80,7 +80,7 @@ import org.apache.lucene.util.SmallFloat;
  *   <li>Then {@link SimScorer#score(float, long)} is called for every matching document to compute its score.
  * </ol>
  * <p>
- * <a name="explaintime">Explanations</a>
+ * <a id="explaintime">Explanations</a>
  * When {@link IndexSearcher#explain(org.apache.lucene.search.Query, int)} is called, queries consult the Similarity's DocScorer for an 
  * explanation of how it computed its score. The query passes in a the document id and an explanation of how the frequency
  * was computed.

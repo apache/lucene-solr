@@ -53,15 +53,15 @@ import org.apache.lucene.util.LongsRef;
 import org.apache.lucene.util.packed.BlockPackedReaderIterator;
 import org.apache.lucene.util.packed.PackedInts;
 
-import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.CODEC_SFX_DAT;
-import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.CODEC_SFX_IDX;
+import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VERSION_OFFHEAP_INDEX;
 import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.FLAGS_BITS;
 import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.OFFSETS;
 import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.PACKED_BLOCK_SIZE;
 import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.PAYLOADS;
 import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.POSITIONS;
 import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VECTORS_EXTENSION;
-import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VECTORS_INDEX_EXTENSION;
+import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VECTORS_INDEX_CODEC_NAME;
+import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VECTORS_INDEX_EXTENSION_PREFIX;
 import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VERSION_CURRENT;
 import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VERSION_START;
 
@@ -72,7 +72,7 @@ import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.
 public final class CompressingTermVectorsReader extends TermVectorsReader implements Closeable {
 
   private final FieldInfos fieldInfos;
-  final CompressingStoredFieldsIndexReader indexReader;
+  final FieldsIndex indexReader;
   final IndexInput vectorsStream;
   private final int version;
   private final int packedIntsVersion;
@@ -112,45 +112,48 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     boolean success = false;
     fieldInfos = fn;
     numDocs = si.maxDoc();
-    int version = -1;
-    CompressingStoredFieldsIndexReader indexReader = null;
-    
-    long maxPointer = -1;
-    
-    // Load the index into memory
-    final String indexName = IndexFileNames.segmentFileName(segment, segmentSuffix, VECTORS_INDEX_EXTENSION);
-    try (ChecksumIndexInput input = d.openChecksumInput(indexName, context)) {
-      Throwable priorE = null;
-      try {
-        final String codecNameIdx = formatName + CODEC_SFX_IDX;
-        version = CodecUtil.checkIndexHeader(input, codecNameIdx, VERSION_START, VERSION_CURRENT, si.getId(), segmentSuffix);
-        assert CodecUtil.indexHeaderLength(codecNameIdx, segmentSuffix) == input.getFilePointer();
-        indexReader = new CompressingStoredFieldsIndexReader(input, si);
-        maxPointer = input.readVLong(); // the end of the data section
-      } catch (Throwable exception) {
-        priorE = exception;
-      } finally {
-        CodecUtil.checkFooter(input, priorE);
-      }
-    }
-    
-    this.version = version;
-    this.indexReader = indexReader;
-    this.maxPointer = maxPointer;
 
     try {
       // Open the data file and read metadata
       final String vectorsStreamFN = IndexFileNames.segmentFileName(segment, segmentSuffix, VECTORS_EXTENSION);
       vectorsStream = d.openInput(vectorsStreamFN, context);
-      final String codecNameDat = formatName + CODEC_SFX_DAT;
-      int version2 = CodecUtil.checkIndexHeader(vectorsStream, codecNameDat, VERSION_START, VERSION_CURRENT, si.getId(), segmentSuffix);
-      if (version != version2) {
-        throw new CorruptIndexException("Version mismatch between stored fields index and data: " + version + " != " + version2, vectorsStream);
-      }
-      assert CodecUtil.indexHeaderLength(codecNameDat, segmentSuffix) == vectorsStream.getFilePointer();
-      
-      long pos = vectorsStream.getFilePointer();
+      version = CodecUtil.checkIndexHeader(vectorsStream, formatName, VERSION_START, VERSION_CURRENT, si.getId(), segmentSuffix);
+      assert CodecUtil.indexHeaderLength(formatName, segmentSuffix) == vectorsStream.getFilePointer();
 
+      FieldsIndex indexReader = null;
+      long maxPointer = -1;
+
+      if (version < VERSION_OFFHEAP_INDEX) {
+        // Load the index into memory
+        final String indexName = IndexFileNames.segmentFileName(segment, segmentSuffix, "tvx");
+        try (ChecksumIndexInput indexStream = d.openChecksumInput(indexName, context)) {
+          Throwable priorE = null;
+          try {
+            assert formatName.endsWith("Data");
+            final String codecNameIdx = formatName.substring(0, formatName.length() - "Data".length()) + "Index";
+            final int version2 = CodecUtil.checkIndexHeader(indexStream, codecNameIdx, VERSION_START, VERSION_CURRENT, si.getId(), segmentSuffix);
+            if (version != version2) {
+              throw new CorruptIndexException("Version mismatch between stored fields index and data: " + version + " != " + version2, indexStream);
+            }
+            assert CodecUtil.indexHeaderLength(codecNameIdx, segmentSuffix) == indexStream.getFilePointer();
+            indexReader = new LegacyFieldsIndexReader(indexStream, si);
+            maxPointer = indexStream.readVLong(); // the end of the data section
+          } catch (Throwable exception) {
+            priorE = exception;
+          } finally {
+            CodecUtil.checkFooter(indexStream, priorE);
+          }
+        }
+      } else {
+        FieldsIndexReader fieldsIndexReader = new FieldsIndexReader(d, si.name, segmentSuffix, VECTORS_INDEX_EXTENSION_PREFIX, VECTORS_INDEX_CODEC_NAME, si.getId());
+        indexReader = fieldsIndexReader;
+        maxPointer = fieldsIndexReader.getMaxPointer();
+      }
+
+      this.indexReader = indexReader;
+      this.maxPointer = maxPointer;
+
+      long pos = vectorsStream.getFilePointer();
       vectorsStream.seek(maxPointer);
       numChunks = vectorsStream.readVLong();
       numDirtyChunks = vectorsStream.readVLong();
@@ -194,7 +197,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     return version;
   }
 
-  CompressingStoredFieldsIndexReader getIndexReader() {
+  FieldsIndex getIndexReader() {
     return indexReader;
   }
 
@@ -226,7 +229,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
   @Override
   public void close() throws IOException {
     if (!closed) {
-      IOUtils.close(vectorsStream);
+      IOUtils.close(indexReader, vectorsStream);
       closed = true;
     }
   }
@@ -1106,6 +1109,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
   
   @Override
   public void checkIntegrity() throws IOException {
+    indexReader.checkIntegrity();
     CodecUtil.checksumEntireFile(vectorsStream);
   }
 

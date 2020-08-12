@@ -92,7 +92,12 @@ public class PathHierarchyTokenizerFactory extends TokenizerFactory {
     }
   }
   
-  @Override
+  /** Default ctor for compatibility with SPI */
+  public PathHierarchyTokenizerFactory() {
+    throw defaultCtorException();
+  }
+
+@Override
   public Tokenizer create(AttributeFactory factory) {
     if (reverse) {
       return new ReversePathHierarchyTokenizer(factory, delimiter, replacement, skip);

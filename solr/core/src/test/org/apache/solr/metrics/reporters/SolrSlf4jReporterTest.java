@@ -27,7 +27,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
-import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.LogWatcherConfig;
@@ -53,7 +52,7 @@ public class SolrSlf4jReporterTest extends SolrTestCaseJ4 {
     System.setProperty("solr.test.sys.prop2", "proptwo");
 
     String solrXml = FileUtils.readFileToString(Paths.get(home.toString(), "solr-slf4jreporter.xml").toFile(), "UTF-8");
-    NodeConfig cfg = SolrXmlConfig.fromString(new SolrResourceLoader(home), solrXml);
+    NodeConfig cfg = SolrXmlConfig.fromString(home, solrXml);
     CoreContainer cc = createCoreContainer(cfg, new TestHarness.TestCoresLocator
                                            (DEFAULT_TEST_CORENAME, initAndGetDataDir().getAbsolutePath(),
                                             "solrconfig.xml", "schema.xml"));
@@ -70,6 +69,7 @@ public class SolrSlf4jReporterTest extends SolrTestCaseJ4 {
     assertTrue(reporter2 instanceof SolrSlf4jReporter);
 
     LogWatcherConfig watcherCfg = new LogWatcherConfig(true, null, null, 100);
+    @SuppressWarnings({"rawtypes"})
     LogWatcher watcher = LogWatcher.newRegisteredLogWatcher(watcherCfg, null);
     watcher.setThreshold("INFO");
 

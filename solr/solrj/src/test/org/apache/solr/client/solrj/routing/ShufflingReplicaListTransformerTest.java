@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.solr.SolrTestCase;
@@ -34,8 +35,14 @@ public class ShufflingReplicaListTransformerTest extends SolrTestCase {
   @Test
   public void testTransformReplicas() throws Exception {
     final List<Replica> replicas = new ArrayList<>();
+    int counter = 0;
     for (final String url : createRandomUrls()) {
-      replicas.add(new Replica(url, new HashMap<String,Object>(),"c1","s1"));
+      Map<String, Object> propMap = new HashMap<>();
+      propMap.put("core", "core" + counter);
+      propMap.put("type", "NRT");
+      propMap.put("node_name", "node" + counter);
+      counter++;
+      replicas.add(new Replica(url, propMap, "c1", "s1"));
     }
     implTestTransform(replicas);
   }

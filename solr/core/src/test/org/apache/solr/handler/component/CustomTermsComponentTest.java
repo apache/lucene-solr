@@ -36,7 +36,7 @@ public class CustomTermsComponentTest extends ShardsWhitelistTest {
 
   public static class CustomTermsComponent extends TermsComponent {
     
-    public void init( NamedList args )
+    public void init( @SuppressWarnings({"rawtypes"})NamedList args )
     {
       super.init(args);
     }

@@ -49,6 +49,11 @@ public class KoreanReadingFormFilterFactory extends TokenFilterFactory {
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public KoreanReadingFormFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public TokenStream create(TokenStream input) {
     return new KoreanReadingFormFilter(input);

@@ -300,8 +300,8 @@ class GeoComplexPolygon extends GeoBasePolygon {
       
       if (testPointFixedYAbovePlane != null && testPointFixedYBelowPlane != null && fixedXAbovePlane != null && fixedXBelowPlane != null) {
         //check if planes intersects  inside world
-        final double checkAbove = 4.0 * (fixedXAbovePlane.D * fixedXAbovePlane.D * planetModel.inverseAbSquared + testPointFixedYAbovePlane.D * testPointFixedYAbovePlane.D * planetModel.inverseAbSquared - 1.0);
-        final double checkBelow = 4.0 * (fixedXBelowPlane.D * fixedXBelowPlane.D * planetModel.inverseAbSquared + testPointFixedYBelowPlane.D * testPointFixedYBelowPlane.D * planetModel.inverseAbSquared - 1.0);
+        final double checkAbove = 4.0 * (fixedXAbovePlane.D * fixedXAbovePlane.D * planetModel.inverseXYScalingSquared + testPointFixedYAbovePlane.D * testPointFixedYAbovePlane.D * planetModel.inverseXYScalingSquared - 1.0);
+        final double checkBelow = 4.0 * (fixedXBelowPlane.D * fixedXBelowPlane.D * planetModel.inverseXYScalingSquared + testPointFixedYBelowPlane.D * testPointFixedYBelowPlane.D * planetModel.inverseXYScalingSquared - 1.0);
         if (checkAbove < Vector.MINIMUM_RESOLUTION_SQUARED && checkBelow < Vector.MINIMUM_RESOLUTION_SQUARED) {
           //System.out.println("  Looking for intersections between travel and test point planes...");
           final GeoPoint[] XIntersectionsY = travelPlaneFixedX.findIntersections(planetModel, testPointFixedYPlane);
@@ -325,8 +325,8 @@ class GeoComplexPolygon extends GeoBasePolygon {
       }
       if (testPointFixedZAbovePlane != null && testPointFixedZBelowPlane != null && fixedXAbovePlane != null && fixedXBelowPlane != null) {
         //check if planes intersects  inside world
-        final double checkAbove = 4.0 * (fixedXAbovePlane.D * fixedXAbovePlane.D * planetModel.inverseAbSquared + testPointFixedZAbovePlane.D * testPointFixedZAbovePlane.D * planetModel.inverseCSquared - 1.0);
-        final double checkBelow = 4.0 * (fixedXBelowPlane.D * fixedXBelowPlane.D * planetModel.inverseAbSquared + testPointFixedZBelowPlane.D * testPointFixedZBelowPlane.D * planetModel.inverseCSquared - 1.0);
+        final double checkAbove = 4.0 * (fixedXAbovePlane.D * fixedXAbovePlane.D * planetModel.inverseXYScalingSquared + testPointFixedZAbovePlane.D * testPointFixedZAbovePlane.D * planetModel.inverseZScalingSquared - 1.0);
+        final double checkBelow = 4.0 * (fixedXBelowPlane.D * fixedXBelowPlane.D * planetModel.inverseXYScalingSquared + testPointFixedZBelowPlane.D * testPointFixedZBelowPlane.D * planetModel.inverseZScalingSquared - 1.0);
         if (checkAbove < Vector.MINIMUM_RESOLUTION_SQUARED && checkBelow < Vector.MINIMUM_RESOLUTION_SQUARED) {
           //System.out.println("  Looking for intersections between travel and test point planes...");
           final GeoPoint[] XIntersectionsZ = travelPlaneFixedX.findIntersections(planetModel, testPointFixedZPlane);
@@ -349,8 +349,8 @@ class GeoComplexPolygon extends GeoBasePolygon {
       }
       if (testPointFixedXAbovePlane != null && testPointFixedXBelowPlane != null && fixedYAbovePlane != null && fixedYBelowPlane != null) {
         //check if planes intersects inside world
-        final double checkAbove = 4.0 * (testPointFixedXAbovePlane.D * testPointFixedXAbovePlane.D * planetModel.inverseAbSquared + fixedYAbovePlane.D * fixedYAbovePlane.D * planetModel.inverseAbSquared - 1.0);
-        final double checkBelow = 4.0 * (testPointFixedXBelowPlane.D * testPointFixedXBelowPlane.D * planetModel.inverseAbSquared + fixedYBelowPlane.D * fixedYBelowPlane.D * planetModel.inverseAbSquared - 1.0);
+        final double checkAbove = 4.0 * (testPointFixedXAbovePlane.D * testPointFixedXAbovePlane.D * planetModel.inverseXYScalingSquared + fixedYAbovePlane.D * fixedYAbovePlane.D * planetModel.inverseXYScalingSquared - 1.0);
+        final double checkBelow = 4.0 * (testPointFixedXBelowPlane.D * testPointFixedXBelowPlane.D * planetModel.inverseXYScalingSquared + fixedYBelowPlane.D * fixedYBelowPlane.D * planetModel.inverseXYScalingSquared - 1.0);
         if (checkAbove < Vector.MINIMUM_RESOLUTION_SQUARED && checkBelow < Vector.MINIMUM_RESOLUTION_SQUARED) {
           //System.out.println("  Looking for intersections between travel and test point planes...");
           final GeoPoint[] YIntersectionsX = travelPlaneFixedY.findIntersections(planetModel, testPointFixedXPlane);
@@ -373,8 +373,8 @@ class GeoComplexPolygon extends GeoBasePolygon {
       }
       if (testPointFixedZAbovePlane != null && testPointFixedZBelowPlane != null && fixedYAbovePlane != null && fixedYBelowPlane != null) {
         //check if planes intersects inside world
-        final double checkAbove = 4.0 * (testPointFixedZAbovePlane.D * testPointFixedZAbovePlane.D * planetModel.inverseCSquared + fixedYAbovePlane.D * fixedYAbovePlane.D * planetModel.inverseAbSquared - 1.0);
-        final double checkBelow = 4.0 * (testPointFixedZBelowPlane.D * testPointFixedZBelowPlane.D * planetModel.inverseCSquared + fixedYBelowPlane.D * fixedYBelowPlane.D * planetModel.inverseAbSquared - 1.0);
+        final double checkAbove = 4.0 * (testPointFixedZAbovePlane.D * testPointFixedZAbovePlane.D * planetModel.inverseZScalingSquared + fixedYAbovePlane.D * fixedYAbovePlane.D * planetModel.inverseXYScalingSquared - 1.0);
+        final double checkBelow = 4.0 * (testPointFixedZBelowPlane.D * testPointFixedZBelowPlane.D * planetModel.inverseZScalingSquared + fixedYBelowPlane.D * fixedYBelowPlane.D * planetModel.inverseXYScalingSquared - 1.0);
         if (checkAbove < Vector.MINIMUM_RESOLUTION_SQUARED && checkBelow < Vector.MINIMUM_RESOLUTION_SQUARED) {
           //System.out.println("  Looking for intersections between travel and test point planes...");
           final GeoPoint[] YIntersectionsZ = travelPlaneFixedY.findIntersections(planetModel, testPointFixedZPlane);
@@ -397,8 +397,8 @@ class GeoComplexPolygon extends GeoBasePolygon {
       }
       if (testPointFixedXAbovePlane != null && testPointFixedXBelowPlane != null && fixedZAbovePlane != null && fixedZBelowPlane != null) {
         //check if planes intersects inside world
-        final double checkAbove = 4.0 * (testPointFixedXAbovePlane.D * testPointFixedXAbovePlane.D * planetModel.inverseAbSquared + fixedZAbovePlane.D * fixedZAbovePlane.D * planetModel.inverseCSquared - 1.0);
-        final double checkBelow = 4.0 * (testPointFixedXBelowPlane.D * testPointFixedXBelowPlane.D * planetModel.inverseAbSquared + fixedZBelowPlane.D * fixedZBelowPlane.D * planetModel.inverseCSquared - 1.0);
+        final double checkAbove = 4.0 * (testPointFixedXAbovePlane.D * testPointFixedXAbovePlane.D * planetModel.inverseXYScalingSquared + fixedZAbovePlane.D * fixedZAbovePlane.D * planetModel.inverseZScalingSquared - 1.0);
+        final double checkBelow = 4.0 * (testPointFixedXBelowPlane.D * testPointFixedXBelowPlane.D * planetModel.inverseXYScalingSquared + fixedZBelowPlane.D * fixedZBelowPlane.D * planetModel.inverseZScalingSquared - 1.0);
         if (checkAbove < Vector.MINIMUM_RESOLUTION_SQUARED && checkBelow < Vector.MINIMUM_RESOLUTION_SQUARED) {
           //System.out.println("  Looking for intersections between travel and test point planes...");
           final GeoPoint[] ZIntersectionsX = travelPlaneFixedZ.findIntersections(planetModel, testPointFixedXPlane);
@@ -421,8 +421,8 @@ class GeoComplexPolygon extends GeoBasePolygon {
       }
       if (testPointFixedYAbovePlane != null && testPointFixedYBelowPlane != null && fixedZAbovePlane != null && fixedZBelowPlane != null) {
         //check if planes intersects inside world
-        final double checkAbove = 4.0 * (testPointFixedYAbovePlane.D * testPointFixedYAbovePlane.D * planetModel.inverseAbSquared + fixedZAbovePlane.D * fixedZAbovePlane.D * planetModel.inverseCSquared - 1.0);
-        final double checkBelow = 4.0 * (testPointFixedYBelowPlane.D * testPointFixedYBelowPlane.D * planetModel.inverseAbSquared + fixedZBelowPlane.D * fixedZBelowPlane.D * planetModel.inverseCSquared - 1.0);
+        final double checkAbove = 4.0 * (testPointFixedYAbovePlane.D * testPointFixedYAbovePlane.D * planetModel.inverseXYScalingSquared + fixedZAbovePlane.D * fixedZAbovePlane.D * planetModel.inverseZScalingSquared - 1.0);
+        final double checkBelow = 4.0 * (testPointFixedYBelowPlane.D * testPointFixedYBelowPlane.D * planetModel.inverseXYScalingSquared + fixedZBelowPlane.D * fixedZBelowPlane.D * planetModel.inverseZScalingSquared - 1.0);
         if (checkAbove < Vector.MINIMUM_RESOLUTION_SQUARED && checkBelow < Vector.MINIMUM_RESOLUTION_SQUARED) {
           //System.out.println("  Looking for intersections between travel and test point planes...");
           final GeoPoint[] ZIntersectionsY = travelPlaneFixedZ.findIntersections(planetModel, testPointFixedYPlane);
@@ -1466,7 +1466,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
         final GeoPoint[] belowAbove = travelBelowPlane.findIntersections(planetModel, testPointAbovePlane, intersectionBound1, intersectionBound2);
         assert belowAbove != null : "Below + above should not be coplanar";
 
-        assert ((aboveAbove.length > 0)?1:0) + ((aboveBelow.length > 0)?1:0) + ((belowBelow.length > 0)?1:0) + ((belowAbove.length > 0)?1:0) == 1 : "Can be exactly one inside point, instead was: aa="+aboveAbove.length+" ab=" + aboveBelow.length+" bb="+ belowBelow.length+" ba=" + belowAbove.length;
+        assert ((aboveAbove.length > 0)?1:0) + ((aboveBelow.length > 0)?1:0) + ((belowBelow.length > 0)?1:0) + ((belowAbove.length > 0)?1:0) == 1 : "Can be exactly one inside point, instead was: aa="+aboveAbove.length+" xyScaling=" + aboveBelow.length+" bb="+ belowBelow.length+" ba=" + belowAbove.length;
         
         final GeoPoint[] insideInsidePoints;
         if (aboveAbove.length > 0) {

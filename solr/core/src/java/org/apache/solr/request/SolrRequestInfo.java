@@ -21,6 +21,7 @@ import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.security.Principal;
 import java.util.Date;
+import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.TimeZone;
@@ -36,9 +37,12 @@ import org.apache.solr.util.TimeZoneUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
+/** Information about the Solr request/response held in a {@link ThreadLocal}. */
 public class SolrRequestInfo {
-  protected final static ThreadLocal<SolrRequestInfo> threadLocal = new ThreadLocal<>();
+
+  protected static final int MAX_STACK_SIZE = 10;
+
+  protected static final ThreadLocal<Deque<SolrRequestInfo>> threadLocal = ThreadLocal.withInitial(LinkedList::new);
 
   protected SolrQueryRequest req;
   protected SolrQueryResponse rsp;
@@ -52,35 +56,62 @@ public class SolrRequestInfo {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static SolrRequestInfo getRequestInfo() {
-    return threadLocal.get();
+    Deque<SolrRequestInfo> stack = threadLocal.get();
+    if (stack.isEmpty()) return null;
+    return stack.peek();
   }
 
+  /**
+   * Adds the SolrRequestInfo onto a stack held in a {@link ThreadLocal}.
+   * Remember to call {@link #clearRequestInfo()}!
+   */
   public static void setRequestInfo(SolrRequestInfo info) {
-    // TODO: temporary sanity check... this can be changed to just an assert in the future
-    SolrRequestInfo prev = threadLocal.get();
-    if (prev != null) {
-      log.error("Previous SolrRequestInfo was not closed!  req=" + prev.req.getOriginalParams().toString());
-      log.error("prev == info : {}", prev.req == info.req, new RuntimeException());
+    Deque<SolrRequestInfo> stack = threadLocal.get();
+    if (info == null) {
+      throw new IllegalArgumentException("SolrRequestInfo is null");
+    } else if (stack.size() <= MAX_STACK_SIZE) {
+      stack.push(info);
+    } else {
+      assert false : "SolrRequestInfo Stack is full";
+      log.error("SolrRequestInfo Stack is full");
     }
-    assert prev == null;
-
-    threadLocal.set(info);
   }
 
+  /** Removes the most recent SolrRequestInfo from the stack */
   public static void clearRequestInfo() {
-    try {
-      SolrRequestInfo info = threadLocal.get();
-      if (info != null && info.closeHooks != null) {
-        for (Closeable hook : info.closeHooks) {
-          try {
-            hook.close();
-          } catch (Exception e) {
-            SolrException.log(log, "Exception during close hook", e);
-          }
+    Deque<SolrRequestInfo> stack = threadLocal.get();
+    if (stack.isEmpty()) {
+      assert false : "clearRequestInfo called too many times";
+      log.error("clearRequestInfo called too many times");
+    } else {
+      SolrRequestInfo info = stack.pop();
+      closeHooks(info);
+    }
+  }
+
+  /**
+   * This reset method is more of a protection mechanism as
+   * we expect it to be empty by now because all "set" calls need to be balanced with a "clear".
+   */
+  public static void reset() {
+    Deque<SolrRequestInfo> stack = threadLocal.get();
+    boolean isEmpty = stack.isEmpty();
+    while (!stack.isEmpty()) {
+      SolrRequestInfo info = stack.pop();
+      closeHooks(info);
+    }
+    assert isEmpty : "SolrRequestInfo Stack should have been cleared.";
+  }
+
+  private static void closeHooks(SolrRequestInfo info) {
+    if (info.closeHooks != null) {
+      for (Closeable hook : info.closeHooks) {
+        try {
+          hook.close();
+        } catch (Exception e) {
+          SolrException.log(log, "Exception during close hook", e);
         }
       }
-    } finally {
-      threadLocal.remove();
     }
   }
 
@@ -172,23 +203,27 @@ public class SolrRequestInfo {
   public static ExecutorUtil.InheritableThreadLocalProvider getInheritableThreadLocalProvider() {
     return new ExecutorUtil.InheritableThreadLocalProvider() {
       @Override
-      public void store(AtomicReference ctx) {
+      @SuppressWarnings({"unchecked"})
+      public void store(@SuppressWarnings({"rawtypes"})AtomicReference ctx) {
         SolrRequestInfo me = SolrRequestInfo.getRequestInfo();
         if (me != null) ctx.set(me);
       }
 
       @Override
-      public void set(AtomicReference ctx) {
+      @SuppressWarnings({"unchecked"})
+      public void set(@SuppressWarnings({"rawtypes"})AtomicReference ctx) {
         SolrRequestInfo me = (SolrRequestInfo) ctx.get();
         if (me != null) {
-          ctx.set(null);
           SolrRequestInfo.setRequestInfo(me);
         }
       }
 
       @Override
-      public void clean(AtomicReference ctx) {
-        SolrRequestInfo.clearRequestInfo();
+      public void clean(@SuppressWarnings({"rawtypes"})AtomicReference ctx) {
+        if (ctx.get() != null) {
+          SolrRequestInfo.clearRequestInfo();
+        }
+        SolrRequestInfo.reset();
       }
     };
   }

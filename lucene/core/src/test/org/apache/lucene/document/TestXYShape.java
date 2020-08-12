@@ -16,9 +16,14 @@
  */
 package org.apache.lucene.document;
 
+import java.util.Random;
+
 import org.apache.lucene.document.ShapeField.QueryRelation;
+import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.ShapeTestUtil;
 import org.apache.lucene.geo.Tessellator;
+import org.apache.lucene.geo.XYCircle;
+import org.apache.lucene.geo.XYGeometry;
 import org.apache.lucene.geo.XYLine;
 import org.apache.lucene.geo.XYPolygon;
 import org.apache.lucene.geo.XYRectangle;
@@ -49,8 +54,8 @@ public class TestXYShape extends LuceneTestCase {
     }
   }
 
-  protected Query newRectQuery(String field, double minX, double maxX, double minY, double maxY) {
-    return XYShape.newBoxQuery(field, QueryRelation.INTERSECTS, (float)minX, (float)maxX, (float)minY, (float)maxY);
+  protected Query newRectQuery(String field, float minX, float maxX, float minY, float maxY) {
+    return XYShape.newBoxQuery(field, QueryRelation.INTERSECTS, minX, maxX, minY, maxY);
   }
 
   /** test we can search for a point with a standard number of vertices*/
@@ -71,8 +76,8 @@ public class TestXYShape extends LuceneTestCase {
     float x[] = new float[p.numPoints() - 1];
     float y[] = new float[p.numPoints() - 1];
     for (int i = 0; i < x.length; ++i) {
-      x[i] = (float)p.getPolyX(i);
-      y[i] = (float)p.getPolyY(i);
+      x[i] = p.getPolyX(i);
+      y[i] = p.getPolyY(i);
     }
     XYLine l = new XYLine(x, y);
     addLineToDoc(FIELDNAME, document, l);
@@ -83,28 +88,28 @@ public class TestXYShape extends LuceneTestCase {
     IndexReader reader = writer.getReader();
     writer.close();
     IndexSearcher searcher = newSearcher(reader);
-    double minX = Math.min(x[0], x[1]);
-    double minY = Math.min(y[0], y[1]);
-    double maxX = Math.max(x[0], x[1]);
-    double maxY = Math.max(y[0], y[1]);
+    float minX = Math.min(x[0], x[1]);
+    float minY = Math.min(y[0], y[1]);
+    float maxX = Math.max(x[0], x[1]);
+    float maxY = Math.max(y[0], y[1]);
     Query q = newRectQuery(FIELDNAME, minX, maxX, minY, maxY);
     assertEquals(2, searcher.count(q));
 
     // search a disjoint bbox
-    q = newRectQuery(FIELDNAME, p.minX-1d, p.minX+1, p.minY-1d, p.minY+1d);
+    q = newRectQuery(FIELDNAME, p.minX-1f, p.minX + 1f, p.minY - 1f, p.minY + 1f);
     assertEquals(0, searcher.count(q));
 
     // search w/ an intersecting polygon
     q = XYShape.newPolygonQuery(FIELDNAME, QueryRelation.INTERSECTS, new XYPolygon(
-        new float[] {(float)minX, (float)minX, (float)maxX, (float)maxX, (float)minX},
-        new float[] {(float)minY, (float)maxY, (float)maxY, (float)minY, (float)minY}
+        new float[] {minX, minX, maxX, maxX, minX},
+        new float[] {minY, maxY, maxY, minY, minY}
     ));
     assertEquals(2, searcher.count(q));
 
     // search w/ an intersecting line
     q = XYShape.newLineQuery(FIELDNAME, QueryRelation.INTERSECTS, new XYLine(
-       new float[] {(float)minX, (float)minX, (float)maxX, (float)maxX},
-       new float[] {(float)minY, (float)maxY, (float)maxY, (float)minY}
+       new float[] {minX, minX, maxX, maxX},
+       new float[] {minY, maxY, maxY, minY}
     ));
     assertEquals(2, searcher.count(q));
 
@@ -112,8 +117,9 @@ public class TestXYShape extends LuceneTestCase {
   }
 
   public void testBoundingBoxQueries() throws Exception {
-    XYRectangle r1 = ShapeTestUtil.nextBox();
-    XYRectangle r2 = ShapeTestUtil.nextBox();
+    Random random = random();
+    XYRectangle r1 = ShapeTestUtil.nextBox(random);
+    XYRectangle r2 = ShapeTestUtil.nextBox(random);
     XYPolygon p;
     //find two boxes so that r1 contains r2
     while (true) {
@@ -127,12 +133,12 @@ public class TestXYShape extends LuceneTestCase {
           // ignore, try other combination
         }
       }
-      r1 = ShapeTestUtil.nextBox();
-      r2 = ShapeTestUtil.nextBox();
+      r1 = ShapeTestUtil.nextBox(random);
+      r2 = ShapeTestUtil.nextBox(random);
     }
 
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
 
     // add the polygon to the index
     Document document = new Document();
@@ -150,18 +156,58 @@ public class TestXYShape extends LuceneTestCase {
     q = newRectQuery(FIELDNAME, r1.minX, r1.maxX, r1.minY, r1.maxY);
     assertEquals(1, searcher.count(q));
     // r1 contains r2, WITHIN should match
-    q = XYShape.newBoxQuery(FIELDNAME, QueryRelation.WITHIN, (float) r1.minX, (float) r1.maxX, (float) r1.minY, (float) r1.maxY);
+    q = XYShape.newBoxQuery(FIELDNAME, QueryRelation.WITHIN, r1.minX, r1.maxX, r1.minY, r1.maxY);
     assertEquals(1, searcher.count(q));
 
     IOUtils.close(reader, dir);
   }
 
+  public void testPointIndexAndDistanceQuery() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document document = new Document();
+    float pX = ShapeTestUtil.nextFloat(random());
+    float py = ShapeTestUtil.nextFloat(random());
+    Field[] fields = XYShape.createIndexableFields(FIELDNAME, pX, py);
+    for (Field f : fields) {
+      document.add(f);
+    }
+    writer.addDocument(document);
+
+    //// search
+    IndexReader r = writer.getReader();
+    writer.close();
+    IndexSearcher s = newSearcher(r);
+    XYCircle circle = ShapeTestUtil.nextCircle();
+    Component2D circle2D = XYGeometry.create(circle);
+    int expected;
+    int expectedDisjoint;
+    if (circle2D.contains(pX, py))  {
+      expected = 1;
+      expectedDisjoint = 0;
+    } else {
+      expected = 0;
+      expectedDisjoint = 1;
+    }
+
+    Query q = XYShape.newDistanceQuery(FIELDNAME, QueryRelation.INTERSECTS, circle);
+    assertEquals(expected, s.count(q));
+
+    q = XYShape.newDistanceQuery(FIELDNAME, QueryRelation.WITHIN, circle);
+    assertEquals(expected, s.count(q));
+
+    q = XYShape.newDistanceQuery(FIELDNAME, QueryRelation.DISJOINT, circle);
+    assertEquals(expectedDisjoint, s.count(q));
+
+    IOUtils.close(r, dir);
+  }
+
   private static boolean areBoxDisjoint(XYRectangle r1, XYRectangle r2) {
-    return ((float) r1.minX <= (float) r2.minX && (float) r1.minY <= (float) r2.minY && (float) r1.maxX >= (float) r2.maxX && (float) r1.maxY >= (float) r2.maxY);
+    return ( r1.minX <=  r2.minX &&  r1.minY <= r2.minY && r1.maxX >= r2.maxX && r1.maxY >= r2.maxY);
   }
 
   private static XYPolygon toPolygon(XYRectangle r) {
-    return new XYPolygon(new float[]{(float) r.minX, (float) r.maxX, (float) r.maxX, (float) r.minX, (float) r.minX},
-                         new float[]{(float) r.minY, (float) r.minY, (float) r.maxY, (float) r.maxY, (float) r.minY});
+    return new XYPolygon(new float[]{ r.minX, r.maxX, r.maxX, r.minX, r.minX},
+                         new float[]{ r.minY, r.minY, r.maxY, r.maxY, r.minY});
   }
 }

@@ -240,7 +240,7 @@ public class TestUnifiedHighlighterMTQ extends LuceneTestCase {
     ir.close();
   }
 
-  public void testOneFuzzy() throws Exception {
+  public void testFuzzy() throws Exception {
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, indexAnalyzer);
 
     Field body = new Field("body", "", fieldType);
@@ -267,6 +267,15 @@ public class TestUnifiedHighlighterMTQ extends LuceneTestCase {
 
     // with prefix
     query = new FuzzyQuery(new Term("body", "tets"), 1, 2);
+    topDocs = searcher.search(query, 10, Sort.INDEXORDER);
+    assertEquals(2, topDocs.totalHits.value);
+    snippets = highlighter.highlight("body", query, topDocs);
+    assertEquals(2, snippets.length);
+    assertEquals("This is a <b>test</b>.", snippets[0]);
+    assertEquals("<b>Test</b> a one sentence document.", snippets[1]);
+
+    // with zero max edits
+    query = new FuzzyQuery(new Term("body", "test"), 0, 2);
     topDocs = searcher.search(query, 10, Sort.INDEXORDER);
     assertEquals(2, topDocs.totalHits.value);
     snippets = highlighter.highlight("body", query, topDocs);
@@ -1004,7 +1013,7 @@ public class TestUnifiedHighlighterMTQ extends LuceneTestCase {
     int docId = searcher.search(new TermQuery(new Term("id", "id")), 1).scoreDocs[0].doc;
 
     WildcardQuery wildcardQuery = new WildcardQuery(new Term("body", "foxtr*"));
-    SpanMultiTermQueryWrapper wildcardQueryWrapper = new SpanMultiTermQueryWrapper<>(wildcardQuery);
+    SpanMultiTermQueryWrapper<WildcardQuery> wildcardQueryWrapper = new SpanMultiTermQueryWrapper<>(wildcardQuery);
 
     SpanQuery wrappedQuery = new MyWrapperSpanQuery(wildcardQueryWrapper);
 

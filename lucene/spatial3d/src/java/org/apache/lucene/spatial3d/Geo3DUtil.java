@@ -36,94 +36,32 @@ import java.util.ArrayList;
 
 class Geo3DUtil {
 
-  /** How many radians are in one earth surface meter */
-  final static double RADIANS_PER_METER = 1.0 / PlanetModel.WGS84_MEAN;
   /** How many radians are in one degree */
   final static double RADIANS_PER_DEGREE = Math.PI / 180.0;
-  
-  private static final double MAX_VALUE = PlanetModel.WGS84.getMaximumMagnitude();
-  private static final int BITS = 32;
-  private static final double MUL = (0x1L<<BITS)/(2*MAX_VALUE);
-  static final double DECODE = getNextSafeDouble(1/MUL);
-  static final int MIN_ENCODED_VALUE = encodeValue(-MAX_VALUE);
-  static final int MAX_ENCODED_VALUE = encodeValue(MAX_VALUE);
-
-  public static int encodeValue(double x) {
-    if (x > MAX_VALUE) {
-      throw new IllegalArgumentException("value=" + x + " is out-of-bounds (greater than WGS84's planetMax=" + MAX_VALUE + ")");
-    }
-    if (x < -MAX_VALUE) {
-      throw new IllegalArgumentException("value=" + x + " is out-of-bounds (less than than WGS84's -planetMax=" + -MAX_VALUE + ")");
-    }
-    long result = (long) Math.floor(x / DECODE);
-    assert result >= Integer.MIN_VALUE;
-    assert result <= Integer.MAX_VALUE;
-    return (int) result;
-  }
-
-  public static double decodeValue(int x) {
-    double result;
-    if (x == MIN_ENCODED_VALUE) {
-      // We must special case this, because -MAX_VALUE is not guaranteed to land precisely at a floor value, and we don't ever want to
-      // return a value outside of the planet's range (I think?).  The max value is "safe" because we floor during encode:
-      result = -MAX_VALUE;
-    } else if (x == MAX_ENCODED_VALUE) {
-      result = MAX_VALUE;
-    } else {
-      // We decode to the center value; this keeps the encoding stable
-      result = (x+0.5) * DECODE;
-    }
-    assert result >= -MAX_VALUE && result <= MAX_VALUE;
-    return result;
-  }
 
   /** Returns smallest double that would encode to int x. */
-  // NOTE: keep this package private!!
-  static double decodeValueFloor(int x) {
-    assert x <= MAX_ENCODED_VALUE && x >= MIN_ENCODED_VALUE;
-    if (x == MIN_ENCODED_VALUE) {
-      return -MAX_VALUE;
+  // NOTE: remains in this class to keep method package private!!
+  static double decodeValueFloor(int x, PlanetModel planetModel) {
+    assert x <= planetModel.MAX_ENCODED_VALUE && x >= planetModel.MIN_ENCODED_VALUE;
+    if (x == planetModel.MIN_ENCODED_VALUE) {
+      return -planetModel.MAX_VALUE;
     }
-    return x * DECODE;
-  }
-  
-  /** Returns a double value >= x such that if you multiply that value by an int, and then
-   *  divide it by that int again, you get precisely the same value back */
-  private static double getNextSafeDouble(double x) {
-
-    // Move to double space:
-    long bits = Double.doubleToLongBits(x);
-
-    // Make sure we are beyond the actual maximum value:
-    bits += Integer.MAX_VALUE;
-
-    // Clear the bottom 32 bits:
-    bits &= ~((long) Integer.MAX_VALUE);
-
-    // Convert back to double:
-    double result = Double.longBitsToDouble(bits);
-    assert result > x;
-    return result;
+    return x * planetModel.DECODE;
   }
 
   /** Returns largest double that would encode to int x. */
   // NOTE: keep this package private!!
-  static double decodeValueCeil(int x) {
-    assert x <= MAX_ENCODED_VALUE && x >= MIN_ENCODED_VALUE;
-    if (x == MAX_ENCODED_VALUE) {
-      return MAX_VALUE;
+  static double decodeValueCeil(int x, PlanetModel planetModel) {
+    assert x <= planetModel.MAX_ENCODED_VALUE && x >= planetModel.MIN_ENCODED_VALUE;
+    if (x == planetModel.MAX_ENCODED_VALUE) {
+      return planetModel.MAX_VALUE;
     }
-    return Math.nextDown((x+1) * DECODE);
+    return Math.nextDown((x+1) * planetModel.DECODE);
   }
   
   /** Converts degress to radians */
   static double fromDegrees(final double degrees) {
     return degrees * RADIANS_PER_DEGREE;
-  }
-  
-  /** Converts earth-surface meters to radians */
-  static double fromMeters(final double meters) {
-    return meters * RADIANS_PER_METER;
   }
 
   /**
@@ -131,24 +69,24 @@ class Geo3DUtil {
     * @param polygons are the Polygon objects.
     * @return the GeoPolygon.
     */
-  static GeoPolygon fromPolygon(final Polygon... polygons) {
+  static GeoPolygon fromPolygon(final PlanetModel planetModel, final Polygon... polygons) {
     //System.err.println("Creating polygon...");
     if (polygons.length < 1) {
       throw new IllegalArgumentException("need at least one polygon");
     }
     final GeoPolygon shape;
     if (polygons.length == 1) {
-      final GeoPolygon component = fromPolygon(polygons[0]);
+      final GeoPolygon component = fromPolygon(planetModel, polygons[0]);
       if (component == null) {
         // Polygon is degenerate
-        shape = new GeoCompositePolygon(PlanetModel.WGS84);
+        shape = new GeoCompositePolygon(planetModel);
       } else {
         shape = component;
       }
     } else {
-      final GeoCompositePolygon poly = new GeoCompositePolygon(PlanetModel.WGS84);
+      final GeoCompositePolygon poly = new GeoCompositePolygon(planetModel);
       for (final Polygon p : polygons) {
-        final GeoPolygon component = fromPolygon(p);
+        final GeoPolygon component = fromPolygon(planetModel, p);
         if (component != null) {
           poly.addShape(component);
         }
@@ -165,11 +103,11 @@ class Geo3DUtil {
    * @param polygons is the list of polygons to convert.
    * @return the large GeoPolygon.
    */
-  static GeoPolygon fromLargePolygon(final Polygon... polygons) {
+  static GeoPolygon fromLargePolygon(final PlanetModel planetModel, final Polygon... polygons) {
     if (polygons.length < 1) {
       throw new IllegalArgumentException("need at least one polygon");
     }
-    return GeoPolygonFactory.makeLargeGeoPolygon(PlanetModel.WGS84, convertToDescription(polygons));
+    return GeoPolygonFactory.makeLargeGeoPolygon(planetModel, convertToDescription(planetModel, polygons));
   }
   
   /**
@@ -179,7 +117,7 @@ class Geo3DUtil {
    * @param pathWidthMeters width of the path in meters.
    * @return the path.
    */
-  static GeoPath fromPath(final double[] pathLatitudes, final double[] pathLongitudes, final double pathWidthMeters) {
+  static GeoPath fromPath(final PlanetModel planetModel, final double[] pathLatitudes, final double[] pathLongitudes, final double pathWidthMeters) {
     if (pathLatitudes.length != pathLongitudes.length) {
       throw new IllegalArgumentException("same number of latitudes and longitudes required");
     }
@@ -189,9 +127,10 @@ class Geo3DUtil {
       final double longitude = pathLongitudes[i];
       GeoUtils.checkLatitude(latitude);
       GeoUtils.checkLongitude(longitude);
-      points[i] = new GeoPoint(PlanetModel.WGS84, fromDegrees(latitude), fromDegrees(longitude));
+      points[i] = new GeoPoint(planetModel, fromDegrees(latitude), fromDegrees(longitude));
     }
-    return GeoPathFactory.makeGeoPath(PlanetModel.WGS84, fromMeters(pathWidthMeters), points);
+    double radiusRadians = pathWidthMeters / (planetModel.getMeanRadius() * planetModel.xyScaling);
+    return GeoPathFactory.makeGeoPath(planetModel, radiusRadians, points);
   }
   
   /**
@@ -201,10 +140,11 @@ class Geo3DUtil {
    * @param radiusMeters maximum distance from the center in meters: must be non-negative and finite.
    * @return the circle.
    */
-  static GeoCircle fromDistance(final double latitude, final double longitude, final double radiusMeters) {
+  static GeoCircle fromDistance(final PlanetModel planetModel, final double latitude, final double longitude, final double radiusMeters) {
     GeoUtils.checkLatitude(latitude);
     GeoUtils.checkLongitude(longitude);
-    return GeoCircleFactory.makeGeoCircle(PlanetModel.WGS84, fromDegrees(latitude), fromDegrees(longitude), fromMeters(radiusMeters));
+    double radiusRadians = radiusMeters / (planetModel.getMeanRadius());
+    return GeoCircleFactory.makeGeoCircle(planetModel, fromDegrees(latitude), fromDegrees(longitude), radiusRadians);
   }
   
   /**
@@ -215,12 +155,12 @@ class Geo3DUtil {
    * @param maxLongitude longitude upper bound: must be within standard +/-180 coordinate bounds.
    * @return the box.
    */
-  static GeoBBox fromBox(final double minLatitude, final double maxLatitude, final double minLongitude, final double maxLongitude) {
+  static GeoBBox fromBox(final PlanetModel planetModel, final double minLatitude, final double maxLatitude, final double minLongitude, final double maxLongitude) {
     GeoUtils.checkLatitude(minLatitude);
     GeoUtils.checkLongitude(minLongitude);
     GeoUtils.checkLatitude(maxLatitude);
     GeoUtils.checkLongitude(maxLongitude);
-    return GeoBBoxFactory.makeGeoBBox(PlanetModel.WGS84, 
+    return GeoBBoxFactory.makeGeoBBox(planetModel,
       Geo3DUtil.fromDegrees(maxLatitude), Geo3DUtil.fromDegrees(minLatitude), Geo3DUtil.fromDegrees(minLongitude), Geo3DUtil.fromDegrees(maxLongitude));
   }
 
@@ -230,14 +170,14 @@ class Geo3DUtil {
     * @param polygon is the Polygon object.
     * @return the GeoPolygon.
     */
-  private static GeoPolygon fromPolygon(final Polygon polygon) {
+  private static GeoPolygon fromPolygon(final PlanetModel planetModel, final Polygon polygon) {
     // First, assemble the "holes".  The geo3d convention is to use the same polygon sense on the inner ring as the
     // outer ring, so we process these recursively with reverseMe flipped.
     final Polygon[] theHoles = polygon.getHoles();
     final List<GeoPolygon> holeList = new ArrayList<>(theHoles.length);
     for (final Polygon hole : theHoles) {
       //System.out.println("Hole: "+hole);
-      final GeoPolygon component = fromPolygon(hole);
+      final GeoPolygon component = fromPolygon(planetModel, hole);
       if (component != null) {
         holeList.add(component);
       }
@@ -252,10 +192,10 @@ class Geo3DUtil {
     // We skip the last point anyway because the API requires it to be repeated, and geo3d doesn't repeat it.
     for (int i = 0; i < polyLats.length - 1; i++) {
       final int index = polyLats.length - 2 - i;
-      points.add(new GeoPoint(PlanetModel.WGS84, fromDegrees(polyLats[index]), fromDegrees(polyLons[index])));
+      points.add(new GeoPoint(planetModel, fromDegrees(polyLats[index]), fromDegrees(polyLons[index])));
     }
     //System.err.println(" building polygon with "+points.size()+" points...");
-    final GeoPolygon rval = GeoPolygonFactory.makeGeoPolygon(PlanetModel.WGS84, points, holeList);
+    final GeoPolygon rval = GeoPolygonFactory.makeGeoPolygon(planetModel, points, holeList);
     //System.err.println(" ...done");
     return rval;
   }
@@ -265,11 +205,11 @@ class Geo3DUtil {
    * @param polygons is the list of polygons to convert.
    * @return the list of polygon descriptions.
    */
-  private static List<GeoPolygonFactory.PolygonDescription> convertToDescription(final Polygon... polygons) {
+  private static List<GeoPolygonFactory.PolygonDescription> convertToDescription(final PlanetModel planetModel, final Polygon... polygons) {
     final List<GeoPolygonFactory.PolygonDescription> descriptions = new ArrayList<>(polygons.length);
     for (final Polygon polygon : polygons) {
       final Polygon[] theHoles = polygon.getHoles();
-      final List<GeoPolygonFactory.PolygonDescription> holes = convertToDescription(theHoles);
+      final List<GeoPolygonFactory.PolygonDescription> holes = convertToDescription(planetModel, theHoles);
       
       // Now do the polygon itself
       final double[] polyLats = polygon.getPolyLats();
@@ -280,7 +220,7 @@ class Geo3DUtil {
       // We skip the last point anyway because the API requires it to be repeated, and geo3d doesn't repeat it.
       for (int i = 0; i < polyLats.length - 1; i++) {
         final int index = polyLats.length - 2 - i;
-        points.add(new GeoPoint(PlanetModel.WGS84, fromDegrees(polyLats[index]), fromDegrees(polyLons[index])));
+        points.add(new GeoPoint(planetModel, fromDegrees(polyLats[index]), fromDegrees(polyLons[index])));
       }
       
       descriptions.add(new GeoPolygonFactory.PolygonDescription(points, holes));

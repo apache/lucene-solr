@@ -121,12 +121,13 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
    * @see DistributedUpdateProcessorFactory
    */
   @Override
+  @SuppressWarnings({"rawtypes"})
   public void init(PluginInfo info) {
     final String infomsg = "updateRequestProcessorChain \"" + 
       (null != info.name ? info.name : "") + "\"" + 
       (info.isDefault() ? " (default)" : "");
 
-    log.debug("creating " + infomsg);
+    log.debug("creating {}", infomsg);
 
     // wrap in an ArrayList so we know we know we can do fast index lookups 
     // and that add(int,Object) is supported
@@ -162,7 +163,7 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
       distrib.init(new NamedList());
       list.add(runIndex, distrib);
 
-      log.debug("inserting DistributedUpdateProcessorFactory into " + infomsg);
+      log.debug("inserting DistributedUpdateProcessorFactory into {}", infomsg);
     }
 
     chain = list;
@@ -173,6 +174,7 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
 
   }
 
+  @SuppressWarnings({"rawtypes"})
   private List<UpdateRequestProcessorFactory> createProcessors(PluginInfo info) {
     List<PluginInfo> processors = info.getChildren("processor");
     return processors.stream().map(it -> {
@@ -268,12 +270,15 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
     if (log.isDebugEnabled()) {
       ArrayList<String> names = new ArrayList<>(urps.size());
       for (UpdateRequestProcessorFactory urp : urps) names.add(urp.getClass().getSimpleName());
-      log.debug("New dynamic chain constructed : " + StrUtils.join(names, '>'));
+      if (log.isDebugEnabled()) {
+        log.debug("New dynamic chain constructed : {}", StrUtils.join(names, '>'));
+      }
     }
     return result;
   }
 
-  private static void insertBefore(LinkedList<UpdateRequestProcessorFactory> urps, List<UpdateRequestProcessorFactory> newFactories, Class klas, int idx) {
+  private static void insertBefore(LinkedList<UpdateRequestProcessorFactory> urps, List<UpdateRequestProcessorFactory> newFactories,
+                                   @SuppressWarnings({"rawtypes"})Class klas, int idx) {
     if (newFactories.isEmpty()) return;
     for (int i = 0; i < urps.size(); i++) {
       if (klas.isInstance(urps.get(i))) {
@@ -304,6 +309,7 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
         p = core.getUpdateProcessors().get(s);
       }
       if (p == null) {
+        @SuppressWarnings({"unchecked"})
         Class<UpdateRequestProcessorFactory> factoryClass = implicits.get(s);
         if(factoryClass != null) {
           PluginInfo pluginInfo = new PluginInfo("updateProcessor",
@@ -354,7 +360,7 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
   public static class LazyUpdateProcessorFactoryHolder extends PluginBag.PluginHolder<UpdateRequestProcessorFactory> {
     private volatile UpdateRequestProcessorFactory lazyFactory;
 
-    public LazyUpdateProcessorFactoryHolder(final PluginBag.PluginHolder holder) {
+    public LazyUpdateProcessorFactoryHolder(@SuppressWarnings({"rawtypes"})final PluginBag.PluginHolder holder) {
       super(holder.getPluginInfo());
       lazyFactory = new LazyUpdateRequestProcessorFactory(holder);
     }
@@ -368,6 +374,7 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
     public static class LazyUpdateRequestProcessorFactory extends UpdateRequestProcessorFactory {
       private final PluginBag.PluginHolder<UpdateRequestProcessorFactory> holder;
 
+      @SuppressWarnings({"unchecked", "rawtypes"})
       public LazyUpdateRequestProcessorFactory(PluginBag.PluginHolder holder) {
         this.holder = holder;
       }
@@ -382,6 +389,7 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
       }
     }
   }
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public static final Map<String, Class> implicits = new ImmutableMap.Builder()
       .put(TemplateUpdateProcessorFactory.NAME, TemplateUpdateProcessorFactory.class)
       .put(AtomicUpdateProcessorFactory.NAME, AtomicUpdateProcessorFactory.class)

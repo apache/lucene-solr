@@ -85,7 +85,7 @@ public final class DocumentField {
 
     dfield.dvType = finfo.getDocValuesType();
 
-    dfield.pointDimensionCount = finfo.getPointDataDimensionCount();
+    dfield.pointDimensionCount = finfo.getPointDimensionCount();
     dfield.pointNumBytes = finfo.getPointNumBytes();
 
     if (field != null) {

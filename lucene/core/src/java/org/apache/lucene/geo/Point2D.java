@@ -23,15 +23,13 @@ import static org.apache.lucene.geo.GeoUtils.orient;
 
 /**
  * 2D point implementation containing geo spatial logic.
- *
- * @lucene.internal
  */
-public class Point2D implements Component2D {
+final class Point2D implements Component2D {
 
   final private double x;
   final private double y;
 
-  Point2D(double x, double y) {
+  private Point2D(double x, double y) {
     this.x = x;
     this.y = y;
   }
@@ -70,65 +68,59 @@ public class Point2D implements Component2D {
   }
 
   @Override
-  public PointValues.Relation relateTriangle(double minX, double maxX, double minY, double maxY,
-                                             double ax, double ay, double bx, double by, double cx, double cy) {
-    if (Component2D.containsPoint(x, y, minX, maxX, minY, maxY) == false) {
-      return PointValues.Relation.CELL_OUTSIDE_QUERY;
-    }
-    if (ax == bx && bx == cx && ay == by && by == cy) {
-      return  PointValues.Relation.CELL_INSIDE_QUERY;
-    } else if (ax == cx && ay == cy) {
-      // indexed "triangle" is a line:
-      if (orient(ax, ay, bx, by, x, y) == 0) {
-        return PointValues.Relation.CELL_INSIDE_QUERY;
-      }
-      return PointValues.Relation.CELL_OUTSIDE_QUERY;
-    } else if (ax == bx && ay == by) {
-      // indexed "triangle" is a line:
-      if (orient(bx, by, cx, cy, x, y) == 0) {
-        return PointValues.Relation.CELL_INSIDE_QUERY;
-      }
-      return PointValues.Relation.CELL_OUTSIDE_QUERY;
-    } else if (bx == cx && by == cy) {
-      // indexed "triangle" is a line:
-      if (orient(cx, cy, ax, ay, x, y) == 0) {
-        return PointValues.Relation.CELL_INSIDE_QUERY;
-      }
-      return PointValues.Relation.CELL_OUTSIDE_QUERY;
-    } else if (Component2D.pointInTriangle(minX, maxX, minY, maxY, x, y, ax, ay, bx, by, cx, cy) == true) {
-      // indexed "triangle" is a triangle:
-      return PointValues.Relation.CELL_INSIDE_QUERY;
-    }
-    return PointValues.Relation.CELL_OUTSIDE_QUERY;
+  public boolean intersectsLine(double minX, double maxX, double minY, double maxY,
+                                double aX, double aY, double bX, double bY) {
+    return Component2D.containsPoint(x, y, minX, maxX, minY, maxY) &&
+           orient(aX, aY, bX, bY, x, y) == 0;
+  }
+
+  @Override
+  public boolean intersectsTriangle(double minX, double maxX, double minY, double maxY,
+                                    double aX, double aY, double bX, double bY, double cX, double cY) {
+    return Component2D.pointInTriangle(minX, maxX, minY, maxY, x, y, aX, aY, bX, bY, cX, cY);
+  }
+
+  @Override
+  public boolean containsLine(double minX, double maxX, double minY, double maxY,
+                              double aX, double aY, double bX, double bY) {
+    return false;
+  }
+
+  @Override
+  public boolean containsTriangle(double minX, double maxX, double minY, double maxY,
+                                  double aX, double aY, double bX, double bY, double cX, double cY) {
+    return false;
+  }
+
+  @Override
+  public WithinRelation withinPoint(double x, double y) {
+    return contains(x, y) ? WithinRelation.CANDIDATE : WithinRelation.DISJOINT;
+  }
+
+  @Override
+  public WithinRelation withinLine(double minX, double maxX, double minY, double maxY,
+                                   double aX, double aY, boolean ab, double bX, double bY) {
+    // can be improved?
+    return intersectsLine(minX, maxX, minY, maxY, aX, aY, bX, bY) ? WithinRelation.CANDIDATE : WithinRelation.DISJOINT;
   }
 
   @Override
   public WithinRelation withinTriangle(double minX, double maxX, double minY, double maxY,
                                        double aX, double aY, boolean ab, double bX, double bY, boolean bc, double cX, double cY, boolean ca) {
-    if (aX == bX && aY == bY && aX == cX && aY == cY) {
-      if (contains(aX, aY)) {
-        return WithinRelation.CANDIDATE;
-      }
+    if (Component2D.pointInTriangle(minX, maxX, minY, maxY, x, y, aX, aY, bX, bY, cX, cY)) {
+      return WithinRelation.CANDIDATE;
     }
     return WithinRelation.DISJOINT;
   }
 
-  /** create a Point2D component tree from provided array of LatLon points.  */
-  public static Component2D create(double[]... points) {
-    Point2D components[] = new Point2D[points.length];
-    for (int i = 0; i < components.length; ++i) {
-      components[i] = new Point2D(GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(points[i][1]))
-          , GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(points[i][0])));
-    }
-    return ComponentTree.create(components);
+  /** create a Point2D component tree from a LatLon point */
+  static Component2D create(Point point) {
+    return new Point2D(GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(point.getLon())),
+        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(point.getLat())));
   }
 
-  /** create a Point2D component tree from provided array of XY points.  */
-  public static Component2D create(float[]... xyPoints) {
-    Point2D components[] = new Point2D[xyPoints.length];
-    for (int i = 0; i < components.length; ++i) {
-      components[i] = new Point2D(xyPoints[i][0], xyPoints[i][1]);
-    }
-    return ComponentTree.create(components);
+  /** create a Point2D component tree from a XY point */
+  static Component2D create(XYPoint xyPoint) {
+    return new Point2D(xyPoint.getX(), xyPoint.getY());
   }
 }

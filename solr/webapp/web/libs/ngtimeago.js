@@ -89,10 +89,9 @@ catalyst.filter('timeago', function() {
             days < 365 && substitute(strings.months, Math.round(days / 30), strings) ||
             years < 1.5 && substitute(strings.year, 1, strings) ||
             substitute(strings.years, Math.round(years), strings);
-            console.log(words+" "+prefix+suffix);
-            prefix.replace(/ /g, '')
-            words.replace(/ /g, '')
-            suffix.replace(/ /g, '')
+            prefix.replace(/ /g, '');
+            words.replace(/ /g, '');
+            suffix.replace(/ /g, '');
             return (prefix+' '+words+' '+suffix+' '+separator); 
         };
     });

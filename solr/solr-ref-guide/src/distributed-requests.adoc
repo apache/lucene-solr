@@ -122,7 +122,7 @@ In SolrCloud mode this whitelist is automatically configured to include all live
 +
 In standalone mode the whitelist defaults to empty (sharding not allowed).
 +
-If you need to disable this feature for backwards compatibility, you can set the system property `solr.disable.shardsWhitelist=true`. The value of this parameter is a comma separated list of the nodes that will be whitelisted, i.e.:
+If you need to disable this feature for backwards compatibility, you can set the system property `solr.disable.shardsWhitelist=true`. The value of this parameter is a comma separated list of the nodes that will be whitelisted, i.e.,
 `10.0.0.1:8983/solr,10.0.0.1:8984/solr`.
 +
 NOTE: In SolrCloud mode, if at least one node is included in the whitelist, then the `live_nodes` will no longer be used as source for the list. This means that if you need to do a cross-cluster request using the `shards` parameter in SolrCloud mode (in addition to regular within-cluster requests), you'll need to add all nodes (local cluster + remote nodes) to the whitelist.
@@ -188,6 +188,10 @@ Applied after sorting by inherent replica attributes, this property defines a fa
 `stable:dividend:_paramName_` parses an integer from the value associated with the given parameter name; this integer is used as the dividend (mod equivalent replica count) to determine (via list rotation) order of preference among equivalent replicas.
 +
 `stable[:hash[:_paramName_]]` the string value associated with the given parameter name is hashed to a dividend that is used to determine replica preference order (analogous to the explicit `dividend` property above); `_paramName_` defaults to `q` if not specified, providing stable routing keyed to the string value of the "main query". Note that this may be inappropriate for some use cases (e.g., static main queries that leverage parameter substitution)
+
+`node.sysprop`::
+Query will be routed to nodes with same defined system properties as the current one. For example, if you start Solr nodes on different racks, you'll want to identify those nodes by a <<configuring-solrconfig-xml.adoc#jvm-system-properties,system property>> (e.g., `-Drack=rack1`). Then, queries can contain `shards.preference=node.sysprop:sysprop.rack`, to make sure you always hit shards with the same value of `rack`.
+
 
 Examples:
 

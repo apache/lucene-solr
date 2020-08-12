@@ -52,7 +52,7 @@ public class VectorValueSource extends MultiValueSource {
   }
 
   @Override
-  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
     int size = sources.size();
 
     // special-case x,y and lat,lon since it's so common
@@ -178,7 +178,7 @@ public class VectorValueSource extends MultiValueSource {
   }
 
   @Override
-  public void createWeight(Map context, IndexSearcher searcher) throws IOException {
+  public void createWeight(Map<Object, Object> context, IndexSearcher searcher) throws IOException {
     for (ValueSource source : sources)
       source.createWeight(context, searcher);
   }

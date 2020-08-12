@@ -18,10 +18,7 @@ package org.apache.solr.security;
 
 import javax.security.auth.Subject;
 import javax.servlet.FilterChain;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.Serializable;
@@ -124,11 +121,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
   }
 
   @Override
-  public boolean doAuthenticate(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws Exception {
-
-    HttpServletRequest request = (HttpServletRequest) servletRequest;
-    HttpServletResponse response = (HttpServletResponse) servletResponse;
-
+  public boolean doAuthenticate(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws Exception {
     String authHeader = request.getHeader("Authorization");
     boolean isAjaxRequest = isAjaxRequest(request);
     
@@ -151,14 +144,10 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
                   authenticationFailure(response, isAjaxRequest, "Bad credentials");
                   return false;
                 } else {
-                  HttpServletRequestWrapper wrapper = new HttpServletRequestWrapper(request) {
-                    @Override
-                    public Principal getUserPrincipal() {
-                      return new BasicAuthUserPrincipal(username, pwd);
-                    }
-                  };
+                  Principal principal = new BasicAuthUserPrincipal(username, pwd);
+                  request = wrapWithPrincipal(request, principal, username);
                   numAuthenticated.inc();
-                  filterChain.doFilter(wrapper, response);
+                  filterChain.doFilter(request, response);
                   return true;
                 }
               } else {
@@ -198,7 +187,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
    * @return map of headers
    */
   private Map<String, String> getPromptHeaders(boolean isAjaxRequest) {
-    Map<String,String> headers = new HashMap(authenticationProvider.getPromptHeaders());
+    Map<String,String> headers = new HashMap<>(authenticationProvider.getPromptHeaders());
     if (isAjaxRequest && headers.containsKey(HttpHeaders.WWW_AUTHENTICATE) 
         && headers.get(HttpHeaders.WWW_AUTHENTICATE).startsWith("Basic ")) {
       headers.put(HttpHeaders.WWW_AUTHENTICATE, "x" + headers.get(HttpHeaders.WWW_AUTHENTICATE));

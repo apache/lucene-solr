@@ -49,7 +49,7 @@ abstract class BinaryDictionaryWriter {
 
   BinaryDictionaryWriter(Class<? extends BinaryDictionary> implClazz, int size) {
     this.implClazz = implClazz;
-    buffer = ByteBuffer.allocate(size);
+    buffer = ByteBuffer.allocateDirect(size);
   }
   
   /**
@@ -96,7 +96,7 @@ abstract class BinaryDictionaryWriter {
     // worst case, 3 short + 4 bytes and features (all as utf-16)
     int worstCase = 9 + 2*(expression.length() + reading.length());
     if (worstCase > left) {
-      ByteBuffer newBuffer = ByteBuffer.allocate(ArrayUtil.oversize(buffer.limit() + worstCase - left, 1));
+      ByteBuffer newBuffer = ByteBuffer.allocateDirect(ArrayUtil.oversize(buffer.limit() + worstCase - left, 1));
       buffer.flip();
       newBuffer.put(buffer);
       buffer = newBuffer;

@@ -591,21 +591,6 @@ pre.syntax .tex .formula
   opacity: 0.5;
 }
 
-#content .tree li,
-#content .tree ins
-{
-  background-color: transparent;
-  background-image: url( ../../img/tree.png );
-  background-repeat: no-repeat;
-}
-
-#content .tree li
-{
-  background-position: -54px 0;
-  background-repeat: repeat-y;
-  line-height: 22px;
-}
-
 #content .tree li.jstree-last
 {
   background:transparent;
@@ -626,16 +611,6 @@ pre.syntax .tex .formula
   background-position: 0 0;
 }
 
-#content .tree .jstree-hovered
-{
-  background:#e7f4f9; border:1px solid #d8f0fa; padding:0 2px 0 1px;
-}
-
-#content .tree .jstree-clicked
-{
-  background:#beebff; border:1px solid #99defd; padding:0 2px 0 1px;
-}
-
 #content .tree a.active
 {
   background-color: #f0f0f0;
@@ -645,11 +620,13 @@ pre.syntax .tex .formula
 #content .tree a .jstree-icon
 {
   background-image: url( ../../img/ico/folder.png );
+  background-position: unset;
 }
 
 #content .tree .jstree-leaf a .jstree-icon
 {
   background-image: url( ../../img/ico/document-text.png );
+  background-position: unset;
 }
 
 #content .tree .jstree-search

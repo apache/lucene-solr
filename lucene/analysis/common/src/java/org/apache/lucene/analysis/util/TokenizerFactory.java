@@ -53,7 +53,7 @@ public abstract class TokenizerFactory extends AbstractAnalysisFactory {
   /** looks up a SPI name for the specified tokenizer factory */
   public static String findSPIName(Class<? extends TokenizerFactory> serviceClass) {
     try {
-      return lookupSPIName(serviceClass);
+      return AnalysisSPILoader.lookupSPIName(serviceClass);
     } catch (NoSuchFieldException | IllegalAccessException | IllegalStateException e) {
       throw new IllegalStateException(e);
     }
@@ -74,6 +74,11 @@ public abstract class TokenizerFactory extends AbstractAnalysisFactory {
     loader.reload(classloader);
   }
   
+  /** Default ctor for compatibility with SPI */
+  protected TokenizerFactory() {
+    super();
+  }
+
   /**
    * Initialize this factory via a set of key-value pairs.
    */

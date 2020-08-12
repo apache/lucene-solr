@@ -195,7 +195,7 @@ class SimpleTextPointsReader extends PointsReader {
     if (fieldInfo == null) {
       throw new IllegalArgumentException("field=\"" + fieldName + "\" is unrecognized");
     }
-    if (fieldInfo.getPointDataDimensionCount() == 0) {
+    if (fieldInfo.getPointDimensionCount() == 0) {
       throw new IllegalArgumentException("field=\"" + fieldName + "\" did not index points");
     }
     return readers.get(fieldName);

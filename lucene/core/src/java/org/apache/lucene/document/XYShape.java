@@ -22,6 +22,10 @@ import java.util.List;
 import org.apache.lucene.document.ShapeField.QueryRelation; // javadoc
 import org.apache.lucene.document.ShapeField.Triangle;
 import org.apache.lucene.geo.Tessellator;
+import org.apache.lucene.geo.XYCircle;
+import org.apache.lucene.geo.XYGeometry;
+import org.apache.lucene.geo.XYPoint;
+import org.apache.lucene.geo.XYRectangle;
 import org.apache.lucene.index.PointValues; // javadoc
 import org.apache.lucene.geo.XYLine;
 import org.apache.lucene.geo.XYPolygon;
@@ -34,7 +38,7 @@ import static org.apache.lucene.geo.XYEncodingUtils.encode;
 /**
  * A cartesian shape utility class for indexing and searching geometries whose vertices are unitless x, y values.
  * <p>
- * This class defines six static factory methods for common indexing and search operations:
+ * This class defines seven static factory methods for common indexing and search operations:
  * <ul>
  *   <li>{@link #createIndexableFields(String, XYPolygon)} for indexing a cartesian polygon.
  *   <li>{@link #createIndexableFields(String, XYLine)} for indexing a cartesian linestring.
@@ -42,6 +46,8 @@ import static org.apache.lucene.geo.XYEncodingUtils.encode;
  *   <li>{@link #newBoxQuery newBoxQuery()} for matching cartesian shapes that have some {@link QueryRelation} with a bounding box.
  *   <li>{@link #newBoxQuery newLineQuery()} for matching cartesian shapes that have some {@link QueryRelation} with a linestring.
  *   <li>{@link #newBoxQuery newPolygonQuery()} for matching cartesian shapes that have some {@link QueryRelation} with a polygon.
+ *   <li>{@link #newGeometryQuery newGeometryQuery()} for matching cartesian shapes that have some {@link QueryRelation}
+ *   with one or more {@link XYGeometry}.
  * </ul>
 
  * <b>WARNING</b>: Like {@link LatLonPoint}, vertex values are indexed with some loss of precision from the
@@ -88,43 +94,46 @@ public class XYShape {
 
   /** create a query to find all cartesian shapes that intersect a defined bounding box **/
   public static Query newBoxQuery(String field, QueryRelation queryRelation, float minX, float maxX, float minY, float maxY) {
-    return new XYShapeBoundingBoxQuery(field, queryRelation, minX, maxX, minY, maxY);
+    XYRectangle rectangle = new XYRectangle(minX, maxX, minY, maxY);
+    return newGeometryQuery(field, queryRelation, rectangle);
   }
 
   /** create a query to find all cartesian shapes that intersect a provided linestring (or array of linestrings) **/
   public static Query newLineQuery(String field, QueryRelation queryRelation, XYLine... lines) {
-    if (queryRelation == QueryRelation.CONTAINS && lines.length > 1) {
-      BooleanQuery.Builder builder = new BooleanQuery.Builder();
-      for (int i =0; i < lines.length; i++) {
-        builder.add(newLineQuery(field, queryRelation, lines[i]), BooleanClause.Occur.MUST);
-      }
-      return builder.build();
-    }
-    return new XYShapeLineQuery(field, queryRelation, lines);
+    return newGeometryQuery(field, queryRelation, lines);
   }
 
   /** create a query to find all cartesian shapes that intersect a provided polygon (or array of polygons) **/
   public static Query newPolygonQuery(String field, QueryRelation queryRelation, XYPolygon... polygons) {
-    if (queryRelation == QueryRelation.CONTAINS && polygons.length > 1) {
-      BooleanQuery.Builder builder = new BooleanQuery.Builder();
-      for (int i =0; i < polygons.length; i++) {
-        builder.add(newPolygonQuery(field, queryRelation, polygons[i]), BooleanClause.Occur.MUST);
-      }
-      return builder.build();
-    }
-    return new XYShapePolygonQuery(field, queryRelation, polygons);
+    return newGeometryQuery(field, queryRelation, polygons);
   }
 
   /** create a query to find all indexed shapes that comply the {@link QueryRelation} with the provided point
    **/
   public static Query newPointQuery(String field, QueryRelation queryRelation, float[]... points) {
-    if (queryRelation == QueryRelation.CONTAINS && points.length > 1) {
+    XYPoint[] pointArray = new XYPoint[points.length];
+    for (int i =0; i < points.length; i++) {
+      pointArray[i] = new XYPoint(points[i][0], points[i][1]);
+    }
+    return newGeometryQuery(field, queryRelation, pointArray);
+  }
+
+  /** create a query to find all cartesian shapes that intersect a provided circle (or arrays of circles) **/
+  public static Query newDistanceQuery(String field, QueryRelation queryRelation, XYCircle... circle) {
+    return newGeometryQuery(field, queryRelation, circle);
+  }
+
+  /** create a query to find all indexed geo shapes that intersect a provided geometry collection
+   *  note: Components do not support dateline crossing
+   **/
+  public static Query newGeometryQuery(String field, QueryRelation queryRelation, XYGeometry... xyGeometries) {
+    if (queryRelation == QueryRelation.CONTAINS && xyGeometries.length > 1) {
       BooleanQuery.Builder builder = new BooleanQuery.Builder();
-      for (int i =0; i < points.length; i++) {
-        builder.add(newPointQuery(field, queryRelation, points[i]), BooleanClause.Occur.MUST);
+      for (int i = 0; i < xyGeometries.length; i++) {
+        builder.add(newGeometryQuery(field, queryRelation, xyGeometries[i]), BooleanClause.Occur.MUST);
       }
       return builder.build();
     }
-    return new XYShapePointQuery(field, queryRelation, points);
+    return new XYShapeQuery(field, queryRelation, xyGeometries);
   }
 }

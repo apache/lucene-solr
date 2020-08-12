@@ -56,6 +56,11 @@ public class EdgeNGramFilterFactory extends TokenFilterFactory {
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public EdgeNGramFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public TokenFilter create(TokenStream input) {
     return new EdgeNGramTokenFilter(input, minGramSize, maxGramSize, preserveOriginal);

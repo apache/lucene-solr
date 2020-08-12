@@ -342,8 +342,8 @@ class SortingLeafReader extends FilterLeafReader {
     }
 
     @Override
-    public int getNumDataDimensions() throws IOException {
-      return in.getNumDataDimensions();
+    public int getNumDimensions() throws IOException {
+      return in.getNumDimensions();
     }
 
     @Override

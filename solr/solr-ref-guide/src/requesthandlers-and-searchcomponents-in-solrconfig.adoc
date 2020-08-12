@@ -169,3 +169,12 @@ Many of the other useful components are described in sections of this Guide for 
 * `TermVectorComponent`, described in the section <<the-term-vector-component.adoc#the-term-vector-component,The Term Vector Component>>.
 * `QueryElevationComponent`, described in the section <<the-query-elevation-component.adoc#the-query-elevation-component,The Query Elevation Component>>.
 * `TermsComponent`, described in the section <<the-terms-component.adoc#the-terms-component,The Terms Component>>.
+* `RealTimeGetComponent`, described in the section <<realtime-get.adoc#realtime-get,RealTime Get>>.
+* `ClusteringComponent`, described in the section <<result-clustering.adoc#result-clustering,Result Clustering>>.
+* `SuggestComponent`, described in the section <<suggester.adoc#suggester,Suggester>>.
+* `AnalyticsComponent`, described in the section <<analytics.adoc#analytics,Analytics>>.
+
+Other components that ship with Solr include:
+
+* `ResponseLogComponent`, used to record which documents are returned to the user via the Solr log, described in the {solr-javadocs}solr-core/org/apache/solr/handler/component/ResponseLogComponent.html[ResponseLogComponent] javadocs.
+* `PhrasesIdentificationComponent`, used to identify & score "phrases" found in the input string, based on shingles in indexed fields, described in the {solr-javadocs}solr-core/org/apache/solr/handler/component/PhrasesIdentificationComponent.html[PhrasesIdentificationComponent] javadocs.

@@ -58,7 +58,6 @@ public class SolrJmxReporterCloudTest extends SolrCloudTestCase {
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
-        .setMaxShardsPerNode(2)
         .process(cluster.getSolrClient());
   }
   @AfterClass
@@ -99,7 +98,9 @@ public class SolrJmxReporterCloudTest extends SolrCloudTestCase {
           QueryExp exp = Query.eq(Query.attr(JmxMetricsReporter.INSTANCE_TAG), Query.value(Integer.toHexString(v.hashCode())));
           Set<ObjectInstance> beans = mBeanServer.queryMBeans(null, exp);
           if (((SolrJmxReporter) v).isStarted() && beans.isEmpty() && jmxReporters < 2) {
-            log.info("DocCollection: " + getCollectionState(COLLECTION));
+            if (log.isInfoEnabled()) {
+              log.info("DocCollection: {}", getCollectionState(COLLECTION));
+            }
             fail("JMX reporter " + k + " for registry " + registry + " failed to register any beans!");
           } else {
             Set<String> categories = new HashSet<>();
@@ -109,7 +110,7 @@ public class SolrJmxReporterCloudTest extends SolrCloudTestCase {
                 categories.add(cat);
               }
             });
-            log.info("Registered categories: " + categories);
+            log.info("Registered categories: {}", categories);
             assertTrue("Too few categories: " + categories, categories.size() > 5);
           }
         });

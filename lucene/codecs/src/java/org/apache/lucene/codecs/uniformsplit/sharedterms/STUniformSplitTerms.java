@@ -43,7 +43,8 @@ public class STUniformSplitTerms extends UniformSplitTerms {
 
   protected STUniformSplitTerms(IndexInput blockInput, FieldMetadata fieldMetadata,
                                 FieldMetadata unionFieldMetadata, PostingsReaderBase postingsReader,
-                                BlockDecoder blockDecoder, FieldInfos fieldInfos, IndexDictionary.BrowserSupplier dictionaryBrowserSupplier) {
+                                BlockDecoder blockDecoder, FieldInfos fieldInfos,
+                                IndexDictionary.BrowserSupplier dictionaryBrowserSupplier) {
     super(blockInput, fieldMetadata, postingsReader, blockDecoder, dictionaryBrowserSupplier);
     this.unionFieldMetadata = unionFieldMetadata;
     this.fieldInfos = fieldInfos;
@@ -51,6 +52,7 @@ public class STUniformSplitTerms extends UniformSplitTerms {
 
   @Override
   public TermsEnum intersect(CompiledAutomaton compiled, BytesRef startTerm) throws IOException {
+    checkIntersectAutomatonType(compiled);
     return new STIntersectBlockReader(compiled, startTerm, dictionaryBrowserSupplier, blockInput, postingsReader, fieldMetadata, blockDecoder, fieldInfos);
   }
 

@@ -163,6 +163,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
     nestedUpdate.processAdd(cmd);
     cmd.clear();
 
+    @SuppressWarnings({"rawtypes"})
     List children = (List) docHierarchy.get("children").getValues();
 
     SolrInputDocument firstChild = (SolrInputDocument) children.get(0);
@@ -189,6 +190,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
     cmd.solrDoc = noIdChildren;
     nestedUpdate.processAdd(cmd);
     cmd.clear();
+    @SuppressWarnings({"rawtypes"})
     List children = (List) noIdChildren.get("children").getValues();
     SolrInputDocument idLessChild = (SolrInputDocument)((SolrInputDocument) children.get(1)).get(childKey).getValue();
     assertTrue("Id less child did not get an Id", idLessChild.containsKey("id"));

@@ -46,6 +46,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
   @Test
   @SuppressWarnings("unchecked")
   public void testSingleEntity() throws Exception {
+    @SuppressWarnings({"rawtypes"})
     List rows = new ArrayList();
     rows.add(createMap("id", "1", "desc", "one"));
     MockDataSource.setIterator("select * from x", rows.iterator());
@@ -62,6 +63,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
   @Test
   @SuppressWarnings("unchecked")
   public void testSingleEntity_CaseInsensitive() throws Exception {
+    @SuppressWarnings({"rawtypes"})
     List rows = new ArrayList();
     rows.add(createMap("id", "1", "desC", "one"));
     MockDataSource.setIterator("select * from x", rows.iterator());
@@ -76,7 +78,9 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testErrorHandler() throws Exception {
+    @SuppressWarnings({"rawtypes"})
     List rows = new ArrayList();
     rows.add(createMap("id", "1", "FORCE_ERROR", "true"));
     MockDataSource.setIterator("select * from x", rows.iterator());
@@ -90,6 +94,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
   @Test
   @SuppressWarnings("unchecked")
   public void testDynamicFields() throws Exception {
+    @SuppressWarnings({"rawtypes"})
     List rows = new ArrayList();
     rows.add(createMap("id", "1", "desc", "one"));
     MockDataSource.setIterator("select * from x", rows.iterator());
@@ -103,6 +108,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
   @Test
   @SuppressWarnings("unchecked")
   public void testRequestParamsAsVariable() throws Exception {
+    @SuppressWarnings({"rawtypes"})
     List rows = new ArrayList();
     rows.add(createMap("id", "101", "desc", "ApacheSolr"));
     MockDataSource.setIterator("select * from books where category='search'", rows.iterator());
@@ -118,6 +124,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
   @Test
   @SuppressWarnings("unchecked")
   public void testDynamicFieldNames() throws Exception {
+    @SuppressWarnings({"rawtypes"})
     List rows = new ArrayList();
     rows.add(createMap("mypk", "101", "text", "ApacheSolr"));
     MockDataSource.setIterator("select * from x", rows.iterator());
@@ -132,6 +139,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
   @Test
   @SuppressWarnings("unchecked")
   public void testRequestParamsAsFieldName() throws Exception {
+    @SuppressWarnings({"rawtypes"})
     List rows = new ArrayList();
     rows.add(createMap("mypk", "101", "text", "ApacheSolr"));
     MockDataSource.setIterator("select * from x", rows.iterator());
@@ -147,6 +155,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
   @Test
   @SuppressWarnings("unchecked")
   public void testContext() throws Exception {
+    @SuppressWarnings({"rawtypes"})
     List rows = new ArrayList();
     rows.add(createMap("id", "1", "desc", "one"));
     MockDataSource.setIterator("select * from x", rows.iterator());
@@ -157,6 +166,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
   @Test
   @SuppressWarnings("unchecked")
   public void testSkipDoc() throws Exception {
+    @SuppressWarnings({"rawtypes"})
     List rows = new ArrayList();
     rows.add(createMap("id", "1", "desc", "one"));
     rows.add(createMap("id", "2", "desc", "two", DocBuilder.SKIP_DOC, "true"));
@@ -169,7 +179,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
   }
 
   @Test
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void testSkipRow() throws Exception {
     List rows = new ArrayList();
     rows.add(createMap("id", "1", "desc", "one"));
@@ -206,6 +216,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
   @Test
   @SuppressWarnings("unchecked")
   public void testStopTransform() throws Exception {
+    @SuppressWarnings({"rawtypes"})
     List rows = new ArrayList();
     rows.add(createMap("id", "1", "desc", "one"));
     rows.add(createMap("id", "2", "desc", "two", "$stopTransform", "true"));
@@ -219,7 +230,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
   }
 
   @Test
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void testDeleteDocs() throws Exception {
     List rows = new ArrayList();
     rows.add(createMap("id", "1", "desc", "one"));
@@ -269,6 +280,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
   public void testFileListEntityProcessor_lastIndexTime() throws Exception  {
     File tmpdir = createTempDir().toFile();
 
+    @SuppressWarnings({"unchecked"})
     Map<String, String> params = createMap("baseDir", tmpdir.getAbsolutePath());
 
     createFile(tmpdir, "a.xml", "a.xml".getBytes(StandardCharsets.UTF_8), true);

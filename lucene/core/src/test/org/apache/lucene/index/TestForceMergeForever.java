@@ -40,7 +40,7 @@ public class TestForceMergeForever extends LuceneTestCase {
     }
 
     @Override
-    public void merge(MergePolicy.OneMerge merge) throws IOException {
+    protected void merge(MergePolicy.OneMerge merge) throws IOException {
       if (merge.maxNumSegments != -1 && (first || merge.segments.size() == 1)) {
         first = false;
         if (VERBOSE) {
@@ -70,7 +70,7 @@ public class TestForceMergeForever extends LuceneTestCase {
       w.addDocument(docs.nextDoc());
     }
     MergePolicy mp = w.getConfig().getMergePolicy();
-    final int mergeAtOnce = 1+w.listOfSegmentCommitInfos().size();
+    final int mergeAtOnce = 1+w.cloneSegmentInfos().size();
     if (mp instanceof TieredMergePolicy) {
       ((TieredMergePolicy) mp).setMaxMergeAtOnce(mergeAtOnce);
     } else if (mp instanceof LogMergePolicy) {

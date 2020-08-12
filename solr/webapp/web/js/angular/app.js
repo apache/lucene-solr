@@ -114,10 +114,6 @@ solrAdminApp.config([
         templateUrl: 'partials/java-properties.html',
         controller: 'JavaPropertiesController'
       }).
-      when('/~cluster-suggestions', {
-        templateUrl: 'partials/cluster_suggestions.html',
-        controller: 'ClusterSuggestionsController'
-      }).
       when('/:core/core-overview', {
         templateUrl: 'partials/core_overview.html',
         controller: 'CoreOverviewController'
@@ -331,24 +327,21 @@ solrAdminApp.config([
         },
         link: function(scope, element, attrs) {
             scope.$watch("data", function(newValue, oldValue) {
-                if (newValue) {
+              if (newValue && !jQuery.isEmptyObject(newValue)) {
                   var treeConfig = {
-                      "plugins" : [ "json_data", "ui" ],
-                      "json_data" : {
-                        "data" : scope.data,
-                        "progressive_render" : true
-                      },
-                      "core" : {
-                        "animation" : 0
-                      }
+                    'core' : {
+                      'animation' : 0,
+                      'data': scope.data,
+                      'worker': false
+                    }
                   };
 
                   var tree = $(element).jstree(treeConfig);
-                  tree.jstree('open_node','li:first');
+                  $(element).jstree('open_node','li:first');
                   if (tree) {
                       element.bind("select_node.jstree", function (event, data) {
                           scope.$apply(function() {
-                              scope.onSelect({url: data.args[0].href, data: data});
+                            scope.onSelect({url: data.node.a_attr.href, data: data});
                           });
                       });
                   }

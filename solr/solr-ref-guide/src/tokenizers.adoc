@@ -84,8 +84,6 @@ Arguments may be passed to tokenizer factories by setting attributes on the `<to
 
 The following sections describe the tokenizer factory classes included in this release of Solr.
 
-For user tips about Solr's tokenizers, see http://wiki.apache.org/solr/AnalyzersTokenizersTokenFilters.
-
 == Standard Tokenizer
 
 This tokenizer splits the text field into tokens, treating whitespace and punctuation as delimiters. Delimiter characters are discarded, with the following exceptions:
@@ -516,7 +514,7 @@ The default configuration for `solr.ICUTokenizerFactory` provides UAX#29 word br
 [IMPORTANT]
 ====
 
-To use this tokenizer, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>). See the `solr/contrib/analysis-extras/README.txt` for information on which jars you need to add.
+To use this tokenizer, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>). See the `solr/contrib/analysis-extras/README.md` for information on which jars you need to add.
 
 ====
 

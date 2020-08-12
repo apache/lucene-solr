@@ -114,7 +114,9 @@ public abstract class ManagedResource {
       NamedList<?> clonedArgs = args.clone();
       observer.onManagedResourceInitialized(clonedArgs,this);
     }
-    log.info("Notified {} observers of {}", observers.size(), getResourceId());
+    if (log.isInfoEnabled()) {
+      log.info("Notified {} observers of {}", observers.size(), getResourceId());
+    }
   }  
   
   /**
@@ -203,7 +205,9 @@ public abstract class ManagedResource {
             "Stored data for "+resourceId+" is not a valid JSON object!");
       }
 
+      @SuppressWarnings({"unchecked"})
       Map<String,Object> jsonMap = (Map<String,Object>)data;
+      @SuppressWarnings({"unchecked"})
       Map<String,Object> initArgsMap = (Map<String,Object>)jsonMap.get(INIT_ARGS_JSON_FIELD);
       managedInitArgs = new NamedList<>(initArgsMap);
       log.info("Loaded initArgs {} for {}", managedInitArgs, resourceId);
@@ -265,7 +269,7 @@ public abstract class ManagedResource {
           // note: the data we're managing now remains in a dubious state
           // however the text analysis component remains unaffected 
           // (at least until core reload)
-          log.error("Failed to load data from storage due to: "+reloadExc);
+          log.error("Failed to load data from storage due to: {}", reloadExc);
         }
       }
       
@@ -360,8 +364,10 @@ public abstract class ManagedResource {
    */
   @SuppressWarnings("unchecked")
   public synchronized void doPut(BaseSolrResource endpoint, Representation entity, Object json) {
-    
-    log.info("Processing update to {}: {} is a "+json.getClass().getName(), getResourceId(), json);
+
+    if (log.isInfoEnabled()) {
+      log.info("Processing update to {}: {} is a {}", getResourceId(), json, json.getClass().getName());
+    }
     
     boolean updatedInitArgs = false;
     Object managedData = null;

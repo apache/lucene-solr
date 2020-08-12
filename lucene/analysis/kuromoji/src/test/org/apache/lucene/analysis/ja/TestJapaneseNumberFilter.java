@@ -44,7 +44,7 @@ public class TestJapaneseNumberFilter extends BaseTokenStreamTestCase {
     analyzer = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), null, false, JapaneseTokenizer.Mode.SEARCH);
+        Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), null, false, false, JapaneseTokenizer.Mode.SEARCH);
         return new TokenStreamComponents(tokenizer, new JapaneseNumberFilter(tokenizer));
       }
     };

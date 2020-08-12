@@ -98,7 +98,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
       hasNorms |= info.hasNorms();
       hasDocValues |= info.getDocValuesType() != DocValuesType.NONE;
       hasPayloads |= info.hasPayloads();
-      hasPointValues |= (info.getPointDataDimensionCount() != 0);
+      hasPointValues |= (info.getPointDimensionCount() != 0);
       if (info.isSoftDeletesField()) {
         if (softDeletesField != null && softDeletesField.equals(info.name) == false) {
           throw new IllegalArgumentException("multiple soft-deletes fields [" + info.name + ", " + softDeletesField + "]");
@@ -251,12 +251,12 @@ public class FieldInfos implements Iterable<FieldInfo> {
   }
 
   static final class FieldDimensions {
-    public final int dataDimensionCount;
+    public final int dimensionCount;
     public final int indexDimensionCount;
     public final int dimensionNumBytes;
 
-    public FieldDimensions(int dataDimensionCount, int indexDimensionCount, int dimensionNumBytes) {
-      this.dataDimensionCount = dataDimensionCount;
+    public FieldDimensions(int dimensionCount, int indexDimensionCount, int dimensionNumBytes) {
+      this.dimensionCount = dimensionCount;
       this.indexDimensionCount = indexDimensionCount;
       this.dimensionNumBytes = dimensionNumBytes;
     }
@@ -297,7 +297,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
      * number assigned if possible otherwise the first unassigned field number
      * is used as the field number.
      */
-    synchronized int addOrGet(String fieldName, int preferredFieldNumber, IndexOptions indexOptions, DocValuesType dvType, int dataDimensionCount, int indexDimensionCount, int dimensionNumBytes, boolean isSoftDeletesField) {
+    synchronized int addOrGet(String fieldName, int preferredFieldNumber, IndexOptions indexOptions, DocValuesType dvType, int dimensionCount, int indexDimensionCount, int dimensionNumBytes, boolean isSoftDeletesField) {
       if (indexOptions != IndexOptions.NONE) {
         IndexOptions currentOpts = this.indexOptions.get(fieldName);
         if (currentOpts == null) {
@@ -314,11 +314,11 @@ public class FieldInfos implements Iterable<FieldInfo> {
           throw new IllegalArgumentException("cannot change DocValues type from " + currentDVType + " to " + dvType + " for field \"" + fieldName + "\"");
         }
       }
-      if (dataDimensionCount != 0) {
+      if (dimensionCount != 0) {
         FieldDimensions dims = dimensions.get(fieldName);
         if (dims != null) {
-          if (dims.dataDimensionCount != dataDimensionCount) {
-            throw new IllegalArgumentException("cannot change point data dimension count from " + dims.dataDimensionCount + " to " + dataDimensionCount + " for field=\"" + fieldName + "\"");
+          if (dims.dimensionCount != dimensionCount) {
+            throw new IllegalArgumentException("cannot change point dimension count from " + dims.dimensionCount + " to " + dimensionCount + " for field=\"" + fieldName + "\"");
           }
           if (dims.indexDimensionCount != indexDimensionCount) {
             throw new IllegalArgumentException("cannot change point index dimension count from " + dims.indexDimensionCount + " to " + indexDimensionCount + " for field=\"" + fieldName + "\"");
@@ -327,7 +327,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
             throw new IllegalArgumentException("cannot change point numBytes from " + dims.dimensionNumBytes + " to " + dimensionNumBytes + " for field=\"" + fieldName + "\"");
           }
         } else {
-          dimensions.put(fieldName, new FieldDimensions(dataDimensionCount, indexDimensionCount, dimensionNumBytes));
+          dimensions.put(fieldName, new FieldDimensions(dimensionCount, indexDimensionCount, dimensionNumBytes));
         }
       }
       Integer fieldNumber = nameToNumber.get(fieldName);
@@ -396,8 +396,8 @@ public class FieldInfos implements Iterable<FieldInfo> {
       }
       FieldDimensions dim = dimensions.get(name);
       if (dim != null) {
-        if (dim.dataDimensionCount != dataDimensionCount) {
-          throw new IllegalArgumentException("cannot change point data dimension count from " + dim.dataDimensionCount + " to " + dataDimensionCount + " for field=\"" + name + "\"");
+        if (dim.dimensionCount != dataDimensionCount) {
+          throw new IllegalArgumentException("cannot change point dimension count from " + dim.dimensionCount + " to " + dataDimensionCount + " for field=\"" + name + "\"");
         }
         if (dim.indexDimensionCount != indexDimensionCount) {
           throw new IllegalArgumentException("cannot change point index dimension count from " + dim.indexDimensionCount + " to " + indexDimensionCount + " for field=\"" + name + "\"");
@@ -440,18 +440,21 @@ public class FieldInfos implements Iterable<FieldInfo> {
       docValuesType.put(name, dvType);
     }
 
-    synchronized void setDimensions(int number, String name, int dataDimensionCount, int indexDimensionCount, int dimensionNumBytes) {
+    synchronized void setDimensions(int number, String name, int dimensionCount, int indexDimensionCount, int dimensionNumBytes) {
+      if (dimensionCount > PointValues.MAX_DIMENSIONS) {
+        throw new IllegalArgumentException("dimensionCount must be <= PointValues.MAX_DIMENSIONS (= " + PointValues.MAX_DIMENSIONS + "); got " + dimensionCount + " for field=\"" + name + "\"");
+      }
       if (dimensionNumBytes > PointValues.MAX_NUM_BYTES) {
         throw new IllegalArgumentException("dimension numBytes must be <= PointValues.MAX_NUM_BYTES (= " + PointValues.MAX_NUM_BYTES + "); got " + dimensionNumBytes + " for field=\"" + name + "\"");
       }
-      if (dataDimensionCount > PointValues.MAX_DIMENSIONS) {
-        throw new IllegalArgumentException("pointDataDimensionCount must be <= PointValues.MAX_DIMENSIONS (= " + PointValues.MAX_DIMENSIONS + "); got " + dataDimensionCount + " for field=\"" + name + "\"");
+      if (indexDimensionCount > dimensionCount) {
+        throw new IllegalArgumentException("indexDimensionCount must be <= dimensionCount (= " + dimensionCount + "); got " + indexDimensionCount + " for field=\"" + name + "\"");
       }
-      if (indexDimensionCount > dataDimensionCount) {
-        throw new IllegalArgumentException("pointIndexDimensionCount must be <= pointDataDimensionCount (= " + dataDimensionCount + "); got " + indexDimensionCount + " for field=\"" + name + "\"");
+      if (indexDimensionCount > PointValues.MAX_INDEX_DIMENSIONS) {
+        throw new IllegalArgumentException("indexDimensionCount must be <= PointValues.MAX_INDEX_DIMENSIONS (= " + PointValues.MAX_INDEX_DIMENSIONS + "); got " + indexDimensionCount + " for field=\"" + name + "\"");
       }
-      verifyConsistentDimensions(number, name, dataDimensionCount, indexDimensionCount, dimensionNumBytes);
-      dimensions.put(name, new FieldDimensions(dataDimensionCount, indexDimensionCount, dimensionNumBytes));
+      verifyConsistentDimensions(number, name, dimensionCount, indexDimensionCount, dimensionNumBytes);
+      dimensions.put(name, new FieldDimensions(dimensionCount, indexDimensionCount, dimensionNumBytes));
     }
   }
   
@@ -554,7 +557,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
                                  fi.omitsNorms(), fi.hasPayloads(),
                                  fi.getIndexOptions(), fi.getDocValuesType(), dvGen,
                                  fi.attributes(),
-                                 fi.getPointDataDimensionCount(), fi.getPointIndexDimensionCount(), fi.getPointNumBytes(),
+                                 fi.getPointDimensionCount(), fi.getPointIndexDimensionCount(), fi.getPointNumBytes(),
                                  fi.isSoftDeletesField());
     }
     

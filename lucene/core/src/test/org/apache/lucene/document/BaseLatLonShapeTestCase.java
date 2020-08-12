@@ -22,15 +22,19 @@ import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.GeoTestUtil;
+import org.apache.lucene.geo.LatLonGeometry;
 import org.apache.lucene.geo.Line;
-import org.apache.lucene.geo.Line2D;
-import org.apache.lucene.geo.Point2D;
 import org.apache.lucene.geo.Polygon;
-import org.apache.lucene.geo.Polygon2D;
 import org.apache.lucene.geo.Rectangle;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.geo.Circle;
 
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
@@ -75,17 +79,37 @@ public abstract class BaseLatLonShapeTestCase extends BaseShapeTestCase {
 
   @Override
   protected Component2D toLine2D(Object... lines) {
-    return Line2D.create(Arrays.stream(lines).toArray(Line[]::new));
+    return LatLonGeometry.create(Arrays.stream(lines).toArray(Line[]::new));
   }
 
   @Override
   protected Component2D toPolygon2D(Object... polygons) {
-    return Polygon2D.create(Arrays.stream(polygons).toArray(Polygon[]::new));
+    return LatLonGeometry.create(Arrays.stream(polygons).toArray(Polygon[]::new));
   }
 
   @Override
   protected Component2D toPoint2D(Object... points) {
-    return Point2D.create(Arrays.stream(points).toArray(double[][]::new));
+    double[][] p = Arrays.stream(points).toArray(double[][]::new);
+    org.apache.lucene.geo.Point[] pointArray = new org.apache.lucene.geo.Point[points.length];
+    for (int i =0; i < points.length; i++) {
+      pointArray[i] = new org.apache.lucene.geo.Point(p[i][0], p[i][1]);
+    }
+    return LatLonGeometry.create(pointArray);
+  }
+
+  @Override
+  protected Query newDistanceQuery(String field, QueryRelation queryRelation, Object circle) {
+    return LatLonShape.newDistanceQuery(field, queryRelation, (Circle) circle);
+  }
+
+  @Override
+  protected Component2D toCircle2D(Object circle) {
+    return LatLonGeometry.create((Circle) circle);
+  }
+
+  @Override
+  protected Circle nextCircle() {
+    return new Circle(nextLatitude(), nextLongitude(), random().nextDouble() * Circle.MAX_RADIUS);
   }
 
   @Override
@@ -178,6 +202,46 @@ public abstract class BaseLatLonShapeTestCase extends BaseShapeTestCase {
     } else {
       QueryUtils.checkUnequal(q1, q5);
     }
+  }
+
+  public void testBoundingBoxQueriesEquivalence() throws Exception {
+    int numShapes = atLeast(20);
+
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+
+    for (int  i =0; i < numShapes; i++) {
+      indexRandomShapes(w.w, nextShape());
+    }
+    if (random().nextBoolean()) {
+      w.forceMerge(1);
+    }
+
+    ///// search //////
+    IndexReader reader = w.getReader();
+    w.close();
+    IndexSearcher searcher = newSearcher(reader);
+
+    Rectangle box = GeoTestUtil.nextBox();
+
+    Query q1 = LatLonShape.newBoxQuery(FIELD_NAME, QueryRelation.INTERSECTS, box.minLat, box.maxLat, box.minLon, box.maxLon);
+    Query q2 = new LatLonShapeQuery(FIELD_NAME, QueryRelation.INTERSECTS, box);
+    assertEquals(searcher.count(q1), searcher.count(q2));
+    q1 = LatLonShape.newBoxQuery(FIELD_NAME, QueryRelation.WITHIN, box.minLat, box.maxLat, box.minLon, box.maxLon);
+    q2 = new LatLonShapeQuery(FIELD_NAME, QueryRelation.WITHIN, box);
+    assertEquals(searcher.count(q1), searcher.count(q2));
+    q1 = LatLonShape.newBoxQuery(FIELD_NAME, QueryRelation.CONTAINS, box.minLat, box.maxLat, box.minLon, box.maxLon);
+    if (box.crossesDateline()) {
+      q2 = LatLonShape.newGeometryQuery(FIELD_NAME, QueryRelation.CONTAINS, box);
+    } else {
+      q2 = new LatLonShapeQuery(FIELD_NAME, QueryRelation.CONTAINS, box);
+    }
+    assertEquals(searcher.count(q1), searcher.count(q2));
+    q1 = LatLonShape.newBoxQuery(FIELD_NAME, QueryRelation.DISJOINT, box.minLat, box.maxLat, box.minLon, box.maxLon);
+    q2 = new LatLonShapeQuery(FIELD_NAME, QueryRelation.DISJOINT, box);
+    assertEquals(searcher.count(q1), searcher.count(q2));
+
+    IOUtils.close(w, reader, dir);
   }
 
   /** factory method to create a new polygon query */
@@ -388,5 +452,4 @@ public abstract class BaseLatLonShapeTestCase extends BaseShapeTestCase {
       return sb.toString();
     }
   }
-
 }

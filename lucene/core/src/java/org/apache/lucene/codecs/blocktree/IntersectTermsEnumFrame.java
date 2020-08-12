@@ -27,7 +27,6 @@ import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.Transition;
-import org.apache.lucene.util.compress.LZ4;
 import org.apache.lucene.util.fst.FST;
 
 // TODO: can we share this with the frame in STE?
@@ -55,6 +54,7 @@ final class IntersectTermsEnumFrame {
   final ByteArrayDataInput suffixLengthsReader;
 
   byte[] statBytes = new byte[64];
+  int statsSingletonRunLength = 0;
   final ByteArrayDataInput statsReader = new ByteArrayDataInput();
 
   byte[] floorData = new byte[32];
@@ -210,7 +210,7 @@ final class IntersectTermsEnumFrame {
       if (allEqual) {
         Arrays.fill(suffixLengthBytes, 0, numSuffixLengthBytes, ite.in.readByte());
       } else {
-        LZ4.decompress(ite.in, numSuffixLengthBytes, suffixLengthBytes, 0);
+        ite.in.readBytes(suffixLengthBytes, 0, numSuffixLengthBytes);
       }
       suffixLengthsReader.reset(suffixLengthBytes, 0, numSuffixLengthBytes);
     } else {
@@ -226,24 +226,12 @@ final class IntersectTermsEnumFrame {
 
     // stats
     int numBytes = ite.in.readVInt();
-    if (version >= BlockTreeTermsReader.VERSION_COMPRESSED_SUFFIXES) {
-      final boolean allOnes = (numBytes & 0x01) != 0;
-      numBytes >>>= 1;
-      if (statBytes.length < numBytes) {
-        statBytes = new byte[ArrayUtil.oversize(numBytes, 1)];
-      }
-      if (allOnes) {
-        Arrays.fill(statBytes, 0, numBytes, (byte) 1);
-      } else {
-        LZ4.decompress(ite.in, numBytes, statBytes, 0);
-      }
-    } else {
-      if (statBytes.length < numBytes) {
-        statBytes = new byte[ArrayUtil.oversize(numBytes, 1)];
-      }
-      ite.in.readBytes(statBytes, 0, numBytes);
+    if (statBytes.length < numBytes) {
+      statBytes = new byte[ArrayUtil.oversize(numBytes, 1)];
     }
+    ite.in.readBytes(statBytes, 0, numBytes);
     statsReader.reset(statBytes, 0, numBytes);
+    statsSingletonRunLength = 0;
     metaDataUpto = 0;
 
     termState.termBlockOrd = 0;
@@ -326,11 +314,35 @@ final class IntersectTermsEnumFrame {
       // just skipN here:
 
       // stats
-      termState.docFreq = statsReader.readVInt();
-      if (ite.fr.fieldInfo.getIndexOptions() == IndexOptions.DOCS) {
-        termState.totalTermFreq = termState.docFreq; // all postings have freq=1
+      if (version >= BlockTreeTermsReader.VERSION_COMPRESSED_SUFFIXES) {
+        if (statsSingletonRunLength > 0) {
+          termState.docFreq = 1;
+          termState.totalTermFreq = 1;
+          statsSingletonRunLength--;
+        } else {
+          int token = statsReader.readVInt();
+          if (version >= BlockTreeTermsReader.VERSION_COMPRESSED_SUFFIXES && (token & 1) == 1) {
+            termState.docFreq = 1;
+            termState.totalTermFreq = 1;
+            statsSingletonRunLength = token >>> 1;
+          } else {
+            termState.docFreq = token >>> 1;
+            if (ite.fr.fieldInfo.getIndexOptions() == IndexOptions.DOCS) {
+              termState.totalTermFreq = termState.docFreq;
+            } else {
+              termState.totalTermFreq = termState.docFreq + statsReader.readVLong();
+            }
+          }
+        }
       } else {
-        termState.totalTermFreq = termState.docFreq + statsReader.readVLong();
+        termState.docFreq = statsReader.readVInt();
+        //if (DEBUG) System.out.println("    dF=" + state.docFreq);
+        if (ite.fr.fieldInfo.getIndexOptions() == IndexOptions.DOCS) {
+          termState.totalTermFreq = termState.docFreq; // all postings have freq=1
+        } else {
+          termState.totalTermFreq = termState.docFreq + statsReader.readVLong();
+          //if (DEBUG) System.out.println("    totTF=" + state.totalTermFreq);
+        }
       }
       // metadata
       ite.fr.parent.postingsReader.decodeTerm(bytesReader, ite.fr.fieldInfo, termState, absolute);

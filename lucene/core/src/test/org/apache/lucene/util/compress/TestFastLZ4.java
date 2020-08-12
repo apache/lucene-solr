@@ -22,7 +22,8 @@ public class TestFastLZ4 extends LZ4TestCase {
 
   @Override
   protected HashTable newHashTable() {
-    return new LZ4.FastCompressionHashTable();
+    LZ4.HashTable hashTable = new LZ4.FastCompressionHashTable();
+    return new AssertingHashTable(hashTable);
   }
 
 }

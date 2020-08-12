@@ -131,22 +131,22 @@ public class LegacyNoFacetCloudTest extends LegacyAbstractAnalyticsCloudTest {
 
     //Int
     Double intResult = getValue(response, "sr", "int_id");
-    Double intTest = (Double)calculateNumberStat(intTestStart, "sum");
+    Double intTest = calculateNumberStat(intTestStart, "sum");
     assertEquals(responseStr, intResult,intTest);
 
     //Long
     Double longResult = getValue(response, "sr", "long_ld");
-    Double longTest = (Double)calculateNumberStat(longTestStart, "sum");
+    Double longTest = calculateNumberStat(longTestStart, "sum");
     assertEquals(responseStr, longResult,longTest);
 
     //Float
     Double floatResult = getValue(response, "sr", "float_fd");
-    Double floatTest = (Double)calculateNumberStat(floatTestStart, "sum");
+    Double floatTest = calculateNumberStat(floatTestStart, "sum");
     assertEquals(responseStr, floatResult,floatTest);
 
     //Double
     Double doubleResult = getValue(response, "sr", "double_dd");
-    Double doubleTest = (Double) calculateNumberStat(doubleTestStart, "sum");
+    Double doubleTest = calculateNumberStat(doubleTestStart, "sum");
     assertEquals(responseStr, doubleResult,doubleTest);
   }
 
@@ -163,22 +163,22 @@ public class LegacyNoFacetCloudTest extends LegacyAbstractAnalyticsCloudTest {
 
     //Int
     Double intResult = getValue(response, "mr", "int_id");
-    Double intTest = (Double)calculateNumberStat(intTestStart, "mean");
+    Double intTest = calculateNumberStat(intTestStart, "mean");
     assertEquals(responseStr, intResult,intTest);
 
     //Long
     Double longResult = getValue(response, "mr", "long_ld");
-    Double longTest = (Double)calculateNumberStat(longTestStart, "mean");
+    Double longTest = calculateNumberStat(longTestStart, "mean");
     assertEquals(responseStr, longResult,longTest);
 
     //Float
     Double floatResult = getValue(response, "mr", "float_fd");
-    Double floatTest = (Double)calculateNumberStat(floatTestStart, "mean");
+    Double floatTest = calculateNumberStat(floatTestStart, "mean");
     assertEquals(responseStr, floatResult,floatTest);
 
     //Double
     Double doubleResult = getValue(response, "mr", "double_dd");
-    Double doubleTest = (Double)calculateNumberStat(doubleTestStart, "mean");
+    Double doubleTest = calculateNumberStat(doubleTestStart, "mean");
     assertEquals(responseStr, doubleResult,doubleTest);
   }
 
@@ -195,23 +195,23 @@ public class LegacyNoFacetCloudTest extends LegacyAbstractAnalyticsCloudTest {
 
     //Int
     Double intResult = getValue(response, "str", "int_id");
-    Double intTest = (Double)calculateNumberStat(intTestStart, "stddev");
+    Double intTest = calculateNumberStat(intTestStart, "stddev");
     assertEquals(responseStr, intResult, intTest, 0.00000000001);
 
     //Long
     Double longResult = getValue(response, "str", "long_ld");
-    Double longTest = (Double)calculateNumberStat(longTestStart, "stddev");
+    Double longTest = calculateNumberStat(longTestStart, "stddev");
     assertEquals(responseStr, longResult, longTest, 0.00000000001);
 
     //Float
     Double floatResult = getValue(response, "str", "float_fd");
-    Double floatTest = (Double)calculateNumberStat(floatTestStart, "stddev");
+    Double floatTest = calculateNumberStat(floatTestStart, "stddev");
     assertEquals(responseStr, floatResult, floatTest, 0.00000000001);
 
 
     //Double
     Double doubleResult = getValue(response, "str", "double_dd");
-    Double doubleTest = (Double)calculateNumberStat(doubleTestStart, "stddev");
+    Double doubleTest = calculateNumberStat(doubleTestStart, "stddev");
     assertEquals(responseStr, doubleResult, doubleTest, 0.00000000001);
   }
 
@@ -229,22 +229,22 @@ public class LegacyNoFacetCloudTest extends LegacyAbstractAnalyticsCloudTest {
 
     //Int
     Double intResult = getValue(response, "medr", "int_id");
-    Double intTest = (Double)calculateNumberStat(intTestStart, "median");
+    Double intTest = calculateNumberStat(intTestStart, "median");
     assertEquals(responseStr, intResult,intTest);
 
     //Long
     Double longResult = getValue(response, "medr", "long_ld");
-    Double longTest = (Double)calculateNumberStat(longTestStart, "median");
+    Double longTest = calculateNumberStat(longTestStart, "median");
     assertEquals(responseStr, longResult,longTest);
 
     //Float
     Double floatResult = getValue(response, "medr", "float_fd");
-    Double floatTest = (Double)calculateNumberStat(floatTestStart, "median");
+    Double floatTest = calculateNumberStat(floatTestStart, "median");
     assertEquals(responseStr, floatResult,floatTest);
 
     //Double
     Double doubleResult = getValue(response, "medr", "double_dd");
-    Double doubleTest = (Double)calculateNumberStat(doubleTestStart, "median");
+    Double doubleTest = calculateNumberStat(doubleTestStart, "median");
     assertEquals(responseStr, doubleResult,doubleTest);
 
     // TODO: Add test for date median

@@ -40,8 +40,8 @@ public abstract class CompoundFormat {
   /**
    * Returns a Directory view (read-only) for the compound files in this segment
    */
-  public abstract Directory getCompoundReader(Directory dir, SegmentInfo si, IOContext context) throws IOException;
-  
+  public abstract CompoundDirectory getCompoundReader(Directory dir, SegmentInfo si, IOContext context) throws IOException;
+
   /**
    * Packs the provided segment's files into a compound format.  All files referenced
    * by the provided {@link SegmentInfo} must have {@link CodecUtil#writeIndexHeader}

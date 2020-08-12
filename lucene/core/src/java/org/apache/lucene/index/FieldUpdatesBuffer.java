@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Comparator;
 
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
@@ -51,6 +52,7 @@ final class FieldUpdatesBuffer {
   // on CPU for those. We also save on not needing to sort in order to apply the terms in order
   // since by definition we store them in order.
   private final BytesRefArray termValues;
+  private BytesRefArray.SortState termSortState;
   private final BytesRefArray byteValues; // this will be null if we are buffering numerics
   private int[] docsUpTo;
   private long[] numericValues; // this will be null if we are buffering binaries
@@ -59,6 +61,7 @@ final class FieldUpdatesBuffer {
   private long minNumeric = Long.MAX_VALUE;
   private String[] fields;
   private final boolean isNumeric;
+  private boolean finished = false;
 
   private FieldUpdatesBuffer(Counter bytesUsed, DocValuesUpdate initialValue, int docUpTo, boolean isNumeric) {
     this.bytesUsed = bytesUsed;
@@ -115,6 +118,7 @@ final class FieldUpdatesBuffer {
   }
 
   void add(String field, int docUpTo, int ord, boolean hasValue) {
+    assert finished == false : "buffer was finished already";
     if (fields[0].equals(field) == false || fields.length != 1 ) {
       if (fields.length <= ord) {
         String[] array = ArrayUtil.grow(fields, ord+1);
@@ -195,7 +199,26 @@ final class FieldUpdatesBuffer {
     return numUpdates++;
   }
 
+  void finish() {
+    if (finished) {
+      throw new IllegalStateException("buffer was finished already");
+    }
+    finished = true;
+    final boolean sortedTerms = hasSingleValue() && hasValues == null && fields.length == 1;
+    if (sortedTerms) {
+      // sort by ascending by term, then sort descending by docsUpTo so that we can skip updates with lower docUpTo.
+      termSortState = termValues.sort(Comparator.naturalOrder(),
+          (i1, i2) -> Integer.compare(
+              docsUpTo[getArrayIndex(docsUpTo.length, i2)],
+              docsUpTo[getArrayIndex(docsUpTo.length, i1)]));
+      bytesUsed.addAndGet(termSortState.ramBytesUsed());
+    }
+  }
+
   BufferedUpdateIterator iterator() {
+    if (finished == false) {
+      throw new IllegalStateException("buffer is not finished yet");
+    }
     return new BufferedUpdateIterator();
   }
 
@@ -264,16 +287,26 @@ final class FieldUpdatesBuffer {
    * An iterator that iterates over all updates in insertion order
    */
   class BufferedUpdateIterator {
-    private final BytesRefIterator termValuesIterator;
+    private final BytesRefArray.IndexedBytesRefIterator termValuesIterator;
+    private final BytesRefArray.IndexedBytesRefIterator lookAheadTermIterator;
     private final BytesRefIterator byteValuesIterator;
     private final BufferedUpdate bufferedUpdate = new BufferedUpdate();
     private final Bits updatesWithValue;
-    private int index = 0;
 
     BufferedUpdateIterator() {
-      this.termValuesIterator = termValues.iterator();
+      this.termValuesIterator = termValues.iterator(termSortState);
+      this.lookAheadTermIterator = termSortState != null ? termValues.iterator(termSortState) : null;
       this.byteValuesIterator = isNumeric ? null : byteValues.iterator();
       updatesWithValue = hasValues == null ? new Bits.MatchAllBits(numUpdates) : hasValues;
+    }
+
+    /**
+     * If all updates update a single field to the same value, then we can apply these
+     * updates in the term order instead of the request order as both will yield the same result.
+     * This optimization allows us to iterate the term dictionary faster and de-duplicate updates.
+     */
+    boolean isSortedTerms() {
+      return termSortState != null;
     }
 
     /**
@@ -281,9 +314,9 @@ final class FieldUpdatesBuffer {
      * The returned instance is a shared instance and must be fully consumed before the next call to this method.
      */
     BufferedUpdate next() throws IOException {
-      BytesRef next = termValuesIterator.next();
+      BytesRef next = nextTerm();
       if (next != null) {
-        final int idx = index++;
+        final int idx = termValuesIterator.ord();
         bufferedUpdate.termValue = next;
         bufferedUpdate.hasValue = updatesWithValue.get(idx);
         bufferedUpdate.termField = fields[getArrayIndex(fields.length, idx)];
@@ -303,6 +336,20 @@ final class FieldUpdatesBuffer {
       } else {
         return null;
       }
+    }
+
+    BytesRef nextTerm() throws IOException {
+      if (lookAheadTermIterator != null) {
+        final BytesRef lastTerm = bufferedUpdate.termValue;
+        BytesRef lookAheadTerm;
+        while ((lookAheadTerm = lookAheadTermIterator.next()) != null && lookAheadTerm.equals(lastTerm)) {
+          BytesRef discardedTerm = termValuesIterator.next(); // discard as the docUpTo of the previous update is higher
+          assert discardedTerm.equals(lookAheadTerm) : "[" + discardedTerm + "] != [" + lookAheadTerm + "]";
+          assert docsUpTo[getArrayIndex(docsUpTo.length, termValuesIterator.ord())] <= bufferedUpdate.docUpTo :
+              docsUpTo[getArrayIndex(docsUpTo.length, termValuesIterator.ord())] + ">" + bufferedUpdate.docUpTo;
+        }
+      }
+      return termValuesIterator.next();
     }
   }
 

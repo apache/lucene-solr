@@ -17,7 +17,7 @@
 package org.apache.lucene.codecs.compressing;
 
 
-import static org.apache.lucene.search.DocIdSetIterator.*;
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -56,9 +56,10 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
 
   /** Extension of stored fields file */
   public static final String FIELDS_EXTENSION = "fdt";
-  
-  /** Extension of stored fields index file */
-  public static final String FIELDS_INDEX_EXTENSION = "fdx";
+  /** Extension of stored fields index */
+  public static final String INDEX_EXTENSION_PREFIX = "fd";
+  /** Codec name for the index. */
+  public static final String INDEX_CODEC_NAME = "Lucene85FieldsIndex";
 
   static final int         STRING = 0x00;
   static final int       BYTE_ARR = 0x01;
@@ -70,13 +71,12 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
   static final int TYPE_BITS = PackedInts.bitsRequired(NUMERIC_DOUBLE);
   static final int TYPE_MASK = (int) PackedInts.maxValue(TYPE_BITS);
 
-  static final String CODEC_SFX_IDX = "Index";
-  static final String CODEC_SFX_DAT = "Data";
   static final int VERSION_START = 1;
-  static final int VERSION_CURRENT = VERSION_START;
+  static final int VERSION_OFFHEAP_INDEX = 2;
+  static final int VERSION_CURRENT = VERSION_OFFHEAP_INDEX;
 
   private final String segment;
-  private CompressingStoredFieldsIndexWriter indexWriter;
+  private FieldsIndexWriter indexWriter;
   private IndexOutput fieldsStream;
 
   private Compressor compressor;
@@ -94,8 +94,8 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
   private long numDirtyChunks; // number of incomplete compressed blocks written
 
   /** Sole constructor. */
-  public CompressingStoredFieldsWriter(Directory directory, SegmentInfo si, String segmentSuffix, IOContext context,
-      String formatName, CompressionMode compressionMode, int chunkSize, int maxDocsPerChunk, int blockSize) throws IOException {
+  CompressingStoredFieldsWriter(Directory directory, SegmentInfo si, String segmentSuffix, IOContext context,
+      String formatName, CompressionMode compressionMode, int chunkSize, int maxDocsPerChunk, int blockShift) throws IOException {
     assert directory != null;
     this.segment = si.name;
     this.compressionMode = compressionMode;
@@ -109,21 +109,12 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
     this.numBufferedDocs = 0;
 
     boolean success = false;
-    IndexOutput indexStream = directory.createOutput(IndexFileNames.segmentFileName(segment, segmentSuffix, FIELDS_INDEX_EXTENSION), 
-                                                                     context);
     try {
-      fieldsStream = directory.createOutput(IndexFileNames.segmentFileName(segment, segmentSuffix, FIELDS_EXTENSION),
-                                                    context);
+      fieldsStream = directory.createOutput(IndexFileNames.segmentFileName(segment, segmentSuffix, FIELDS_EXTENSION), context);
+      CodecUtil.writeIndexHeader(fieldsStream, formatName, VERSION_CURRENT, si.getId(), segmentSuffix);
+      assert CodecUtil.indexHeaderLength(formatName, segmentSuffix) == fieldsStream.getFilePointer();
 
-      final String codecNameIdx = formatName + CODEC_SFX_IDX;
-      final String codecNameDat = formatName + CODEC_SFX_DAT;
-      CodecUtil.writeIndexHeader(indexStream, codecNameIdx, VERSION_CURRENT, si.getId(), segmentSuffix);
-      CodecUtil.writeIndexHeader(fieldsStream, codecNameDat, VERSION_CURRENT, si.getId(), segmentSuffix);
-      assert CodecUtil.indexHeaderLength(codecNameDat, segmentSuffix) == fieldsStream.getFilePointer();
-      assert CodecUtil.indexHeaderLength(codecNameIdx, segmentSuffix) == indexStream.getFilePointer();
-
-      indexWriter = new CompressingStoredFieldsIndexWriter(indexStream, blockSize);
-      indexStream = null;
+      indexWriter = new FieldsIndexWriter(directory, segment, segmentSuffix, INDEX_EXTENSION_PREFIX, INDEX_CODEC_NAME, si.getId(), blockShift, context);
 
       fieldsStream.writeVInt(chunkSize);
       fieldsStream.writeVInt(PackedInts.VERSION_CURRENT);
@@ -131,7 +122,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
       success = true;
     } finally {
       if (!success) {
-        IOUtils.closeWhileHandlingException(fieldsStream, indexStream, indexWriter);
+        IOUtils.closeWhileHandlingException(fieldsStream, indexWriter);
       }
     }
   }
@@ -589,7 +580,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
         // read the docstart + doccount from the chunk header (we write a new header, since doc numbers will change),
         // and just copy the bytes directly.
         IndexInput rawDocs = matchingFieldsReader.getFieldsStream();
-        CompressingStoredFieldsIndexReader index = matchingFieldsReader.getIndexReader();
+        FieldsIndex index = matchingFieldsReader.getIndexReader();
         rawDocs.seek(index.getStartPointer(0));
         int docID = 0;
         while (docID < maxDoc) {

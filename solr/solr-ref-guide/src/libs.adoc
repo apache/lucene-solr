@@ -40,7 +40,7 @@ Certain plugins or add-ons to plugins require placement here.
 They will document themselves to say so.
 
 Solr incorporates Jetty for providing HTTP server functionality.
-Jetty has some directories that contain `.jar` files for itself and its own plugins / modules or JVM level plugins (e.g. loggers).
+Jetty has some directories that contain `.jar` files for itself and its own plugins / modules or JVM level plugins (e.g., loggers).
 Solr plugins won't work in these locations.
 
 == Lib Directives in SolrConfig

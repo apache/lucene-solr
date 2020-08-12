@@ -75,11 +75,14 @@ public class TestRTimerTree extends SolrTestCase {
     assertEquals(120, (int) subt.getTime());
     assertEquals(220, (int) rt.getTime());
 
+    @SuppressWarnings({"rawtypes"})
     NamedList nl = rt.asNamedList();
     assertEquals(220, ((Double) nl.get("time")).intValue());
+    @SuppressWarnings({"rawtypes"})
     NamedList sub1nl = (NamedList) nl.get("sub1");
     assertNotNull(sub1nl);
     assertEquals(120, ((Double) sub1nl.get("time")).intValue());
+    @SuppressWarnings({"rawtypes"})
     NamedList sub11nl = (NamedList) sub1nl.get("sub1.1");
     assertNotNull(sub11nl);
     assertEquals(20, ((Double) sub11nl.get("time")).intValue());

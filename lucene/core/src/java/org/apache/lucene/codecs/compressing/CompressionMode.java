@@ -136,7 +136,7 @@ public abstract class CompressionMode {
       if (bytes.bytes.length < originalLength + 7) {
         bytes.bytes = new byte[ArrayUtil.oversize(originalLength + 7, 1)];
       }
-      final int decompressedLength = LZ4.decompress(in, offset + length, bytes.bytes, 0);
+      final int decompressedLength = LZ4.decompress(in, offset + length, bytes.bytes);
       if (decompressedLength > originalLength) {
         throw new CorruptIndexException("Corrupted: lengths mismatch: " + decompressedLength + " > " + originalLength, in);
       }

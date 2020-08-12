@@ -114,10 +114,10 @@ public class FreeTextSuggester extends Lookup implements Accountable {
   /** Codec name used in the header for the saved model. */
   public final static String CODEC_NAME = "freetextsuggest";
 
-  /** Initial version of the the saved model file format. */
+  /** Initial version of the saved model file format. */
   public final static int VERSION_START = 0;
 
-  /** Current version of the the saved model file format. */
+  /** Current version of the saved model file format. */
   public final static int VERSION_CURRENT = VERSION_START;
 
   /** By default we use a bigram model. */
@@ -360,7 +360,7 @@ public class FreeTextSuggester extends Lookup implements Accountable {
     output.writeByte(separator);
     output.writeVInt(grams);
     output.writeVLong(totTokens);
-    fst.save(output);
+    fst.save(output, output);
     return true;
   }
 
@@ -378,7 +378,7 @@ public class FreeTextSuggester extends Lookup implements Accountable {
     }
     totTokens = input.readVLong();
 
-    fst = new FST<>(input, PositiveIntOutputs.getSingleton());
+    fst = new FST<>(input, input, PositiveIntOutputs.getSingleton());
 
     return true;
   }

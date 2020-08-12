@@ -98,6 +98,7 @@ public class TestLatLonMultiPolygonShapeQueries extends BaseLatLonShapeTestCase 
 
   protected class MultiPolygonValidator extends Validator {
     TestLatLonPolygonShapeQueries.PolygonValidator POLYGONVALIDATOR;
+
     MultiPolygonValidator(Encoder encoder) {
       super(encoder);
       POLYGONVALIDATOR = new TestLatLonPolygonShapeQueries.PolygonValidator(encoder);
@@ -112,7 +113,7 @@ public class TestLatLonMultiPolygonShapeQueries extends BaseLatLonShapeTestCase 
 
     @Override
     public boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape) {
-      Polygon[] polygons = (Polygon[])shape;
+      Polygon[] polygons = (Polygon[]) shape;
       for (Polygon p : polygons) {
         boolean b = POLYGONVALIDATOR.testBBoxQuery(minLat, maxLat, minLon, maxLon, p);
         if (b == true && queryRelation == QueryRelation.INTERSECTS) {
@@ -130,7 +131,10 @@ public class TestLatLonMultiPolygonShapeQueries extends BaseLatLonShapeTestCase 
 
     @Override
     public boolean testComponentQuery(Component2D query, Object shape) {
-      Polygon[] polygons = (Polygon[])shape;
+      Polygon[] polygons = (Polygon[]) shape;
+      if (queryRelation == QueryRelation.CONTAINS) {
+        return testWithinPolygon(query, polygons);
+      }
       for (Polygon p : polygons) {
         boolean b = POLYGONVALIDATOR.testComponentQuery(query, p);
         if (b == true && queryRelation == QueryRelation.INTERSECTS) {
@@ -144,6 +148,19 @@ public class TestLatLonMultiPolygonShapeQueries extends BaseLatLonShapeTestCase 
         }
       }
       return queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS;
+    }
+
+    private boolean testWithinPolygon(Component2D query, Polygon[] polygons) {
+      Component2D.WithinRelation answer = Component2D.WithinRelation.DISJOINT;
+      for (Polygon p : polygons) {
+        Component2D.WithinRelation relation = POLYGONVALIDATOR.testWithinPolygon(query, p);
+        if (relation == Component2D.WithinRelation.NOTWITHIN) {
+          return false;
+        } else if (relation == Component2D.WithinRelation.CANDIDATE) {
+          answer = relation;
+        }
+      }
+      return answer == Component2D.WithinRelation.CANDIDATE;
     }
   }
 

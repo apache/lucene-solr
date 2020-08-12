@@ -76,7 +76,7 @@ class SimpleTextPointsWriter extends PointsWriter {
     try (SimpleTextBKDWriter writer = new SimpleTextBKDWriter(writeState.segmentInfo.maxDoc(),
                                                               writeState.directory,
                                                               writeState.segmentInfo.name,
-                                                              fieldInfo.getPointDataDimensionCount(),
+                                                              fieldInfo.getPointDimensionCount(),
                                                               fieldInfo.getPointIndexDimensionCount(),
                                                               fieldInfo.getPointNumBytes(),
                                                               SimpleTextBKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE,

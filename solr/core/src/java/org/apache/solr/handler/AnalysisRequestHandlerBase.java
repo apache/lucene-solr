@@ -82,6 +82,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
    *
    * @throws Exception When analysis fails.
    */
+  @SuppressWarnings({"rawtypes"})
   protected abstract NamedList doAnalysis(SolrQueryRequest req) throws Exception;
 
   /**
@@ -99,6 +100,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     if (!TokenizerChain.class.isInstance(analyzer)) {
 
       try (TokenStream tokenStream = analyzer.tokenStream(context.getFieldName(), value)) {
+        @SuppressWarnings({"rawtypes"})
         NamedList<List<NamedList>> namedList = new NamedList<>();
         namedList.add(tokenStream.getClass().getName(), convertTokensToNamedLists(analyzeTokenStream(tokenStream), context));
         return namedList;
@@ -231,6 +233,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
    *
    * @return List of NamedLists containing the relevant information taken from the tokens
    */
+  @SuppressWarnings({"rawtypes"})
   private List<NamedList> convertTokensToNamedLists(final List<AttributeSource> tokenList, AnalysisContext context) {
     final List<NamedList> tokensNamedLists = new ArrayList<>();
     final FieldType fieldType = context.getFieldType();

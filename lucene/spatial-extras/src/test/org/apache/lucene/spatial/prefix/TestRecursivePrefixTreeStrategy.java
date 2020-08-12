@@ -70,11 +70,11 @@ public class TestRecursivePrefixTreeStrategy extends StrategyTestCase {
   public void testPrecision() throws IOException{
     init(GeohashPrefixTree.getMaxLevelsPossible());
 
-    Point iPt = ctx.makePoint(2.8028712999999925, 48.3708044);//lon, lat
+    Point iPt = ctx.getShapeFactory().pointXY(2.8028712999999925, 48.3708044);//lon, lat
     addDocument(newDoc("iPt", iPt));
     commit();
 
-    Point qPt = ctx.makePoint(2.4632387000000335, 48.6003516);
+    Point qPt = ctx.getShapeFactory().pointXY(2.4632387000000335, 48.6003516);
 
     final double KM2DEG = DistanceUtils.dist2Degrees(1, DistanceUtils.EARTH_MEAN_RADIUS_KM);
     final double DEG2KM = 1 / KM2DEG;
@@ -101,7 +101,7 @@ public class TestRecursivePrefixTreeStrategy extends StrategyTestCase {
   }
 
   private SpatialArgs q(Point pt, double distDEG, double distErrPct) {
-    Shape shape = ctx.makeCircle(pt, distDEG);
+    Shape shape = ctx.getShapeFactory().circle(pt, distDEG);
     SpatialArgs args = new SpatialArgs(SpatialOperation.Intersects,shape);
     args.setDistErrPct(distErrPct);
     return args;

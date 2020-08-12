@@ -102,31 +102,6 @@ public interface IndexDictionary extends Accountable {
      * term precedes alphabetically the first block key of the dictionary.
      */
     long seekBlock(BytesRef term) throws IOException;
-
-    /**
-     * Returns the next block key and positions the browser at this key.
-     * A key is a prefix of a term in the dictionary.
-     * If seekBlock was just called then this is the current block key.
-     */
-    BytesRef nextKey() throws IOException;
-
-    /**
-     * Returns the next key without advancing.
-     * Only call this after {@link #nextKey()} returns a non-null result.
-     */
-    BytesRef peekKey() throws IOException;
-
-    /**
-     * Returns the number of characters of this block's key that is in common with all terms in this block.
-     * Only call this after {@link #nextKey()} returns a non-null result.
-     */
-    int getBlockPrefixLen() throws IOException;
-
-    /**
-     * Returns the block file pointer associated with the key returned.
-     * Only call this after {@link #nextKey()} returns a non-null result.
-     */
-    long getBlockFilePointer() throws IOException;
   }
 
   /**
@@ -137,5 +112,6 @@ public interface IndexDictionary extends Accountable {
    * {@link org.apache.lucene.index.TermsEnum#seekExact} are called (it is not loaded for a direct
    * all-terms enumeration).
    */
-  interface BrowserSupplier extends IOSupplier<Browser>, Accountable {}
+  interface BrowserSupplier extends IOSupplier<Browser>, Accountable {
+  }
 }

@@ -714,6 +714,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
         "/response/docs/[0]/cat_ss/[1]==\"ccc\"");
   }
 
+  @SuppressWarnings({"unchecked"})
   private static void assertDocContainsSubset(SolrInputDocument subsetDoc, SolrInputDocument fullDoc) {
     for(SolrInputField field: subsetDoc) {
       String fieldName = field.getName();

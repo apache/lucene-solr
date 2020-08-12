@@ -39,10 +39,10 @@ public class BrazilianStemmer {
   }
 
   /**
-   * Stems the given term to an unique <tt>discriminator</tt>.
+   * Stems the given term to an unique <code>discriminator</code>.
    *
    * @param term  The term that should be stemmed.
-   * @return      Discriminator for <tt>term</tt>
+   * @return      Discriminator for <code>term</code>
    */
   protected String stem( String term ) {
     boolean altered = false ; // altered the term

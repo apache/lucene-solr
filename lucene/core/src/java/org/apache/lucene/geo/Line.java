@@ -28,7 +28,7 @@ import java.util.Arrays;
  *   <li>For more advanced GeoSpatial indexing and query operations see the {@code spatial-extras} module
  * </ol>
  */
-public class Line {
+public class Line extends LatLonGeometry {
   /** array of latitude coordinates */
   private final double[] lats;
   /** array of longitude coordinates */
@@ -108,6 +108,11 @@ public class Line {
   }
 
   @Override
+  protected Component2D toComponent2D() {
+    return Line2D.create(this);
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (!(o instanceof Line)) return false;
@@ -137,7 +142,7 @@ public class Line {
     return sb.toString();
   }
 
-  /** prints polygons as geojson */
+  /** prints lines as geojson */
   public String toGeoJSON() {
     StringBuilder sb = new StringBuilder();
     sb.append("[");

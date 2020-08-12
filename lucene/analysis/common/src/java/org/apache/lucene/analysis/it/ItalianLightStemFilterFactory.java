@@ -48,6 +48,11 @@ public class ItalianLightStemFilterFactory extends TokenFilterFactory {
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public ItalianLightStemFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public TokenStream create(TokenStream input) {
     return new ItalianLightStemFilter(input);

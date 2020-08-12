@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
@@ -68,7 +69,7 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
 
   @Test
   public void test() throws Exception {
-    waitForThingsToLevelOut(15);
+    waitForThingsToLevelOut(15, TimeUnit.SECONDS);
 
     ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
     final DocRouter router = clusterState.getCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION).getRouter();
@@ -113,7 +114,7 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
 
       Thread.sleep(2000);
 
-      waitForThingsToLevelOut(90);
+      waitForThingsToLevelOut(90, TimeUnit.SECONDS);
 
       Thread.sleep(1000);
       checkShardConsistency(false, true);
@@ -259,14 +260,15 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
     ZkStateReader reader = new ZkStateReader(zkClient);
     LeaderElector overseerElector = new LeaderElector(zkClient);
     UpdateShardHandler updateShardHandler = new UpdateShardHandler(UpdateShardHandlerConfig.DEFAULT);
-    // TODO: close Overseer
-    Overseer overseer = new Overseer((HttpShardHandler) new HttpShardHandlerFactory().getShardHandler(), updateShardHandler, "/admin/cores",
-        reader, null, new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "solr").build());
-    overseer.close();
-    ElectionContext ec = new OverseerElectionContext(zkClient, overseer,
-        address.replaceAll("/", "_"));
-    overseerElector.setup(ec);
-    overseerElector.joinElection(ec, false);
+    try (HttpShardHandlerFactory hshf = new HttpShardHandlerFactory()) {
+      Overseer overseer = new Overseer((HttpShardHandler) hshf.getShardHandler(), updateShardHandler, "/admin/cores",
+          reader, null, new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "solr").build());
+      overseer.close();
+      ElectionContext ec = new OverseerElectionContext(zkClient, overseer,
+          address.replaceAll("/", "_"));
+      overseerElector.setup(ec);
+      overseerElector.joinElection(ec, false);
+    }
     reader.close();
     return zkClient;
   }

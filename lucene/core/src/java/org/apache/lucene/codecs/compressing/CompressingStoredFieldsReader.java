@@ -18,14 +18,13 @@ package org.apache.lucene.codecs.compressing;
 
 
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.BYTE_ARR;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.CODEC_SFX_DAT;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.CODEC_SFX_IDX;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.DAY;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.DAY_ENCODING;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.FIELDS_EXTENSION;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.FIELDS_INDEX_EXTENSION;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.HOUR;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.HOUR_ENCODING;
+import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.INDEX_CODEC_NAME;
+import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.INDEX_EXTENSION_PREFIX;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.NUMERIC_DOUBLE;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.NUMERIC_FLOAT;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.NUMERIC_INT;
@@ -36,6 +35,7 @@ import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.TYPE_BITS;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.TYPE_MASK;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_CURRENT;
+import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_OFFHEAP_INDEX;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_START;
 
 import java.io.EOFException;
@@ -77,7 +77,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
 
   private final int version;
   private final FieldInfos fieldInfos;
-  private final CompressingStoredFieldsIndexReader indexReader;
+  private final FieldsIndex indexReader;
   private final long maxPointer;
   private final IndexInput fieldsStream;
   private final int chunkSize;
@@ -118,42 +118,13 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
     boolean success = false;
     fieldInfos = fn;
     numDocs = si.maxDoc();
-    
-    int version = -1;
-    long maxPointer = -1;
-    CompressingStoredFieldsIndexReader indexReader = null;
-    
-    // Load the index into memory
-    final String indexName = IndexFileNames.segmentFileName(segment, segmentSuffix, FIELDS_INDEX_EXTENSION);    
-    try (ChecksumIndexInput indexStream = d.openChecksumInput(indexName, context)) {
-      Throwable priorE = null;
-      try {
-        final String codecNameIdx = formatName + CODEC_SFX_IDX;
-        version = CodecUtil.checkIndexHeader(indexStream, codecNameIdx, VERSION_START, VERSION_CURRENT, si.getId(), segmentSuffix);
-        assert CodecUtil.indexHeaderLength(codecNameIdx, segmentSuffix) == indexStream.getFilePointer();
-        indexReader = new CompressingStoredFieldsIndexReader(indexStream, si);
-        maxPointer = indexStream.readVLong();
-      } catch (Throwable exception) {
-        priorE = exception;
-      } finally {
-        CodecUtil.checkFooter(indexStream, priorE);
-      }
-    }
-    
-    this.version = version;
-    this.maxPointer = maxPointer;
-    this.indexReader = indexReader;
 
     final String fieldsStreamFN = IndexFileNames.segmentFileName(segment, segmentSuffix, FIELDS_EXTENSION);
     try {
       // Open the data file and read metadata
       fieldsStream = d.openInput(fieldsStreamFN, context);
-      final String codecNameDat = formatName + CODEC_SFX_DAT;
-      final int fieldsVersion = CodecUtil.checkIndexHeader(fieldsStream, codecNameDat, VERSION_START, VERSION_CURRENT, si.getId(), segmentSuffix);
-      if (version != fieldsVersion) {
-        throw new CorruptIndexException("Version mismatch between stored fields index and data: " + version + " != " + fieldsVersion, fieldsStream);
-      }
-      assert CodecUtil.indexHeaderLength(codecNameDat, segmentSuffix) == fieldsStream.getFilePointer();
+      version = CodecUtil.checkIndexHeader(fieldsStream, formatName, VERSION_START, VERSION_CURRENT, si.getId(), segmentSuffix);
+      assert CodecUtil.indexHeaderLength(formatName, segmentSuffix) == fieldsStream.getFilePointer();
 
       chunkSize = fieldsStream.readVInt();
       packedIntsVersion = fieldsStream.readVInt();
@@ -161,18 +132,51 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
       this.merging = false;
       this.state = new BlockState();
 
+      // NOTE: data file is too costly to verify checksum against all the bytes on open,
+      // but for now we at least verify proper structure of the checksum footer: which looks
+      // for FOOTER_MAGIC + algorithmID. This is cheap and can detect some forms of corruption
+      // such as file truncation.
+      CodecUtil.retrieveChecksum(fieldsStream);
+
+      long maxPointer = -1;
+      FieldsIndex indexReader = null;
+
+      if (version < VERSION_OFFHEAP_INDEX) {
+        // Load the index into memory
+        final String indexName = IndexFileNames.segmentFileName(segment, segmentSuffix, "fdx");
+        try (ChecksumIndexInput indexStream = d.openChecksumInput(indexName, context)) {
+          Throwable priorE = null;
+          try {
+            assert formatName.endsWith("Data");
+            final String codecNameIdx = formatName.substring(0, formatName.length() - "Data".length()) + "Index";
+            final int version2 = CodecUtil.checkIndexHeader(indexStream, codecNameIdx, VERSION_START, VERSION_CURRENT, si.getId(), segmentSuffix);
+            if (version != version2) {
+              throw new CorruptIndexException("Version mismatch between stored fields index and data: " + version2 + " != " + version, indexStream);
+            }
+            assert CodecUtil.indexHeaderLength(codecNameIdx, segmentSuffix) == indexStream.getFilePointer();
+            indexReader = new LegacyFieldsIndexReader(indexStream, si);
+            maxPointer = indexStream.readVLong();
+          } catch (Throwable exception) {
+            priorE = exception;
+          } finally {
+            CodecUtil.checkFooter(indexStream, priorE);
+          }
+        }
+      } else {
+        FieldsIndexReader fieldsIndexReader = new FieldsIndexReader(d, si.name, segmentSuffix, INDEX_EXTENSION_PREFIX, INDEX_CODEC_NAME, si.getId());
+        indexReader = fieldsIndexReader;
+        maxPointer = fieldsIndexReader.getMaxPointer();
+      }
+
+      this.maxPointer = maxPointer;
+      this.indexReader = indexReader;
+
       fieldsStream.seek(maxPointer);
       numChunks = fieldsStream.readVLong();
       numDirtyChunks = fieldsStream.readVLong();
       if (numDirtyChunks > numChunks) {
         throw new CorruptIndexException("invalid chunk counts: dirty=" + numDirtyChunks + ", total=" + numChunks, fieldsStream);
       }
-
-      // NOTE: data file is too costly to verify checksum against all the bytes on open,
-      // but for now we at least verify proper structure of the checksum footer: which looks
-      // for FOOTER_MAGIC + algorithmID. This is cheap and can detect some forms of corruption
-      // such as file truncation.
-      CodecUtil.retrieveChecksum(fieldsStream);
 
       success = true;
     } finally {
@@ -197,7 +201,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
   @Override
   public void close() throws IOException {
     if (!closed) {
-      IOUtils.close(fieldsStream);
+      IOUtils.close(indexReader, fieldsStream);
       closed = true;
     }
   }
@@ -618,7 +622,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
     return compressionMode;
   }
   
-  CompressingStoredFieldsIndexReader getIndexReader() {
+  FieldsIndex getIndexReader() {
     return indexReader;
   }
   
@@ -658,6 +662,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
 
   @Override
   public void checkIntegrity() throws IOException {
+    indexReader.checkIntegrity();
     CodecUtil.checksumEntireFile(fieldsStream);
   }
 

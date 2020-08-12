@@ -29,8 +29,6 @@
 
   <import file="../analysis-module-build.xml"/>
 
-  <property name="snowball.programs.dir" location="src/java/org/tartarus/snowball/ext"/>
-
   <property name="unicode-props-file" location="src/java/org/apache/lucene/analysis/util/UnicodeProps.java"/>
 
   <!-- Because of a bug in JFlex's ant task, HTMLStripCharFilter has to be generated last.   -->
@@ -41,17 +39,18 @@
 
   <target name="-jflex-HTMLStripCharFilter" depends="-install-jflex,generate-jflex-html-char-entities">
     <run-jflex dir="src/java/org/apache/lucene/analysis/charfilter" name="HTMLStripCharFilter"/>
+    <fixcrlf  file="src/java/org/apache/lucene/analysis/charfilter/HTMLStripCharFilter.java" encoding="UTF-8" eol="lf"/>
   </target>
 
   <target name="generate-jflex-html-char-entities">
     <exec dir="src/java/org/apache/lucene/analysis/charfilter"
           output="src/java/org/apache/lucene/analysis/charfilter/HTMLCharacterEntities.jflex"
-          executable="${python.exe}" failonerror="true" logerror="true">
+          executable="${python3.exe}" failonerror="true" logerror="true">
       <!-- Tell Python not to write any bytecode cache into the filesystem: -->
       <arg value="-B"/>
       <arg value="htmlentity.py"/>
     </exec>
-    <fixcrlf file="src/java/org/apache/lucene/analysis/charfilter/HTMLCharacterEntities.jflex" encoding="UTF-8"/>
+    <fixcrlf file="src/java/org/apache/lucene/analysis/charfilter/HTMLCharacterEntities.jflex" encoding="UTF-8" eol="lf"/>
   </target>
 
   <target name="-jflex-wiki-tokenizer" depends="-install-jflex">
@@ -123,14 +122,4 @@
 
   <target name="regenerate" depends="jflex,unicode-data"/>
 
-  <target name="patch-snowball" description="Patches all snowball programs in '${snowball.programs.dir}' to make them work with MethodHandles">
-      <fileset id="snowball.programs" dir="${snowball.programs.dir}" includes="*Stemmer.java"/>
-      <replaceregexp match="^public class \w+Stemmer\b" replace="@SuppressWarnings(&quot;unused&quot;) \0" flags="m" encoding="UTF-8">
-        <fileset refid="snowball.programs"/>
-      </replaceregexp>
-      <replaceregexp match="private final static \w+Stemmer methodObject\b.*$" replace="/* patched */ private static final java.lang.invoke.MethodHandles.Lookup methodObject = java.lang.invoke.MethodHandles.lookup();" flags="m" encoding="UTF-8">
-        <fileset refid="snowball.programs"/>
-      </replaceregexp>
-      <fixcrlf srcdir="${snowball.programs.dir}" includes="*Stemmer.java" tab="remove" tablength="2" encoding="UTF-8" javafiles="yes" fixlast="yes"/>
-  </target>
 </project>

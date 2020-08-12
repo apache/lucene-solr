@@ -138,7 +138,7 @@ public final class ByteBlockPool implements Accountable {
   
   /**
    * Resets the pool to its initial state reusing the first buffer and fills all
-   * buffers with <tt>0</tt> bytes before they reused or passed to
+   * buffers with <code>0</code> bytes before they reused or passed to
    * {@link Allocator#recycleByteBlocks(byte[][], int, int)}. Calling
    * {@link ByteBlockPool#nextBuffer()} is not needed after reset.
    */
@@ -149,7 +149,7 @@ public final class ByteBlockPool implements Accountable {
   /**
    * Expert: Resets the pool to its initial state reusing the first buffer. Calling
    * {@link ByteBlockPool#nextBuffer()} is not needed after reset. 
-   * @param zeroFillBuffers if <code>true</code> the buffers are filled with <tt>0</tt>. 
+   * @param zeroFillBuffers if <code>true</code> the buffers are filled with <code>0</code>. 
    *        This should be set to <code>true</code> if this pool is used with slices.
    * @param reuseFirst if <code>true</code> the first buffer will be reused and calling
    *        {@link ByteBlockPool#nextBuffer()} is not needed after reset iff the 
@@ -349,7 +349,7 @@ public final class ByteBlockPool implements Accountable {
   
   /**
    * Reads bytes out of the pool starting at the given offset with the given  
-   * length into the given byte array at offset <tt>off</tt>.
+   * length into the given byte array at offset <code>off</code>.
    * <p>Note: this method allows to copy across block boundaries.</p>
    */
   public void readBytes(final long offset, final byte bytes[], int bytesOffset, int bytesLength) {

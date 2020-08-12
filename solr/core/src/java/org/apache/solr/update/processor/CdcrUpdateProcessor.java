@@ -36,7 +36,9 @@ import org.slf4j.LoggerFactory;
  * for every updates. This ensures that the version parameter sent by the source cluster is kept
  * by the target cluster.
  * </p>
+ * @deprecated since 8.6
  */
+@Deprecated(since = "8.6")
 public class CdcrUpdateProcessor extends DistributedZkUpdateProcessor {
 
   public static final String CDCR_UPDATE = "cdcr.update";

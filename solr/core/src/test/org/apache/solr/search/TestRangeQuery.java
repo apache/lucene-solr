@@ -25,6 +25,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+
+import com.carrotsearch.hppc.IntHashSet;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
@@ -684,14 +686,19 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     return randomInt(cardinality);
   }
 
-  static boolean sameDocs(String msg, DocSet a, DocSet b) {
-    DocIterator i = a.iterator();
-    // System.out.println("SIZES="+a.size() + "," + b.size());
+  static boolean sameDocs(String msg, DocList a, DocList b) {
     assertEquals(msg, a.size(), b.size());
-    while (i.hasNext()) {
-      int doc = i.nextDoc();
-      assertTrue(msg, b.exists(doc));
-      // System.out.println("MATCH! " + doc);
+
+    IntHashSet bIds = new IntHashSet(b.size());
+    DocIterator bIter = b.iterator();
+    while (bIter.hasNext()) {
+      bIds.add(bIter.nextDoc());
+    }
+
+    DocIterator aIter = a.iterator();
+    while (aIter.hasNext()) {
+      int doc = aIter.nextDoc();
+      assertTrue(msg, bIds.contains(doc));
     }
     return true;
   }

@@ -82,6 +82,20 @@ public class TestNGramFilters extends BaseTokenStreamFactoryTestCase {
   }
 
   /**
+   * Test the NGramFilterFactory with preserve option
+   */
+  public void testNGramFilter3() throws Exception {
+    Reader reader = new StringReader("test");
+    TokenStream stream = whitespaceMockTokenizer(reader);
+    stream = tokenFilterFactory("NGram",
+        "minGramSize", "2",
+        "maxGramSize", "3",
+        "preserveOriginal", "true").create(stream);
+    assertTokenStreamContents(stream, 
+        new String[] { "te", "tes", "es", "est", "st", "test" });
+  }
+
+  /**
    * Test NGramFilterFactory on tokens with payloads
    */
   public void testNGramFilterPayload() throws Exception {
@@ -150,6 +164,20 @@ public class TestNGramFilters extends BaseTokenStreamFactoryTestCase {
         "maxGramSize", "2").create(stream);
     assertTokenStreamContents(stream, 
         new String[] { "t", "te" });
+  }
+
+  /**
+   * Test EdgeNGramFilterFactory with preserve option
+   */
+  public void testEdgeNGramFilter3() throws Exception {
+    Reader reader = new StringReader("test");
+    TokenStream stream = whitespaceMockTokenizer(reader);
+    stream = tokenFilterFactory("EdgeNGram",
+        "minGramSize", "1",
+        "maxGramSize", "2",
+        "preserveOriginal", "true").create(stream);
+    assertTokenStreamContents(stream, 
+        new String[] { "t", "te", "test" });
   }
 
   /**

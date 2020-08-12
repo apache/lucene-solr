@@ -48,6 +48,11 @@ public class TokenOffsetPayloadTokenFilterFactory extends TokenFilterFactory {
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public TokenOffsetPayloadTokenFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public TokenOffsetPayloadTokenFilter create(TokenStream input) {
     return new TokenOffsetPayloadTokenFilter(input);

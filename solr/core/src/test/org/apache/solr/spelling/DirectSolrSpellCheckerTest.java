@@ -32,6 +32,7 @@ import org.junit.Test;
  * Simple tests for {@link DirectSolrSpellChecker}
  */
 @SuppressTempFileChecks(bugUrl = "https://issues.apache.org/jira/browse/SOLR-1877 Spellcheck IndexReader leak bug?")
+@SuppressWarnings({"rawtypes"})
 public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
 
   private static SpellingQueryConverter queryConverter;
@@ -51,8 +52,10 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
   }
   
   @Test
+  @SuppressWarnings({"unchecked"})
   public void test() throws Exception {
     DirectSolrSpellChecker checker = new DirectSolrSpellChecker();
+    @SuppressWarnings({"rawtypes"})
     NamedList spellchecker = new NamedList();
     spellchecker.add("classname", DirectSolrSpellChecker.class.getName());
     spellchecker.add(SolrSpellChecker.FIELD, "teststop");

@@ -215,7 +215,7 @@ public class TestConstantScoreScorer extends LuceneTestCase {
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() throws IOException {
       reader.close();
       directory.close();
     }

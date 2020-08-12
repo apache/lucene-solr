@@ -80,6 +80,11 @@ public class PatternTokenizerFactory extends TokenizerFactory {
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public PatternTokenizerFactory() {
+    throw defaultCtorException();
+  }
+
   /**
    * Split the input using configured pattern
    */

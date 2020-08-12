@@ -433,7 +433,7 @@ public final class SchemaField extends FieldProperties implements IndexableField
   }
 
   @Override
-  public int pointDataDimensionCount() {
+  public int pointDimensionCount() {
     return 0;
   }
 

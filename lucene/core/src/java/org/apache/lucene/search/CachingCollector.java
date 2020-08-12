@@ -38,7 +38,7 @@ import org.apache.lucene.util.ArrayUtil;
  * set is large this can easily be a very substantial amount
  * of RAM!
  *
- * <p>See the Lucene <tt>modules/grouping</tt> module for more
+ * <p>See the Lucene <code>modules/grouping</code> module for more
  * details including a full code example.</p>
  *
  * @lucene.experimental

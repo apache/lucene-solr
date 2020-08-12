@@ -45,7 +45,7 @@ import org.apache.lucene.util.BitUtil;
  *     {@link Float#floatToIntBits(float)} on
  *     {@link DataOutput#writeInt(int) 4 bytes}
  * <li>BitsPerValue: a {@link DataOutput#writeVInt(int) variable-length int}
- * <li>Ints: if BitsPerValue is <tt>0</tt>, then there is nothing to read and
+ * <li>Ints: if BitsPerValue is <code>0</code>, then there is nothing to read and
  *     all values perfectly match the result of the function. Otherwise, these
  *     are the {@link PackedInts packed} deltas from the expected value
  *     (computed from the function) using exactly BitsPerValue bits per value.

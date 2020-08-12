@@ -20,13 +20,15 @@ package org.apache.lucene.monitor;
 public class TestConcurrentQueryLoader extends MonitorTestBase {
 
   public void testLoading() throws Exception {
+    // TODO: there are problems if this thing hits OOM (it hides it)
+    int numQueries = TEST_NIGHTLY ? 2000 : 200;
     try (Monitor monitor = newMonitor()) {
       try (ConcurrentQueryLoader loader = new ConcurrentQueryLoader(monitor)) {
-        for (int i = 0; i < 2000; i++) {
+        for (int i = 0; i < numQueries; i++) {
           loader.add(new MonitorQuery(Integer.toString(i), parse("\"test " + i + "\"")));
         }
       }
-      assertEquals(2000, monitor.getQueryCount());
+      assertEquals(numQueries, monitor.getQueryCount());
     }
   }
 

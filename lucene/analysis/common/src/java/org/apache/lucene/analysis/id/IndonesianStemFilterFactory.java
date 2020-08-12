@@ -51,6 +51,11 @@ public class IndonesianStemFilterFactory extends TokenFilterFactory {
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public IndonesianStemFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public TokenStream create(TokenStream input) {
     return new IndonesianStemFilter(input, stemDerivational);

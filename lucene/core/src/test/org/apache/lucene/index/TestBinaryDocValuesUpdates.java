@@ -666,13 +666,12 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     int refreshChance = TestUtil.nextInt(random(), 5, 200);
     int deleteChance = TestUtil.nextInt(random(), 2, 100);
 
-    int idUpto = 0;
     int deletedCount = 0;
     
     List<OneSortDoc> docs = new ArrayList<>();
     DirectoryReader r = w.getReader();
 
-    int numIters = atLeast(1000);
+    int numIters = TEST_NIGHTLY ? atLeast(1000) : atLeast(100);
     for(int iter=0;iter<numIters;iter++) {
       BytesRef value = toBytes((long) random().nextInt(valueRange));
       if (docs.isEmpty() || random().nextInt(3) == 1) {
@@ -977,7 +976,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     
     // create index
     final int numFields = TestUtil.nextInt(random(), 1, 4);
-    final int numDocs = atLeast(2000);
+    final int numDocs = TEST_NIGHTLY ? atLeast(2000) : atLeast(200);
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       doc.add(new StringField("id", "doc" + i, Store.NO));
@@ -996,7 +995,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
       writer.addDocument(doc);
     }
     
-    final int numThreads = TestUtil.nextInt(random(), 3, 6);
+    final int numThreads = TEST_NIGHTLY ? TestUtil.nextInt(random(), 3, 6) : 2;
     final CountDownLatch done = new CountDownLatch(numThreads);
     final AtomicInteger numUpdates = new AtomicInteger(atLeast(100));
     

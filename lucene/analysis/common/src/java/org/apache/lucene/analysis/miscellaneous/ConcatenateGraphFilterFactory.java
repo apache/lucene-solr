@@ -27,23 +27,23 @@ import org.apache.lucene.util.automaton.TooComplexToDeterminizeException;
  * Factory for {@link ConcatenateGraphFilter}.
  *
  * <ul>
- *   <li><tt>preserveSep</tt>:
+ *   <li><code>preserveSep</code>:
  *                            For lucene versions lesser than {@link org.apache.lucene.util.Version#LUCENE_8_4_0}
  *                            Whether {@link ConcatenateGraphFilter#SEP_LABEL}
  *                            should separate the input tokens in the concatenated token
  *                            </li>
- *   <li><tt>tokenSeparator</tt>:
+ *   <li><code>tokenSeparator</code>:
  *                            Separator to use for concatenation. If not present,
  *                            {@link ConcatenateGraphFilter#DEFAULT_TOKEN_SEPARATOR} will be used.
  *                            If empty, tokens will be concatenated without any separators.
  *                            </li>
- *   <li><tt>preservePositionIncrements</tt>:
+ *   <li><code>preservePositionIncrements</code>:
  *                                       Whether to add an empty token for missing positions.
  *                                       The effect is a consecutive {@link ConcatenateGraphFilter#SEP_LABEL}.
  *                                       When false, it's as if there were no missing positions
  *                                         (we pretend the surrounding tokens were adjacent).
  *                                       </li>
- *   <li><tt>maxGraphExpansions</tt>:
+ *   <li><code>maxGraphExpansions</code>:
  *                            If the tokenStream graph has more than this many possible paths through, then we'll throw
  *                            {@link TooComplexToDeterminizeException} to preserve the stability and memory of the
  *                            machine.
@@ -65,7 +65,9 @@ public class ConcatenateGraphFilterFactory extends TokenFilterFactory {
   public ConcatenateGraphFilterFactory(Map<String, String> args) {
     super(args);
     Version luceneMatchVersion = getLuceneMatchVersion();
-    if (luceneMatchVersion.onOrAfter(Version.LUCENE_8_4_0)) {
+    @SuppressWarnings("deprecation")
+    Version LUCENE_8_4_0 = Version.LUCENE_8_4_0;
+    if (luceneMatchVersion.onOrAfter(LUCENE_8_4_0)) {
       tokenSeparator = getCharacter(args, "tokenSeparator", ConcatenateGraphFilter.DEFAULT_TOKEN_SEPARATOR);
     } else {
       boolean preserveSep = getBoolean(args, "preserveSep", ConcatenateGraphFilter.DEFAULT_PRESERVE_SEP);
@@ -77,6 +79,11 @@ public class ConcatenateGraphFilterFactory extends TokenFilterFactory {
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
+  }
+
+  /** Default ctor for compatibility with SPI */
+  public ConcatenateGraphFilterFactory() {
+    throw defaultCtorException();
   }
 
   @Override

@@ -20,6 +20,14 @@
 
 With CDCR, Source and Target data centers can each serve search queries when CDCR is operating. The Target data center will lag somewhat behind the Source cluster due to propagation delays.
 
+[WARNING]
+.CDCR is deprecated
+====
+This feature (in its current form) is deprecated and will likely be removed in 9.0.
+
+See <<cross-data-center-replication-cdcr.adoc#cross-data-center-replication-cdcr,Cross Data Center Replication>> for more details.
+====
+
 Data changes on the Source data center are replicated to the Target data center only after they are persisted to disk. The data changes can be replicated in near real-time (with a small delay) or could be scheduled to be sent at longer intervals to the Target data center. CDCR can "bootstrap" the collection to the Target data center. Since this is a full copy of the entire index, network bandwidth should be considered. Of course both Source and Target collections may be empty to start.
 
 Each shard leader in the Source data center will be responsible for replicating its updates to the corresponding leader in the Target data center. When receiving updates from the Source data center, shard leaders in the Target data center will replicate the changes to their own replicas as normal SolrCloud updates.

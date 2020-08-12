@@ -31,9 +31,8 @@ import org.apache.lucene.search.IndexSearcher;
 /**
  * A {@link DoubleValuesSource} which evaluates a {@link Expression} given the context of an {@link Bindings}.
  */
-@SuppressWarnings({"rawtypes", "unchecked"})
-final class ExpressionValueSource extends DoubleValuesSource {
-  final DoubleValuesSource variables[];
+class ExpressionValueSource extends DoubleValuesSource {
+  final DoubleValuesSource[] variables;
   final Expression expression;
   final boolean needsScores;
 
@@ -70,7 +69,8 @@ final class ExpressionValueSource extends DoubleValuesSource {
       if (values == null) {
         values = variables[i].getValues(readerContext, scores);
         if (values == null) {
-          throw new RuntimeException("Internal error. External (" + externalName + ") does not exist.");
+          throw new RuntimeException("Unrecognized variable (" + externalName + ") referenced in expression (" +
+              expression.sourceText + ").");
         }
         valuesCache.put(externalName, values);
       }
@@ -80,7 +80,7 @@ final class ExpressionValueSource extends DoubleValuesSource {
     return new ExpressionFunctionValues(expression, externalValues);
   }
 
-  private static DoubleValues zeroWhenUnpositioned(DoubleValues in) {
+  static DoubleValues zeroWhenUnpositioned(DoubleValues in) {
     return new DoubleValues() {
 
       boolean positioned = false;
@@ -175,7 +175,7 @@ final class ExpressionValueSource extends DoubleValuesSource {
     DoubleValuesSource[] rewritten = new DoubleValuesSource[variables.length];
     for (int i = 0; i < variables.length; i++) {
       rewritten[i] = variables[i].rewrite(searcher);
-      changed |= (rewritten[i] == variables[i]);
+      changed |= (rewritten[i] != variables[i]);
     }
     if (changed) {
       return new ExpressionValueSource(rewritten, expression, needsScores);

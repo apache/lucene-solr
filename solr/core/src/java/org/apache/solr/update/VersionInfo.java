@@ -208,6 +208,7 @@ public class VersionInfo {
    * Returns the latest version from the index, searched by the given id (bytes) as seen from the realtime searcher.
    * Returns null if no document can be found in the index for the given id.
    */
+  @SuppressWarnings({"unchecked"})
   public Long getVersionFromIndex(BytesRef idBytes) {
     // TODO: we could cache much of this and invalidate during a commit.
     // TODO: most DocValues classes are threadsafe - expose which.
@@ -219,6 +220,7 @@ public class VersionInfo {
       if (lookup < 0) return null; // this means the doc doesn't exist in the index yet
 
       ValueSource vs = versionField.getType().getValueSource(versionField, null);
+      @SuppressWarnings({"rawtypes"})
       Map context = ValueSource.newContext(searcher);
       vs.createWeight(context, searcher);
       FunctionValues fv = vs.getValues(context, searcher.getTopReaderContext().leaves().get((int) (lookup >> 32)));
@@ -237,6 +239,7 @@ public class VersionInfo {
   /**
    * Returns the highest version from the index, or 0L if no versions can be found in the index.
    */
+  @SuppressWarnings({"unchecked"})
   public Long getMaxVersionFromIndex(IndexSearcher searcher) throws IOException {
 
     final String versionFieldName = versionField.getName();
@@ -254,6 +257,7 @@ public class VersionInfo {
     
     long maxVersionInIndex = 0L;
     ValueSource vs = versionField.getType().getValueSource(versionField, null);
+    @SuppressWarnings({"rawtypes"})
     Map funcContext = ValueSource.newContext(searcher);
     vs.createWeight(funcContext, searcher);
     // TODO: multi-thread this

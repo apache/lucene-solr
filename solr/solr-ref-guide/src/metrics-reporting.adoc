@@ -519,7 +519,7 @@ Example configuration:
            </lst>
            <lst name="report">
              <str name="group">aggregated_shard_leaders</str>
-             <str name="registry">solr\.core\.(.*)\.leader</str>
+             <str name="registry">solr\.collection\.(.*)\.leader</str>
              <str name="label">leader.$1</str>
              <str name="filter">UPDATE\./update/.*</str>
            </lst>
@@ -670,4 +670,4 @@ http://localhost:8983/solr/admin/metrics?regex=.*\.requests&group=core
 Request only "user.name" property of "system.properties" metric from registry "solr.jvm":
 
 [source,text]
-http://localhost:8983/solr/admin/metrics?wt=xml?key=solr.jvm:system.properties:user.name
+http://localhost:8983/solr/admin/metrics?wt=xml&key=solr.jvm:system.properties:user.name

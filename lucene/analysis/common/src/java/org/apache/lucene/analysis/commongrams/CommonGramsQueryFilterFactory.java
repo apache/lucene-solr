@@ -45,6 +45,11 @@ public class CommonGramsQueryFilterFactory extends CommonGramsFilterFactory {
     super(args);
   }
 
+  /** Default ctor for compatibility with SPI */
+  public CommonGramsQueryFilterFactory() {
+    throw defaultCtorException();
+  }
+
   /**
    * Create a CommonGramsFilter and wrap it with a CommonGramsQueryFilter
    */

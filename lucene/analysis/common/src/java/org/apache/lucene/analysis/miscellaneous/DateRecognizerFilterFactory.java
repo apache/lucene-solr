@@ -65,6 +65,11 @@ public class DateRecognizerFilterFactory extends TokenFilterFactory {
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public DateRecognizerFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public TokenStream create(TokenStream input) {
     return new DateRecognizerFilter(input, dateFormat);

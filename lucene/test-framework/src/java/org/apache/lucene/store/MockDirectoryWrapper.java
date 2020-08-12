@@ -267,17 +267,22 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   }
 
   public synchronized void corruptUnknownFiles() throws IOException {
-
-    System.out.println("MDW: corrupt unknown files");
+    if (LuceneTestCase.VERBOSE) {
+      System.out.println("MDW: corrupt unknown files");
+    }
     Set<String> knownFiles = new HashSet<>();
     for(String fileName : listAll()) {
       if (fileName.startsWith(IndexFileNames.SEGMENTS)) {
-        System.out.println("MDW: read " + fileName + " to gather files it references");
+        if (LuceneTestCase.VERBOSE) {
+          System.out.println("MDW: read " + fileName + " to gather files it references");
+        }
         SegmentInfos infos;
         try {
           infos = SegmentInfos.readCommit(this, fileName);
         } catch (IOException ioe) {
-          System.out.println("MDW: exception reading segment infos " + fileName + "; files: " + Arrays.toString(listAll()));
+          if (LuceneTestCase.VERBOSE) {
+            System.out.println("MDW: exception reading segment infos " + fileName + "; files: " + Arrays.toString(listAll()));
+          }
           throw ioe;
         }
         knownFiles.addAll(infos.files(true));
@@ -833,8 +838,9 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
           
         // TODO: factor this out / share w/ TestIW.assertNoUnreferencedFiles
         if (assertNoUnreferencedFilesOnClose) {
-          System.out.println("MDW: now assert no unref'd files at close");
-
+          if (LuceneTestCase.VERBOSE) {
+            System.out.println("MDW: now assert no unref'd files at close");
+          }
           // now look for unreferenced files: discount ones that we tried to delete but could not
           Set<String> allFiles = new HashSet<>(Arrays.asList(listAll()));
           String[] startFiles = allFiles.toArray(new String[0]);

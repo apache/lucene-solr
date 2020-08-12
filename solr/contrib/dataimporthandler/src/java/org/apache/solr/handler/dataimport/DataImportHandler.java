@@ -63,8 +63,10 @@ import static org.apache.solr.handler.dataimport.DataImporter.IMPORT_CMD;
  * <p>
  * <b>This API is experimental and subject to change</b>
  *
+ * @deprecated since 8.6
  * @since solr 1.3
  */
+@Deprecated(since = "8.6")
 public class DataImportHandler extends RequestHandlerBase implements
         SolrCoreAware {
 
@@ -89,12 +91,13 @@ public class DataImportHandler extends RequestHandlerBase implements
   }
 
   @Override
-  @SuppressWarnings("unchecked")
-  public void init(NamedList args) {
+
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     super.init(args);
     Map<String,String> macro = new HashMap<>();
     macro.put("expandMacros", "false");
     defaults = SolrParams.wrapDefaults(defaults, new MapSolrParams(macro));
+    log.warn("Data Import Handler is deprecated as of Solr 8.6. See SOLR-14066 for more details.");
   }
 
   @Override
@@ -131,6 +134,7 @@ public class DataImportHandler extends RequestHandlerBase implements
       }
     }
     SolrParams params = req.getParams();
+    @SuppressWarnings({"rawtypes"})
     NamedList defaultParams = (NamedList) initArgs.get("defaults");
     RequestInfo requestParams = new RequestInfo(req, getParamsMap(params), contentStream);
     String command = requestParams.getCommand();
@@ -242,7 +246,7 @@ public class DataImportHandler extends RequestHandlerBase implements
     SolrParams reqParams = req.getParams();
     String writerClassStr = null;
     if (reqParams != null && reqParams.get(PARAM_WRITER_IMPL) != null) {
-      writerClassStr = (String) reqParams.get(PARAM_WRITER_IMPL);
+      writerClassStr = reqParams.get(PARAM_WRITER_IMPL);
     }
     DIHWriter writer;
     if (writerClassStr != null
@@ -252,6 +256,7 @@ public class DataImportHandler extends RequestHandlerBase implements
       try {
         @SuppressWarnings("unchecked")
         Class<DIHWriter> writerClass = DocBuilder.loadClass(writerClassStr, req.getCore());
+        @SuppressWarnings({"rawtypes"})
         Constructor<DIHWriter> cnstr = writerClass.getConstructor(new Class[] {
             UpdateRequestProcessor.class, SolrQueryRequest.class});
         return cnstr.newInstance((Object) processor, (Object) req);
@@ -266,7 +271,7 @@ public class DataImportHandler extends RequestHandlerBase implements
           try {
             return super.upload(document);
           } catch (RuntimeException e) {
-            log.error("Exception while adding: " + document, e);
+            log.error("Exception while adding: {}", document, e);
             return false;
           }
         }

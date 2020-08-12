@@ -20,20 +20,17 @@ package org.apache.lucene.codecs.lucene50;
 import java.io.IOException;
 import java.util.Objects;
 
-import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.StoredFieldsWriter;
 import org.apache.lucene.codecs.compressing.CompressingStoredFieldsFormat;
-import org.apache.lucene.codecs.compressing.CompressingStoredFieldsIndexWriter;
 import org.apache.lucene.codecs.compressing.CompressionMode;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.StoredFieldVisitor;
-import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
-import org.apache.lucene.util.packed.PackedInts;
+import org.apache.lucene.util.packed.DirectMonotonicWriter;
 
 /**
  * Lucene 5.0 stored fields format.
@@ -58,54 +55,17 @@ import org.apache.lucene.util.packed.PackedInts;
  *   // indexWriterConfig.setCodec(new Lucene54Codec(Mode.BEST_COMPRESSION));
  * </pre>
  * <p><b>File formats</b>
- * <p>Stored fields are represented by two files:
+ * <p>Stored fields are represented by three files:
  * <ol>
- * <li><a name="field_data"></a>
- * <p>A fields data file (extension <tt>.fdt</tt>). This file stores a compact
+ * <li><a id="field_data"></a>
+ * <p>A fields data file (extension <code>.fdt</code>). This file stores a compact
  * representation of documents in compressed blocks of 16KB or more. When
- * writing a segment, documents are appended to an in-memory <tt>byte[]</tt>
+ * writing a segment, documents are appended to an in-memory <code>byte[]</code>
  * buffer. When its size reaches 16KB or more, some metadata about the documents
  * is flushed to disk, immediately followed by a compressed representation of
  * the buffer using the
- * <a href="http://code.google.com/p/lz4/">LZ4</a>
+ * <a href="https://github.com/lz4/lz4">LZ4</a>
  * <a href="http://fastcompression.blogspot.fr/2011/05/lz4-explained.html">compression format</a>.</p>
- * <p>Here is a more detailed description of the field data file format:</p>
- * <ul>
- * <li>FieldData (.fdt) --&gt; &lt;Header&gt;, PackedIntsVersion, &lt;Chunk&gt;<sup>ChunkCount</sup>, ChunkCount, DirtyChunkCount, Footer</li>
- * <li>Header --&gt; {@link CodecUtil#writeIndexHeader IndexHeader}</li>
- * <li>PackedIntsVersion --&gt; {@link PackedInts#VERSION_CURRENT} as a {@link DataOutput#writeVInt VInt}</li>
- * <li>ChunkCount is not known in advance and is the number of chunks necessary to store all document of the segment</li>
- * <li>Chunk --&gt; DocBase, ChunkDocs, DocFieldCounts, DocLengths, &lt;CompressedDocs&gt;</li>
- * <li>DocBase --&gt; the ID of the first document of the chunk as a {@link DataOutput#writeVInt VInt}</li>
- * <li>ChunkDocs --&gt; the number of documents in the chunk as a {@link DataOutput#writeVInt VInt}</li>
- * <li>DocFieldCounts --&gt; the number of stored fields of every document in the chunk, encoded as followed:<ul>
- *   <li>if chunkDocs=1, the unique value is encoded as a {@link DataOutput#writeVInt VInt}</li>
- *   <li>else read a {@link DataOutput#writeVInt VInt} (let's call it <tt>bitsRequired</tt>)<ul>
- *     <li>if <tt>bitsRequired</tt> is <tt>0</tt> then all values are equal, and the common value is the following {@link DataOutput#writeVInt VInt}</li>
- *     <li>else <tt>bitsRequired</tt> is the number of bits required to store any value, and values are stored in a {@link PackedInts packed} array where every value is stored on exactly <tt>bitsRequired</tt> bits</li>
- *   </ul></li>
- * </ul></li>
- * <li>DocLengths --&gt; the lengths of all documents in the chunk, encoded with the same method as DocFieldCounts</li>
- * <li>CompressedDocs --&gt; a compressed representation of &lt;Docs&gt; using the LZ4 compression format</li>
- * <li>Docs --&gt; &lt;Doc&gt;<sup>ChunkDocs</sup></li>
- * <li>Doc --&gt; &lt;FieldNumAndType, Value&gt;<sup>DocFieldCount</sup></li>
- * <li>FieldNumAndType --&gt; a {@link DataOutput#writeVLong VLong}, whose 3 last bits are Type and other bits are FieldNum</li>
- * <li>Type --&gt;<ul>
- *   <li>0: Value is String</li>
- *   <li>1: Value is BinaryValue</li>
- *   <li>2: Value is Int</li>
- *   <li>3: Value is Float</li>
- *   <li>4: Value is Long</li>
- *   <li>5: Value is Double</li>
- *   <li>6, 7: unused</li>
- * </ul></li>
- * <li>FieldNum --&gt; an ID of the field</li>
- * <li>Value --&gt; {@link DataOutput#writeString(String) String} | BinaryValue | Int | Float | Long | Double depending on Type</li>
- * <li>BinaryValue --&gt; ValueLength &lt;Byte&gt;<sup>ValueLength</sup></li>
- * <li>ChunkCount --&gt; the number of chunks in this file</li>
- * <li>DirtyChunkCount --&gt; the number of prematurely flushed chunks in this file</li>
- * <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
- * </ul>
  * <p>Notes
  * <ul>
  * <li>If documents are larger than 16KB then chunks will likely contain only
@@ -119,23 +79,25 @@ import org.apache.lucene.util.packed.PackedInts;
  * <li>Given that the original lengths are written in the metadata of the chunk,
  * the decompressor can leverage this information to stop decoding as soon as
  * enough data has been decompressed.</li>
- * <li>In case documents are incompressible, CompressedDocs will be less than
- * 0.5% larger than Docs.</li>
+ * <li>In case documents are incompressible, the overhead of the compression format
+ * is less than 0.5%.</li>
  * </ul>
  * </li>
- * <li><a name="field_index"></a>
- * <p>A fields index file (extension <tt>.fdx</tt>).</p>
- * <ul>
- * <li>FieldsIndex (.fdx) --&gt; &lt;Header&gt;, &lt;ChunkIndex&gt;, Footer</li>
- * <li>Header --&gt; {@link CodecUtil#writeIndexHeader IndexHeader}</li>
- * <li>ChunkIndex: See {@link CompressingStoredFieldsIndexWriter}</li>
- * <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
- * </ul>
+ * <li><a id="field_index"></a>
+ * <p>A fields index file (extension <code>.fdx</code>). This file stores two
+ * {@link DirectMonotonicWriter monotonic arrays}, one for the first doc IDs of
+ * each block of compressed documents, and another one for the corresponding
+ * offsets on disk. At search time, the array containing doc IDs is
+ * binary-searched in order to find the block that contains the expected doc ID,
+ * and the associated offset on disk is retrieved from the second array.</p>
+ * <li><a id="field_meta"></a>
+ * <p>A fields meta file (extension <code>.fdm</code>). This file stores metadata
+ * about the monotonic arrays stored in the index file.</p>
  * </li>
  * </ol>
  * <p><b>Known limitations</b>
  * <p>This {@link StoredFieldsFormat} does not support individual documents
- * larger than (<tt>2<sup>31</sup> - 2<sup>14</sup></tt>) bytes.
+ * larger than (<code>2<sup>31</sup> - 2<sup>14</sup></code>) bytes.
  * @lucene.experimental
  */
 public final class Lucene50StoredFieldsFormat extends StoredFieldsFormat {
@@ -186,9 +148,9 @@ public final class Lucene50StoredFieldsFormat extends StoredFieldsFormat {
   StoredFieldsFormat impl(Mode mode) {
     switch (mode) {
       case BEST_SPEED: 
-        return new CompressingStoredFieldsFormat("Lucene50StoredFieldsFast", CompressionMode.FAST, 1 << 14, 128, 1024);
+        return new CompressingStoredFieldsFormat("Lucene50StoredFieldsFastData", CompressionMode.FAST, 1 << 14, 128, 10);
       case BEST_COMPRESSION: 
-        return new CompressingStoredFieldsFormat("Lucene50StoredFieldsHigh", CompressionMode.HIGH_COMPRESSION, 61440, 512, 1024);
+        return new CompressingStoredFieldsFormat("Lucene50StoredFieldsHighData", CompressionMode.HIGH_COMPRESSION, 61440, 512, 10);
       default: throw new AssertionError();
     }
   }

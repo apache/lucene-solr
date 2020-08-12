@@ -34,7 +34,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,14 +59,14 @@ public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
   }
 
   /**
-   * Test the scenario where the slave is killed from the start. The replication
+   * Test the scenario where the follower is killed from the start. The replication
    * strategy should fetch all the missing tlog files from the leader.
    */
   @Test
   @ShardsFixed(num = 2)
   public void testFullReplication() throws Exception {
-    List<CloudJettyRunner> slaves = this.getShardToSlaveJetty(SOURCE_COLLECTION, SHARD1);
-    slaves.get(0).jetty.stop();
+    List<CloudJettyRunner> followers = this.getShardToFollowerJetty(SOURCE_COLLECTION, SHARD1);
+    followers.get(0).jetty.stop();
 
     for (int i = 0; i < 10; i++) {
       List<SolrInputDocument> docs = new ArrayList<>();
@@ -78,14 +78,14 @@ public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
 
     assertNumDocs(100, SOURCE_COLLECTION);
 
-    // Restart the slave node to trigger Replication strategy
-    this.restartServer(slaves.get(0));
+    // Restart the follower node to trigger Replication strategy
+    this.restartServer(followers.get(0));
 
     this.assertUpdateLogsEquals(SOURCE_COLLECTION, 10);
   }
 
   /**
-   * Test the scenario where the slave is killed before receiving all the documents. The replication
+   * Test the scenario where the follower is killed before receiving all the documents. The replication
    * strategy should fetch all the missing tlog files from the leader.
    */
   @Test
@@ -99,8 +99,8 @@ public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
       index(SOURCE_COLLECTION, docs);
     }
 
-    List<CloudJettyRunner> slaves = this.getShardToSlaveJetty(SOURCE_COLLECTION, SHARD1);
-    slaves.get(0).jetty.stop();
+    List<CloudJettyRunner> followers = this.getShardToFollowerJetty(SOURCE_COLLECTION, SHARD1);
+    followers.get(0).jetty.stop();
 
     for (int i = 5; i < 10; i++) {
       List<SolrInputDocument> docs = new ArrayList<>();
@@ -112,32 +112,32 @@ public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
 
     assertNumDocs(200, SOURCE_COLLECTION);
 
-    // Restart the slave node to trigger Replication strategy
-    this.restartServer(slaves.get(0));
+    // Restart the follower node to trigger Replication strategy
+    this.restartServer(followers.get(0));
 
-    // at this stage, the slave should have replicated the 5 missing tlog files
+    // at this stage, the follower should have replicated the 5 missing tlog files
     this.assertUpdateLogsEquals(SOURCE_COLLECTION, 10);
   }
 
   /**
-   * Test the scenario where the slave is killed before receiving a commit. This creates a truncated tlog
-   * file on the slave node. The replication strategy should detect this truncated file, and fetch the
+   * Test the scenario where the follower is killed before receiving a commit. This creates a truncated tlog
+   * file on the follower node. The replication strategy should detect this truncated file, and fetch the
    * non-truncated file from the leader.
    */
   @Test
   @ShardsFixed(num = 2)
   public void testPartialReplicationWithTruncatedTlog() throws Exception {
     CloudSolrClient client = createCloudClient(SOURCE_COLLECTION);
-    List<CloudJettyRunner> slaves = this.getShardToSlaveJetty(SOURCE_COLLECTION, SHARD1);
+    List<CloudJettyRunner> followers = this.getShardToFollowerJetty(SOURCE_COLLECTION, SHARD1);
 
     try {
       for (int i = 0; i < 10; i++) {
         for (int j = i * 20; j < (i * 20) + 20; j++) {
           client.add(getDoc(id, Integer.toString(j)));
 
-          // Stop the slave in the middle of a batch to create a truncated tlog on the slave
+          // Stop the follower in the middle of a batch to create a truncated tlog on the follower
           if (j == 45) {
-            slaves.get(0).jetty.stop();
+            followers.get(0).jetty.stop();
           }
 
         }
@@ -149,16 +149,16 @@ public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
 
     assertNumDocs(200, SOURCE_COLLECTION);
 
-    // Restart the slave node to trigger Replication recovery
-    this.restartServer(slaves.get(0));
+    // Restart the follower node to trigger Replication recovery
+    this.restartServer(followers.get(0));
 
-    // at this stage, the slave should have replicated the 5 missing tlog files
+    // at this stage, the follower should have replicated the 5 missing tlog files
     this.assertUpdateLogsEquals(SOURCE_COLLECTION, 10);
   }
 
   /**
-   * Test the scenario where the slave first recovered with a PeerSync strategy, then with a Replication strategy.
-   * The PeerSync strategy will generate a single tlog file for all the missing updates on the slave node.
+   * Test the scenario where the follower first recovered with a PeerSync strategy, then with a Replication strategy.
+   * The PeerSync strategy will generate a single tlog file for all the missing updates on the follower node.
    * If a Replication strategy occurs at a later stage, it should remove this tlog file generated by PeerSync
    * and fetch the corresponding tlog files from the leader.
    */
@@ -173,8 +173,8 @@ public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
       index(SOURCE_COLLECTION, docs);
     }
 
-    List<CloudJettyRunner> slaves = this.getShardToSlaveJetty(SOURCE_COLLECTION, SHARD1);
-    slaves.get(0).jetty.stop();
+    List<CloudJettyRunner> followers = this.getShardToFollowerJetty(SOURCE_COLLECTION, SHARD1);
+    followers.get(0).jetty.stop();
 
     for (int i = 5; i < 10; i++) {
       List<SolrInputDocument> docs = new ArrayList<>();
@@ -186,11 +186,11 @@ public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
 
     assertNumDocs(100, SOURCE_COLLECTION);
 
-    // Restart the slave node to trigger PeerSync recovery
-    // (the update windows between leader and slave is small enough)
-    this.restartServer(slaves.get(0));
+    // Restart the follower node to trigger PeerSync recovery
+    // (the update windows between leader and follower is small enough)
+    this.restartServer(followers.get(0));
 
-    slaves.get(0).jetty.stop();
+    followers.get(0).jetty.stop();
 
     for (int i = 10; i < 15; i++) {
       List<SolrInputDocument> docs = new ArrayList<>();
@@ -200,30 +200,30 @@ public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
       index(SOURCE_COLLECTION, docs);
     }
 
-    // restart the slave node to trigger Replication recovery
-    this.restartServer(slaves.get(0));
+    // restart the follower node to trigger Replication recovery
+    this.restartServer(followers.get(0));
 
-    // at this stage, the slave should have replicated the 5 missing tlog files
+    // at this stage, the follower should have replicated the 5 missing tlog files
     this.assertUpdateLogsEquals(SOURCE_COLLECTION, 15);
   }
 
   /**
-   * Test the scenario where the slave is killed while the leader is still receiving updates.
-   * The slave should buffer updates while in recovery, then replay them at the end of the recovery.
-   * If updates were properly buffered and replayed, then the slave should have the same number of documents
+   * Test the scenario where the follower is killed while the leader is still receiving updates.
+   * The follower should buffer updates while in recovery, then replay them at the end of the recovery.
+   * If updates were properly buffered and replayed, then the follower should have the same number of documents
    * than the leader. This checks if cdcr tlog replication interferes with buffered updates - SOLR-8263.
    */
   @Test
   @ShardsFixed(num = 2)
   public void testReplicationWithBufferedUpdates() throws Exception {
-    List<CloudJettyRunner> slaves = this.getShardToSlaveJetty(SOURCE_COLLECTION, SHARD1);
+    List<CloudJettyRunner> followers = this.getShardToFollowerJetty(SOURCE_COLLECTION, SHARD1);
 
     AtomicInteger numDocs = new AtomicInteger(0);
-    ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(new DefaultSolrThreadFactory("cdcr-test-update-scheduler"));
+    ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(new SolrNamedThreadFactory("cdcr-test-update-scheduler"));
     executor.scheduleWithFixedDelay(new UpdateThread(numDocs), 10, 10, TimeUnit.MILLISECONDS);
 
-    // Restart the slave node to trigger Replication strategy
-    this.restartServer(slaves.get(0));
+    // Restart the follower node to trigger Replication strategy
+    this.restartServer(followers.get(0));
 
     // shutdown the update thread and wait for its completion
     executor.shutdown();
@@ -232,8 +232,8 @@ public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
     // check that we have the expected number of documents in the cluster
     assertNumDocs(numDocs.get(), SOURCE_COLLECTION);
 
-    // check that we have the expected number of documents on the slave
-    assertNumDocs(numDocs.get(), slaves.get(0));
+    // check that we have the expected number of documents on the follower
+    assertNumDocs(numDocs.get(), followers.get(0));
   }
 
   private void assertNumDocs(int expectedNumDocs, CloudJettyRunner jetty)
@@ -276,7 +276,9 @@ public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
         }
         index(SOURCE_COLLECTION, docs);
         numDocs.getAndAdd(10);
-        log.info("Sent batch of {} updates - numDocs:{}", docs.size(), numDocs);
+        if (log.isInfoEnabled()) {
+          log.info("Sent batch of {} updates - numDocs:{}", docs.size(), numDocs);
+        }
       }
       catch (Exception e) {
         throw new RuntimeException(e);
@@ -285,7 +287,7 @@ public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
 
   }
 
-  private List<CloudJettyRunner> getShardToSlaveJetty(String collection, String shard) {
+  private List<CloudJettyRunner> getShardToFollowerJetty(String collection, String shard) {
     List<CloudJettyRunner> jetties = new ArrayList<>(shardToJetty.get(collection).get(shard));
     CloudJettyRunner leader = shardToLeaderJetty.get(collection).get(shard);
     jetties.remove(leader);
@@ -293,7 +295,7 @@ public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
   }
 
   /**
-   * Asserts that the update logs are in sync between the leader and slave. The leader and the slaves
+   * Asserts that the update logs are in sync between the leader and follower. The leader and the followers
    * must have identical tlog files.
    */
   protected void assertUpdateLogsEquals(String collection, int numberOfTLogs) throws Exception {
@@ -302,14 +304,14 @@ public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
 
     for (String shard : shardToCoresMap.keySet()) {
       Map<Long, Long> leaderFilesMeta = this.getFilesMeta(info.getLeader(shard).ulogDir);
-      Map<Long, Long> slaveFilesMeta = this.getFilesMeta(info.getReplicas(shard).get(0).ulogDir);
+      Map<Long, Long> followerFilesMeta = this.getFilesMeta(info.getReplicas(shard).get(0).ulogDir);
 
       assertEquals("Incorrect number of tlog files on the leader", numberOfTLogs, leaderFilesMeta.size());
-      assertEquals("Incorrect number of tlog files on the slave", numberOfTLogs, slaveFilesMeta.size());
+      assertEquals("Incorrect number of tlog files on the follower", numberOfTLogs, followerFilesMeta.size());
 
       for (Long leaderFileVersion : leaderFilesMeta.keySet()) {
-        assertTrue("Slave is missing a tlog for version " + leaderFileVersion, slaveFilesMeta.containsKey(leaderFileVersion));
-        assertEquals("Slave's tlog file size differs for version " + leaderFileVersion, leaderFilesMeta.get(leaderFileVersion), slaveFilesMeta.get(leaderFileVersion));
+        assertTrue("Follower is missing a tlog for version " + leaderFileVersion, followerFilesMeta.containsKey(leaderFileVersion));
+        assertEquals("Follower's tlog file size differs for version " + leaderFileVersion, leaderFilesMeta.get(leaderFileVersion), followerFilesMeta.get(leaderFileVersion));
       }
     }
   }

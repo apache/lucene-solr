@@ -26,13 +26,18 @@ import java.util.Locale;
  * Tool to build dictionaries. Usage:
  * <pre>
  *    java -cp [lucene classpath] org.apache.lucene.analysis.ja.util.DictionaryBuilder \
- *          ${inputDir} ${outputDir} ${encoding}
+ *          ${inputDir} ${outputDir} ${encoding} ${normalizeEntry}
  * </pre>
  *
  * <p> The input directory is expected to include unk.def, matrix.def, plus any number of .csv
  * files, roughly following the conventions of IPADIC. JapaneseTokenizer uses dictionaries built
  * with this tool. Note that the input files required by this build generally must be generated from
  * a corpus of real text using tools that are not part of Lucene.  </p>
+ * <p>The normalizeEntry option is a Boolean value.<br>
+ * If true,
+ * check a surface form (first column in csv) is <a href="https://unicode.org/reports/tr15/#Norm_Forms">NFC Normalized</a>.
+ * If it isn't, NFC normalized contents will be added to the TokenInfoDictionary in addition to the original form.<br>
+ * This option is false for pre-built dictionary in the Lucene. </p>
  * @lucene.experimental
  */
 public class DictionaryBuilder {

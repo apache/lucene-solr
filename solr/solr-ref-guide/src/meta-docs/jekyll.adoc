@@ -1,4 +1,4 @@
-= Making Changes to HTML Version
+= Working with HTML Templates
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -45,9 +45,9 @@ Front matter for Jekyll is similar to a header that defines the title of the pag
 
 Every document that will be converted to HTML *must* include at least the page title at the top of the page. Page titles are defined with a single equal sign (`=`) followed by the title that will appear at the top of the page (such as `= Topic of the Page`).
 
-Many guides to Jekyll also say that defining the layout in the front matter is required. However, since we only use one layout for all pages, we have defined this as a default.
+Many guides to Jekyll also say that defining the `layout` in the front matter is required. However, since we only use one layout for all pages, we have defined this as a default.
 
-The Solr Ref Guide uses the front matter to define some custom attributes on a per page basis:
+The Solr Ref Guide uses the front matter to define some custom attributes on a per-page basis:
 
 * `page-children` - ordered list of child pages, this is used to build the site navigation menu that appears to the left of each page's content.
 
@@ -58,19 +58,12 @@ The format for adding any parameter to the front matter is to use colons on both
 ==== Table of Contents
 There are some optional custom attributes that can be defined in pages to affect the Table of Contents presentation in Jekyll:
 
-`page-toclevels`::
-Changes how "deep" the TOC will be in terms of nested section/sub-section titles (default = `2`).
-`page-tocclass`::
-Changes the CSS class applied to the TOC. The options are:
-* `normal`, the default, resulting in the class name `toc-normal` being used in the HTML.
-* `right`, to put the TOC on the right side of the page.
-* `column`, to make a very long TOC span 3 columns at the top of the page.
-`page-toc`::
-If this is `false`, then no TOCs will be generated for the page at all. The default is `true`, so can usually be left undefined.
-`\{section-toc}`::
-A special macro that can be used anywhere in a page to create an "In this Section" TOC covering only the sub-headings in the same section.
-+
-NOTE: Setting `:page-toc: false` will prevent the `section-toc` macro from working, so if you want no "top level" TOC, but you do want section TOCs, use `:page-toclevels: 0`.
+`toclevels`::
+Changes how "deep" the TOC will be in terms of nested section/sub-section titles (default = `2`). Example: `:toclevels: 1`.
+
+`page-show-toc`::
+If this is `false`, then no TOCs will be generated for the page at all. The default is `true`, so can usually be left undefined. Example `:page-show-toc: false`.
+
 
 === Layouts
 
@@ -78,35 +71,50 @@ Layouts define the "look and feel" of each page. Jekyll uses https://shopify.git
 
 For our implementation of Jekyll, layouts are found in `solr-ref-guide/src/_layouts`.
 
-We currently use only the `_layouts/default.html` layout for overall page structure, and `_layouts/page.html` for the page-level content. The `page.html` layout is inserted into the `default.html` layout.
+We currently use the `_layouts/default.html` layout for overall page structure, for almost all pages and `_layouts/page.html` for the page-level content.
+The `page.html` layout is inserted into the `default.html` layout.
+
+The main page (`index.html`) of the Ref Guide uses the `_layouts/home.html` layout.
+It also still uses `_layouts/page.html` for the page-level content.
+This is done because `index.html` has some special formatting and rules for how to define the page.
 
 === Includes
 
-Include files are (usually) small files that are pulled into a layout when a page is being built. They are Liquid templates that define an area of the page. This allows flexibility across layouts - all pages can have the same header without duplicating code, but different pages could have different menu options.
+Include files are (usually) small HTML files that are pulled into a layout when a page is being built.
+ They are Liquid templates that define an area of the page.
+ This allows flexibility across layouts - all pages can have the same header without duplicating code, but different pages could have different menu options.
 
-Include files that we use define the top navigation, the page header, the page footer, and tables of contents.
+Include files that we use define the top navigation, the page header, and the page footer.
 
 For our implementation of Jekyll, include files are found in `solr-ref-guide/src/_includes`.
 
 === Data Files
 
-Data files include data such as lists that should be included in each page. The left-hand navigation menu is an example of a data file. However, in our build, the navigation is built from the `page-children` hierarchies.
+Data files include data such as lists that should be included in each page.
+The left-hand navigation menu is an example of a data file.
+However, in our build, the navigation is built from the `page-children` hierarchies defined on parent pages.
 
 For our implementation of Jekyll, data files are found in `solr-ref-guide/src/_data`.
 
-=== Using Bootstrap Components
+=== Asciidoctor Slim Templates
 
-The HTML files include https://getbootstrap.com/docs/3.3/[Bootstrap] (v3.3.4 as of October 2017, see `_includes/head.html` to confirm the Bootstrap version currently being used), so all of the components of Bootstrap are available.
+Jekyll creates all of the page elements we do not define in each `.adoc` file: the header, footer, top nav, sidebar nav, and other parts of the page that we don't worry about as we write the content of a page.
 
-However, before trying to use these components, it's important to understand how Jekyll and Asciidoctor relate to one another.
+Asciidoctor converts the content in each `.adoc` file into HTML and inserts it into the Jekyll page layout we have defined (see <<Layouts>>) to make the individual HTML files that make up the Ref Guide.
 
-==== How Jekyll Consumes .adoc Files
+While we have unlimited control over styling page content via CSS, without creating custom Asciidoctor-specific plugins or templates there is little out-of-the-box control over the elements, classes, etc. that make up the HTML pages.
 
-Jekyll creates all of the page elements we do not define in an `.adoc` file: the header, footer, navigation elements, comments, and other parts of the page that we don't worry about as we write the content of a page. It produces a template that our content is inserted into.
+In order to better support HTML5, we have customized Asciidoc's default conversion with templates found in the `_templates` directory. These templates use http://slim-lang.com/[Slim] as the template engine.
 
-Asciidoctor converts our content to HTML - defining its own classes to define default styling - and inserts it into the template Jekyll has provided. While we have a lot of control over the CSS for styling, without creating custom plugins for Asciidoctor, we don't control the HTML elements produced by the plugin.
+Since these templates dictate the very structure of the HTML of our content, customizing these should only be attempted in rare instances and with extensive testing for unforeseen impacts.
 
-This is important because in order to use Bootstrap components, we need to insert `div` classes into the HTML produced by Asciidoctor.
+=== Using Bootstrap
+
+The HTML files include https://getbootstrap.com/docs/4.1/[Bootstrap] (v4.1.3 as of April 2020, see `_includes/head.html` to confirm the Bootstrap version currently being used), so all of the components of Bootstrap are available.
+
+The design of the Ref Guide makes extensive use of Bootstrap classes to layout the page via the Liquid templates and our customized Asciidoctor templates.
+
+When we want to use additional components of Boostrap that require specific HTML constructs, we must define those within the page content itself (using either `<div>` elements in the content or with Asciidoctor's roles, discussed in the section).
 
 ==== Asciidoctor Roles
 
@@ -116,10 +124,12 @@ Asciidoctor does not call these "divs" or "classes", but instead "_roles_". We c
 
 Because roles are so flexible, they only apply to the thing - the word, content block, image, etc. - they are directly applied to. This means that if we want an entire section of content to be given a specific role in the HTML (i.e., enclosed in a `<div>`), then we need to put the content in a block.
 
+TIP: For more on Roles in Asciidoctor, see https://asciidoctor.org/docs/user-manual/#role[Role] in the Asciidoctor User Guide.
+
 ==== Creating Tabbed Sections
 Hopefully a little bit of background on roles is helpful to understanding the rest of what we'll do to create a tabbed section in a page.
 
-See the Bootstrap docs on https://getbootstrap.com/docs/3.3/components/#nav-tabs[tabs] for details on how to use tabs and pills with Bootstrap. As a quick overview, tabs in Bootstrap are defined like this:
+See the Bootstrap docs on https://getbootstrap.com/docs/4.1/components/navs/#tabs[nav tabs] for details on how to use tabs and pills with Bootstrap. As a quick overview, tabs in Bootstrap are defined like this:
 
 [source,html]
 ----
@@ -196,9 +206,13 @@ My content...
 
 == Building the HTML Site
 
-An Ant target `build-site` will build the full HTML site. This target builds the navigation for the left-hand menu, and converts all `.adoc` files to `.html`, including navigation and inter-document links.
+An Ant target `ant build-site` when run from the `solr/solr-ref-guide` directory will build the full HTML site (found in `solr/build/solr-ref-guide/html-site`).
+
+This target builds the navigation for the left-hand menu, and converts all `.adoc` files to `.html`, including navigation and inter-document links.
 
 Building the HTML has several dependencies that will need to be installed on your local machine. Review the `README.adoc` file in the `solr/solr-ref-guide` directory for specific details.
+
+Using the Gradle build does not require any local dependencies. Simply use `./gradlew buildSite` to generate the HTML files using Gradle (these will be found in `solr/solr-ref-guide/build/html-site`).
 
 === Build Validation
 

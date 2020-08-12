@@ -82,7 +82,8 @@ public final class LZ4 {
    * enough to be able to hold <b>all</b> decompressed data (meaning that you
    * need to know the total decompressed length).
    */
-  public static int decompress(DataInput compressed, int decompressedLen, byte[] dest, int dOff) throws IOException {
+  public static int decompress(DataInput compressed, int decompressedLen, byte[] dest) throws IOException {
+    int dOff = 0;
     final int destEnd = dest.length;
 
     do {
@@ -202,6 +203,9 @@ public final class LZ4 {
      * offsets. A return value of {@code -1} indicates that no other index could
      * be found. */
     abstract int previous(int off);
+
+    // For testing
+    abstract boolean assertReset();
   }
 
   /**
@@ -263,6 +267,11 @@ public final class LZ4 {
       return -1;
     }
 
+    @Override
+    boolean assertReset() {
+      return true;
+    }
+
   }
 
   /**
@@ -290,13 +299,6 @@ public final class LZ4 {
       Arrays.fill(chainTable, (short) 0xFFFF);
     }
 
-    private boolean assertReset() {
-      for (int i = 0; i < chainTable.length; ++i) {
-        assert chainTable[i] == (short) 0xFFFF : i;
-      }
-      return true;
-    }
-
     @Override
     void reset(byte[] bytes, int off, int len) {
       Objects.checkFromIndexSize(off, len, bytes.length);
@@ -319,7 +321,6 @@ public final class LZ4 {
         Arrays.fill(hashTable, -1);
         Arrays.fill(chainTable, (short) 0xFFFF);
       }
-      assert assertReset();
       this.bytes = bytes;
       this.base = off;
       this.next = off;
@@ -376,6 +377,14 @@ public final class LZ4 {
         }
       }
       return -1;
+    }
+
+    @Override
+    boolean assertReset() {
+      for (int i = 0; i < chainTable.length; ++i) {
+        assert chainTable[i] == (short) 0xFFFF : i;
+      }
+      return true;
     }
   }
 

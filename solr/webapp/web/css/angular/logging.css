@@ -227,6 +227,7 @@ limitations under the License.
   line-height: 17px;
   padding: 0;
   width: 90%;
+  vertical-align: middle;
 }
 
 #content #logging .jstree a:hover
@@ -282,14 +283,14 @@ limitations under the License.
   z-index: 800;
 }
 
-#content #logging .jstree li .selector-holder { left: 440px; }
-#content #logging .jstree li li .selector-holder { left: 422px; }
-#content #logging .jstree li li li .selector-holder { left: 404px; }
-#content #logging .jstree li li li li .selector-holder { left: 386px; }
-#content #logging .jstree li li li li li .selector-holder { left: 368px; }
+#content #logging .jstree li .selector-holder { left: 475px; }
+#content #logging .jstree li li .selector-holder { left: 450px; }
+#content #logging .jstree li li li .selector-holder { left: 425px; }
+#content #logging .jstree li li li li .selector-holder { left: 400px; }
+#content #logging .jstree li li li li li .selector-holder { left: 375px; }
 #content #logging .jstree li li li li li li .selector-holder { left: 350px; }
-#content #logging .jstree li li li li li li li .selector-holder { left: 332px; }
-#content #logging .jstree li li li li li li li li .selector-holder { left: 314px; }
+#content #logging .jstree li li li li li li li .selector-holder { left: 325px; }
+#content #logging .jstree li li li li li li li li .selector-holder { left: 300px; }
 
 #content #logging .jstree .selector
 {

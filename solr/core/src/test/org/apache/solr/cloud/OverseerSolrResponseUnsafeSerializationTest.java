@@ -49,8 +49,8 @@ public class OverseerSolrResponseUnsafeSerializationTest extends OverseerSolrRes
       } else {
         System.setProperty("solr.useUnsafeOverseerResponse", propertyValue);
       }
-      assertEquals("Unexpected serialization toggle for value: " + propertyValue, serializationEnabled, OverseerSolrResponse.useUnsafeSerialization());
-      assertEquals("Unexpected serialization toggle for value: " + propertyValue, deserializationEnabled, OverseerSolrResponse.useUnsafeDeserialization());
+      assertEquals("Unexpected serialization toggle for value: " + propertyValue, serializationEnabled, OverseerSolrResponseSerializer.useUnsafeSerialization());
+      assertEquals("Unexpected serialization toggle for value: " + propertyValue, deserializationEnabled, OverseerSolrResponseSerializer.useUnsafeDeserialization());
     } finally {
       if (previousValue != null) {
         System.setProperty("solr.useUnsafeOverseerResponse", previousValue);

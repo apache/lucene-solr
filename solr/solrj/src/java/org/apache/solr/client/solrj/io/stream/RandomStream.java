@@ -193,7 +193,7 @@ public class RandomStream extends TupleStream implements Expressible  {
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l =  new ArrayList();
+    List<TupleStream> l =  new ArrayList<>();
     return l;
   }
 
@@ -234,25 +234,22 @@ public class RandomStream extends TupleStream implements Expressible  {
 
   public Tuple read() throws IOException {
     if(documentIterator.hasNext()) {
-      Map map = new HashMap();
+      Tuple tuple = new Tuple();
       SolrDocument doc = documentIterator.next();
 
       // Put the generated x-axis first. If there really is an x field it will overwrite it.
       if(outputX) {
-        map.put("x", x++);
+        tuple.put("x", x++);
       }
 
       for(Entry<String, Object> entry : doc.entrySet()) {
-        map.put(entry.getKey(), entry.getValue());
+        tuple.put(entry.getKey(), entry.getValue());
       }
 
 
-      return new Tuple(map);
-    } else {
-      Map fields = new HashMap();
-      fields.put("EOF", true);
-      Tuple tuple = new Tuple(fields);
       return tuple;
+    } else {
+      return Tuple.EOF();
     }
   }
 

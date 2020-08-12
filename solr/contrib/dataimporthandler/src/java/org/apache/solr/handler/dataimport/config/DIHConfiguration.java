@@ -106,7 +106,9 @@ public class DIHConfiguration {
       SchemaField sf = entry.getValue();
       if (!fields.containsKey(sf.getName())) {
         if (sf.isRequired()) {
-          log.info(sf.getName() + " is a required field in SolrSchema . But not found in DataConfig");
+          if (log.isInfoEnabled()) {
+            log.info("{} is a required field in SolrSchema . But not found in DataConfig", sf.getName());
+          }
         }
       }
     }
@@ -114,7 +116,9 @@ public class DIHConfiguration {
       EntityField fld = entry.getValue();
       SchemaField field = getSchemaField(fld.getName());
       if (field == null && !isSpecialCommand(fld.getName())) {
-        log.info("The field :" + fld.getName() + " present in DataConfig does not have a counterpart in Solr Schema");
+        if (log.isInfoEnabled()) {
+          log.info("The field :{} present in DataConfig does not have a counterpart in Solr Schema", fld.getName());
+        }
       }
     }
   }

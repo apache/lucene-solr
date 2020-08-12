@@ -103,7 +103,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase
   }
 
   @Override
-  public void init(NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     super.init( args );
     hiddenFiles = initHidden(invariants);
   }
@@ -195,14 +195,14 @@ public class ShowFileRequestHandler extends RequestHandlerBase
 
     // Make sure the file exists, is readable and is not a hidden file
     if( !adminFile.exists() ) {
-      log.error("Can not find: "+adminFile.getName() + " ["+adminFile.getAbsolutePath()+"]");
+      log.error("Can not find: {} [{}]", adminFile.getName(), adminFile.getAbsolutePath());
       rsp.setException(new SolrException
                        ( ErrorCode.NOT_FOUND, "Can not find: "+adminFile.getName() 
                          + " ["+adminFile.getAbsolutePath()+"]" ));
       return;
     }
     if( !adminFile.canRead() || adminFile.isHidden() ) {
-      log.error("Can not show: "+adminFile.getName() + " ["+adminFile.getAbsolutePath()+"]");
+      log.error("Can not show: {} [{}]", adminFile.getName(), adminFile.getAbsolutePath());
       rsp.setException(new SolrException
                        ( ErrorCode.NOT_FOUND, "Can not show: "+adminFile.getName() 
                          + " ["+adminFile.getAbsolutePath()+"]" ));
@@ -257,7 +257,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase
     String fname = fnameIn.toUpperCase(Locale.ROOT);
     if (hiddenFiles.contains(fname) || hiddenFiles.contains("*")) {
       if (reportError) {
-        log.error("Cannot access " + fname);
+        log.error("Cannot access {}", fname);
         rsp.setException(new SolrException(SolrException.ErrorCode.FORBIDDEN, "Can not access: " + fnameIn));
       }
       return true;
@@ -267,7 +267,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase
     // to fix it to handle all possibilities though.
     if (fname.indexOf("..") >= 0 || fname.startsWith(".")) {
       if (reportError) {
-        log.error("Invalid path: " + fname);
+        log.error("Invalid path: {}", fname);
         rsp.setException(new SolrException(SolrException.ErrorCode.FORBIDDEN, "Invalid path: " + fnameIn));
       }
       return true;
@@ -306,7 +306,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase
 
     // Make sure the file exists, is readable and is not a hidden file
     if (!zkClient.exists(adminFile, true)) {
-      log.error("Can not find: " + adminFile);
+      log.error("Can not find: {}", adminFile);
       rsp.setException(new SolrException(SolrException.ErrorCode.NOT_FOUND, "Can not find: "
           + adminFile));
       return null;
@@ -340,12 +340,12 @@ public class ShowFileRequestHandler extends RequestHandlerBase
     else {
       fname = fname.replace( '\\', '/' ); // normalize slashes
       if( hiddenFiles.contains( fname.toUpperCase(Locale.ROOT) ) ) {
-        log.error("Can not access: "+ fname);
+        log.error("Can not access: {}", fname);
         rsp.setException(new SolrException( SolrException.ErrorCode.FORBIDDEN, "Can not access: "+fname ));
         return null;
       }
       if( fname.indexOf( ".." ) >= 0 ) {
-        log.error("Invalid path: "+ fname);
+        log.error("Invalid path: {}", fname);
         rsp.setException(new SolrException( SolrException.ErrorCode.FORBIDDEN, "Invalid path: "+fname ));
         return null;
       }

@@ -99,7 +99,7 @@ public final class IntBlockPool {
   
   /**
    * Expert: Resets the pool to its initial state reusing the first buffer. 
-   * @param zeroFillBuffers if <code>true</code> the buffers are filled with <tt>0</tt>. 
+   * @param zeroFillBuffers if <code>true</code> the buffers are filled with <code>0</code>. 
    *        This should be set to <code>true</code> if this pool is used with 
    *        {@link SliceWriter}.
    * @param reuseFirst if <code>true</code> the first buffer will be reused and calling
@@ -175,7 +175,7 @@ public final class IntBlockPool {
     return upto;
   }
   
-  private static final boolean assertSliceBuffer(int[] buffer) {
+  private static boolean assertSliceBuffer(int[] buffer) {
     int count = 0;
     for (int i = 0; i < buffer.length; i++) {
       count += buffer[i]; // for slices the buffer must only have 0 values

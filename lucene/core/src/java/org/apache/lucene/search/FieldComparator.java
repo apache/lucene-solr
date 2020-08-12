@@ -165,8 +165,8 @@ public abstract class FieldComparator<T> {
    *  org.apache.lucene.index.LeafReader#getNumericDocValues} and sorts by ascending value */
   public static class DoubleComparator extends NumericComparator<Double> {
     private final double[] values;
-    private double bottom;
-    private double topValue;
+    protected double bottom;
+    protected double topValue;
 
     /** 
      * Creates a new comparator based on {@link Double#compare} for {@code numHits}.
@@ -225,8 +225,8 @@ public abstract class FieldComparator<T> {
    *  org.apache.lucene.index.LeafReader#getNumericDocValues(String)} and sorts by ascending value */
   public static class FloatComparator extends NumericComparator<Float> {
     private final float[] values;
-    private float bottom;
-    private float topValue;
+    protected float bottom;
+    protected float topValue;
 
     /** 
      * Creates a new comparator based on {@link Float#compare} for {@code numHits}.
@@ -285,8 +285,8 @@ public abstract class FieldComparator<T> {
    *  org.apache.lucene.index.LeafReader#getNumericDocValues(String)} and sorts by ascending value */
   public static class IntComparator extends NumericComparator<Integer> {
     private final int[] values;
-    private int bottom;                           // Value of bottom of queue
-    private int topValue;
+    protected int bottom;                           // Value of bottom of queue
+    protected int topValue;
 
     /** 
      * Creates a new comparator based on {@link Integer#compare} for {@code numHits}.
@@ -347,8 +347,8 @@ public abstract class FieldComparator<T> {
    *  org.apache.lucene.index.LeafReader#getNumericDocValues(String)} and sorts by ascending value */
   public static class LongComparator extends NumericComparator<Long> {
     private final long[] values;
-    private long bottom;
-    private long topValue;
+    protected long bottom;
+    protected long topValue;
 
     /** 
      * Creates a new comparator based on {@link Long#compare} for {@code numHits}.

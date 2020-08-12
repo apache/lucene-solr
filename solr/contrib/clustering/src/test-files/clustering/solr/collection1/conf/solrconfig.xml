@@ -153,12 +153,6 @@
          queryResultCache. -->
     <queryResultMaxDocsCached>200</queryResultMaxDocsCached>
 
-    <!-- This entry enables an int hash representation for filters (DocSets)
-         when the number of items in the set is less than maxSize.  For smaller
-         sets, this representation is more memory efficient, more efficient to
-         iterate over, and faster to take intersections.  -->
-    <HashDocSet maxSize="3000" loadFactor="0.75"/>
-
     <!-- a newSearcher event is fired whenever a new searcher is being prepared
          and there is a current searcher handling requests (aka registered). -->
     <!-- QuerySenderListener takes an array of NamedList and executes a

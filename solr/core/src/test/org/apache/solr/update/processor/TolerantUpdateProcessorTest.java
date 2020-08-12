@@ -343,7 +343,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
     try {
       return connection.request(handler, params, xml);
     } catch (SolrException e) {
-      throw (SolrException)e;
+      throw e;
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }

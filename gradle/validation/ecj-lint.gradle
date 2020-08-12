@@ -1,0 +1,112 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// This adds 'ecjLint' task.
+
+configure(rootProject) {
+  configurations {
+    ecjDeps
+  }
+
+  dependencies {
+    ecjDeps "org.eclipse.jdt:ecj:${scriptDepVersions['ecj']}"
+  }
+}
+
+allprojects {
+  plugins.withType(JavaPlugin) {
+    // Create a [sourceSetName]EcjLint task for each source set
+    // with a non-empty java.srcDirs. These tasks are then
+    // attached to project's "ecjLint" task.
+    def lintTasks = sourceSets.collect { sourceSet ->
+      def srcDirs = sourceSet.java.srcDirs.findAll { dir -> dir.exists() }
+
+      tasks.create(sourceSet.getTaskName("ecjLint", null), JavaExec, {
+        // This dependency is on a configuration; technically it causes
+        // all dependencies to be resolved before this task executes
+        // (this includes scheduling tasks that compile the
+        // sources from other projects for example).
+        dependsOn sourceSet.compileClasspath
+
+        // The inputs are all source files from the sourceSet.
+        inputs.files sourceSet.allSource.asFileTree
+        // The outputs are always up to date (we don't generate anything).
+        outputs.upToDateWhen { true }
+
+        // We create a task for all source sets but ignore those
+        // that don't have any Java source directories.
+        enabled = !srcDirs.isEmpty()
+
+        classpath = rootProject.configurations.ecjDeps
+        main = "org.eclipse.jdt.internal.compiler.batch.Main"
+
+        // Don't emit any .class files.
+        // Hack around "-d none" still emitting package-info.class
+        // by running in a temporary directory.
+        def tmpDst = getTemporaryDir()
+        workingDir tmpDst
+
+        args += [ "-d", "none" ]
+
+        // Compilation environment.
+        args += [ "-source", project.java.sourceCompatibility ]
+        args += [ "-target", project.java.targetCompatibility ]
+        args += [ "-encoding", "UTF-8"]
+        args += [ "-proc:none" ]
+        args += [ "-nowarn" ]
+        args += [ "-enableJavadoc" ]
+        args += [ "-properties", project(":lucene").file("tools/javadoc/ecj.javadocs.prefs").absolutePath ]
+
+        doFirst {
+          tmpDst.mkdirs()
+
+          // Add classpath locations at execution time (can't resolve the
+          // configuration at evaluation time). Filter out non-existing entries
+          // (output folders for non-existing input source dirs like resources).
+          def cpath = sourceSet.compileClasspath.filter { p -> p.exists() }
+          if (!cpath.isEmpty()) {
+            args += ["-classpath", cpath.asPath]
+          }
+
+          // Add source location(s). Ideally we'd provide a set of files as in:
+          // args += sourceSet.java.files
+          // but this exceeds max allowed command line size. So we pass source
+          // directories instead:
+          args += srcDirs
+        }
+      })
+    }
+
+    task ecjLint() {
+      description "Lint Java sources using ECJ."
+      group "Verification"
+
+      dependsOn lintTasks
+    }
+
+    // Attach ecjLint to check.
+    check.dependsOn ecjLint
+  }
+}
+
+// This excludes solr-ref-guide from the check (excludes are not taken into account
+// and linting of the ant-based task fails.
+configure(project(":solr:solr-ref-guide")) {
+  afterEvaluate {
+    project.tasks.findByPath("ecjLintMain").enabled = false
+  }
+}

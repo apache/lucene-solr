@@ -32,7 +32,7 @@ public class TestNoMergeScheduler extends LuceneTestCase {
   public void testNoMergeScheduler() throws Exception {
     MergeScheduler ms = NoMergeScheduler.INSTANCE;
     ms.close();
-    ms.merge(null, RandomPicks.randomFrom(random(), MergeTrigger.values()), random().nextBoolean());
+    ms.merge(null, RandomPicks.randomFrom(random(), MergeTrigger.values()));
   }
 
   @Test

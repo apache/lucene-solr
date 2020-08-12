@@ -130,7 +130,8 @@ public class TestSloppyMath extends LuceneTestCase {
   
   /** Test this method sorts the same way as real haversin */
   public void testHaversinSortKey() {
-    for (int i = 0; i < 100000; i++) {
+    int iters = atLeast(10000);
+    for (int i = 0; i < iters; i++) {
       double centerLat = GeoTestUtil.nextLatitude();
       double centerLon = GeoTestUtil.nextLongitude();
 

@@ -24,7 +24,6 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.QueryVisitor;
 
 class FixedFieldIntervalsSource extends IntervalsSource {
@@ -43,7 +42,7 @@ class FixedFieldIntervalsSource extends IntervalsSource {
   }
 
   @Override
-  public MatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException {
+  public IntervalMatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException {
     return source.matches(this.field, ctx, doc);
   }
 
