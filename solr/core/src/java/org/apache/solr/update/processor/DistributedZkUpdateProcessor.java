@@ -159,8 +159,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
   @Override
   public void processCommit(CommitUpdateCommand cmd) throws IOException {
-    setupRequest(cmd);
-
     log.info("processCommit - start commit isLeader={} commit_end_point={} replicaType={}", isLeader, req.getParams().get(COMMIT_END_POINT), replicaType);
 
       try (ParWork worker = new ParWork(this, false, true)) {
@@ -213,7 +211,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         log.info(
             "processCommit - distrib commit isLeader={} commit_end_point={} replicaType={}",
             isLeader, req.getParams().get(COMMIT_END_POINT), replicaType);
-        if (!isLeader && req.getParams().get(COMMIT_END_POINT, "").equals("replicas")) {
+        if (req.getParams().get(COMMIT_END_POINT, "").equals("replicas")) {
           if (replicaType == Replica.Type.PULL) {
             log.warn("processCommit - Commit not supported on replicas of type "
                 + Replica.Type.PULL);
@@ -232,6 +230,21 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
             params.set(DISTRIB_UPDATE_PARAM, DistribPhase.TOLEADER.toString());
             params.set(COMMIT_END_POINT, "leaders");
+
+            if (isLeader) {
+
+              worker.collect(() -> {
+                log.info(
+                    "processCommit - Do a local commit on NRT endpoint for leader");
+                try {
+                  doLocalCommit(cmd);
+                } catch (IOException e) {
+                  log.error("Error on local commit");
+                  throw new SolrException(ErrorCode.SERVER_ERROR, e);
+                }
+              });
+            }
+
             if (useNodes != null && useNodes.size() > 0) {
               log.info("processCommit - send commit to leaders nodes={}",
                   useNodes);
@@ -246,17 +259,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
             }
           }
           if (isLeader) {
-
-            worker.collect(() -> {
-              log.info(
-                  "processCommit - Do a local commit on NRT endpoint for leader");
-              try {
-                doLocalCommit(cmd);
-              } catch (IOException e) {
-                log.error("Error on local commit");
-                throw new SolrException(ErrorCode.SERVER_ERROR, e);
-              }
-            });
 
             params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
 
