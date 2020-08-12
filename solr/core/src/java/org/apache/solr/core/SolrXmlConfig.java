@@ -150,7 +150,7 @@ public class SolrXmlConfig {
     }
 
     try (InputStream inputStream = Files.newInputStream(configFile)) {
-      return fromInputStream(solrHome, inputStream, substituteProps);
+      return fromInputStream(solrHome, inputStream, substituteProps, false, Files.size(configFile));
     } catch (SolrException exc) {
       throw exc;
     } catch (Exception exc) {
@@ -172,15 +172,23 @@ public class SolrXmlConfig {
     return fromInputStream(solrHome, is, substituteProps, false);
   }
 
-  public static NodeConfig fromInputStream(Path solrHome, InputStream is, Properties substituteProps, boolean fromZookeeper) {
+  public static NodeConfig fromInputStream(Path solrHome, InputStream is, Properties substituteProps, boolean fromZookeeper, long size) {
     SolrResourceLoader loader = new SolrResourceLoader(solrHome);
     if (substituteProps == null) {
       substituteProps = new Properties();
     }
     try {
-      byte[] buf = IOUtils.toByteArray(is);
+      byte[] buf;
+
+      if (size != -1) {
+        buf = IOUtils.toByteArray(is, size);
+      } else {
+        buf = IOUtils.toByteArray(is);
+      }
+
       try (ByteArrayInputStream dup = new ByteArrayInputStream(buf)) {
-        XmlConfigFile config = new XmlConfigFile(loader, null, new InputSource(dup), null, substituteProps);
+        XmlConfigFile config = new XmlConfigFile(loader, null,
+            new InputSource(dup), null, substituteProps);
         return fromConfig(solrHome, config, fromZookeeper);
       }
     } catch (SolrException exc) {
@@ -192,28 +200,8 @@ public class SolrXmlConfig {
     }
   }
 
-
-  public static NodeConfig fromInputStream(Path solrHome, ByteBuffer buffer, Properties substituteProps) {
-    return fromInputStream(solrHome, buffer, substituteProps, false);
-  }
-
-  public static NodeConfig fromInputStream(Path solrHome, ByteBuffer buffer, Properties substituteProps, boolean fromZookeeper) {
-    SolrResourceLoader loader = new SolrResourceLoader(solrHome);
-    if (substituteProps == null) {
-      substituteProps = new Properties();
-    }
-    try {
-
-        XmlConfigFile config = new XmlConfigFile(loader, null, buffer, null, substituteProps);
-        return fromConfig(solrHome, config, fromZookeeper);
-
-    } catch (SolrException exc) {
-      log.error("Exception reading config", exc);
-      throw exc;
-    } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-    }
+  private static NodeConfig fromInputStream(Path solrHome, InputStream inputStream, Properties substituteProps, boolean fromZookeeper) {
+    return fromInputStream(solrHome, inputStream, substituteProps, fromZookeeper, -1);
   }
 
   public static NodeConfig fromSolrHome(Path solrHome, Properties substituteProps) {
@@ -221,7 +209,7 @@ public class SolrXmlConfig {
   }
 
   private static void checkForIllegalConfig(XmlConfigFile config) {
-    // woah! it's best if we don't do this - resource killer
+    // woah! it's best if we don't do this - resource killer - note: perhaps not as bad now that xml is more efficient?
 //    failIfFound(config, "solr/@coreLoadThreads");
 //    failIfFound(config, "solr/@persistent");
 //    failIfFound(config, "solr/@sharedLib");
@@ -586,7 +574,7 @@ public class SolrXmlConfig {
     MBeanServer mBeanServer = JmxUtil.findFirstMBeanServer();
     if (mBeanServer != null && !hasJmxReporter && !Boolean.getBoolean("solr.disableJmxReporter")) {
       log.info("MBean server found: {}, but no JMX reporters were configured - adding default JMX reporter.", mBeanServer);
-      Map<String,Object> attributes = new HashMap<>();
+      Map<String,Object> attributes = new HashMap<>(2);
       attributes.put("name", "default");
       attributes.put("class", SolrJmxReporter.class.getName());
       PluginInfo defaultPlugin = new PluginInfo("reporter", attributes);
@@ -600,7 +588,7 @@ public class SolrXmlConfig {
     if (nodes == null || nodes.getLength() == 0) {
       return NodeConfig.NodeConfigBuilder.DEFAULT_HIDDEN_SYS_PROPS;
     }
-    Set<String> props = new HashSet<>();
+    Set<String> props = new HashSet<>(nodes.getLength());
     for (int i = 0; i < nodes.getLength(); i++) {
       String prop = DOMUtil.getText(nodes.item(i));
       if (prop != null && !prop.trim().isEmpty()) {

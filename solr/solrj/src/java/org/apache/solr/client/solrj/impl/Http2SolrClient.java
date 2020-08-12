@@ -635,7 +635,7 @@ public class Http2SolrClient extends SolrClient {
         for (Map.Entry<String,String> entry : headers.entrySet()) {
           req.header(entry.getKey(), entry.getValue());
         }
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ByteArrayOutputStream baos = new ByteArrayOutputStream(4096);
         contentWriter.write(baos);
 
         //TODO reduce memory usage

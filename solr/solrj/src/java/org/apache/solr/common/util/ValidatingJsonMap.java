@@ -17,6 +17,7 @@
 
 package org.apache.solr.common.util;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -333,7 +334,7 @@ public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
       throw new RuntimeException("invalid API spec: " + resourceName);
     }
     ValidatingJsonMap map = null;
-    try (InputStream is = resource.openStream()) {
+    try (InputStream is = new BufferedInputStream(resource.openStream())) {
       try {
         map = fromJSON(is, includeLocation);
       } catch (Exception e) {
