@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.dataimport;
 
+import com.ctc.wstx.stax.WstxInputFactory;
 import org.apache.solr.common.util.XMLErrorLogger;
 import org.apache.solr.common.EmptyEntityResolver;
 import javax.xml.stream.XMLInputFactory;
@@ -28,6 +29,8 @@ import java.lang.invoke.MethodHandles;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.codehaus.stax2.XMLInputFactory2;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -631,7 +634,7 @@ public class XPathRecordReader {
     return result;
   }
 
-  static XMLInputFactory factory = XMLInputFactory.newInstance();
+  static XMLInputFactory factory = new WstxInputFactory();
   static {
     EmptyEntityResolver.configureXMLInputFactory(factory);
     factory.setXMLReporter(XMLLOG);
