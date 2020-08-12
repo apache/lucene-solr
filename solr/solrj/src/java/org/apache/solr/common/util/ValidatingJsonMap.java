@@ -284,10 +284,12 @@ public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
       map.putAll(includedMap);
     }
     if (maxDepth > 0) {
-      map.entrySet().stream()
-          .filter(e -> e.getValue() instanceof Map)
-          .map(Map.Entry::getValue)
-          .forEach(m -> handleIncludes((ValidatingJsonMap) m, loc, maxDepth - 1));
+      ParWork.getExecutor().submit(() -> {
+        map.entrySet().parallelStream()
+            .filter(e -> e.getValue() instanceof Map)
+            .map(Map.Entry::getValue)
+            .forEach(m -> handleIncludes((ValidatingJsonMap) m, loc, maxDepth - 1));
+      });
     }
   }
 
@@ -334,7 +336,7 @@ public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
       throw new RuntimeException("invalid API spec: " + resourceName);
     }
     ValidatingJsonMap map = null;
-    try (InputStream is = new BufferedInputStream(resource.openStream())) {
+    try (InputStream is = resource.openStream()) { // a buffered reader is used to parse the json
       try {
         map = fromJSON(is, includeLocation);
       } catch (Exception e) {
