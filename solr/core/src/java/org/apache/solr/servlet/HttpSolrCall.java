@@ -725,7 +725,7 @@ public class HttpSolrCall {
 
       addProxyHeaders(req, proxyRequest);
 
-      InputStreamContentProvider defferedContent = new InputStreamContentProvider(req.getInputStream());
+      InputStreamContentProvider defferedContent = new InputStreamContentProvider(req.getInputStream(), 16384, false);
 
       if (hasContent(req)) {
         proxyRequest.content(defferedContent);
@@ -734,9 +734,8 @@ public class HttpSolrCall {
       InputStreamResponseListener listener = new InputStreamResponseListener() {
         @Override
         public void onFailure(Response resp, Throwable t) {
-          //System.out.println("proxy to failed");
+          log.error("remote proxy failed", t);
           super.onFailure(resp, t);
-
         }
 
         @Override
@@ -761,8 +760,7 @@ public class HttpSolrCall {
       proxyRequest.send(listener);
 
 
-      IOUtils.copyLarge(listener.getInputStream(), response.getOutputStream());
-//    /  response.getOutputStream().flush(); // nocommit try not flushing
+      listener.getInputStream().transferTo(response.getOutputStream());
 
     }
 

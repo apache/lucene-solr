@@ -231,7 +231,7 @@ public class SolrTestCase extends LuceneTestCase {
       System.setProperty("solr.reloadSPI", "false");
 
       // nocommit - not used again yet
-      System.setProperty("solr.OverseerStateUpdateDelay", "0");
+      // System.setProperty("solr.OverseerStateUpdateDelay", "0");
 
       System.setProperty("solr.disableMetricsHistoryHandler", "true");
 
