@@ -60,7 +60,8 @@ public class SolrQoSFilter extends QoSFilter {
       throws IOException, ServletException {
     HttpServletRequest req = (HttpServletRequest) request;
     String source = req.getHeader(QoSParams.REQUEST_SOURCE);
-    if (!req.getPathInfo().startsWith("/img/") && (source == null || !source.equals(QoSParams.INTERNAL))) {
+    boolean imagePath = req.getPathInfo() != null && req.getPathInfo().startsWith("/img/");
+    if (!imagePath && (source == null || !source.equals(QoSParams.INTERNAL))) {
 
       // TODO - we don't need to call this *every* request
       double ourLoad = sysStats.getAvarageUsagePerCPU();
