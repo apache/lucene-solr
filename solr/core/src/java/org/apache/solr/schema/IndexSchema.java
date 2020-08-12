@@ -23,6 +23,7 @@ import org.apache.lucene.queries.payloads.PayloadDecoder;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Version;
 import org.apache.solr.common.MapSerializable;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -81,6 +82,7 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -136,7 +138,9 @@ public class IndexSchema {
   protected final SolrResourceLoader loader;
   protected final Properties substitutableProperties;
 
-  protected Map<String,SchemaField> fields = new HashMap<>(128);
+  // some code will add fields after construction, needs to be thread safe
+  protected final Map<String,SchemaField> fields = new ConcurrentHashMap<>(128);
+
   protected Map<String,FieldType> fieldTypes = new HashMap<>(64);
 
   protected List<SchemaField> fieldsWithDefaultValue = new ArrayList<>(64);
@@ -145,20 +149,20 @@ public class IndexSchema {
 
   public DynamicField[] getDynamicFields() { return dynamicFields; }
 
-  protected Cache<String, SchemaField> dynamicFieldCache = new ConcurrentLRUCache(10000, 8000, 9000,100, false,false, null);
+  protected final Cache<String, SchemaField> dynamicFieldCache = new ConcurrentLRUCache(10000, 8000, 9000,100, false,false, null);
 
   private Analyzer indexAnalyzer;
   private Analyzer queryAnalyzer;
 
   protected List<SchemaAware> schemaAware = new ArrayList<>(64);
 
-  protected Map<String, List<CopyField>> copyFieldsMap = new HashMap<>(64);
-  public Map<String,List<CopyField>> getCopyFieldsMap() { return Collections.unmodifiableMap(copyFieldsMap); }
+  protected Map<String,Set<CopyField>> copyFieldsMap = new ConcurrentHashMap<>(64);
+  public Map<String,Set<CopyField>> getCopyFieldsMap() { return Collections.unmodifiableMap(copyFieldsMap); }
 
   protected DynamicCopy[] dynamicCopyFields = new DynamicCopy[] {};
   public DynamicCopy[] getDynamicCopyFields() { return dynamicCopyFields; }
 
-  private Map<FieldType, PayloadDecoder> decoders = new HashMap<>();  // cache to avoid scanning token filters repeatedly, unnecessarily
+  private Map<FieldType, PayloadDecoder> decoders = new ConcurrentHashMap<>();  // cache to avoid scanning token filters repeatedly, unnecessarily
 
   /**
    * keys are all fields copied to, count is num of copyField
@@ -181,7 +185,6 @@ public class IndexSchema {
     this.resourceName = Objects.requireNonNull(name);
     try {
       readSchema(is);
-      // nocommit
       loader.inform(loader);
     } catch (IOException e) {
       throw new RuntimeException(e);
@@ -634,8 +637,13 @@ public class IndexSchema {
 
   protected void postReadInform() {
     //Run the callbacks on SchemaAware now that everything else is done
-    for (SchemaAware aware : schemaAware) {
-      aware.inform(this);
+    try (ParWork work = new ParWork(this)) {
+      for (SchemaAware aware : schemaAware) {
+        work.collect(() -> {
+          aware.inform(this);
+        });
+      }
+      work.addCollect("postReadInform");
     }
   }
 
@@ -826,10 +834,10 @@ public class IndexSchema {
    * Register one or more new Dynamic Fields with the Schema.
    * @param fields The sequence of {@link org.apache.solr.schema.SchemaField}
    */
-  public void registerDynamicFields(SchemaField... fields) {
-    List<DynamicField> dynFields = Collections.synchronizedList(new ArrayList<>(asList(dynamicFields)));
+  public synchronized void registerDynamicFields(SchemaField... fields) {
+    List<DynamicField> dynFields = new ArrayList<>(asList(dynamicFields));
     for (SchemaField field : fields) {
-      if (isDuplicateDynField(dynFields, field)) { Collections.synchronizedList(new ArrayList<>(asList(dynamicFields)));
+      if (isDuplicateDynField(dynFields, field)) { new ArrayList<>(asList(dynamicFields));
         if (log.isDebugEnabled()) {
           log.debug("dynamic field already exists: dynamic field: [{}]", field.getName());
         }
@@ -859,16 +867,7 @@ public class IndexSchema {
     registerCopyField(source, dest, CopyField.UNLIMITED);
   }
 
-  /**
-   * <p>
-   * NOTE: this function is not thread safe.  However, it is safe to use within the standard
-   * <code>inform( SolrCore core )</code> function for <code>SolrCoreAware</code> classes.
-   * Outside <code>inform</code>, this could potentially throw a ConcurrentModificationException
-   * </p>
-   * 
-   * @see SolrCoreAware
-   */
-  public void registerCopyField(String source, String dest, int maxChars) {
+  public synchronized void registerCopyField(String source, String dest, int maxChars) {
     log.debug("{} {}='{}' {}='{}' {}='{}'", COPY_FIELD, SOURCE, source, DESTINATION, dest
               ,MAX_CHARS, maxChars);
 
@@ -975,9 +974,10 @@ public class IndexSchema {
   }
 
   protected void registerExplicitSrcAndDestFields(String source, int maxChars, SchemaField destSchemaField, SchemaField sourceSchemaField) {
-    List<CopyField> copyFieldList = copyFieldsMap.get(source);
+    Set<CopyField> copyFieldList = copyFieldsMap.get(source);
     if (copyFieldList == null) {
-      copyFieldList = new ArrayList<>();
+      copyFieldList = ConcurrentHashMap
+          .newKeySet();
       copyFieldsMap.put(source, copyFieldList);
     }
     copyFieldList.add(new CopyField(sourceSchemaField, destSchemaField, maxChars));
@@ -1349,7 +1349,7 @@ public class IndexSchema {
       return Collections.emptyList();
     }
     List<String> fieldNames = new ArrayList<>();
-    for (Map.Entry<String, List<CopyField>> cfs : copyFieldsMap.entrySet()) {
+    for (Map.Entry<String,Set<CopyField>> cfs : copyFieldsMap.entrySet()) {
       for (CopyField copyField : cfs.getValue()) {
         if (copyField.getDestination().getName().equals(destField)) {
           fieldNames.add(copyField.getSource().getName());
@@ -1378,7 +1378,7 @@ public class IndexSchema {
         result.add(new CopyField(getField(sourceField), dynamicCopy.getTargetField(sourceField), dynamicCopy.maxChars));
       }
     }
-    List<CopyField> fixedCopyFields = copyFieldsMap.get(sourceField);
+    Set<CopyField> fixedCopyFields = copyFieldsMap.get(sourceField);
     if (null != fixedCopyFields) {
       result.addAll(fixedCopyFields);
     }
@@ -1549,14 +1549,15 @@ public class IndexSchema {
   public List<SimpleOrderedMap<Object>> getCopyFieldProperties
       (boolean showDetails, Set<String> requestedSourceFields, Set<String> requestedDestinationFields) {
     List<SimpleOrderedMap<Object>> copyFieldProperties = new ArrayList<>();
-    SortedMap<String,List<CopyField>> sortedCopyFields = new TreeMap<>(copyFieldsMap);
-    for (List<CopyField> copyFields : sortedCopyFields.values()) {
-      copyFields = new ArrayList<>(copyFields);
-      Collections.sort(copyFields, (cf1, cf2) -> {
+    SortedMap<String,Set<CopyField>> sortedCopyFields = new TreeMap<>(copyFieldsMap);
+    for (Set<CopyField> copyFields : sortedCopyFields.values()) {
+      List<CopyField> cFields = new ArrayList<>(copyFields.size());
+      cFields.addAll(copyFields);
+      Collections.sort(cFields, (cf1, cf2) -> {
         // sources are all the same, just sorting by destination here
         return cf1.getDestination().getName().compareTo(cf2.getDestination().getName());
       });
-      for (CopyField copyField : copyFields) {
+      for (CopyField copyField : cFields) {
         final String source = copyField.getSource().getName();
         final String destination = copyField.getDestination().getName();
         if (   (null == requestedSourceFields      || requestedSourceFields.contains(source))

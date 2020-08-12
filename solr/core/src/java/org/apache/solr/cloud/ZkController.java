@@ -1631,6 +1631,9 @@ public class ZkController implements Closeable {
   public void startReplicationFromLeader(String coreName, boolean switchTransactionLog) throws InterruptedException {
     if (isClosed()) throw new AlreadyClosedException();
     log.info("{} starting background replication from leader", coreName);
+
+    stopReplicationFromLeader(coreName);
+
     ReplicateFromLeader replicateFromLeader = new ReplicateFromLeader(cc, coreName);
 
     ReplicateFromLeader prev = replicateFromLeaders.putIfAbsent(coreName, replicateFromLeader);

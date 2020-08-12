@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -527,8 +528,8 @@ public final class ManagedIndexSchema extends IndexSchema {
       newSchema.copyFieldTargetCounts.remove(oldField); // zero out target count for this field
 
       // Remove copy fields where the target is this field; remember them to rebuild
-      for (Map.Entry<String,List<CopyField>> entry : newSchema.copyFieldsMap.entrySet()) {
-        List<CopyField> perSourceCopyFields = entry.getValue();
+      for (Map.Entry<String,Set<CopyField>> entry : newSchema.copyFieldsMap.entrySet()) {
+        Set<CopyField> perSourceCopyFields = entry.getValue();
         Iterator<CopyField> checkDestCopyFieldsIter = perSourceCopyFields.iterator();
         while (checkDestCopyFieldsIter.hasNext()) {
           CopyField checkDestCopyField = checkDestCopyFieldsIter.next();
@@ -878,7 +879,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     if (!found) {
       // non-dynamic copy field directive.
       // Here, source field could either exists in schema or match a dynamic rule
-      List<CopyField> copyFieldList = copyFieldsMap.get(source);
+      Set<CopyField> copyFieldList = copyFieldsMap.get(source);
       if (copyFieldList != null) {
         for (Iterator<CopyField> iter = copyFieldList.iterator() ; iter.hasNext() ; ) {
           CopyField copyField = iter.next();
@@ -905,7 +906,7 @@ public final class ManagedIndexSchema extends IndexSchema {
    * and adds the removed copy fields to removedCopyFields.
    */
   private void removeCopyFieldSource(String sourceFieldName, List<CopyField> removedCopyFields) {
-    List<CopyField> sourceCopyFields = copyFieldsMap.remove(sourceFieldName);
+    Set<CopyField> sourceCopyFields = copyFieldsMap.remove(sourceFieldName);
     if (null != sourceCopyFields) {
       for (CopyField sourceCopyField : sourceCopyFields) {
         decrementCopyFieldTargetCount(sourceCopyField.getDestination());
@@ -1031,12 +1032,15 @@ public final class ManagedIndexSchema extends IndexSchema {
     return newSchema;
   }
   
-  private Map<String,List<CopyField>> cloneCopyFieldsMap(Map<String,List<CopyField>> original) {
-    Map<String,List<CopyField>> clone = new HashMap<>(original.size());
-    Iterator<Map.Entry<String,List<CopyField>>> iterator = original.entrySet().iterator();
+  private Map<String,Set<CopyField>> cloneCopyFieldsMap(Map<String,Set<CopyField>> original) {
+    Map<String,Set<CopyField>> clone = new ConcurrentHashMap<>(original.size());
+    Iterator<Map.Entry<String,Set<CopyField>>> iterator = original.entrySet().iterator();
     while (iterator.hasNext()) {
-      Map.Entry<String,List<CopyField>> entry = iterator.next();
-      clone.put(entry.getKey(), new ArrayList<>(entry.getValue()));
+      Map.Entry<String,Set<CopyField>> entry = iterator.next();
+      Set<CopyField> copyFields = ConcurrentHashMap
+          .newKeySet(entry.getValue().size());
+      copyFields.addAll(entry.getValue());
+      clone.put(entry.getKey(), copyFields);
     }
     return clone;
   }
@@ -1101,10 +1105,10 @@ public final class ManagedIndexSchema extends IndexSchema {
         newSchema.fields.put(replacementField.getName(), replacementField);
       }
       // Remove copy fields where the target is of the type being replaced; remember them to rebuild
-      Iterator<Map.Entry<String,List<CopyField>>> copyFieldsMapIter = newSchema.copyFieldsMap.entrySet().iterator();
+      Iterator<Map.Entry<String,Set<CopyField>>> copyFieldsMapIter = newSchema.copyFieldsMap.entrySet().iterator();
       while (copyFieldsMapIter.hasNext()) {
-        Map.Entry<String,List<CopyField>> entry = copyFieldsMapIter.next();
-        List<CopyField> perSourceCopyFields = entry.getValue();
+        Map.Entry<String,Set<CopyField>> entry = copyFieldsMapIter.next();
+        Set<CopyField> perSourceCopyFields = entry.getValue();
         Iterator<CopyField> checkDestCopyFieldsIter = perSourceCopyFields.iterator();
         while (checkDestCopyFieldsIter.hasNext()) {
           CopyField checkDestCopyField = checkDestCopyFieldsIter.next();

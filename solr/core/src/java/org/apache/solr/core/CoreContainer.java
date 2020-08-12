@@ -1688,7 +1688,6 @@ public class CoreContainer implements Closeable {
             }
 
           } else if (replica.getType() == Replica.Type.PULL) {
-            getZkController().stopReplicationFromLeader(core.getName());
             getZkController().startReplicationFromLeader(newCore.getName(), false);
           }
         }
