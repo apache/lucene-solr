@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -128,7 +129,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider {
 
   private static SpecProvider readSpec(EndPoint endPoint, List<Method> m) {
     return () -> {
-      Map map = new LinkedHashMap(3);
+      Map map = new ConcurrentHashMap(64);
       List<String> methods = new ArrayList<>(endPoint.method().length);
       for (SolrRequest.METHOD method : endPoint.method()) {
         methods.add(method.name());

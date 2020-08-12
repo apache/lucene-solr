@@ -621,8 +621,8 @@ public class ParWork implements Closeable {
 
       Integer minThreads;
       Integer maxThreads;
-      minThreads = Integer.getInteger("solr.per_thread_exec.min_threads", 3);
-      maxThreads = Integer.getInteger("solr.per_thread_exec.max_threads",  Runtime.getRuntime().availableProcessors());
+      minThreads = 3;
+      maxThreads = PROC_COUNT;
       exec = getExecutorService(Math.max(minThreads, maxThreads)); // keep alive directly affects how long a worker might
       // be stuck in poll without an enqueue on shutdown
       THREAD_LOCAL_EXECUTOR.set(exec);

@@ -40,7 +40,7 @@ public class JsonSchemaValidator {
   @SuppressWarnings({"unchecked", "rawtypes"})
   private List<Validator> validators;
   private static Set<String> KNOWN_FNAMES = new HashSet<>(Arrays.asList(
-      "description","documentation","default","additionalProperties"));
+      "description","documentation","default","additionalProperties", "#include"));
 
 
   @SuppressWarnings({"rawtypes"})

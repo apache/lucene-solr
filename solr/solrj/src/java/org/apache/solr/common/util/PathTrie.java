@@ -118,13 +118,13 @@ public class PathTrie<T> {
     }
 
 
-    private synchronized void insert(List<String> path, T o) {
+    private void insert(List<String> path, T o) {
       String part = path.get(0);
       Node matchedChild = null;
       if ("*".equals(name)) {
         return;
       }
-      if (children == null) children = new ConcurrentHashMap<>();
+      if (children == null) children = new ConcurrentHashMap<>(32);
 
       String varName = templateName(part);
       String key = varName == null ? part : "";

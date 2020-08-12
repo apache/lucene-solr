@@ -32,6 +32,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.solr.common.NavigableObject;
 import org.apache.solr.common.ParWork;
@@ -77,11 +78,11 @@ public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
   }
 
   public ValidatingJsonMap(int i) {
-    delegate = new LinkedHashMap<>(i);
+    delegate = new ConcurrentHashMap<>(i);
   }
 
   public ValidatingJsonMap() {
-    delegate = new LinkedHashMap<>();
+    delegate = new ConcurrentHashMap<>(32);
   }
 
   @Override

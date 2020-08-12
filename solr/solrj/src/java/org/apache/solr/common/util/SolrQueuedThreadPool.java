@@ -699,11 +699,19 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
     @Override
     public Thread newThread(Runnable runnable)
     {
-        Thread thread = new Thread(_threadGroup, runnable) {
+        ThreadGroup group;
+
+        {
+            SecurityManager s = System.getSecurityManager();
+            group = (s != null) ?
+                s.getThreadGroup() :
+                Thread.currentThread().getThreadGroup();
+        }
+        Thread thread = new Thread(group, "") {
             @Override
             public void run() {
                 try {
-                    super.run();
+                    runnable.run();
                 } finally {
                     ParWork.closeExecutor();
                 }

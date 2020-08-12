@@ -61,7 +61,7 @@ public class ApiBag {
   private final boolean isCoreSpecific;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final Map<String, PathTrie<Api>> apis = new ConcurrentHashMap<>(128, 0.75f, 12);
+  private final Map<String, PathTrie<Api>> apis = new ConcurrentHashMap<>(128, 0.75f, 6);
 
   public ApiBag(boolean isCoreSpecific) {
     this.isCoreSpecific = isCoreSpecific;
@@ -198,7 +198,7 @@ public class ApiBag {
   }
 
   public static Map<String, JsonSchemaValidator> getParsedSchema(ValidatingJsonMap commands) {
-    Map<String, JsonSchemaValidator> validators = new HashMap<>();
+    Map<String, JsonSchemaValidator> validators = new HashMap<>(commands.size());
     for (Object o : commands.entrySet()) {
       Map.Entry cmd = (Map.Entry) o;
       try {
