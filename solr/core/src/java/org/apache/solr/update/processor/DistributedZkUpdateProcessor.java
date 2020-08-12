@@ -159,8 +159,9 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
   @Override
   public void processCommit(CommitUpdateCommand cmd) throws IOException {
-    {
-      log.info("processCommit - start commit isLeader={} commit_end_point={} replicaType={}", isLeader, req.getParams().get(COMMIT_END_POINT), replicaType);
+    setupRequest(cmd);
+
+    log.info("processCommit - start commit isLeader={} commit_end_point={} replicaType={}", isLeader, req.getParams().get(COMMIT_END_POINT), replicaType);
 
       try (ParWork worker = new ParWork(this, false, true)) {
         clusterState = zkController.getClusterState();
@@ -288,7 +289,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         worker.addCollect("distCommit");
       }
       log.info("processCommit(CommitUpdateCommand) - end");
-    }
   }
 
   @Override
