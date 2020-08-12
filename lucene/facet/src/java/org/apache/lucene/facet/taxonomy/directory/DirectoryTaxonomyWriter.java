@@ -104,7 +104,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   private SinglePositionTokenStream parentStream = new SinglePositionTokenStream(Consts.PAYLOAD_PARENT);
   private Field parentStreamField;
   private Field fullPathField;
-  
+
   private int cacheMissesUntilFill = 11;
   private boolean shouldFillCache = true;
   
