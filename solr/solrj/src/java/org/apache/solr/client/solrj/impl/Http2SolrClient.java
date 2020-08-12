@@ -232,9 +232,10 @@ public class Http2SolrClient extends SolrClient {
       httpClient.setStrictEventOrdering(false);
       httpClient.setConnectBlocking(false);
       httpClient.setFollowRedirects(false);
-      httpClient.setMaxRequestsQueuedPerDestination(asyncTracker.getMaxRequestsQueuedPerDestination());
+      httpClient.setMaxRequestsQueuedPerDestination(1024);
       httpClient.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, AGENT));
       httpClient.setIdleTimeout(idleTimeout);
+      httpClient.setTCPNoDelay(true);
       if (builder.connectionTimeout != null) httpClient.setConnectTimeout(builder.connectionTimeout);
       httpClient.start();
     } catch (Exception e) {
@@ -254,7 +255,6 @@ public class Http2SolrClient extends SolrClient {
           closer.collect(() -> {
                 try {
                   httpClient.stop();
-                  //httpClientExecutor.close();
                 } catch (InterruptedException e) {
                   ParWork.propegateInterrupt(e);
                 } catch (Exception e) {
