@@ -33,17 +33,18 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.CorruptIndexException; // javadocs
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.PostingsEnum;
+import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 
@@ -324,9 +325,12 @@ public class DirectoryTaxonomyReader extends TaxonomyReader implements Accountab
       }
     }
 
-    BinaryDocValues values = MultiDocValues.getBinaryValues(indexReader, Consts.FULL);
-    boolean found = values.advanceExact(ordinal);
+    int readerIndex = ReaderUtil.subIndex(ordinal, indexReader.leaves());
+    LeafReader leafReader = indexReader.leaves().get(readerIndex).reader();
+    BinaryDocValues values = leafReader.getBinaryDocValues(Consts.FULL);
+    boolean found = values.advanceExact(ordinal-indexReader.leaves().get(readerIndex).docBase);
     assert found;
+
     FacetLabel ret = new FacetLabel(FacetsConfig.stringToPath(values.binaryValue().utf8ToString()));
     synchronized (categoryCache) {
       categoryCache.put(catIDInteger, ret);
