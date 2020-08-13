@@ -417,4 +417,8 @@ public class ClusterState implements JSONWriter.Writable {
 
   }
 
+  public int size() {
+    return collectionStates.size();
+  }
+
 }
