@@ -10,7 +10,7 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 
 Bug Fixes
 ---------------------
-(No changes)
+* SOLR-14751: Zookeeper Admin screen not working for old ZK versions (janhoy)
 
 ==================  8.6.1 ==================
 

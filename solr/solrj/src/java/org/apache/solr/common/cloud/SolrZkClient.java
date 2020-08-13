@@ -773,6 +773,9 @@ public class SolrZkClient implements Closeable {
         return "";
       }
       return new String(data, StandardCharsets.UTF_8);
+    } catch (NoNodeException nne) {
+      log.debug("Zookeeper does not have the /zookeeper/config znode, assuming old ZK version");
+      return "";
     } catch (KeeperException|InterruptedException ex) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed to get config from zookeeper", ex);
     }
