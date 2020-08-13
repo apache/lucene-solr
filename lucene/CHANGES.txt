@@ -189,6 +189,9 @@ Optimizations
 * LUCENE-9395: ConstantValuesSource now shares a single DoubleValues
   instance across all segments (Tony Xu)
 
+* LUCENE-9447: Stored fields are getting more space-efficient through an
+  increase of the block size they use for compression. (Adrien Grand)
+
 Bug Fixes
 ---------------------
 
