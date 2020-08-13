@@ -109,7 +109,7 @@ public class SimpleZkMap implements SimpleMap<Resource> {
         try {
             Map<String, List<String>> withKids = new LinkedHashMap<>();
             for (String child : childrenList) {
-                String relativePath =  parent.isBlank() ? child: parent+"/"+child;
+                String relativePath =  parent.isEmpty() ? child: parent+"/"+child;
                 if(!fun.apply(relativePath, readZkNode(relativePath))) return false;
                 List<String> l1 =  zkStateReader.getZkClient().getChildren(basePath+ "/"+ relativePath, null, true);
                 if(l1 != null && !l1.isEmpty()) {
