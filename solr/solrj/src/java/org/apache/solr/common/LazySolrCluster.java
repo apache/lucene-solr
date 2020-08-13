@@ -66,7 +66,7 @@ public class LazySolrCluster implements SolrCluster {
                     return Boolean.FALSE;
                 });
 
-        return new SimpleMap<>() {
+        return new SimpleMap<CollectionConfig>() {
             @Override
             public CollectionConfig get(String key) {
                 if (configNames.contains(key)) {
@@ -91,7 +91,7 @@ public class LazySolrCluster implements SolrCluster {
     }
 
     private SimpleMap<SolrNode> lazyNodeMap() {
-        return new SimpleMap<>() {
+        return new SimpleMap<SolrNode>() {
             @Override
             public SolrNode get(String key) {
                 if (!zkStateReader.getClusterState().liveNodesContain(key)) {
@@ -115,7 +115,7 @@ public class LazySolrCluster implements SolrCluster {
     }
 
     private SimpleMap<SolrCollection> lazyCollectionsWithAlias(ZkStateReader zkStateReader) {
-        return new SimpleMap<>() {
+        return new SimpleMap<SolrCollection>() {
             @Override
             public SolrCollection get(String key) {
                 SolrCollection result = collections.get(key);
@@ -145,7 +145,7 @@ public class LazySolrCluster implements SolrCluster {
     }
 
     private SimpleMap<SolrCollection> lazyCollectionsMap(ZkStateReader zkStateReader) {
-        return new SimpleMap<>() {
+        return new SimpleMap<SolrCollection>() {
             @Override
             public SolrCollection get(String key) {
                 return _collection(key, null);
@@ -338,7 +338,7 @@ public class LazySolrCluster implements SolrCluster {
 
         @Override
         public String name() {
-            return replica.name;
+            return replica.getName();
         }
 
         @Override
@@ -363,7 +363,7 @@ public class LazySolrCluster implements SolrCluster {
 
         @Override
         public Replica.Type type() {
-            return replica.type;
+            return replica.getType();
         }
 
         @Override
