@@ -32,7 +32,9 @@ Many of these parsers are expressed the same way as <<local-parameters-in-querie
 // nocommit: so people can understand them (and so other sections of the ref-guide can link here for
 // nocommit: actual explanaiton)
 
-
+// nocommit: find a way to write up a susincet & clear description of the process/hueristic demonstrated in
+// nocommit: TestNestedUpdateProcessor.testRandomNestPathQueryFiltering
+// nocommit: AKA: the "manual" form of the syntactic sugar proposed in SOLR-14687
 
 There are two query parsers that support block joins. These parsers allow indexing and searching for relational content that has been <<indexing-nested-documents.adoc#indexing-nested-documents, indexed as Nested Documents>>.
 

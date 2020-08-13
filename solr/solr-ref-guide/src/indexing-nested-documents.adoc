@@ -85,7 +85,7 @@ Even though the child documents in these examples are provided syntactically as 
    "skus": [ { "id": "P22!S22",
                "color_s": "RED",
                "price_i": 89,
-               "manuals": [ { "id": "P21!D41",
+               "manuals": [ { "id": "P22!D42",
                               "name_s": "Red Mont Blanc Brochure",
                               "content_t": "..."
                             } ]
