@@ -148,9 +148,9 @@ public final class Lucene50StoredFieldsFormat extends StoredFieldsFormat {
   StoredFieldsFormat impl(Mode mode) {
     switch (mode) {
       case BEST_SPEED: 
-        return new CompressingStoredFieldsFormat("Lucene50StoredFieldsFastData", CompressionMode.FAST, 1 << 14, 128, 10);
+        return new CompressingStoredFieldsFormat("Lucene50StoredFieldsFastData", CompressionMode.FAST, 64 * 1024, 128, 10);
       case BEST_COMPRESSION: 
-        return new CompressingStoredFieldsFormat("Lucene50StoredFieldsHighData", CompressionMode.HIGH_COMPRESSION, 61440, 512, 10);
+        return new CompressingStoredFieldsFormat("Lucene50StoredFieldsHighData", CompressionMode.HIGH_COMPRESSION, 256 * 1024, 512, 10);
       default: throw new AssertionError();
     }
   }

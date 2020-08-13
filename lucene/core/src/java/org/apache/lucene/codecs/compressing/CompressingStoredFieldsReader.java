@@ -373,8 +373,17 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
     // the start pointer at which you can read the compressed documents
     private long startPointer;
 
-    private final BytesRef spare = new BytesRef();
-    private final BytesRef bytes = new BytesRef();
+    private final BytesRef spare;
+    private final BytesRef bytes;
+
+    BlockState() {
+      if (merging) {
+        spare = new BytesRef();
+        bytes = new BytesRef();
+      } else {
+        spare = bytes = null;
+      }
+    }
 
     boolean contains(int docID) {
       return docID >= docBase && docID < docBase + chunkDocs;
@@ -503,6 +512,13 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
       final int length = offsets[index+1] - offset;
       final int totalLength = offsets[chunkDocs];
       final int numStoredFields = this.numStoredFields[index];
+
+      final BytesRef bytes;
+      if (merging) {
+        bytes = this.bytes;
+      } else {
+        bytes = new BytesRef();
+      }
 
       final DataInput documentInput;
       if (length == 0) {
