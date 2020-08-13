@@ -737,8 +737,13 @@ public class Utils {
       throw new IllegalArgumentException("nodeName does not contain expected '_' separator: " + nodeName);
     }
     final String hostAndPort = nodeName.substring(0, _offset);
-    final String path = URLDecoder.decode(nodeName.substring(1 + _offset), UTF_8);
-    return urlScheme + "://" + hostAndPort + (path.isEmpty() ? "" : ("/" + (isV2? "api": path)));
+    try {
+      String path = URLDecoder.decode(nodeName.substring(1 + _offset), "UTF-8");
+      if(isV2) path = "api";
+      return urlScheme + "://" + hostAndPort + (path.isEmpty() ? "" : ("/" + path));
+    } catch (UnsupportedEncodingException e) {
+      throw new IllegalStateException("JVM Does not seem to support UTF-8", e);
+    }
   }
 
   public static long time(TimeSource timeSource, TimeUnit unit) {
