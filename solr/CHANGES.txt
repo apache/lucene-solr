@@ -180,6 +180,8 @@ Bug Fixes
 
 * SOLR-14748: Fix incorrect auth/SSL startup logging (Jason Gerlowski)
 
+* SOLR-14751: Zookeeper Admin screen not working for old ZK versions (janhoy)
+
 Other Changes
 ---------------------
 
