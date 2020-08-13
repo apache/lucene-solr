@@ -38,7 +38,6 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class TestIndexWriterMergePolicy extends LuceneTestCase {
 
-  private static final MergePolicy MERGE_ON_COMMIT_POLICY = new MergeOnXMergePolicy(MergeTrigger.COMMIT);
 
   // Test the normal case
   public void testNormalCase() throws IOException {
@@ -305,7 +304,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     firstWriter.close(); // When this writer closes, it does not merge on commit.
 
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()))
-        .setMergePolicy(MERGE_ON_COMMIT_POLICY).setMaxCommitMergeWaitMillis(Integer.MAX_VALUE);
+        .setMergePolicy(new MergeOnXMergePolicy(MergeTrigger.COMMIT)).setMaxCommitMergeWaitMillis(Integer.MAX_VALUE);
 
 
     IndexWriter writerWithMergePolicy = new IndexWriter(dir, iwc);
@@ -350,13 +349,14 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     // TODO: Add more checks for other non-double setters!
   }
 
-  public void testCarryOverNewDeletes() throws IOException, InterruptedException {
+
+  public void testCarryOverNewDeletesOnCommit() throws IOException, InterruptedException {
     try (Directory directory = newDirectory()) {
       boolean useSoftDeletes = random().nextBoolean();
       CountDownLatch waitForMerge = new CountDownLatch(1);
       CountDownLatch waitForUpdate = new CountDownLatch(1);
       try (IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig()
-          .setMergePolicy(MERGE_ON_COMMIT_POLICY).setMaxCommitMergeWaitMillis(30 * 1000)
+          .setMergePolicy(new MergeOnXMergePolicy(MergeTrigger.COMMIT)).setMaxCommitMergeWaitMillis(30 * 1000)
           .setSoftDeletesField("soft_delete")
           .setMaxBufferedDocs(Integer.MAX_VALUE)
           .setRAMBufferSizeMB(100)
@@ -424,12 +424,22 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
    * This test makes sure we release the merge readers on abort. MDW will fail if it
    * can't close all files
    */
-  public void testAbortCommitMerge() throws IOException, InterruptedException {
+
+  public void testAbortMergeOnCommit() throws IOException, InterruptedException {
+    abortMergeOnX(false);
+  }
+
+  public void testAbortMergeOnGetReader() throws IOException, InterruptedException {
+    abortMergeOnX(true);
+  }
+
+  void abortMergeOnX(boolean useGetReader) throws IOException, InterruptedException {
     try (Directory directory = newDirectory()) {
       CountDownLatch waitForMerge = new CountDownLatch(1);
       CountDownLatch waitForDeleteAll = new CountDownLatch(1);
       try (IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig()
-          .setMergePolicy(MERGE_ON_COMMIT_POLICY).setMaxCommitMergeWaitMillis(30 * 1000)
+          .setMergePolicy(new MergeOnXMergePolicy(useGetReader ? MergeTrigger.GET_READER : MergeTrigger.COMMIT))
+          .setMaxCommitMergeWaitMillis(30 * 1000)
           .setMergeScheduler(new SerialMergeScheduler() {
             @Override
             public synchronized void merge(MergeSource mergeSource, MergeTrigger trigger) throws IOException {
@@ -454,7 +464,11 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
         writer.addDocument(d2);
         Thread t = new Thread(() -> {
           try {
-            writer.commit();
+            if (useGetReader) {
+              writer.getReader().close();
+            } else {
+              writer.commit();
+            }
           } catch (IOException e) {
             throw new AssertionError(e);
           }
@@ -468,10 +482,19 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     }
   }
 
+  public void testStressUpdateSameDocumentWithMergeOnGetReader() throws IOException, InterruptedException {
+    stressUpdateSameDocumentWithMergeOnX(true);
+  }
+
   public void testStressUpdateSameDocumentWithMergeOnCommit() throws IOException, InterruptedException {
+    stressUpdateSameDocumentWithMergeOnX(false);
+  }
+
+  void stressUpdateSameDocumentWithMergeOnX(boolean useGetReader) throws IOException, InterruptedException {
     try (Directory directory = newDirectory()) {
       try (RandomIndexWriter writer = new RandomIndexWriter(random(), directory, newIndexWriterConfig()
-          .setMergePolicy(MERGE_ON_COMMIT_POLICY).setMaxCommitMergeWaitMillis(10 + random().nextInt(2000))
+          .setMergePolicy(new MergeOnXMergePolicy(useGetReader ? MergeTrigger.GET_READER : MergeTrigger.COMMIT))
+          .setMaxCommitMergeWaitMillis(10 + random().nextInt(2000))
           .setSoftDeletesField("soft_delete")
           .setMergeScheduler(new ConcurrentMergeScheduler()))) {
         Document d1 = new Document();
@@ -500,11 +523,17 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
         }
         try {
           while (done.get() == false) {
-            if (random().nextBoolean()) {
-              writer.commit();
-            }
-            try (DirectoryReader open = new SoftDeletesDirectoryReaderWrapper(DirectoryReader.open(directory), "___soft_deletes")) {
-              assertEquals(1, open.numDocs());
+            if (useGetReader) {
+              try (DirectoryReader reader = writer.getReader()) {
+                assertEquals(1, reader.numDocs());
+              }
+            } else {
+              if (random().nextBoolean()) {
+                writer.commit();
+              }
+              try (DirectoryReader open = new SoftDeletesDirectoryReaderWrapper(DirectoryReader.open(directory), "___soft_deletes")) {
+                assertEquals(1, open.numDocs());
+              }
             }
           }
         } finally {

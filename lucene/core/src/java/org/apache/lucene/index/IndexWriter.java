@@ -3395,7 +3395,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
    * below.  We also ensure that we pull the merge readers while holding {@code IndexWriter}'s lock.  Otherwise
    * we could see concurrent deletions/updates applied that do not belong to the segment.
    */
-  private MergePolicy.MergeSpecification prepareOnPointInTimeMerge(SegmentInfos committingSegmentInfos, AtomicBoolean includeInCommit,
+  private MergePolicy.MergeSpecification prepareOnPointInTimeMerge(SegmentInfos mergeingSegmentInfos, AtomicBoolean includeMergeResult,
                                                                    MergeTrigger trigger,
                                                                    IOUtils.IOConsumer<SegmentCommitInfo> mergeFinished) throws IOException {
     assert Thread.holdsLock(this);
@@ -3414,7 +3414,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
             // and will not commit our merge to the to-be-commited SegmentInfos
             if (segmentDropped == false
                 && committed
-                && includeInCommit.get()) {
+                && includeMergeResult.get()) {
 
               // make sure onMergeComplete really was called:
               assert origInfo != null;
@@ -3431,7 +3431,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
                 mergedSegmentNames.add(sci.info.name);
               }
               List<SegmentCommitInfo> toCommitMergedAwaySegments = new ArrayList<>();
-              for (SegmentCommitInfo sci : committingSegmentInfos) {
+              for (SegmentCommitInfo sci : mergeingSegmentInfos) {
                 if (mergedSegmentNames.contains(sci.info.name)) {
                   toCommitMergedAwaySegments.add(sci);
                   if (trigger == MergeTrigger.COMMIT) { // if we do this in a getReader call here this is obsolete
@@ -3443,8 +3443,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
               MergePolicy.OneMerge applicableMerge = new MergePolicy.OneMerge(toCommitMergedAwaySegments);
               applicableMerge.info = origInfo;
               long segmentCounter = Long.parseLong(origInfo.info.name.substring(1), Character.MAX_RADIX);
-              committingSegmentInfos.counter = Math.max(committingSegmentInfos.counter, segmentCounter + 1);
-              committingSegmentInfos.applyMergeChanges(applicableMerge, false);
+              mergeingSegmentInfos.counter = Math.max(mergeingSegmentInfos.counter, segmentCounter + 1);
+              mergeingSegmentInfos.applyMergeChanges(applicableMerge, false);
             } else {
               if (infoStream.isEnabled("IW")) {
                 infoStream.message("IW", "skip apply merge during commit: " + toWrap.segString());
@@ -3456,12 +3456,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
           @Override
           void onMergeComplete() throws IOException {
-            if (includeInCommit.get() && isAborted() == false) {
+            if (includeMergeResult.get() && isAborted() == false) {
               assert Thread.holdsLock(IndexWriter.this);
               mergeFinished.accept(info);
               // clone the target info to make sure we have the original info without the updated del and update gens
               origInfo = info.clone();
             }
+            toWrap.onMergeComplete();
+            super.onMergeComplete();
           }
 
           @Override
