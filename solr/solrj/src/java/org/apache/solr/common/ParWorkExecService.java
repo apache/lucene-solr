@@ -29,6 +29,7 @@ import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ParWorkExecService extends AbstractExecutorService {
   private static final Logger log = LoggerFactory
@@ -42,38 +43,38 @@ public class ParWorkExecService extends AbstractExecutorService {
   private volatile boolean terminated;
   private volatile boolean shutdown;
 
+  private final AtomicInteger running = new AtomicInteger();
+
+  private final Object awaitTerminate = new Object();
+
   private final BlockingArrayQueue<Runnable> workQueue = new BlockingArrayQueue<>(30, 0);
   private volatile Worker worker;
   private volatile Future<?> workerFuture;
 
-  private class Worker extends Thread {
+  private class Worker implements Runnable {
 
     Worker() {
-      setName("ParExecWorker");
+    //  setName("ParExecWorker");
     }
 
     @Override
     public void run() {
-      while (!terminated) {
+      while (!terminated && !Thread.currentThread().isInterrupted()) {
         Runnable runnable = null;
         try {
-          runnable = workQueue.poll(5, TimeUnit.SECONDS);
-          //System.out.println("get " + runnable + " " + workQueue.size());
+          runnable = workQueue.poll(Integer.MAX_VALUE, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
-//          ParWork.propegateInterrupt(e);
-           continue;
+           ParWork.propegateInterrupt(e);
+           return;
         }
         if (runnable == null) {
-          continue;
+          running.decrementAndGet();
+          synchronized (awaitTerminate) {
+            awaitTerminate.notifyAll();
+          }
+          return;
         }
-        //        boolean success = checkLoad();
-//        if (success) {
-//          success = available.tryAcquire();
-//        }
-//        if (!success) {
-//          runnable.run();
-//          return;
-//        }
+
         if (runnable instanceof ParWork.SolrFutureTask) {
 
         } else {
@@ -81,7 +82,12 @@ public class ParWorkExecService extends AbstractExecutorService {
           try {
             available.acquire();
           } catch (InterruptedException e) {
-            e.printStackTrace();
+            ParWork.propegateInterrupt(e);
+            running.decrementAndGet();
+            synchronized (awaitTerminate) {
+              awaitTerminate.notifyAll();
+            }
+            return;
           }
 
         }
@@ -101,6 +107,10 @@ public class ParWorkExecService extends AbstractExecutorService {
                 }
               } finally {
                 ParWork.closeExecutor();
+                running.decrementAndGet();
+                synchronized (awaitTerminate) {
+                  awaitTerminate.notifyAll();
+                }
               }
             }
           }
@@ -192,20 +202,21 @@ public class ParWorkExecService extends AbstractExecutorService {
       throws InterruptedException {
     assert ObjectReleaseTracker.release(this);
     TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    while (available.hasQueuedThreads() || workQueue.peek() != null) {
+    while (running.get() > 0) {
       if (timeout.hasTimedOut()) {
         throw new RuntimeException("Timeout");
       }
 
      //zaa System.out.println("WAIT : " + workQueue.size() + " " + available.getQueueLength() + " " + workQueue.toString());
-      Thread.sleep(10);
+      synchronized (awaitTerminate) {
+        awaitTerminate.wait(250);
+      }
     }
 //    workQueue.clear();
 
 //    workerFuture.cancel(true);
     terminated = true;
-    worker.interrupt();
-    worker.join();
+    workerFuture.cancel(true);
 
    // worker.interrupt();
     return true;
@@ -214,32 +225,91 @@ public class ParWorkExecService extends AbstractExecutorService {
 
   @Override
   public void execute(Runnable runnable) {
-
-//    if (shutdown) {
-//      runnable.run();
-//      return;
-//    }
-
+    if (shutdown) {
+      throw new RejectedExecutionException();
+    }
+    running.incrementAndGet();
     if (runnable instanceof ParWork.SolrFutureTask) {
-      ParWork.getEXEC().execute(runnable);
+      service.execute(new Runnable() {
+        @Override
+        public void run() {
+          try {
+            runnable.run();
+          } finally {
+            running.decrementAndGet();
+            synchronized (awaitTerminate) {
+              awaitTerminate.notifyAll();
+            }
+          }
+        }
+      });
       return;
     }
 
-    boolean success = this.workQueue.offer(runnable);
-    if (!success) {
-     // log.warn("No room in the queue, running in caller thread {} {} {} {}", workQueue.size(), isShutdown(), isTerminated(), worker.isAlive());
-      runnable.run();
+    if (runnable instanceof ParWork.SolrFutureTask) {
+
     } else {
-      if (worker == null) {
-        synchronized (this) {
-          if (worker == null) {
-            worker = new Worker();
-            worker.setDaemon(true);
-            worker.start();
+
+      try {
+        available.acquire();
+      } catch (InterruptedException e) {
+        ParWork.propegateInterrupt(e);
+        running.decrementAndGet();
+        synchronized (awaitTerminate) {
+          awaitTerminate.notifyAll();
+        }
+        return;
+      }
+
+    }
+
+    Runnable finalRunnable = runnable;
+    service.execute(new Runnable() {
+      @Override
+      public void run() {
+        try {
+          finalRunnable.run();
+        } finally {
+          try {
+            if (finalRunnable instanceof ParWork.SolrFutureTask) {
+
+            } else {
+              available.release();
+            }
+          } finally {
+            ParWork.closeExecutor();
+            running.decrementAndGet();
+            synchronized (awaitTerminate) {
+              awaitTerminate.notifyAll();
+            }
           }
         }
       }
-    }
+    });
+
+
+//    boolean success = this.workQueue.offer(runnable);
+//    if (!success) {
+//     // log.warn("No room in the queue, running in caller thread {} {} {} {}", workQueue.size(), isShutdown(), isTerminated(), worker.isAlive());
+//      try {
+//        runnable.run();
+//      } finally {
+//        running.decrementAndGet();
+//        synchronized (awaitTerminate) {
+//          awaitTerminate.notifyAll();
+//        }
+//      }
+//    } else {
+//      if (worker == null) {
+//        synchronized (this) {
+//          if (worker == null) {
+//            worker = new Worker();
+//
+//            workerFuture = ParWork.getEXEC().submit(worker);
+//          }
+//        }
+//      }
+//    }
   }
 
 

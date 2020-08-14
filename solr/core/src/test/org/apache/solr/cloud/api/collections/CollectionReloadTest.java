@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
  * Verifies cluster state remains consistent after collection reload.
  */
 @SolrTestCase.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
-//@LuceneTestCase.Nightly // hmmm, this can be slow sometimes in a full gradle test run ... I thought I fixed it, but only happens less
+@LuceneTestCase.Nightly // hmmm, this can be slow sometimes in a full gradle test run ... I thought I fixed it, but only happens less
 public class CollectionReloadTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
