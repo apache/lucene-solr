@@ -207,12 +207,19 @@ public class ParWorkExecService extends AbstractExecutorService {
     }
     running.incrementAndGet();
     if (runnable instanceof ParWork.SolrFutureTask) {
-      service.execute(new Runnable() {
-        @Override
-        public void run() {
-          runIt(runnable, false);
+      try {
+        service.execute(new Runnable() {
+          @Override
+          public void run() {
+            runIt(runnable, false);
+          }
+        });
+      } catch (Exception e) {
+        running.decrementAndGet();
+        synchronized (awaitTerminate) {
+          awaitTerminate.notifyAll();
         }
-      });
+      }
       return;
     }
 
@@ -233,12 +240,19 @@ public class ParWorkExecService extends AbstractExecutorService {
     }
 
     Runnable finalRunnable = runnable;
+    try {
     service.execute(new Runnable() {
       @Override
       public void run() {
         runIt(finalRunnable, false);
       }
     });
+    } catch (Exception e) {
+      running.decrementAndGet();
+      synchronized (awaitTerminate) {
+        awaitTerminate.notifyAll();
+      }
+    }
 
 
 //    boolean success = this.workQueue.offer(runnable);

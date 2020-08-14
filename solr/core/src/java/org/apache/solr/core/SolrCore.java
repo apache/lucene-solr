@@ -1870,7 +1870,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private final LinkedList<RefCounted<SolrIndexSearcher>> _searchers = new LinkedList<>();
   private final LinkedList<RefCounted<SolrIndexSearcher>> _realtimeSearchers = new LinkedList<>();
 
-  final ExecutorService searcherExecutor = new ParWorkExecutor("searcherExecutor", 1, 1, 0, new LinkedBlockingQueue<>());
+  final ExecutorService searcherExecutor = new ParWorkExecutor("searcherExecutor", 1, 1, 1, new LinkedBlockingQueue<>());
   private AtomicInteger onDeckSearchers = new AtomicInteger();  // number of searchers preparing
   // Lock ordering: one can acquire the openSearcherLock and then the searcherLock, but not vice-versa.
   private final Object searcherLock = new Object();  // the sync object for the searcher

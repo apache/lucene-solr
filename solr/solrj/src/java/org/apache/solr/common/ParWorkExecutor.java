@@ -18,7 +18,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class ParWorkExecutor extends ThreadPoolExecutor {
   private static final Logger log = LoggerFactory
       .getLogger(MethodHandles.lookup().lookupClass());
-  public static final int KEEP_ALIVE_TIME = 1;
+  public static final int KEEP_ALIVE_TIME = 5000;
 
   private static AtomicInteger threadNumber = new AtomicInteger(0);
 
@@ -27,7 +27,7 @@ public class ParWorkExecutor extends ThreadPoolExecutor {
   }
 
   public ParWorkExecutor(String name, int corePoolsSize, int maxPoolsSize) {
-    this(name, corePoolsSize, maxPoolsSize, KEEP_ALIVE_TIME,     new SynchronousQueue<>());
+    this(name, corePoolsSize, maxPoolsSize, KEEP_ALIVE_TIME,  new SynchronousQueue<>());
   }
 
   public ParWorkExecutor(String name, int corePoolsSize, int maxPoolsSize,

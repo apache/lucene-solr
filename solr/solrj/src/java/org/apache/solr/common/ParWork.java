@@ -723,7 +723,7 @@ public class ParWork implements Closeable {
       }
 
       if (!handled) {
-        String msg = label + " -> I do not know how to close: " + object.getClass().getName();
+        String msg = label + " -> I do not know how to close " + label + ": " + object.getClass().getName();
         log.error(msg);
         IllegalArgumentException illegal = new IllegalArgumentException(msg);
         exception.set(illegal);
@@ -735,12 +735,12 @@ public class ParWork implements Closeable {
       } else {
         if (ignoreExceptions) {
           warns.add(t);
-          log.error("Error handling close for an object", new ObjectReleaseTracker.ObjectTrackerException(t));
+          log.error("Error handling close for an object: " + label + ": " + object.getClass().getSimpleName() , new ObjectReleaseTracker.ObjectTrackerException(t));
           if (t instanceof Error && !(t instanceof AssertionError)) {
             throw (Error) t;
           }
         } else {
-          log.error("handleObject(AtomicReference<Throwable>=" + exception + ", CloseTimeTracker=" + workUnitTracker
+          log.error("handleObject(AtomicReference<Throwable>=" + exception + ", CloseTimeTracker=" + workUnitTracker   + ", Label=" + label + ")"
               + ", Object=" + object + ")", t);
           propegateInterrupt(t);
           if (t instanceof Error) {
