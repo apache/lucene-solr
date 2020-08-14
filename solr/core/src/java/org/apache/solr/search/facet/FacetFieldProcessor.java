@@ -161,7 +161,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
 
   private final CountSlotAccFactory cachingCountSlotAccFactory;
 
-  SweepCountAccStruct getSweepCountAcc(String key, QueryResultKey qKey, DocSet docs, boolean isBase, int numSlots) {
+  SweepCountAccStruct getSweepCountAcc(String key, QueryResultKey qKey, DocSet docs, boolean isBase, int numSlots, int countCacheDf) {
     final int size = docs.size();
     final SweepCountAccStruct qrkCandidate;
     if (qKey != null && (qrkCandidate = trackSweepCountAccsQRK.get(qKey)) != null) {
@@ -182,7 +182,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       trackSweepCountAccs.put(size, extantSameSize);
     }
     final CountSlotAccFactory factory;
-    if (cachingCountSlotAccFactory == null || size < (freq.countCacheDf == 0 ? TermFacetCache.DEFAULT_THRESHOLD : (freq.countCacheDf < 0 ? Integer.MAX_VALUE : freq.countCacheDf))) {
+    if (cachingCountSlotAccFactory == null || size < countCacheDf) {
       factory = DEFAULT_COUNT_ACC_FACTORY;
     } else {
       factory = cachingCountSlotAccFactory;
@@ -213,7 +213,8 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
 
   protected CountSlotAcc createBaseCountAcc(int slotCount) {
     QueryResultKey baseQKey = fcontext.baseFilters == null ? null : new QueryResultKey(null, Arrays.asList(fcontext.baseFilters), null, 0);
-    SweepCountAccStruct struct = getSweepCountAcc("count", baseQKey, fcontext.base, true, slotCount);
+    final int countCacheDf = (freq.countCacheDf == 0 ? TermFacetCache.DEFAULT_THRESHOLD : (freq.countCacheDf < 0 ? Integer.MAX_VALUE : freq.countCacheDf));
+    SweepCountAccStruct struct = getSweepCountAcc("count", baseQKey, fcontext.base, true, slotCount, countCacheDf);
     return struct.countAcc;
   }
 

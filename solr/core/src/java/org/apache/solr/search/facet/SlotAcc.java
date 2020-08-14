@@ -41,7 +41,6 @@ import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.QueryResultKey;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.search.facet.FacetFieldProcessor.CountSlotAccFactory;
 
 /**
  * Accumulates statistics separated by a slot number. 
@@ -816,8 +815,8 @@ public abstract class SlotAcc implements Closeable {
      * @return a read-only representation of the count acc which is guaranteed to be populated after sweep count
      *         collection
      */
-    public ReadOnlyCountSlotAcc add(String key, DocSet docs, int numSlots, QueryResultKey qKey) {
-      final SweepCountAccStruct ret = p.getSweepCountAcc(key, qKey, docs, false, numSlots);
+    public ReadOnlyCountSlotAcc add(String key, DocSet docs, int numSlots, QueryResultKey qKey, int countCacheDf) {
+      final SweepCountAccStruct ret = p.getSweepCountAcc(key, qKey, docs, false, numSlots, countCacheDf);
       if (null != debug) {
         @SuppressWarnings("unchecked")
         List<String> accsDebug = (List<String>) debug.get("accs");
