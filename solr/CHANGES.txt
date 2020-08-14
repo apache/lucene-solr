@@ -210,6 +210,9 @@ Other Changes
 Bug Fixes
 ---------------------
 
+* SOLR-14665, SOLR-14706: Revert SOLR-12845 adding of default autoscaling cluster policy, due to performance
+ issues. (Ishan Chattopadhyaya, Houston Putman, Gus Heck, ab)
+
 * SOLR-14671: Parsing dynamic ZK config sometimes cause NuberFormatException (janhoy)
 
 ==================  8.6.0 ==================
