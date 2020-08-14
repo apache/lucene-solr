@@ -125,7 +125,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     assert null != this.sort;
     @SuppressWarnings("unchecked")
     final SolrCache<FacetCacheKey, Map<CacheKey, SegmentCacheEntry>> facetCache = fcontext.searcher.getCache(TermFacetCache.NAME);
-    if (facetCache != null && this instanceof FacetFieldProcessorByArray && (freq.prefix == null || freq.prefix.isEmpty())) {
+    if (facetCache != null && facetCache.getMaxSize() > 0 && this instanceof FacetFieldProcessorByArray && (freq.prefix == null || freq.prefix.isEmpty())) {
       CacheKey topLevelKey = fcontext.searcher.getIndexReader().getReaderCacheHelper().getKey();
       cachingCountSlotAccFactory = new CachingCountSlotAccFactory(facetCache, topLevelKey, freq.field);
     } else {
