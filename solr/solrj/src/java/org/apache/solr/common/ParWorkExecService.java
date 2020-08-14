@@ -203,7 +203,8 @@ public class ParWorkExecService extends AbstractExecutorService {
   @Override
   public void execute(Runnable runnable) {
     if (shutdown) {
-      throw new RejectedExecutionException();
+      runIt(runnable, true);
+      return;
     }
     running.incrementAndGet();
     if (runnable instanceof ParWork.SolrFutureTask) {
