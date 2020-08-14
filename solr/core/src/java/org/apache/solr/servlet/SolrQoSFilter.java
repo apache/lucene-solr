@@ -62,8 +62,6 @@ public class SolrQoSFilter extends QoSFilter {
     String source = req.getHeader(QoSParams.REQUEST_SOURCE);
     boolean imagePath = req.getPathInfo() != null && req.getPathInfo().startsWith("/img/");
     if (!imagePath && (source == null || !source.equals(QoSParams.INTERNAL))) {
-
-      // TODO - we don't need to call this *every* request
       double ourLoad = sysStats.getAvarageUsagePerCPU();
       if (ourLoad > OUR_LOAD_HIGH) {
         log.info("Our individual load is {}", ourLoad);
@@ -75,12 +73,7 @@ public class SolrQoSFilter extends QoSFilter {
         }
       } else {
         // nocommit - deal with no supported, use this as a fail safe with high and low watermark?
-        double load =  ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage();
-        if (load < 0) {
-          log.warn("SystemLoadAverage not supported on this JVM");
-          load = 0;
-        }
-        double sLoad = load / (double) PROC_COUNT;
+        double sLoad = sysStats.getSystemLoad();
         if (sLoad > PROC_COUNT) {
           int cMax = getMaxRequests();
           if (cMax > 2) {
