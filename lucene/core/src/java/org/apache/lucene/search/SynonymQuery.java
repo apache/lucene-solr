@@ -226,7 +226,7 @@ public final class SynonymQuery extends Query {
     public Matches matches(LeafReaderContext context, int doc) throws IOException {
       String field = terms[0].term.field();
       Terms indexTerms = context.reader().terms(field);
-      if (indexTerms == null || indexTerms.hasPositions() == false) {
+      if (indexTerms == null) {
         return super.matches(context, doc);
       }
       List<Term> termList = Arrays.stream(terms)

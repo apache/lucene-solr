@@ -12,7 +12,7 @@ System Requirements
 
 API Changes
 
-* LUCENE-8474: RAMDirectory and associated deprecated classes have been 
+* LUCENE-8474: RAMDirectory and associated deprecated classes have been
   removed. (Dawid Weiss)
 
 * LUCENE-3041: The deprecated Weight#extractTerms() method has been 
@@ -57,6 +57,9 @@ API Changes
 * LUCENE-9307: BufferedIndexInput#setBufferSize has been removed. (Adrien Grand)
 
 * LUCENE-9340: SimpleBindings#add(SortField) has been removed. (Alan Woodward)
+
+* LUCENE-9462: Fields without positions should still return MatchIterator.
+  (Alan Woodward, Dawid Weiss)
 
 Improvements
 
